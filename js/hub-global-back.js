@@ -24,6 +24,13 @@
     window.location.href = HOME;
   };
 
+  const mountTarget = () => {
+    // Dashboard: place back inside the topbar so it never covers logout/actions
+    const topbarLead = document.querySelector('.topbar > div');
+    if (topbarLead) return { host: topbarLead, inline: true, prepend: true };
+    return { host: document.body, inline: false, prepend: false };
+  };
+
   const init = () => {
     if (document.getElementById('hub-back-button')) return;
     if (isHomePage()) return;
@@ -35,7 +42,11 @@
     button.setAttribute('aria-label', 'رجوع');
     button.innerHTML = '<i class="fas fa-arrow-right" aria-hidden="true"></i><span>رجوع</span>';
     button.addEventListener('click', goBack);
-    document.body.appendChild(button);
+
+    const { host, inline, prepend } = mountTarget();
+    if (inline) button.classList.add('hub-back-button--inline');
+    if (prepend) host.prepend(button);
+    else host.appendChild(button);
   };
 
   if (document.body) init();
