@@ -4,7 +4,7 @@
  * Persists to localStorage.
  */
 const HubStore = (() => {
-  const KEY = 'naioshHub360Store_v11';
+  const KEY = 'naioshHub360Store_v12';
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
@@ -66,13 +66,19 @@ const HubStore = (() => {
             manager: '—',
           })),
         worldBranches: (window.HubBranchesData?.BRANCHES || []).map((b) => ({ ...b })),
-        incubators: [
-          { id: uid('inc'), name: 'حاضنة التعليم الذكي', sector: 'تعليم', platforms: 6, offices: 14, members: 320, health: 91 },
-          { id: uid('inc'), name: 'حاضنة الصحة الرقمية', sector: 'صحة', platforms: 4, offices: 9, members: 180, health: 86 },
-          { id: uid('inc'), name: 'حاضنة القانون', sector: 'قانون', platforms: 3, offices: 7, members: 95, health: 88 },
-          { id: uid('inc'), name: 'حاضنة التسويق', sector: 'تسويق', platforms: 5, offices: 11, members: 240, health: 79 },
-          { id: uid('inc'), name: 'حاضنة التقنية', sector: 'تقنية', platforms: 8, offices: 18, members: 410, health: 94 },
-        ],
+        incubators: (window.HubIncubatorsData?.INCUBATORS || []).map((inc) => ({
+          id: inc.id,
+          name: inc.name,
+          sector: inc.sector,
+          platforms: 1 + (inc.num % 5),
+          offices: 1 + (inc.num % 4),
+          members: 20 + (inc.num % 80),
+          health: 70 + (inc.num % 26),
+          num: inc.num,
+          icon: inc.icon,
+          status: 'active',
+        })),
+        worldIncubators: (window.HubIncubatorsData?.INCUBATORS || []).map((i) => ({ ...i })),
         platforms: (window.HubSovereignPlatforms?.list || []).map((p) => ({
           id: uid('pl'),
           code: p.code,
@@ -88,7 +94,7 @@ const HubStore = (() => {
       },
       command: {
         branches: (window.HubBranchesData?.BRANCHES || []).length || 26,
-        incubators: 100,
+        incubators: (window.HubIncubatorsData?.INCUBATORS || []).length || 100,
         platforms: window.HubSovereignPlatforms?.count || 18,
         clients: 1860,
         trainees: 22400,
@@ -366,6 +372,25 @@ const HubStore = (() => {
         }));
       }
       if (e.command) e.command.branches = bd.length;
+      changed = true;
+    }
+    const idata = window.HubIncubatorsData?.INCUBATORS;
+    const currentInc = e.organization.incubators?.length || 0;
+    if (idata?.length > 0 && currentInc < idata.length) {
+      e.organization.incubators = idata.map((inc) => ({
+        id: inc.id,
+        name: inc.name,
+        sector: inc.sector,
+        platforms: 1 + (inc.num % 5),
+        offices: 1 + (inc.num % 4),
+        members: 20 + (inc.num % 80),
+        health: 70 + (inc.num % 26),
+        num: inc.num,
+        icon: inc.icon,
+        status: 'active',
+      }));
+      e.organization.worldIncubators = idata.map((x) => ({ ...x }));
+      if (e.command) e.command.incubators = idata.length;
       changed = true;
     }
     return changed;

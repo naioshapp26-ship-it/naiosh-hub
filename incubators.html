@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الحاضنات | نايوش هوب 360</title>
+  <meta name="description" content="حاضنات نايوش هوب — 100 حاضنة قطاعية بنفس قائمة وتصميم نايوش ERP." />
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/hub-theme.css" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/hub-row-actions.css" />
+  <link rel="stylesheet" href="css/hub-incubators.css" />
+</head>
+<body class="homepage incubators-body" data-hub-entity="incubators">
+  <header class="top-nav">
+    <div class="container inner">
+      <div class="nav-main">
+        <a class="brand" href="index.html">
+          <img src="assets/logo-hub.jpeg" alt="شعار نايوش هوب" />
+          <span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span>
+        </a>
+        <nav class="nav-links" aria-label="روابط نايوش هوب">
+          <a href="index.html">الرئيسية</a>
+          <a href="products.html">المنتجات</a>
+          <a href="store.html">المتجر</a>
+          <a href="ads.html">الإعلانات</a>
+          <a href="events.html">الفعاليات</a>
+          <a href="apps.html">الأنظمة</a>
+          <a href="platforms.html">المنصات</a>
+          <a href="branches.html">الفروع</a>
+          <a class="active" href="incubators.html">الحاضنات</a>
+        </nav>
+      </div>
+      <div class="auth-actions" aria-label="إجراءات الحساب">
+        <a href="dashboard.html" class="auth-btn primary">غرفة العمليات</a>
+        <a href="login.html" class="auth-btn">تسجيل الدخول</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container incubators-page">
+    <section class="incubators-hero" aria-labelledby="incubators-page-title">
+      <div class="incubators-hero-head">
+        <h1 id="incubators-page-title">حاضنات نايوش</h1>
+        <p>استعرض برامج الحاضنات حسب المجال بسهولة، مع ترتيب واضح وسريع للوصول.</p>
+      </div>
+      <div class="incubators-stats" aria-label="إحصائيات الحاضنات">
+        <article class="incubators-stat"><strong id="statTotalIncubators">0</strong><span>إجمالي الحاضنات</span></article>
+        <article class="incubators-stat"><strong id="statTotalSections">0</strong><span>الأقسام</span></article>
+        <article class="incubators-stat"><strong>100%</strong><span>مطابقة الأسماء</span></article>
+        <article class="incubators-stat"><strong>RTL</strong><span>واجهة عربية</span></article>
+      </div>
+      <div id="incubatorsTabs" class="incubators-tabs" role="tablist" aria-label="تصنيفات الحاضنات"></div>
+      <form id="incubatorsSearchForm" class="incubators-search-wrap" aria-label="بحث الحاضنات">
+        <input id="incubatorsSearchInput" type="search" placeholder="ابحث عن اسم الحاضنة..." aria-label="بحث باسم الحاضنة" />
+        <button type="submit">بحث الآن</button>
+      </form>
+    </section>
+
+    <section class="section-head">
+      <div>
+        <h2>برامج الحاضنات</h2>
+        <p>جميع الحاضنات المعتمدة مرتبة حسب الأقسام وبنفس ترتيب القائمة المعتمدة.</p>
+      </div>
+    </section>
+
+    <div id="incubatorsSections" class="incubators-sections"></div>
+
+    <section class="incubator-cta">
+      <h3>لم تجد حاضنتك؟</h3>
+      <p>يمكنك إنشاء إعلان جديد للحاضنة التي تبحث عنها ليتم إضافتها مباشرة.</p>
+      <a class="btn btn-primary" href="ads.html">أنشئ إعلان الآن</a>
+    </section>
+
+    <section class="incubators-footer">
+      <h3>انضم إلى مجتمع نايوش</h3>
+      <p>تابع التحديثات، تواصل مع فريقنا، واستفد من برامج الحاضنات الجديدة.</p>
+      <div class="incubators-footer-actions">
+        <a class="btn btn-primary" href="dashboard.html">غرفة العمليات</a>
+        <a class="btn ghost" href="index.html">تواصل معنا</a>
+      </div>
+      <div class="incubators-footer-links">
+        <a href="index.html">الرئيسية</a>
+        <a href="branches.html">الفروع</a>
+        <a href="ads.html">الإعلانات</a>
+        <a href="platforms.html">المنصات</a>
+      </div>
+    </section>
+  </main>
+
+  <nav class="floating-actions" aria-label="أزرار جانبية عائمة">
+    <a href="index.html" title="الرئيسية" aria-label="الرئيسية"><i class="fas fa-house"></i></a>
+    <a href="dashboard.html" title="غرفة العمليات" aria-label="غرفة العمليات"><i class="fas fa-gauge-high"></i></a>
+    <a href="login.html" title="دخول" aria-label="دخول"><i class="fas fa-right-to-bracket"></i></a>
+    <button type="button" id="to-top" title="الصعود للأعلى" aria-label="الصعود للأعلى"><i class="fas fa-arrow-up"></i></button>
+  </nav>
+
+  <script src="js/empire-blueprint.js"></script>
+  <script src="js/sovereign-platforms.js"></script>
+  <script src="js/hub-marketplace-data.js"></script>
+  <script src="js/hub-branches-data.js"></script>
+  <script src="js/hub-incubators-data.js"></script>
+  <script src="js/hub-store.js"></script>
+  <script src="js/hub-row-actions.js"></script>
+  <script src="js/hub-incubators.js"></script>
+  <script src="js/mobile-nav.js"></script>
+  <script src="js/hub-global-back.js" defer></script>
+  <script src="js/hub-page-guide.js" defer></script>
+</body>
+</html>

@@ -121,7 +121,7 @@
     const page = document.body?.dataset?.marketPage || document.body?.dataset?.hubEntity;
     if (!page) return;
     // platforms page is a read-only sovereign catalog — no CRUD toolbar
-    const map = { apps: 'apps', store: 'store', ads: 'ads', events: 'events', products: 'products', branches: 'branches' };
+    const map = { apps: 'apps', store: 'store', ads: 'ads', events: 'events', products: 'products', branches: 'branches', incubators: 'incubators' };
     const entity = map[page];
     if (!entity) return;
     if (document.querySelector(`.hub-page-actions[data-entity="${entity}"]`)) return;
@@ -131,6 +131,8 @@
       document.querySelector('.products-hero') ||
       document.querySelector('.branches-head') ||
       document.querySelector('.branches-showcase') ||
+      document.querySelector('.incubators-hero-head') ||
+      document.querySelector('.incubators-hero') ||
       document.querySelector('main .container') ||
       document.querySelector('main');
     if (!host) return;
@@ -142,7 +144,9 @@
       host.classList.contains('shop-top') ||
       host.classList.contains('products-hero') ||
       host.classList.contains('branches-head') ||
-      host.classList.contains('branches-showcase')
+      host.classList.contains('branches-showcase') ||
+      host.classList.contains('incubators-hero-head') ||
+      host.classList.contains('incubators-hero')
     ) {
       host.appendChild(node);
     } else {

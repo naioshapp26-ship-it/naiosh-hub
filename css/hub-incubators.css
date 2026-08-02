@@ -1,0 +1,21 @@
+/* تعديلات خفيفة لصفحة الحاضنات داخل هوب — الأساس من styles.css (ERP) */
+
+.incubators-page .section-head {
+  margin-top: 8px;
+}
+
+.incubator-card-actions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.incubators-tab.active {
+  background: rgba(var(--brand-red-rgb), 0.45);
+  border-color: rgba(var(--brand-red-rgb), 0.8);
+}
+
+.incubators-footer-links a {
+  color: inherit;
+}

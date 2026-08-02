@@ -30,6 +30,7 @@
     { code: 'STORE', nameAr: 'متجر المبيعات', kind: 'studio', category: 'استوديوهات هوب', url: 'store.html', icon: 'fa-bag-shopping', status: 'active' },
     { code: 'PRODUCTS', nameAr: 'عرض المنتجات', kind: 'studio', category: 'استوديوهات هوب', url: 'products.html', icon: 'fa-boxes-stacked', status: 'active' },
     { code: 'BRANCHES', nameAr: 'الفروع العالمية', kind: 'studio', category: 'استوديوهات هوب', url: 'branches.html', icon: 'fa-code-branch', status: 'active' },
+    { code: 'INCUBATORS', nameAr: 'الحاضنات القطاعية', kind: 'studio', category: 'استوديوهات هوب', url: 'incubators.html', icon: 'fa-seedling', status: 'active' },
     { code: 'LMS', nameAr: 'نظام التعلم', kind: 'system', category: 'أنظمة نايوش', url: 'apps.html#lms', icon: 'fa-laptop-code', status: 'active' },
     { code: 'CRM', nameAr: 'إدارة علاقات العملاء', kind: 'system', category: 'أنظمة نايوش', url: 'apps.html#crm', icon: 'fa-handshake', status: 'building' },
   ];
