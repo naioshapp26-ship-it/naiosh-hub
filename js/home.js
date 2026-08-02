@@ -72,7 +72,7 @@
     revealTargets.forEach((el) => observer.observe(el));
   }
 
-  const stats = document.querySelectorAll('.hero-stats .stat strong');
+  const stats = document.querySelectorAll('.law-hero-stats strong, .hero-stats .stat strong');
   if (stats.length && !reduceMotion && 'IntersectionObserver' in window) {
     const animateStat = (el) => {
       const target = Number((el.textContent || '').replace(/[^\d]/g, ''));
