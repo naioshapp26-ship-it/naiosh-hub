@@ -33,6 +33,8 @@
     if (el) el.textContent = String(value);
   };
 
+  const actions = (entity, id) => (window.HubActions ? window.HubActions.rowHtml(entity, id) : '');
+
   const renderApps = () => {
     const apps = store?.get?.().empire?.apps || data.APPS.map((a) => ({ ...a, id: a.code }));
     const root = document.getElementById('market-grid');
@@ -42,7 +44,9 @@
     let active = 'الكل';
 
     const paint = () => {
-      const list = active === 'الكل' ? apps : apps.filter((a) => a.category === active);
+      const list = (active === 'الكل' ? apps : apps.filter((a) => a.category === active)).filter(
+        (a) => a.status !== 'archived'
+      );
       root.innerHTML = list
         .map(
           (a) => `<article class="market-card" id="${esc((a.code || '').toLowerCase())}">
@@ -50,10 +54,11 @@
             <span class="badge-soft">${esc(a.category)}</span>
             <h3>${esc(a.nameAr)}</h3>
             <p>أي نظام نايوش يمكنه الظهور هنا والارتباط بهوب للتشغيل الموحد.</p>
-            <div class="meta">${a.status === 'active' ? 'متاح الآن' : 'قيد التجهيز'}${a.health ? ` · صحة ${a.health}%` : ''}</div>
+            <div class="meta">${a.status === 'active' ? 'متاح الآن' : 'قيد التجهيز'}${a.health ? ` · صحة ${a.health}%` : ''}${a.assignee ? ` · معيّن: ${esc(a.assignee)}` : ''}</div>
             <div class="card-actions">
               <a class="btn-mini primary" href="${esc(a.url || 'apps.html')}"><i class="fas fa-arrow-left"></i> فتح</a>
             </div>
+            ${actions('apps', a.id || a.code)}
           </article>`
         )
         .join('');
@@ -85,7 +90,9 @@
     const cats = data.STORE_CATEGORIES;
 
     const paint = () => {
-      const list = active === 'الكل' ? items : items.filter((i) => i.category === active);
+      const list = (active === 'الكل' ? items : items.filter((i) => i.category === active)).filter(
+        (i) => i.status !== 'archived'
+      );
       root.innerHTML = list
         .map(
           (i) => `<article class="market-card">
@@ -93,11 +100,12 @@
             <h3>${esc(i.title)}</h3>
             <p>${esc(i.desc)}</p>
             <div class="price">${Number(i.price).toLocaleString('ar-EG')} ر.س</div>
-            <div class="meta">نقاط: ${i.points} · مخزون: ${i.stock} · منصة: ${esc(i.platformCode || '—')}</div>
+            <div class="meta">نقاط: ${i.points} · مخزون: ${i.stock} · منصة: ${esc(i.platformCode || '—')}${i.assignee ? ` · معيّن: ${esc(i.assignee)}` : ''}</div>
             <div class="card-actions">
               <button type="button" class="btn-mini primary" data-buy="${esc(i.id)}"><i class="fas fa-cart-plus"></i> اشترِ الآن</button>
               <a class="btn-mini" href="ads.html"><i class="fas fa-rectangle-ad"></i> إعلان المنتج</a>
             </div>
+            ${actions('store', i.id)}
           </article>`
         )
         .join('');
@@ -159,6 +167,7 @@
                 <a class="btn-mini primary" href="products.html">عرض المنتجات</a>
                 <a class="btn-mini" href="store.html">المتجر</a>
               </div>
+              ${actions('ads', a.id)}
             </div>
           </article>`
         )
@@ -207,16 +216,18 @@
     const root = document.getElementById('market-grid');
     if (!root) return;
     root.innerHTML = events
+      .filter((e) => e.status !== 'archived')
       .map(
         (e) => `<article class="market-card">
           <span class="badge-soft">${esc(e.status)}</span>
           <h3>${esc(e.name)}</h3>
           <p>${esc(e.description)}</p>
           <div class="meta">${esc(e.date)} · ${esc(e.time)} · ${esc(e.duration)}</div>
-          <div class="meta">${esc(e.type)} · ${esc(e.speaker)} · ${esc(e.platform)}</div>
+          <div class="meta">${esc(e.type)} · ${esc(e.speaker)} · ${esc(e.platform)}${e.assignee ? ` · معيّن: ${esc(e.assignee)}` : ''}</div>
           <div class="card-actions">
             <a class="btn-mini primary" href="dashboard.html#events-studio"><i class="fas fa-ticket"></i> إدارة من غرفة العمليات</a>
           </div>
+          ${actions('events', e.id)}
         </article>`
       )
       .join('');
@@ -270,6 +281,7 @@
     const paint = () => {
       const q = (searchInput?.value || '').trim().toLowerCase();
       const list = products.filter((p) => {
+        if (p.status === 'archived' || p.status === 'مؤرشف') return false;
         if (active !== 'الكل' && p.category !== active) return false;
         if (!q) return true;
         const hay = `${p.sku} ${p.name} ${p.brand} ${p.platform} ${p.category}`.toLowerCase();
@@ -293,6 +305,7 @@
                     <a class="primary" href="store.html">شراء</a>
                     <a href="ads.html">إعلان</a>
                   </div>
+                  ${actions('products', p.id)}
                 </div>
               </article>`
             )

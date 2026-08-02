@@ -1,0 +1,136 @@
+/* أزرار الإجراءات الموحّدة — زي ERP (إضافة · تعديل · تعيين · حذف · أرشفة) */
+
+.hub-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 16px;
+}
+
+.hub-page-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  color: #fff;
+  background: #d70000;
+  box-shadow: 0 8px 18px rgba(215, 0, 0, 0.22);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.hub-page-act:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.hub-page-act.ghost {
+  background: #fff;
+  color: #303848;
+  border: 1px solid #e2e6ef;
+  box-shadow: none;
+}
+
+.hub-row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.hub-act {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff !important;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.hub-act:hover {
+  opacity: 0.88;
+  transform: scale(1.06);
+}
+
+.hub-act i {
+  color: #fff !important;
+  font-size: 13px;
+}
+
+.hub-act-edit {
+  background: #2563eb;
+}
+
+.hub-act-assign {
+  background: #0f766e;
+}
+
+.hub-act-delete {
+  background: #dc2626;
+}
+
+.hub-act-archive {
+  background: #475569;
+}
+
+.hub-act-add {
+  background: #16a34a;
+}
+
+.hub-act-view {
+  background: #0891b2;
+}
+
+.hub-act.is-text {
+  width: auto;
+  min-height: 32px;
+  padding: 0 10px;
+  gap: 6px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.market-card .hub-row-actions,
+.shop-card .hub-row-actions,
+.card .hub-row-actions {
+  margin-top: 10px;
+}
+
+.hub-toast-mini {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 800;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.hub-toast-mini.show {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .hub-act {
+    width: 32px;
+    height: 32px;
+  }
+}

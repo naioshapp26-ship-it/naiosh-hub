@@ -68,6 +68,9 @@
   let reportTab = 'daily';
   let govTab = 'policies';
 
+  const rowActs = (entity, id) => (window.HubActions ? window.HubActions.rowHtml(entity, id) : '');
+  const pageActs = (entity, label) => (window.HubActions ? window.HubActions.toolbarHtml(entity, label) : '');
+
   const esc = (v = '') =>
     String(v)
       .replace(/&/g, '&amp;')
@@ -521,6 +524,7 @@
                   <td>
                     <button class="btn btn-sm btn-dark" data-action="toggle-app" data-id="${a.id}">تفعيل/إيقاف</button>
                     <a class="btn btn-sm btn-ghost" href="${esc(a.url || 'apps.html')}">فتح</a>
+                    ${rowActs('apps', a.id)}
                   </td>
                 </tr>`
               )
@@ -535,7 +539,8 @@
     const catalog = HubStore.get().empire.productCatalog || [];
     return `
       <div class="toolbar">
-        <a class="btn btn-primary" href="products.html" target="_blank"><i class="fas fa-boxes-stacked"></i> فتح عرض المنتجات</a>
+        ${pageActs('products', 'إضافة منتج')}
+        <a class="btn btn-ghost" href="products.html" target="_blank"><i class="fas fa-boxes-stacked"></i> فتح عرض المنتجات</a>
         <a class="btn btn-ghost" href="store.html" target="_blank">المتجر</a>
         <a class="btn btn-ghost" href="ads.html" target="_blank">الإعلانات</a>
       </div>
@@ -548,7 +553,7 @@
       <article class="card" style="margin-top:12px">
         <h3><span class="title-left"><i class="fas fa-boxes-stacked icon"></i> كتالوج المنتجات</span></h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الرمز</th><th>المنتج</th><th>العلامة</th><th>المنصة</th><th>السعر</th><th>المخزون</th><th>المبيعات</th><th>الحركة</th><th>الحالة</th></tr></thead>
+          <thead><tr><th>الرمز</th><th>المنتج</th><th>العلامة</th><th>المنصة</th><th>السعر</th><th>المخزون</th><th>المبيعات</th><th>الحركة</th><th>الحالة</th><th>إجراءات</th></tr></thead>
           <tbody>
             ${catalog
               .map(
@@ -562,6 +567,7 @@
                   <td>${Number(p.sold).toLocaleString('ar-EG')}</td>
                   <td>${esc(p.movement)}</td>
                   <td>${esc(p.status)}</td>
+                  <td>${rowActs('products', p.id)}</td>
                 </tr>`
               )
               .join('')}
@@ -601,7 +607,7 @@
                     <td>${Number(i.price).toLocaleString('ar-EG')}</td>
                     <td>${i.points}</td>
                     <td>${i.stock}</td>
-                    <td><button class="btn btn-sm btn-primary" data-action="buy-store-item" data-id="${i.id}">بيع</button></td>
+                    <td><button class="btn btn-sm btn-primary" data-action="buy-store-item" data-id="${i.id}">بيع</button>${rowActs('store', i.id)}</td>
                   </tr>`
                 )
                 .join('')}
@@ -660,7 +666,7 @@
                   <td>${Number(a.price || 0).toLocaleString('ar-EG')}</td>
                   <td>${Number(a.views || 0).toLocaleString('ar-EG')}</td>
                   <td>${badgeStatus(a.status)}</td>
-                  <td><button class="btn btn-sm btn-dark" data-action="toggle-ad" data-id="${a.id}">تشغيل/إيقاف</button></td>
+                  <td><button class="btn btn-sm btn-dark" data-action="toggle-ad" data-id="${a.id}">تشغيل/إيقاف</button>${rowActs('ads', a.id)}</td>
                 </tr>`
               )
               .join('')}
@@ -690,7 +696,7 @@
       <article class="card" style="margin-top:12px">
         <h3><span class="title-left"><i class="fas fa-calendar-days icon"></i> إدارة الفعاليات</span></h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الفعالية</th><th>التاريخ</th><th>النوع</th><th>المتحدّث</th><th>الحالة</th></tr></thead>
+          <thead><tr><th>الفعالية</th><th>التاريخ</th><th>النوع</th><th>المتحدّث</th><th>الحالة</th><th>إجراءات</th></tr></thead>
           <tbody>
             ${events
               .map(
@@ -700,6 +706,7 @@
                   <td>${esc(e.type)}</td>
                   <td>${esc(e.speaker)}</td>
                   <td>${badgeStatus(e.status)}</td>
+                  <td>${rowActs('events', e.id)}</td>
                 </tr>`
               )
               .join('')}
@@ -718,7 +725,7 @@
         <button class="btn btn-primary" data-action="add-incubator"><i class="fas fa-plus"></i> إنشاء حاضنة</button>
       </div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>الحاضنة</th><th>القطاع</th><th>منصات</th><th>مكاتب</th><th>أعضاء</th><th>الصحة</th></tr></thead>
+        <thead><tr><th>الحاضنة</th><th>القطاع</th><th>منصات</th><th>مكاتب</th><th>أعضاء</th><th>الصحة</th><th>إجراءات</th></tr></thead>
         <tbody>
           ${org.incubators
             .map(
@@ -729,6 +736,7 @@
                 <td>${i.offices}</td>
                 <td>${i.members}</td>
                 <td style="min-width:110px">${bar(i.health)} <small>${i.health}%</small></td>
+                <td>${rowActs('incubators', i.id)}</td>
               </tr>`
             )
             .join('')}
@@ -903,7 +911,7 @@
             .map(
               (p) => `<tr>
                 <td>${esc(p.code)}</td><td>${esc(p.title)}</td><td>${esc(p.scope)}</td><td>${badgeStatus(p.status)}</td>
-                <td>${p.status !== 'active' ? `<button class="btn btn-sm btn-primary" data-action="activate-policy" data-id="${p.id}">تفعيل</button>` : '—'}</td>
+                <td>${p.status !== 'active' ? `<button class="btn btn-sm btn-primary" data-action="activate-policy" data-id="${p.id}">تفعيل</button>` : '—'}${rowActs('policies', p.id)}</td>
               </tr>`
             )
             .join('')}</tbody>
@@ -1029,7 +1037,7 @@
                   <td>${esc(sys.category)}</td>
                   <td>${sys.tenants}</td>
                   <td>${badgeStatus(sys.status)}</td>
-                  <td><button class="btn btn-sm btn-dark" data-action="toggle-market" data-id="${sys.id}">تفعيل/إيقاف</button></td>
+                  <td><button class="btn btn-sm btn-dark" data-action="toggle-market" data-id="${sys.id}">تفعيل/إيقاف</button>${rowActs('systems', sys.id)}</td>
                 </tr>`
               )
               .join('')}
@@ -1099,6 +1107,7 @@
                       ${item.status !== 'in_progress' && item.status !== 'done' ? `<button class="btn btn-sm btn-ghost" data-action="task-status" data-id="${item.id}" data-status="in_progress">بدء</button>` : ''}
                       ${item.status !== 'done' ? `<button class="btn btn-sm btn-primary" data-action="task-status" data-id="${item.id}" data-status="done">إتمام</button>` : ''}
                       ${item.status !== 'blocked' && item.status !== 'done' ? `<button class="btn btn-sm btn-dark" data-action="task-status" data-id="${item.id}" data-status="blocked">اختناق</button>` : ''}
+                      ${rowActs('tasks', item.id)}
                     </td>
                   </tr>`
                 )
@@ -1259,7 +1268,7 @@
                 .map(
                   (c) => `<tr>
                     <td>${esc(c.name)}</td><td>${esc(c.type)}</td><td>${badgeStatus(c.status)}</td>
-                    <td><button class="btn btn-sm btn-dark" data-action="toggle-connector" data-id="${c.id}">تبديل</button></td>
+                    <td><button class="btn btn-sm btn-dark" data-action="toggle-connector" data-id="${c.id}">تبديل</button>${rowActs('connectors', c.id)}</td>
                   </tr>`
                 )
                 .join('')}
@@ -1305,6 +1314,7 @@
   const render = () => {
     root.innerHTML = `<section class="panel active">${renderers[current]()}</section>`;
   };
+  window.hubRerender = () => render();
 
   // —— Event delegation
   root.addEventListener('click', (e) => {

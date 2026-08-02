@@ -4,7 +4,7 @@
  * Persists to localStorage.
  */
 const HubStore = (() => {
-  const KEY = 'naioshHub360Store_v8';
+  const KEY = 'naioshHub360Store_v9';
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
@@ -856,11 +856,109 @@ const HubStore = (() => {
       speaker: payload.speaker || 'فريق نايوش',
       duration: payload.duration || '60 دقيقة',
       department: payload.department || 'غرفة العمليات',
+      assignee: '',
     };
     studio.events.unshift(event);
     pushFeed('decision', `فعالية جديدة: ${event.name}`);
     save();
     return event;
+  };
+
+  const addProduct = (payload) => {
+    const empire = get().empire;
+    if (!empire.productCatalog) empire.productCatalog = [];
+    const item = {
+      id: uid('pr'),
+      sku: payload.sku || `NH-${Date.now().toString().slice(-6)}`,
+      name: payload.name,
+      brand: payload.brand || 'نايوش هوب',
+      platform: payload.platform || 'هوب',
+      category: payload.category || 'تشغيل',
+      price: Number(payload.price) || 0,
+      stock: Number(payload.stock) || 10,
+      sold: 0,
+      status: 'متوفر',
+      movement: 'متوسط',
+      icon: payload.icon || 'fa-cube',
+      assignee: '',
+    };
+    empire.productCatalog.unshift(item);
+    pushFeed('decision', `منتج كتالوج: ${item.name}`);
+    save();
+    return item;
+  };
+
+  const resolveCollection = (entity) => {
+    const s = get();
+    const empire = s.empire;
+    switch (entity) {
+      case 'apps':
+        return { list: empire.apps || [], nameKey: 'nameAr' };
+      case 'store':
+        return { list: empire.salesStore?.items || [], nameKey: 'title' };
+      case 'ads':
+        return { list: empire.adsStudio?.listings || [], nameKey: 'title' };
+      case 'events':
+        return { list: empire.eventsStudio?.events || [], nameKey: 'name' };
+      case 'products':
+        return { list: empire.productCatalog || [], nameKey: 'name' };
+      case 'incubators':
+        return { list: empire.organization?.incubators || [], nameKey: 'name' };
+      case 'tasks':
+        return { list: s.tasks?.items || [], nameKey: 'title' };
+      case 'policies':
+        return { list: s.governance?.policies || [], nameKey: 'title' };
+      case 'systems':
+        return { list: s.empire?.marketplace?.catalog || s.systems?.registry || [], nameKey: 'name' };
+      case 'connectors':
+        return { list: s.integration?.connectors || [], nameKey: 'name' };
+      default:
+        return null;
+    }
+  };
+
+  const entityAction = (entity, id, action, patch = {}) => {
+    const bag = resolveCollection(entity);
+    if (!bag) return null;
+    const idx = bag.list.findIndex((x) => String(x.id) === String(id));
+    if (idx < 0) return null;
+    const item = bag.list[idx];
+
+    if (action === 'delete') {
+      bag.list.splice(idx, 1);
+      pushFeed('decision', `حذف ${entity}: ${item[bag.nameKey] || id}`);
+      save();
+      return true;
+    }
+    if (action === 'archive') {
+      item.status = item.status === 'متوفر' ? 'مؤرشف' : 'archived';
+      item.archivedAt = nowIso();
+      pushFeed('decision', `أرشفة ${entity}: ${item[bag.nameKey] || id}`);
+      save();
+      return item;
+    }
+    if (action === 'assign') {
+      item.assignee = patch.assignee || '';
+      pushFeed('decision', `تعيين ${entity} → ${item.assignee}`);
+      save();
+      return item;
+    }
+    if (action === 'edit') {
+      const title = patch.title || patch.name;
+      if (title) {
+        if (bag.nameKey in item) item[bag.nameKey] = title;
+        else if ('title' in item) item.title = title;
+        else if ('name' in item) item.name = title;
+        else if ('nameAr' in item) item.nameAr = title;
+      }
+      Object.keys(patch).forEach((k) => {
+        if (k !== 'title' && k !== 'name') item[k] = patch[k];
+      });
+      pushFeed('decision', `تعديل ${entity}: ${item[bag.nameKey] || id}`);
+      save();
+      return item;
+    }
+    return null;
   };
 
   const refreshCommandStats = () => {
@@ -921,6 +1019,8 @@ const HubStore = (() => {
     addAdListing,
     toggleAd,
     addEvent,
+    addProduct,
+    entityAction,
     refreshCommandStats,
     REPORT_TITLES,
   };
