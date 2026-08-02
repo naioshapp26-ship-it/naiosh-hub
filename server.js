@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 
-const PORT = Number(process.env.PORT) || 3600;
+const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
 const ROOT = path.resolve(__dirname);
 
