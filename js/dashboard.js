@@ -37,7 +37,7 @@
     wallet: ['اقتصاد النقاط', 'شحن · استهلاك · تسعير · فواتير'],
     core: ['العقل المركزي', 'قرار · تنبؤ · تحسين · شذوذ · خريطة معرفة'],
     governance: ['الحوكمة الدستورية', 'سياسات · امتثال · جودة · عقوبات/مكافآت · دستور'],
-    workforce: ['القوى العاملة عن بُعد', 'تتبع · إنتاجية · إنذار · مكافآت'],
+    workforce: ['القوى العاملة عن بُعد', 'إضافة · تعديل · تعيين · حذف · إنذار · مكافآت'],
     systems: ['سوق الأنظمة التشغيلية', 'تفعيل · إيقاف · ربط'],
     tasks: ['المهام والمشاريع', 'توزيع · أولويات · اختناقات · جودة تنفيذ'],
     measurement: ['القياس الموحد', 'درجات · مستويات · مصفوفة · أثر العملاء'],
@@ -978,22 +978,26 @@
     const w = HubStore.get().workforce;
     return `
       <div class="toolbar">
+        ${pageActs('employees', 'إضافة موظف')}
         <button class="btn btn-dark" data-action="tick-productivity"><i class="fas fa-heartbeat"></i> تحديث الإنتاجية اللحظية</button>
       </div>
       <div class="grid-2">
         <article class="card">
           <h3><span class="title-left"><i class="fas fa-users icon"></i> الموظفون</span></h3>
           <div class="table-wrap"><table class="data">
-            <thead><tr><th>الاسم</th><th>الدور</th><th>ساعات</th><th>إنتاجية</th><th>درجة</th><th>حالة</th><th></th></tr></thead>
+            <thead><tr><th>الاسم</th><th>الدور</th><th>ساعات</th><th>إنتاجية</th><th>درجة</th><th>حالة</th><th>إجراءات</th></tr></thead>
             <tbody>
               ${w.employees
                 .map(
                   (e) => `<tr>
                     <td>${esc(e.name)}</td><td>${esc(e.role)}</td><td>${e.hours}</td>
                     <td>${e.productivity}% ${bar(e.productivity)}</td><td>${e.score}</td><td>${badgeStatus(e.status)}</td>
-                    <td style="display:flex;gap:4px">
-                      <button class="btn btn-sm btn-ghost" data-action="warn-emp" data-id="${e.id}">إنذار</button>
-                      <button class="btn btn-sm btn-primary" data-action="reward-emp" data-id="${e.id}">مكافأة</button>
+                    <td>
+                      <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+                        <button class="btn btn-sm btn-ghost" data-action="warn-emp" data-id="${e.id}">إنذار</button>
+                        <button class="btn btn-sm btn-primary" data-action="reward-emp" data-id="${e.id}">مكافأة</button>
+                        ${rowActs('employees', e.id)}
+                      </div>
                     </td>
                   </tr>`
                 )

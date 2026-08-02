@@ -505,6 +505,26 @@ const HubStore = (() => {
   };
 
   // —— Workforce
+  const addEmployee = (payload = {}) => {
+    const name = String(payload.name || '').trim();
+    if (!name) return null;
+    const item = {
+      id: uid('e'),
+      name,
+      role: String(payload.role || 'تشغيل').trim() || 'تشغيل',
+      hours: Number(payload.hours) || 0,
+      productivity: Number(payload.productivity) || 70,
+      score: Number(payload.score) || 70,
+      status: payload.status || 'active',
+      warned: false,
+      assignee: '',
+    };
+    get().workforce.employees.unshift(item);
+    pushFeed('decision', `موظف جديد: ${item.name} · ${item.role}`);
+    save();
+    return item;
+  };
+
   const warnEmployee = (id) => {
     const e = get().workforce.employees.find((x) => x.id === id);
     if (!e) return null;
@@ -939,6 +959,8 @@ const HubStore = (() => {
         return { list: empire.organization?.incubators || [], nameKey: 'name' };
       case 'tasks':
         return { list: s.tasks?.items || [], nameKey: 'title' };
+      case 'employees':
+        return { list: s.workforce?.employees || [], nameKey: 'name' };
       case 'policies':
         return { list: s.governance?.policies || [], nameKey: 'title' };
       case 'systems':
@@ -1036,6 +1058,7 @@ const HubStore = (() => {
     activatePolicy,
     issuePenaltyOrReward,
     addConstitutionArticle,
+    addEmployee,
     warnEmployee,
     rewardEmployee,
     tickProductivity,

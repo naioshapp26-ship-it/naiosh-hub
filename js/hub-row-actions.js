@@ -15,6 +15,7 @@
     products: 'منتج',
     incubators: 'حاضنة',
     tasks: 'مهمة',
+    employees: 'موظف',
     policies: 'سياسة',
     systems: 'نظام سوق',
     connectors: 'موصل',
@@ -66,6 +67,11 @@
     project: 'المشروع',
     quality: 'الجودة',
     scope: 'النطاق',
+    role: 'الدور',
+    hours: 'الساعات',
+    productivity: 'الإنتاجية',
+    score: 'الدرجة',
+    warned: 'إنذار سابق',
     archivedAt: 'تاريخ الأرشفة',
   };
 
@@ -248,6 +254,12 @@
     const item = window.HubStore?.getEntity?.(entity, id);
     if (!item) return toast('السجل غير موجود');
     const current = recordTitle(item);
+    const extraFields =
+      entity === 'employees'
+        ? `<label>الدور
+            <input id="hub-edit-role" type="text" value="${esc(item.role || '')}" />
+          </label>`
+        : '';
     openModal({
       title: `تعديل · ${current}`,
       kicker: `نموذج تعديل ${ENTITY_LABELS[entity] || 'سجل'}`,
@@ -258,6 +270,7 @@
           <label>الاسم / العنوان
             <input id="hub-edit-title" type="text" value="${esc(current)}" />
           </label>
+          ${extraFields}
         </div>`,
       foot: `
         <button type="button" class="hub-erp-btn ghost" data-hub-modal-close>إلغاء</button>
@@ -266,7 +279,11 @@
     document.getElementById('hub-edit-save')?.addEventListener('click', () => {
       const title = document.getElementById('hub-edit-title')?.value.trim();
       if (!title) return toast('العنوان مطلوب');
-      const ok = window.HubStore.entityAction(entity, id, 'edit', { title });
+      const patch = { title };
+      if (entity === 'employees') {
+        patch.role = document.getElementById('hub-edit-role')?.value.trim() || item.role || 'تشغيل';
+      }
+      const ok = window.HubStore.entityAction(entity, id, 'edit', patch);
       if (!ok) return toast('تعذّر التعديل');
       closeModal();
       toast('تم التعديل');
@@ -365,6 +382,23 @@
         { id: 'priority', label: 'الأولوية', value: 'عادي' },
       ],
       save: (v) => window.HubStore.addTask(v.title, v.assignee || 'فريق هوب', v.priority || 'عادي'),
+    },
+    employees: {
+      title: 'إضافة موظف',
+      fields: [
+        { id: 'name', label: 'اسم الموظف', required: true },
+        { id: 'role', label: 'الدور', value: 'تشغيل', required: true },
+        { id: 'hours', label: 'ساعات العمل', value: '8', type: 'number' },
+        { id: 'productivity', label: 'الإنتاجية %', value: '75', type: 'number' },
+      ],
+      save: (v) =>
+        window.HubStore.addEmployee({
+          name: v.name,
+          role: v.role,
+          hours: v.hours,
+          productivity: v.productivity,
+          score: v.productivity,
+        }),
     },
     policies: {
       title: 'إضافة سياسة',
