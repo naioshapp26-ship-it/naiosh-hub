@@ -156,7 +156,8 @@
               <p class="ads-meta">${esc(a.content)}</p>
               <p class="ads-meta" style="margin-top:8px">${Number(a.views || 0).toLocaleString('ar-EG')} مشاهدة · ${esc(a.category)}</p>
               <div style="margin-top:10px">
-                <a class="btn-mini primary" href="store.html">عرض في المتجر</a>
+                <a class="btn-mini primary" href="products.html">عرض المنتجات</a>
+                <a class="btn-mini" href="store.html">المتجر</a>
               </div>
             </div>
           </article>`
@@ -223,8 +224,93 @@
     setStat('stat-upcoming', events.filter((e) => e.status === 'قادمة').length);
   };
 
+  const renderProducts = () => {
+    const products = store?.get?.().empire?.productCatalog || data.PRODUCT_CATALOG || [];
+    const tbody = document.getElementById('products-tbody');
+    const brandSel = document.getElementById('filter-brand');
+    const catSel = document.getElementById('filter-category');
+    const statusSel = document.getElementById('filter-status');
+    const searchInput = document.getElementById('products-search');
+    const form = document.getElementById('products-search-form');
+    if (!tbody) return;
+
+    if (brandSel && !brandSel.options.length) {
+      (data.PRODUCT_BRANDS || ['الكل']).forEach((b) => {
+        const opt = document.createElement('option');
+        opt.value = b;
+        opt.textContent = b;
+        brandSel.appendChild(opt);
+      });
+    }
+    if (catSel && !catSel.options.length) {
+      (data.PRODUCT_CATEGORIES || ['الكل']).forEach((c) => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        catSel.appendChild(opt);
+      });
+    }
+
+    const paint = () => {
+      const q = (searchInput?.value || '').trim().toLowerCase();
+      const brand = brandSel?.value || 'الكل';
+      const category = catSel?.value || 'الكل';
+      const status = statusSel?.value || 'الكل';
+      const list = products.filter((p) => {
+        if (brand !== 'الكل' && p.brand !== brand) return false;
+        if (category !== 'الكل' && p.category !== category) return false;
+        if (status !== 'الكل' && p.status !== status) return false;
+        if (!q) return true;
+        const hay = `${p.sku} ${p.name} ${p.brand} ${p.platform} ${p.category}`.toLowerCase();
+        return hay.includes(q);
+      });
+
+      tbody.innerHTML = list
+        .map((p) => {
+          const moveClass = p.movement === 'سريع' ? 'fast' : p.movement === 'بطيء' ? 'slow' : 'mid';
+          const stockClass = p.status === 'منخفض' || p.stock < 40 ? 'low' : 'ok';
+          return `<tr>
+            <td class="sku">${esc(p.sku)}</td>
+            <td class="name-cell"><strong>${esc(p.name)}</strong><small>${esc(p.category)}</small></td>
+            <td>${esc(p.brand)}</td>
+            <td>${esc(p.platform)}</td>
+            <td><strong>${Number(p.price).toLocaleString('ar-EG')}</strong> ر.س</td>
+            <td><span class="stock-pill ${stockClass}">${p.stock}</span></td>
+            <td>${Number(p.sold).toLocaleString('ar-EG')}</td>
+            <td><span class="move-pill ${moveClass}">${esc(p.movement)}</span></td>
+            <td><span class="status-pill ${stockClass}">${esc(p.status)}</span></td>
+            <td>
+              <a class="btn-mini primary" href="ads.html">إعلان</a>
+              <a class="btn-mini" href="store.html">شراء</a>
+            </td>
+          </tr>`;
+        })
+        .join('');
+
+      if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:28px;color:#667080;font-weight:700">لا توجد منتجات مطابقة للبحث</td></tr>`;
+      }
+    };
+
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      paint();
+    });
+    searchInput?.addEventListener('input', paint);
+    brandSel?.addEventListener('change', paint);
+    catSel?.addEventListener('change', paint);
+    statusSel?.addEventListener('change', paint);
+
+    setStat('stat-products', products.length);
+    setStat('stat-brands', new Set(products.map((p) => p.brand)).size);
+    setStat('stat-stock', products.reduce((s, p) => s + (p.stock || 0), 0));
+    setStat('stat-sold', products.reduce((s, p) => s + (p.sold || 0), 0));
+    paint();
+  };
+
   if (page === 'apps') renderApps();
   if (page === 'store') renderStore();
   if (page === 'ads') renderAds();
   if (page === 'events') renderEvents();
+  if (page === 'products') renderProducts();
 })();

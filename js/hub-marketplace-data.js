@@ -27,6 +27,7 @@
     { code: 'ADS', nameAr: 'استوديو الإعلانات', kind: 'studio', category: 'استوديوهات هوب', url: 'ads.html', icon: 'fa-rectangle-ad', status: 'active' },
     { code: 'EVENTS', nameAr: 'استوديو الفعاليات', kind: 'studio', category: 'استوديوهات هوب', url: 'events.html', icon: 'fa-calendar-days', status: 'active' },
     { code: 'STORE', nameAr: 'متجر المبيعات', kind: 'studio', category: 'استوديوهات هوب', url: 'store.html', icon: 'fa-bag-shopping', status: 'active' },
+    { code: 'PRODUCTS', nameAr: 'عرض المنتجات', kind: 'studio', category: 'استوديوهات هوب', url: 'products.html', icon: 'fa-boxes-stacked', status: 'active' },
     { code: 'LMS', nameAr: 'نظام التعلم', kind: 'system', category: 'أنظمة نايوش', url: 'apps.html#lms', icon: 'fa-laptop-code', status: 'active' },
     { code: 'CRM', nameAr: 'إدارة علاقات العملاء', kind: 'system', category: 'أنظمة نايوش', url: 'apps.html#crm', icon: 'fa-handshake', status: 'building' },
   ];
@@ -80,6 +81,37 @@
 
   const STORE_CATEGORIES = ['الكل', 'تشغيل', 'تعليم', 'إعلانات', 'فعاليات', 'بيانات', 'موارد', 'قانون', 'صحة', 'تكامل', 'مالية'];
 
+  /** عرض المنتجات (بحث · علامة · سعر · مخزون · حركة) */
+  const PRODUCT_CATALOG = [
+    { id: 'pr-1', sku: 'NH-UOS-001', name: 'رخصة تشغيل هوب الأساسية', brand: 'نايوش هوب', platform: 'النظام التشغيلي الموحد', category: 'تشغيل', price: 2500, stock: 120, sold: 340, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-2', sku: 'NH-KMS-014', name: 'حزمة سياسات الدستور', brand: 'نايوش معرفة', platform: 'إدارة المعرفة والدستور', category: 'حوكمة', price: 780, stock: 85, sold: 190, status: 'متوفر', movement: 'متوسط' },
+    { id: 'pr-3', sku: 'NH-CCS-003', name: 'لوحة غرفة القيادة', brand: 'نايوش سيطرة', platform: 'التحكم الكوني', category: 'تشغيل', price: 4200, stock: 40, sold: 96, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-4', sku: 'NH-NAI-021', name: 'محرك تنبؤ تشغيلي', brand: 'نايوش ذكاء', platform: 'محرك الذكاء الاصطناعي', category: 'بيانات', price: 5600, stock: 28, sold: 74, status: 'منخفض', movement: 'متوسط' },
+    { id: 'pr-5', sku: 'NH-NERP-008', name: 'وحدة الموارد المؤسسية', brand: 'نايوش موارد', platform: 'نظام إدارة الموارد', category: 'تشغيل', price: 3100, stock: 66, sold: 210, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-6', sku: 'NH-NHR-011', name: 'باقة ضبط القوى العاملة', brand: 'نايوش موارد بشرية', platform: 'الموارد البشرية السيادية', category: 'موارد', price: 1800, stock: 95, sold: 260, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-7', sku: 'NH-NQMS-005', name: 'درع الجودة والامتثال', brand: 'نايوش جودة', platform: 'الجودة والامتثال', category: 'حوكمة', price: 1450, stock: 70, sold: 132, status: 'متوفر', movement: 'متوسط' },
+    { id: 'pr-8', sku: 'NH-NIMS-002', name: 'نظام استجابة الطوارئ', brand: 'نايوش حوادث', platform: 'إدارة الحوادث والطوارئ', category: 'حوكمة', price: 2300, stock: 38, sold: 81, status: 'متوفر', movement: 'بطيء' },
+    { id: 'pr-9', sku: 'NH-NAMS-019', name: 'سجل الأصول التشغيلية', brand: 'نايوش أصول', platform: 'إدارة الأصول', category: 'تشغيل', price: 990, stock: 140, sold: 305, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-10', sku: 'NH-NEMS-044', name: 'مسار تدريب معتمد', brand: 'أكاديمية نايوش', platform: 'التعليم والتدريب', category: 'تعليم', price: 650, stock: 220, sold: 510, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-11', sku: 'NH-NTS-007', name: 'تتبع أسطول النقل', brand: 'نايوش نقل', platform: 'النقل والمركبات', category: 'تشغيل', price: 2750, stock: 52, sold: 118, status: 'متوفر', movement: 'متوسط' },
+    { id: 'pr-12', sku: 'NH-NCS-016', name: 'باقة الإعلام المؤسسي', brand: 'نايوش اتصال', platform: 'الاتصال المؤسسي', category: 'تسويق', price: 1200, stock: 88, sold: 176, status: 'متوفر', movement: 'متوسط' },
+    { id: 'pr-13', sku: 'NH-NMS-033', name: 'حملة هوية المنصة', brand: 'نايوش تسويق', platform: 'التسويق والهوية', category: 'تسويق', price: 1500, stock: 60, sold: 240, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-14', sku: 'NH-NDS-009', name: 'لوحة تحليل المبيعات', brand: 'نايوش بيانات', platform: 'البيانات والتحليل', category: 'بيانات', price: 2100, stock: 47, sold: 155, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-15', sku: 'NH-NFS-012', name: 'اشتراك المحاسبة الشهرية', brand: 'نايوش مالية', platform: 'المالية والمحاسبة', category: 'مالية', price: 1600, stock: 110, sold: 290, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-16', sku: 'NH-NOPS-004', name: 'محرك العمليات اليومية', brand: 'نايوش عمليات', platform: 'العمليات التشغيلية', category: 'تشغيل', price: 1950, stock: 73, sold: 188, status: 'متوفر', movement: 'متوسط' },
+    { id: 'pr-17', sku: 'NH-NIS-001', name: 'موصل تكامل الأنظمة', brand: 'نايوش تكامل', platform: 'التكامل والربط', category: 'تكامل', price: 2100, stock: 55, sold: 142, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-18', sku: 'NH-NGS-006', name: 'حزمة الرقابة العليا', brand: 'نايوش حوكمة', platform: 'الحوكمة والرقابة', category: 'حوكمة', price: 3400, stock: 32, sold: 67, status: 'منخفض', movement: 'بطيء' },
+    { id: 'pr-19', sku: 'NH-LAW-101', name: 'رخصة نايوش لو المهنية', brand: 'نايوش لو', platform: 'النظام القانوني', category: 'قانون', price: 3200, stock: 44, sold: 98, status: 'متوفر', movement: 'متوسط' },
+    { id: 'pr-20', sku: 'NH-FIT-055', name: 'اشتراك نايوش فيت للفروع', brand: 'نايوش فيت', platform: 'الصحة واللياقة', category: 'صحة', price: 990, stock: 160, sold: 420, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-21', sku: 'NH-ADS-077', name: 'بطاقة إعلان منتج منصة', brand: 'استوديو الإعلانات', platform: 'استوديو الإعلانات', category: 'إعلانات', price: 450, stock: 300, sold: 680, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-22', sku: 'NH-EVT-088', name: 'تذكرة فعالية مباشرة', brand: 'استوديو الفعاليات', platform: 'استوديو الفعاليات', category: 'فعاليات', price: 350, stock: 500, sold: 920, status: 'متوفر', movement: 'سريع' },
+    { id: 'pr-23', sku: 'NH-ERP-010', name: 'وحدة نايوش إي آر بي', brand: 'نايوش إي آر بي', platform: 'إدارة الموارد', category: 'تشغيل', price: 4800, stock: 22, sold: 51, status: 'منخفض', movement: 'متوسط' },
+    { id: 'pr-24', sku: 'NH-CRM-030', name: 'باقة علاقات العملاء', brand: 'نايوش عملاء', platform: 'إدارة علاقات العملاء', category: 'مبيعات', price: 1700, stock: 64, sold: 133, status: 'متوفر', movement: 'متوسط' },
+  ];
+
+  const PRODUCT_BRANDS = ['الكل', ...Array.from(new Set(PRODUCT_CATALOG.map((p) => p.brand)))];
+  const PRODUCT_CATEGORIES = ['الكل', ...Array.from(new Set(PRODUCT_CATALOG.map((p) => p.category)))];
+
   window.HubMarketplaceData = {
     APPS,
     STORE_ITEMS,
@@ -87,6 +119,9 @@
     EVENTS,
     AD_CATEGORIES,
     STORE_CATEGORIES,
+    PRODUCT_CATALOG,
+    PRODUCT_BRANDS,
+    PRODUCT_CATEGORIES,
     uid,
   };
 })();

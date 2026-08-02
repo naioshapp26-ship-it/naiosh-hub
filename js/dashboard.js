@@ -4,6 +4,7 @@
     { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
     { key: 'platforms', icon: 'fa-layer-group', label: 'المنصات السيادية' },
     { key: 'apps', icon: 'fa-cubes', label: 'سجل الأنظمة' },
+    { key: 'products', icon: 'fa-boxes-stacked', label: 'عرض المنتجات' },
     { key: 'store', icon: 'fa-bag-shopping', label: 'متجر المبيعات' },
     { key: 'ads-studio', icon: 'fa-rectangle-ad', label: 'استوديو الإعلانات' },
     { key: 'events-studio', icon: 'fa-calendar-days', label: 'استوديو الفعاليات' },
@@ -22,11 +23,12 @@
   ];
 
   const TITLES = {
-    overview: ['مركز التحكم العالمي', 'الفروع · الحاضنات · المنصات · المتجر · الإعلانات · الفعاليات'],
+    overview: ['مركز التحكم العالمي', 'الفروع · الحاضنات · المنصات · المنتجات · المتجر · الإعلانات · الفعاليات'],
     blueprint: ['دستور المعمارية الإمبراطورية', 'هوب مركزي — طبقات · محاور · أول 6 أشهر'],
     platforms: ['المنصات السيادية لنايوش 360', '18 منصة تشغّل هوب — من الدماغ المركزي إلى السلطة العليا'],
     apps: ['سجل أنظمة هوب', 'أي نظام نايوش يمكنه الظهور هنا والارتباط بالتشغيل الموحّد'],
-    store: ['متجر المبيعات', 'منتجات المنصات · طلبات · نقاط المحفظة'],
+    products: ['عرض المنتجات', 'بحث · علامة · سعر · مخزون · حركة البيع'],
+    store: ['متجر المبيعات', 'باقات البيع · طلبات · نقاط المحفظة'],
     'ads-studio': ['استوديو الإعلانات', 'إعلانات منتجات المنصات — ظهور وميزانية ومشاهدات'],
     'events-studio': ['استوديو الفعاليات', 'فعاليات · بث · ورش · إدارة من غرفة العمليات'],
     identity: ['بوابة الهوية الرقمية', 'هوية موحّدة · دخول موحّد · أدوار'],
@@ -520,6 +522,46 @@
                     <button class="btn btn-sm btn-dark" data-action="toggle-app" data-id="${a.id}">تفعيل/إيقاف</button>
                     <a class="btn btn-sm btn-ghost" href="${esc(a.url || 'apps.html')}">فتح</a>
                   </td>
+                </tr>`
+              )
+              .join('')}
+          </tbody>
+        </table></div>
+      </article>
+    `;
+  };
+
+  const renderProductsPanel = () => {
+    const catalog = HubStore.get().empire.productCatalog || [];
+    return `
+      <div class="toolbar">
+        <a class="btn btn-primary" href="products.html" target="_blank"><i class="fas fa-boxes-stacked"></i> فتح عرض المنتجات</a>
+        <a class="btn btn-ghost" href="store.html" target="_blank">المتجر</a>
+        <a class="btn btn-ghost" href="ads.html" target="_blank">الإعلانات</a>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi"><span>منتجات</span><strong>${catalog.length}</strong><small>في الكتالوج</small></article>
+        <article class="kpi"><span>علامات</span><strong>${new Set(catalog.map((p) => p.brand)).size}</strong><small>تجارية</small></article>
+        <article class="kpi"><span>مخزون</span><strong>${catalog.reduce((s, p) => s + (p.stock || 0), 0).toLocaleString('ar-EG')}</strong><small>وحدة</small></article>
+        <article class="kpi"><span>مبيعات</span><strong>${catalog.reduce((s, p) => s + (p.sold || 0), 0).toLocaleString('ar-EG')}</strong><small>تراكمي</small></article>
+      </div>
+      <article class="card" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-boxes-stacked icon"></i> كتالوج المنتجات</span></h3>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>الرمز</th><th>المنتج</th><th>العلامة</th><th>المنصة</th><th>السعر</th><th>المخزون</th><th>المبيعات</th><th>الحركة</th><th>الحالة</th></tr></thead>
+          <tbody>
+            ${catalog
+              .map(
+                (p) => `<tr>
+                  <td><strong>${esc(p.sku)}</strong></td>
+                  <td>${esc(p.name)}<br><small>${esc(p.category)}</small></td>
+                  <td>${esc(p.brand)}</td>
+                  <td>${esc(p.platform)}</td>
+                  <td>${Number(p.price).toLocaleString('ar-EG')}</td>
+                  <td>${p.stock}</td>
+                  <td>${Number(p.sold).toLocaleString('ar-EG')}</td>
+                  <td>${esc(p.movement)}</td>
+                  <td>${esc(p.status)}</td>
                 </tr>`
               )
               .join('')}
@@ -1242,6 +1284,7 @@
     blueprint: renderBlueprint,
     platforms: renderPlatforms,
     apps: renderApps,
+    products: renderProductsPanel,
     store: renderStorePanel,
     'ads-studio': renderAdsStudio,
     'events-studio': renderEventsStudio,

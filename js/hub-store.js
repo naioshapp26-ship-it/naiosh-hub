@@ -4,7 +4,7 @@
  * Persists to localStorage.
  */
 const HubStore = (() => {
-  const KEY = 'naioshHub360Store_v5';
+  const KEY = 'naioshHub360Store_v6';
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
@@ -131,6 +131,7 @@ const HubStore = (() => {
           { id: uid('ord'), itemId: 'st-4', title: 'تذكرة فعالية مباشرة', buyer: 'سارة أحمد', amount: 350, points: 50, at: nowIso(), status: 'مكتمل' },
         ],
       },
+      productCatalog: (window.HubMarketplaceData?.PRODUCT_CATALOG || []).map((x) => ({ ...x })),
       adsStudio: {
         listings: (window.HubMarketplaceData?.ADS || []).map((x) => ({ ...x, impressions: x.views * 3, clicks: Math.floor(x.views * 0.08) })),
       },
@@ -142,7 +143,7 @@ const HubStore = (() => {
 
   const seed = () => ({
       meta: {
-      version: 5,
+      version: 6,
       updatedAt: nowIso(),
       phase: 1,
       productType: 'central_digital_hub',
