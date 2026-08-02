@@ -4,7 +4,7 @@
  * Persists to localStorage.
  */
 const HubStore = (() => {
-  const KEY = 'naioshHub360Store_v10';
+  const KEY = 'naioshHub360Store_v11';
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
@@ -49,22 +49,22 @@ const HubStore = (() => {
       },
       organization: {
         chain: bp?.orgChain || ['دولة', 'فرع', 'حاضنة', 'منصة', 'مكتب إلكتروني'],
-        countries: [
-          { id: uid('co'), name: 'مصر', code: 'EG', branches: 1, status: 'active' },
-          { id: uid('co'), name: 'العراق', code: 'IQ', branches: 1, status: 'active' },
-          { id: uid('co'), name: 'السعودية', code: 'SA', branches: 1, status: 'active' },
-          { id: uid('co'), name: 'الإمارات', code: 'AE', branches: 1, status: 'active' },
-          { id: uid('co'), name: 'تركيا', code: 'TR', branches: 1, status: 'active' },
-          { id: uid('co'), name: 'الأردن', code: 'JO', branches: 1, status: 'active' },
-        ],
-        branches: [
-          { id: uid('br'), name: 'فرع القاهرة', country: 'مصر', incubators: 12, manager: 'أحمد منصور' },
-          { id: uid('br'), name: 'فرع بغداد', country: 'العراق', incubators: 6, manager: 'علي حسين' },
-          { id: uid('br'), name: 'فرع الرياض', country: 'السعودية', incubators: 9, manager: 'نورة العتيبي' },
-          { id: uid('br'), name: 'فرع دبي', country: 'الإمارات', incubators: 5, manager: 'خالد الراشد' },
-          { id: uid('br'), name: 'فرع إسطنبول', country: 'تركيا', incubators: 4, manager: 'أحمد يلماز' },
-          { id: uid('br'), name: 'فرع عمّان', country: 'الأردن', incubators: 3, manager: 'ليلى ناصر' },
-        ],
+        countries: (window.HubBranchesData?.COUNTRIES || []).map((c) => ({
+          id: uid('co'),
+          name: c.nameAr,
+          code: c.code,
+          branches: c.branches || 1,
+          status: c.status || 'active',
+        })),
+        branches: (window.HubBranchesData?.BRANCHES || [])
+          .filter((b) => b.code !== 'HQ')
+          .map((b) => ({
+            id: uid('br'),
+            name: `فرع ${b.nameAr}`,
+            country: b.nameAr,
+            incubators: 3,
+            manager: '—',
+          })),
         worldBranches: (window.HubBranchesData?.BRANCHES || []).map((b) => ({ ...b })),
         incubators: [
           { id: uid('inc'), name: 'حاضنة التعليم الذكي', sector: 'تعليم', platforms: 6, offices: 14, members: 320, health: 91 },
@@ -87,7 +87,7 @@ const HubStore = (() => {
         })),
       },
       command: {
-        branches: (window.HubBranchesData?.BRANCHES || []).length || 6,
+        branches: (window.HubBranchesData?.BRANCHES || []).length || 26,
         incubators: 100,
         platforms: window.HubSovereignPlatforms?.count || 18,
         clients: 1860,
@@ -353,8 +353,19 @@ const HubStore = (() => {
     }));
     const bd = window.HubBranchesData?.BRANCHES;
     if (!e.organization) e.organization = {};
-    if (!(e.organization.worldBranches?.length > 0) && bd?.length > 0) {
+    const currentBranches = e.organization.worldBranches?.length || 0;
+    if (bd?.length > 0 && currentBranches < bd.length) {
       e.organization.worldBranches = bd.map((x) => ({ ...x }));
+      if (window.HubBranchesData?.COUNTRIES?.length) {
+        e.organization.countries = window.HubBranchesData.COUNTRIES.map((c) => ({
+          id: uid('co'),
+          name: c.nameAr,
+          code: c.code,
+          branches: c.branches || 1,
+          status: c.status || 'active',
+        }));
+      }
+      if (e.command) e.command.branches = bd.length;
       changed = true;
     }
     return changed;
