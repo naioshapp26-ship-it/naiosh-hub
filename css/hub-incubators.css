@@ -1,35 +1,51 @@
-/* تعديلات صفحة الحاضنات داخل هوب — الأساس من styles.css (ERP) */
+/* صفحة الحاضنات — بطاقات تملى عرض السطر بدون فراغ من الجنبين */
 
-/* وسّع المحتوى عشان يلغي فراغ الجنبين */
-body.incubators-body > .container.incubators-page {
-  max-width: 1560px;
-  width: 100%;
+body.incubators-body > main.container.incubators-page {
+  max-width: none !important;
+  width: 100% !important;
+  margin-inline: 0 !important;
+  padding-inline: 1rem !important;
+  box-sizing: border-box;
 }
 
 body.incubators-body .top-nav .container {
-  max-width: 1560px;
+  max-width: none !important;
+  width: 100% !important;
+  padding-inline: 1rem;
+}
+
+body.incubators-body .incubators-hero,
+body.incubators-body .incubators-sections,
+body.incubators-body .section-head,
+body.incubators-body .incubator-cta,
+body.incubators-body .incubators-footer {
+  width: 100%;
+  max-width: none;
 }
 
 .incubators-page .section-head {
   margin-top: 8px;
 }
 
-/* فرّق البطاقات على عرض السطر كامل — حتى لو الصف ناقص */
-.incubators-page .incubator-grid.cards {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  justify-content: stretch;
-  align-items: stretch;
+/* 6 في الصف · الصف الناقص يتمطّ ويملى السطر */
+body.incubators-body .incubators-page .incubator-grid.cards {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  width: 100% !important;
+  max-width: none !important;
+  gap: 1rem !important;
+  margin-bottom: 0 !important;
+  justify-content: stretch !important;
+  align-items: stretch !important;
 }
 
-.incubators-page .incubator-card.card {
-  width: 100%;
-  min-width: 0;
-  max-width: none;
-  margin: 0;
-  box-sizing: border-box;
+body.incubators-body .incubators-page .incubator-card.card {
+  flex: 1 1 calc((100% - 5 * 1rem) / 6) !important;
+  width: auto !important;
+  min-width: calc((100% - 5 * 1rem) / 6) !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .incubator-card-actions {
@@ -48,15 +64,34 @@ body.incubators-body .top-nav .container {
   color: inherit;
 }
 
-@media (max-width: 900px) {
-  .incubators-page .incubator-grid.cards {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
+@media (max-width: 1200px) {
+  body.incubators-body .incubators-page .incubator-card.card {
+    flex: 1 1 calc((100% - 3 * 1rem) / 4) !important;
+    min-width: calc((100% - 3 * 1rem) / 4) !important;
   }
 }
 
-@media (max-width: 560px) {
-  .incubators-page .incubator-grid.cards {
-    grid-template-columns: 1fr;
+@media (max-width: 900px) {
+  body.incubators-body .incubators-page .incubator-card.card {
+    flex: 1 1 calc((100% - 2 * 0.75rem) / 3) !important;
+    min-width: calc((100% - 2 * 0.75rem) / 3) !important;
+  }
+
+  body.incubators-body .incubators-page .incubator-grid.cards {
+    gap: 0.75rem !important;
+  }
+}
+
+@media (max-width: 600px) {
+  body.incubators-body .incubators-page .incubator-card.card {
+    flex: 1 1 calc((100% - 0.75rem) / 2) !important;
+    min-width: calc((100% - 0.75rem) / 2) !important;
+  }
+}
+
+@media (max-width: 400px) {
+  body.incubators-body .incubators-page .incubator-card.card {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
   }
 }
