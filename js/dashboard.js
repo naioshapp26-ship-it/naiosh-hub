@@ -3,6 +3,10 @@
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
     { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
     { key: 'platforms', icon: 'fa-layer-group', label: 'المنصات السيادية' },
+    { key: 'apps', icon: 'fa-cubes', label: 'سجل الأنظمة' },
+    { key: 'store', icon: 'fa-bag-shopping', label: 'متجر المبيعات' },
+    { key: 'ads-studio', icon: 'fa-rectangle-ad', label: 'استوديو الإعلانات' },
+    { key: 'events-studio', icon: 'fa-calendar-days', label: 'استوديو الفعاليات' },
     { key: 'identity', icon: 'fa-id-card', label: 'NAIOSH ID' },
     { key: 'organization', icon: 'fa-globe', label: 'الهيكل العالمي' },
     { key: 'incubators', icon: 'fa-building', label: 'الحاضنات' },
@@ -18,21 +22,25 @@
   ];
 
   const TITLES = {
-    overview: ['مركز التحكم العالمي', 'Global Command Center — الفروع · الحاضنات · المنصات · النقاط'],
-    blueprint: ['دستور المعمارية الإمبراطورية', 'Central Digital Hub — 5 طبقات · 12 محور · أول 6 أشهر'],
+    overview: ['مركز التحكم العالمي', 'الفروع · الحاضنات · المنصات · المتجر · الإعلانات · الفعاليات'],
+    blueprint: ['دستور المعمارية الإمبراطورية', 'هوب مركزي — طبقات · محاور · أول 6 أشهر'],
     platforms: ['المنصات السيادية لنايوش 360', '18 منصة تشغّل هوب — من الدماغ المركزي إلى السلطة العليا'],
-    identity: ['بوابة الهوية الرقمية', 'NAIOSH ID · SSO · IAM · Role Matrix · MFA'],
+    apps: ['سجل أنظمة هوب', 'أي نظام نايوش يمكنه الظهور هنا والارتباط بالتشغيل الموحّد'],
+    store: ['متجر المبيعات', 'منتجات المنصات · طلبات · نقاط المحفظة'],
+    'ads-studio': ['استوديو الإعلانات', 'إعلانات منتجات المنصات — ظهور وميزانية ومشاهدات'],
+    'events-studio': ['استوديو الفعاليات', 'فعاليات · بث · ورش · إدارة من غرفة العمليات'],
+    identity: ['بوابة الهوية الرقمية', 'هوية موحّدة · دخول موحّد · أدوار'],
     organization: ['محرك الهيكل المؤسسي', 'دولة ← فرع ← حاضنة ← منصة ← مكتب إلكتروني'],
     incubators: ['إدارة الحاضنات', '100 حاضنة قطاعية · منصات · مكاتب · أعضاء'],
-    wallet: ['اقتصاد النقاط', 'NAIOSH Wallet — شحن · استهلاك · تسعير · فواتير'],
+    wallet: ['اقتصاد النقاط', 'شحن · استهلاك · تسعير · فواتير'],
     core: ['العقل المركزي', 'قرار · تنبؤ · تحسين · شذوذ · خريطة معرفة'],
     governance: ['الحوكمة الدستورية', 'سياسات · امتثال · جودة · عقوبات/مكافآت · دستور'],
     workforce: ['القوى العاملة عن بُعد', 'تتبع · إنتاجية · إنذار · مكافآت'],
-    systems: ['سوق الأنظمة التشغيلية', 'System Marketplace — تفعيل · إيقاف · ربط'],
+    systems: ['سوق الأنظمة التشغيلية', 'تفعيل · إيقاف · ربط'],
     tasks: ['المهام والمشاريع', 'توزيع · أولويات · اختناقات · جودة تنفيذ'],
     measurement: ['القياس الموحد', 'درجات · مستويات · مصفوفة · أثر العملاء'],
     reports: ['التقارير السيادية', 'يومي · أسبوعي · شهري · مخاطر · نمو · امتثال'],
-    integration: ['الربط والتكامل', 'API Gateway · Event Bus · Connectors'],
+    integration: ['الربط والتكامل', 'بوابة الربط · ناقل الأحداث · موصلات'],
   };
 
   const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
@@ -53,7 +61,8 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const root = $('#panel-root');
   const toastEl = $('#toast');
-  let current = 'overview';
+  let current = (location.hash || '').replace(/^#/, '') || 'overview';
+  if (!TITLES[current]) current = 'overview';
   let reportTab = 'daily';
   let govTab = 'policies';
 
@@ -107,6 +116,11 @@
       deferred: 'badge-outline',
       stopped: 'badge-red',
       beta: 'badge-gray',
+      paused: 'badge-gray',
+      قادمة: 'badge-black',
+      منتهية: 'badge-gray',
+      مسودة: 'badge-red',
+      مكتمل: 'badge-black',
       عالي: 'badge-red',
       عاجل: 'badge-red',
       متوسط: 'badge-gray',
@@ -469,6 +483,187 @@
         </article>`
         )
         .join('')}
+    `;
+  };
+
+  const renderApps = () => {
+    const apps = HubStore.get().empire.apps || [];
+    return `
+      <div class="toolbar">
+        <div class="field"><label>رمز النظام</label><input id="app-code" placeholder="LAW" /></div>
+        <div class="field"><label>الاسم بالعربي</label><input id="app-name" placeholder="نظام جديد لنايوش" /></div>
+        <div class="field"><label>التصنيف</label><input id="app-cat" placeholder="أنظمة نايوش" /></div>
+        <div class="field"><label>الرابط</label><input id="app-url" placeholder="apps.html" /></div>
+        <button class="btn btn-primary" data-action="register-app"><i class="fas fa-plus"></i> تسجيل نظام في هوب</button>
+        <a class="btn btn-ghost" href="apps.html" target="_blank">فتح السجل العام</a>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi"><span>أنظمة مسجّلة</span><strong>${apps.length}</strong><small>في هوب</small></article>
+        <article class="kpi"><span>نشطة</span><strong>${apps.filter((a) => a.status === 'active').length}</strong><small>متاحة</small></article>
+        <article class="kpi"><span>استوديوهات</span><strong>${apps.filter((a) => a.kind === 'studio').length}</strong><small>إعلانات · فعاليات · متجر</small></article>
+        <article class="kpi"><span>سيادية</span><strong>${apps.filter((a) => a.kind === 'sovereign').length}</strong><small>منصات</small></article>
+      </div>
+      <article class="card" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-cubes icon"></i> أي نظام نايوش يظهر هنا</span></h3>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>الصحة</th><th>الحالة</th><th></th></tr></thead>
+          <tbody>
+            ${apps
+              .map(
+                (a) => `<tr>
+                  <td><strong>${esc(a.nameAr)}</strong></td>
+                  <td>${esc(a.category)}</td>
+                  <td>${esc(a.kind)}</td>
+                  <td>${a.health || '—'}%</td>
+                  <td>${badgeStatus(a.status)}</td>
+                  <td>
+                    <button class="btn btn-sm btn-dark" data-action="toggle-app" data-id="${a.id}">تفعيل/إيقاف</button>
+                    <a class="btn btn-sm btn-ghost" href="${esc(a.url || 'apps.html')}">فتح</a>
+                  </td>
+                </tr>`
+              )
+              .join('')}
+          </tbody>
+        </table></div>
+      </article>
+    `;
+  };
+
+  const renderStorePanel = () => {
+    const store = HubStore.get().empire.salesStore || { items: [], orders: [] };
+    return `
+      <div class="toolbar">
+        <div class="field"><label>المنتج</label><input id="store-title" placeholder="اسم المنتج" /></div>
+        <div class="field"><label>السعر</label><input id="store-price" type="number" value="500" /></div>
+        <div class="field"><label>النقاط</label><input id="store-points" type="number" value="50" /></div>
+        <div class="field"><label>منصة</label><input id="store-platform" placeholder="UOS" /></div>
+        <button class="btn btn-primary" data-action="add-store-item"><i class="fas fa-plus"></i> إضافة منتج</button>
+        <a class="btn btn-ghost" href="store.html" target="_blank">فتح المتجر</a>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi"><span>منتجات</span><strong>${store.items.length}</strong><small>في المتجر</small></article>
+        <article class="kpi"><span>طلبات</span><strong>${store.orders.length}</strong><small>مكتملة</small></article>
+        <article class="kpi"><span>مخزون</span><strong>${store.items.reduce((s, i) => s + (i.stock || 0), 0)}</strong><small>وحدة</small></article>
+        <article class="kpi"><span>إعلانات</span><strong>${(HubStore.get().empire.adsStudio?.listings || []).length}</strong><small>مرتبطة</small></article>
+      </div>
+      <div class="grid-2" style="margin-top:12px">
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-bag-shopping icon"></i> المنتجات</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>المنتج</th><th>السعر</th><th>نقاط</th><th>مخزون</th><th></th></tr></thead>
+            <tbody>
+              ${store.items
+                .map(
+                  (i) => `<tr>
+                    <td><strong>${esc(i.title)}</strong><br><small>${esc(i.platformCode || '')}</small></td>
+                    <td>${Number(i.price).toLocaleString('ar-EG')}</td>
+                    <td>${i.points}</td>
+                    <td>${i.stock}</td>
+                    <td><button class="btn btn-sm btn-primary" data-action="buy-store-item" data-id="${i.id}">بيع</button></td>
+                  </tr>`
+                )
+                .join('')}
+            </tbody>
+          </table></div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-receipt icon"></i> الطلبات</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>المنتج</th><th>المشتري</th><th>المبلغ</th><th>الوقت</th></tr></thead>
+            <tbody>
+              ${store.orders
+                .map(
+                  (o) => `<tr>
+                    <td>${esc(o.title)}</td>
+                    <td>${esc(o.buyer)}</td>
+                    <td>${Number(o.amount).toLocaleString('ar-EG')}</td>
+                    <td>${fmtTime(o.at)}</td>
+                  </tr>`
+                )
+                .join('')}
+            </tbody>
+          </table></div>
+        </article>
+      </div>
+    `;
+  };
+
+  const renderAdsStudio = () => {
+    const listings = HubStore.get().empire.adsStudio?.listings || [];
+    return `
+      <div class="toolbar">
+        <div class="field"><label>عنوان الإعلان</label><input id="ad-title" placeholder="عرض منتج المنصة" /></div>
+        <div class="field"><label>السعر</label><input id="ad-price" type="number" value="1000" /></div>
+        <div class="field"><label>التصنيف</label><input id="ad-cat" placeholder="تشغيل" /></div>
+        <div class="field"><label>منصة</label><input id="ad-platform" placeholder="UOS" /></div>
+        <button class="btn btn-primary" data-action="add-ad"><i class="fas fa-plus"></i> نشر إعلان منتج</button>
+        <a class="btn btn-ghost" href="ads.html" target="_blank">فتح استوديو الإعلانات</a>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi"><span>إعلانات</span><strong>${listings.length}</strong><small>الكل</small></article>
+        <article class="kpi"><span>نشطة</span><strong>${listings.filter((a) => a.status === 'active').length}</strong><small>ظاهرة</small></article>
+        <article class="kpi"><span>مشاهدات</span><strong>${listings.reduce((s, a) => s + (a.views || 0), 0).toLocaleString('ar-EG')}</strong><small>تراكمي</small></article>
+        <article class="kpi"><span>منتجات منصات</span><strong>${listings.filter((a) => a.type === 'منتج منصة').length}</strong><small>مهمة</small></article>
+      </div>
+      <article class="card" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-rectangle-ad icon"></i> إعلانات منتجات المنصات</span></h3>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>الإعلان</th><th>المنصة</th><th>السعر</th><th>مشاهدات</th><th>الحالة</th><th></th></tr></thead>
+          <tbody>
+            ${listings
+              .map(
+                (a) => `<tr>
+                  <td><strong>${esc(a.title)}</strong><br><small>${esc(a.content || '')}</small></td>
+                  <td>${esc(a.platformCode || '—')}</td>
+                  <td>${Number(a.price || 0).toLocaleString('ar-EG')}</td>
+                  <td>${Number(a.views || 0).toLocaleString('ar-EG')}</td>
+                  <td>${badgeStatus(a.status)}</td>
+                  <td><button class="btn btn-sm btn-dark" data-action="toggle-ad" data-id="${a.id}">تشغيل/إيقاف</button></td>
+                </tr>`
+              )
+              .join('')}
+          </tbody>
+        </table></div>
+      </article>
+    `;
+  };
+
+  const renderEventsStudio = () => {
+    const events = HubStore.get().empire.eventsStudio?.events || [];
+    return `
+      <div class="toolbar">
+        <div class="field"><label>اسم الفعالية</label><input id="ev-name" placeholder="قمة تشغيلية" /></div>
+        <div class="field"><label>التاريخ</label><input id="ev-date" type="date" /></div>
+        <div class="field"><label>الوقت</label><input id="ev-time" type="time" value="18:00" /></div>
+        <div class="field"><label>النوع</label><input id="ev-type" placeholder="بث مباشر" /></div>
+        <button class="btn btn-primary" data-action="add-event"><i class="fas fa-plus"></i> إنشاء فعالية</button>
+        <a class="btn btn-ghost" href="events.html" target="_blank">فتح استوديو الفعاليات</a>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi"><span>فعاليات</span><strong>${events.length}</strong><small>الكل</small></article>
+        <article class="kpi"><span>قادمة</span><strong>${events.filter((e) => e.status === 'قادمة').length}</strong><small>مجدولة</small></article>
+        <article class="kpi"><span>منتهية</span><strong>${events.filter((e) => e.status === 'منتهية').length}</strong><small>أرشيف</small></article>
+        <article class="kpi"><span>مسودات</span><strong>${events.filter((e) => e.status === 'مسودة').length}</strong><small>قيد الإعداد</small></article>
+      </div>
+      <article class="card" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-calendar-days icon"></i> إدارة الفعاليات</span></h3>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>الفعالية</th><th>التاريخ</th><th>النوع</th><th>المتحدّث</th><th>الحالة</th></tr></thead>
+          <tbody>
+            ${events
+              .map(
+                (e) => `<tr>
+                  <td><strong>${esc(e.name)}</strong><br><small>${esc(e.description || '')}</small></td>
+                  <td>${esc(e.date)} ${esc(e.time)}</td>
+                  <td>${esc(e.type)}</td>
+                  <td>${esc(e.speaker)}</td>
+                  <td>${badgeStatus(e.status)}</td>
+                </tr>`
+              )
+              .join('')}
+          </tbody>
+        </table></div>
+      </article>
     `;
   };
 
@@ -1046,6 +1241,10 @@
     overview: renderOverview,
     blueprint: renderBlueprint,
     platforms: renderPlatforms,
+    apps: renderApps,
+    store: renderStorePanel,
+    'ads-studio': renderAdsStudio,
+    'events-studio': renderEventsStudio,
     identity: renderIdentity,
     organization: renderOrganization,
     incubators: renderIncubators,
@@ -1221,6 +1420,69 @@
         HubStore.toggleMarketplaceSystem(id);
         toast('تحدّثت حالة النظام في السوق');
         break;
+      case 'register-app': {
+        const code = $('#app-code')?.value.trim();
+        const nameAr = $('#app-name')?.value.trim();
+        const category = $('#app-cat')?.value.trim() || 'أنظمة نايوش';
+        const url = $('#app-url')?.value.trim() || 'apps.html';
+        if (!code || !nameAr) return toast('رمز النظام والاسم مطلوبان');
+        HubStore.registerApp({ code, nameAr, category, url, kind: 'system', icon: 'fa-cube' });
+        toast('تم تسجيل النظام في هوب');
+        break;
+      }
+      case 'toggle-app':
+        HubStore.toggleApp(id);
+        toast('تحدّثت حالة النظام');
+        break;
+      case 'add-store-item': {
+        const title = $('#store-title')?.value.trim();
+        if (!title) return toast('اسم المنتج مطلوب');
+        HubStore.addStoreItem({
+          title,
+          price: $('#store-price')?.value,
+          points: $('#store-points')?.value,
+          platformCode: $('#store-platform')?.value.trim(),
+          desc: 'منتج مضاف من غرفة العمليات',
+          category: 'تشغيل',
+        });
+        toast('أُضيف المنتج للمتجر');
+        break;
+      }
+      case 'buy-store-item':
+        if (!HubStore.placeStoreOrder(id, user.name || 'مشغّل هوب')) return toast('تعذّر البيع');
+        toast('تم تسجيل عملية البيع');
+        break;
+      case 'add-ad': {
+        const title = $('#ad-title')?.value.trim();
+        if (!title) return toast('عنوان الإعلان مطلوب');
+        HubStore.addAdListing({
+          title,
+          content: 'إعلان منتج منصة من استوديو الإعلانات',
+          price: $('#ad-price')?.value,
+          category: $('#ad-cat')?.value.trim() || 'تشغيل',
+          platformCode: $('#ad-platform')?.value.trim(),
+          type: 'منتج منصة',
+        });
+        toast('نُشر إعلان المنتج');
+        break;
+      }
+      case 'toggle-ad':
+        HubStore.toggleAd(id);
+        toast('تحدّثت حالة الإعلان');
+        break;
+      case 'add-event': {
+        const name = $('#ev-name')?.value.trim();
+        if (!name) return toast('اسم الفعالية مطلوب');
+        HubStore.addEvent({
+          name,
+          description: 'فعالية مُدارة من استوديو الفعاليات في هوب',
+          date: $('#ev-date')?.value || undefined,
+          time: $('#ev-time')?.value || undefined,
+          type: $('#ev-type')?.value.trim() || 'بث مباشر',
+        });
+        toast('أُنشئت الفعالية');
+        break;
+      }
       default:
         break;
     }

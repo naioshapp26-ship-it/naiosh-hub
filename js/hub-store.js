@@ -4,7 +4,7 @@
  * Persists to localStorage.
  */
 const HubStore = (() => {
-  const KEY = 'naioshHub360Store_v4';
+  const KEY = 'naioshHub360Store_v5';
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
@@ -118,12 +118,31 @@ const HubStore = (() => {
           role: p.role,
         })),
       },
+      apps: (window.HubMarketplaceData?.APPS || []).map((a) => ({
+        id: uid('app'),
+        ...a,
+        registeredAt: nowIso(),
+        health: a.status === 'active' ? 92 + Math.floor(Math.random() * 7) : 55,
+      })),
+      salesStore: {
+        items: (window.HubMarketplaceData?.STORE_ITEMS || []).map((x) => ({ ...x })),
+        orders: [
+          { id: uid('ord'), itemId: 'st-1', title: 'باقة تشغيل منصة', buyer: 'فرع القاهرة', amount: 2500, points: 500, at: nowIso(), status: 'مكتمل' },
+          { id: uid('ord'), itemId: 'st-4', title: 'تذكرة فعالية مباشرة', buyer: 'سارة أحمد', amount: 350, points: 50, at: nowIso(), status: 'مكتمل' },
+        ],
+      },
+      adsStudio: {
+        listings: (window.HubMarketplaceData?.ADS || []).map((x) => ({ ...x, impressions: x.views * 3, clicks: Math.floor(x.views * 0.08) })),
+      },
+      eventsStudio: {
+        events: (window.HubMarketplaceData?.EVENTS || []).map((x) => ({ ...x })),
+      },
     };
   };
 
   const seed = () => ({
       meta: {
-      version: 4,
+      version: 5,
       updatedAt: nowIso(),
       phase: 1,
       productType: 'central_digital_hub',
@@ -706,6 +725,143 @@ const HubStore = (() => {
     return item;
   };
 
+  const registerApp = (manifest) => {
+    const empire = get().empire;
+    if (!empire.apps) empire.apps = [];
+    const code = (manifest.code || '').trim().toUpperCase();
+    if (!code || !manifest.nameAr) return null;
+    const existing = empire.apps.find((a) => a.code === code);
+    if (existing) {
+      Object.assign(existing, manifest, { code, status: manifest.status || existing.status });
+      pushFeed('architecture', `تحديث نظام في هوب: ${existing.nameAr}`);
+      save();
+      return existing;
+    }
+    const app = {
+      id: uid('app'),
+      code,
+      nameAr: manifest.nameAr,
+      kind: manifest.kind || 'system',
+      category: manifest.category || 'أنظمة نايوش',
+      url: manifest.url || 'apps.html',
+      icon: manifest.icon || 'fa-cube',
+      status: manifest.status || 'active',
+      health: 88,
+      registeredAt: nowIso(),
+    };
+    empire.apps.unshift(app);
+    pushFeed('architecture', `نظام جديد ظهر في هوب: ${app.nameAr}`);
+    save();
+    return app;
+  };
+
+  const toggleApp = (id) => {
+    const app = get().empire.apps?.find((a) => a.id === id);
+    if (!app) return null;
+    app.status = app.status === 'active' ? 'stopped' : 'active';
+    pushFeed('decision', `تطبيق هوب · ${app.nameAr}: ${app.status}`);
+    save();
+    return app;
+  };
+
+  const placeStoreOrder = (itemId, buyer) => {
+    const store = get().empire.salesStore;
+    const item = store?.items?.find((x) => x.id === itemId);
+    if (!item || item.stock < 1) return null;
+    item.stock -= 1;
+    const order = {
+      id: uid('ord'),
+      itemId: item.id,
+      title: item.title,
+      buyer: buyer || 'مستخدم هوب',
+      amount: item.price,
+      points: item.points,
+      at: nowIso(),
+      status: 'مكتمل',
+    };
+    store.orders.unshift(order);
+    if (item.points) burnPoints('متجر المبيعات', item.points, `شراء: ${item.title}`);
+    pushFeed('decision', `طلب متجر: ${item.title}`);
+    save();
+    return order;
+  };
+
+  const addStoreItem = (payload) => {
+    const store = get().empire.salesStore;
+    if (!store) return null;
+    const item = {
+      id: uid('st'),
+      title: payload.title,
+      desc: payload.desc || '',
+      price: Number(payload.price) || 0,
+      points: Number(payload.points) || 0,
+      category: payload.category || 'عام',
+      platformCode: payload.platformCode || '',
+      stock: Number(payload.stock) || 10,
+      status: 'active',
+      badge: payload.badge || 'جديد',
+    };
+    store.items.unshift(item);
+    pushFeed('decision', `منتج جديد في المتجر: ${item.title}`);
+    save();
+    return item;
+  };
+
+  const addAdListing = (payload) => {
+    const studio = get().empire.adsStudio;
+    if (!studio) return null;
+    const ad = {
+      id: uid('ad'),
+      title: payload.title,
+      content: payload.content || '',
+      price: Number(payload.price) || 0,
+      category: payload.category || 'عام',
+      platformCode: payload.platformCode || '',
+      productId: payload.productId || '',
+      views: 0,
+      impressions: 0,
+      clicks: 0,
+      status: 'active',
+      level: payload.level || 'متوسط',
+      type: payload.type || 'منتج منصة',
+    };
+    studio.listings.unshift(ad);
+    pushFeed('decision', `إعلان جديد: ${ad.title}`);
+    save();
+    return ad;
+  };
+
+  const toggleAd = (id) => {
+    const ad = get().empire.adsStudio?.listings?.find((x) => x.id === id);
+    if (!ad) return null;
+    ad.status = ad.status === 'active' ? 'paused' : 'active';
+    pushFeed('decision', `إعلان · ${ad.title}: ${ad.status}`);
+    save();
+    return ad;
+  };
+
+  const addEvent = (payload) => {
+    const studio = get().empire.eventsStudio;
+    if (!studio) return null;
+    const event = {
+      id: uid('ev'),
+      name: payload.name,
+      description: payload.description || '',
+      date: payload.date || today(),
+      time: payload.time || '18:00',
+      platform: payload.platform || 'استوديو الفعاليات',
+      status: payload.status || 'قادمة',
+      type: payload.type || 'بث مباشر',
+      speaker: payload.speaker || 'فريق نايوش',
+      duration: payload.duration || '60 دقيقة',
+      department: payload.department || 'غرفة العمليات',
+    };
+    studio.events.unshift(event);
+    pushFeed('decision', `فعالية جديدة: ${event.name}`);
+    save();
+    return event;
+  };
+
   const refreshCommandStats = () => {
     const org = get().empire.organization;
     const cmd = get().empire.command;
@@ -757,6 +913,13 @@ const HubStore = (() => {
     burnPoints,
     toggleMarketplaceSystem,
     addIncubator,
+    registerApp,
+    toggleApp,
+    placeStoreOrder,
+    addStoreItem,
+    addAdListing,
+    toggleAd,
+    addEvent,
     refreshCommandStats,
     REPORT_TITLES,
   };

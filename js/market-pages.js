@@ -1,0 +1,230 @@
+(() => {
+  const page = document.body.dataset.marketPage;
+  const data = window.HubMarketplaceData;
+  const store = window.HubStore;
+  if (!page || !data) return;
+
+  const esc = (v = '') =>
+    String(v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  const toast = (msg) => {
+    let el = document.getElementById('market-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'market-toast';
+      el.style.cssText =
+        'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;z-index:99999;opacity:0;transition:.2s';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.opacity = '1';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => {
+      el.style.opacity = '0';
+    }, 2200);
+  };
+
+  const setStat = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  };
+
+  const renderApps = () => {
+    const apps = store?.get?.().empire?.apps || data.APPS.map((a) => ({ ...a, id: a.code }));
+    const root = document.getElementById('market-grid');
+    const tabs = document.getElementById('market-tabs');
+    if (!root) return;
+    const cats = ['الكل', ...Array.from(new Set(apps.map((a) => a.category)))];
+    let active = 'الكل';
+
+    const paint = () => {
+      const list = active === 'الكل' ? apps : apps.filter((a) => a.category === active);
+      root.innerHTML = list
+        .map(
+          (a) => `<article class="market-card" id="${esc((a.code || '').toLowerCase())}">
+            <div class="card-icon"><i class="fas ${esc(a.icon || 'fa-cube')}"></i></div>
+            <span class="badge-soft">${esc(a.category)}</span>
+            <h3>${esc(a.nameAr)}</h3>
+            <p>أي نظام نايوش يمكنه الظهور هنا والارتباط بهوب للتشغيل الموحد.</p>
+            <div class="meta">${a.status === 'active' ? 'متاح الآن' : 'قيد التجهيز'}${a.health ? ` · صحة ${a.health}%` : ''}</div>
+            <div class="card-actions">
+              <a class="btn-mini primary" href="${esc(a.url || 'apps.html')}"><i class="fas fa-arrow-left"></i> فتح</a>
+            </div>
+          </article>`
+        )
+        .join('');
+    };
+
+    if (tabs) {
+      tabs.innerHTML = cats
+        .map((c) => `<button type="button" class="market-tab${c === active ? ' is-active' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`)
+        .join('');
+      tabs.onclick = (e) => {
+        const btn = e.target.closest('[data-cat]');
+        if (!btn) return;
+        active = btn.dataset.cat;
+        tabs.querySelectorAll('.market-tab').forEach((t) => t.classList.toggle('is-active', t.dataset.cat === active));
+        paint();
+      };
+    }
+    setStat('stat-apps', apps.length);
+    setStat('stat-active', apps.filter((a) => a.status === 'active').length);
+    paint();
+  };
+
+  const renderStore = () => {
+    const items = store?.get?.().empire?.salesStore?.items || data.STORE_ITEMS;
+    const root = document.getElementById('market-grid');
+    const tabs = document.getElementById('market-tabs');
+    if (!root) return;
+    let active = 'الكل';
+    const cats = data.STORE_CATEGORIES;
+
+    const paint = () => {
+      const list = active === 'الكل' ? items : items.filter((i) => i.category === active);
+      root.innerHTML = list
+        .map(
+          (i) => `<article class="market-card">
+            <span class="badge-soft">${esc(i.badge || i.category)}</span>
+            <h3>${esc(i.title)}</h3>
+            <p>${esc(i.desc)}</p>
+            <div class="price">${Number(i.price).toLocaleString('ar-EG')} ر.س</div>
+            <div class="meta">نقاط: ${i.points} · مخزون: ${i.stock} · منصة: ${esc(i.platformCode || '—')}</div>
+            <div class="card-actions">
+              <button type="button" class="btn-mini primary" data-buy="${esc(i.id)}"><i class="fas fa-cart-plus"></i> اشترِ الآن</button>
+              <a class="btn-mini" href="ads.html"><i class="fas fa-rectangle-ad"></i> إعلان المنتج</a>
+            </div>
+          </article>`
+        )
+        .join('');
+    };
+
+    if (tabs) {
+      tabs.innerHTML = cats
+        .map((c) => `<button type="button" class="market-tab${c === active ? ' is-active' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`)
+        .join('');
+      tabs.onclick = (e) => {
+        const btn = e.target.closest('[data-cat]');
+        if (!btn) return;
+        active = btn.dataset.cat;
+        tabs.querySelectorAll('.market-tab').forEach((t) => t.classList.toggle('is-active', t.dataset.cat === active));
+        paint();
+      };
+    }
+
+    root.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-buy]');
+      if (!btn || !store?.placeStoreOrder) return;
+      const order = store.placeStoreOrder(btn.dataset.buy, 'زائر المتجر');
+      if (!order) return toast('تعذّر إتمام الطلب');
+      toast(`تم الشراء: ${order.title}`);
+      paint();
+      setStat('stat-orders', store.get().empire.salesStore.orders.length);
+      setStat('stat-items', store.get().empire.salesStore.items.length);
+    });
+
+    setStat('stat-items', items.length);
+    setStat('stat-orders', store?.get?.().empire?.salesStore?.orders?.length || 0);
+    paint();
+  };
+
+  const renderAds = () => {
+    const listings = (store?.get?.().empire?.adsStudio?.listings || data.ADS).filter((a) => a.status === 'active');
+    const root = document.getElementById('ads-grid');
+    const tabs = document.getElementById('market-tabs');
+    const catsRoot = document.getElementById('ads-cats');
+    if (!root) return;
+    let active = 'all';
+
+    const paint = () => {
+      const list = active === 'all' ? listings : listings.filter((a) => a.category === active);
+      root.innerHTML = list
+        .map(
+          (a) => `<article class="ads-item-card">
+            <div class="ads-item-media">
+              <i class="fas fa-rectangle-ad" style="font-size:28px"></i>
+              <span>${esc(a.type || 'إعلان')}</span>
+              <small>${esc(a.platformCode || '')}</small>
+            </div>
+            <div class="ads-item-body">
+              <p class="ads-price">${Number(a.price || 0).toLocaleString('ar-EG')} ر.س</p>
+              <h3 class="ads-item-title">${esc(a.title)}</h3>
+              <p class="ads-meta">${esc(a.content)}</p>
+              <p class="ads-meta" style="margin-top:8px">${Number(a.views || 0).toLocaleString('ar-EG')} مشاهدة · ${esc(a.category)}</p>
+              <div style="margin-top:10px">
+                <a class="btn-mini primary" href="store.html">عرض في المتجر</a>
+              </div>
+            </div>
+          </article>`
+        )
+        .join('');
+    };
+
+    if (catsRoot) {
+      catsRoot.innerHTML = data.AD_CATEGORIES.map(
+        (c) => `<button type="button" class="market-card" data-cat="${esc(c.id)}" style="cursor:pointer;text-align:center">
+          <div class="card-icon" style="margin:0 auto"><i class="fas ${esc(c.icon)}"></i></div>
+          <h3>${esc(c.name)}</h3>
+        </button>`
+      ).join('');
+      catsRoot.style.display = 'grid';
+      catsRoot.style.gridTemplateColumns = 'repeat(6, minmax(0, 1fr))';
+      catsRoot.style.gap = '1rem';
+      catsRoot.style.marginBottom = '1.5rem';
+      catsRoot.onclick = (e) => {
+        const btn = e.target.closest('[data-cat]');
+        if (!btn) return;
+        active = btn.dataset.cat;
+        paint();
+      };
+    }
+
+    if (tabs) {
+      tabs.innerHTML = data.AD_CATEGORIES.map(
+        (c) => `<button type="button" class="market-tab${c.id === active ? ' is-active' : ''}" data-cat="${esc(c.id)}">${esc(c.name)}</button>`
+      ).join('');
+      tabs.onclick = (e) => {
+        const btn = e.target.closest('[data-cat]');
+        if (!btn) return;
+        active = btn.dataset.cat;
+        tabs.querySelectorAll('.market-tab').forEach((t) => t.classList.toggle('is-active', t.dataset.cat === active));
+        paint();
+      };
+    }
+
+    setStat('stat-ads', listings.length);
+    setStat('stat-views', listings.reduce((s, a) => s + (a.views || 0), 0));
+    paint();
+  };
+
+  const renderEvents = () => {
+    const events = store?.get?.().empire?.eventsStudio?.events || data.EVENTS;
+    const root = document.getElementById('market-grid');
+    if (!root) return;
+    root.innerHTML = events
+      .map(
+        (e) => `<article class="market-card">
+          <span class="badge-soft">${esc(e.status)}</span>
+          <h3>${esc(e.name)}</h3>
+          <p>${esc(e.description)}</p>
+          <div class="meta">${esc(e.date)} · ${esc(e.time)} · ${esc(e.duration)}</div>
+          <div class="meta">${esc(e.type)} · ${esc(e.speaker)} · ${esc(e.platform)}</div>
+          <div class="card-actions">
+            <a class="btn-mini primary" href="dashboard.html#events-studio"><i class="fas fa-ticket"></i> إدارة من غرفة العمليات</a>
+          </div>
+        </article>`
+      )
+      .join('');
+    setStat('stat-events', events.length);
+    setStat('stat-upcoming', events.filter((e) => e.status === 'قادمة').length);
+  };
+
+  if (page === 'apps') renderApps();
+  if (page === 'store') renderStore();
+  if (page === 'ads') renderAds();
+  if (page === 'events') renderEvents();
+})();
