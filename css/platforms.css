@@ -1,0 +1,309 @@
+/* Sovereign platforms — ERP products pattern */
+
+.products-page {
+  margin: 0 auto 80px;
+  max-width: none !important;
+  width: 100% !important;
+  padding-inline: 0.75rem;
+}
+
+.products-hero {
+  text-align: center;
+  padding: 56px 12px 40px;
+}
+
+.products-hero h1 {
+  margin: 0 0 14px;
+  font-size: clamp(28px, 4.5vw, 48px);
+  font-weight: 900;
+  color: #1d222b;
+  letter-spacing: -0.5px;
+}
+
+.products-hero p {
+  margin: 0 auto 28px;
+  max-width: 640px;
+  color: #5f6672;
+  font-size: clamp(15px, 1.5vw, 18px);
+  line-height: 1.7;
+  font-weight: 600;
+}
+
+.products-stats {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.products-stat {
+  background: #fff;
+  border: 1px solid #e8eaf0;
+  border-radius: 14px;
+  padding: 14px 24px;
+  box-shadow: 0 4px 14px rgba(12, 14, 17, 0.06);
+  text-align: center;
+  min-width: 110px;
+}
+
+.products-stat strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 900;
+  color: #d70000;
+  line-height: 1;
+}
+
+.products-stat span {
+  font-size: 12px;
+  color: #5f6672;
+  font-weight: 700;
+  margin-top: 4px;
+  display: block;
+}
+
+.products-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  padding: 24px 8px 8px;
+}
+
+.products-tab {
+  background: #fff;
+  border: 1.5px solid rgba(215, 0, 0, 0.28);
+  color: #d70000;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.products-tab:hover,
+.products-tab.active {
+  background: #d70000;
+  color: #fff;
+  border-color: #d70000;
+}
+
+.product-section {
+  margin-bottom: 48px;
+}
+
+.product-section-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 4px 18px;
+  border-bottom: 2px solid #f0f2f7;
+  margin-bottom: 24px;
+}
+
+.product-section-head .section-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff1f2f, #8a000c);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.product-section-head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  color: #1d222b;
+}
+
+.product-section-count {
+  margin-right: auto;
+  background: rgba(215, 0, 0, 0.1);
+  color: #d70000;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 12px;
+  border-radius: 999px;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 20px;
+  padding: 22px 18px 18px;
+  border: 1px solid #e8eaf0;
+  box-shadow: 0 6px 22px rgba(12, 14, 17, 0.07);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  opacity: 0;
+  transform: translateY(22px);
+  min-width: 0;
+}
+
+.product-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 40px rgba(12, 14, 17, 0.12);
+  border-color: #f3c3cb;
+}
+
+.product-card .card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ff1f2f, #8a000c);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.product-card .platform-code {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #d70000;
+  margin-bottom: 6px;
+}
+
+.product-card h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #1d222b;
+  line-height: 1.4;
+}
+
+.product-card .platform-role {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #8a000c;
+}
+
+.product-card p {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  color: #5f6672;
+  line-height: 1.65;
+  flex: 1;
+}
+
+.product-card .card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid rgba(215, 0, 0, 0.35);
+  color: #d70000;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  align-self: flex-start;
+  transition: background 0.2s, color 0.2s;
+}
+
+.product-card:hover .card-btn {
+  background: #d70000;
+  color: #fff;
+  border-color: #d70000;
+}
+
+/* Homepage sovereign strip */
+body.homepage #platforms-home.hub-platforms-home {
+  margin: 2rem 0;
+}
+
+body.homepage #platforms-home .hub-platform-grid {
+  display: grid !important;
+  width: 100% !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+}
+
+body.homepage #platforms-home .hub-platform-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 16px;
+  border: 1px solid #e8eaf0;
+  box-shadow: 0 8px 22px rgba(12, 14, 17, 0.07);
+  border-top: 3px solid #d70000;
+  min-width: 0;
+}
+
+body.homepage #platforms-home .hub-platform-card .platform-code {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #d70000;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+body.homepage #platforms-home .hub-platform-card h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+body.homepage #platforms-home .hub-platform-card p {
+  margin: 0;
+  font-size: 12.5px;
+  color: #5f6672;
+  line-height: 1.6;
+}
+
+body.homepage #platforms-home .hub-platforms-cta {
+  margin-top: 1.25rem;
+  text-align: start;
+}
+
+@media (max-width: 1200px) {
+  .product-grid,
+  body.homepage #platforms-home .hub-platform-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .product-grid,
+  body.homepage #platforms-home .hub-platform-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .product-grid,
+  body.homepage #platforms-home .hub-platform-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

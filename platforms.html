@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>المنصات السيادية | نايوش هوب 360</title>
+  <meta name="description" content="منصات نايوش 360 السيادية — 18 منصة تشغّل نايوش هوب." />
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/hub-theme.css" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/platforms.css" />
+</head>
+<body class="homepage platforms-page-body">
+  <header class="top-nav">
+    <div class="container inner">
+      <div class="nav-main">
+        <a class="brand" href="index.html">
+          <img src="assets/logo-hub.jpeg" alt="شعار نايوش هوب" />
+          <span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span>
+        </a>
+        <nav class="nav-links" aria-label="روابط نايوش هوب">
+          <a href="index.html">الرئيسية</a>
+          <a class="active" href="platforms.html">المنصات</a>
+          <a href="index.html#layers">الطبقات</a>
+          <a href="dashboard.html">غرفة العمليات</a>
+          <a href="index.html#register">انضم</a>
+        </nav>
+      </div>
+      <div class="auth-actions" aria-label="إجراءات الحساب">
+        <a href="dashboard.html" class="auth-btn primary">غرفة العمليات</a>
+        <a href="login.html" class="auth-btn">تسجيل الدخول</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container products-page">
+    <section class="products-hero">
+      <h1>منصات نايوش 360 السيادية</h1>
+      <p>ثمانية عشر منصة تشغّل نايوش هوب — من الدماغ المركزي إلى السلطة العليا.</p>
+      <div class="products-stats">
+        <div class="products-stat"><strong id="stat-count">18</strong><span>منصة سيادية</span></div>
+        <div class="products-stat"><strong>4</strong><span>مجموعات</span></div>
+        <div class="products-stat"><strong>360</strong><span>رؤية موحّدة</span></div>
+        <div class="products-stat"><strong>HUB</strong><span>تشغيل مركزي</span></div>
+      </div>
+    </section>
+
+    <nav class="products-tabs" id="platformsTabs" aria-label="مجموعات المنصات"></nav>
+    <div id="platformsSections"></div>
+  </main>
+
+  <nav class="floating-actions" aria-label="أزرار جانبية عائمة">
+    <a href="index.html" title="الرئيسية" aria-label="الرئيسية"><i class="fas fa-house"></i></a>
+    <a href="dashboard.html" title="غرفة العمليات" aria-label="غرفة العمليات"><i class="fas fa-gauge-high"></i></a>
+    <a href="login.html" title="دخول" aria-label="دخول"><i class="fas fa-right-to-bracket"></i></a>
+    <button type="button" id="to-top" title="الصعود للأعلى" aria-label="الصعود للأعلى"><i class="fas fa-arrow-up"></i></button>
+  </nav>
+
+  <script src="js/sovereign-platforms.js"></script>
+  <script src="js/platforms-page.js"></script>
+  <script src="js/mobile-nav.js"></script>
+  <script src="js/hub-global-back.js" defer></script>
+  <script src="js/hub-page-guide.js" defer></script>
+</body>
+</html>

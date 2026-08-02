@@ -4,7 +4,7 @@
  * Persists to localStorage.
  */
 const HubStore = (() => {
-  const KEY = 'naioshHub360Store_v2';
+  const KEY = 'naioshHub360Store_v3';
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
@@ -66,16 +66,23 @@ const HubStore = (() => {
           { id: uid('inc'), name: 'حاضنة التسويق', sector: 'تسويق', platforms: 5, offices: 11, members: 240, health: 79 },
           { id: uid('inc'), name: 'حاضنة التقنية', sector: 'تقنية', platforms: 8, offices: 18, members: 410, health: 94 },
         ],
-        platforms: [
-          { id: uid('pl'), name: 'منصة Academy Ops', incubator: 'حاضنة التعليم الذكي', offices: 4, status: 'online' },
-          { id: uid('pl'), name: 'منصة Fit Clinic', incubator: 'حاضنة الصحة الرقمية', offices: 3, status: 'online' },
-          { id: uid('pl'), name: 'منصة Law Desk', incubator: 'حاضنة القانون', offices: 2, status: 'building' },
-        ],
+        platforms: (window.HubSovereignPlatforms?.list || []).map((p) => ({
+          id: uid('pl'),
+          code: p.code,
+          name: `منصة ${p.code}`,
+          nameAr: p.nameAr,
+          role: p.role,
+          incubator: 'النواة السيادية — Hub 360',
+          offices: 1,
+          status: 'online',
+          icon: p.icon,
+          desc: p.desc,
+        })),
       },
       command: {
         branches: 9,
         incubators: 100,
-        platforms: 41,
+        platforms: window.HubSovereignPlatforms?.count || 18,
         clients: 1860,
         trainees: 22400,
         revenuePoints: 9850000,
@@ -102,23 +109,21 @@ const HubStore = (() => {
         ],
       },
       marketplace: {
-        catalog: [
-          { id: uid('mk'), name: 'LMS', category: 'تعليم', status: 'active', tenants: 42 },
-          { id: uid('mk'), name: 'LXP', category: 'تعليم', status: 'active', tenants: 31 },
-          { id: uid('mk'), name: 'ERP', category: 'تشغيل', status: 'active', tenants: 18 },
-          { id: uid('mk'), name: 'POSHA', category: 'تشغيل', status: 'active', tenants: 12 },
-          { id: uid('mk'), name: 'NAIOSH LAW', category: 'قانون', status: 'active', tenants: 9 },
-          { id: uid('mk'), name: 'NAIOSH FIT', category: 'صحة', status: 'active', tenants: 15 },
-          { id: uid('mk'), name: 'CRM Hub', category: 'عملاء', status: 'beta', tenants: 6 },
-          { id: uid('mk'), name: 'Events Studio', category: 'فعاليات', status: 'planned', tenants: 0 },
-        ],
+        catalog: (window.HubSovereignPlatforms?.list || []).map((p) => ({
+          id: uid('mk'),
+          name: p.code,
+          category: p.nameAr,
+          status: 'active',
+          tenants: 1,
+          role: p.role,
+        })),
       },
     };
   };
 
   const seed = () => ({
-    meta: {
-      version: 2,
+      meta: {
+      version: 3,
       updatedAt: nowIso(),
       phase: 1,
       productType: 'central_digital_hub',

@@ -5,6 +5,20 @@
     window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
   });
 
+  const homeGrid = document.getElementById('home-platforms-grid');
+  if (homeGrid && window.HubSovereignPlatforms?.list) {
+    homeGrid.innerHTML = window.HubSovereignPlatforms.list
+      .map(
+        (p) => `<article class="hub-platform-card" id="plat-${p.code.toLowerCase()}">
+          <span class="platform-code">${p.code}</span>
+          <div class="icon-box"><i class="fas ${p.icon}"></i></div>
+          <h3>${p.nameAr}</h3>
+          <p><strong>${p.role}</strong> — ${p.desc}</p>
+        </article>`
+      )
+      .join('');
+  }
+
   document.getElementById('join-form')?.addEventListener('submit', (event) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -43,6 +57,7 @@
     '#layers .tour-image-card',
     '#layers .newsletter-section',
     '#layers .imperial-strip',
+    '#platforms-home .hub-platform-card',
     '.site-footer-inner > section',
   ].join(', ');
   const revealTargets = document.querySelectorAll(revealSelector);

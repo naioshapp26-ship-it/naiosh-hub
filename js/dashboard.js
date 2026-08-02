@@ -2,6 +2,7 @@
   const NAV = [
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
     { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
+    { key: 'platforms', icon: 'fa-layer-group', label: 'المنصات السيادية' },
     { key: 'identity', icon: 'fa-id-card', label: 'NAIOSH ID' },
     { key: 'organization', icon: 'fa-globe', label: 'الهيكل العالمي' },
     { key: 'incubators', icon: 'fa-building', label: 'الحاضنات' },
@@ -19,6 +20,7 @@
   const TITLES = {
     overview: ['مركز التحكم العالمي', 'Global Command Center — الفروع · الحاضنات · المنصات · النقاط'],
     blueprint: ['دستور المعمارية الإمبراطورية', 'Central Digital Hub — 5 طبقات · 12 محور · أول 6 أشهر'],
+    platforms: ['منصات نايوش 360 السيادية', '18 منصة تشغّل هوب — من الدماغ المركزي إلى السلطة العليا'],
     identity: ['بوابة الهوية الرقمية', 'NAIOSH ID · SSO · IAM · Role Matrix · MFA'],
     organization: ['محرك الهيكل المؤسسي', 'دولة ← فرع ← حاضنة ← منصة ← مكتب إلكتروني'],
     incubators: ['إدارة الحاضنات', '100 حاضنة قطاعية · منصات · مكاتب · أعضاء'],
@@ -412,16 +414,61 @@
         </article>
       </div>
       <article class="card" style="margin-top:12px">
-        <h3><span class="title-left"><i class="fas fa-layer-group icon"></i> المنصات</span></h3>
+        <h3><span class="title-left"><i class="fas fa-layer-group icon"></i> المنصات السيادية</span></h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>المنصة</th><th>الحاضنة</th><th>المكاتب</th><th>الحالة</th></tr></thead>
+          <thead><tr><th>الكود</th><th>المنصة</th><th>الدور</th><th>الحالة</th></tr></thead>
           <tbody>
             ${org.platforms
-              .map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.incubator)}</td><td>${p.offices}</td><td>${badgeStatus(p.status)}</td></tr>`)
+              .map(
+                (p) => `<tr>
+                  <td><strong>${esc(p.code || p.name)}</strong></td>
+                  <td>${esc(p.nameAr || p.name)}</td>
+                  <td>${esc(p.role || p.incubator || '—')}</td>
+                  <td>${badgeStatus(p.status)}</td>
+                </tr>`
+              )
               .join('')}
           </tbody>
         </table></div>
       </article>
+    `;
+  };
+
+  const renderPlatforms = () => {
+    const list = window.HubSovereignPlatforms?.list || HubStore.get().empire.organization.platforms || [];
+    const groups = window.HubSovereignPlatforms?.byCategory?.() || [];
+    return `
+      <div class="kpi-grid">
+        <article class="kpi"><span>منصات سيادية</span><strong>${list.length}</strong><small>Sovereign Platforms</small></article>
+        <article class="kpi"><span>مجموعات</span><strong>${groups.length || 4}</strong><small>Categories</small></article>
+        <article class="kpi"><span>متصلة بهوب</span><strong>${list.length}</strong><small>Online</small></article>
+        <article class="kpi"><span>التكامل</span><strong>NIS</strong><small>Integration Layer</small></article>
+      </div>
+      ${(groups.length
+        ? groups
+        : [{ label: 'المنصات السيادية', platforms: list }]
+      )
+        .map(
+          (g) => `
+        <article class="card" style="margin-top:12px">
+          <h3><span class="title-left"><i class="fas fa-layer-group icon"></i> ${esc(g.label)}</span>
+            <span class="badge badge-red">${(g.platforms || []).length}</span>
+          </h3>
+          <div class="phase-cards">
+            ${(g.platforms || [])
+              .map(
+                (p) => `<article class="phase-card">
+                  <small>${esc(p.code)}</small>
+                  <h4>${esc(p.nameAr || p.name)}</h4>
+                  <p style="margin:4px 0 0;color:var(--muted);font-size:12px"><strong>${esc(p.role || '')}</strong></p>
+                  <p style="margin:6px 0 0;color:var(--muted);font-size:12px">${esc(p.desc || '')}</p>
+                </article>`
+              )
+              .join('')}
+          </div>
+        </article>`
+        )
+        .join('')}
     `;
   };
 
@@ -998,6 +1045,7 @@
   const renderers = {
     overview: renderOverview,
     blueprint: renderBlueprint,
+    platforms: renderPlatforms,
     identity: renderIdentity,
     organization: renderOrganization,
     incubators: renderIncubators,
