@@ -21,6 +21,7 @@
     { code: 'NIS', nameAr: 'التكامل والربط', kind: 'sovereign', category: 'نواة', url: 'platforms.html', icon: 'fa-network-wired', status: 'active' },
     { code: 'NGS', nameAr: 'الحوكمة والرقابة', kind: 'sovereign', category: 'حوكمة', url: 'platforms.html', icon: 'fa-scale-balanced', status: 'active' },
     { code: 'LAW', nameAr: 'نايوش لو — النظام القانوني', kind: 'system', category: 'أنظمة نايوش', url: 'apps.html#law', icon: 'fa-gavel', status: 'active' },
+    { code: 'NAIS', nameAr: 'نايس — ذكاء التشغيل', kind: 'system', category: 'أنظمة نايوش', url: 'apps.html#nais', icon: 'fa-chart-line', status: 'active' },
     { code: 'FIT', nameAr: 'نايوش فيت — الصحة واللياقة', kind: 'system', category: 'أنظمة نايوش', url: 'apps.html#fit', icon: 'fa-dumbbell', status: 'active' },
     { code: 'ERP', nameAr: 'نايوش إي آر بي', kind: 'system', category: 'أنظمة نايوش', url: 'apps.html#erp', icon: 'fa-sitemap', status: 'active' },
     { code: 'ACADEMY', nameAr: 'أكاديمية نايوش', kind: 'system', category: 'أنظمة نايوش', url: 'apps.html#academy', icon: 'fa-chalkboard-user', status: 'active' },

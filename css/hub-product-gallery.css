@@ -1,0 +1,353 @@
+/* معرض منتجات نايوش هوب — أسلوب لقطات المتجر (تمرير أفقي · بطاقات عمودية) */
+
+.hub-product-gallery {
+  --gallery-red: #d70000;
+  --gallery-ink: #141820;
+  --gallery-muted: #5c6470;
+  --gallery-line: #e6e9ef;
+  --gallery-bg: #f3f4f7;
+  background:
+    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(215, 0, 0, 0.08), transparent 55%),
+    linear-gradient(180deg, #fafbfc 0%, #f0f2f6 100%);
+  border-block: 1px solid var(--gallery-line);
+  padding: 42px 0 52px;
+  margin: 0;
+}
+
+.hub-product-gallery-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.hub-product-gallery-head h2 {
+  margin: 0 0 8px;
+  font-size: clamp(26px, 3.6vw, 40px);
+  font-weight: 900;
+  color: var(--gallery-ink);
+  letter-spacing: -0.02em;
+}
+
+.hub-product-gallery-head p {
+  margin: 0;
+  max-width: 540px;
+  color: var(--gallery-muted);
+  font-weight: 600;
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+.hub-gallery-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.hub-gallery-controls button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--gallery-line);
+  background: #fff;
+  color: var(--gallery-red);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  box-shadow: 0 6px 16px rgba(12, 14, 17, 0.06);
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.hub-gallery-controls button:hover {
+  background: var(--gallery-red);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.hub-gallery-controls button:disabled {
+  opacity: 0.35;
+  cursor: default;
+  transform: none;
+}
+
+.hub-gallery-track-wrap {
+  overflow: hidden;
+  margin-inline: max(0px, calc((100% - min(100%, 1240px)) / 2 * -1));
+  padding-inline: max(16px, calc((100% - min(100%, 1240px)) / 2 + 16px));
+}
+
+.hub-gallery-track {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 8px 4px 20px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.hub-gallery-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* بطاقة لقطة — زي متجر التطبيقات */
+.hub-gallery-shot {
+  flex: 0 0 min(248px, 78vw);
+  scroll-snap-align: start;
+  background: #fff;
+  border-radius: 28px;
+  border: 1px solid var(--gallery-line);
+  box-shadow: 0 14px 36px rgba(12, 14, 17, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
+  animation: hubGalleryIn 0.55s ease both;
+}
+
+.hub-gallery-shot:nth-child(2) { animation-delay: 0.06s; }
+.hub-gallery-shot:nth-child(3) { animation-delay: 0.12s; }
+.hub-gallery-shot:nth-child(4) { animation-delay: 0.18s; }
+.hub-gallery-shot:nth-child(5) { animation-delay: 0.24s; }
+.hub-gallery-shot:nth-child(6) { animation-delay: 0.3s; }
+
+.hub-gallery-shot:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 48px rgba(215, 0, 0, 0.14);
+}
+
+@keyframes hubGalleryIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hub-gallery-copy {
+  padding: 22px 18px 12px;
+  flex: 0 0 auto;
+}
+
+.hub-gallery-copy .tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gallery-red);
+  background: rgba(215, 0, 0, 0.08);
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.hub-gallery-copy h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.35;
+  color: var(--gallery-ink);
+}
+
+.hub-gallery-copy p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  font-weight: 600;
+  color: var(--gallery-muted);
+}
+
+.hub-gallery-visual {
+  flex: 1;
+  margin: 8px 14px 16px;
+  border-radius: 22px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: end center;
+  min-height: 300px;
+  background: var(--gallery-bg);
+}
+
+.hub-gallery-visual::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.55), transparent 45%),
+    linear-gradient(165deg, rgba(215, 0, 0, 0.12), transparent 50%);
+  pointer-events: none;
+}
+
+/* إطار هاتف داخل اللقطة */
+.hub-phone {
+  position: relative;
+  z-index: 1;
+  width: 168px;
+  height: 292px;
+  background: #0f1218;
+  border-radius: 28px;
+  border: 3px solid #2a303a;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+  transform: translateY(18px);
+  transition: transform 0.35s ease;
+}
+
+.hub-gallery-shot:hover .hub-phone {
+  transform: translateY(8px);
+}
+
+.hub-phone-notch {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 52px;
+  height: 8px;
+  border-radius: 999px;
+  background: #1a1f28;
+  z-index: 2;
+}
+
+.hub-phone-screen {
+  position: absolute;
+  inset: 14px 8px 10px;
+  border-radius: 18px;
+  background: #fff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-size: 9px;
+}
+
+.hub-phone-bar {
+  background: linear-gradient(135deg, #d70000, #9a0000);
+  color: #fff;
+  padding: 10px 8px 8px;
+  font-weight: 800;
+}
+
+.hub-phone-bar small {
+  display: block;
+  opacity: 0.85;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.hub-phone-body {
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  background: #f6f7fa;
+}
+
+.hub-phone-row {
+  height: 28px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e8ebf1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 7px;
+  font-weight: 700;
+  color: #303848;
+}
+
+.hub-phone-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 5px;
+  background: rgba(215, 0, 0, 0.15);
+  color: var(--gallery-red);
+  display: grid;
+  place-items: center;
+  font-size: 7px;
+  flex: 0 0 auto;
+}
+
+.hub-phone-kpi {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.hub-phone-kpi span {
+  background: #fff;
+  border: 1px solid #e8ebf1;
+  border-radius: 8px;
+  padding: 7px 6px;
+  font-weight: 800;
+  color: #1d222b;
+}
+
+.hub-phone-kpi span b {
+  display: block;
+  color: var(--gallery-red);
+  font-size: 11px;
+}
+
+/* تدرجات بصرية لكل منتج */
+.hub-gallery-visual.tone-erp {
+  background: linear-gradient(160deg, #ffe8e8 0%, #f4f5f8 55%, #e9edf5 100%);
+}
+.hub-gallery-visual.tone-nais {
+  background: linear-gradient(160deg, #ffe4d6 0%, #f5f6fa 55%, #e8eef8 100%);
+}
+.hub-gallery-visual.tone-fit {
+  background: linear-gradient(160deg, #ffe8ef 0%, #f5f7fa 55%, #eaf6f0 100%);
+}
+.hub-gallery-visual.tone-academy {
+  background: linear-gradient(160deg, #ffe9e0 0%, #f6f7fb 55%, #eef1ff 100%);
+}
+.hub-gallery-visual.tone-law {
+  background: linear-gradient(160deg, #f0f0f2 0%, #f6f7fb 40%, #ffe8e8 100%);
+}
+.hub-gallery-visual.tone-hub {
+  background: linear-gradient(160deg, #ffd6d6 0%, #f5f6fa 55%, #eceff5 100%);
+}
+
+.hub-gallery-foot {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hub-gallery-foot a.btn-link {
+  color: var(--gallery-red);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.hub-gallery-foot a.btn-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .hub-product-gallery {
+    padding: 28px 0 36px;
+  }
+
+  .hub-gallery-shot {
+    flex-basis: min(220px, 82vw);
+    min-height: 480px;
+  }
+
+  .hub-phone {
+    width: 150px;
+    height: 262px;
+  }
+}

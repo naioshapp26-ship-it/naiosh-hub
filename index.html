@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/platforms.css" />
   <link rel="stylesheet" href="css/hub-marketplace.css" />
+  <link rel="stylesheet" href="css/hub-product-gallery.css" />
 </head>
 <body class="homepage">
   <div class="announcement-bar" id="announcement-bar" role="status" aria-live="polite">
@@ -32,7 +33,7 @@
         </a>
         <nav class="nav-links" aria-label="روابط نايوش هوب">
           <a class="active" href="index.html">الرئيسية</a>
-          <a href="products.html">المنتجات</a>
+          <a href="#hub-products">المنتجات</a>
           <a href="store.html">المتجر</a>
           <a href="ads.html">الإعلانات</a>
           <a href="events.html">الفعاليات</a>
@@ -152,15 +153,173 @@
       </div>
     </div>
 
-    <a href="#layers" class="law-scroll" aria-label="اكتشف المزيد">
+    <a href="#hub-products" class="law-scroll" aria-label="اكتشف المزيد">
       <span>اكتشف المزيد</span>
       <i class="fas fa-chevron-down"></i>
     </a>
   </section>
 
+  <section class="hub-product-gallery" id="hub-products" aria-label="معرض منتجات نايوش هوب">
+    <div class="container">
+      <div class="hub-product-gallery-head">
+        <div>
+          <h2>منتجات نايوش هوب</h2>
+          <p>معرض بصري لكل الأنظمة اللي اشتغلنا عليها — لقطات كبيرة زي متجر التطبيقات، تعطي قوة وحضور لكل منتج.</p>
+        </div>
+        <div class="hub-gallery-controls" aria-label="تحكم المعرض">
+          <button type="button" id="hub-gallery-prev" aria-label="السابق"><i class="fas fa-chevron-right"></i></button>
+          <button type="button" id="hub-gallery-next" aria-label="التالي"><i class="fas fa-chevron-left"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="hub-gallery-track-wrap">
+      <div class="hub-gallery-track" id="hub-gallery-track" tabindex="0" aria-label="تمرير لقطات المنتجات">
+        <a class="hub-gallery-shot" href="apps.html#erp">
+          <div class="hub-gallery-copy">
+            <span class="tag">نظام تشغيل مؤسسي</span>
+            <h3>نايوش إي آر بي — إدارة الموارد في قبضة يدك</h3>
+            <p>تشغيل المبيعات والمخزون والمالية والموارد من منصة واحدة مربوطة بهوب.</p>
+          </div>
+          <div class="hub-gallery-visual tone-erp">
+            <div class="hub-phone" aria-hidden="true">
+              <div class="hub-phone-notch"></div>
+              <div class="hub-phone-screen">
+                <div class="hub-phone-bar">نايوش إي آر بي<small>لوحة التشغيل</small></div>
+                <div class="hub-phone-body">
+                  <div class="hub-phone-kpi"><span><b>١٢٤</b>طلب</span><span><b>٨٨٪</b>جاهزية</span></div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-sitemap"></i></span>الموارد</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-boxes-stacked"></i></span>المخزون</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-coins"></i></span>المالية</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <a class="hub-gallery-shot" href="apps.html#nais">
+          <div class="hub-gallery-copy">
+            <span class="tag">ذكاء وتشغيل</span>
+            <h3>نايس — جسر بين القرار والتنفيذ</h3>
+            <p>رؤية لحظية للعمليات والعملاء، تربط البيانات بالقرار داخل هوب.</p>
+          </div>
+          <div class="hub-gallery-visual tone-nais">
+            <div class="hub-phone" aria-hidden="true">
+              <div class="hub-phone-notch"></div>
+              <div class="hub-phone-screen">
+                <div class="hub-phone-bar">نايس<small>مؤشرات النمو</small></div>
+                <div class="hub-phone-body">
+                  <div class="hub-phone-kpi"><span><b>٣٦٠</b>رؤية</span><span><b>٩٤٪</b>دقة</span></div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-chart-line"></i></span>تحليلات</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-bolt"></i></span>تنبيهات</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-handshake"></i></span>عملاء</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <a class="hub-gallery-shot" href="apps.html#fit">
+          <div class="hub-gallery-copy">
+            <span class="tag">صحة ولياقة</span>
+            <h3>فيت — صحة الفروع والفرق تحت السيطرة</h3>
+            <p>اشتراكات · برامج · متابعة أداء صحي للموظفين والمراكز.</p>
+          </div>
+          <div class="hub-gallery-visual tone-fit">
+            <div class="hub-phone" aria-hidden="true">
+              <div class="hub-phone-notch"></div>
+              <div class="hub-phone-screen">
+                <div class="hub-phone-bar">نايوش فيت<small>لوحة اللياقة</small></div>
+                <div class="hub-phone-body">
+                  <div class="hub-phone-kpi"><span><b>٢٫١ك</b>عضو</span><span><b>٧٦٪</b>التزام</span></div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-dumbbell"></i></span>البرامج</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-heart-pulse"></i></span>المتابعة</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-id-card"></i></span>الاشتراكات</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <a class="hub-gallery-shot" href="apps.html#academy">
+          <div class="hub-gallery-copy">
+            <span class="tag">تعليم وتأهيل</span>
+            <h3>أكاديمية نايوش — مسارات تدريب معتمدة</h3>
+            <p>دورات · شهادات · مسارات حوكمة وتشغيل داخل منظومة هوب.</p>
+          </div>
+          <div class="hub-gallery-visual tone-academy">
+            <div class="hub-phone" aria-hidden="true">
+              <div class="hub-phone-notch"></div>
+              <div class="hub-phone-screen">
+                <div class="hub-phone-bar">الأكاديمية<small>مسارات التعلم</small></div>
+                <div class="hub-phone-body">
+                  <div class="hub-phone-kpi"><span><b>٤٨</b>دورة</span><span><b>٩١٪</b>إتمام</span></div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-graduation-cap"></i></span>البرامج</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-certificate"></i></span>الشهادات</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-chalkboard-user"></i></span>المدربون</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <a class="hub-gallery-shot" href="apps.html#law">
+          <div class="hub-gallery-copy">
+            <span class="tag">النظام القانوني</span>
+            <h3>القانونية — نايوش لو للمحاماة الرقمية</h3>
+            <p>عقود · قضايا · امتثال قانوني مربوط بغرفة العمليات.</p>
+          </div>
+          <div class="hub-gallery-visual tone-law">
+            <div class="hub-phone" aria-hidden="true">
+              <div class="hub-phone-notch"></div>
+              <div class="hub-phone-screen">
+                <div class="hub-phone-bar">نايوش لو<small>الملفات القانونية</small></div>
+                <div class="hub-phone-body">
+                  <div class="hub-phone-kpi"><span><b>٣١٢</b>قضية</span><span><b>٦٧</b>عقد</span></div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-gavel"></i></span>القضايا</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-file-contract"></i></span>العقود</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-shield-halved"></i></span>الامتثال</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <a class="hub-gallery-shot" href="products.html">
+          <div class="hub-gallery-copy">
+            <span class="tag">كتالوج هوب</span>
+            <h3>كل المنتجات في عرض واحد</h3>
+            <p>بحث · علامة · سعر · مخزون · حركة — كتالوج المبيعات الكامل.</p>
+          </div>
+          <div class="hub-gallery-visual tone-hub">
+            <div class="hub-phone" aria-hidden="true">
+              <div class="hub-phone-notch"></div>
+              <div class="hub-phone-screen">
+                <div class="hub-phone-bar">عرض المنتجات<small>كتالوج نايوش</small></div>
+                <div class="hub-phone-body">
+                  <div class="hub-phone-kpi"><span><b>٢٤</b>منتج</span><span><b>٥</b>أنظمة</span></div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-magnifying-glass"></i></span>بحث سريع</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-tags"></i></span>علامات</div>
+                  <div class="hub-phone-row"><span class="hub-phone-dot"><i class="fas fa-warehouse"></i></span>المخزون</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="hub-gallery-foot">
+        <span style="color:#5c6470;font-weight:700;font-size:14px">مرّر أفقياً لاستعراض كل المنتجات · اضغط أي لقطة للدخول للنظام</span>
+        <a class="btn-link" href="apps.html">سجل كل الأنظمة <i class="fas fa-arrow-left"></i></a>
+      </div>
+    </div>
+  </section>
+
   <main class="container" id="layers">
     <div class="imperial-strip">
-      <h3>العاصمة الرقمية — Central Digital Hub</h3>
+      <h3>العاصمة الرقمية المركزية</h3>
       <p>ليس موقعًا إلكترونيًا: نظام التشغيل العالمي لإمبراطورية نايوش. يربط الفروع · الحاضنات · المنصات · المكاتب · الأنظمة · المعرفة · التسويق · التعليم · الحوكمة في بيئة واحدة.</p>
       <div class="principles">
         <span>Core Platform أولًا</span>
@@ -463,6 +622,7 @@
   <script src="js/hub-marketplace-data.js"></script>
   <script src="js/mobile-nav.js"></script>
   <script src="js/home.js"></script>
+  <script src="js/hub-product-gallery.js"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js" defer></script>
 </body>
