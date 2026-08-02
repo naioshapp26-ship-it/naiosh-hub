@@ -1,7 +1,35 @@
-/* تعديلات خفيفة لصفحة الحاضنات داخل هوب — الأساس من styles.css (ERP) */
+/* تعديلات صفحة الحاضنات داخل هوب — الأساس من styles.css (ERP) */
+
+/* وسّع المحتوى عشان يلغي فراغ الجنبين */
+body.incubators-body > .container.incubators-page {
+  max-width: 1560px;
+  width: 100%;
+}
+
+body.incubators-body .top-nav .container {
+  max-width: 1560px;
+}
 
 .incubators-page .section-head {
   margin-top: 8px;
+}
+
+/* فرّق البطاقات على عرض السطر كامل — حتى لو الصف ناقص */
+.incubators-page .incubator-grid.cards {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  justify-content: stretch;
+  align-items: stretch;
+}
+
+.incubators-page .incubator-card.card {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .incubator-card-actions {
@@ -18,4 +46,17 @@
 
 .incubators-footer-links a {
   color: inherit;
+}
+
+@media (max-width: 900px) {
+  .incubators-page .incubator-grid.cards {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (max-width: 560px) {
+  .incubators-page .incubator-grid.cards {
+    grid-template-columns: 1fr;
+  }
 }
