@@ -316,6 +316,37 @@ const HubStore = (() => {
 
   let state = null;
 
+  /** Refill empty marketplace catalogs if seed ran without HubMarketplaceData (e.g. login-first). */
+  const hydrateMarketplace = () => {
+    const md = window.HubMarketplaceData;
+    if (!md || !state?.empire) return false;
+    const e = state.empire;
+    let changed = false;
+    const fill = (cur, src, mapFn) => {
+      if ((cur?.length || 0) > 0 || !(src?.length > 0)) return cur || [];
+      changed = true;
+      return src.map(mapFn);
+    };
+    e.productCatalog = fill(e.productCatalog, md.PRODUCT_CATALOG, (x) => ({ ...x }));
+    if (!e.salesStore) e.salesStore = { items: [], orders: [] };
+    e.salesStore.items = fill(e.salesStore.items, md.STORE_ITEMS, (x) => ({ ...x }));
+    if (!e.adsStudio) e.adsStudio = { listings: [] };
+    e.adsStudio.listings = fill(e.adsStudio.listings, md.ADS, (x) => ({
+      ...x,
+      impressions: (x.views || 0) * 3,
+      clicks: Math.floor((x.views || 0) * 0.08),
+    }));
+    if (!e.eventsStudio) e.eventsStudio = { events: [] };
+    e.eventsStudio.events = fill(e.eventsStudio.events, md.EVENTS, (x) => ({ ...x }));
+    e.apps = fill(e.apps, md.APPS, (a) => ({
+      id: uid('app'),
+      ...a,
+      registeredAt: nowIso(),
+      health: a.status === 'active' ? 92 : 55,
+    }));
+    return changed;
+  };
+
   const load = () => {
     try {
       const raw = localStorage.getItem(KEY);
@@ -323,6 +354,8 @@ const HubStore = (() => {
         state = JSON.parse(raw);
         if (!state.empire) {
           state.empire = seedEmpire();
+          save();
+        } else if (hydrateMarketplace()) {
           save();
         }
         return state;

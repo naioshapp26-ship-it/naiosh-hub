@@ -111,7 +111,8 @@
   const ensurePageToolbar = () => {
     const page = document.body?.dataset?.marketPage || document.body?.dataset?.hubEntity;
     if (!page) return;
-    const map = { apps: 'apps', store: 'store', ads: 'ads', events: 'events', products: 'products', platforms: 'platforms' };
+    // platforms page is a read-only sovereign catalog — no CRUD toolbar
+    const map = { apps: 'apps', store: 'store', ads: 'ads', events: 'events', products: 'products' };
     const entity = map[page];
     if (!entity) return;
     if (document.querySelector(`.hub-page-actions[data-entity="${entity}"]`)) return;
