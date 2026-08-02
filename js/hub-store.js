@@ -939,6 +939,8 @@ const HubStore = (() => {
     }
     if (action === 'assign') {
       item.assignee = patch.assignee || '';
+      item.assignNote = patch.assignNote || item.assignNote || '';
+      item.assignedAt = nowIso();
       pushFeed('decision', `تعيين ${entity} → ${item.assignee}`);
       save();
       return item;
@@ -959,6 +961,12 @@ const HubStore = (() => {
       return item;
     }
     return null;
+  };
+
+  const getEntity = (entity, id) => {
+    const bag = resolveCollection(entity);
+    if (!bag) return null;
+    return bag.list.find((x) => String(x.id) === String(id)) || null;
   };
 
   const refreshCommandStats = () => {
@@ -1021,6 +1029,7 @@ const HubStore = (() => {
     addEvent,
     addProduct,
     entityAction,
+    getEntity,
     refreshCommandStats,
     REPORT_TITLES,
   };

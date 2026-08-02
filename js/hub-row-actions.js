@@ -1,5 +1,6 @@
 (() => {
   const ACTIONS = [
+    { key: 'view', title: 'معاينة', icon: 'fa-eye', cls: 'hub-act-view' },
     { key: 'edit', title: 'تعديل', icon: 'fa-pen', cls: 'hub-act-edit' },
     { key: 'assign', title: 'تعيين', icon: 'fa-user-check', cls: 'hub-act-assign' },
     { key: 'delete', title: 'حذف', icon: 'fa-trash', cls: 'hub-act-delete' },
@@ -21,6 +22,55 @@
     generic: 'سجل',
   };
 
+  const FIELD_LABELS = {
+    id: 'المعرّف',
+    sku: 'الرمز',
+    code: 'الكود',
+    name: 'الاسم',
+    nameAr: 'الاسم',
+    title: 'العنوان',
+    brand: 'العلامة',
+    platform: 'المنصة',
+    platformCode: 'كود المنصة',
+    category: 'التصنيف',
+    price: 'السعر',
+    points: 'النقاط',
+    stock: 'المخزون',
+    sold: 'المبيعات',
+    status: 'الحالة',
+    movement: 'الحركة',
+    desc: 'الوصف',
+    description: 'الوصف',
+    content: 'المحتوى',
+    badge: 'الوسم',
+    type: 'النوع',
+    kind: 'النوع',
+    date: 'التاريخ',
+    time: 'الوقت',
+    duration: 'المدة',
+    speaker: 'المتحدث',
+    department: 'القسم',
+    assignee: 'المسؤول المعيّن',
+    assignNote: 'ملاحظة التعيين',
+    assignedAt: 'وقت التعيين',
+    health: 'الصحة',
+    views: 'المشاهدات',
+    level: 'المستوى',
+    sector: 'القطاع',
+    members: 'الأعضاء',
+    offices: 'المكاتب',
+    platforms: 'المنصات',
+    url: 'الرابط',
+    icon: 'الأيقونة',
+    priority: 'الأولوية',
+    project: 'المشروع',
+    quality: 'الجودة',
+    scope: 'النطاق',
+    archivedAt: 'تاريخ الأرشفة',
+  };
+
+  const HIDDEN_KEYS = new Set(['icon']);
+
   const toast = (msg) => {
     let el = document.getElementById('hub-toast-mini');
     if (!el) {
@@ -34,6 +84,13 @@
     clearTimeout(toast._t);
     toast._t = setTimeout(() => el.classList.remove('show'), 2200);
   };
+
+  const esc = (v = '') =>
+    String(v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
 
   const rowHtml = (entity, id, opts = {}) => {
     const extra = opts.extra || '';
@@ -54,14 +111,7 @@
   const ensurePageToolbar = () => {
     const page = document.body?.dataset?.marketPage || document.body?.dataset?.hubEntity;
     if (!page) return;
-    const map = {
-      apps: 'apps',
-      store: 'store',
-      ads: 'ads',
-      events: 'events',
-      products: 'products',
-      platforms: 'platforms',
-    };
+    const map = { apps: 'apps', store: 'store', ads: 'ads', events: 'events', products: 'products', platforms: 'platforms' };
     const entity = map[page];
     if (!entity) return;
     if (document.querySelector(`.hub-page-actions[data-entity="${entity}"]`)) return;
@@ -82,99 +132,304 @@
     }
   };
 
-  const handleAdd = (entity) => {
-    const store = window.HubStore;
-    if (!store) return toast('المخزن غير جاهز');
-    if (entity === 'apps') {
-      const nameAr = prompt('اسم النظام بالعربية:');
-      if (!nameAr) return;
-      const code = prompt('رمز النظام (إنجليزي مختصر):', 'SYS') || 'SYS';
-      store.registerApp({ nameAr, code, kind: 'system', category: 'أنظمة نايوش' });
-      toast('تمت إضافة النظام');
-    } else if (entity === 'store') {
-      const title = prompt('اسم منتج المتجر:');
-      if (!title) return;
-      store.addStoreItem({ title, price: 500, points: 50, stock: 10 });
-      toast('تمت إضافة المنتج');
-    } else if (entity === 'ads') {
-      const title = prompt('عنوان الإعلان:');
-      if (!title) return;
-      store.addAdListing({ title, price: 1000, category: 'عام', content: 'إعلان منتج منصة' });
-      toast('نُشر الإعلان');
-    } else if (entity === 'events') {
-      const name = prompt('اسم الفعالية:');
-      if (!name) return;
-      store.addEvent({ name, description: 'فعالية من هوب', date: new Date().toISOString().slice(0, 10), status: 'قادمة' });
-      toast('أُنشئت الفعالية');
-    } else if (entity === 'products') {
-      const name = prompt('اسم المنتج:');
-      if (!name) return;
-      store.addProduct?.({ name, brand: 'نايوش هوب', category: 'تشغيل', price: 1000, stock: 20 });
-      toast('أُضيف المنتج للكتالوج');
-    } else if (entity === 'incubators') {
-      const name = prompt('اسم الحاضنة:');
-      if (!name) return;
-      store.addIncubator(name, 'عام');
-      toast('أُنشئت الحاضنة');
-    } else if (entity === 'tasks') {
-      const title = prompt('عنوان المهمة:');
-      if (!title) return;
-      store.addTask(title, 'فريق هوب', 'عادي');
-      toast('أُضيفت المهمة');
-    } else if (entity === 'policies') {
-      const title = prompt('عنوان السياسة:');
-      if (!title) return;
-      store.addPolicy(title, 'عام');
-      toast('أُضيفت السياسة');
-    } else {
-      toast('استخدم نموذج الإضافة في الصفحة');
-      return;
-    }
-    window.dispatchEvent(new CustomEvent('hub-data-changed', { detail: { entity, action: 'add' } }));
-    if (typeof window.hubRerender === 'function') window.hubRerender();
-    else setTimeout(() => location.reload(), 350);
-  };
-
-  const handleRow = (action, entity, id) => {
-    const store = window.HubStore;
-    if (!store?.entityAction) return toast('المخزن غير جاهز');
-    if (action === 'edit') {
-      const title = prompt('القيمة الجديدة (الاسم/العنوان):');
-      if (!title) return;
-      const ok = store.entityAction(entity, id, 'edit', { title });
-      if (!ok) return toast('تعذّر التعديل');
-      toast('تم التعديل');
-    } else if (action === 'assign') {
-      const assignee = prompt('تعيين إلى (اسم المسؤول):');
-      if (!assignee) return;
-      const ok = store.entityAction(entity, id, 'assign', { assignee });
-      if (!ok) return toast('تعذّر التعيين');
-      toast(`تم التعيين إلى ${assignee}`);
-    } else if (action === 'delete') {
-      if (!confirm('تأكيد حذف السجل؟')) return;
-      const ok = store.entityAction(entity, id, 'delete');
-      if (!ok) return toast('تعذّر الحذف');
-      toast('تم الحذف');
-    } else if (action === 'archive') {
-      const ok = store.entityAction(entity, id, 'archive');
-      if (!ok) return toast('تعذّرت الأرشفة');
-      toast('تمت الأرشفة');
-    } else {
-      return;
-    }
+  const afterChange = (entity, action, id) => {
     window.dispatchEvent(new CustomEvent('hub-data-changed', { detail: { entity, action, id } }));
     if (typeof window.hubRerender === 'function') window.hubRerender();
     else setTimeout(() => location.reload(), 350);
   };
 
+  const recordTitle = (item) => item?.nameAr || item?.title || item?.name || item?.sku || item?.code || item?.id || 'سجل';
+
+  const detailsGrid = (item) => {
+    if (!item) return '<p class="hub-modal-empty">لا توجد بيانات لهذا السجل.</p>';
+    const rows = Object.entries(item)
+      .filter(([k, v]) => !HIDDEN_KEYS.has(k) && v !== undefined && v !== null && v !== '')
+      .map(([k, v]) => {
+        const label = FIELD_LABELS[k] || k;
+        const val = typeof v === 'object' ? JSON.stringify(v) : v;
+        return `<div class="hub-detail-row"><span>${esc(label)}</span><strong>${esc(val)}</strong></div>`;
+      })
+      .join('');
+    return `<div class="hub-detail-grid">${rows}</div>`;
+  };
+
+  const ensureModal = () => {
+    let modal = document.getElementById('hub-erp-modal');
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.id = 'hub-erp-modal';
+    modal.className = 'hub-erp-modal';
+    modal.innerHTML = `
+      <div class="hub-erp-dialog" role="dialog" aria-modal="true" aria-labelledby="hub-erp-modal-title">
+        <header class="hub-erp-head">
+          <div>
+            <p class="hub-erp-kicker" id="hub-erp-modal-kicker">تفاصيل السجل</p>
+            <h3 id="hub-erp-modal-title">نموذج</h3>
+          </div>
+          <button type="button" class="hub-erp-close" data-hub-modal-close aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
+        </header>
+        <div class="hub-erp-body" id="hub-erp-modal-body"></div>
+        <footer class="hub-erp-foot" id="hub-erp-modal-foot"></footer>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal || e.target.closest('[data-hub-modal-close]')) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+    });
+    return modal;
+  };
+
+  const closeModal = () => {
+    const modal = document.getElementById('hub-erp-modal');
+    if (modal) modal.classList.remove('open');
+  };
+
+  const openModal = ({ title, kicker, body, foot }) => {
+    const modal = ensureModal();
+    document.getElementById('hub-erp-modal-title').textContent = title;
+    document.getElementById('hub-erp-modal-kicker').textContent = kicker || 'نموذج نايوش هوب';
+    document.getElementById('hub-erp-modal-body').innerHTML = body;
+    document.getElementById('hub-erp-modal-foot').innerHTML = foot || '';
+    modal.classList.add('open');
+    return modal;
+  };
+
+  const openView = (entity, id) => {
+    const item = window.HubStore?.getEntity?.(entity, id);
+    if (!item) return toast('السجل غير موجود');
+    openModal({
+      title: recordTitle(item),
+      kicker: `معاينة · ${ENTITY_LABELS[entity] || 'سجل'}`,
+      body: detailsGrid(item),
+      foot: `
+        <button type="button" class="hub-erp-btn ghost" data-hub-modal-close>إغلاق</button>
+        <button type="button" class="hub-erp-btn teal" data-hub-modal-go="assign" data-entity="${esc(entity)}" data-id="${esc(id)}"><i class="fas fa-user-check"></i> تعيين</button>
+        <button type="button" class="hub-erp-btn blue" data-hub-modal-go="edit" data-entity="${esc(entity)}" data-id="${esc(id)}"><i class="fas fa-pen"></i> تعديل</button>`,
+    });
+  };
+
+  const openAssign = (entity, id) => {
+    const item = window.HubStore?.getEntity?.(entity, id);
+    if (!item) return toast('السجل غير موجود');
+    openModal({
+      title: `تعيين · ${recordTitle(item)}`,
+      kicker: `نموذج تعيين ${ENTITY_LABELS[entity] || 'سجل'}`,
+      body: `
+        ${detailsGrid(item)}
+        <div class="hub-form-block">
+          <h4><i class="fas fa-user-check"></i> بيانات التعيين</h4>
+          <label>اسم المسؤول المعيّن
+            <input id="hub-assign-name" type="text" value="${esc(item.assignee || '')}" placeholder="مثال: أحمد محمد — غرفة العمليات" />
+          </label>
+          <label>ملاحظة التعيين
+            <textarea id="hub-assign-note" rows="3" placeholder="اكتب تفاصيل المهمة أو سبب التعيين…">${esc(item.assignNote || '')}</textarea>
+          </label>
+        </div>`,
+      foot: `
+        <button type="button" class="hub-erp-btn ghost" data-hub-modal-close>إلغاء</button>
+        <button type="button" class="hub-erp-btn teal" id="hub-assign-save" data-entity="${esc(entity)}" data-id="${esc(id)}"><i class="fas fa-check"></i> حفظ التعيين</button>`,
+    });
+    document.getElementById('hub-assign-save')?.addEventListener('click', () => {
+      const assignee = document.getElementById('hub-assign-name')?.value.trim();
+      const assignNote = document.getElementById('hub-assign-note')?.value.trim();
+      if (!assignee) return toast('اكتب اسم المسؤول');
+      const ok = window.HubStore.entityAction(entity, id, 'assign', { assignee, assignNote });
+      if (!ok) return toast('تعذّر التعيين');
+      closeModal();
+      toast(`تم التعيين إلى ${assignee}`);
+      afterChange(entity, 'assign', id);
+    });
+  };
+
+  const openEdit = (entity, id) => {
+    const item = window.HubStore?.getEntity?.(entity, id);
+    if (!item) return toast('السجل غير موجود');
+    const current = recordTitle(item);
+    openModal({
+      title: `تعديل · ${current}`,
+      kicker: `نموذج تعديل ${ENTITY_LABELS[entity] || 'سجل'}`,
+      body: `
+        ${detailsGrid(item)}
+        <div class="hub-form-block">
+          <h4><i class="fas fa-pen"></i> تعديل البيانات</h4>
+          <label>الاسم / العنوان
+            <input id="hub-edit-title" type="text" value="${esc(current)}" />
+          </label>
+        </div>`,
+      foot: `
+        <button type="button" class="hub-erp-btn ghost" data-hub-modal-close>إلغاء</button>
+        <button type="button" class="hub-erp-btn blue" id="hub-edit-save" data-entity="${esc(entity)}" data-id="${esc(id)}"><i class="fas fa-check"></i> حفظ التعديل</button>`,
+    });
+    document.getElementById('hub-edit-save')?.addEventListener('click', () => {
+      const title = document.getElementById('hub-edit-title')?.value.trim();
+      if (!title) return toast('العنوان مطلوب');
+      const ok = window.HubStore.entityAction(entity, id, 'edit', { title });
+      if (!ok) return toast('تعذّر التعديل');
+      closeModal();
+      toast('تم التعديل');
+      afterChange(entity, 'edit', id);
+    });
+  };
+
+  const openConfirm = (entity, id, action) => {
+    const item = window.HubStore?.getEntity?.(entity, id);
+    if (!item) return toast('السجل غير موجود');
+    const isDelete = action === 'delete';
+    openModal({
+      title: isDelete ? `حذف · ${recordTitle(item)}` : `أرشفة · ${recordTitle(item)}`,
+      kicker: isDelete ? 'تأكيد الحذف' : 'تأكيد الأرشفة',
+      body: `
+        ${detailsGrid(item)}
+        <div class="hub-form-block warn">
+          <p>${isDelete ? 'سيتم حذف السجل نهائيًا من القائمة.' : 'سيتم أرشفة السجل وإخفاؤه من العرض النشط.'}</p>
+        </div>`,
+      foot: `
+        <button type="button" class="hub-erp-btn ghost" data-hub-modal-close>إلغاء</button>
+        <button type="button" class="hub-erp-btn ${isDelete ? 'red' : 'slate'}" id="hub-confirm-save"><i class="fas ${isDelete ? 'fa-trash' : 'fa-archive'}"></i> تأكيد</button>`,
+    });
+    document.getElementById('hub-confirm-save')?.addEventListener('click', () => {
+      const ok = window.HubStore.entityAction(entity, id, action);
+      if (!ok) return toast(isDelete ? 'تعذّر الحذف' : 'تعذّرت الأرشفة');
+      closeModal();
+      toast(isDelete ? 'تم الحذف' : 'تمت الأرشفة');
+      afterChange(entity, action, id);
+    });
+  };
+
+  const ADD_FORMS = {
+    apps: {
+      title: 'إضافة نظام',
+      fields: [
+        { id: 'nameAr', label: 'اسم النظام', required: true },
+        { id: 'code', label: 'رمز النظام', value: 'SYS', required: true },
+        { id: 'category', label: 'التصنيف', value: 'أنظمة نايوش' },
+      ],
+      save: (v) => window.HubStore.registerApp({ nameAr: v.nameAr, code: v.code, kind: 'system', category: v.category || 'أنظمة نايوش' }),
+    },
+    store: {
+      title: 'إضافة منتج متجر',
+      fields: [
+        { id: 'title', label: 'اسم المنتج', required: true },
+        { id: 'price', label: 'السعر', value: '500', type: 'number' },
+        { id: 'points', label: 'النقاط', value: '50', type: 'number' },
+        { id: 'stock', label: 'المخزون', value: '10', type: 'number' },
+      ],
+      save: (v) => window.HubStore.addStoreItem({ title: v.title, price: v.price, points: v.points, stock: v.stock }),
+    },
+    ads: {
+      title: 'إضافة إعلان',
+      fields: [
+        { id: 'title', label: 'عنوان الإعلان', required: true },
+        { id: 'price', label: 'السعر', value: '1000', type: 'number' },
+        { id: 'category', label: 'التصنيف', value: 'عام' },
+        { id: 'content', label: 'المحتوى', value: 'إعلان منتج منصة' },
+      ],
+      save: (v) => window.HubStore.addAdListing(v),
+    },
+    events: {
+      title: 'إضافة فعالية',
+      fields: [
+        { id: 'name', label: 'اسم الفعالية', required: true },
+        { id: 'description', label: 'الوصف', value: 'فعالية من هوب' },
+        { id: 'date', label: 'التاريخ', type: 'date', value: new Date().toISOString().slice(0, 10) },
+      ],
+      save: (v) => window.HubStore.addEvent({ ...v, status: 'قادمة' }),
+    },
+    products: {
+      title: 'إضافة منتج',
+      fields: [
+        { id: 'name', label: 'اسم المنتج', required: true },
+        { id: 'brand', label: 'العلامة', value: 'نايوش هوب' },
+        { id: 'category', label: 'التصنيف', value: 'تشغيل' },
+        { id: 'price', label: 'السعر', value: '1000', type: 'number' },
+        { id: 'stock', label: 'المخزون', value: '20', type: 'number' },
+      ],
+      save: (v) => window.HubStore.addProduct?.(v),
+    },
+    incubators: {
+      title: 'إضافة حاضنة',
+      fields: [
+        { id: 'name', label: 'اسم الحاضنة', required: true },
+        { id: 'sector', label: 'القطاع', value: 'عام' },
+      ],
+      save: (v) => window.HubStore.addIncubator(v.name, v.sector || 'عام'),
+    },
+    tasks: {
+      title: 'إضافة مهمة',
+      fields: [
+        { id: 'title', label: 'عنوان المهمة', required: true },
+        { id: 'assignee', label: 'المسؤول', value: 'فريق هوب' },
+        { id: 'priority', label: 'الأولوية', value: 'عادي' },
+      ],
+      save: (v) => window.HubStore.addTask(v.title, v.assignee || 'فريق هوب', v.priority || 'عادي'),
+    },
+    policies: {
+      title: 'إضافة سياسة',
+      fields: [
+        { id: 'title', label: 'عنوان السياسة', required: true },
+        { id: 'scope', label: 'النطاق', value: 'عام' },
+      ],
+      save: (v) => window.HubStore.addPolicy(v.title, v.scope || 'عام'),
+    },
+  };
+
+  const openAdd = (entity) => {
+    const form = ADD_FORMS[entity];
+    if (!form) return toast('استخدم نموذج الإضافة في الصفحة');
+    openModal({
+      title: form.title,
+      kicker: 'نموذج إضافة جديد',
+      body: `<div class="hub-form-block">
+        ${form.fields
+          .map(
+            (f) => `<label>${esc(f.label)}
+              <input id="hub-add-${esc(f.id)}" type="${f.type || 'text'}" value="${esc(f.value || '')}" ${f.required ? 'required' : ''} />
+            </label>`
+          )
+          .join('')}
+      </div>`,
+      foot: `
+        <button type="button" class="hub-erp-btn ghost" data-hub-modal-close>إلغاء</button>
+        <button type="button" class="hub-erp-btn red" id="hub-add-save"><i class="fas fa-plus"></i> حفظ</button>`,
+    });
+    document.getElementById('hub-add-save')?.addEventListener('click', () => {
+      const values = {};
+      for (const f of form.fields) {
+        values[f.id] = document.getElementById(`hub-add-${f.id}`)?.value.trim() || '';
+        if (f.required && !values[f.id]) return toast(`${f.label} مطلوب`);
+      }
+      const ok = form.save(values);
+      if (!ok) return toast('تعذّرت الإضافة');
+      closeModal();
+      toast('تمت الإضافة');
+      afterChange(entity, 'add');
+    });
+  };
+
+  const handleRow = (action, entity, id) => {
+    if (!window.HubStore?.getEntity) return toast('المخزن غير جاهز');
+    if (action === 'view') return openView(entity, id);
+    if (action === 'assign') return openAssign(entity, id);
+    if (action === 'edit') return openEdit(entity, id);
+    if (action === 'delete' || action === 'archive') return openConfirm(entity, id, action);
+  };
+
   document.addEventListener('click', (e) => {
+    const go = e.target.closest('[data-hub-modal-go]');
+    if (go) {
+      e.preventDefault();
+      handleRow(go.dataset.hubModalGo, go.dataset.entity, go.dataset.id);
+      return;
+    }
     const btn = e.target.closest('[data-hub-act]');
     if (!btn) return;
     e.preventDefault();
     const action = btn.dataset.hubAct;
     const entity = btn.dataset.entity || btn.closest('[data-entity]')?.dataset.entity || 'generic';
     const id = btn.dataset.id;
-    if (action === 'add') handleAdd(entity);
+    if (action === 'add') openAdd(entity);
     else if (id) handleRow(action, entity, id);
   });
 
@@ -191,5 +446,9 @@
     toolbarHtml,
     toast,
     ensurePageToolbar,
+    openView,
+    openAssign,
+    openEdit,
+    closeModal,
   };
 })();
