@@ -3,8 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "description": "Naiosh Hub 360 — Imperial Operations Platform",
+  "main": "server.js",
   "scripts": {
-    "dev": "npx serve . -l 3600",
-    "start": "npx serve . -l 3600"
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
   }
 }
