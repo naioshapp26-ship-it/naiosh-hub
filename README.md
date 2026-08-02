@@ -13,6 +13,25 @@ node server.js
 
 ثم افتح: http://localhost:8080 (محليًا الافتراضي 8080، وعلى Railway يستخدم `PORT`)
 
+## Railway + Postgres
+
+راجع: [`db/RAILWAY.md`](db/RAILWAY.md)
+
+باختصار على خدمة **naiosh-hub** أضف:
+
+- `DATABASE_URL=${{Postgres.DATABASE_URL}}`
+- `DATABASE_PRIVATE_URL=${{Postgres.DATABASE_PRIVATE_URL}}`
+- `NODE_ENV=production`
+- `HUB_AUTO_MIGRATE=true`
+
+الجداول تُنشأ تلقائيًا من `db/schema.sql` عند الإقلاع.
+
+اختبارات سريعة بعد النشر:
+
+- `/api/health`
+- `/api/env-check`
+- `/api/db/tables`
+
 ## الصفحات
 
 - `index.html` — الواجهة الرئيسية

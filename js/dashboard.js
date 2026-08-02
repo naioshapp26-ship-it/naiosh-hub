@@ -405,6 +405,9 @@
   const renderOrganization = () => {
     const org = HubStore.get().empire.organization;
     return `
+      <div class="toolbar">
+        <a class="btn btn-primary" href="branches.html" target="_blank"><i class="fas fa-code-branch"></i> فتح صفحة الفروع العالمية</a>
+      </div>
       <div class="chain-row">
         ${org.chain.map((c, i) => `<span class="chain-node">${esc(c)}</span>${i < org.chain.length - 1 ? '<i class="fas fa-arrow-left chain-arrow"></i>' : ''}`).join('')}
       </div>

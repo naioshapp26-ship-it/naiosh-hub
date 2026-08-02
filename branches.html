@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>المنصات السيادية | نايوش هوب 360</title>
-  <meta name="description" content="منصات نايوش 360 السيادية — 18 منصة تشغّل نايوش هوب." />
+  <title>الفروع | نايوش هوب 360</title>
+  <meta name="description" content="فروع نايوش هوب حول العالم — مصر · العراق · السعودية · الإمارات · تركيا · الأردن." />
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,9 +14,9 @@
   <link rel="stylesheet" href="css/hub-theme.css" />
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-row-actions.css" />
-  <link rel="stylesheet" href="css/platforms.css" />
+  <link rel="stylesheet" href="css/hub-branches.css" />
 </head>
-<body class="homepage platforms-page-body">
+<body class="homepage branches-page" data-hub-entity="branches">
   <header class="top-nav">
     <div class="container inner">
       <div class="nav-main">
@@ -31,8 +31,8 @@
           <a href="ads.html">الإعلانات</a>
           <a href="events.html">الفعاليات</a>
           <a href="apps.html">الأنظمة</a>
-          <a class="active" href="platforms.html">المنصات</a>
-          <a href="branches.html">الفروع</a>
+          <a href="platforms.html">المنصات</a>
+          <a class="active" href="branches.html">الفروع</a>
         </nav>
       </div>
       <div class="auth-actions" aria-label="إجراءات الحساب">
@@ -42,20 +42,25 @@
     </div>
   </header>
 
-  <main class="container products-page">
-    <section class="products-hero">
-      <h1>منصات نايوش 360 السيادية</h1>
-      <p>ثمانية عشر منصة تشغّل نايوش هوب — من الدماغ المركزي إلى السلطة العليا.</p>
-      <div class="products-stats">
-        <div class="products-stat"><strong id="stat-count">18</strong><span>منصة سيادية</span></div>
-        <div class="products-stat"><strong>4</strong><span>مجموعات</span></div>
-        <div class="products-stat"><strong>360</strong><span>رؤية موحّدة</span></div>
-        <div class="products-stat"><strong>هوب</strong><span>تشغيل مركزي</span></div>
+  <main class="container">
+    <section class="branches-showcase">
+      <header class="branches-head">
+        <h1>فروعنا حول العالم</h1>
+        <p>شبكة الفروع العالمية مصممة لتقديم تجربة موحدة واحترافية عبر مواقعنا المختلفة.</p>
+      </header>
+      <div class="branches-toolbar">
+        <input id="branchSearch" type="search" placeholder="ابحث عن الفرع أو الدولة..." aria-label="بحث الفروع" />
+        <select id="branchTypeFilter" aria-label="تصفية نوع الفرع">
+          <option value="all">كل الأنواع</option>
+          <option value="مكاتب خاصة">مكاتب خاصة</option>
+          <option value="حاضنة أعمال">حاضنة أعمال</option>
+          <option value="مسرعة أعمال">مسرعة أعمال</option>
+        </select>
+        <button type="button" id="branchFilterAll" class="branches-filter-all">الكل</button>
       </div>
+      <p id="branchFilterStatus" class="sr-only" aria-live="polite"></p>
+      <section class="branch-grid" id="branchGrid" aria-label="شبكة الفروع"></section>
     </section>
-
-    <nav class="products-tabs" id="platformsTabs" aria-label="مجموعات المنصات"></nav>
-    <div id="platformsSections"></div>
   </main>
 
   <nav class="floating-actions" aria-label="أزرار جانبية عائمة">
@@ -70,11 +75,10 @@
   <script src="js/hub-marketplace-data.js"></script>
   <script src="js/hub-branches-data.js"></script>
   <script src="js/hub-store.js"></script>
-  <script src="js/platforms-page.js"></script>
-  <script src="js/mobile-nav.js"></script>
   <script src="js/hub-row-actions.js"></script>
+  <script src="js/hub-branches.js"></script>
+  <script src="js/mobile-nav.js"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js" defer></script>
 </body>
 </html>
-

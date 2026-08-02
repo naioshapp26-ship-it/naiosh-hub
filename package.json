@@ -6,7 +6,9 @@
   "main": "server.js",
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "db:migrate": "node -e \"require('./db/migrate').migrate().then(r=>{console.log(r);process.exit(0)}).catch(e=>{console.error(e);process.exit(1)})\"",
+    "env:check": "node -e \"console.log(JSON.stringify(require('./db/env-check').checkEnvironment(),null,2))\""
   },
   "engines": {
     "node": ">=18"

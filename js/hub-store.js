@@ -4,7 +4,7 @@
  * Persists to localStorage.
  */
 const HubStore = (() => {
-  const KEY = 'naioshHub360Store_v9';
+  const KEY = 'naioshHub360Store_v10';
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
@@ -50,15 +50,22 @@ const HubStore = (() => {
       organization: {
         chain: bp?.orgChain || ['دولة', 'فرع', 'حاضنة', 'منصة', 'مكتب إلكتروني'],
         countries: [
-          { id: uid('co'), name: 'مصر', code: 'EG', branches: 4, status: 'active' },
-          { id: uid('co'), name: 'السعودية', code: 'SA', branches: 3, status: 'active' },
-          { id: uid('co'), name: 'الإمارات', code: 'AE', branches: 2, status: 'building' },
+          { id: uid('co'), name: 'مصر', code: 'EG', branches: 1, status: 'active' },
+          { id: uid('co'), name: 'العراق', code: 'IQ', branches: 1, status: 'active' },
+          { id: uid('co'), name: 'السعودية', code: 'SA', branches: 1, status: 'active' },
+          { id: uid('co'), name: 'الإمارات', code: 'AE', branches: 1, status: 'active' },
+          { id: uid('co'), name: 'تركيا', code: 'TR', branches: 1, status: 'active' },
+          { id: uid('co'), name: 'الأردن', code: 'JO', branches: 1, status: 'active' },
         ],
         branches: [
           { id: uid('br'), name: 'فرع القاهرة', country: 'مصر', incubators: 12, manager: 'أحمد منصور' },
+          { id: uid('br'), name: 'فرع بغداد', country: 'العراق', incubators: 6, manager: 'علي حسين' },
           { id: uid('br'), name: 'فرع الرياض', country: 'السعودية', incubators: 9, manager: 'نورة العتيبي' },
           { id: uid('br'), name: 'فرع دبي', country: 'الإمارات', incubators: 5, manager: 'خالد الراشد' },
+          { id: uid('br'), name: 'فرع إسطنبول', country: 'تركيا', incubators: 4, manager: 'أحمد يلماز' },
+          { id: uid('br'), name: 'فرع عمّان', country: 'الأردن', incubators: 3, manager: 'ليلى ناصر' },
         ],
+        worldBranches: (window.HubBranchesData?.BRANCHES || []).map((b) => ({ ...b })),
         incubators: [
           { id: uid('inc'), name: 'حاضنة التعليم الذكي', sector: 'تعليم', platforms: 6, offices: 14, members: 320, health: 91 },
           { id: uid('inc'), name: 'حاضنة الصحة الرقمية', sector: 'صحة', platforms: 4, offices: 9, members: 180, health: 86 },
@@ -80,7 +87,7 @@ const HubStore = (() => {
         })),
       },
       command: {
-        branches: 9,
+        branches: (window.HubBranchesData?.BRANCHES || []).length || 6,
         incubators: 100,
         platforms: window.HubSovereignPlatforms?.count || 18,
         clients: 1860,
@@ -344,6 +351,12 @@ const HubStore = (() => {
       registeredAt: nowIso(),
       health: a.status === 'active' ? 92 : 55,
     }));
+    const bd = window.HubBranchesData?.BRANCHES;
+    if (!e.organization) e.organization = {};
+    if (!(e.organization.worldBranches?.length > 0) && bd?.length > 0) {
+      e.organization.worldBranches = bd.map((x) => ({ ...x }));
+      changed = true;
+    }
     return changed;
   };
 
@@ -505,6 +518,29 @@ const HubStore = (() => {
   };
 
   // —— Workforce
+  const addBranch = (payload = {}) => {
+    const org = get().empire.organization;
+    if (!org.worldBranches) org.worldBranches = [];
+    const nameAr = String(payload.nameAr || payload.name || '').trim();
+    if (!nameAr) return null;
+    const item = {
+      id: uid('br'),
+      nameAr,
+      nameEn: String(payload.nameEn || nameAr).trim(),
+      code: String(payload.code || 'XX').trim().toUpperCase(),
+      type: String(payload.type || 'مكاتب خاصة').trim(),
+      hours: String(payload.hours || 'من 9:00 صباحًا إلى 6:00 مساءً').trim(),
+      flag: payload.flag || window.HubBranchesData?.FLAG?.eg || '',
+      flagAlt: `علم ${nameAr}`,
+      status: 'active',
+      assignee: '',
+    };
+    org.worldBranches.unshift(item);
+    pushFeed('decision', `فرع جديد: ${item.nameAr}`);
+    save();
+    return item;
+  };
+
   const addEmployee = (payload = {}) => {
     const name = String(payload.name || '').trim();
     if (!name) return null;
@@ -961,6 +997,8 @@ const HubStore = (() => {
         return { list: s.tasks?.items || [], nameKey: 'title' };
       case 'employees':
         return { list: s.workforce?.employees || [], nameKey: 'name' };
+      case 'branches':
+        return { list: empire.organization?.worldBranches || [], nameKey: 'nameAr' };
       case 'policies':
         return { list: s.governance?.policies || [], nameKey: 'title' };
       case 'systems':
@@ -1058,6 +1096,7 @@ const HubStore = (() => {
     activatePolicy,
     issuePenaltyOrReward,
     addConstitutionArticle,
+    addBranch,
     addEmployee,
     warnEmployee,
     rewardEmployee,

@@ -20,6 +20,7 @@
     systems: 'نظام سوق',
     connectors: 'موصل',
     platforms: 'منصة',
+    branches: 'فرع',
     generic: 'سجل',
   };
 
@@ -72,10 +73,12 @@
     productivity: 'الإنتاجية',
     score: 'الدرجة',
     warned: 'إنذار سابق',
+    nameEn: 'الاسم الإنجليزي',
+    flagAlt: 'وصف العلم',
     archivedAt: 'تاريخ الأرشفة',
   };
 
-  const HIDDEN_KEYS = new Set(['icon']);
+  const HIDDEN_KEYS = new Set(['icon', 'flag']);
 
   const toast = (msg) => {
     let el = document.getElementById('hub-toast-mini');
@@ -118,7 +121,7 @@
     const page = document.body?.dataset?.marketPage || document.body?.dataset?.hubEntity;
     if (!page) return;
     // platforms page is a read-only sovereign catalog — no CRUD toolbar
-    const map = { apps: 'apps', store: 'store', ads: 'ads', events: 'events', products: 'products' };
+    const map = { apps: 'apps', store: 'store', ads: 'ads', events: 'events', products: 'products', branches: 'branches' };
     const entity = map[page];
     if (!entity) return;
     if (document.querySelector(`.hub-page-actions[data-entity="${entity}"]`)) return;
@@ -126,13 +129,21 @@
       document.querySelector('.market-hero') ||
       document.querySelector('.shop-top') ||
       document.querySelector('.products-hero') ||
+      document.querySelector('.branches-head') ||
+      document.querySelector('.branches-showcase') ||
       document.querySelector('main .container') ||
       document.querySelector('main');
     if (!host) return;
     const bar = document.createElement('div');
     bar.innerHTML = toolbarHtml(entity);
     const node = bar.firstElementChild;
-    if (host.classList.contains('market-hero') || host.classList.contains('shop-top') || host.classList.contains('products-hero')) {
+    if (
+      host.classList.contains('market-hero') ||
+      host.classList.contains('shop-top') ||
+      host.classList.contains('products-hero') ||
+      host.classList.contains('branches-head') ||
+      host.classList.contains('branches-showcase')
+    ) {
       host.appendChild(node);
     } else {
       host.prepend(node);
@@ -399,6 +410,17 @@
           productivity: v.productivity,
           score: v.productivity,
         }),
+    },
+    branches: {
+      title: 'إضافة فرع',
+      fields: [
+        { id: 'nameAr', label: 'اسم الدولة / الفرع', required: true },
+        { id: 'nameEn', label: 'الاسم بالإنجليزية', value: '' },
+        { id: 'code', label: 'رمز الدولة', value: 'XX', required: true },
+        { id: 'type', label: 'نوع الفرع', value: 'مكاتب خاصة' },
+        { id: 'hours', label: 'ساعات العمل', value: 'من 9:00 صباحًا إلى 6:00 مساءً' },
+      ],
+      save: (v) => window.HubStore.addBranch(v),
     },
     policies: {
       title: 'إضافة سياسة',
