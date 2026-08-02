@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تسجيل الدخول — نايوش هوب</title>
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#d70000',
+              dark: '#8a000c',
+              light: '#ff1f2f',
+              50: '#fff5f5',
+            },
+            secondary: '#0a0a0a',
+          },
+          fontFamily: {
+            sans: ['Cairo', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .loading-spinner {
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top: 3px solid white;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-white flex items-center justify-center min-h-screen p-4">
+  <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+    <div class="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-3xl"></div>
+    <div class="absolute top-[40%] -left-[10%] w-[40%] h-[40%] rounded-full bg-black/5 blur-3xl"></div>
+  </div>
+
+  <div class="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden z-10 relative border border-gray-100">
+    <div class="bg-primary p-8 text-center relative overflow-hidden">
+      <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-30"></div>
+      <div class="relative z-10">
+        <div class="inline-flex items-center justify-center w-28 h-28 rounded-full bg-white mb-4 border border-white/60 shadow-xl overflow-hidden">
+          <img src="assets/logo-hub.jpeg" alt="شعار نايوش هوب" class="w-24 h-24 object-contain" />
+        </div>
+        <div class="text-white text-3xl md:text-4xl font-extrabold tracking-wide">
+          NAIOSH <span class="text-white">HUB</span>
+        </div>
+        <p class="text-white/90 text-sm mt-1 font-bold tracking-widest">360 · IMPERIAL</p>
+        <p class="text-white/80 text-sm mt-2">تسجيل الدخول إلى غرفة العمليات</p>
+      </div>
+    </div>
+
+    <div class="p-8">
+      <div id="alertMessage" class="hidden mb-6 p-4 rounded-lg text-sm font-medium transition-all duration-300 border"></div>
+
+      <form id="loginForm" class="space-y-5">
+        <div>
+          <label for="email" class="block text-sm font-semibold text-black mb-2">البريد الإلكتروني</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+              <i class="fa-solid fa-envelope"></i>
+            </div>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="block w-full pr-10 pl-3 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition sm:text-sm"
+              placeholder="name@naiosh.com"
+              required
+              autocomplete="email"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-semibold text-black mb-2">كلمة المرور</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+              <i class="fa-solid fa-lock"></i>
+            </div>
+            <button
+              type="button"
+              id="togglePassword"
+              class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-primary transition-colors"
+              aria-label="إظهار كلمة المرور"
+              aria-pressed="false"
+            >
+              <i id="togglePasswordIcon" class="fa-solid fa-eye"></i>
+            </button>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="block w-full pr-10 pl-10 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition sm:text-sm"
+              placeholder="••••••••"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <input id="rememberMe" type="checkbox" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded cursor-pointer" />
+            <label for="rememberMe" class="mr-2 block text-sm text-gray-600 cursor-pointer">تذكرني</label>
+          </div>
+          <div class="text-sm">
+            <a href="#" class="font-medium text-primary hover:text-primary-dark transition-colors">نسيت كلمة المرور؟</a>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          id="loginBtn"
+          class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+        >
+          <span class="btn-text flex items-center gap-2">
+            دخول غرفة العمليات
+            <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+          </span>
+          <span class="loading-spinner hidden"></span>
+        </button>
+      </form>
+
+      <div class="mt-5 text-center text-sm text-gray-600">
+        ليس لديك حساب؟
+        <a href="index.html#register" class="font-bold text-primary hover:text-primary-dark transition-colors">
+          اطلب الانضمام
+        </a>
+      </div>
+
+      <div class="relative mt-8 mb-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-200"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-4 bg-white text-gray-500 font-medium">حسابات تجريبية</span>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <h3 class="text-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">للعرض المحلي</h3>
+        <button
+          type="button"
+          onclick="fillLogin('leader@naiosh.com', 'Hub@360')"
+          class="flex items-center p-3 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary-50 transition-all duration-200 group text-right w-full"
+        >
+          <div class="flex-shrink-0 bg-primary/10 text-primary w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+            <i class="fa-solid fa-crown"></i>
+          </div>
+          <div class="mr-3">
+            <p class="text-sm font-bold text-black">القائد الأعلى</p>
+            <p class="text-xs text-gray-500">leader@naiosh.com</p>
+          </div>
+        </button>
+        <button
+          type="button"
+          onclick="fillLogin('malika@naiosh.com', 'Hub@360')"
+          class="flex items-center p-3 border border-gray-200 rounded-lg hover:border-black hover:bg-gray-50 transition-all duration-200 group text-right w-full"
+        >
+          <div class="flex-shrink-0 bg-black/10 text-black w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
+            <i class="fa-solid fa-user-gear"></i>
+          </div>
+          <div class="mr-3">
+            <p class="text-sm font-bold text-black">المهندسة مليكة</p>
+            <p class="text-xs text-gray-500">malika@naiosh.com</p>
+          </div>
+        </button>
+      </div>
+
+      <div class="mt-6 flex items-center justify-center gap-3 text-base font-extrabold text-black">
+        <img src="assets/logo-hub.jpeg" alt="شعار نايوش هوب" class="w-12 h-12 object-contain drop-shadow-sm rounded" />
+        <span>NAIOSH HUB <span class="text-primary">360</span></span>
+      </div>
+
+      <div class="mt-4 text-center">
+        <a href="index.html" class="text-sm text-gray-500 hover:text-primary transition-colors">
+          <i class="fa-solid fa-home ml-1"></i> العودة للرئيسية
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/login.js"></script>
+</body>
+</html>

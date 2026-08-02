@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>غرفة العمليات — نايوش هوب</title>
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body>
+  <aside class="sidebar" id="sidebar" aria-label="قائمة الطبقات">
+    <div class="sidebar-brand">
+      <img src="assets/logo-hub.jpeg" alt="نايوش هوب" />
+      <div>
+        <strong>NAIOSH HUB</strong>
+        <span>360 · Imperial</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-phase" id="sidebar-phase"></div>
+    <a class="sidebar-home" href="index.html"><i class="fas fa-house"></i> الرئيسية</a>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button type="button" class="mobile-toggle" id="mobile-toggle" aria-label="القائمة"><i class="fas fa-bars"></i></button>
+        <div>
+          <h1 id="page-title">غرفة العمليات</h1>
+          <p id="page-sub">السيادة التشغيلية اللحظية للمنصة</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-recalc"><i class="fas fa-rotate"></i> إعادة حساب</button>
+        <button type="button" class="btn btn-dark btn-sm" id="btn-reset"><i class="fas fa-trash"></i> تصفير البيانات</button>
+        <div class="topbar-user">
+          <div class="user-meta">
+            <strong id="user-name">—</strong>
+            <span id="user-role">—</span>
+          </div>
+          <button type="button" id="logout-btn" class="logout-btn">خروج</button>
+        </div>
+      </div>
+    </header>
+
+    <div id="panel-root"></div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/hub-store.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

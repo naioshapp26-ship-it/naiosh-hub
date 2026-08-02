@@ -1,0 +1,263 @@
+/* Naiosh Hub 360 — identity + minimal layout fixes only */
+:root {
+  --brand-red: #d70000;
+  --brand-red-rgb: 215, 0, 0;
+  --brand-red-soft: #ff1f2f;
+  --brand-red-dark: #8a000c;
+  --brand-red-mid: #b10011;
+  --brand-red-deep: #140004;
+  --brand-black-deep: #000000;
+  --brand-black: #0a0a0a;
+  --brand-white: #ffffff;
+  --brand-gray: #f5f5f5;
+  --brand-border: #e5e5e5;
+  --brand-text-muted: #4a4a4a;
+  --status-active-color: #ffffff;
+  --status-active-color-rgb: 255, 255, 255;
+  --homepage-button-color: #d70000;
+  --homepage-header-bg: #ffffff;
+  --homepage-text-color: #0a0a0a;
+  --homepage-heading-color: #0a0a0a;
+  --homepage-paragraph-color: #4a4a4a;
+  --homepage-link-color: #0a0a0a;
+  --hero-bg-solid: #0a0a0a;
+  --announcement-bg: #1a0208;
+  --announcement-text: #ffffff;
+  --announcement-bar-height: 44px;
+  --hub-gold: #c9a227;
+  --hero-custom-image: url('../assets/hero-main.png');
+  --hero-custom-size: cover;
+  --hero-custom-position: center;
+}
+
+body.homepage {
+  background: #ffffff;
+  background-image:
+    radial-gradient(circle at 10% 8%, rgba(215, 0, 0, 0.05), transparent 32%),
+    radial-gradient(circle at 90% 70%, rgba(0, 0, 0, 0.03), transparent 36%);
+  /* IMPORTANT: no padding-top — announcement stays in normal flow to kill the white gap */
+  padding-top: 0 !important;
+}
+
+.brand .logo-text {
+  letter-spacing: 0.04em;
+  font-weight: 800;
+}
+
+.brand .logo-text .hub-mark {
+  color: var(--brand-red);
+}
+
+.hero-content h1 {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.hero-content h1 .accent {
+  color: #ff3b3b;
+}
+
+.layer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(215, 0, 0, 0.12);
+  border: 1px solid rgba(215, 0, 0, 0.35);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+
+.hub-layer-grid .card {
+  border-top: 3px solid var(--brand-red);
+}
+
+.hub-layer-grid .card .layer-num {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--brand-red);
+  margin-bottom: 8px;
+  letter-spacing: 0.06em;
+}
+
+.imperial-strip {
+  background: #0a0a0a;
+  color: #fff;
+  border-radius: 18px;
+  padding: 28px 24px;
+  display: grid;
+  gap: 10px;
+  margin: 28px 0 8px;
+  border: 1px solid #1f1f1f;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+
+.imperial-strip h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 22px;
+}
+
+.imperial-strip p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.imperial-strip .principles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.imperial-strip .principles span {
+  background: #d70000;
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 999px;
+}
+
+.brand img,
+#site-logo-hero-badge,
+#site-logo-footer {
+  border-radius: 10px;
+}
+
+#site-logo-hero-badge {
+  background: #fff !important;
+  object-fit: contain !important;
+}
+
+.hero-sidebar-item {
+  font-weight: 800;
+}
+
+/* ========== FIX 1: remove white gap (announcement → header → banner) ========== */
+body.homepage .announcement-bar {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  z-index: 60;
+  height: var(--announcement-bar-height);
+  min-height: var(--announcement-bar-height);
+  margin: 0 !important;
+  border-bottom: none !important;
+}
+
+body.homepage .top-nav {
+  /* restore original white header */
+  background: #ffffff !important;
+  border-bottom: none !important;
+  backdrop-filter: none !important;
+  margin: 0 !important;
+  top: 0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  box-shadow: none !important;
+}
+
+body.homepage .top-nav .inner {
+  min-height: 58px;
+  gap: 14px;
+}
+
+body.homepage .brand,
+body.homepage .brand .logo-text {
+  color: #0a0a0a !important;
+}
+
+body.homepage .hero {
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* ========== FIX 2: button spacing only ========== */
+body.homepage .auth-actions {
+  gap: 12px !important;
+  padding-inline-start: 14px !important;
+  margin-inline-start: 8px !important;
+}
+
+body.homepage .auth-btn {
+  padding: 10px 16px !important;
+  min-height: 40px;
+  margin: 0 !important;
+}
+
+body.homepage .nav-links {
+  gap: 8px !important;
+}
+
+body.homepage .nav-links a {
+  padding: 7px 11px !important;
+}
+
+body.homepage .hero-ctas {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  margin-top: 4px !important;
+}
+
+body.homepage .hero-ctas .btn {
+  margin: 0 !important;
+  min-height: 46px;
+  padding: 12px 20px !important;
+  white-space: nowrap;
+}
+
+/* Keep hero dashboard visible (ERP CSS hides it) */
+body.homepage .hero-dashboard {
+  display: grid !important;
+}
+
+body.homepage .hero-glass-search {
+  display: flex !important;
+}
+
+body.homepage .hero-panel {
+  background: linear-gradient(146deg, rgba(70, 10, 18, 0.96), rgba(28, 6, 12, 0.96)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #fff !important;
+}
+
+body.homepage .hero-media-stack {
+  width: 100% !important;
+  max-width: 100% !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+@media (max-width: 740px) {
+  .imperial-strip {
+    padding: 22px 18px;
+  }
+
+  body.homepage .hero-ctas {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  body.homepage .hero-ctas .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  body.homepage .auth-actions {
+    gap: 10px !important;
+    border-inline-start: none !important;
+    padding-inline-start: 0 !important;
+  }
+}
