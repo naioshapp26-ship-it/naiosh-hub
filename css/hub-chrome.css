@@ -1,9 +1,12 @@
-/* Global back + page guide (ERP parity) */
+/* Global back + page guide (ERP parity)
+   Docked bottom-left so they never cover topbar / sidebar actions. */
 
 .hub-back-button {
   position: fixed;
-  top: 72px;
-  right: 20px;
+  top: auto;
+  right: auto;
+  bottom: 22px;
+  left: 20px;
   z-index: 10000;
   display: inline-flex;
   align-items: center;
@@ -37,7 +40,9 @@
 
 .hub-guide-button {
   position: fixed;
-  top: 72px;
+  top: auto;
+  right: auto;
+  bottom: 22px;
   left: 20px;
   z-index: 10000;
   display: inline-flex;
@@ -56,6 +61,11 @@
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* When back exists, place guide beside it */
+body:has(#hub-back-button) .hub-guide-button {
+  left: 124px;
 }
 
 .hub-guide-button:hover {
@@ -165,17 +175,23 @@ body.hub-guide-open .hub-guide-panel {
 @media (max-width: 640px) {
   .hub-back-button,
   .hub-guide-button {
-    top: 64px;
     min-width: 86px;
     padding: 6px 11px;
     font-size: 11px;
+    left: 12px;
   }
 
   .hub-back-button {
-    right: 12px;
+    bottom: 16px;
   }
 
   .hub-guide-button {
+    bottom: 16px;
+  }
+
+  /* Stack vertically on small screens */
+  body:has(#hub-back-button) .hub-guide-button {
     left: 12px;
+    bottom: 62px;
   }
 }
