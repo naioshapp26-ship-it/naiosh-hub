@@ -226,85 +226,118 @@
 
   const renderProducts = () => {
     const products = store?.get?.().empire?.productCatalog || data.PRODUCT_CATALOG || [];
-    const tbody = document.getElementById('products-tbody');
-    const brandSel = document.getElementById('filter-brand');
-    const catSel = document.getElementById('filter-category');
-    const statusSel = document.getElementById('filter-status');
+    const cats = data.SHOP_CATEGORIES || [{ id: 'الكل', name: 'كل المنتجات', icon: 'fa-border-all' }];
+    const strip = document.getElementById('shop-cat-strip');
+    const side = document.getElementById('shop-side-list');
+    const grid = document.getElementById('shop-grid');
+    const label = document.getElementById('shop-result-label');
     const searchInput = document.getElementById('products-search');
     const form = document.getElementById('products-search-form');
-    if (!tbody) return;
+    const viewGrid = document.getElementById('view-grid');
+    const viewList = document.getElementById('view-list');
+    if (!grid) return;
 
-    if (brandSel && !brandSel.options.length) {
-      (data.PRODUCT_BRANDS || ['الكل']).forEach((b) => {
-        const opt = document.createElement('option');
-        opt.value = b;
-        opt.textContent = b;
-        brandSel.appendChild(opt);
-      });
-    }
-    if (catSel && !catSel.options.length) {
-      (data.PRODUCT_CATEGORIES || ['الكل']).forEach((c) => {
-        const opt = document.createElement('option');
-        opt.value = c;
-        opt.textContent = c;
-        catSel.appendChild(opt);
-      });
-    }
+    let active = 'الكل';
+    let view = 'grid';
+
+    const countOf = (id) => (id === 'الكل' ? products.length : products.filter((p) => p.category === id).length);
+
+    const paintChrome = () => {
+      if (strip) {
+        strip.innerHTML = cats
+          .map(
+            (c) => `<button type="button" class="shop-cat-chip${c.id === active ? ' is-active' : ''}" data-cat="${esc(c.id)}">
+              <span class="thumb"><i class="fas ${esc(c.icon || 'fa-cube')}"></i></span>
+              <span>${esc(c.name)}</span>
+            </button>`
+          )
+          .join('');
+      }
+      if (side) {
+        side.innerHTML = cats
+          .map((c) => {
+            const n = countOf(c.id);
+            return `<label class="shop-side-item">
+              <input type="radio" name="shop-cat" value="${esc(c.id)}" ${c.id === active ? 'checked' : ''} />
+              <span>${esc(c.name)}</span>
+              <small>(${n})</small>
+            </label>`;
+          })
+          .join('');
+      }
+    };
 
     const paint = () => {
       const q = (searchInput?.value || '').trim().toLowerCase();
-      const brand = brandSel?.value || 'الكل';
-      const category = catSel?.value || 'الكل';
-      const status = statusSel?.value || 'الكل';
       const list = products.filter((p) => {
-        if (brand !== 'الكل' && p.brand !== brand) return false;
-        if (category !== 'الكل' && p.category !== category) return false;
-        if (status !== 'الكل' && p.status !== status) return false;
+        if (active !== 'الكل' && p.category !== active) return false;
         if (!q) return true;
         const hay = `${p.sku} ${p.name} ${p.brand} ${p.platform} ${p.category}`.toLowerCase();
         return hay.includes(q);
       });
 
-      tbody.innerHTML = list
-        .map((p) => {
-          const moveClass = p.movement === 'سريع' ? 'fast' : p.movement === 'بطيء' ? 'slow' : 'mid';
-          const stockClass = p.status === 'منخفض' || p.stock < 40 ? 'low' : 'ok';
-          return `<tr>
-            <td class="sku">${esc(p.sku)}</td>
-            <td class="name-cell"><strong>${esc(p.name)}</strong><small>${esc(p.category)}</small></td>
-            <td>${esc(p.brand)}</td>
-            <td>${esc(p.platform)}</td>
-            <td><strong>${Number(p.price).toLocaleString('ar-EG')}</strong> ر.س</td>
-            <td><span class="stock-pill ${stockClass}">${p.stock}</span></td>
-            <td>${Number(p.sold).toLocaleString('ar-EG')}</td>
-            <td><span class="move-pill ${moveClass}">${esc(p.movement)}</span></td>
-            <td><span class="status-pill ${stockClass}">${esc(p.status)}</span></td>
-            <td>
-              <a class="btn-mini primary" href="ads.html">إعلان</a>
-              <a class="btn-mini" href="store.html">شراء</a>
-            </td>
-          </tr>`;
-        })
-        .join('');
+      const catName = cats.find((c) => c.id === active)?.name || active;
+      if (label) label.textContent = `${catName} — ${list.length} عنصر`;
 
-      if (!list.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:28px;color:#667080;font-weight:700">لا توجد منتجات مطابقة للبحث</td></tr>`;
-      }
+      grid.classList.toggle('is-list', view === 'list');
+      grid.innerHTML = list.length
+        ? list
+            .map(
+              (p) => `<article class="shop-card">
+                <div class="shop-card-media"><div class="media-icon"><i class="fas ${esc(p.icon || 'fa-cube')}"></i></div></div>
+                <div class="shop-card-body">
+                  <h3>${esc(p.name)}</h3>
+                  <div class="shop-card-meta">${esc(p.brand)} · ${esc(p.category)}</div>
+                  <div class="shop-card-price">${Number(p.price).toLocaleString('ar-EG')} ر.س</div>
+                  <div class="shop-card-actions">
+                    <a class="primary" href="store.html">شراء</a>
+                    <a href="ads.html">إعلان</a>
+                  </div>
+                </div>
+              </article>`
+            )
+            .join('')
+        : `<div class="shop-empty">لا توجد منتجات في هذا التصنيف</div>`;
     };
+
+    const setCategory = (id) => {
+      active = id || 'الكل';
+      paintChrome();
+      paint();
+    };
+
+    strip?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-cat]');
+      if (!btn) return;
+      setCategory(btn.dataset.cat);
+    });
+
+    side?.addEventListener('change', (e) => {
+      const input = e.target.closest('input[name="shop-cat"]');
+      if (!input) return;
+      setCategory(input.value);
+    });
 
     form?.addEventListener('submit', (e) => {
       e.preventDefault();
       paint();
     });
     searchInput?.addEventListener('input', paint);
-    brandSel?.addEventListener('change', paint);
-    catSel?.addEventListener('change', paint);
-    statusSel?.addEventListener('change', paint);
 
-    setStat('stat-products', products.length);
-    setStat('stat-brands', new Set(products.map((p) => p.brand)).size);
-    setStat('stat-stock', products.reduce((s, p) => s + (p.stock || 0), 0));
-    setStat('stat-sold', products.reduce((s, p) => s + (p.sold || 0), 0));
+    viewGrid?.addEventListener('click', () => {
+      view = 'grid';
+      viewGrid.classList.add('is-active');
+      viewList?.classList.remove('is-active');
+      paint();
+    });
+    viewList?.addEventListener('click', () => {
+      view = 'list';
+      viewList.classList.add('is-active');
+      viewGrid?.classList.remove('is-active');
+      paint();
+    });
+
+    paintChrome();
     paint();
   };
 

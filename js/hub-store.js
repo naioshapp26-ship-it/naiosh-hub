@@ -4,7 +4,7 @@
  * Persists to localStorage.
  */
 const HubStore = (() => {
-  const KEY = 'naioshHub360Store_v7';
+  const KEY = 'naioshHub360Store_v8';
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
