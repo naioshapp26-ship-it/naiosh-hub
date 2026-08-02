@@ -38,12 +38,13 @@
     grid.className = 'product-grid';
 
     group.platforms.forEach((p) => {
+      const order = catalog.list.findIndex((item) => item.code === p.code) + 1;
       const card = document.createElement('article');
       card.className = 'product-card';
-      card.setAttribute('aria-label', `${p.code} — ${p.nameAr}`);
+      card.setAttribute('aria-label', p.nameAr);
       card.innerHTML = `
         <div class="card-icon"><i class="fas ${p.icon}"></i></div>
-        <span class="platform-code">${p.code}</span>
+        <span class="platform-code">منصة ${String(order).padStart(2, '0')}</span>
         <h3>${p.nameAr}</h3>
         <div class="platform-role">${p.role}</div>
         <p>${p.desc}</p>

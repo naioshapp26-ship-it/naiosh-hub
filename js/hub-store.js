@@ -4,7 +4,7 @@
  * Persists to localStorage.
  */
 const HubStore = (() => {
-  const KEY = 'naioshHub360Store_v3';
+  const KEY = 'naioshHub360Store_v4';
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
@@ -69,10 +69,10 @@ const HubStore = (() => {
         platforms: (window.HubSovereignPlatforms?.list || []).map((p) => ({
           id: uid('pl'),
           code: p.code,
-          name: `منصة ${p.code}`,
+          name: p.name,
           nameAr: p.nameAr,
           role: p.role,
-          incubator: 'النواة السيادية — Hub 360',
+          incubator: 'النواة السيادية — هوب 360',
           offices: 1,
           status: 'online',
           icon: p.icon,
@@ -93,7 +93,7 @@ const HubStore = (() => {
         wallets: [
           { id: uid('w'), owner: 'فرع القاهرة', balance: 420000, burn30d: 38000 },
           { id: uid('w'), owner: 'حاضنة التعليم الذكي', balance: 210000, burn30d: 22000 },
-          { id: uid('w'), owner: 'منصة Academy Ops', balance: 64000, burn30d: 9100 },
+          { id: uid('w'), owner: 'منصة النظام التشغيلي الموحد', balance: 64000, burn30d: 9100 },
           { id: uid('w'), owner: 'سارة أحمد', balance: 1250, burn30d: 180 },
         ],
         pricing: [
@@ -103,16 +103,16 @@ const HubStore = (() => {
           { service: 'شهادة رقمية', cost: 25 },
         ],
         ledger: [
-          { id: uid('l'), type: 'burn', party: 'منصة Academy Ops', amount: -500, note: 'تفعيل LMS', at: nowIso() },
+          { id: uid('l'), type: 'burn', party: 'منصة النظام التشغيلي الموحد', amount: -500, note: 'تفعيل نظام التعليم', at: nowIso() },
           { id: uid('l'), type: 'topup', party: 'فرع القاهرة', amount: 50000, note: 'شحن رصيد', at: nowIso() },
-          { id: uid('l'), type: 'transfer', party: 'حاضنة التعليم ← منصة Academy', amount: -2000, note: 'تحويل داخلي', at: nowIso() },
+          { id: uid('l'), type: 'transfer', party: 'حاضنة التعليم ← منصة التشغيل', amount: -2000, note: 'تحويل داخلي', at: nowIso() },
         ],
       },
       marketplace: {
         catalog: (window.HubSovereignPlatforms?.list || []).map((p) => ({
           id: uid('mk'),
-          name: p.code,
-          category: p.nameAr,
+          name: p.nameAr,
+          category: p.role,
           status: 'active',
           tenants: 1,
           role: p.role,
@@ -123,7 +123,7 @@ const HubStore = (() => {
 
   const seed = () => ({
       meta: {
-      version: 3,
+      version: 4,
       updatedAt: nowIso(),
       phase: 1,
       productType: 'central_digital_hub',

@@ -9,8 +9,8 @@
   if (homeGrid && window.HubSovereignPlatforms?.list) {
     homeGrid.innerHTML = window.HubSovereignPlatforms.list
       .map(
-        (p) => `<article class="hub-platform-card" id="plat-${p.code.toLowerCase()}">
-          <span class="platform-code">${p.code}</span>
+        (p, idx) => `<article class="hub-platform-card" id="plat-${p.code.toLowerCase()}">
+          <span class="platform-code">منصة ${String(idx + 1).padStart(2, '0')}</span>
           <div class="icon-box"><i class="fas ${p.icon}"></i></div>
           <h3>${p.nameAr}</h3>
           <p><strong>${p.role}</strong> — ${p.desc}</p>
