@@ -1,22 +1,137 @@
 /**
  * Naiosh Hub 360 — Central Operational Store (Imperial Edition)
- * Local mock engines for all 8 layers. Persists to localStorage.
+ * Driven by EmpireBlueprint: Core Platform + 12 axes + org hierarchy + wallet.
+ * Persists to localStorage.
  */
 const HubStore = (() => {
-  const KEY = 'naioshHub360Store_v1';
+  const KEY = 'naioshHub360Store_v2';
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
   const today = () => new Date().toLocaleDateString('ar-EG');
 
+  const seedEmpire = () => {
+    const bp = window.EmpireBlueprint;
+    const coreModules = (bp?.corePlatform || []).map((m, i) => ({
+      ...m,
+      status: i < 5 ? 'building' : 'planned',
+      progress: i < 5 ? Math.max(12, 72 - i * 10) : 0,
+    }));
+    const axes = (bp?.twelveAxes || []).map((a) => ({
+      id: a.id,
+      nameAr: a.nameAr,
+      priority: a.priority,
+      status: a.priority <= 5 ? 'active' : a.priority <= 8 ? 'queued' : 'deferred',
+      progress: a.priority <= 5 ? Math.max(8, 55 - a.priority * 7) : 0,
+    }));
+    const priorities = (bp?.sixMonthPriorities || []).map((p) => ({
+      ...p,
+      status: p.order <= 4 ? 'in_progress' : 'pending',
+      progress: p.order <= 4 ? Math.max(10, 48 - p.order * 6) : 0,
+    }));
+    return {
+      coreModules,
+      axes,
+      priorities,
+      docs: (bp?.preCodeDocs || []).map((name, i) => ({
+        name,
+        status: i < 3 ? 'ready' : i < 6 ? 'draft' : 'todo',
+      })),
+      identity: {
+        totalUsers: 12840,
+        ssoDomains: ['naioshhub360.com', 'edunaiosh.com', 'naiosherp.com', 'naioshlaw.com', 'naioshfit.com'],
+        mfaEnabledPct: 67,
+        activeSessions: 412,
+        roles: (bp?.dashboardsByRole || []).map((r, i) => ({
+          ...r,
+          users: [2, 14, 38, 96, 210, 540, 180, 8200][i] || 50,
+        })),
+      },
+      organization: {
+        chain: bp?.orgChain || ['دولة', 'فرع', 'حاضنة', 'منصة', 'مكتب إلكتروني'],
+        countries: [
+          { id: uid('co'), name: 'مصر', code: 'EG', branches: 4, status: 'active' },
+          { id: uid('co'), name: 'السعودية', code: 'SA', branches: 3, status: 'active' },
+          { id: uid('co'), name: 'الإمارات', code: 'AE', branches: 2, status: 'building' },
+        ],
+        branches: [
+          { id: uid('br'), name: 'فرع القاهرة', country: 'مصر', incubators: 12, manager: 'أحمد منصور' },
+          { id: uid('br'), name: 'فرع الرياض', country: 'السعودية', incubators: 9, manager: 'نورة العتيبي' },
+          { id: uid('br'), name: 'فرع دبي', country: 'الإمارات', incubators: 5, manager: 'خالد الراشد' },
+        ],
+        incubators: [
+          { id: uid('inc'), name: 'حاضنة التعليم الذكي', sector: 'تعليم', platforms: 6, offices: 14, members: 320, health: 91 },
+          { id: uid('inc'), name: 'حاضنة الصحة الرقمية', sector: 'صحة', platforms: 4, offices: 9, members: 180, health: 86 },
+          { id: uid('inc'), name: 'حاضنة القانون', sector: 'قانون', platforms: 3, offices: 7, members: 95, health: 88 },
+          { id: uid('inc'), name: 'حاضنة التسويق', sector: 'تسويق', platforms: 5, offices: 11, members: 240, health: 79 },
+          { id: uid('inc'), name: 'حاضنة التقنية', sector: 'تقنية', platforms: 8, offices: 18, members: 410, health: 94 },
+        ],
+        platforms: [
+          { id: uid('pl'), name: 'منصة Academy Ops', incubator: 'حاضنة التعليم الذكي', offices: 4, status: 'online' },
+          { id: uid('pl'), name: 'منصة Fit Clinic', incubator: 'حاضنة الصحة الرقمية', offices: 3, status: 'online' },
+          { id: uid('pl'), name: 'منصة Law Desk', incubator: 'حاضنة القانون', offices: 2, status: 'building' },
+        ],
+      },
+      command: {
+        branches: 9,
+        incubators: 100,
+        platforms: 41,
+        clients: 1860,
+        trainees: 22400,
+        revenuePoints: 9850000,
+        systemsUsagePct: 73,
+      },
+      wallet: {
+        treasury: 9850000,
+        wallets: [
+          { id: uid('w'), owner: 'فرع القاهرة', balance: 420000, burn30d: 38000 },
+          { id: uid('w'), owner: 'حاضنة التعليم الذكي', balance: 210000, burn30d: 22000 },
+          { id: uid('w'), owner: 'منصة Academy Ops', balance: 64000, burn30d: 9100 },
+          { id: uid('w'), owner: 'سارة أحمد', balance: 1250, burn30d: 180 },
+        ],
+        pricing: [
+          { service: 'تفعيل نظام', cost: 500 },
+          { service: 'مكتب إلكتروني / شهر', cost: 200 },
+          { service: 'دورة تدريبية', cost: 80 },
+          { service: 'شهادة رقمية', cost: 25 },
+        ],
+        ledger: [
+          { id: uid('l'), type: 'burn', party: 'منصة Academy Ops', amount: -500, note: 'تفعيل LMS', at: nowIso() },
+          { id: uid('l'), type: 'topup', party: 'فرع القاهرة', amount: 50000, note: 'شحن رصيد', at: nowIso() },
+          { id: uid('l'), type: 'transfer', party: 'حاضنة التعليم ← منصة Academy', amount: -2000, note: 'تحويل داخلي', at: nowIso() },
+        ],
+      },
+      marketplace: {
+        catalog: [
+          { id: uid('mk'), name: 'LMS', category: 'تعليم', status: 'active', tenants: 42 },
+          { id: uid('mk'), name: 'LXP', category: 'تعليم', status: 'active', tenants: 31 },
+          { id: uid('mk'), name: 'ERP', category: 'تشغيل', status: 'active', tenants: 18 },
+          { id: uid('mk'), name: 'POSHA', category: 'تشغيل', status: 'active', tenants: 12 },
+          { id: uid('mk'), name: 'NAIOSH LAW', category: 'قانون', status: 'active', tenants: 9 },
+          { id: uid('mk'), name: 'NAIOSH FIT', category: 'صحة', status: 'active', tenants: 15 },
+          { id: uid('mk'), name: 'CRM Hub', category: 'عملاء', status: 'beta', tenants: 6 },
+          { id: uid('mk'), name: 'Events Studio', category: 'فعاليات', status: 'planned', tenants: 0 },
+        ],
+      },
+    };
+  };
+
   const seed = () => ({
-    meta: { version: 1, updatedAt: nowIso(), phase: 1 },
+    meta: {
+      version: 2,
+      updatedAt: nowIso(),
+      phase: 1,
+      productType: 'central_digital_hub',
+      blueprint: 'empire-v1',
+    },
     feed: [
+      { id: uid('f'), type: 'architecture', text: 'تم تحميل دستور المعمارية الإمبراطورية — Core Platform أولوية قصوى', at: nowIso() },
       { id: uid('f'), type: 'decision', text: 'إعادة توزيع 6 مهام ذات أولوية عالية', at: nowIso() },
       { id: uid('f'), type: 'alert', text: 'انخفاض إنتاجية فريق التكامل 12%', at: nowIso() },
       { id: uid('f'), type: 'compliance', text: 'سياسة الجودة Q-17 فُعّلت على 3 أنظمة', at: nowIso() },
       { id: uid('f'), type: 'report', text: 'ملخص المخاطر اليومي جاهز للقائد', at: nowIso() },
     ],
+    empire: seedEmpire(),
     core: {
       decisions: [
         { id: uid('d'), title: 'إعادة توزيع مهام الاختناق', engine: 'AI Decision', status: 'executed', impact: 'عالي', at: nowIso() },
@@ -181,6 +296,10 @@ const HubStore = (() => {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         state = JSON.parse(raw);
+        if (!state.empire) {
+          state.empire = seedEmpire();
+          save();
+        }
         return state;
       }
     } catch (_) {}
@@ -210,6 +329,8 @@ const HubStore = (() => {
 
   const kpis = () => {
     const s = get();
+    const e = s.empire || {};
+    const cmd = e.command || {};
     return {
       decisionsToday: s.core.decisions.filter((d) => d.status === 'executed').length,
       compliance: avg(s.governance.compliance, 'rate'),
@@ -217,6 +338,12 @@ const HubStore = (() => {
       systemsHealth: avg(s.systems.registry, 'health'),
       openAnomalies: s.core.anomalies.filter((a) => a.status !== 'closed').length,
       activeTasks: s.tasks.items.filter((t) => t.status !== 'done').length,
+      branches: cmd.branches || 0,
+      incubators: cmd.incubators || 0,
+      platforms: cmd.platforms || 0,
+      trainees: cmd.trainees || 0,
+      treasury: e.wallet?.treasury || 0,
+      coreReadyPct: Math.round(avg(e.coreModules || [], 'progress')),
       layerHealth: {
         core: avg(Object.values(s.core.engineHealth).map((v) => ({ v })), 'v') || Math.round(Object.values(s.core.engineHealth).reduce((a, b) => a + b, 0) / 5),
         governance: avg(s.governance.compliance, 'rate'),
@@ -226,6 +353,9 @@ const HubStore = (() => {
         measurement: avg(s.measurement.scores, 'score'),
         reports: s.reports.generated.length ? 88 : 60,
         integration: s.integration.gateway.status === 'online' ? 90 : 50,
+        identity: e.identity?.mfaEnabledPct || 60,
+        organization: Math.min(100, (e.organization?.branches?.length || 0) * 20 + 20),
+        wallet: e.wallet ? 82 : 40,
       },
     };
   };
@@ -483,6 +613,106 @@ const HubStore = (() => {
     return g;
   };
 
+  // —— Empire / Blueprint engines
+  const advanceCoreModule = (id) => {
+    const m = get().empire.coreModules.find((x) => x.id === id);
+    if (!m) return null;
+    m.progress = Math.min(100, m.progress + 8 + Math.floor(Math.random() * 10));
+    m.status = m.progress >= 100 ? 'ready' : m.progress > 0 ? 'building' : 'planned';
+    pushFeed('architecture', `تقدم Core: ${m.nameAr || m.name} → ${m.progress}%`);
+    save();
+    return m;
+  };
+
+  const advancePriority = (order) => {
+    const p = get().empire.priorities.find((x) => x.order === Number(order));
+    if (!p) return null;
+    p.progress = Math.min(100, p.progress + 10);
+    p.status = p.progress >= 100 ? 'done' : 'in_progress';
+    pushFeed('architecture', `أولوية ${p.order}: ${p.axis} → ${p.progress}%`);
+    save();
+    return p;
+  };
+
+  const topupWallet = (owner, amount) => {
+    const amt = Number(amount) || 0;
+    if (amt <= 0) return null;
+    const w = get().empire.wallet.wallets.find((x) => x.owner === owner) || get().empire.wallet.wallets[0];
+    if (!w) return null;
+    w.balance += amt;
+    get().empire.wallet.treasury += amt;
+    get().empire.wallet.ledger.unshift({
+      id: uid('l'),
+      type: 'topup',
+      party: w.owner,
+      amount: amt,
+      note: 'شحن رصيد نقاط',
+      at: nowIso(),
+    });
+    pushFeed('decision', `شحن محفظة ${w.owner}: +${amt}`);
+    save();
+    return w;
+  };
+
+  const burnPoints = (owner, amount, note = 'استهلاك خدمة') => {
+    const amt = Number(amount) || 0;
+    const w = get().empire.wallet.wallets.find((x) => x.owner === owner) || get().empire.wallet.wallets[0];
+    if (!w || amt <= 0 || w.balance < amt) return null;
+    w.balance -= amt;
+    w.burn30d += amt;
+    get().empire.wallet.ledger.unshift({
+      id: uid('l'),
+      type: 'burn',
+      party: w.owner,
+      amount: -amt,
+      note,
+      at: nowIso(),
+    });
+    pushFeed('decision', `استهلاك نقاط ${w.owner}: -${amt}`);
+    save();
+    return w;
+  };
+
+  const toggleMarketplaceSystem = (id) => {
+    const sys = get().empire.marketplace.catalog.find((x) => x.id === id);
+    if (!sys) return null;
+    if (sys.status === 'active') sys.status = 'stopped';
+    else if (sys.status === 'stopped' || sys.status === 'beta') sys.status = 'active';
+    else sys.status = 'beta';
+    pushFeed('decision', `سوق الأنظمة · ${sys.name}: ${sys.status}`);
+    save();
+    return sys;
+  };
+
+  const addIncubator = (name, sector) => {
+    const item = {
+      id: uid('inc'),
+      name,
+      sector: sector || 'عام',
+      platforms: 0,
+      offices: 0,
+      members: 0,
+      health: 70,
+    };
+    get().empire.organization.incubators.unshift(item);
+    get().empire.command.incubators = Math.max(get().empire.command.incubators, get().empire.organization.incubators.length);
+    pushFeed('architecture', `حاضنة جديدة: ${name}`);
+    save();
+    return item;
+  };
+
+  const refreshCommandStats = () => {
+    const org = get().empire.organization;
+    const cmd = get().empire.command;
+    cmd.branches = org.branches.length;
+    cmd.platforms = Math.max(cmd.platforms, org.platforms.length);
+    cmd.systemsUsagePct = Math.min(99, cmd.systemsUsagePct + Math.floor(Math.random() * 3) - 1);
+    cmd.revenuePoints = get().empire.wallet.treasury;
+    pushFeed('report', 'تحديث مركز التحكم العالمي');
+    save();
+    return cmd;
+  };
+
   const reset = () => {
     state = seed();
     save();
@@ -516,6 +746,13 @@ const HubStore = (() => {
     generateReport,
     toggleConnector,
     pingGateway,
+    advanceCoreModule,
+    advancePriority,
+    topupWallet,
+    burnPoints,
+    toggleMarketplaceSystem,
+    addIncubator,
+    refreshCommandStats,
     REPORT_TITLES,
   };
 })();

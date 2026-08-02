@@ -1,10 +1,15 @@
 (() => {
   const NAV = [
-    { key: 'overview', icon: 'fa-gauge-high', label: 'نظرة عامة' },
+    { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
+    { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
+    { key: 'identity', icon: 'fa-id-card', label: 'NAIOSH ID' },
+    { key: 'organization', icon: 'fa-globe', label: 'الهيكل العالمي' },
+    { key: 'incubators', icon: 'fa-building', label: 'الحاضنات' },
+    { key: 'wallet', icon: 'fa-coins', label: 'محفظة النقاط' },
     { key: 'core', icon: 'fa-brain', label: 'العقل المركزي' },
     { key: 'governance', icon: 'fa-scale-balanced', label: 'الحوكمة' },
     { key: 'workforce', icon: 'fa-users-gear', label: 'القوى العاملة' },
-    { key: 'systems', icon: 'fa-network-wired', label: 'الأنظمة' },
+    { key: 'systems', icon: 'fa-store', label: 'سوق الأنظمة' },
     { key: 'tasks', icon: 'fa-clipboard-list', label: 'المهام' },
     { key: 'measurement', icon: 'fa-chart-simple', label: 'القياس' },
     { key: 'reports', icon: 'fa-scroll', label: 'التقارير' },
@@ -12,15 +17,20 @@
   ];
 
   const TITLES = {
-    overview: ['غرفة العمليات', 'السيادة التشغيلية اللحظية — كل الطبقات'],
+    overview: ['مركز التحكم العالمي', 'Global Command Center — الفروع · الحاضنات · المنصات · النقاط'],
+    blueprint: ['دستور المعمارية الإمبراطورية', 'Central Digital Hub — 5 طبقات · 12 محور · أول 6 أشهر'],
+    identity: ['بوابة الهوية الرقمية', 'NAIOSH ID · SSO · IAM · Role Matrix · MFA'],
+    organization: ['محرك الهيكل المؤسسي', 'دولة ← فرع ← حاضنة ← منصة ← مكتب إلكتروني'],
+    incubators: ['إدارة الحاضنات', '100 حاضنة قطاعية · منصات · مكاتب · أعضاء'],
+    wallet: ['اقتصاد النقاط', 'NAIOSH Wallet — شحن · استهلاك · تسعير · فواتير'],
     core: ['العقل المركزي', 'قرار · تنبؤ · تحسين · شذوذ · خريطة معرفة'],
     governance: ['الحوكمة الدستورية', 'سياسات · امتثال · جودة · عقوبات/مكافآت · دستور'],
     workforce: ['القوى العاملة عن بُعد', 'تتبع · إنتاجية · إنذار · مكافآت'],
-    systems: ['الأنظمة التشغيلية', 'LMS · LXP · ERP · POSHA · Academy · Fit · Workspace'],
+    systems: ['سوق الأنظمة التشغيلية', 'System Marketplace — تفعيل · إيقاف · ربط'],
     tasks: ['المهام والمشاريع', 'توزيع · أولويات · اختناقات · جودة تنفيذ'],
     measurement: ['القياس الموحد', 'درجات · مستويات · مصفوفة · أثر العملاء'],
     reports: ['التقارير السيادية', 'يومي · أسبوعي · شهري · مخاطر · نمو · امتثال'],
-    integration: ['الربط والتكامل', 'API Gateway · داخلي · خارجي · AI · عملاء'],
+    integration: ['الربط والتكامل', 'API Gateway · Event Bus · Connectors'],
   };
 
   const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
@@ -89,6 +99,12 @@
       blocked: 'badge-red',
       done: 'badge-black',
       ready: 'badge-black',
+      building: 'badge-red',
+      planned: 'badge-gray',
+      queued: 'badge-gray',
+      deferred: 'badge-outline',
+      stopped: 'badge-red',
+      beta: 'badge-gray',
       عالي: 'badge-red',
       عاجل: 'badge-red',
       متوسط: 'badge-gray',
@@ -143,10 +159,11 @@
     };
 
     const tl = HubStore.get().timeline;
+    const p0 = HubStore.get().empire?.priorities?.[0];
     $('#sidebar-phase').innerHTML = `
-      <strong>خطة التنفيذ</strong>
-      <div>المرحلة الحالية: ${esc(tl.phase1.name)} · ${tl.phase1.progress}%</div>
-      ${bar(tl.phase1.progress)}
+      <strong>أول 6 أشهر</strong>
+      <div>${p0 ? `P${p0.order}: ${esc(p0.axis)} · ${p0.progress}%` : `${esc(tl.phase1.name)} · ${tl.phase1.progress}%`}</div>
+      ${bar(p0 ? p0.progress : tl.phase1.progress)}
     `;
   };
 
@@ -164,7 +181,25 @@
     const s = HubStore.get();
     const k = HubStore.kpis();
     const lh = k.layerHealth;
+    const cmd = s.empire?.command || {};
     return `
+      <div class="empire-banner">
+        <div>
+          <strong>Central Digital Hub</strong>
+          <p>ليس موقعًا — بل نظام التشغيل العالمي لإمبراطورية نايوش. أي مستخدم يدخل مرة واحدة ويصل فقط لما صُرّح له.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" data-action="refresh-command"><i class="fas fa-rotate"></i> تحديث المؤشرات</button>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi"><span>الفروع</span><strong>${k.branches}</strong><small>Branches</small></article>
+        <article class="kpi"><span>الحاضنات</span><strong>${k.incubators}</strong><small>Incubators</small></article>
+        <article class="kpi"><span>المنصات / الأنظمة</span><strong>${k.platforms}</strong><small>Platforms</small></article>
+        <article class="kpi"><span>المتدربون</span><strong>${Number(k.trainees).toLocaleString('ar-EG')}</strong><small>Trainees</small></article>
+        <article class="kpi"><span>خزينة النقاط</span><strong>${Number(k.treasury).toLocaleString('ar-EG')}</strong><small>Wallet</small></article>
+        <article class="kpi"><span>جاهزية Core</span><strong>${k.coreReadyPct}%</strong><small>Core Platform</small></article>
+        <article class="kpi"><span>استخدام الأنظمة</span><strong>${cmd.systemsUsagePct || 0}%</strong><small>Usage</small></article>
+        <article class="kpi"><span>صحة الأنظمة</span><strong>${k.systemsHealth}%</strong><small>Health</small></article>
+      </div>
       <div class="phase-cards">
         ${['phase1', 'phase2', 'phase3']
           .map((key) => {
@@ -177,12 +212,6 @@
             </article>`;
           })
           .join('')}
-      </div>
-      <div class="kpi-grid">
-        <article class="kpi"><span>قرارات منفّذة</span><strong>${k.decisionsToday}</strong><small>العقل المركزي</small></article>
-        <article class="kpi"><span>الامتثال</span><strong>${k.compliance}%</strong><small>الحوكمة</small></article>
-        <article class="kpi"><span>الإنتاجية</span><strong>${k.productivity}%</strong><small>القوى العاملة</small></article>
-        <article class="kpi"><span>صحة الأنظمة</span><strong>${k.systemsHealth}%</strong><small>التشغيل</small></article>
       </div>
       <div class="grid-2">
         <article class="card">
@@ -197,21 +226,275 @@
           </ul>
         </article>
         <article class="card">
-          <h3><span class="title-left"><i class="fas fa-diagram-project icon"></i> صحة الطبقات</span></h3>
+          <h3><span class="title-left"><i class="fas fa-diagram-project icon"></i> صحة المحاور</span></h3>
           ${Object.entries({
+            'الهوية NAIOSH ID': lh.identity,
+            'الهيكل العالمي': lh.organization,
             'العقل المركزي': lh.core,
             الحوكمة: lh.governance,
-            'القوى العاملة': lh.workforce,
+            'محفظة النقاط': lh.wallet,
             الأنظمة: lh.systems,
-            المهام: lh.tasks,
-            القياس: lh.measurement,
-            التقارير: lh.reports,
             التكامل: lh.integration,
+            القياس: lh.measurement,
           })
             .map(
               ([name, val]) => `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:4px"><span>${name}</span><span>${val}%</span></div>${bar(val)}</div>`
             )
             .join('')}
+        </article>
+      </div>
+    `;
+  };
+
+  const renderBlueprint = () => {
+    const bp = window.EmpireBlueprint;
+    const e = HubStore.get().empire;
+    if (!bp) return `<article class="card"><p>تعذّر تحميل دستور المعمارية.</p></article>`;
+    return `
+      <article class="card empire-verdict">
+        <h3><span class="title-left"><i class="fas fa-crown icon"></i> ${esc(bp.philosophy.title)}</span></h3>
+        <p class="lead">${esc(bp.philosophy.subtitle)}</p>
+        <p>${esc(bp.philosophy.verdict)}</p>
+        <p class="muted">${esc(bp.philosophy.capitalMetaphor)}</p>
+      </article>
+      <h3 class="section-label">الطبقات الخمس</h3>
+      <div class="phase-cards">
+        ${bp.fiveLayers
+          .map(
+            (l) => `<article class="phase-card">
+              <h4>${esc(l.nameAr)}</h4>
+              <small>${esc(l.name)}</small>
+              <ul>${l.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>
+            </article>`
+          )
+          .join('')}
+      </div>
+      <h3 class="section-label">Core Platform — لا نظام قبل اكتمالها</h3>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>المكوّن</th><th>الوصف</th><th>الحالة</th><th>التقدم</th><th></th></tr></thead>
+        <tbody>
+          ${e.coreModules
+            .map(
+              (m) => `<tr>
+                <td><strong>${esc(m.name)}</strong></td>
+                <td>${esc(m.nameAr)}</td>
+                <td>${badgeStatus(m.status)}</td>
+                <td style="min-width:120px">${bar(m.progress)} <small>${m.progress}%</small></td>
+                <td><button class="btn btn-sm btn-primary" data-action="advance-core" data-id="${m.id}">تقدّم</button></td>
+              </tr>`
+            )
+            .join('')}
+        </tbody>
+      </table></div>
+      <h3 class="section-label">أول 6 أشهر — أولويات المبرمجين</h3>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>#</th><th>المحور</th><th>ملاحظة</th><th>الحالة</th><th>التقدم</th><th></th></tr></thead>
+        <tbody>
+          ${e.priorities
+            .map(
+              (p) => `<tr>
+                <td>${p.order}</td>
+                <td><strong>${esc(p.axis)}</strong></td>
+                <td>${esc(p.note)}</td>
+                <td>${badgeStatus(p.status)}</td>
+                <td style="min-width:120px">${bar(p.progress)} <small>${p.progress}%</small></td>
+                <td><button class="btn btn-sm btn-dark" data-action="advance-priority" data-id="${p.order}">دفع</button></td>
+              </tr>`
+            )
+            .join('')}
+        </tbody>
+      </table></div>
+      <h3 class="section-label">12 محورًا رئيسيًا</h3>
+      <div class="axis-grid">
+        ${bp.twelveAxes
+          .map((a) => {
+            const st = e.axes.find((x) => x.id === a.id);
+            return `<article class="axis-card">
+              <div class="axis-num">0${a.priority}</div>
+              <h4>${esc(a.nameAr)}</h4>
+              <small>${esc(a.name)}</small>
+              <div>${bar(st?.progress || 0)}</div>
+              <ul>${a.components.slice(0, 4).map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
+              ${badgeStatus(st?.status || 'planned')}
+            </article>`;
+          })
+          .join('')}
+      </div>
+      <div class="grid-2" style="margin-top:14px">
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-folder-tree icon"></i> شجرة المنصة</span></h3>
+          <ul class="stack-tree">
+            ${bp.stackTree
+              .map(
+                (n) => `<li><strong>${esc(n.nameAr)}</strong> <span>${esc(n.name)}</span><em>${n.children.join(' · ')}</em></li>`
+              )
+              .join('')}
+          </ul>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-file-lines icon"></i> وثائق قبل الكود</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>الوثيقة</th><th>الحالة</th></tr></thead>
+            <tbody>
+              ${e.docs.map((d) => `<tr><td>${esc(d.name)}</td><td>${badgeStatus(d.status)}</td></tr>`).join('')}
+            </tbody>
+          </table></div>
+          <p class="muted" style="margin-top:10px">لا تسويق ولا ذكاء اصطناعي قبل اكتمال الأساسات (Core → Identity → Hierarchy → Roles → Dashboard → Gateway).</p>
+        </article>
+      </div>
+    `;
+  };
+
+  const renderIdentity = () => {
+    const idn = HubStore.get().empire.identity;
+    const bp = window.EmpireBlueprint;
+    return `
+      <div class="kpi-grid">
+        <article class="kpi"><span>المستخدمون</span><strong>${idn.totalUsers.toLocaleString('ar-EG')}</strong><small>NAIOSH ID</small></article>
+        <article class="kpi"><span>جلسات نشطة</span><strong>${idn.activeSessions}</strong><small>SSO</small></article>
+        <article class="kpi"><span>تفعيل MFA</span><strong>${idn.mfaEnabledPct}%</strong><small>Security</small></article>
+        <article class="kpi"><span>الدومينات المربوطة</span><strong>${idn.ssoDomains.length}</strong><small>Single Sign-On</small></article>
+      </div>
+      <div class="grid-2">
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-shield-halved icon"></i> دومينات SSO</span></h3>
+          <ul class="feed">${idn.ssoDomains.map((d) => `<li><b>SSO:</b> ${esc(d)}</li>`).join('')}</ul>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-users icon"></i> مصفوفة الأدوار ولوحات التحكم</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>الدور</th><th>النطاق</th><th>المستخدمون</th></tr></thead>
+            <tbody>
+              ${idn.roles
+                .map((r) => `<tr><td>${esc(r.nameAr)}</td><td>${esc(r.scope)}</td><td>${r.users.toLocaleString('ar-EG')}</td></tr>`)
+                .join('')}
+            </tbody>
+          </table></div>
+        </article>
+      </div>
+      <article class="card" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-key icon"></i> مكوّنات الهوية (من الدستور)</span></h3>
+        <div class="chip-row">
+          ${(bp?.getAxis('naiosh-id')?.components || []).map((c) => `<span class="chip">${esc(c)}</span>`).join('')}
+        </div>
+      </article>
+    `;
+  };
+
+  const renderOrganization = () => {
+    const org = HubStore.get().empire.organization;
+    return `
+      <div class="chain-row">
+        ${org.chain.map((c, i) => `<span class="chain-node">${esc(c)}</span>${i < org.chain.length - 1 ? '<i class="fas fa-arrow-left chain-arrow"></i>' : ''}`).join('')}
+      </div>
+      <div class="grid-2">
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-flag icon"></i> الدول</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>الدولة</th><th>الكود</th><th>الفروع</th><th>الحالة</th></tr></thead>
+            <tbody>
+              ${org.countries
+                .map((c) => `<tr><td>${esc(c.name)}</td><td>${esc(c.code)}</td><td>${c.branches}</td><td>${badgeStatus(c.status)}</td></tr>`)
+                .join('')}
+            </tbody>
+          </table></div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-code-branch icon"></i> الفروع</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>الفرع</th><th>الدولة</th><th>حاضنات</th><th>المدير</th></tr></thead>
+            <tbody>
+              ${org.branches
+                .map((b) => `<tr><td>${esc(b.name)}</td><td>${esc(b.country)}</td><td>${b.incubators}</td><td>${esc(b.manager)}</td></tr>`)
+                .join('')}
+            </tbody>
+          </table></div>
+        </article>
+      </div>
+      <article class="card" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-layer-group icon"></i> المنصات</span></h3>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>المنصة</th><th>الحاضنة</th><th>المكاتب</th><th>الحالة</th></tr></thead>
+          <tbody>
+            ${org.platforms
+              .map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.incubator)}</td><td>${p.offices}</td><td>${badgeStatus(p.status)}</td></tr>`)
+              .join('')}
+          </tbody>
+        </table></div>
+      </article>
+    `;
+  };
+
+  const renderIncubators = () => {
+    const org = HubStore.get().empire.organization;
+    return `
+      <div class="toolbar">
+        <div class="field"><label>اسم الحاضنة</label><input id="inc-name" placeholder="حاضنة القطاع…" /></div>
+        <div class="field"><label>القطاع</label><input id="inc-sector" placeholder="تعليم / صحة / قانون…" /></div>
+        <button class="btn btn-primary" data-action="add-incubator"><i class="fas fa-plus"></i> إنشاء حاضنة</button>
+      </div>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>الحاضنة</th><th>القطاع</th><th>منصات</th><th>مكاتب</th><th>أعضاء</th><th>الصحة</th></tr></thead>
+        <tbody>
+          ${org.incubators
+            .map(
+              (i) => `<tr>
+                <td><strong>${esc(i.name)}</strong></td>
+                <td>${esc(i.sector)}</td>
+                <td>${i.platforms}</td>
+                <td>${i.offices}</td>
+                <td>${i.members}</td>
+                <td style="min-width:110px">${bar(i.health)} <small>${i.health}%</small></td>
+              </tr>`
+            )
+            .join('')}
+        </tbody>
+      </table></div>
+    `;
+  };
+
+  const renderWallet = () => {
+    const w = HubStore.get().empire.wallet;
+    return `
+      <div class="kpi-grid">
+        <article class="kpi"><span>خزينة الإمبراطورية</span><strong>${w.treasury.toLocaleString('ar-EG')}</strong><small>نقطة</small></article>
+        <article class="kpi"><span>محافظ نشطة</span><strong>${w.wallets.length}</strong><small>Wallets</small></article>
+        <article class="kpi"><span>خدمات مسعّرة</span><strong>${w.pricing.length}</strong><small>Pricing</small></article>
+        <article class="kpi"><span>حركات السجل</span><strong>${w.ledger.length}</strong><small>Ledger</small></article>
+      </div>
+      <div class="toolbar">
+        <div class="field"><label>المحفظة</label>
+          <select id="wallet-owner">${w.wallets.map((x) => `<option>${esc(x.owner)}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>المبلغ</label><input id="wallet-amount" type="number" value="1000" /></div>
+        <button class="btn btn-primary" data-action="wallet-topup"><i class="fas fa-plus"></i> شحن</button>
+        <button class="btn btn-dark" data-action="wallet-burn"><i class="fas fa-fire"></i> استهلاك</button>
+      </div>
+      <div class="grid-2">
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-wallet icon"></i> المحافظ</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>المالك</th><th>الرصيد</th><th>استهلاك 30 يوم</th></tr></thead>
+            <tbody>
+              ${w.wallets
+                .map((x) => `<tr><td>${esc(x.owner)}</td><td>${x.balance.toLocaleString('ar-EG')}</td><td>${x.burn30d.toLocaleString('ar-EG')}</td></tr>`)
+                .join('')}
+            </tbody>
+          </table></div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-tags icon"></i> تسعير الخدمات</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>الخدمة</th><th>التكلفة بالنقاط</th></tr></thead>
+            <tbody>${w.pricing.map((p) => `<tr><td>${esc(p.service)}</td><td>${p.cost}</td></tr>`).join('')}</tbody>
+          </table></div>
+          <h3 style="margin-top:14px"><span class="title-left"><i class="fas fa-receipt icon"></i> السجل</span></h3>
+          <ul class="feed">
+            ${w.ledger
+              .slice(0, 8)
+              .map((l) => `<li><b>${esc(l.type)}:</b> ${esc(l.party)} · ${l.amount} — ${esc(l.note)}<small>${fmtTime(l.at)}</small></li>`)
+              .join('')}
+          </ul>
         </article>
       </div>
     `;
@@ -445,13 +728,33 @@
 
   const renderSystems = () => {
     const s = HubStore.get().systems;
+    const market = HubStore.get().empire.marketplace;
     return `
       <div class="toolbar">
         <button class="btn btn-primary" data-action="sync-all"><i class="fas fa-sync"></i> مزامنة كل الأنظمة</button>
       </div>
+      <article class="card" style="margin-bottom:12px">
+        <h3><span class="title-left"><i class="fas fa-store icon"></i> System Marketplace</span></h3>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>النظام</th><th>التصنيف</th><th>المستأجرون</th><th>الحالة</th><th></th></tr></thead>
+          <tbody>
+            ${market.catalog
+              .map(
+                (sys) => `<tr>
+                  <td><strong>${esc(sys.name)}</strong></td>
+                  <td>${esc(sys.category)}</td>
+                  <td>${sys.tenants}</td>
+                  <td>${badgeStatus(sys.status)}</td>
+                  <td><button class="btn btn-sm btn-dark" data-action="toggle-market" data-id="${sys.id}">تفعيل/إيقاف</button></td>
+                </tr>`
+              )
+              .join('')}
+          </tbody>
+        </table></div>
+      </article>
       <div class="grid-2">
         <article class="card">
-          <h3><span class="title-left"><i class="fas fa-server icon"></i> سجل الأنظمة</span></h3>
+          <h3><span class="title-left"><i class="fas fa-server icon"></i> صحة التشغيل اللحظية</span></h3>
           <div class="table-wrap"><table class="data">
             <thead><tr><th>النظام</th><th>الصحة</th><th>الحالة</th><th>آخر مزامنة</th><th></th></tr></thead>
             <tbody>
@@ -694,6 +997,11 @@
 
   const renderers = {
     overview: renderOverview,
+    blueprint: renderBlueprint,
+    identity: renderIdentity,
+    organization: renderOrganization,
+    incubators: renderIncubators,
+    wallet: renderWallet,
     core: renderCore,
     governance: renderGovernance,
     workforce: renderWorkforce,
@@ -826,6 +1134,44 @@
         break;
       case 'refresh-feed':
         toast('التدفق محدّث');
+        break;
+      case 'refresh-command':
+        HubStore.refreshCommandStats();
+        toast('تحدّث مركز التحكم');
+        break;
+      case 'advance-core':
+        HubStore.advanceCoreModule(id);
+        toast('تقدّم مكوّن Core Platform');
+        break;
+      case 'advance-priority':
+        HubStore.advancePriority(id);
+        toast('دُفعت أولوية التنفيذ');
+        break;
+      case 'add-incubator': {
+        const name = $('#inc-name')?.value.trim();
+        const sector = $('#inc-sector')?.value.trim();
+        if (!name) return toast('اسم الحاضنة مطلوب');
+        HubStore.addIncubator(name, sector);
+        toast('أُنشئت حاضنة');
+        break;
+      }
+      case 'wallet-topup': {
+        const owner = $('#wallet-owner')?.value;
+        const amount = $('#wallet-amount')?.value;
+        if (!HubStore.topupWallet(owner, amount)) return toast('تعذّر الشحن');
+        toast('تم شحن المحفظة');
+        break;
+      }
+      case 'wallet-burn': {
+        const owner = $('#wallet-owner')?.value;
+        const amount = $('#wallet-amount')?.value;
+        if (!HubStore.burnPoints(owner, amount)) return toast('رصيد غير كافٍ أو مبلغ غير صالح');
+        toast('تم استهلاك النقاط');
+        break;
+      }
+      case 'toggle-market':
+        HubStore.toggleMarketplaceSystem(id);
+        toast('تحدّثت حالة النظام في السوق');
         break;
       default:
         break;
