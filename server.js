@@ -4,7 +4,8 @@ const path = require('path');
 const { URL } = require('url');
 
 const PORT = Number(process.env.PORT) || 3600;
-const ROOT = __dirname;
+const HOST = '0.0.0.0';
+const ROOT = path.resolve(__dirname);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -26,12 +27,22 @@ function send(res, status, body, headers = {}) {
   res.end(body);
 }
 
+function resolveSafePath(pathname) {
+  const relative = decodeURIComponent(pathname).replace(/^\/+/, '');
+  const filePath = path.resolve(ROOT, relative || 'index.html');
+  const rootWithSep = ROOT.endsWith(path.sep) ? ROOT : ROOT + path.sep;
+  if (filePath !== ROOT && !filePath.startsWith(rootWithSep)) {
+    return null;
+  }
+  return filePath;
+}
+
 function serveStatic(req, res) {
   let pathname = new URL(req.url, 'http://localhost').pathname;
   if (pathname === '/') pathname = '/index.html';
 
-  const filePath = path.normalize(path.join(ROOT, pathname));
-  if (!filePath.startsWith(ROOT)) {
+  const filePath = resolveSafePath(pathname);
+  if (!filePath) {
     return send(res, 403, 'Forbidden');
   }
 
@@ -80,31 +91,52 @@ async function checkDatabase() {
   }
 }
 
-const server = http.createServer(async (req, res) => {
+const server = http.createServer((req, res) => {
   const pathname = new URL(req.url, 'http://localhost').pathname;
 
   if (pathname === '/api/health') {
-    const db = await checkDatabase();
-    return send(
-      res,
-      200,
-      JSON.stringify({
-        ok: true,
-        service: 'naiosh-hub',
-        database: db,
-        time: new Date().toISOString(),
-      }),
-      {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'no-store',
-      }
-    );
+    checkDatabase()
+      .then((db) => {
+        send(
+          res,
+          200,
+          JSON.stringify({
+            ok: true,
+            service: 'naiosh-hub',
+            database: db,
+            time: new Date().toISOString(),
+          }),
+          {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'no-store',
+          }
+        );
+      })
+      .catch((error) => {
+        send(
+          res,
+          500,
+          JSON.stringify({ ok: false, error: error.message }),
+          { 'Content-Type': 'application/json; charset=utf-8' }
+        );
+      });
+    return;
   }
 
   serveStatic(req, res);
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Naiosh Hub listening on 0.0.0.0:${PORT}`);
-  console.log(`DATABASE_URL: ${process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL ? 'set' : 'not set'}`);
+server.on('error', (error) => {
+  console.error('Server error:', error);
+  process.exit(1);
+});
+
+server.listen(PORT, HOST, () => {
+  console.log(`Naiosh Hub listening on http://${HOST}:${PORT}`);
+  console.log(`ROOT: ${ROOT}`);
+  console.log(
+    `DATABASE_URL: ${
+      process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL ? 'set' : 'not set'
+    }`
+  );
 });
