@@ -732,18 +732,18 @@ body.homepage .hero.law-hero .hero-orb {
 
 /* ========== Full-width card grids (no side gap) ========== */
 body.homepage #layers.container {
-  max-width: 1220px !important;
-  width: min(1220px, calc(100% - 2.5rem)) !important;
-  margin-inline: auto !important;
-  padding-inline: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+  margin-inline: 0 !important;
+  padding-inline: 0.75rem !important;
 }
 
 body.homepage #layers .cards,
 body.homepage #layers .hub-layer-grid {
   display: grid !important;
   width: 100% !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 1.25rem !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
   margin-bottom: 2rem;
 }
 
@@ -769,7 +769,7 @@ body.homepage #layers .section-head p {
   margin-inline: 0 !important;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
   body.homepage #layers .cards,
   body.homepage #layers .hub-layer-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
