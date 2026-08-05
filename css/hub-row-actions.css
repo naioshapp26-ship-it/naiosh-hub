@@ -330,6 +330,8 @@
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
+  max-width: min(92vw, 420px);
+  text-align: center;
 }
 
 .hub-toast-mini.show {
@@ -369,5 +371,9 @@
 
   .hub-erp-btn {
     min-height: 42px;
+  }
+
+  .hub-toast-mini {
+    bottom: 72px;
   }
 }

@@ -492,8 +492,11 @@ table.data tr:hover td { background: #fafafa; }
     margin-inline-start: auto;
   }
   .user-meta { text-align: right; }
-  .topbar-actions .btn .btn-label-full {
-    display: none;
+  .topbar-actions .btn {
+    padding: 8px 10px;
+  }
+  .topbar-actions .btn i {
+    margin: 0;
   }
   .grid-2,
   .grid-3,
