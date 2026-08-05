@@ -1322,28 +1322,130 @@ const HubStore = (() => {
     return item;
   };
 
+  const normalizeList = (value) => {
+    if (Array.isArray(value)) return value.map((s) => String(s).trim()).filter(Boolean);
+    return String(value || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  };
+
+  const normalizePublishTargets = (payload = {}) => {
+    const fromObj = payload.publishTargets && typeof payload.publishTargets === 'object' ? payload.publishTargets : null;
+    const home =
+      payload.publishHome === true ||
+      payload.publishHome === '1' ||
+      !!fromObj?.home ||
+      normalizeList(payload.appearancePlaces).includes('home');
+    const branches = normalizeList(fromObj?.branches || payload.targetBranches);
+    const incubators = normalizeList(fromObj?.incubators || payload.targetIncubators);
+    const platforms = normalizeList(fromObj?.platforms || payload.targetPlatforms);
+    return { home, branches, incubators, platforms };
+  };
+
+  const deriveAdScope = (targets) => {
+    const hits = [];
+    if (targets.home) hits.push('home');
+    if (targets.branches.length) hits.push('branches');
+    if (targets.incubators.length) hits.push('incubators');
+    if (targets.platforms.length) hits.push('platforms');
+    if (!hits.length) return 'platforms';
+    if (hits.length === 1) return hits[0];
+    return 'multi';
+  };
+
+  const adMatchesScope = (ad, scope) => {
+    if (!scope) return true;
+    const t = ad.publishTargets;
+    if (t && typeof t === 'object') {
+      if (scope === 'home') return !!t.home;
+      if (scope === 'branches') return (t.branches || []).length > 0 || ad.scope === 'branches';
+      if (scope === 'incubators') return (t.incubators || []).length > 0 || ad.scope === 'incubators';
+      if (scope === 'platforms') return (t.platforms || []).length > 0 || ad.scope === 'platforms';
+      if (scope === 'multi') return deriveAdScope(t) === 'multi';
+    }
+    return (ad.scope || 'platforms') === scope;
+  };
+
+  const adMatchesTarget = (ad, kind, name = '') => {
+    if (!ad) return false;
+    if (ad.publishStatus === 'deferred' || ad.publishStatus === 'draft') return false;
+    if (ad.status && ad.status !== 'active') return false;
+
+    const t = ad.publishTargets;
+    if (!t || typeof t !== 'object') {
+      if (kind === 'home') return normalizeList(ad.appearancePlaces).includes('home') || ad.scope === 'home';
+      return (ad.scope || 'platforms') === kind;
+    }
+    if (kind === 'home') return !!t.home;
+    const list = t[kind] || [];
+    if (!list.length) return false;
+    if (list.includes('*') || list.includes('all')) return true;
+    if (!name) return true;
+    return list.includes(name);
+  };
+
+  const listAdsFor = (kind, name = '') => {
+    const listings = get().empire?.adsStudio?.listings || [];
+    return listings.filter((ad) => adMatchesTarget(ad, kind, name));
+  };
+
   const addAdListing = (payload) => {
     const studio = get().empire.adsStudio;
     if (!studio) return null;
+    const publishStatus = payload.publishStatus || 'published';
+    const statusMap = {
+      published: 'active',
+      deferred: 'paused',
+      draft: 'paused',
+    };
+    const appearancePlaces = normalizeList(payload.appearancePlaces);
+    const socialShares = normalizeList(payload.socialShares);
+    const publishTargets = normalizePublishTargets(payload);
+    if (!publishTargets.home && !publishTargets.branches.length && !publishTargets.incubators.length && !publishTargets.platforms.length) {
+      // fallback: use single branch/incubator/platform from common meta + ads studio
+      if (payload.branch) publishTargets.branches = [payload.branch];
+      if (payload.incubator) publishTargets.incubators = [payload.incubator];
+      if (payload.platform) publishTargets.platforms = [payload.platform];
+      if (!publishTargets.branches.length && !publishTargets.incubators.length && !publishTargets.platforms.length) {
+        publishTargets.platforms = ['*'];
+      }
+    }
+    const productType = payload.productType || payload.itemKind || 'رقمية';
+    const desc = payload.desc || payload.description || payload.content || '';
     const ad = {
       id: uid('ad'),
       title: payload.title,
-      content: payload.content || '',
+      content: desc,
+      desc,
       price: Number(payload.price) || 0,
       category: payload.category || 'عام',
+      subcategory: payload.subcategory || '',
+      productType,
+      itemKind: productType,
       platformCode: payload.platformCode || '',
       productId: payload.productId || '',
       views: 0,
       impressions: 0,
       clicks: 0,
-      status: 'active',
+      status: statusMap[publishStatus] || payload.status || 'active',
+      publishStatus,
       level: payload.level || 'متوسط',
-      type: payload.type || 'منتج منصة',
-      scope: payload.scope || 'platforms',
+      type: payload.type || productType || 'منتج منصة',
+      brand: payload.brand || payload.companyName || 'نايوش هوب',
+      adStartDate: payload.adStartDate || '',
+      adEndDate: payload.adEndDate || '',
+      appearancePlaces,
+      socialShares,
+      publishTargets,
+      scope: payload.scope || deriveAdScope(publishTargets),
+      assignee: '',
       ...pickCommonMeta(payload),
     };
     studio.listings.unshift(ad);
-    pushFeed('decision', `إعلان جديد: ${ad.title}`);
+    const label =
+      publishStatus === 'deferred' ? 'تأجيل نشر إعلان' : publishStatus === 'draft' ? 'مسودة إعلان' : 'إعلان جديد';
+    pushFeed('decision', `${label}: ${ad.title}`);
     save();
     return ad;
   };
@@ -1686,6 +1788,9 @@ const HubStore = (() => {
     addStoreItem,
     linkStoreMarketplace,
     addAdListing,
+    listAdsFor,
+    adMatchesScope,
+    adMatchesTarget,
     toggleAd,
     addEvent,
     addProduct,

@@ -51,6 +51,7 @@
     adEndDate: 'تاريخ نهاية الإعلان',
     appearancePlaces: 'مكان ظهور الإعلان',
     socialShares: 'مشاركة منصات نايوش',
+    publishTargets: 'مكان رفع الإعلان',
     companyName: 'اسم الشركة',
     companyAddress: 'عنوان الشركة',
     content: 'المحتوى',
@@ -619,14 +620,45 @@
       save: (v) => window.HubStore.addStoreItem({ ...v, name: v.title, mirrorToCatalog: true }),
     },
     ads: {
-      title: 'إضافة إعلان',
+      title: 'رفع إعلان نايوش',
       fields: [
         { id: 'title', label: 'عنوان الإعلان', required: true },
+        { id: 'brand', label: 'العلامة / العلامة التجارية', value: 'نايوش هوب' },
+        {
+          id: 'productType',
+          label: 'نوع المنتج',
+          type: 'select',
+          required: true,
+          options: [
+            { value: 'رقمية', label: 'رقمية' },
+            { value: 'خدمية', label: 'خدمية' },
+            { value: 'عينية', label: 'عينية' },
+          ],
+          value: 'رقمية',
+        },
+        {
+          id: 'category',
+          label: 'التصنيف',
+          type: 'select',
+          required: true,
+          optionsFrom: 'storeCategories',
+          value: 'إعلانات',
+        },
+        {
+          id: 'subcategory',
+          label: 'التصنيف الفرعي',
+          type: 'select',
+          optionsFrom: 'subcategories',
+          value: '',
+        },
         { id: 'price', label: 'السعر', value: '1000', type: 'number' },
-        { id: 'category', label: 'التصنيف', value: 'عام' },
-        { id: 'content', label: 'المحتوى', value: 'إعلان منتج منصة' },
+        { id: 'adStartDate', label: 'تاريخ بداية الإعلان', type: 'date', required: true, value: new Date().toISOString().slice(0, 10) },
+        { id: 'adEndDate', label: 'تاريخ نهاية الإعلان', type: 'date', required: true, value: '' },
+        { id: 'desc', label: 'شرح مبسط عن المنتج / الإعلان', type: 'textarea', required: true, value: '' },
       ],
-      save: (v) => window.HubStore.addAdListing(v),
+      includeProductExtras: true,
+      includeAdTargets: true,
+      save: (v) => window.HubStore.addAdListing?.(v),
     },
     events: {
       title: 'إضافة فعالية',
@@ -833,6 +865,69 @@
     );
   };
 
+  const groupMultiHtml = (title, idPrefix, options, selectAllLabel) => `
+    <div class="hub-ad-target-group">
+      <div class="hub-ad-target-head">
+        <strong>${esc(title)}</strong>
+        <label class="hub-ad-select-all">
+          <input type="checkbox" data-ad-select-all="${esc(idPrefix)}" />
+          ${esc(selectAllLabel)}
+        </label>
+      </div>
+      <div class="hub-multi-grid" data-ad-group="${esc(idPrefix)}">
+        ${options
+          .map(
+            (name) => `<label class="hub-multi-chip">
+              <input type="checkbox" data-ad-target="${esc(idPrefix)}" value="${esc(name)}" />
+              <span>${esc(name)}</span>
+            </label>`
+          )
+          .join('')}
+      </div>
+    </div>`;
+
+  const adTargetsFormHtml = () => {
+    const opts = hierarchyOptions();
+    return `<div class="hub-form-block hub-ad-targets-block">
+      <h4><i class="fas fa-bullhorn"></i> مكان رفع الإعلان</h4>
+      <p class="hub-form-hint">ارفع الإعلان على الصفحة الرئيسية و/أو فرع أو أكثر و/أو حاضنة أو أكثر و/أو منصة أو أكثر</p>
+      <label class="hub-multi-chip hub-ad-home-chip">
+        <input type="checkbox" id="hub-ad-target-home" value="home" />
+        <span><i class="fas fa-house"></i> الصفحة الرئيسية</span>
+      </label>
+      ${groupMultiHtml('الفروع', 'branches', opts.branches, 'كل الفروع')}
+      ${groupMultiHtml('الحاضنات', 'incubators', opts.incubators, 'كل الحاضنات')}
+      ${groupMultiHtml('المنصات', 'platforms', opts.platforms, 'كل المنصات')}
+    </div>`;
+  };
+
+  const collectAdTargets = () => {
+    const home = !!document.getElementById('hub-ad-target-home')?.checked;
+    const pick = (prefix) => {
+      const all = document.querySelector(`input[data-ad-select-all="${prefix}"]`)?.checked;
+      if (all) return ['*'];
+      return Array.from(document.querySelectorAll(`input[data-ad-target="${prefix}"]:checked`)).map((el) => el.value);
+    };
+    return {
+      home,
+      branches: pick('branches'),
+      incubators: pick('incubators'),
+      platforms: pick('platforms'),
+    };
+  };
+
+  const wireAdTargetSelectAll = () => {
+    document.querySelectorAll('input[data-ad-select-all]').forEach((master) => {
+      master.addEventListener('change', () => {
+        const prefix = master.dataset.adSelectAll;
+        document.querySelectorAll(`input[data-ad-target="${prefix}"]`).forEach((el) => {
+          el.checked = master.checked;
+          el.disabled = master.checked;
+        });
+      });
+    });
+  };
+
   const marketplaceFormHtml = () => {
     const list = window.HubMarketplaceData?.MARKETPLACE_CONNECTORS || [];
     if (!list.length) return '';
@@ -875,7 +970,9 @@
   const collectMulti = (prefix) =>
     Array.from(document.querySelectorAll(`input[data-multi="${prefix}"]:checked`)).map((el) => el.value);
 
-  const saveProductForm = async (form, publishStatus) => {
+  const saveProductForm = async (form, publishStatus) => savePublishableForm('products', form, publishStatus);
+
+  const savePublishableForm = async (entity, form, publishStatus) => {
     const values = {};
     for (const f of form.fields) {
       values[f.id] = document.getElementById(`hub-add-${f.id}`)?.value.trim() || '';
@@ -892,7 +989,6 @@
     if (form.includeProductExtras && !socialShares.length) {
       return toast('اختر منصة تواصل واحدة على الأقل أو كل المنصات');
     }
-    // If "all" selected, expand to all social ids except "all"
     if (socialShares.includes('all')) {
       values.socialShares = (window.HubMarketplaceData?.HUB_SOCIAL_PLATFORMS || [])
         .filter((s) => s.id !== 'all')
@@ -902,50 +998,70 @@
     }
     values.appearancePlaces = appearancePlaces;
     values.publishStatus = publishStatus;
+
+    if (form.includeAdTargets) {
+      const publishTargets = collectAdTargets();
+      const hasTarget =
+        publishTargets.home ||
+        publishTargets.branches.length ||
+        publishTargets.incubators.length ||
+        publishTargets.platforms.length;
+      if (!hasTarget) return toast('اختر مكان رفع الإعلان: الرئيسية أو فرع/حاضنة/منصة');
+      values.publishTargets = publishTargets;
+      values.publishHome = publishTargets.home;
+      values.targetBranches = publishTargets.branches;
+      values.targetIncubators = publishTargets.incubators;
+      values.targetPlatforms = publishTargets.platforms;
+    }
+
     const meta = await collectCommonMeta();
     if (meta.error) return toast(meta.error);
     Object.assign(values, meta);
     if (!values.brand && values.companyName) values.brand = values.companyName;
+    if (entity === 'ads' && !values.content) values.content = values.desc || '';
     const ok = form.save(values);
     if (!ok) return toast('تعذّرت الإضافة');
     closeModal();
+    const noun = entity === 'ads' ? 'الإعلان' : 'المنتج';
     const msg =
       publishStatus === 'deferred'
-        ? 'تم تأجيل نشر المنتج'
+        ? `تم تأجيل نشر ${noun}`
         : publishStatus === 'draft'
-          ? 'تم حفظ المسودة'
-          : 'تم حفظ ونشر المنتج';
+          ? `تم حفظ مسودة ${noun}`
+          : `تم حفظ ونشر ${noun}`;
     toast(msg);
-    afterChange('products', 'add');
+    afterChange(entity, 'add');
   };
 
   const openAdd = (entity) => {
     const form = ADD_FORMS[entity];
     if (!form) return toast('استخدم نموذج الإضافة في الصفحة');
-    const isProduct = entity === 'products';
+    const isPublishable = entity === 'products' || entity === 'ads';
     const defaultEnd = new Date();
     defaultEnd.setDate(defaultEnd.getDate() + 30);
-    if (isProduct) {
+    if (isPublishable) {
       const endField = form.fields.find((f) => f.id === 'adEndDate');
       if (endField && !endField.value) endField.value = defaultEnd.toISOString().slice(0, 10);
     }
+    const kickers = {
+      products: 'منتجات رقمية · خدمية · عينية — توجيه حسب التصنيف والنوع عبر الفروع والحاضنات والمنصات',
+      ads: 'رفع الإعلان على الرئيسية و/أو الفروع و/أو الحاضنات و/أو المنصات — نموذج مطابق للمنتجات',
+      store: 'نموذج رفع على المتجر — مطابق لنموذج المنتجات',
+    };
     openModal({
       title: form.title,
-      kicker: isProduct
-        ? 'منتجات رقمية · خدمية · عينية — توجيه حسب التصنيف والنوع عبر الفروع والحاضنات والمنصات'
-        : entity === 'store'
-          ? 'نموذج رفع على المتجر — مطابق لنموذج المنتجات'
-          : 'نموذج إضافة جديد — حقول هوب الإلزامية',
+      kicker: kickers[entity] || 'نموذج إضافة جديد — حقول هوب الإلزامية',
       body: `<div class="hub-form-block">
         <h4><i class="fas fa-plus-circle"></i> بيانات ${esc(ENTITY_LABELS[entity] || 'السجل')}</h4>
         <div class="hub-form-grid">
         ${form.fields.map((f) => fieldHtml(f)).join('')}
         </div>
       </div>
+      ${form.includeAdTargets ? adTargetsFormHtml() : ''}
       ${form.includeProductExtras ? productExtrasFormHtml() : ''}
       ${form.includeMarketplaces ? marketplaceFormHtml() : ''}
       ${commonMetaFormHtml()}`,
-      foot: isProduct
+      foot: isPublishable
         ? `
         <button type="button" class="hub-erp-btn ghost" data-hub-modal-close title="إلغاء"><i class="fas fa-xmark"></i> إلغاء</button>
         <button type="button" class="hub-erp-btn slate" id="hub-add-defer" title="تأجيل النشر"><i class="fas fa-clock"></i> تأجيل النشر</button>
@@ -962,6 +1078,8 @@
       catSel.addEventListener('change', () => fillSubcategories(catSel.value));
     }
 
+    if (form.includeAdTargets) wireAdTargetSelectAll();
+
     // social "all" exclusivity
     document.getElementById('social-grid')?.addEventListener('change', (e) => {
       const t = e.target;
@@ -977,7 +1095,7 @@
     });
 
     document.getElementById('hub-add-save')?.addEventListener('click', async () => {
-      if (isProduct) return saveProductForm(form, 'published');
+      if (isPublishable) return savePublishableForm(entity, form, 'published');
       const values = {};
       for (const f of form.fields) {
         values[f.id] = document.getElementById(`hub-add-${f.id}`)?.value.trim() || '';
@@ -1004,7 +1122,7 @@
     });
 
     document.getElementById('hub-add-defer')?.addEventListener('click', async () => {
-      if (isProduct) return saveProductForm(form, 'deferred');
+      if (isPublishable) return savePublishableForm(entity, form, 'deferred');
     });
   };
 

@@ -185,14 +185,20 @@
 
   const renderAds = () => {
     const scopeTitles = {
+      home: 'اعلانات الصفحة الرئيسية',
       branches: 'اعلانات الفروع',
       incubators: 'اعلانات الحاضنات',
       platforms: 'اعلانات المنصات',
+      multi: 'اعلانات متعددة النطاق',
     };
     const scopeParam = new URLSearchParams(window.location.search).get('scope') || '';
-    const allListings = (store?.get?.().empire?.adsStudio?.listings || data.ADS).filter((a) => a.status === 'active');
+    const allListings = (store?.get?.().empire?.adsStudio?.listings || data.ADS).filter(
+      (a) => a.status === 'active' && a.publishStatus !== 'deferred' && a.publishStatus !== 'draft'
+    );
     const listings = scopeParam
-      ? allListings.filter((a) => (a.scope || 'platforms') === scopeParam)
+      ? allListings.filter((a) =>
+          window.HubStore?.adMatchesScope ? window.HubStore.adMatchesScope(a, scopeParam) : (a.scope || 'platforms') === scopeParam
+        )
       : allListings;
     const root = document.getElementById('ads-grid');
     const tabs = document.getElementById('market-tabs');
@@ -209,6 +215,17 @@
       heroDesc.textContent = `عرض إعلانات ${scopeTitles[scopeParam].replace('اعلانات ', '')} داخل هوب — مرتبطة بالتشغيل والمبيعات والظهور الموحّد.`;
     }
 
+    const targetBadge = (a) => {
+      const t = a.publishTargets || {};
+      const bits = [];
+      if (t.home) bits.push('الرئيسية');
+      if ((t.branches || []).length) bits.push('فروع');
+      if ((t.incubators || []).length) bits.push('حاضنات');
+      if ((t.platforms || []).length) bits.push('منصات');
+      if (!bits.length && a.scope) bits.push(scopeTitles[a.scope]?.replace('اعلانات ', '') || a.scope);
+      return bits.join(' · ') || 'منصات';
+    };
+
     const paint = () => {
       const list = active === 'all' ? listings : listings.filter((a) => a.category === active);
       root.innerHTML = list.length
@@ -216,15 +233,16 @@
             .map(
               (a) => `<article class="ads-item-card">
             <div class="ads-item-media">
-              <i class="fas fa-rectangle-ad" style="font-size:28px"></i>
-              <span>${esc(a.type || 'إعلان')}</span>
-              <small>${esc(a.platformCode || '')}</small>
+              ${a.imageDataUrl ? `<img src="${esc(a.imageDataUrl)}" alt="" />` : `<i class="fas fa-rectangle-ad" style="font-size:28px"></i>`}
+              <span>${esc(a.productType || a.type || 'إعلان')}</span>
+              <small>${esc(a.platformCode || a.platform || '')}</small>
             </div>
             <div class="ads-item-body">
               <p class="ads-price">${Number(a.price || 0).toLocaleString('ar-EG')} ر.س</p>
               <h3 class="ads-item-title">${esc(a.title)}</h3>
-              <p class="ads-meta">${esc(a.content)}</p>
-              <p class="ads-meta" style="margin-top:8px">${Number(a.views || 0).toLocaleString('ar-EG')} مشاهدة · ${esc(a.category)}</p>
+              <p class="ads-meta">${esc(a.desc || a.content || '')}</p>
+              <p class="ads-meta" style="margin-top:8px">${esc(a.category || '')}${a.subcategory ? ' / ' + esc(a.subcategory) : ''} · ${esc(targetBadge(a))}</p>
+              <p class="ads-meta">${Number(a.views || 0).toLocaleString('ar-EG')} مشاهدة${a.adStartDate ? ` · ${esc(a.adStartDate)} → ${esc(a.adEndDate || '—')}` : ''}</p>
               ${metaLine(a)}
               <div style="margin-top:10px">
                 <a class="btn-mini primary" href="products.html">عرض المنتجات</a>
@@ -239,12 +257,29 @@
     };
 
     if (catsRoot) {
-      catsRoot.innerHTML = data.AD_CATEGORIES.map(
-        (c) => `<button type="button" class="market-card" data-cat="${esc(c.id)}" style="cursor:pointer;text-align:center">
+      const scopes = window.HubMarketplaceData?.AD_PUBLISH_SCOPES || [
+        { id: 'home', nameAr: 'الرئيسية', icon: 'fa-house' },
+        { id: 'branches', nameAr: 'الفروع', icon: 'fa-code-branch' },
+        { id: 'incubators', nameAr: 'الحاضنات', icon: 'fa-seedling' },
+        { id: 'platforms', nameAr: 'المنصات', icon: 'fa-layer-group' },
+      ];
+      catsRoot.innerHTML =
+        scopes
+          .map(
+            (c) => `<a class="market-card" href="ads.html?scope=${esc(c.id)}" style="text-align:center;text-decoration:none">
+          <div class="card-icon" style="margin:0 auto"><i class="fas ${esc(c.icon)}"></i></div>
+          <h3>${esc(c.nameAr)}</h3>
+        </a>`
+          )
+          .join('') +
+        data.AD_CATEGORIES.filter((c) => c.id !== 'all')
+          .map(
+            (c) => `<button type="button" class="market-card" data-cat="${esc(c.id)}" style="cursor:pointer;text-align:center">
           <div class="card-icon" style="margin:0 auto"><i class="fas ${esc(c.icon)}"></i></div>
           <h3>${esc(c.name)}</h3>
         </button>`
-      ).join('');
+          )
+          .join('');
       catsRoot.className = 'ads-cats-grid';
       catsRoot.onclick = (e) => {
         const btn = e.target.closest('[data-cat]');
