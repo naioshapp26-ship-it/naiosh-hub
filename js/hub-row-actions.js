@@ -9,7 +9,7 @@
 
   const ENTITY_LABELS = {
     apps: 'نظام',
-    store: 'منتج متجر',
+    store: 'منتج / خدمة متجر',
     ads: 'إعلان',
     events: 'فعالية',
     products: 'منتج',
@@ -561,14 +561,38 @@
       save: (v) => window.HubStore.addMarketSystem?.(v),
     },
     store: {
-      title: 'إضافة منتج متجر',
+      title: 'رفع منتج / خدمة على المتجر',
       fields: [
-        { id: 'title', label: 'اسم المنتج', required: true },
-        { id: 'price', label: 'السعر', value: '500', type: 'number' },
+        { id: 'title', label: 'اسم المنتج أو الخدمة', required: true },
+        { id: 'brand', label: 'العلامة', value: 'نايوش هوب' },
+        {
+          id: 'category',
+          label: 'التصنيف الرئيسي',
+          type: 'select',
+          required: true,
+          optionsFrom: 'storeCategories',
+          value: 'تشغيل',
+        },
+        {
+          id: 'itemKind',
+          label: 'النوع',
+          type: 'select',
+          required: true,
+          options: [
+            { value: 'منتج', label: 'منتج' },
+            { value: 'خدمة', label: 'خدمة' },
+          ],
+          value: 'منتج',
+        },
+        { id: 'price', label: 'السعر', value: '1000', type: 'number', required: true },
+        { id: 'stock', label: 'المخزون', value: '20', type: 'number' },
         { id: 'points', label: 'النقاط', value: '50', type: 'number' },
-        { id: 'stock', label: 'المخزون', value: '10', type: 'number' },
+        { id: 'sku', label: 'رمز SKU', value: '' },
+        { id: 'platformCode', label: 'رمز المنصة', value: 'ACADEMY' },
+        { id: 'desc', label: 'الوصف', value: '' },
       ],
-      save: (v) => window.HubStore.addStoreItem(v),
+      includeMarketplaces: true,
+      save: (v) => window.HubStore.addStoreItem({ ...v, name: v.title, mirrorToCatalog: true }),
     },
     ads: {
       title: 'إضافة إعلان',
@@ -594,11 +618,28 @@
       fields: [
         { id: 'name', label: 'اسم المنتج', required: true },
         { id: 'brand', label: 'العلامة', value: 'نايوش هوب' },
-        { id: 'category', label: 'التصنيف', value: 'تشغيل' },
+        {
+          id: 'category',
+          label: 'التصنيف',
+          type: 'select',
+          required: true,
+          optionsFrom: 'storeCategories',
+          value: 'تشغيل',
+        },
+        {
+          id: 'itemKind',
+          label: 'النوع',
+          type: 'select',
+          options: [
+            { value: 'منتج', label: 'منتج' },
+            { value: 'خدمة', label: 'خدمة' },
+          ],
+          value: 'منتج',
+        },
         { id: 'price', label: 'السعر', value: '1000', type: 'number' },
         { id: 'stock', label: 'المخزون', value: '20', type: 'number' },
       ],
-      save: (v) => window.HubStore.addProduct?.(v),
+      save: (v) => window.HubStore.addProduct?.({ ...v, icon: v.itemKind === 'خدمة' ? 'fa-concierge-bell' : 'fa-cube' }),
     },
     incubators: {
       title: 'إضافة حاضنة',
@@ -665,28 +706,92 @@
     },
   };
 
+  const resolveFieldOptions = (field) => {
+    if (Array.isArray(field.options)) return field.options;
+    if (field.optionsFrom === 'storeCategories') {
+      return (
+        window.HubMarketplaceData?.storeCategoryOptions?.() ||
+        (window.HubMarketplaceData?.SHOP_CATEGORIES || [])
+          .filter((c) => c.id !== 'الكل')
+          .map((c) => ({ value: c.id, label: c.name }))
+      );
+    }
+    return [];
+  };
+
+  const fieldHtml = (f) => {
+    if (f.type === 'select') {
+      const opts = resolveFieldOptions(f);
+      return `<label>${esc(f.label)}
+        <select id="hub-add-${esc(f.id)}" ${f.required ? 'required' : ''}>
+          <option value="">— اختر —</option>
+          ${opts
+            .map((o) => {
+              const val = typeof o === 'string' ? o : o.value;
+              const lab = typeof o === 'string' ? o : o.label;
+              return `<option value="${esc(val)}" ${String(val) === String(f.value || '') ? 'selected' : ''}>${esc(lab)}</option>`;
+            })
+            .join('')}
+        </select>
+      </label>`;
+    }
+    if (f.type === 'textarea') {
+      return `<label>${esc(f.label)}
+        <textarea id="hub-add-${esc(f.id)}" rows="3">${esc(f.value || '')}</textarea>
+      </label>`;
+    }
+    return `<label>${esc(f.label)}
+      <input id="hub-add-${esc(f.id)}" type="${f.type || 'text'}" value="${esc(f.value || '')}" ${f.required ? 'required' : ''} />
+    </label>`;
+  };
+
+  const marketplaceFormHtml = () => {
+    const list = window.HubMarketplaceData?.MARKETPLACE_CONNECTORS || [];
+    if (!list.length) return '';
+    return `<div class="hub-form-block hub-marketplace-block">
+      <h4><i class="fas fa-link"></i> ربط بمواقع البيع المباشر</h4>
+      <p class="hub-form-hint">اربط المنتج/الخدمة بأمازون · علي بابا · تيمو · شي إن · نون · وأي متجر كبير</p>
+      <div class="hub-mp-grid">
+        ${list
+          .map(
+            (m) => `<div class="hub-mp-row" data-mp="${esc(m.id)}">
+              <label class="hub-mp-check">
+                <input type="checkbox" id="hub-add-mp_${esc(m.id)}" value="1" />
+                <span><i class="${esc(m.icon)}"></i> ${esc(m.nameAr)}</span>
+              </label>
+              <input id="hub-add-mp_url_${esc(m.id)}" type="url" placeholder="${esc(m.placeholder || 'https://...')}" />
+            </div>`
+          )
+          .join('')}
+      </div>
+      <div class="hub-form-grid" style="margin-top:10px">
+        <label>اسم متجر إضافي
+          <input id="hub-add-mp_custom_name" type="text" placeholder="مثال: سوق · ترينديول · جوميا" />
+        </label>
+        <label>رابط المتجر الإضافي
+          <input id="hub-add-mp_url_custom" type="url" placeholder="https://..." />
+        </label>
+      </div>
+    </div>`;
+  };
+
   const openAdd = (entity) => {
     const form = ADD_FORMS[entity];
     if (!form) return toast('استخدم نموذج الإضافة في الصفحة');
     openModal({
       title: form.title,
-      kicker: 'نموذج إضافة جديد — حقول هوب الإلزامية',
+      kicker: entity === 'store' ? 'نموذج رفع على المتجر — مطابق لنموذج المنتجات' : 'نموذج إضافة جديد — حقول هوب الإلزامية',
       body: `<div class="hub-form-block">
         <h4><i class="fas fa-plus-circle"></i> بيانات ${esc(ENTITY_LABELS[entity] || 'السجل')}</h4>
         <div class="hub-form-grid">
-        ${form.fields
-          .map(
-            (f) => `<label>${esc(f.label)}
-              <input id="hub-add-${esc(f.id)}" type="${f.type || 'text'}" value="${esc(f.value || '')}" ${f.required ? 'required' : ''} />
-            </label>`
-          )
-          .join('')}
+        ${form.fields.map((f) => fieldHtml(f)).join('')}
         </div>
       </div>
+      ${form.includeMarketplaces ? marketplaceFormHtml() : ''}
       ${commonMetaFormHtml()}`,
       foot: `
         <button type="button" class="hub-erp-btn ghost" data-hub-modal-close>إلغاء</button>
-        <button type="button" class="hub-erp-btn red" id="hub-add-save"><i class="fas fa-plus"></i> حفظ</button>`,
+        <button type="button" class="hub-erp-btn red" id="hub-add-save"><i class="fas fa-cloud-arrow-up"></i> ${entity === 'store' ? 'رفع على المتجر' : 'حفظ'}</button>`,
     });
     document.getElementById('hub-add-save')?.addEventListener('click', async () => {
       const values = {};
@@ -694,13 +799,23 @@
         values[f.id] = document.getElementById(`hub-add-${f.id}`)?.value.trim() || '';
         if (f.required && !values[f.id]) return toast(`${f.label} مطلوب`);
       }
+      if (form.includeMarketplaces) {
+        const list = window.HubMarketplaceData?.MARKETPLACE_CONNECTORS || [];
+        list.forEach((m) => {
+          const checked = document.getElementById(`hub-add-mp_${m.id}`)?.checked;
+          values[`mp_${m.id}`] = checked ? '1' : '';
+          values[`mp_url_${m.id}`] = document.getElementById(`hub-add-mp_url_${m.id}`)?.value.trim() || '';
+        });
+        values.mp_custom_name = document.getElementById('hub-add-mp_custom_name')?.value.trim() || '';
+        values.mp_url_custom = document.getElementById('hub-add-mp_url_custom')?.value.trim() || '';
+      }
       const meta = await collectCommonMeta();
       if (meta.error) return toast(meta.error);
       Object.assign(values, meta);
       const ok = form.save(values);
       if (!ok) return toast('تعذّرت الإضافة');
       closeModal();
-      toast('تمت الإضافة مع بيانات الأطراف والهيكل');
+      toast(entity === 'store' ? 'تم رفع المنتج/الخدمة على المتجر' : 'تمت الإضافة مع بيانات الأطراف والهيكل');
       afterChange(entity, 'add');
     });
   };

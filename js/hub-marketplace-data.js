@@ -96,6 +96,9 @@
     { id: 'st-10', title: 'باقة مالية شهرية', desc: 'محاسبة وتقارير من نظام المالية.', price: 1600, points: 280, category: 'مالية', platformCode: 'NFS', stock: 55, status: 'active', badge: 'مالية' },
     { id: 'st-11', title: 'عرض منتج المنصة', desc: 'بطاقة منتج تظهر في إعلانات المنصات.', price: 450, points: 90, category: 'إعلانات', platformCode: 'ADS', stock: 150, status: 'active', badge: 'منتج' },
     { id: 'st-12', title: 'استضافة فعالية افتراضية', desc: 'قاعة بث وإدارة حضور عبر استوديو الفعاليات.', price: 2700, points: 520, category: 'فعاليات', platformCode: 'EVENTS', stock: 20, status: 'active', badge: 'بث' },
+    { id: 'st-ac-1', title: 'أكاديمية نايوش — مسار تشغيلي', desc: 'نفس متجر الأكاديمية: دورة تشغيل معتمدة.', price: 650, points: 80, category: 'أكاديمية', platformCode: 'ACADEMY', stock: 220, status: 'active', badge: 'أكاديمية', itemKind: 'خدمة', brand: 'أكاديمية نايوش' },
+    { id: 'st-ac-2', title: 'دورة حوكمة معتمدة', desc: 'برنامج امتثال من أكاديمية نايوش داخل المتجر الموحّد.', price: 890, points: 100, category: 'أكاديمية', platformCode: 'ACADEMY', stock: 140, status: 'active', badge: 'أكاديمية', itemKind: 'خدمة', brand: 'أكاديمية نايوش' },
+    { id: 'st-ac-3', title: 'ورشة المدربين السياديين', desc: 'ورشة تدريب من أكاديمية نايوش — متاحة عبر المتجر.', price: 1200, points: 150, category: 'أكاديمية', platformCode: 'ACADEMY', stock: 80, status: 'active', badge: 'أكاديمية', itemKind: 'خدمة', brand: 'أكاديمية نايوش' },
   ];
 
   const ADS = [
@@ -133,9 +136,9 @@
     { id: 'تكامل', name: 'تكامل', icon: 'fa-plug' },
   ];
 
-  const STORE_CATEGORIES = ['الكل', 'تشغيل', 'تعليم', 'إعلانات', 'فعاليات', 'بيانات', 'موارد', 'قانون', 'صحة', 'تكامل', 'مالية'];
+  const STORE_CATEGORIES = ['الكل', 'تشغيل', 'تعليم', 'إعلانات', 'فعاليات', 'بيانات', 'موارد', 'قانون', 'صحة', 'تكامل', 'مالية', 'أكاديمية', 'إي آر بي', 'نايس', 'فيت', 'قانونية', 'خدمات'];
 
-  /** تصنيفات المتجر — أسلوب hub360 (شريط + قائمة + عدّاد) */
+  /** تصنيفات المتجر — أسلوب hub360 (شريط + قائمة + عدّاد) — نفس قائمة المنتجات/الأكاديمية */
   const SHOP_CATEGORIES = [
     { id: 'الكل', name: 'كل المنتجات', icon: 'fa-border-all' },
     { id: 'إي آر بي', name: 'إي آر بي', icon: 'fa-sitemap' },
@@ -153,7 +156,26 @@
     { id: 'موارد', name: 'موارد', icon: 'fa-users-gear' },
     { id: 'تسويق', name: 'تسويق', icon: 'fa-bullhorn' },
     { id: 'مبيعات', name: 'مبيعات', icon: 'fa-handshake' },
+    { id: 'خدمات', name: 'خدمات', icon: 'fa-concierge-bell' },
   ];
+
+  /** مواقع البيع المباشر القابلة للربط بالمتجر */
+  const MARKETPLACE_CONNECTORS = [
+    { id: 'amazon', name: 'Amazon', nameAr: 'أمازون', icon: 'fa-brands fa-amazon', color: '#ff9900', placeholder: 'https://www.amazon.com/dp/...' },
+    { id: 'alibaba', name: 'Alibaba', nameAr: 'علي بابا', icon: 'fa-brands fa-alipay', color: '#ff6a00', placeholder: 'https://www.alibaba.com/product-detail/...' },
+    { id: 'temu', name: 'Temu', nameAr: 'تيمو', icon: 'fa-bag-shopping', color: '#fb7701', placeholder: 'https://www.temu.com/...' },
+    { id: 'shein', name: 'Shein', nameAr: 'شي إن', icon: 'fa-shirt', color: '#000000', placeholder: 'https://www.shein.com/...' },
+    { id: 'noon', name: 'Noon', nameAr: 'نون', icon: 'fa-sun', color: '#f3ea48', placeholder: 'https://www.noon.com/...' },
+    { id: 'ebay', name: 'eBay', nameAr: 'إيباي', icon: 'fa-brands fa-ebay', color: '#e53238', placeholder: 'https://www.ebay.com/itm/...' },
+    { id: 'etsy', name: 'Etsy', nameAr: 'إيتسي', icon: 'fa-brands fa-etsy', color: '#f56400', placeholder: 'https://www.etsy.com/listing/...' },
+    { id: 'custom', name: 'Other', nameAr: 'أي متجر كبير', icon: 'fa-store', color: '#dc2626', placeholder: 'https://...' },
+  ];
+
+  const storeCategoryOptions = () =>
+    SHOP_CATEGORIES.filter((c) => c.id !== 'الكل').map((c) => ({ value: c.id, label: c.name }));
+
+  const marketplaceOptions = () =>
+    MARKETPLACE_CONNECTORS.map((m) => ({ value: m.id, label: `${m.nameAr} (${m.name})` }));
 
   /** كتالوج المنتجات للعرض الشبكي */
   const PRODUCT_CATALOG = [
@@ -200,9 +222,12 @@
     AD_CATEGORIES,
     STORE_CATEGORIES,
     SHOP_CATEGORIES,
+    MARKETPLACE_CONNECTORS,
     PRODUCT_CATALOG,
     PRODUCT_BRANDS,
     PRODUCT_CATEGORIES,
+    storeCategoryOptions,
+    marketplaceOptions,
     uid,
   };
 })();

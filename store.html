@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-row-actions.css" />
   <link rel="stylesheet" href="css/hub-marketplace.css" />
+  <link rel="stylesheet" href="css/hub-store-upload.css" />
 </head>
 <body class="homepage" data-market-page="store">
   <header class="top-nav">
@@ -40,15 +41,81 @@
   <main class="container market-page">
     <section class="market-hero">
       <h1>متجر مبيعات نايوش</h1>
-      <p>بيع باقات التشغيل والمنتجات المرتبطة بالمنصات — مع خصم نقاط المحفظة. لعرض الجدول الكامل (بحث · علامة · مخزون · حركة) افتح <a href="products.html">عرض المنتجات</a>.</p>
+      <p>نفس متجر أكاديمية نايوش — ارفع منتجًا أو خدمة، اختر التصنيف، واربط المتجر بأمازون ونون وعلي بابا وأي منصة بيع مباشر.</p>
       <div class="market-stats">
-        <div class="market-stat"><strong id="stat-items">0</strong><span>منتج</span></div>
+        <div class="market-stat"><strong id="stat-items">0</strong><span>منتج / خدمة</span></div>
         <div class="market-stat"><strong id="stat-orders">0</strong><span>طلب</span></div>
-        <div class="market-stat"><strong>نقاط</strong><span>دفع بالنقاط</span></div>
-        <div class="market-stat"><strong>منصات</strong><span>منتجات مربوطة</span></div>
+        <div class="market-stat"><strong id="stat-cats">0</strong><span>تصنيف</span></div>
+        <div class="market-stat"><strong id="stat-mp">0</strong><span>روابط أسواق</span></div>
       </div>
     </section>
-    <nav class="market-tabs" id="market-tabs" aria-label="تصنيفات المتجر"></nav>
+
+    <section class="store-upload-panel" id="store-upload-panel" aria-label="نموذج رفع على المتجر">
+      <h2><i class="fas fa-cloud-arrow-up" style="color:#dc2626"></i> نموذج رفع على المتجر</h2>
+      <p>1) قائمة التصنيفات الرئيسية · 2) اختيار التصنيف من القائمة المنسدلة · 3) رفع خدمة أو منتج · 4) النموذج مطابق لنموذج المنتجات</p>
+      <form id="store-upload-form">
+        <div class="store-upload-grid">
+          <label>اسم المنتج / الخدمة
+            <input name="title" id="su-title" required placeholder="مثال: دورة حوكمة · باقة تشغيل" />
+          </label>
+          <label>العلامة
+            <input name="brand" id="su-brand" value="أكاديمية نايوش" />
+          </label>
+          <label>التصنيف الرئيسي
+            <select name="category" id="su-category" required></select>
+          </label>
+          <label>النوع
+            <select name="itemKind" id="su-kind" required>
+              <option value="منتج">منتج</option>
+              <option value="خدمة" selected>خدمة</option>
+            </select>
+          </label>
+          <label>السعر
+            <input name="price" id="su-price" type="number" value="890" required />
+          </label>
+          <label>المخزون
+            <input name="stock" id="su-stock" type="number" value="50" />
+          </label>
+          <label>النقاط
+            <input name="points" id="su-points" type="number" value="80" />
+          </label>
+          <label>رمز المنصة
+            <input name="platformCode" id="su-platform" value="ACADEMY" />
+          </label>
+          <label class="full">الوصف
+            <textarea name="desc" id="su-desc" rows="2" placeholder="وصف مختصر للخدمة أو المنتج"></textarea>
+          </label>
+        </div>
+
+        <div class="store-mp-section">
+          <h3><i class="fas fa-link"></i> ربط بمواقع البيع المباشر</h3>
+          <p>أمازون · علي بابا · تيمو · شي إن · نون · وأي متجر كبير</p>
+          <div class="store-mp-chips" id="su-mp-chips"></div>
+          <div class="store-upload-grid" style="margin-top:12px">
+            <label class="full">روابط الأسواق المحددة (اختياري — اتركه فارغًا للمسودة)
+              <input id="su-mp-url" type="url" placeholder="الصق رابط المنتج على أمازون / نون / …" />
+            </label>
+            <label>متجر إضافي
+              <input id="su-mp-custom-name" placeholder="سوق · ترينديول · جوميا" />
+            </label>
+            <label>رابط المتجر الإضافي
+              <input id="su-mp-custom-url" type="url" placeholder="https://..." />
+            </label>
+          </div>
+        </div>
+
+        <div class="store-upload-actions">
+          <button type="submit" class="hub-page-act"><i class="fas fa-cloud-arrow-up"></i> رفع على المتجر</button>
+          <button type="button" class="hub-page-act ghost" id="su-open-modal" data-hub-act="add" data-entity="store">
+            <i class="fas fa-table-list"></i> النموذج الكامل (مثل المنتجات)
+          </button>
+          <a class="hub-page-act ghost" href="products.html"><i class="fas fa-boxes-stacked"></i> عرض المنتجات</a>
+          <a class="hub-page-act ghost" href="systems/academy.html?from=hub"><i class="fas fa-graduation-cap"></i> أكاديمية نايوش</a>
+        </div>
+      </form>
+    </section>
+
+    <nav class="market-tabs" id="market-tabs" aria-label="التصنيفات الرئيسية"></nav>
     <div class="market-grid" id="market-grid"></div>
   </main>
 
@@ -60,9 +127,10 @@
   <script src="js/hub-store.js"></script>
   <script src="js/hub-row-actions.js"></script>
   <script src="js/market-pages.js"></script>
+  <script src="js/hub-store-upload.js"></script>
   <script src="js/mobile-nav.js"></script>
+  <script src="js/hub-notifications-ui.js" defer></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js" defer></script>
 </body>
 </html>
-
