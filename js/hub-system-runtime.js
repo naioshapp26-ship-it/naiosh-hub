@@ -33,7 +33,7 @@
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(toast._t);
-    toast._t = setTimeout(() => el.classList.remove('show'), 2400);
+    toast._t = setTimeout(() => el.classList.remove('show'), 3200);
   };
 
   const logLine = (text, type = 'info') => {

@@ -11,17 +11,24 @@ const DEMO_USERS = {
   },
 };
 
-function fillLogin(email, password) {
+function fillLogin(email, password, autoSubmit = true) {
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
   if (!emailInput || !passwordInput) return;
   emailInput.value = email;
   passwordInput.value = password;
+  emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+  passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
   emailInput.parentElement?.classList.add('ring-2', 'ring-primary/20');
   setTimeout(() => {
     emailInput.parentElement?.classList.remove('ring-2', 'ring-primary/20');
   }, 500);
+  document.getElementById('rememberMe') && (document.getElementById('rememberMe').checked = true);
   document.getElementById('loginBtn')?.focus();
+  if (autoSubmit) {
+    document.getElementById('loginForm')?.requestSubmit?.() ||
+      document.getElementById('loginBtn')?.click();
+  }
 }
 
 (() => {

@@ -102,13 +102,13 @@
     const direct = getDirectLaunchUrl(app);
     const solo = getStandaloneUrl(app);
     if (compact) {
-      return `<a class="btn-mini primary hub-launch-direct" href="${direct}" data-launch-code="${app.code}"><i class="fas fa-arrow-up-right-from-square"></i> فتح النظام</a>`;
+      return `<a class="btn-mini primary hub-launch-direct" href="${direct}" data-launch-code="${app.code}" data-launch-mode="hub"><i class="fas fa-arrow-up-right-from-square"></i> فتح النظام</a>`;
     }
     return `
-      <a class="btn-mini primary hub-launch-direct" href="${direct}" data-launch-code="${app.code}" title="تشغيل عبر هوب — انتقال مباشر للنظام">
+      <a class="btn-mini primary hub-launch-direct" href="${direct}" data-launch-code="${app.code}" data-launch-mode="hub" title="تشغيل عبر هوب — انتقال مباشر للنظام">
         <i class="fas fa-bolt"></i> فتح عبر هوب
       </a>
-      <a class="btn-mini hub-launch-solo" href="${solo}" data-launch-code="${app.code}" title="تشغيل منفرد بدون هوب">
+      <a class="btn-mini hub-launch-solo" href="${solo}" data-launch-code="${app.code}" data-launch-mode="standalone" title="تشغيل منفرد بدون هوب">
         <i class="fas fa-window-restore"></i> منفرد
       </a>`;
   };

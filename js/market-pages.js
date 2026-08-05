@@ -40,8 +40,8 @@
     const root = document.getElementById('market-grid');
     const tabs = document.getElementById('market-tabs');
     if (!root) return;
-    const cats = ['الكل', ...Array.from(new Set(apps.map((a) => a.category)))];
-    let active = 'الكل';
+    const cats = ['الكل', 'أنظمة نايوش', ...Array.from(new Set(apps.map((a) => a.category))).filter((c) => c !== 'أنظمة نايوش')];
+    let active = 'أنظمة نايوش';
     const launcher = window.HubLauncher;
 
     const paint = () => {
@@ -90,6 +90,12 @@
     setStat('stat-apps', apps.length);
     setStat('stat-active', apps.filter((a) => a.status === 'active').length);
     paint();
+
+    root.addEventListener('click', (e) => {
+      const link = e.target.closest('[data-launch-code]');
+      if (!link || !window.HubStore?.recordLaunch) return;
+      window.HubStore.recordLaunch(link.dataset.launchCode, link.dataset.launchMode || 'hub');
+    });
   };
 
   const renderStore = () => {

@@ -89,9 +89,10 @@ body.system-portal {
 .sys-log b { color: #fecaca; }
 .sys-toast {
   position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
-  background: #111827; color: #fff; padding: 10px 16px; border-radius: 12px;
-  border: 1px solid var(--sys-line); opacity: 0; transition: .25s ease; z-index: 50;
-  font-weight: 700; font-size: 13px;
+  background: #111827; color: #fff; padding: 12px 18px; border-radius: 12px;
+  border: 1px solid rgba(220,38,38,.55); opacity: 0; transition: .25s ease; z-index: 50;
+  font-weight: 800; font-size: 14px; box-shadow: 0 12px 30px rgba(0,0,0,.35);
+  pointer-events: none;
 }
 .sys-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
