@@ -356,29 +356,38 @@ body.homepage .hero.law-hero .hero-orb {
 
 .law-hero-grid-layout {
   display: grid;
-  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(280px, 420px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
   gap: 2.5rem 1.75rem;
-  align-items: stretch;
-  min-height: min(78vh, 720px);
+  align-items: center;
+  min-height: 0;
+  padding-inline-start: 0;
+  /* مساحة للمنيو الجانبي الثابت بطول الهيرو */
+  padding-inline-end: clamp(210px, 22vw, 270px);
 }
 
-/* منيو جانبي في هيرو هوب — واضح ومتفرّق بطول الهيرو */
+/* منيو جانبي ثابت بطول الهيرو بالكامل — واضح ومتفرّق */
 body.homepage .hero.law-hero .hero-sidebar {
+  position: absolute;
+  top: max(88px, calc(var(--announcement-bar-height, 40px) + 72px));
+  bottom: 72px;
+  inset-inline-start: max(12px, calc((100vw - min(100vw, 1280px)) / 2 + 8px));
+  inset-inline-end: auto;
+  width: clamp(188px, 18vw, 236px);
   grid-area: auto;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 12px;
-  align-self: stretch;
-  justify-self: stretch;
+  gap: 14px;
+  align-self: auto;
+  justify-self: auto;
   direction: rtl;
-  padding: 8px 0;
-  height: 100%;
-  min-height: 100%;
+  padding: 0;
+  height: auto;
+  min-height: 0;
   max-height: none;
   overflow: visible;
   transform: none;
-  z-index: 12;
+  z-index: 20;
 }
 
 body.homepage .hero.law-hero .hero-sidebar-item {
@@ -388,12 +397,12 @@ body.homepage .hero.law-hero .hero-sidebar-item {
   gap: 12px;
   flex: 1 1 0;
   width: 100%;
-  min-height: 58px;
+  min-height: 56px;
   box-sizing: border-box;
   padding: 14px 18px;
   border-radius: 999px;
-  background: rgba(8, 0, 3, 0.72);
-  border: 1.5px solid rgba(255, 31, 47, 0.45);
+  background: rgba(8, 0, 3, 0.78);
+  border: 1.5px solid rgba(255, 31, 47, 0.5);
   color: #fff;
   font-size: 15px;
   font-weight: 900;
@@ -403,8 +412,8 @@ body.homepage .hero.law-hero .hero-sidebar-item {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow:
-    0 8px 22px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 8px 22px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease, transform 0.18s ease, box-shadow 0.22s ease;
   white-space: nowrap;
@@ -417,11 +426,11 @@ body.homepage .hero.law-hero .hero-sidebar-icon {
   border-radius: 50%;
   display: inline-grid;
   place-items: center;
-  background: linear-gradient(145deg, rgba(255, 31, 47, 0.35), rgba(215, 0, 0, 0.18));
-  border: 1.5px solid rgba(255, 80, 90, 0.55);
+  background: linear-gradient(145deg, rgba(255, 31, 47, 0.4), rgba(215, 0, 0, 0.2));
+  border: 1.5px solid rgba(255, 80, 90, 0.6);
   color: #ffd6da;
   font-size: 15px;
-  box-shadow: 0 0 16px rgba(255, 31, 47, 0.28);
+  box-shadow: 0 0 16px rgba(255, 31, 47, 0.3);
 }
 
 body.homepage .hero.law-hero .hero-sidebar-label {
@@ -876,30 +885,54 @@ body.homepage #layers .section-head p {
 
 @media (max-width: 1100px) {
   .law-hero-grid-layout {
-    grid-template-columns: minmax(132px, 160px) minmax(0, 1fr) minmax(240px, 340px);
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
     gap: 1.5rem;
+    padding-inline-end: clamp(190px, 24vw, 230px);
+  }
+
+  body.homepage .hero.law-hero .hero-sidebar {
+    width: clamp(170px, 20vw, 210px);
+    gap: 12px;
   }
 
   body.homepage .hero.law-hero .hero-sidebar-item {
-    font-size: 12px;
-    padding: 9px 12px;
+    font-size: 14px;
+    padding: 12px 14px;
+    min-height: 50px;
+  }
+
+  body.homepage .hero.law-hero .hero-sidebar-icon {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    font-size: 14px;
   }
 }
 
 @media (max-width: 900px) {
   .law-hero-grid-layout {
     grid-template-columns: 1fr !important;
+    min-height: 0;
+    align-items: start;
+    padding-inline-end: 0 !important;
   }
 
   body.homepage .hero.law-hero .hero-sidebar {
+    position: static;
+    inset: auto;
+    width: 100%;
     order: -1;
     flex-direction: row;
     flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-self: auto;
+    height: auto;
+    min-height: 0;
     overflow-x: auto;
     overflow-y: hidden;
     max-height: none;
-    gap: 8px;
-    padding: 0 0 6px;
+    gap: 10px;
+    padding: 4px 0 10px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
@@ -912,7 +945,17 @@ body.homepage #layers .section-head p {
     flex: 0 0 auto;
     width: auto;
     min-width: max-content;
+    min-height: 48px;
+    font-size: 13.5px;
+    padding: 12px 16px;
     transform: none !important;
+  }
+
+  body.homepage .hero.law-hero .hero-sidebar-icon {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+    font-size: 13px;
   }
 
   .law-hero-visual {
