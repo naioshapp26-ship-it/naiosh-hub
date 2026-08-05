@@ -356,96 +356,96 @@ body.homepage .hero.law-hero .hero-orb {
 
 .law-hero-grid-layout {
   display: grid;
-  grid-template-columns: minmax(148px, 176px) minmax(0, 1fr) minmax(280px, 420px);
-  gap: 2.5rem 2rem;
-  align-items: center;
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(280px, 420px);
+  gap: 2.5rem 1.75rem;
+  align-items: stretch;
+  min-height: min(78vh, 720px);
 }
 
-/* منيو جانبي في هيرو هوب — نفس شكل ERP + أيقونات */
+/* منيو جانبي في هيرو هوب — واضح ومتفرّق بطول الهيرو */
 body.homepage .hero.law-hero .hero-sidebar {
   grid-area: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  align-self: center;
+  justify-content: space-between;
+  gap: 12px;
+  align-self: stretch;
   justify-self: stretch;
   direction: rtl;
-  padding: 4px 0;
-  max-height: min(72vh, 620px);
-  overflow-y: auto;
-  overflow-x: hidden;
+  padding: 8px 0;
+  height: 100%;
+  min-height: 100%;
+  max-height: none;
+  overflow: visible;
   transform: none;
   z-index: 12;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(229, 9, 20, 0.45) transparent;
-}
-
-body.homepage .hero.law-hero .hero-sidebar::-webkit-scrollbar {
-  width: 5px;
-}
-
-body.homepage .hero.law-hero .hero-sidebar::-webkit-scrollbar-thumb {
-  background: rgba(229, 9, 20, 0.45);
-  border-radius: 999px;
 }
 
 body.homepage .hero.law-hero .hero-sidebar-item {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 12px;
+  flex: 1 1 0;
   width: 100%;
+  min-height: 58px;
   box-sizing: border-box;
-  padding: 10px 14px;
+  padding: 14px 18px;
   border-radius: 999px;
-  background: rgba(10, 0, 4, 0.55);
-  border: 1px solid rgba(229, 9, 20, 0.28);
-  color: rgba(255, 220, 228, 0.92);
-  font-size: 13px;
-  font-weight: 800;
+  background: rgba(8, 0, 3, 0.72);
+  border: 1.5px solid rgba(255, 31, 47, 0.45);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
   text-align: right;
   text-decoration: none;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease, transform 0.18s ease, box-shadow 0.22s ease;
   white-space: nowrap;
 }
 
 body.homepage .hero.law-hero .hero-sidebar-icon {
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
   border-radius: 50%;
   display: inline-grid;
   place-items: center;
-  background: rgba(255, 31, 47, 0.18);
-  border: 1px solid rgba(255, 31, 47, 0.35);
-  color: #ffb3b8;
-  font-size: 12px;
+  background: linear-gradient(145deg, rgba(255, 31, 47, 0.35), rgba(215, 0, 0, 0.18));
+  border: 1.5px solid rgba(255, 80, 90, 0.55);
+  color: #ffd6da;
+  font-size: 15px;
+  box-shadow: 0 0 16px rgba(255, 31, 47, 0.28);
 }
 
 body.homepage .hero.law-hero .hero-sidebar-label {
   flex: 1;
   min-width: 0;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 body.homepage .hero.law-hero .hero-sidebar-item:hover,
 body.homepage .hero.law-hero .hero-sidebar-item:focus-visible {
-  background: linear-gradient(135deg, #e50914, #b5000e);
-  border-color: rgba(229, 9, 20, 0.7);
+  background: linear-gradient(135deg, #ff1f2f, #b5000e);
+  border-color: rgba(255, 90, 100, 0.9);
   color: #ffffff;
-  transform: translateX(3px);
-  box-shadow: 0 8px 22px rgba(229, 9, 20, 0.4);
+  transform: translateX(4px) scale(1.01);
+  box-shadow: 0 12px 28px rgba(229, 9, 20, 0.48);
   outline: none;
 }
 
 body.homepage .hero.law-hero .hero-sidebar-item:hover .hero-sidebar-icon,
 body.homepage .hero.law-hero .hero-sidebar-item:focus-visible .hero-sidebar-icon {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.5);
   color: #fff;
+  box-shadow: none;
 }
 
 .law-hero-badge {
