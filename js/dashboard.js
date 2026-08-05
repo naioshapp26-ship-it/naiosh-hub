@@ -1,6 +1,7 @@
 (() => {
   const NAV = [
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
+    { key: 'operating', icon: 'fa-gears', label: 'آلية التشغيل' },
     { key: 'notifications', icon: 'fa-bell', label: 'إشعارات هوب' },
     { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
     { key: 'platforms', icon: 'fa-layer-group', label: 'المنصات السيادية' },
@@ -28,6 +29,7 @@
 
   const TITLES = {
     overview: ['مركز التحكم العالمي', 'الفروع · الحاضنات · المنصات · المنتجات · المتجر · الإعلانات · الفعاليات'],
+    operating: ['آلية تشغيل نايوش هوب', 'بدون تكرار · اشتراك=صلاحية · SSO · تقارير نشاط · خدمات موحّدة'],
     notifications: ['مركز إشعارات هوب', 'كل تنبيهات الأنظمة تصل هنا — ERP · LAW · FIT · Academy'],
     blueprint: ['دستور المعمارية الإمبراطورية', 'هوب مركزي — طبقات · محاور · أول 6 أشهر'],
     platforms: ['المنصات السيادية لنايوش 360', '18 منصة تشغّل هوب — من الدماغ المركزي إلى السلطة العليا'],
@@ -49,7 +51,7 @@
     systems: ['سوق الأنظمة التشغيلية', 'تفعيل · إيقاف · ربط'],
     tasks: ['المهام والمشاريع', 'توزيع · أولويات · اختناقات · جودة تنفيذ'],
     measurement: ['القياس الموحد', 'درجات · مستويات · مصفوفة · أثر العملاء'],
-    reports: ['التقارير السيادية', 'يومي · أسبوعي · شهري · مخاطر · نمو · امتثال'],
+    reports: ['التقارير السيادية', 'يومي · أسبوعي · شهري · مخاطر · نمو · امتثال · نشاط موحّد'],
     integration: ['الربط والتكامل', 'بوابة الربط · ناقل الأحداث · موصلات'],
   };
 
@@ -1580,8 +1582,103 @@
     `;
   };
 
+  const renderOperating = () => {
+    const op = HubStore.ensureOperating?.() || HubStore.get().empire.operating || { subscriptions: [], offices: [], activityLog: [] };
+    const systems = Object.keys(window.HubLauncher?.SYSTEM_META || {});
+    const services = HubStore.listUnifiedServices?.() || [];
+    const bySystem = services.reduce((acc, s) => {
+      (acc[s.systemCode] = acc[s.systemCode] || []).push(s);
+      return acc;
+    }, {});
+    const activeSubs = (op.subscriptions || []).filter((s) => s.status === 'active');
+    return `
+      <div class="kpi-grid">
+        <article class="kpi"><span>اشتراكات نشطة</span><strong>${activeSubs.length}</strong><small>صلاحيات ممنوحة</small></article>
+        <article class="kpi"><span>مكاتب إلكترونية</span><strong>${(op.offices || []).length}</strong><small>ممنوحة من هوب</small></article>
+        <article class="kpi"><span>خدمات موحّدة</span><strong>${services.length}</strong><small>عبر كل الأنظمة</small></article>
+        <article class="kpi"><span>سجل النشاط</span><strong>${(op.activityLog || []).length}</strong><small>أحداث مسجّلة</small></article>
+      </div>
+      <div class="toolbar" style="margin-top:12px;flex-wrap:wrap;gap:8px">
+        <a class="btn btn-ghost" href="operating.html" target="_blank"><i class="fas fa-book"></i> صفحة آلية التشغيل</a>
+        <button class="btn btn-primary" data-action="gen-report" data-type="activity"><i class="fas fa-scroll"></i> تقرير النشاط الموحّد</button>
+        ${pageActs('offices', 'منح مكتب إلكتروني')}
+      </div>
+      <div class="grid-2" style="margin-top:14px">
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-key icon"></i> منح اشتراك / صلاحية</span></h3>
+          <div class="toolbar" style="flex-wrap:wrap">
+            <div class="field"><label>بريد العميل</label><input id="op-sub-email" type="email" placeholder="client@example.com" value="${esc(user.email || '')}" /></div>
+            <div class="field"><label>النظام</label>
+              <select id="op-sub-system">${systems.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+            </div>
+            <div class="field"><label>الخطة</label><input id="op-sub-plan" value="standard" /></div>
+            <button class="btn btn-primary" data-action="grant-sub"><i class="fas fa-user-check"></i> منح</button>
+          </div>
+          <div class="table-wrap" style="margin-top:10px"><table class="data">
+            <thead><tr><th>البريد</th><th>النظام</th><th>الخطة</th><th>الصلاحيات</th><th></th></tr></thead>
+            <tbody>
+              ${activeSubs
+                .slice(0, 20)
+                .map(
+                  (s) => `<tr>
+                  <td>${esc(s.email)}</td><td>${esc(s.systemCode)}</td><td>${esc(s.plan)}</td>
+                  <td>${esc((s.permissions || []).join(' · '))}</td>
+                  <td><button class="btn btn-sm btn-dark" data-action="revoke-sub" data-id="${esc(s.id)}">إلغاء</button></td>
+                </tr>`
+                )
+                .join('') || '<tr><td colspan="5">لا اشتراكات بعد</td></tr>'}
+            </tbody>
+          </table></div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-briefcase icon"></i> المكاتب الإلكترونية</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>المكتب</th><th>الفرع</th><th>الحاضنة</th><th>المنصة</th><th>الحالة</th></tr></thead>
+            <tbody>
+              ${(op.offices || [])
+                .map(
+                  (o) => `<tr>
+                  <td>${esc(o.nameAr)}</td><td>${esc(o.branch || '—')}</td>
+                  <td>${esc(o.incubator || '—')}</td><td>${esc(o.platform || '—')}</td>
+                  <td>${badgeStatus(o.status)}</td>
+                </tr>`
+                )
+                .join('') || '<tr><td colspan="5">لا مكاتب بعد — استخدم منح مكتب إلكتروني</td></tr>'}
+            </tbody>
+          </table></div>
+        </article>
+      </div>
+      <article class="card" style="margin-top:14px">
+        <h3><span class="title-left"><i class="fas fa-layer-group icon"></i> خريطة خدمات الأنظمة (هوب يعكس الكل)</span></h3>
+        <div class="grid-2">
+          ${Object.entries(bySystem)
+            .map(
+              ([code, list]) => `<div style="border:1px solid var(--border);border-radius:12px;padding:10px">
+              <b>${esc(window.HubLauncher?.SYSTEM_META?.[code]?.nameAr || code)}</b>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+                ${list.map((s) => `<span class="chip">${esc(s.nameAr)}</span>`).join('')}
+              </div>
+              <div style="margin-top:8px">${window.HubLauncher?.openButtonsHtml?.(code, { compact: true }) || ''}</div>
+            </div>`
+            )
+            .join('')}
+        </div>
+      </article>
+      <article class="card" style="margin-top:14px">
+        <h3><span class="title-left"><i class="fas fa-timeline icon"></i> النشاط الجاري والماضي</span></h3>
+        <ul class="feed-list">
+          ${(op.activityLog || [])
+            .slice(0, 25)
+            .map((a) => `<li><b>${esc(a.kind)}</b> — ${esc(a.text)} <small>${fmtTime(a.at)}</small></li>`)
+            .join('') || '<li>لا نشاط مسجّل بعد</li>'}
+        </ul>
+      </article>
+    `;
+  };
+
   const renderers = {
     overview: renderOverview,
+    operating: renderOperating,
     notifications: renderNotifications,
     blueprint: renderBlueprint,
     platforms: renderPlatforms,
@@ -1719,6 +1816,22 @@
       case 'gen-report':
         HubStore.generateReport(btn.dataset.type || reportTab);
         toast('التقرير جاهز للقائد الأعلى');
+        break;
+      case 'grant-sub': {
+        const email = $('#op-sub-email')?.value.trim();
+        const systemCode = $('#op-sub-system')?.value;
+        const plan = $('#op-sub-plan')?.value.trim() || 'standard';
+        if (!email || !systemCode) {
+          toast('أدخل البريد والنظام');
+          return;
+        }
+        HubStore.grantSubscription({ email, systemCode, plan, permissions: ['read', 'write'] });
+        toast(`تم منح اشتراك ${systemCode}`);
+        break;
+      }
+      case 'revoke-sub':
+        HubStore.revokeSubscription(id);
+        toast('أُلغي الاشتراك');
         break;
       case 'ping-gateway':
         HubStore.pingGateway();

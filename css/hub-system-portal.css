@@ -100,3 +100,25 @@ body.system-portal {
   .sys-top { flex-direction: column; align-items: stretch; }
   .sys-kpis { grid-template-columns: 1fr; }
 }
+
+.sys-sso { margin-top: 10px; color: #fecaca; font-weight: 700; font-size: 13px; }
+.sys-services { margin: 18px 0; }
+.sys-services h2 { margin: 0 0 6px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+.sys-services > p { margin: 0 0 12px; color: var(--sys-muted); font-size: 13px; font-weight: 600; }
+.sys-services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.sys-service-card {
+  display: grid;
+  gap: 8px;
+  place-items: center;
+  text-align: center;
+  padding: 14px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--sys-line);
+  background: #121821;
+}
+.sys-service-card i { color: var(--sys-accent, #dc2626); font-size: 18px; }
+.sys-service-card strong { font-size: 13px; }

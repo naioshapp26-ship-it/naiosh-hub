@@ -1,5 +1,6 @@
 /**
  * Hub Launcher — فتح الأنظمة مباشرة من هوب أو بشكل منفرد
+ * مع فحص الاشتراك/الصلاحية وتمرير جلسة NAIOSH ID
  */
 (() => {
   const SYSTEM_META = {
@@ -46,13 +47,17 @@
     return null;
   };
 
-  const withLaunchParams = (url, { from = 'hub', returnUrl } = {}) => {
+  const withLaunchParams = (url, { from = 'hub', returnUrl, systemCode = '' } = {}) => {
     try {
       const u = new URL(url, window.location.href);
       u.searchParams.set('from', from);
       if (returnUrl) u.searchParams.set('return', returnUrl);
       u.searchParams.set('hub', '1');
-      return u.pathname + u.search + u.hash;
+      let href = u.pathname + u.search + u.hash;
+      if (window.HubAuth?.attachSsoParams) {
+        href = window.HubAuth.attachSsoParams(href, systemCode || u.searchParams.get('system') || '');
+      }
+      return href;
     } catch (_) {
       const join = url.includes('?') ? '&' : '?';
       return `${url}${join}from=${encodeURIComponent(from)}&hub=1`;
@@ -66,6 +71,7 @@
     return withLaunchParams(app.launchUrl || app.url, {
       from: 'hub',
       returnUrl: `${window.location.pathname}${window.location.search}${window.location.hash}` || 'dashboard.html#apps',
+      systemCode: app.code,
     });
   };
 
@@ -78,7 +84,9 @@
       u.searchParams.set('mode', 'standalone');
       u.searchParams.delete('from');
       u.searchParams.delete('hub');
-      return u.pathname + u.search + u.hash;
+      let href = u.pathname + u.search + u.hash;
+      if (window.HubAuth?.attachSsoParams) href = window.HubAuth.attachSsoParams(href, app.code);
+      return href;
     } catch (_) {
       const base = app.standaloneUrl || app.launchUrl || app.url;
       const join = base.includes('?') ? '&' : '?';
@@ -86,9 +94,43 @@
     }
   };
 
-  const launch = (codeOrApp, { mode = 'hub', target = '_self' } = {}) => {
+  const gateAccess = (app, { mode = 'hub', silent = false } = {}) => {
+    if (!app) return { ok: false, reason: 'missing' };
+    // التشغيل المنفرد للتجربة مسموح بدون بوابة صارمة؛ عبر هوب يلزم جلسة + صلاحية
+    if (mode === 'standalone') return { ok: true, reason: 'standalone' };
+    if (!window.HubAuth) return { ok: true, reason: 'no-auth-module' };
+    if (!window.HubAuth.isLoggedIn()) {
+      if (!silent) {
+        window.HubAuth.requireLogin({
+          next: getDirectLaunchUrl(app),
+          system: app.code,
+        });
+      }
+      return { ok: false, reason: 'login' };
+    }
+    const access = window.HubAuth.canAccessSystem(app.code, 'read');
+    if (!access.ok) {
+      if (!silent) {
+        const msg =
+          access.reason === 'subscription'
+            ? `لا يوجد اشتراك نشط لنظام ${app.nameAr}. اشترك من المتجر أو اطلب المنح من هوب.`
+            : `صلاحيتك لا تسمح بفتح ${app.nameAr}`;
+        if (window.HubActions?.toast) window.HubActions.toast(msg);
+        else window.alert(msg);
+        window.HubStore?.recordActivity?.('deny', `رفض دخول ${app.code}: ${access.reason}`, { code: app.code });
+      }
+      return access;
+    }
+    return access;
+  };
+
+  const launch = (codeOrApp, { mode = 'hub', target = '_self', force = false } = {}) => {
     const app = findApp(codeOrApp);
     if (!app) return null;
+    if (!force) {
+      const gate = gateAccess(app, { mode });
+      if (!gate.ok) return null;
+    }
     const href = mode === 'standalone' ? getStandaloneUrl(app) : getDirectLaunchUrl(app);
     window.HubStore?.recordLaunch?.(app.code, mode);
     if (target === '_blank') window.open(href, '_blank', 'noopener');
@@ -113,6 +155,15 @@
       </a>`;
   };
 
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-launch-code]');
+    if (!a) return;
+    const mode = a.dataset.launchMode || 'hub';
+    if (mode === 'standalone') return; // allow default navigation
+    e.preventDefault();
+    launch(a.dataset.launchCode, { mode, target: a.target === '_blank' ? '_blank' : '_self' });
+  });
+
   window.HubLauncher = {
     SYSTEM_META,
     systemPath,
@@ -121,6 +172,7 @@
     getDirectLaunchUrl,
     getStandaloneUrl,
     withLaunchParams,
+    gateAccess,
     launch,
     openButtonsHtml,
   };

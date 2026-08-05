@@ -151,6 +151,48 @@ const HubStore = (() => {
       eventsStudio: {
         events: (window.HubMarketplaceData?.EVENTS || []).map((x) => ({ ...x })),
       },
+      operating: seedOperating(),
+    };
+  };
+
+  const seedOperating = () => {
+    const systems = ['ERP', 'LAW', 'FIT', 'NAIS', 'ACADEMY', 'LMS', 'CRM'];
+    const grantAll = (email, plan = 'enterprise') =>
+      systems.map((systemCode) => ({
+        id: uid('sub'),
+        email,
+        systemCode,
+        plan,
+        status: 'active',
+        permissions: ['read', 'write', 'admin'],
+        grantedAt: nowIso(),
+        expiresAt: '',
+        source: 'seed',
+      }));
+    return {
+      subscriptions: [...grantAll('leader@naiosh.com'), ...grantAll('malika@naiosh.com', 'professional')],
+      offices: [
+        {
+          id: uid('off'),
+          nameAr: 'المكتب الإلكتروني الرئيسي',
+          branch: 'المقر الرئيسي',
+          incubator: 'حاضنة تقنية',
+          platform: 'النظام التشغيلي الموحد',
+          type: 'إلكتروني',
+          status: 'active',
+          manager: 'القائد الأعلى',
+          grantedAt: nowIso(),
+        },
+      ],
+      activityLog: [
+        {
+          id: uid('act'),
+          kind: 'boot',
+          text: 'تفعيل آلية تشغيل هوب — سجل نشاط موحّد',
+          at: nowIso(),
+          meta: null,
+        },
+      ],
     };
   };
 
@@ -439,6 +481,73 @@ const HubStore = (() => {
     return changed;
   };
 
+  /** آلية التشغيل: اشتراكات · مكاتب · سجل نشاط · إزالة تكرار الأنظمة */
+  const hydrateOperating = () => {
+    if (!state?.empire) return false;
+    let changed = false;
+    if (!state.empire.operating) {
+      state.empire.operating = seedOperating();
+      changed = true;
+    } else {
+      const op = state.empire.operating;
+      if (!Array.isArray(op.subscriptions)) {
+        op.subscriptions = seedOperating().subscriptions;
+        changed = true;
+      }
+      if (!Array.isArray(op.offices)) {
+        op.offices = seedOperating().offices;
+        changed = true;
+      }
+      if (!Array.isArray(op.activityLog)) {
+        op.activityLog = seedOperating().activityLog;
+        changed = true;
+      }
+    }
+    // Deduplicate empire.apps by code (canonical registry)
+    const apps = state.empire.apps || [];
+    const seen = new Map();
+    const deduped = [];
+    apps.forEach((a) => {
+      const code = String(a.code || '').toUpperCase();
+      if (!code) {
+        deduped.push(a);
+        return;
+      }
+      if (seen.has(code)) {
+        const base = seen.get(code);
+        Object.assign(base, a, { id: base.id, code });
+        changed = true;
+      } else {
+        a.code = code;
+        seen.set(code, a);
+        deduped.push(a);
+      }
+    });
+    if (deduped.length !== apps.length) {
+      state.empire.apps = deduped;
+      changed = true;
+    }
+    // Mirror systems.registry from apps without duplicate codes
+    if (state.systems?.registry) {
+      const regSeen = new Set();
+      const nextReg = [];
+      state.systems.registry.forEach((r) => {
+        const key = String(r.code || r.name || r.id);
+        if (regSeen.has(key)) {
+          changed = true;
+          return;
+        }
+        regSeen.add(key);
+        nextReg.push(r);
+      });
+      if (nextReg.length !== state.systems.registry.length) {
+        state.systems.registry = nextReg;
+        changed = true;
+      }
+    }
+    return changed;
+  };
+
   let state = null;
 
   /** Refill empty marketplace catalogs if seed ran without HubMarketplaceData (e.g. login-first). */
@@ -531,6 +640,7 @@ const HubStore = (() => {
         }
         if (hydrateOpsDomains()) save();
         if (hydrateLaunchFields()) save();
+        if (hydrateOperating()) save();
         return state;
       }
     } catch (_) {}
@@ -552,6 +662,127 @@ const HubStore = (() => {
     if (get().feed.length > 40) get().feed.length = 40;
     save();
   };
+
+  const recordActivity = (kind, text, meta = null) => {
+    const op = get().empire?.operating;
+    if (op) {
+      if (!Array.isArray(op.activityLog)) op.activityLog = [];
+      op.activityLog.unshift({ id: uid('act'), kind, text, at: nowIso(), meta });
+      if (op.activityLog.length > 200) op.activityLog.length = 200;
+    }
+    pushFeed(kind === 'auth' ? 'decision' : kind === 'report' ? 'report' : 'decision', text);
+    return op?.activityLog?.[0] || null;
+  };
+
+  const ensureOperating = () => {
+    const e = get().empire;
+    if (!e.operating) e.operating = seedOperating();
+    if (!Array.isArray(e.operating.subscriptions)) e.operating.subscriptions = [];
+    if (!Array.isArray(e.operating.offices)) e.operating.offices = [];
+    if (!Array.isArray(e.operating.activityLog)) e.operating.activityLog = [];
+    return e.operating;
+  };
+
+  const listSubscriptions = (email = '') => {
+    const list = ensureOperating().subscriptions || [];
+    if (!email) return list;
+    return list.filter((s) => String(s.email).toLowerCase() === String(email).toLowerCase());
+  };
+
+  const checkEntitlement = (email, systemCode, minPermission = 'read') => {
+    const code = String(systemCode || '').toUpperCase();
+    const order = { read: 1, write: 2, admin: 3 };
+    const need = order[minPermission] || 1;
+    const active = listSubscriptions(email).filter(
+      (s) => s.systemCode === code && s.status === 'active' && (!s.expiresAt || s.expiresAt >= today())
+    );
+    if (!active.length) return { ok: false, reason: 'subscription', permissions: [] };
+    const permissions = Array.from(new Set(active.flatMap((s) => s.permissions || ['read'])));
+    const max = Math.max(...permissions.map((p) => order[p] || 0));
+    if (max < need) return { ok: false, reason: 'permission', permissions };
+    return { ok: true, reason: 'subscription', permissions, subscription: active[0] };
+  };
+
+  const grantSubscription = (payload = {}) => {
+    const op = ensureOperating();
+    const email = String(payload.email || '').trim().toLowerCase();
+    const systemCode = String(payload.systemCode || payload.code || '').toUpperCase();
+    if (!email || !systemCode) return null;
+    const existing = op.subscriptions.find(
+      (s) => s.email === email && s.systemCode === systemCode && s.status === 'active'
+    );
+    if (existing) {
+      existing.permissions = payload.permissions || existing.permissions || ['read', 'write'];
+      existing.plan = payload.plan || existing.plan || 'standard';
+      existing.expiresAt = payload.expiresAt || existing.expiresAt || '';
+      existing.updatedAt = nowIso();
+      recordActivity('grant', `تحديث اشتراك ${systemCode} ← ${email}`, { email, systemCode });
+      save();
+      return existing;
+    }
+    const item = {
+      id: uid('sub'),
+      email,
+      systemCode,
+      plan: payload.plan || 'standard',
+      status: 'active',
+      permissions: payload.permissions || ['read', 'write'],
+      grantedAt: nowIso(),
+      expiresAt: payload.expiresAt || '',
+      source: payload.source || 'hub',
+    };
+    op.subscriptions.unshift(item);
+    recordActivity('grant', `منح اشتراك ${systemCode} ← ${email}`, { email, systemCode });
+    pushNotification({
+      source: 'HUB',
+      sourceName: 'نايوش هوب',
+      title: `اشتراك ${systemCode} مفعّل`,
+      body: `تم منح صلاحية الدخول لنظام ${systemCode} للمستخدم ${email}`,
+      level: 'success',
+      category: 'subscription',
+      link: 'dashboard.html#operating',
+    });
+    save();
+    return item;
+  };
+
+  const revokeSubscription = (id) => {
+    const op = ensureOperating();
+    const sub = op.subscriptions.find((s) => s.id === id);
+    if (!sub) return null;
+    sub.status = 'revoked';
+    sub.revokedAt = nowIso();
+    recordActivity('grant', `إلغاء اشتراك ${sub.systemCode} ← ${sub.email}`, { id });
+    save();
+    return sub;
+  };
+
+  const addOffice = (payload = {}) => {
+    const op = ensureOperating();
+    const item = {
+      id: uid('off'),
+      nameAr: payload.nameAr || payload.name || 'مكتب إلكتروني',
+      branch: payload.branch || '',
+      incubator: payload.incubator || '',
+      platform: payload.platform || '',
+      type: payload.type || 'إلكتروني',
+      status: payload.status || 'active',
+      manager: payload.manager || payload.party1Name || '',
+      grantedAt: nowIso(),
+      ...pickCommonMeta(payload),
+    };
+    op.offices.unshift(item);
+    recordActivity('org', `منح مكتب إلكتروني: ${item.nameAr}`, { id: item.id });
+    save();
+    return item;
+  };
+
+  const listUnifiedServices = () => {
+    const catalog = window.HubOperatingModel?.allServices?.() || [];
+    return catalog;
+  };
+
+  const listSystemServices = (code) => window.HubOperatingModel?.servicesFor?.(code) || [];
 
   const emitNotificationsChanged = () => {
     try {
@@ -612,7 +843,7 @@ const HubStore = (() => {
       app.lastLaunchMode = mode;
       save();
     }
-    pushFeed('decision', `تشغيل ${code} · ${mode === 'standalone' ? 'منفرد' : 'عبر هوب'}`);
+    recordActivity('launch', `تشغيل ${code} · ${mode === 'standalone' ? 'منفرد' : 'عبر هوب'}`, { code, mode });
     return app || null;
   };
 
@@ -1004,19 +1235,39 @@ const HubStore = (() => {
     risk: 'تقرير المخاطر',
     growth: 'تقرير النمو',
     compliance: 'تقرير الامتثال',
+    activity: 'تقرير النشاط الموحّد',
   };
 
   const generateReport = (type) => {
     const k = kpis();
+    const op = ensureOperating();
+    const activity = (op.activityLog || []).slice(0, 40);
+    const notes = (get().notifications || []).slice(0, 20);
+    const launches = (get().empire?.apps || [])
+      .filter((a) => a.lastLaunchAt)
+      .map((a) => ({ code: a.code, nameAr: a.nameAr, at: a.lastLaunchAt, mode: a.lastLaunchMode }));
+    const subs = (op.subscriptions || []).filter((s) => s.status === 'active');
+    const baseSummary =
+      type === 'risk'
+        ? `مخاطر مفتوحة: ${get().core.predictions.length} تنبؤ · ${get().core.anomalies.filter((a) => a.status !== 'closed').length} شذوذ`
+        : type === 'compliance'
+          ? `متوسط الامتثال ${k.compliance}%`
+          : type === 'activity'
+            ? `نشاط موحّد: ${activity.length} حدثًا · ${notes.length} إشعارًا · ${launches.length} تشغيل · ${subs.length} اشتراك`
+            : `قرارات منفّذة ${k.decisionsToday} · إنتاجية ${k.productivity}% · صحة أنظمة ${k.systemsHealth}%`;
     const body = {
       date: today(),
       kpis: k,
-      summary:
-        type === 'risk'
-          ? `مخاطر مفتوحة: ${get().core.predictions.length} تنبؤ · ${get().core.anomalies.filter((a) => a.status !== 'closed').length} شذوذ`
-          : type === 'compliance'
-            ? `متوسط الامتثال ${k.compliance}%`
-            : `قرارات منفّذة ${k.decisionsToday} · إنتاجية ${k.productivity}% · صحة أنظمة ${k.systemsHealth}%`,
+      summary: baseSummary,
+      activity,
+      notifications: notes.map((n) => ({ title: n.title, source: n.sourceName, at: n.at, read: n.read })),
+      launches,
+      subscriptions: subs.map((s) => ({ email: s.email, systemCode: s.systemCode, plan: s.plan })),
+      ongoing: {
+        openTasks: (get().tasks?.items || []).filter((t) => t.status !== 'done' && t.status !== 'مكتمل').length,
+        activeAds: (get().empire?.adsStudio?.listings || []).filter((a) => a.status === 'active').length,
+        openIncidents: get().infoSecurity?.openIncidents || 0,
+      },
     };
     const item = {
       id: uid('r'),
@@ -1027,7 +1278,7 @@ const HubStore = (() => {
       body,
     };
     get().reports.generated.unshift(item);
-    pushFeed('report', `${item.title} جاهز للقائد الأعلى`);
+    recordActivity('report', `${item.title} جاهز للقائد الأعلى`, { type });
     save();
     return item;
   };
@@ -1203,7 +1454,22 @@ const HubStore = (() => {
     };
     store.orders.unshift(order);
     if (item.points) burnPoints('متجر المبيعات', item.points, `شراء: ${item.title}`);
-    pushFeed('decision', `طلب متجر: ${item.title}`);
+    // اشتراك → صلاحية دخول للنظام المرتبط
+    const systemCode = String(item.platformCode || '').toUpperCase();
+    const userEmail =
+      (typeof buyer === 'string' && buyer.includes('@') && buyer) ||
+      window.HubAuth?.getUser?.()?.email ||
+      '';
+    if (systemCode && userEmail && window.HubLauncher?.SYSTEM_META?.[systemCode]) {
+      grantSubscription({
+        email: userEmail,
+        systemCode,
+        plan: item.title,
+        permissions: ['read', 'write'],
+        source: 'store',
+      });
+    }
+    recordActivity('order', `طلب متجر: ${item.title}`, { itemId: item.id, systemCode });
     save();
     return order;
   };
@@ -1663,6 +1929,8 @@ const HubStore = (() => {
         return { list: s.empire?.marketplace?.catalog || s.systems?.registry || [], nameKey: 'name' };
       case 'platforms':
         return { list: empire.organization?.platforms || [], nameKey: 'nameAr' };
+      case 'offices':
+        return { list: ensureOperating().offices || [], nameKey: 'nameAr' };
       case 'connectors':
         return { list: s.integration?.connectors || [], nameKey: 'name' };
       default:
@@ -1755,6 +2023,15 @@ const HubStore = (() => {
     markAllNotificationsRead,
     recordLaunch,
     ingestSystemSync,
+    recordActivity,
+    ensureOperating,
+    listSubscriptions,
+    checkEntitlement,
+    grantSubscription,
+    revokeSubscription,
+    addOffice,
+    listUnifiedServices,
+    listSystemServices,
     issueDecision,
     executeDecision,
     resolveAnomaly,

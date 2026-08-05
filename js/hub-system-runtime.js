@@ -44,25 +44,31 @@
     list.prepend(li);
   };
 
-  const buildPayload = () => ({
-    code,
-    nameAr: meta.nameAr,
-    domain: meta.domain,
-    mode: fromHub ? 'hub' : 'standalone',
-    health: 90 + Math.floor(Math.random() * 9),
-    status: 'online',
-    metrics: {
-      activeUsers: 40 + Math.floor(Math.random() * 80),
-      openTickets: Math.floor(Math.random() * 12),
-      syncLagSec: Math.floor(Math.random() * 20),
-    },
-    modules: [
-      { id: 'core', nameAr: 'النواة', status: 'active' },
-      { id: 'ops', nameAr: 'التشغيل', status: 'active' },
-      { id: 'reports', nameAr: 'التقارير', status: 'active' },
-    ],
-    uploadedAt: new Date().toISOString(),
-  });
+  const buildPayload = () => {
+    const services = window.HubStore?.listSystemServices?.(code) || window.HubOperatingModel?.servicesFor?.(code) || [];
+    return {
+      code,
+      nameAr: meta.nameAr,
+      domain: meta.domain,
+      mode: fromHub ? 'hub' : 'standalone',
+      health: 90 + Math.floor(Math.random() * 9),
+      status: 'online',
+      metrics: {
+        activeUsers: 40 + Math.floor(Math.random() * 80),
+        openTickets: Math.floor(Math.random() * 12),
+        syncLagSec: Math.floor(Math.random() * 20),
+      },
+      modules: services.length
+        ? services.map((s) => ({ id: s.id, nameAr: s.nameAr, status: 'active', icon: s.icon }))
+        : [
+            { id: 'core', nameAr: 'النواة', status: 'active' },
+            { id: 'ops', nameAr: 'التشغيل', status: 'active' },
+            { id: 'reports', nameAr: 'التقارير', status: 'active' },
+          ],
+      services,
+      uploadedAt: new Date().toISOString(),
+    };
+  };
 
   const pushLocalNotification = (n) => {
     if (window.HubStore?.pushNotification) {
@@ -134,6 +140,9 @@
 
     const modeLabel = fromHub ? 'تشغيل عبر هوب' : 'تشغيل منفرد';
     const modeClass = fromHub ? 'is-hub' : 'is-solo';
+    const services = window.HubStore?.listSystemServices?.(code) || window.HubOperatingModel?.servicesFor?.(code) || [];
+    const ssoUser = params.get('hubUser') || '';
+    const perms = (params.get('perms') || '').split(',').filter(Boolean);
 
     document.body.innerHTML = `
       <header class="sys-top">
@@ -156,19 +165,41 @@
           <h1>${esc(meta.nameAr)}</h1>
           <p>
             ${fromHub
-              ? 'تم فتح النظام مباشرة من هوب. يمكنك العمل هنا ثم رفع كل المعلومات والإشعارات إلى مركز هوب الموحّد.'
+              ? 'تم فتح النظام مباشرة من هوب. خدمات هذا النظام فقط تظهر هنا — بينما هوب يعكس كل خدمات الأنظمة.'
               : 'النظام يعمل بشكل منفرد. يمكنك لاحقًا الربط بهوب لرفع البيانات والإشعارات دون إيقاف التشغيل المستقل.'}
           </p>
+          ${
+            ssoUser
+              ? `<p class="sys-sso"><i class="fas fa-id-card"></i> جلسة NAIOSH ID: <b>${esc(ssoUser)}</b>${
+                  perms.length ? ` · صلاحيات: ${esc(perms.join(' · '))}` : ''
+                }</p>`
+              : ''
+          }
         </section>
         <div class="sys-kpis">
           <div class="sys-kpi"><strong id="kpi-health">—</strong><span>صحة النظام</span></div>
           <div class="sys-kpi"><strong id="kpi-users">—</strong><span>مستخدمون نشطون</span></div>
           <div class="sys-kpi"><strong id="kpi-mode">${fromHub ? 'HUB' : 'SOLO'}</strong><span>وضع التشغيل</span></div>
         </div>
+        <section class="sys-services">
+          <h2><i class="fas fa-layer-group"></i> خدمات ${esc(meta.nameAr)} فقط</h2>
+          <p>داخل النظام تُعرض أنشطة ${esc(code)} — خدمات هوب الموحّدة تُرى من غرفة العمليات.</p>
+          <div class="sys-services-grid">
+            ${
+              services.length
+                ? services
+                    .map(
+                      (s) => `<article class="sys-service-card"><i class="fas ${esc(s.icon || 'fa-cube')}"></i><strong>${esc(s.nameAr)}</strong></article>`
+                    )
+                    .join('')
+                : '<p>لا توجد خدمات معرّفة لهذا النظام بعد.</p>'
+            }
+          </div>
+        </section>
         <div class="sys-grid">
           <article class="sys-card">
             <h3><i class="fas fa-cloud-arrow-up"></i> رفع المعلومات على هوب</h3>
-            <p>يرسل المقاييس والحالة والوحدات إلى سجل هوب ومركز الإشعارات.</p>
+            <p>يرسل المقاييس والحالة وخدمات النظام إلى سجل هوب ومركز الإشعارات.</p>
             <button type="button" class="sys-btn primary" id="btn-sync"><i class="fas fa-upload"></i> رفع الكل الآن</button>
           </article>
           <article class="sys-card">
@@ -179,7 +210,7 @@
           <article class="sys-card">
             <h3><i class="fas fa-shuffle"></i> تبديل وضع التشغيل</h3>
             <ul>
-              <li>عبر هوب: انتقال مباشر مع سياق العودة</li>
+              <li>عبر هوب: انتقال مباشر مع سياق العودة وصلاحية الاشتراك</li>
               <li>منفرد: تشغيل مستقل بدون اعتماد على الواجهة المركزية</li>
             </ul>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
@@ -187,16 +218,16 @@
               <a class="sys-btn" href="?mode=standalone"><i class="fas fa-window-restore"></i> منفرد</a>
             </div>
           </article>
-          ${
-            code === 'ACADEMY'
-              ? `<article class="sys-card">
-            <h3><i class="fas fa-bag-shopping"></i> متجر الأكاديمية</h3>
-            <p>نفس متجر هوب الموحّد — ارفع الدورات والخدمات واربطها بأسواق البيع المباشر.</p>
-            <a class="sys-btn primary" href="../store.html"><i class="fas fa-store"></i> فتح المتجر</a>
-            <a class="sys-btn" href="../products.html"><i class="fas fa-boxes-stacked"></i> المنتجات</a>
-          </article>`
-              : ''
-          }
+          <article class="sys-card">
+            <h3><i class="fas fa-gears"></i> آلية تشغيل هوب</h3>
+            <p>اشتراك · صلاحية · SSO · تقارير · بدون تكرار.</p>
+            <a class="sys-btn" href="../operating.html"><i class="fas fa-book"></i> عرض الآلية</a>
+            ${
+              code === 'ACADEMY'
+                ? `<a class="sys-btn primary" href="../store.html"><i class="fas fa-store"></i> متجر الأكاديمية</a>`
+                : ''
+            }
+          </article>
         </div>
         <ul class="sys-log" id="sys-log"></ul>
       </main>
@@ -216,6 +247,7 @@
     );
 
     logLine(fromHub ? 'تم الدخول مباشرة من هوب' : 'تشغيل منفرد جاهز', 'boot');
+    if (ssoUser) logLine(`SSO: ${ssoUser}`, 'auth');
 
     // Auto announce arrival to Hub when launched from Hub
     if (fromHub) {
