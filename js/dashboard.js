@@ -1,6 +1,7 @@
 (() => {
   const NAV = [
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
+    { key: 'notifications', icon: 'fa-bell', label: 'إشعارات هوب' },
     { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
     { key: 'platforms', icon: 'fa-layer-group', label: 'المنصات السيادية' },
     { key: 'apps', icon: 'fa-cubes', label: 'سجل الأنظمة' },
@@ -27,6 +28,7 @@
 
   const TITLES = {
     overview: ['مركز التحكم العالمي', 'الفروع · الحاضنات · المنصات · المنتجات · المتجر · الإعلانات · الفعاليات'],
+    notifications: ['مركز إشعارات هوب', 'كل تنبيهات الأنظمة تصل هنا — ERP · LAW · FIT · Academy'],
     blueprint: ['دستور المعمارية الإمبراطورية', 'هوب مركزي — طبقات · محاور · أول 6 أشهر'],
     platforms: ['المنصات السيادية لنايوش 360', '18 منصة تشغّل هوب — من الدماغ المركزي إلى السلطة العليا'],
     apps: ['سجل أنظمة هوب', 'أي نظام نايوش يمكنه الظهور هنا والارتباط بالتشغيل الموحّد'],
@@ -538,15 +540,62 @@
     `;
   };
 
+  const renderNotifications = () => {
+    const notes = HubStore.listNotifications?.() || [];
+    const unread = HubStore.unreadNotificationsCount?.() || 0;
+    return `
+      <div class="toolbar">
+        <button class="btn btn-primary" data-action="mark-all-notifications"><i class="fas fa-check-double"></i> تعليم الكل كمقروء</button>
+        <button class="btn btn-ghost" data-action="demo-hub-notification"><i class="fas fa-plus"></i> إشعار تجريبي</button>
+        <a class="btn btn-ghost" href="apps.html" target="_blank"><i class="fas fa-cubes"></i> سجل الأنظمة</a>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi"><span>كل الإشعارات</span><strong>${notes.length}</strong><small>على هوب</small></article>
+        <article class="kpi"><span>غير مقروء</span><strong>${unread}</strong><small>يحتاج متابعة</small></article>
+        <article class="kpi"><span>مصادر</span><strong>${new Set(notes.map((n) => n.source)).size}</strong><small>أنظمة</small></article>
+        <article class="kpi"><span>مزامنة</span><strong>${notes.filter((n) => n.category === 'sync').length}</strong><small>رفع معلومات</small></article>
+      </div>
+      <article class="card" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-bell icon"></i> صندوق الإشعارات الموحّد</span></h3>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>المصدر</th><th>العنوان</th><th>التفاصيل</th><th>النوع</th><th>الوقت</th><th>الحالة</th><th></th></tr></thead>
+          <tbody>
+            ${
+              notes.length
+                ? notes
+                    .map(
+                      (n) => `<tr>
+                        <td><strong>${esc(n.sourceName || n.source)}</strong><br><small>${esc(n.source)}</small></td>
+                        <td>${esc(n.title)}</td>
+                        <td>${esc(n.body || '—')}</td>
+                        <td>${esc(n.level)} · ${esc(n.category)}</td>
+                        <td>${fmtTime(n.at)}</td>
+                        <td>${n.read ? badgeStatus('active') : '<span class="badge badge-red">جديد</span>'}</td>
+                        <td>
+                          ${n.read ? '' : `<button class="btn btn-sm btn-dark" data-action="read-notification" data-id="${n.id}">مقروء</button>`}
+                          ${n.link ? `<a class="btn btn-sm btn-ghost" href="${esc(n.link)}">فتح</a>` : ''}
+                        </td>
+                      </tr>`
+                    )
+                    .join('')
+                : '<tr><td colspan="7">لا إشعارات بعد — افتح نظامًا من سجل الأنظمة أو ارفع معلوماته إلى هوب.</td></tr>'
+            }
+          </tbody>
+        </table></div>
+      </article>
+    `;
+  };
+
   const renderApps = () => {
     const apps = HubStore.get().empire.apps || [];
+    const launcher = window.HubLauncher;
     return `
       <div class="toolbar">
         ${pageActs('apps', 'إضافة')}
         <div class="field"><label>رمز النظام</label><input id="app-code" placeholder="LAW" /></div>
         <div class="field"><label>الاسم بالعربي</label><input id="app-name" placeholder="نظام جديد لنايوش" /></div>
         <div class="field"><label>التصنيف</label><input id="app-cat" placeholder="أنظمة نايوش" /></div>
-        <div class="field"><label>الرابط</label><input id="app-url" placeholder="apps.html" /></div>
+        <div class="field"><label>رابط التشغيل المباشر</label><input id="app-url" placeholder="systems/erp.html" /></div>
         <button class="btn btn-primary" data-action="register-app"><i class="fas fa-plus"></i> تسجيل سريع</button>
         <a class="btn btn-ghost" href="apps.html" target="_blank">فتح السجل العام</a>
       </div>
@@ -557,26 +606,35 @@
         <article class="kpi"><span>سيادية</span><strong>${apps.filter((a) => a.kind === 'sovereign').length}</strong><small>منصات</small></article>
       </div>
       <article class="card" style="margin-top:12px">
-        <h3><span class="title-left"><i class="fas fa-cubes icon"></i> أي نظام نايوش يظهر هنا</span></h3>
+        <h3><span class="title-left"><i class="fas fa-cubes icon"></i> اضغط النظام → انتقال مباشر إليه</span>
+          <span class="badge badge-red">Hub Launch</span>
+        </h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>الصحة</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
+          <thead><tr><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>الصحة</th><th>آخر مزامنة</th><th>الحالة</th><th>تشغيل</th>${metaHead()}<th></th></tr></thead>
           <tbody>
             ${apps
-              .map(
-                (a) => `<tr>
-                  <td><strong>${esc(a.nameAr)}</strong></td>
+              .map((a) => {
+                const app = launcher?.normalizeApp?.(a) || a;
+                const direct = launcher ? launcher.getDirectLaunchUrl(app) : app.url || 'apps.html';
+                const solo = launcher ? launcher.getStandaloneUrl(app) : app.url || 'apps.html';
+                return `<tr>
+                  <td><strong>${esc(a.nameAr)}</strong><br><small>${esc(a.code)}</small></td>
                   <td>${esc(a.category)}</td>
                   <td>${esc(a.kind)}</td>
                   <td>${a.health || '—'}%</td>
+                  <td>${a.lastSyncAt ? fmtTime(a.lastSyncAt) : '—'}</td>
                   <td>${badgeStatus(a.status)}</td>
+                  <td style="white-space:nowrap">
+                    <a class="btn btn-sm btn-primary" href="${esc(direct)}" title="تشغيل عبر هوب"><i class="fas fa-bolt"></i> فتح النظام</a>
+                    <a class="btn btn-sm btn-ghost" href="${esc(solo)}" title="تشغيل منفرد">منفرد</a>
+                  </td>
                   ${metaCells(a)}
                   <td>
                     <button class="btn btn-sm btn-dark" data-action="toggle-app" data-id="${a.id}">تفعيل/إيقاف</button>
-                    <a class="btn btn-sm btn-ghost" href="${esc(a.url || 'apps.html')}">فتح</a>
                     ${rowActs('apps', a.id)}
                   </td>
-                </tr>`
-              )
+                </tr>`;
+              })
               .join('')}
           </tbody>
         </table></div>
@@ -1514,6 +1572,7 @@
 
   const renderers = {
     overview: renderOverview,
+    notifications: renderNotifications,
     blueprint: renderBlueprint,
     platforms: renderPlatforms,
     apps: renderApps,
@@ -1704,15 +1763,47 @@
         const code = $('#app-code')?.value.trim();
         const nameAr = $('#app-name')?.value.trim();
         const category = $('#app-cat')?.value.trim() || 'أنظمة نايوش';
-        const url = $('#app-url')?.value.trim() || 'apps.html';
+        const url = $('#app-url')?.value.trim() || (code ? `systems/${code.toLowerCase()}.html` : 'apps.html');
         if (!code || !nameAr) return toast('رمز النظام والاسم مطلوبان');
-        HubStore.registerApp({ code, nameAr, category, url, kind: 'system', icon: 'fa-cube' });
+        HubStore.registerApp({
+          code,
+          nameAr,
+          category,
+          url,
+          launchUrl: url,
+          standaloneUrl: url,
+          hubPath: `apps.html#${code.toLowerCase()}`,
+          kind: 'system',
+          icon: 'fa-cube',
+          supportsStandalone: true,
+          launchViaHub: true,
+        });
         toast('تم تسجيل النظام في هوب');
         break;
       }
       case 'toggle-app':
         HubStore.toggleApp(id);
         toast('تحدّثت حالة النظام');
+        break;
+      case 'mark-all-notifications':
+        HubStore.markAllNotificationsRead?.();
+        toast('تم تعليم كل الإشعارات كمقروءة');
+        break;
+      case 'read-notification':
+        HubStore.markNotificationRead?.(id);
+        toast('تم تعليم الإشعار كمقروء');
+        break;
+      case 'demo-hub-notification':
+        HubStore.pushNotification?.({
+          source: 'HUB',
+          sourceName: 'غرفة العمليات',
+          title: 'إشعار تجريبي من هوب',
+          body: 'هذا يؤكد أن مركز الإشعارات الموحّد يستقبل تنبيهات كل الأنظمة.',
+          level: 'info',
+          category: 'system',
+          link: 'dashboard.html#notifications',
+        });
+        toast('أُضيف إشعار إلى هوب');
         break;
       case 'add-store-item': {
         const title = $('#store-title')?.value.trim();

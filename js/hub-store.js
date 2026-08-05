@@ -4,7 +4,7 @@
  * Persists to localStorage.
  */
 const HubStore = (() => {
-  const KEY = 'naioshHub360Store_v12';
+  const KEY = 'naioshHub360Store_v13';
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
@@ -223,6 +223,20 @@ const HubStore = (() => {
       { id: uid('f'), type: 'compliance', text: 'سياسة الجودة Q-17 فُعّلت على 3 أنظمة', at: nowIso() },
       { id: uid('f'), type: 'report', text: 'ملخص المخاطر اليومي جاهز للقائد', at: nowIso() },
     ],
+    notifications: [
+      {
+        id: uid('n'),
+        source: 'HUB',
+        sourceName: 'نايوش هوب',
+        title: 'مركز الإشعارات جاهز',
+        body: 'كل إشعارات الأنظمة (ERP · LAW · FIT…) تصل إلى هوب هنا.',
+        level: 'info',
+        category: 'system',
+        read: false,
+        at: nowIso(),
+        link: 'dashboard.html#notifications',
+      },
+    ],
     empire: seedEmpire(),
     core: {
       decisions: [
@@ -399,6 +413,29 @@ const HubStore = (() => {
       state.systemsAutomation = seedSystemsAutomation();
       changed = true;
     }
+    if (!Array.isArray(state.notifications)) {
+      state.notifications = [];
+      changed = true;
+    }
+    return changed;
+  };
+
+  /** Refresh launch URLs / dual-mode fields from marketplace catalog */
+  const hydrateLaunchFields = () => {
+    const md = window.HubMarketplaceData?.APPS;
+    if (!md?.length || !state?.empire?.apps?.length) return false;
+    let changed = false;
+    const byCode = Object.fromEntries(md.map((a) => [a.code, a]));
+    state.empire.apps.forEach((app) => {
+      const src = byCode[app.code];
+      if (!src) return;
+      ['launchUrl', 'standaloneUrl', 'hubPath', 'url', 'supportsStandalone', 'launchViaHub'].forEach((k) => {
+        if (src[k] != null && app[k] !== src[k]) {
+          app[k] = src[k];
+          changed = true;
+        }
+      });
+    });
     return changed;
   };
 
@@ -483,6 +520,7 @@ const HubStore = (() => {
           save();
         }
         if (hydrateOpsDomains()) save();
+        if (hydrateLaunchFields()) save();
         return state;
       }
     } catch (_) {}
@@ -503,6 +541,131 @@ const HubStore = (() => {
     get().feed.unshift({ id: uid('f'), type, text, at: nowIso() });
     if (get().feed.length > 40) get().feed.length = 40;
     save();
+  };
+
+  const emitNotificationsChanged = () => {
+    try {
+      window.dispatchEvent(new CustomEvent('hub-notifications-changed'));
+    } catch (_) {}
+  };
+
+  const pushNotification = (payload = {}) => {
+    const s = get();
+    if (!Array.isArray(s.notifications)) s.notifications = [];
+    const item = {
+      id: uid('n'),
+      source: (payload.source || 'HUB').toString().toUpperCase(),
+      sourceName: payload.sourceName || payload.source || 'HUB',
+      title: payload.title || 'إشعار هوب',
+      body: payload.body || '',
+      level: payload.level || 'info',
+      category: payload.category || 'system',
+      link: payload.link || '',
+      read: false,
+      at: nowIso(),
+      meta: payload.meta || null,
+    };
+    s.notifications.unshift(item);
+    if (s.notifications.length > 200) s.notifications.length = 200;
+    pushFeed('alert', `${item.sourceName}: ${item.title}`);
+    save();
+    emitNotificationsChanged();
+    return item;
+  };
+
+  const listNotifications = () => get().notifications || [];
+
+  const unreadNotificationsCount = () => (get().notifications || []).filter((n) => !n.read).length;
+
+  const markNotificationRead = (id) => {
+    const n = (get().notifications || []).find((x) => x.id === id);
+    if (!n) return null;
+    n.read = true;
+    save();
+    emitNotificationsChanged();
+    return n;
+  };
+
+  const markAllNotificationsRead = () => {
+    (get().notifications || []).forEach((n) => {
+      n.read = true;
+    });
+    save();
+    emitNotificationsChanged();
+    return listNotifications();
+  };
+
+  const recordLaunch = (code, mode = 'hub') => {
+    const app = get().empire?.apps?.find((a) => a.code === String(code || '').toUpperCase());
+    if (app) {
+      app.lastLaunchAt = nowIso();
+      app.lastLaunchMode = mode;
+      save();
+    }
+    pushFeed('decision', `تشغيل ${code} · ${mode === 'standalone' ? 'منفرد' : 'عبر هوب'}`);
+    return app || null;
+  };
+
+  const ingestSystemSync = (payload = {}) => {
+    const code = String(payload.code || '').toUpperCase();
+    if (!code) return null;
+    const empire = get().empire;
+    if (!empire.apps) empire.apps = [];
+
+    let app = empire.apps.find((a) => a.code === code);
+    const launchUrl = payload.launchUrl || (window.HubLauncher?.systemPath?.(code) || `systems/${code.toLowerCase()}.html`);
+    if (!app) {
+      app = {
+        id: uid('app'),
+        code,
+        nameAr: payload.nameAr || code,
+        kind: 'system',
+        category: 'أنظمة نايوش',
+        url: launchUrl,
+        launchUrl,
+        standaloneUrl: launchUrl,
+        hubPath: `apps.html#${code.toLowerCase()}`,
+        icon: payload.icon || 'fa-cube',
+        status: 'active',
+        health: Number(payload.health) || 90,
+        registeredAt: nowIso(),
+        supportsStandalone: true,
+        launchViaHub: true,
+      };
+      empire.apps.unshift(app);
+    } else {
+      if (payload.nameAr) app.nameAr = payload.nameAr;
+      if (payload.health != null) app.health = Number(payload.health);
+      app.status = payload.status === 'offline' ? 'stopped' : 'active';
+      app.url = app.launchUrl || launchUrl;
+      app.launchUrl = app.launchUrl || launchUrl;
+      app.standaloneUrl = app.standaloneUrl || launchUrl;
+      app.lastSyncAt = nowIso();
+      app.lastSyncPayload = {
+        metrics: payload.metrics || null,
+        modules: payload.modules || null,
+        mode: payload.mode || null,
+        domain: payload.domain || null,
+        uploadedAt: payload.uploadedAt || nowIso(),
+      };
+    }
+
+    // Mirror into systems.registry health panel
+    const reg = get().systems?.registry || [];
+    let sys = reg.find((x) => String(x.name).toUpperCase() === code || String(x.code || '').toUpperCase() === code);
+    if (!sys) {
+      sys = { id: uid('sys'), name: code, code, health: Number(payload.health) || 90, status: 'online', lastSync: nowIso() };
+      reg.unshift(sys);
+    } else {
+      sys.health = Number(payload.health) || sys.health;
+      sys.status = payload.status || (sys.health >= 95 ? 'online' : sys.health >= 88 ? 'degraded' : 'offline');
+      sys.lastSync = nowIso();
+      sys.code = code;
+    }
+
+    pushFeed('decision', `رفع معلومات ${app.nameAr} على هوب`);
+    save();
+    return { app, sys };
   };
 
   const avg = (arr, key) => {
@@ -734,6 +897,24 @@ const HubStore = (() => {
     sys.health = Math.min(100, sys.health + Math.floor(Math.random() * 5));
     sys.status = sys.health >= 95 ? 'online' : sys.health >= 88 ? 'degraded' : 'offline';
     pushFeed('decision', `مزامنة ${sys.name}`);
+    pushNotification({
+      source: sys.code || sys.name,
+      sourceName: sys.name,
+      title: `مزامنة ${sys.name}`,
+      body: `اكتملت المزامنة مع هوب · صحة ${sys.health}%`,
+      level: 'info',
+      category: 'sync',
+    });
+    // Also mirror into apps registry when code matches
+    const code = String(sys.code || sys.name || '').toUpperCase();
+    ingestSystemSync({
+      code,
+      nameAr: sys.name,
+      health: sys.health,
+      status: sys.status,
+      mode: 'hub',
+      metrics: { lastSync: sys.lastSync },
+    });
     save();
     return sys;
   };
@@ -966,11 +1147,16 @@ const HubStore = (() => {
       nameAr: manifest.nameAr,
       kind: manifest.kind || 'system',
       category: manifest.category || 'أنظمة نايوش',
-      url: manifest.url || 'apps.html',
+      url: manifest.url || manifest.launchUrl || 'apps.html',
+      launchUrl: manifest.launchUrl || manifest.url || 'apps.html',
+      standaloneUrl: manifest.standaloneUrl || manifest.launchUrl || manifest.url || 'apps.html',
+      hubPath: manifest.hubPath || `apps.html#${code.toLowerCase()}`,
       icon: manifest.icon || 'fa-cube',
       status: manifest.status || 'active',
       health: 88,
       registeredAt: nowIso(),
+      supportsStandalone: manifest.supportsStandalone !== false,
+      launchViaHub: manifest.launchViaHub !== false,
       ...pickCommonMeta(manifest),
     };
     empire.apps.unshift(app);
@@ -1321,6 +1507,13 @@ const HubStore = (() => {
     reset,
     kpis,
     pushFeed,
+    pushNotification,
+    listNotifications,
+    unreadNotificationsCount,
+    markNotificationRead,
+    markAllNotificationsRead,
+    recordLaunch,
+    ingestSystemSync,
     issueDecision,
     executeDecision,
     resolveAnomaly,

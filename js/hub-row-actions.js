@@ -538,8 +538,19 @@
         { id: 'nameAr', label: 'اسم النظام', required: true },
         { id: 'code', label: 'رمز النظام', value: 'SYS', required: true },
         { id: 'category', label: 'التصنيف', value: 'أنظمة نايوش' },
+        { id: 'url', label: 'رابط التشغيل المباشر', value: 'systems/erp.html' },
       ],
-      save: (v) => window.HubStore.registerApp({ nameAr: v.nameAr, code: v.code, kind: 'system', category: v.category || 'أنظمة نايوش', ...v }),
+      save: (v) =>
+        window.HubStore.registerApp({
+          nameAr: v.nameAr,
+          code: v.code,
+          kind: 'system',
+          category: v.category || 'أنظمة نايوش',
+          url: v.url || `systems/${String(v.code || 'sys').toLowerCase()}.html`,
+          launchUrl: v.url || `systems/${String(v.code || 'sys').toLowerCase()}.html`,
+          standaloneUrl: v.url || `systems/${String(v.code || 'sys').toLowerCase()}.html`,
+          ...v,
+        }),
     },
     systems: {
       title: 'إضافة نظام للسوق',

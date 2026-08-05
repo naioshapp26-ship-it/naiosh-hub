@@ -40,28 +40,38 @@
     const root = document.getElementById('market-grid');
     const tabs = document.getElementById('market-tabs');
     if (!root) return;
-    const cats = ['الكل', ...Array.from(new Set(apps.map((a) => a.category)))];
-    let active = 'الكل';
+    const cats = ['الكل', 'أنظمة نايوش', ...Array.from(new Set(apps.map((a) => a.category))).filter((c) => c !== 'أنظمة نايوش')];
+    let active = 'أنظمة نايوش';
+    const launcher = window.HubLauncher;
 
     const paint = () => {
       const list = (active === 'الكل' ? apps : apps.filter((a) => a.category === active)).filter(
         (a) => a.status !== 'archived'
       );
       root.innerHTML = list
-        .map(
-          (a) => `<article class="market-card" id="${esc((a.code || '').toLowerCase())}">
+        .map((a) => {
+          const app = launcher?.normalizeApp?.(a) || a;
+          const isSystem = app.kind === 'system';
+          const openHtml = launcher
+            ? launcher.openButtonsHtml(app, { compact: !isSystem })
+            : `<a class="btn-mini primary" href="${esc(app.url || 'apps.html')}"><i class="fas fa-arrow-left"></i> فتح</a>`;
+          return `<article class="market-card" id="${esc((a.code || '').toLowerCase())}">
             <div class="card-icon"><i class="fas ${esc(a.icon || 'fa-cube')}"></i></div>
             <span class="badge-soft">${esc(a.category)}</span>
             <h3>${esc(a.nameAr)}</h3>
-            <p>أي نظام نايوش يمكنه الظهور هنا والارتباط بهوب للتشغيل الموحد.</p>
-            <div class="meta">${a.status === 'active' ? 'متاح الآن' : 'قيد التجهيز'}${a.health ? ` · صحة ${a.health}%` : ''}${a.assignee ? ` · معيّن: ${esc(a.assignee)}` : ''}</div>
+            <p>${
+              isSystem
+                ? 'اضغط للانتقال مباشرة إلى النظام نفسه — يعمل عبر هوب أو بشكل منفرد، ويرفع إشعاراته ومعلوماته إلى هوب.'
+                : 'أي نظام نايوش يمكنه الظهور هنا والارتباط بهوب للتشغيل الموحد.'
+            }</p>
+            <div class="meta">${a.status === 'active' ? 'متاح الآن' : 'قيد التجهيز'}${a.health ? ` · صحة ${a.health}%` : ''}${a.assignee ? ` · معيّن: ${esc(a.assignee)}` : ''}${app.lastSyncAt ? ' · مُزامَن' : ''}</div>
             ${metaLine(a)}
             <div class="card-actions">
-              <a class="btn-mini primary" href="${esc(a.url || 'apps.html')}"><i class="fas fa-arrow-left"></i> فتح</a>
+              ${openHtml}
             </div>
             ${actions('apps', a.id || a.code)}
-          </article>`
-        )
+          </article>`;
+        })
         .join('');
     };
 
@@ -80,6 +90,12 @@
     setStat('stat-apps', apps.length);
     setStat('stat-active', apps.filter((a) => a.status === 'active').length);
     paint();
+
+    root.addEventListener('click', (e) => {
+      const link = e.target.closest('[data-launch-code]');
+      if (!link || !window.HubStore?.recordLaunch) return;
+      window.HubStore.recordLaunch(link.dataset.launchCode, link.dataset.launchMode || 'hub');
+    });
   };
 
   const renderStore = () => {

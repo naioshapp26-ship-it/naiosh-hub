@@ -250,6 +250,29 @@ CREATE TABLE IF NOT EXISTS hub_feed (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS hub_notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  source TEXT NOT NULL,
+  source_name TEXT,
+  title TEXT NOT NULL,
+  body TEXT,
+  level TEXT NOT NULL DEFAULT 'info',
+  category TEXT NOT NULL DEFAULT 'system',
+  link TEXT,
+  meta JSONB NOT NULL DEFAULT '{}'::jsonb,
+  is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS hub_system_sync (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  health INT NOT NULL DEFAULT 90,
+  status TEXT NOT NULL DEFAULT 'online',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS hub_env_checks (
   id SERIAL PRIMARY KEY,
   check_name TEXT NOT NULL,
@@ -266,3 +289,5 @@ CREATE INDEX IF NOT EXISTS idx_hub_events_date ON hub_events(event_date);
 CREATE INDEX IF NOT EXISTS idx_hub_employees_status ON hub_employees(status);
 CREATE INDEX IF NOT EXISTS idx_hub_feed_created ON hub_feed(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_hub_wallet_ledger_created ON hub_wallet_ledger(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_hub_notifications_created ON hub_notifications(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_hub_system_sync_code ON hub_system_sync(code, created_at DESC);
