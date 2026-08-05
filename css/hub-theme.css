@@ -369,7 +369,7 @@ body.homepage .hero.law-hero .hero-orb {
 body.homepage .hero.law-hero .hero-sidebar {
   position: absolute;
   top: max(92px, calc(var(--announcement-bar-height, 40px) + 70px));
-  bottom: 48px;
+  bottom: 40px;
   inset-inline-start: max(16px, calc((100vw - min(100vw, 1320px)) / 2 + 12px));
   inset-inline-end: auto;
   width: clamp(200px, 19vw, 256px);
@@ -377,7 +377,7 @@ body.homepage .hero.law-hero .hero-sidebar {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 18px;
+  gap: 10px;
   align-self: auto;
   justify-self: auto;
   direction: rtl;
@@ -394,17 +394,17 @@ body.homepage .hero.law-hero .hero-sidebar-item {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 14px;
+  gap: 12px;
   flex: 1 1 0;
   width: 100%;
-  min-height: 64px;
+  min-height: 48px;
   box-sizing: border-box;
-  padding: 16px 20px;
+  padding: 12px 18px;
   border-radius: 999px;
   background: rgba(8, 0, 3, 0.82);
   border: 2px solid rgba(255, 31, 47, 0.55);
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 900;
   letter-spacing: 0.01em;
   text-align: right;
@@ -420,16 +420,16 @@ body.homepage .hero.law-hero .hero-sidebar-item {
 }
 
 body.homepage .hero.law-hero .hero-sidebar-icon {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
   border-radius: 50%;
   display: inline-grid;
   place-items: center;
   background: linear-gradient(145deg, rgba(255, 31, 47, 0.45), rgba(215, 0, 0, 0.22));
   border: 1.5px solid rgba(255, 80, 90, 0.65);
   color: #ffe0e3;
-  font-size: 16px;
+  font-size: 14px;
   box-shadow: 0 0 18px rgba(255, 31, 47, 0.35);
 }
 
