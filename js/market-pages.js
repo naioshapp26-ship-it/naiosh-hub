@@ -140,18 +140,37 @@
   };
 
   const renderAds = () => {
-    const listings = (store?.get?.().empire?.adsStudio?.listings || data.ADS).filter((a) => a.status === 'active');
+    const scopeTitles = {
+      branches: 'اعلانات الفروع',
+      incubators: 'اعلانات الحاضنات',
+      platforms: 'اعلانات المنصات',
+    };
+    const scopeParam = new URLSearchParams(window.location.search).get('scope') || '';
+    const allListings = (store?.get?.().empire?.adsStudio?.listings || data.ADS).filter((a) => a.status === 'active');
+    const listings = scopeParam
+      ? allListings.filter((a) => (a.scope || 'platforms') === scopeParam)
+      : allListings;
     const root = document.getElementById('ads-grid');
     const tabs = document.getElementById('market-tabs');
     const catsRoot = document.getElementById('ads-cats');
+    const heroTitle = document.querySelector('.market-hero h1');
+    const heroDesc = document.querySelector('.market-hero p');
     if (!root) return;
     let active = 'all';
 
+    if (heroTitle && scopeTitles[scopeParam]) {
+      heroTitle.textContent = scopeTitles[scopeParam];
+    }
+    if (heroDesc && scopeTitles[scopeParam]) {
+      heroDesc.textContent = `عرض إعلانات ${scopeTitles[scopeParam].replace('اعلانات ', '')} داخل هوب — مرتبطة بالتشغيل والمبيعات والظهور الموحّد.`;
+    }
+
     const paint = () => {
       const list = active === 'all' ? listings : listings.filter((a) => a.category === active);
-      root.innerHTML = list
-        .map(
-          (a) => `<article class="ads-item-card">
+      root.innerHTML = list.length
+        ? list
+            .map(
+              (a) => `<article class="ads-item-card">
             <div class="ads-item-media">
               <i class="fas fa-rectangle-ad" style="font-size:28px"></i>
               <span>${esc(a.type || 'إعلان')}</span>
@@ -169,8 +188,9 @@
               ${actions('ads', a.id)}
             </div>
           </article>`
-        )
-        .join('');
+            )
+            .join('')
+        : `<div class="shop-empty" style="grid-column:1/-1">لا توجد إعلانات في هذا النطاق حاليًا.</div>`;
     };
 
     if (catsRoot) {
