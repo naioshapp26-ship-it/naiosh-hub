@@ -610,7 +610,7 @@
           <span class="badge badge-red">Hub Launch</span>
         </h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>الصحة</th><th>آخر مزامنة</th><th>الحالة</th>${metaHead()}<th>تشغيل</th></tr></thead>
+          <thead><tr><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>الصحة</th><th>آخر مزامنة</th><th>الحالة</th><th>تشغيل</th>${metaHead()}<th></th></tr></thead>
           <tbody>
             ${apps
               .map((a) => {
@@ -624,10 +624,12 @@
                   <td>${a.health || '—'}%</td>
                   <td>${a.lastSyncAt ? fmtTime(a.lastSyncAt) : '—'}</td>
                   <td>${badgeStatus(a.status)}</td>
-                  ${metaCells(a)}
-                  <td>
+                  <td style="white-space:nowrap">
                     <a class="btn btn-sm btn-primary" href="${esc(direct)}" title="تشغيل عبر هوب"><i class="fas fa-bolt"></i> فتح النظام</a>
                     <a class="btn btn-sm btn-ghost" href="${esc(solo)}" title="تشغيل منفرد">منفرد</a>
+                  </td>
+                  ${metaCells(a)}
+                  <td>
                     <button class="btn btn-sm btn-dark" data-action="toggle-app" data-id="${a.id}">تفعيل/إيقاف</button>
                     ${rowActs('apps', a.id)}
                   </td>
