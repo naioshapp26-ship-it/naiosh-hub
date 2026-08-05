@@ -765,6 +765,8 @@ const HubStore = (() => {
 
   // —— Common ERP meta (طرف أول/ثاني · فرع · حاضنة · منصة · مكتب · مرفقات)
   const pickCommonMeta = (payload = {}) => ({
+    companyName: payload.companyName || '',
+    companyAddress: payload.companyAddress || '',
     party1Name: payload.party1Name || '',
     party1Phone: payload.party1Phone || '',
     party2Name: payload.party2Name || '',
@@ -1382,24 +1384,59 @@ const HubStore = (() => {
   const addProduct = (payload) => {
     const empire = get().empire;
     if (!empire.productCatalog) empire.productCatalog = [];
+    const productType = payload.productType || payload.itemKind || 'رقمية';
+    const publishStatus = payload.publishStatus || 'published';
+    const statusMap = {
+      published: 'متوفر',
+      deferred: 'مؤجل',
+      draft: 'مسودة',
+    };
+    const iconByType = {
+      رقمية: 'fa-cloud',
+      خدمية: 'fa-concierge-bell',
+      عينية: 'fa-box',
+    };
+    const appearancePlaces = Array.isArray(payload.appearancePlaces)
+      ? payload.appearancePlaces
+      : String(payload.appearancePlaces || '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+    const socialShares = Array.isArray(payload.socialShares)
+      ? payload.socialShares
+      : String(payload.socialShares || '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
     const item = {
       id: uid('pr'),
       sku: payload.sku || `NH-${Date.now().toString().slice(-6)}`,
       name: payload.name,
-      brand: payload.brand || 'نايوش هوب',
+      brand: payload.brand || payload.companyName || 'نايوش هوب',
       platform: payload.platform || 'هوب',
       category: payload.category || 'تشغيل',
+      subcategory: payload.subcategory || '',
+      productType,
+      itemKind: productType,
+      desc: payload.desc || payload.description || '',
       price: Number(payload.price) || 0,
       stock: Number(payload.stock) || 10,
       sold: 0,
-      status: 'متوفر',
+      status: statusMap[publishStatus] || payload.status || 'متوفر',
+      publishStatus,
       movement: 'متوسط',
-      icon: payload.icon || 'fa-cube',
+      icon: payload.icon || iconByType[productType] || 'fa-cube',
+      adStartDate: payload.adStartDate || '',
+      adEndDate: payload.adEndDate || '',
+      appearancePlaces,
+      socialShares,
       assignee: '',
       ...pickCommonMeta(payload),
     };
     empire.productCatalog.unshift(item);
-    pushFeed('decision', `منتج كتالوج: ${item.name}`);
+    const label =
+      publishStatus === 'deferred' ? 'تأجيل نشر منتج' : publishStatus === 'draft' ? 'حفظ مسودة منتج' : 'منتج كتالوج';
+    pushFeed('decision', `${label}: ${item.name} · ${item.category}${item.subcategory ? ' / ' + item.subcategory : ''}`);
     save();
     return item;
   };

@@ -439,3 +439,32 @@
 .hub-mp-check { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; margin: 0; }
 .hub-mp-row input[type="url"] { width: 100%; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 10px; font: inherit; }
 @media (max-width: 720px) { .hub-mp-row { grid-template-columns: 1fr; } }
+
+/* Product upload multi-select (appearance places + Hub social) */
+.hub-multi-block .hub-form-hint { margin: 0 0 10px; }
+.hub-multi-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hub-multi-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  user-select: none;
+}
+.hub-multi-chip input { accent-color: #dc2626; }
+.hub-multi-chip:has(input:checked) {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #991b1b;
+}
+.hub-form-grid .full-span { grid-column: 1 / -1; }
