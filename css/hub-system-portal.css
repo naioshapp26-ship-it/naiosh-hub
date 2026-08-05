@@ -1,0 +1,101 @@
+/* System portal shell — standalone or Hub-launched */
+:root {
+  --sys-bg: #0b0d10;
+  --sys-panel: #14181f;
+  --sys-line: rgba(255, 255, 255, 0.1);
+  --sys-text: #f5f5f5;
+  --sys-muted: #9aa3b2;
+  --sys-accent: #dc2626;
+  --sys-ok: #16a34a;
+  --sys-warn: #ca8a04;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body.system-portal {
+  font-family: 'Cairo', sans-serif;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, color-mix(in srgb, var(--sys-accent) 35%, transparent), transparent 60%),
+    linear-gradient(160deg, #0b0d10 0%, #151a22 45%, #0b0d10 100%);
+  color: var(--sys-text);
+}
+
+.sys-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--sys-line);
+  background: rgba(10, 12, 16, 0.72);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.sys-brand { display: flex; align-items: center; gap: 12px; }
+.sys-brand i {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--sys-accent) 22%, #111);
+  color: #fff; font-size: 18px;
+}
+.sys-brand strong { display: block; font-size: 16px; }
+.sys-brand span { color: var(--sys-muted); font-size: 12px; font-weight: 600; }
+.sys-mode {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--sys-line); font-size: 12px; font-weight: 700;
+}
+.sys-mode.is-hub { border-color: color-mix(in srgb, var(--sys-accent) 50%, transparent); color: #fecaca; }
+.sys-mode.is-solo { color: #bbf7d0; border-color: rgba(22, 163, 74, 0.45); }
+.sys-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sys-btn {
+  appearance: none; border: 1px solid var(--sys-line); background: #1a2030;
+  color: var(--sys-text); border-radius: 10px; padding: 8px 12px;
+  font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.sys-btn.primary { background: var(--sys-accent); border-color: transparent; }
+.sys-btn.ghost { background: transparent; }
+.sys-btn:hover { filter: brightness(1.08); }
+
+.sys-wrap { max-width: 1100px; margin: 0 auto; padding: 28px 20px 48px; }
+.sys-hero h1 { margin: 0 0 8px; font-size: clamp(1.6rem, 3vw, 2.2rem); }
+.sys-hero p { margin: 0; color: var(--sys-muted); max-width: 60ch; line-height: 1.7; }
+.sys-grid {
+  display: grid; gap: 14px; margin-top: 22px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.sys-card {
+  background: var(--sys-panel); border: 1px solid var(--sys-line);
+  border-radius: 16px; padding: 16px;
+}
+.sys-card h3 { margin: 0 0 8px; font-size: 15px; }
+.sys-card p, .sys-card li { color: var(--sys-muted); font-size: 13px; line-height: 1.6; }
+.sys-card ul { margin: 0; padding-inline-start: 18px; }
+.sys-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 18px; }
+.sys-kpi {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--sys-line);
+  border-radius: 14px; padding: 14px; text-align: center;
+}
+.sys-kpi strong { display: block; font-size: 1.4rem; }
+.sys-kpi span { color: var(--sys-muted); font-size: 12px; font-weight: 700; }
+.sys-log {
+  margin-top: 18px; background: #0e1218; border: 1px solid var(--sys-line);
+  border-radius: 14px; padding: 14px; min-height: 120px; font-size: 13px;
+}
+.sys-log li { margin: 6px 0; color: var(--sys-muted); }
+.sys-log b { color: #fecaca; }
+.sys-toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: #111827; color: #fff; padding: 10px 16px; border-radius: 12px;
+  border: 1px solid var(--sys-line); opacity: 0; transition: .25s ease; z-index: 50;
+  font-weight: 700; font-size: 13px;
+}
+.sys-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 720px) {
+  .sys-top { flex-direction: column; align-items: stretch; }
+  .sys-kpis { grid-template-columns: 1fr; }
+}

@@ -4,6 +4,7 @@ const path = require('path');
 const { URL } = require('url');
 const { checkEnvironment } = require('./db/env-check');
 const { getDatabaseUrl, migrate, listTables } = require('./db/migrate');
+const hubRuntime = require('./db/hub-runtime');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -34,6 +35,26 @@ function sendJson(res, status, payload) {
   send(res, status, JSON.stringify(payload, null, 2), {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  });
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      const raw = Buffer.concat(chunks).toString('utf8');
+      if (!raw) return resolve({});
+      try {
+        resolve(JSON.parse(raw));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    req.on('error', reject);
   });
 }
 
@@ -107,6 +128,53 @@ async function checkDatabase() {
   }
 }
 
+async function handleHubApi(req, res, pathname) {
+  if (req.method === 'OPTIONS') {
+    sendJson(res, 204, {});
+    return true;
+  }
+
+  if (pathname === '/api/hub/notifications' && req.method === 'GET') {
+    const items = hubRuntime.listNotifications(100);
+    sendJson(res, 200, { ok: true, count: items.length, unread: items.filter((n) => !n.read).length, items });
+    return true;
+  }
+
+  if (pathname === '/api/hub/notifications' && req.method === 'POST') {
+    const body = await readBody(req);
+    const item = hubRuntime.addNotification(body);
+    sendJson(res, 201, { ok: true, item });
+    return true;
+  }
+
+  if (pathname === '/api/hub/notifications/read' && req.method === 'POST') {
+    const body = await readBody(req);
+    const items = hubRuntime.markRead(body.id, !!body.all);
+    sendJson(res, 200, { ok: true, items });
+    return true;
+  }
+
+  if (pathname === '/api/hub/sync' && req.method === 'POST') {
+    const body = await readBody(req);
+    const result = hubRuntime.ingestSync(body);
+    sendJson(res, 200, { ok: true, ...result });
+    return true;
+  }
+
+  if (pathname === '/api/hub/apps' && req.method === 'GET') {
+    sendJson(res, 200, { ok: true, apps: hubRuntime.listApps(), synced: hubRuntime.getSynced() });
+    return true;
+  }
+
+  if (pathname.startsWith('/api/hub/synced/') && req.method === 'GET') {
+    const code = pathname.split('/').pop();
+    sendJson(res, 200, { ok: true, item: hubRuntime.getSynced(code) });
+    return true;
+  }
+
+  return false;
+}
+
 const server = http.createServer((req, res) => {
   const pathname = new URL(req.url, 'http://localhost').pathname;
 
@@ -121,6 +189,10 @@ const server = http.createServer((req, res) => {
           environment: {
             ok: env.ok,
             failed: env.failed,
+          },
+          hubRuntime: {
+            notifications: hubRuntime.listNotifications(5).length,
+            apps: hubRuntime.listApps().length,
           },
           time: new Date().toISOString(),
         });
@@ -155,6 +227,13 @@ const server = http.createServer((req, res) => {
           error: error.message,
         })
       );
+    return;
+  }
+
+  if (pathname.startsWith('/api/hub/')) {
+    handleHubApi(req, res, pathname).catch((error) =>
+      sendJson(res, error.status || 500, { ok: false, error: error.message || 'Hub API error' })
+    );
     return;
   }
 
