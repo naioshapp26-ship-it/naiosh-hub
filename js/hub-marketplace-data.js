@@ -101,19 +101,26 @@
     { id: 'st-ac-3', title: 'ورشة المدربين السياديين', desc: 'ورشة تدريب من أكاديمية نايوش — متاحة عبر المتجر.', price: 1200, points: 150, category: 'أكاديمية', platformCode: 'ACADEMY', stock: 80, status: 'active', badge: 'أكاديمية', itemKind: 'خدمة', brand: 'أكاديمية نايوش' },
   ];
 
+  const adTargets = (scope, extras = {}) => ({
+    home: scope === 'home' || !!extras.home,
+    branches: scope === 'branches' ? ['*'] : extras.branches || [],
+    incubators: scope === 'incubators' ? ['*'] : extras.incubators || [],
+    platforms: scope === 'platforms' ? ['*'] : extras.platforms || [],
+  });
+
   const ADS = [
-    { id: 'ad-1', title: 'عرض تفعيل النظام التشغيلي', content: 'فعّل منصتك السيادية خلال 24 ساعة مع دعم غرفة العمليات.', price: 2500, category: 'تشغيل', platformCode: 'UOS', productId: 'st-1', views: 1840, status: 'active', level: 'مرتفع', type: 'منتج منصة', scope: 'platforms' },
-    { id: 'ad-2', title: 'دورة الحوكمة للمنصات', content: 'برنامج امتثال وجودة معتمد من نايوش.', price: 890, category: 'تعليم', platformCode: 'NEMS', productId: 'st-2', views: 960, status: 'active', level: 'متوسط', type: 'منتج منصة', scope: 'platforms' },
-    { id: 'ad-3', title: 'نايوش لو للمحاماة الرقمية', content: 'إدارة العقود والقضايا داخل هوب.', price: 3200, category: 'قانون', platformCode: 'LAW', productId: 'st-7', views: 1220, status: 'active', level: 'مرتفع', type: 'منتج منصة', scope: 'platforms' },
-    { id: 'ad-4', title: 'فعالية القمة التشغيلية', content: 'احجز مقعدك في فعالية القيادة العليا.', price: 350, category: 'فعاليات', platformCode: 'EVENTS', productId: 'st-4', views: 2100, status: 'active', level: 'مرتفع', type: 'فعالية', scope: 'platforms' },
-    { id: 'ad-5', title: 'حزمة الموارد البشرية', content: 'ضبط العنصر البشري لمنصتك فورًا.', price: 1800, category: 'موارد', platformCode: 'NHR', productId: 'st-6', views: 740, status: 'active', level: 'متوسط', type: 'منتج منصة', scope: 'incubators' },
-    { id: 'ad-6', title: 'تحليلات البيانات اللحظية', content: 'لوحات سيادية لاتخاذ القرار.', price: 1200, category: 'بيانات', platformCode: 'NDS', productId: 'st-5', views: 1580, status: 'active', level: 'مرتفع', type: 'منتج منصة', scope: 'platforms' },
-    { id: 'ad-7', title: 'نايوش فيت للفروع', content: 'اشتراكات صحية متكاملة للموظفين.', price: 990, category: 'صحة', platformCode: 'FIT', productId: 'st-9', views: 680, status: 'paused', level: 'منخفض', type: 'منتج منصة', scope: 'branches' },
-    { id: 'ad-8', title: 'باقة التكامل بين الأنظمة', content: 'اربط أي نظام نايوش بهوب عبر طبقة التكامل.', price: 2100, category: 'تكامل', platformCode: 'NIS', productId: 'st-8', views: 910, status: 'active', level: 'مرتفع', type: 'منتج منصة', scope: 'platforms' },
-    { id: 'ad-9', title: 'استضافة بث فعالية', content: 'قاعة افتراضية جاهزة للفعاليات الكبرى.', price: 2700, category: 'فعاليات', platformCode: 'EVENTS', productId: 'st-12', views: 430, status: 'active', level: 'متوسط', type: 'فعالية', scope: 'incubators' },
-    { id: 'ad-10', title: 'إعلان افتتاح فرع جديد', content: 'ظهور الفرع في شبكة هوب العالمية مع دعوة للانضمام.', price: 1200, category: 'تشغيل', platformCode: 'BRANCHES', productId: 'st-1', views: 540, status: 'active', level: 'مرتفع', type: 'فرع', scope: 'branches' },
-    { id: 'ad-11', title: 'حاضنة السياحة الرقمية', content: 'برنامج حاضنة قطاعية جاهز للانضمام عبر هوب.', price: 1600, category: 'تعليم', platformCode: 'INCUBATORS', productId: 'st-2', views: 390, status: 'active', level: 'متوسط', type: 'حاضنة', scope: 'incubators' },
-    { id: 'ad-12', title: 'عرض تشغيل منصة سيادية', content: 'فعّل منصتك ضمن المنصات الـ18 داخل هوب.', price: 2800, category: 'تشغيل', platformCode: 'UOS', productId: 'st-1', views: 1120, status: 'active', level: 'مرتفع', type: 'منصة', scope: 'platforms' },
+    { id: 'ad-1', title: 'عرض تفعيل النظام التشغيلي', content: 'فعّل منصتك السيادية خلال 24 ساعة مع دعم غرفة العمليات.', price: 2500, category: 'تشغيل', platformCode: 'UOS', productId: 'st-1', views: 1840, status: 'active', level: 'مرتفع', type: 'منتج منصة', productType: 'رقمية', scope: 'platforms', publishTargets: adTargets('platforms', { home: true }) },
+    { id: 'ad-2', title: 'دورة الحوكمة للمنصات', content: 'برنامج امتثال وجودة معتمد من نايوش.', price: 890, category: 'تعليم', platformCode: 'NEMS', productId: 'st-2', views: 960, status: 'active', level: 'متوسط', type: 'منتج منصة', productType: 'خدمية', scope: 'platforms', publishTargets: adTargets('platforms') },
+    { id: 'ad-3', title: 'نايوش لو للمحاماة الرقمية', content: 'إدارة العقود والقضايا داخل هوب.', price: 3200, category: 'قانون', platformCode: 'LAW', productId: 'st-7', views: 1220, status: 'active', level: 'مرتفع', type: 'منتج منصة', productType: 'رقمية', scope: 'platforms', publishTargets: adTargets('platforms') },
+    { id: 'ad-4', title: 'فعالية القمة التشغيلية', content: 'احجز مقعدك في فعالية القيادة العليا.', price: 350, category: 'فعاليات', platformCode: 'EVENTS', productId: 'st-4', views: 2100, status: 'active', level: 'مرتفع', type: 'فعالية', productType: 'خدمية', scope: 'platforms', publishTargets: adTargets('platforms', { home: true }) },
+    { id: 'ad-5', title: 'حزمة الموارد البشرية', content: 'ضبط العنصر البشري لمنصتك فورًا.', price: 1800, category: 'موارد', platformCode: 'NHR', productId: 'st-6', views: 740, status: 'active', level: 'متوسط', type: 'منتج منصة', productType: 'خدمية', scope: 'incubators', publishTargets: adTargets('incubators') },
+    { id: 'ad-6', title: 'تحليلات البيانات اللحظية', content: 'لوحات سيادية لاتخاذ القرار.', price: 1200, category: 'بيانات', platformCode: 'NDS', productId: 'st-5', views: 1580, status: 'active', level: 'مرتفع', type: 'منتج منصة', productType: 'رقمية', scope: 'platforms', publishTargets: adTargets('platforms') },
+    { id: 'ad-7', title: 'نايوش فيت للفروع', content: 'اشتراكات صحية متكاملة للموظفين.', price: 990, category: 'صحة', platformCode: 'FIT', productId: 'st-9', views: 680, status: 'paused', level: 'منخفض', type: 'منتج منصة', productType: 'عينية', scope: 'branches', publishTargets: adTargets('branches') },
+    { id: 'ad-8', title: 'باقة التكامل بين الأنظمة', content: 'اربط أي نظام نايوش بهوب عبر طبقة التكامل.', price: 2100, category: 'تكامل', platformCode: 'NIS', productId: 'st-8', views: 910, status: 'active', level: 'مرتفع', type: 'منتج منصة', productType: 'رقمية', scope: 'platforms', publishTargets: adTargets('platforms') },
+    { id: 'ad-9', title: 'استضافة بث فعالية', content: 'قاعة افتراضية جاهزة للفعاليات الكبرى.', price: 2700, category: 'فعاليات', platformCode: 'EVENTS', productId: 'st-12', views: 430, status: 'active', level: 'متوسط', type: 'فعالية', productType: 'خدمية', scope: 'incubators', publishTargets: adTargets('incubators') },
+    { id: 'ad-10', title: 'إعلان افتتاح فرع جديد', content: 'ظهور الفرع في شبكة هوب العالمية مع دعوة للانضمام.', price: 1200, category: 'تشغيل', platformCode: 'BRANCHES', productId: 'st-1', views: 540, status: 'active', level: 'مرتفع', type: 'فرع', productType: 'عينية', scope: 'branches', publishTargets: adTargets('branches', { home: true }) },
+    { id: 'ad-11', title: 'حاضنة السياحة الرقمية', content: 'برنامج حاضنة قطاعية جاهز للانضمام عبر هوب.', price: 1600, category: 'تعليم', platformCode: 'INCUBATORS', productId: 'st-2', views: 390, status: 'active', level: 'متوسط', type: 'حاضنة', productType: 'خدمية', scope: 'incubators', publishTargets: adTargets('incubators') },
+    { id: 'ad-12', title: 'عرض تشغيل منصة سيادية', content: 'فعّل منصتك ضمن المنصات الـ18 داخل هوب.', price: 2800, category: 'تشغيل', platformCode: 'UOS', productId: 'st-1', views: 1120, status: 'active', level: 'مرتفع', type: 'منصة', productType: 'رقمية', scope: 'platforms', publishTargets: adTargets('platforms', { home: true }) },
   ];
 
   const EVENTS = [
@@ -218,6 +225,14 @@
     { id: 'apps', nameAr: 'سجل الأنظمة', icon: 'fa-cubes' },
   ];
 
+  /** نطاقات رفع الإعلان — رئيسية · فروع · حاضنات · منصات */
+  const AD_PUBLISH_SCOPES = [
+    { id: 'home', nameAr: 'الصفحة الرئيسية', icon: 'fa-house' },
+    { id: 'branches', nameAr: 'الفروع', icon: 'fa-code-branch' },
+    { id: 'incubators', nameAr: 'الحاضنات', icon: 'fa-seedling' },
+    { id: 'platforms', nameAr: 'المنصات', icon: 'fa-layer-group' },
+  ];
+
   /** منصات التواصل الخاصة بنايوش هوب — اختيار واحد أو أكثر أو الكل */
   const HUB_SOCIAL_PLATFORMS = [
     { id: 'all', nameAr: 'كل المنصات', icon: 'fa-share-nodes' },
@@ -285,6 +300,7 @@
     PRODUCT_TYPES,
     PRODUCT_SUBCATEGORIES,
     AD_APPEARANCE_PLACES,
+    AD_PUBLISH_SCOPES,
     HUB_SOCIAL_PLATFORMS,
     storeCategoryOptions,
     marketplaceOptions,
