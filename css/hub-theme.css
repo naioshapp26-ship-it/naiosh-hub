@@ -360,24 +360,24 @@ body.homepage .hero.law-hero .hero-orb {
   gap: 2.5rem 1.75rem;
   align-items: center;
   min-height: 0;
-  padding-inline-start: 0;
-  /* مساحة للمنيو الجانبي الثابت بطول الهيرو */
-  padding-inline-end: clamp(210px, 22vw, 270px);
+  /* مساحة للمنيو على يمين الهيرو (RTL inline-start) */
+  padding-inline-start: clamp(210px, 22vw, 270px);
+  padding-inline-end: 0;
 }
 
 /* منيو جانبي ثابت بطول الهيرو بالكامل — واضح ومتفرّق */
 body.homepage .hero.law-hero .hero-sidebar {
   position: absolute;
-  top: max(88px, calc(var(--announcement-bar-height, 40px) + 72px));
-  bottom: 72px;
-  inset-inline-start: max(12px, calc((100vw - min(100vw, 1280px)) / 2 + 8px));
+  top: max(96px, calc(var(--announcement-bar-height, 40px) + 76px));
+  bottom: 56px;
+  inset-inline-start: max(16px, calc((100vw - min(100vw, 1320px)) / 2 + 12px));
   inset-inline-end: auto;
-  width: clamp(188px, 18vw, 236px);
+  width: clamp(196px, 18vw, 248px);
   grid-area: auto;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 14px;
+  gap: 16px;
   align-self: auto;
   justify-self: auto;
   direction: rtl;
@@ -887,7 +887,7 @@ body.homepage #layers .section-head p {
   .law-hero-grid-layout {
     grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
     gap: 1.5rem;
-    padding-inline-end: clamp(190px, 24vw, 230px);
+    padding-inline-start: clamp(190px, 24vw, 230px);
   }
 
   body.homepage .hero.law-hero .hero-sidebar {
@@ -914,14 +914,19 @@ body.homepage #layers .section-head p {
     grid-template-columns: 1fr !important;
     min-height: 0;
     align-items: start;
+    padding-inline-start: 0 !important;
     padding-inline-end: 0 !important;
   }
 
   body.homepage .hero.law-hero .hero-sidebar {
-    position: static;
-    inset: auto;
+    position: relative;
+    top: auto;
+    bottom: auto;
+    inset-inline-start: auto;
+    inset-inline-end: auto;
     width: 100%;
-    order: -1;
+    margin: 0 auto 18px;
+    max-width: 100%;
     flex-direction: row;
     flex-wrap: nowrap;
     justify-content: flex-start;
@@ -932,9 +937,10 @@ body.homepage #layers .section-head p {
     overflow-y: hidden;
     max-height: none;
     gap: 10px;
-    padding: 4px 0 10px;
+    padding: 4px 12px 10px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    z-index: 12;
   }
 
   body.homepage .hero.law-hero .hero-sidebar::-webkit-scrollbar {
@@ -966,6 +972,8 @@ body.homepage #layers .section-head p {
     min-height: auto !important;
     padding-top: 4rem !important;
     padding-bottom: 2.5rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
   }
 
   .law-hero-copy {
