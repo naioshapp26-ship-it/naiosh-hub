@@ -338,11 +338,36 @@
 
 @media (max-width: 640px) {
   .hub-act {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+
+  .hub-row-actions {
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .hub-detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .hub-erp-modal {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .hub-erp-dialog {
+    width: 100%;
+    max-height: min(92vh, 860px);
+    border-radius: 18px 18px 12px 12px;
+  }
+
+  .hub-erp-actions {
+    flex-wrap: wrap;
+  }
+
+  .hub-erp-btn {
+    min-height: 42px;
   }
 }

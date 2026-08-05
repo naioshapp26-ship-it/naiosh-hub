@@ -181,10 +181,7 @@
           <h3>${esc(c.name)}</h3>
         </button>`
       ).join('');
-      catsRoot.style.display = 'grid';
-      catsRoot.style.gridTemplateColumns = 'repeat(6, minmax(0, 1fr))';
-      catsRoot.style.gap = '1rem';
-      catsRoot.style.marginBottom = '1.5rem';
+      catsRoot.className = 'ads-cats-grid';
       catsRoot.onclick = (e) => {
         const btn = e.target.closest('[data-cat]');
         if (!btn) return;
@@ -236,7 +233,7 @@
   };
 
   const renderProducts = () => {
-    const products = store?.get?.().empire?.productCatalog || data.PRODUCT_CATALOG || [];
+    const products = store?.get?.().empire?.productCatalog || data?.PRODUCT_CATALOG || [];
     const cats = data.SHOP_CATEGORIES || [{ id: 'الكل', name: 'كل المنتجات', icon: 'fa-border-all' }];
     const strip = document.getElementById('shop-cat-strip');
     const side = document.getElementById('shop-side-list');

@@ -204,11 +204,15 @@ body.hub-guide-open .hub-guide-panel {
   }
 
   body:has(.top-nav) .hub-back-button:not(.hub-back-button--inline) {
-    top: 64px;
+    top: auto;
+    bottom: 16px;
+    right: 12px;
+    left: auto;
   }
 
   body:has(.sidebar) .hub-back-button:not(.hub-back-button--inline) {
-    top: 12px;
+    top: auto;
+    bottom: 16px;
     right: 12px;
   }
 
@@ -218,5 +222,21 @@ body.hub-guide-open .hub-guide-panel {
     min-width: 86px;
     padding: 6px 11px;
     font-size: 11px;
+  }
+
+  .hub-guide-panel {
+    width: min(100vw, 100%);
+  }
+
+  .hub-guide-header,
+  .hub-guide-body {
+    padding: 16px;
+  }
+
+  /* Keep floating chrome clear of page content */
+  body:has(.top-nav) main,
+  body:has(.top-nav) .shop-page,
+  body:has(.top-nav) .market-page {
+    padding-bottom: 72px;
   }
 }

@@ -407,14 +407,26 @@
 .move-pill.mid { background: rgba(245, 158, 11, 0.14); color: #b45309; }
 .move-pill.slow { background: #eef2f7; color: #64748b; }
 
+/* Ads category grid - responsive layout for mobile */
+.ads-cats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
 @media (max-width: 1200px) {
   .market-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ads-latest-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-market-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ads-cats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {
   .products-filters { grid-template-columns: 1fr; }
+  .market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .market-hero { padding: 28px 8px 18px; }
+  .market-stat { min-width: calc(50% - 12px); flex: 1 1 calc(50% - 12px); }
 }
 
 @media (max-width: 768px) {
@@ -422,4 +434,20 @@
   .ads-latest-grid,
   .home-market-links { grid-template-columns: 1fr; }
   .products-search { flex-wrap: wrap; }
+  .ads-cats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+  .market-page { padding-inline: 0.85rem; }
+  .market-tabs { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 12px; -webkit-overflow-scrolling: touch; }
+  .market-tab { flex: 0 0 auto; }
+  .market-card { min-width: 0; }
+  .market-card h3 { overflow-wrap: anywhere; }
+  .card-actions { flex-wrap: wrap; }
+  .btn-mini { min-height: 40px; }
+}
+
+@media (max-width: 480px) {
+  .ads-cats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .market-stat { min-width: calc(50% - 8px); padding: 10px 12px; }
+  .market-stat strong { font-size: 20px; }
+  .market-hero h1 { font-size: clamp(24px, 7vw, 34px); }
+  .market-hero p { font-size: 14px; }
 }

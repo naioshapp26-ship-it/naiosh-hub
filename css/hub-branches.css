@@ -240,31 +240,39 @@
   }
 
   .branch-card {
-    width: min(90%, 420px);
-    margin: 10px auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    align-items: stretch;
+    text-align: right;
   }
 
   .branch-flag {
     position: absolute;
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 12px;
+    left: auto;
+    transform: none;
   }
 
   .branch-content {
-    text-align: center;
+    text-align: right;
     width: 100%;
   }
 
   .branch-hours {
-    justify-content: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .branch-actions {
     width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .branch-actions a,
+  .branch-actions button {
+    min-height: 42px;
   }
 }

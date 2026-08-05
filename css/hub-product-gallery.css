@@ -338,12 +338,37 @@
 
 @media (max-width: 720px) {
   .hub-product-gallery {
-    padding: 28px 0 36px;
+    padding: 24px 0 32px;
+  }
+
+  .hub-product-gallery-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-inline: 4px;
+  }
+
+  .hub-product-gallery-head h2 {
+    font-size: clamp(22px, 6.5vw, 30px);
+  }
+
+  .hub-product-gallery-head p {
+    font-size: 14px;
+  }
+
+  .hub-gallery-controls {
+    align-self: flex-end;
+  }
+
+  .hub-gallery-track-wrap {
+    margin-inline: 0;
+    padding-inline: 12px;
   }
 
   .hub-gallery-shot {
-    flex-basis: min(220px, 82vw);
-    min-height: 480px;
+    flex-basis: min(240px, 86vw);
+    min-height: 0;
   }
 
   .hub-phone {

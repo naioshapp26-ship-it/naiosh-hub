@@ -799,6 +799,29 @@ body.homepage #layers .section-head p {
   body.homepage .hero.law-hero {
     min-height: auto !important;
     padding-top: 4rem !important;
+    padding-bottom: 2.5rem !important;
+  }
+
+  .law-hero-copy {
+    max-width: 100% !important;
+  }
+
+  .law-hero-heading {
+    font-size: clamp(1.85rem, 9vw, 2.6rem) !important;
+  }
+
+  .law-hero-sub {
+    font-size: 0.95rem !important;
+  }
+
+  .law-hero-stats {
+    gap: 1rem 1.25rem !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .law-hero-stats strong {
+    font-size: 1.45rem !important;
   }
 }
 
@@ -810,11 +833,22 @@ body.homepage #layers .section-head p {
 
   .law-hero-cta {
     flex-direction: column;
+    width: 100%;
   }
 
   .law-btn-primary,
   .law-btn-ghost {
     text-align: center;
+    width: 100%;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .law-hero-badge {
+    font-size: 0.72rem !important;
+    line-height: 1.5;
   }
 }
 
@@ -822,5 +856,10 @@ body.homepage #layers .section-head p {
   body.homepage #layers .cards,
   body.homepage #layers .hub-layer-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .law-hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.85rem !important;
   }
 }

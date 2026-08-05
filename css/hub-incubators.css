@@ -83,15 +83,22 @@ body.incubators-body .incubators-page .incubator-card.card {
 }
 
 @media (max-width: 600px) {
-  body.incubators-body .incubators-page .incubator-card.card {
-    flex: 1 1 calc((100% - 0.75rem) / 2) !important;
-    min-width: calc((100% - 0.75rem) / 2) !important;
+  body.incubators-body > main.container.incubators-page {
+    padding-inline: 0.75rem !important;
   }
-}
 
-@media (max-width: 400px) {
   body.incubators-body .incubators-page .incubator-card.card {
     flex: 1 1 100% !important;
     min-width: 100% !important;
+  }
+
+  .incubator-card-actions {
+    width: 100%;
+  }
+
+  .incubator-card-actions .hub-act,
+  .incubator-card-actions button,
+  .incubator-card-actions a {
+    min-height: 40px;
   }
 }

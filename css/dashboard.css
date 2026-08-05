@@ -463,19 +463,55 @@ table.data tr:hover td { background: #fafafa; }
   body { grid-template-columns: 1fr; }
   .sidebar {
     position: fixed;
-    inset: 0 auto 0 0;
+    inset: 0 0 0 auto;
     width: min(280px, 86vw);
-    transform: translateX(-105%);
+    transform: translateX(105%);
     transition: transform 0.25s ease;
+    box-shadow: -12px 0 28px rgba(0, 0, 0, 0.28);
   }
   body.nav-open .sidebar { transform: none; }
+  body.nav-open::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 10, 0.45);
+    z-index: 15;
+  }
   .mobile-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .main { padding: 12px; }
+  .topbar {
+    padding: 12px;
+    gap: 10px;
+  }
+  .topbar h1 { font-size: 18px; }
+  .topbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .topbar-user {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .user-meta { text-align: right; }
   .grid-2,
   .grid-3,
   .kpi-grid,
   .engine-grid,
   .phase-cards { grid-template-columns: 1fr; }
   .kg-row { grid-template-columns: 1fr; text-align: center; }
+  .table-wrap,
+  .data-table-wrap,
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .card,
+  .panel,
+  article.card {
+    min-width: 0;
+  }
 }
 
 /* Empire blueprint surfaces */

@@ -388,8 +388,80 @@
 }
 
 @media (max-width: 560px) {
+  .shop-page {
+    padding-inline: 0.75rem;
+    margin-bottom: 64px;
+  }
+
+  .shop-top {
+    padding: 18px 0 4px;
+  }
+
+  .shop-top h1 {
+    font-size: clamp(22px, 7vw, 30px);
+  }
+
+  .shop-top p {
+    font-size: 14px;
+    margin-bottom: 14px;
+  }
+
+  .shop-search {
+    border-radius: 16px;
+    padding: 6px 6px 6px 12px;
+    gap: 6px;
+  }
+
+  .shop-search button {
+    padding: 10px 14px;
+    min-height: 44px;
+  }
+
+  .shop-cat-strip {
+    padding: 12px 2px 10px;
+    margin-bottom: 12px;
+    gap: 4px;
+  }
+
+  .shop-cat-chip {
+    min-width: 76px;
+    font-size: 11px;
+    padding: 6px 6px 10px;
+  }
+
+  .shop-cat-chip .thumb {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+
+  .shop-sidebar {
+    padding: 12px;
+  }
+
+  .shop-side-list {
+    max-height: 160px;
+  }
+
+  .shop-main-head h2 {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
   .shop-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .shop-card-body h3 {
+    min-height: 0;
+    font-size: 15px;
+  }
+
+  .shop-card-actions a,
+  .shop-card-actions button {
+    min-height: 42px;
+    font-size: 13px;
   }
 
   .shop-grid.is-list .shop-card {

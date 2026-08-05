@@ -165,6 +165,12 @@
 
   $('#mobile-toggle').onclick = () => document.body.classList.toggle('nav-open');
 
+  document.addEventListener('click', (e) => {
+    if (!document.body.classList.contains('nav-open')) return;
+    if (e.target.closest('.sidebar') || e.target.closest('#mobile-toggle')) return;
+    document.body.classList.remove('nav-open');
+  });
+
   // —— Nav
   const renderNav = () => {
     $('#sidebar-nav').innerHTML = NAV.map(
