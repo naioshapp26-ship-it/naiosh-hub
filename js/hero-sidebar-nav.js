@@ -2,15 +2,18 @@
   'use strict';
 
   /**
-   * منيو جانبي في الهيرو — نفس شكل ERP مع بيانات هوب + أيقونات قوية
+   * منيو جانبي في الهيرو — بيانات هوب الشخصية + أيقونات واضحة
    */
   const SIDE_PAGES = [
-    { label: 'انظمتي', href: 'apps.html', icon: 'fa-cubes' },
+    { label: 'فرعي', href: 'branches.html', icon: 'fa-code-branch' },
+    { label: 'حاضنتي', href: 'incubators.html', icon: 'fa-seedling' },
+    { label: 'منصتي', href: 'platforms.html', icon: 'fa-layer-group' },
+    { label: 'مكتبي', href: 'dashboard.html', icon: 'fa-briefcase' },
     { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },
-    { label: 'اعلانات الفروع', href: 'ads.html?scope=branches', icon: 'fa-earth-americas' },
-    { label: 'اعلانات الحاضنات', href: 'ads.html?scope=incubators', icon: 'fa-seedling' },
-    { label: 'اعلانات المنصات', href: 'ads.html?scope=platforms', icon: 'fa-diagram-project' },
-    { label: 'خدماتي', href: 'store.html', icon: 'fa-handshake' },
+    { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
+    { label: 'شراكاتي', href: 'store.html', icon: 'fa-handshake' },
+    { label: 'عملائي', href: 'apps.html#crm', icon: 'fa-users' },
+    { label: 'اخرى', href: 'apps.html', icon: 'fa-ellipsis' },
   ];
 
   const renderSidebar = () => {
