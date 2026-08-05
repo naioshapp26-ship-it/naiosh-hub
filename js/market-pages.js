@@ -57,7 +57,14 @@
             <div class="meta">${a.status === 'active' ? 'متاح الآن' : 'قيد التجهيز'}${a.health ? ` · صحة ${a.health}%` : ''}${a.assignee ? ` · معيّن: ${esc(a.assignee)}` : ''}</div>
             ${metaLine(a)}
             <div class="card-actions">
-              <a class="btn-mini primary" href="${esc(a.url || 'apps.html')}"><i class="fas fa-arrow-left"></i> فتح</a>
+              <a class="btn-mini primary" href="${esc(
+                (window.HubSystemsRegistry?.resolveLaunch?.(a).standaloneUrl) || a.url || 'apps.html'
+              )}" target="_blank" rel="noopener"><i class="fas fa-arrow-left"></i> فتح النظام</a>
+              ${
+                window.HubSystemsRegistry?.resolveLaunch?.(a)?.isExternalSystem
+                  ? `<a class="btn-mini" href="${esc(window.HubSystemsRegistry.resolveLaunch(a).hubUrl)}" target="_blank" rel="noopener"><i class="fas fa-link"></i> عبر هوب</a>`
+                  : ''
+              }
             </div>
             ${actions('apps', a.id || a.code)}
           </article>`
