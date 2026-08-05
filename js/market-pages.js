@@ -99,7 +99,10 @@
   };
 
   const renderStore = () => {
-    const items = store?.get?.().empire?.salesStore?.items || data.STORE_ITEMS;
+    const rawItems = store?.get?.().empire?.salesStore?.items || data.STORE_ITEMS;
+    const items = (rawItems || []).filter(
+      (i) => !window.HubReadySites?.isExcluded?.(i.title) && !window.HubReadySites?.isExcluded?.(i.brand)
+    );
     const root = document.getElementById('market-grid');
     const tabs = document.getElementById('market-tabs');
     if (!root) return;
@@ -139,7 +142,19 @@
             ${metaLine(i)}
             <div class="card-actions">
               <button type="button" class="btn-mini primary" data-buy="${esc(i.id)}"><i class="fas fa-cart-plus"></i> اشترِ الآن</button>
-              <a class="btn-mini" href="ads.html"><i class="fas fa-rectangle-ad"></i> إعلان المنتج</a>
+              ${
+                (() => {
+                  const site = window.HubReadySites?.siteForProduct?.(i);
+                  if (!site) return '';
+                  const href =
+                    site.launchCode && window.HubLauncher?.getDirectLaunchUrl
+                      ? window.HubLauncher.getDirectLaunchUrl(site.launchCode)
+                      : site.href;
+                  return `<a class="btn-mini" href="${esc(href)}" ${
+                    site.launchCode ? `data-launch-code="${esc(site.launchCode)}" data-launch-mode="hub"` : ''
+                  }><i class="fas fa-arrow-up-left"></i> ادخل الموقع</a>`;
+                })()
+              }
             </div>
             ${actions('store', i.id)}
           </article>`
@@ -165,8 +180,31 @@
     }
 
     root.onclick = (e) => {
+      const launch = e.target.closest('[data-launch-code]');
+      if (launch && window.HubLauncher?.launch) {
+        e.preventDefault();
+        window.HubLauncher.launch(launch.dataset.launchCode, { mode: 'hub' });
+        return;
+      }
       const btn = e.target.closest('[data-buy]');
-      if (!btn || !store?.placeStoreOrder) return;
+      if (!btn) return;
+      if (window.HubReadySites?.buyThenOpen) {
+        const result = window.HubReadySites.buyThenOpen(btn.dataset.buy);
+        if (!result.ok) return toast(result.error || 'تعذّر إتمام الطلب');
+        toast(`تم الشراء: ${result.order.title} — جاري فتح موقعك…`);
+        paint();
+        setStat('stat-orders', store.get().empire.salesStore.orders.length);
+        setStat('stat-items', store.get().empire.salesStore.items.length);
+        setTimeout(() => {
+          if (result.site?.launchCode && window.HubLauncher?.launch) {
+            window.HubLauncher.launch(result.site.launchCode, { mode: 'hub', force: true });
+          } else if (result.openHref) {
+            window.location.href = result.openHref;
+          }
+        }, 700);
+        return;
+      }
+      if (!store?.placeStoreOrder) return;
       const order = store.placeStoreOrder(btn.dataset.buy, 'زائر المتجر');
       if (!order) return toast('تعذّر إتمام الطلب');
       toast(`تم الشراء: ${order.title}`);
@@ -333,7 +371,10 @@
   };
 
   const renderProducts = () => {
-    const products = store?.get?.().empire?.productCatalog || data?.PRODUCT_CATALOG || [];
+    const raw = store?.get?.().empire?.productCatalog || data?.PRODUCT_CATALOG || [];
+    const products = raw.filter(
+      (p) => !window.HubReadySites?.isExcluded?.(p.name) && !window.HubReadySites?.isExcluded?.(p.brand)
+    );
     const cats = data.SHOP_CATEGORIES || [{ id: 'الكل', name: 'كل المنتجات', icon: 'fa-border-all' }];
     const strip = document.getElementById('shop-cat-strip');
     const side = document.getElementById('shop-side-list');
@@ -349,6 +390,15 @@
     let view = 'grid';
 
     const countOf = (id) => (id === 'الكل' ? products.length : products.filter((p) => p.category === id).length);
+
+    const siteHref = (p) => {
+      const site = window.HubReadySites?.siteForProduct?.(p);
+      if (!site) return 'store.html';
+      if (site.launchCode && window.HubLauncher?.getDirectLaunchUrl) {
+        return window.HubLauncher.getDirectLaunchUrl(site.launchCode);
+      }
+      return site.href;
+    };
 
     const paintChrome = () => {
       if (strip) {
@@ -391,23 +441,28 @@
       grid.classList.toggle('is-list', view === 'list');
       grid.innerHTML = list.length
         ? list
-            .map(
-              (p) => `<article class="shop-card">
+            .map((p) => {
+              const site = window.HubReadySites?.siteForProduct?.(p);
+              const openUrl = siteHref(p);
+              const buyUrl = `store.html?buy=${encodeURIComponent(p.sku || p.id)}&site=${encodeURIComponent(site?.id || '')}`;
+              return `<article class="shop-card">
                 <div class="shop-card-media"><div class="media-icon"><i class="fas ${esc(p.icon || 'fa-cube')}"></i></div></div>
                 <div class="shop-card-body">
                   <h3>${esc(p.name)}</h3>
                   <div class="shop-card-meta">${esc(p.productType || p.itemKind || 'رقمية')} · ${esc(p.category)}${p.subcategory ? ` / ${esc(p.subcategory)}` : ''} · ${esc(p.brand || '')}</div>
                   <div class="shop-card-price">${Number(p.price).toLocaleString('ar-EG')} ر.س</div>
-                  <div class="shop-card-meta" style="margin-top:4px">${esc(p.status || 'متوفر')}${p.adStartDate ? ` · إعلان ${esc(p.adStartDate)}` : ''}${p.adEndDate ? ` → ${esc(p.adEndDate)}` : ''}</div>
+                  <div class="shop-card-meta" style="margin-top:4px">${esc(p.status || 'متوفر')}${site ? ` · موقع: ${esc(site.nameAr)}` : ''}</div>
                   ${metaLine(p)}
                   <div class="shop-card-actions">
-                    <a class="primary" href="store.html">شراء</a>
-                    <a href="ads.html">إعلان</a>
+                    <a class="primary" href="${esc(buyUrl)}"><i class="fas fa-cart-shopping"></i> اشتري</a>
+                    <a href="${esc(openUrl)}" ${
+                      site?.launchCode ? `data-launch-code="${esc(site.launchCode)}" data-launch-mode="hub"` : ''
+                    }><i class="fas fa-arrow-up-left"></i> ادخل الموقع</a>
                   </div>
                   ${actions('products', p.id)}
                 </div>
-              </article>`
-            )
+              </article>`;
+            })
             .join('')
         : `<div class="shop-empty">لا توجد منتجات في هذا التصنيف</div>`;
     };
@@ -449,6 +504,13 @@
       paint();
     });
 
+    grid.addEventListener('click', (e) => {
+      const launch = e.target.closest('[data-launch-code]');
+      if (!launch || !window.HubLauncher?.launch) return;
+      e.preventDefault();
+      window.HubLauncher.launch(launch.dataset.launchCode, { mode: 'hub' });
+    });
+
     paintChrome();
     paint();
   };
@@ -458,4 +520,27 @@
   if (page === 'ads') renderAds();
   if (page === 'events') renderEvents();
   if (page === 'products') renderProducts();
+
+  // من المنتجات: store.html?buy=SKU → تمييز العنصر ومسار الشراء الواضح
+  if (page === 'store') {
+    const params = new URLSearchParams(window.location.search);
+    const buyKey = params.get('buy');
+    if (buyKey) {
+      const items = store?.get?.().empire?.salesStore?.items || data.STORE_ITEMS || [];
+      const match = items.find(
+        (i) =>
+          String(i.id) === buyKey ||
+          String(i.sku || '') === buyKey ||
+          String(i.title || '').includes(buyKey)
+      );
+      if (match) {
+        setTimeout(() => {
+          const cardBtn = document.querySelector(`[data-buy="${match.id}"]`);
+          cardBtn?.closest('.market-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (cardBtn) cardBtn.style.boxShadow = '0 0 0 3px #dc2626';
+          toast(`جاهز للشراء: ${match.title} — اضغط «اشترِ الآن» ثم ادخل موقعك`);
+        }, 450);
+      }
+    }
+  }
 })();
