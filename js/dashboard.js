@@ -70,6 +70,8 @@
 
   const rowActs = (entity, id) => (window.HubActions ? window.HubActions.rowHtml(entity, id) : '');
   const pageActs = (entity, label) => (window.HubActions ? window.HubActions.toolbarHtml(entity, label) : '');
+  const metaHead = () => (window.HubActions?.metaColumnsHeader ? window.HubActions.metaColumnsHeader() : '');
+  const metaCells = (item) => (window.HubActions?.metaCells ? window.HubActions.metaCells(item) : '');
 
   const esc = (v = '') =>
     String(v)
@@ -465,14 +467,41 @@
 
   const renderPlatforms = () => {
     const list = window.HubSovereignPlatforms?.list || HubStore.get().empire.organization.platforms || [];
+    const custom = HubStore.get().empire.organization.platforms || [];
     const groups = window.HubSovereignPlatforms?.byCategory?.() || [];
     return `
+      <div class="toolbar">
+        ${pageActs('platforms', 'إضافة منصة')}
+        <a class="btn btn-ghost" href="platforms.html" target="_blank"><i class="fas fa-layer-group"></i> فتح صفحة المنصات</a>
+      </div>
       <div class="kpi-grid">
         <article class="kpi"><span>منصات سيادية</span><strong>${list.length}</strong><small>منصات نايوش</small></article>
         <article class="kpi"><span>مجموعات</span><strong>${groups.length || 4}</strong><small>تصنيفات</small></article>
         <article class="kpi"><span>متصلة بهوب</span><strong>${list.length}</strong><small>متصلة الآن</small></article>
-        <article class="kpi"><span>التكامل</span><strong>نشط</strong><small>طبقة الربط</small></article>
+        <article class="kpi"><span>مضافة من هوب</span><strong>${custom.length}</strong><small>سجلات تشغيل</small></article>
       </div>
+      <article class="card" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-layer-group icon"></i> سجل المنصات التشغيلي</span></h3>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>المنصة</th><th>الرمز</th><th>الدور</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
+          <tbody>
+            ${custom.length
+              ? custom
+                  .map(
+                    (p) => `<tr>
+                      <td><strong>${esc(p.nameAr || p.name)}</strong></td>
+                      <td>${esc(p.code || '—')}</td>
+                      <td>${esc(p.role || '—')}</td>
+                      <td>${badgeStatus(p.status)}</td>
+                      ${metaCells(p)}
+                      <td>${rowActs('platforms', p.id)}</td>
+                    </tr>`
+                  )
+                  .join('')
+              : `<tr><td colspan="14" class="empty">لا منصات مضافة بعد — استخدم زر إضافة</td></tr>`}
+          </tbody>
+        </table></div>
+      </article>
       ${(groups.length
         ? groups
         : [{ label: 'المنصات السيادية', platforms: list }]
@@ -505,11 +534,12 @@
     const apps = HubStore.get().empire.apps || [];
     return `
       <div class="toolbar">
+        ${pageActs('apps', 'إضافة')}
         <div class="field"><label>رمز النظام</label><input id="app-code" placeholder="LAW" /></div>
         <div class="field"><label>الاسم بالعربي</label><input id="app-name" placeholder="نظام جديد لنايوش" /></div>
         <div class="field"><label>التصنيف</label><input id="app-cat" placeholder="أنظمة نايوش" /></div>
         <div class="field"><label>الرابط</label><input id="app-url" placeholder="apps.html" /></div>
-        <button class="btn btn-primary" data-action="register-app"><i class="fas fa-plus"></i> تسجيل نظام في هوب</button>
+        <button class="btn btn-primary" data-action="register-app"><i class="fas fa-plus"></i> تسجيل سريع</button>
         <a class="btn btn-ghost" href="apps.html" target="_blank">فتح السجل العام</a>
       </div>
       <div class="kpi-grid">
@@ -521,7 +551,7 @@
       <article class="card" style="margin-top:12px">
         <h3><span class="title-left"><i class="fas fa-cubes icon"></i> أي نظام نايوش يظهر هنا</span></h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>الصحة</th><th>الحالة</th><th></th></tr></thead>
+          <thead><tr><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>الصحة</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
           <tbody>
             ${apps
               .map(
@@ -531,6 +561,7 @@
                   <td>${esc(a.kind)}</td>
                   <td>${a.health || '—'}%</td>
                   <td>${badgeStatus(a.status)}</td>
+                  ${metaCells(a)}
                   <td>
                     <button class="btn btn-sm btn-dark" data-action="toggle-app" data-id="${a.id}">تفعيل/إيقاف</button>
                     <a class="btn btn-sm btn-ghost" href="${esc(a.url || 'apps.html')}">فتح</a>
@@ -563,7 +594,7 @@
       <article class="card" style="margin-top:12px">
         <h3><span class="title-left"><i class="fas fa-boxes-stacked icon"></i> كتالوج المنتجات</span></h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الرمز</th><th>المنتج</th><th>العلامة</th><th>المنصة</th><th>السعر</th><th>المخزون</th><th>المبيعات</th><th>الحركة</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+          <thead><tr><th>الرمز</th><th>المنتج</th><th>العلامة</th><th>المنصة</th><th>السعر</th><th>المخزون</th><th>المبيعات</th><th>الحركة</th><th>الحالة</th>${metaHead()}<th>إجراءات</th></tr></thead>
           <tbody>
             ${catalog
               .map(
@@ -577,6 +608,7 @@
                   <td>${Number(p.sold).toLocaleString('ar-EG')}</td>
                   <td>${esc(p.movement)}</td>
                   <td>${esc(p.status)}</td>
+                  ${metaCells(p)}
                   <td>${rowActs('products', p.id)}</td>
                 </tr>`
               )
@@ -591,11 +623,12 @@
     const store = HubStore.get().empire.salesStore || { items: [], orders: [] };
     return `
       <div class="toolbar">
+        ${pageActs('store', 'إضافة')}
         <div class="field"><label>المنتج</label><input id="store-title" placeholder="اسم المنتج" /></div>
         <div class="field"><label>السعر</label><input id="store-price" type="number" value="500" /></div>
         <div class="field"><label>النقاط</label><input id="store-points" type="number" value="50" /></div>
         <div class="field"><label>منصة</label><input id="store-platform" placeholder="UOS" /></div>
-        <button class="btn btn-primary" data-action="add-store-item"><i class="fas fa-plus"></i> إضافة منتج</button>
+        <button class="btn btn-primary" data-action="add-store-item"><i class="fas fa-plus"></i> إضافة سريعة</button>
         <a class="btn btn-ghost" href="store.html" target="_blank">فتح المتجر</a>
       </div>
       <div class="kpi-grid">
@@ -608,7 +641,7 @@
         <article class="card">
           <h3><span class="title-left"><i class="fas fa-bag-shopping icon"></i> المنتجات</span></h3>
           <div class="table-wrap"><table class="data">
-            <thead><tr><th>المنتج</th><th>السعر</th><th>نقاط</th><th>مخزون</th><th></th></tr></thead>
+            <thead><tr><th>المنتج</th><th>السعر</th><th>نقاط</th><th>مخزون</th>${metaHead()}<th></th></tr></thead>
             <tbody>
               ${store.items
                 .map(
@@ -617,6 +650,7 @@
                     <td>${Number(i.price).toLocaleString('ar-EG')}</td>
                     <td>${i.points}</td>
                     <td>${i.stock}</td>
+                    ${metaCells(i)}
                     <td><button class="btn btn-sm btn-primary" data-action="buy-store-item" data-id="${i.id}">بيع</button>${rowActs('store', i.id)}</td>
                   </tr>`
                 )
@@ -650,11 +684,12 @@
     const listings = HubStore.get().empire.adsStudio?.listings || [];
     return `
       <div class="toolbar">
+        ${pageActs('ads', 'إضافة')}
         <div class="field"><label>عنوان الإعلان</label><input id="ad-title" placeholder="عرض منتج المنصة" /></div>
         <div class="field"><label>السعر</label><input id="ad-price" type="number" value="1000" /></div>
         <div class="field"><label>التصنيف</label><input id="ad-cat" placeholder="تشغيل" /></div>
         <div class="field"><label>منصة</label><input id="ad-platform" placeholder="UOS" /></div>
-        <button class="btn btn-primary" data-action="add-ad"><i class="fas fa-plus"></i> نشر إعلان منتج</button>
+        <button class="btn btn-primary" data-action="add-ad"><i class="fas fa-plus"></i> نشر سريع</button>
         <a class="btn btn-ghost" href="ads.html" target="_blank">فتح استوديو الإعلانات</a>
       </div>
       <div class="kpi-grid">
@@ -666,7 +701,7 @@
       <article class="card" style="margin-top:12px">
         <h3><span class="title-left"><i class="fas fa-rectangle-ad icon"></i> إعلانات منتجات المنصات</span></h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الإعلان</th><th>المنصة</th><th>السعر</th><th>مشاهدات</th><th>الحالة</th><th></th></tr></thead>
+          <thead><tr><th>الإعلان</th><th>المنصة</th><th>السعر</th><th>مشاهدات</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
           <tbody>
             ${listings
               .map(
@@ -676,6 +711,7 @@
                   <td>${Number(a.price || 0).toLocaleString('ar-EG')}</td>
                   <td>${Number(a.views || 0).toLocaleString('ar-EG')}</td>
                   <td>${badgeStatus(a.status)}</td>
+                  ${metaCells(a)}
                   <td><button class="btn btn-sm btn-dark" data-action="toggle-ad" data-id="${a.id}">تشغيل/إيقاف</button>${rowActs('ads', a.id)}</td>
                 </tr>`
               )
@@ -690,11 +726,12 @@
     const events = HubStore.get().empire.eventsStudio?.events || [];
     return `
       <div class="toolbar">
+        ${pageActs('events', 'إضافة')}
         <div class="field"><label>اسم الفعالية</label><input id="ev-name" placeholder="قمة تشغيلية" /></div>
         <div class="field"><label>التاريخ</label><input id="ev-date" type="date" /></div>
         <div class="field"><label>الوقت</label><input id="ev-time" type="time" value="18:00" /></div>
         <div class="field"><label>النوع</label><input id="ev-type" placeholder="بث مباشر" /></div>
-        <button class="btn btn-primary" data-action="add-event"><i class="fas fa-plus"></i> إنشاء فعالية</button>
+        <button class="btn btn-primary" data-action="add-event"><i class="fas fa-plus"></i> إنشاء سريع</button>
         <a class="btn btn-ghost" href="events.html" target="_blank">فتح استوديو الفعاليات</a>
       </div>
       <div class="kpi-grid">
@@ -706,7 +743,7 @@
       <article class="card" style="margin-top:12px">
         <h3><span class="title-left"><i class="fas fa-calendar-days icon"></i> إدارة الفعاليات</span></h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الفعالية</th><th>التاريخ</th><th>النوع</th><th>المتحدّث</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+          <thead><tr><th>الفعالية</th><th>التاريخ</th><th>النوع</th><th>المتحدّث</th><th>الحالة</th>${metaHead()}<th>إجراءات</th></tr></thead>
           <tbody>
             ${events
               .map(
@@ -716,6 +753,7 @@
                   <td>${esc(e.type)}</td>
                   <td>${esc(e.speaker)}</td>
                   <td>${badgeStatus(e.status)}</td>
+                  ${metaCells(e)}
                   <td>${rowActs('events', e.id)}</td>
                 </tr>`
               )
@@ -730,13 +768,14 @@
     const org = HubStore.get().empire.organization;
     return `
       <div class="toolbar">
-        <a class="btn btn-primary" href="incubators.html" target="_blank"><i class="fas fa-seedling"></i> فتح صفحة الحاضنات</a>
+        ${pageActs('incubators', 'إضافة حاضنة')}
+        <a class="btn btn-ghost" href="incubators.html" target="_blank"><i class="fas fa-seedling"></i> فتح صفحة الحاضنات</a>
         <div class="field"><label>اسم الحاضنة</label><input id="inc-name" placeholder="حاضنة القطاع…" /></div>
         <div class="field"><label>القطاع</label><input id="inc-sector" placeholder="تعليم / صحة / قانون…" /></div>
-        <button class="btn btn-primary" data-action="add-incubator"><i class="fas fa-plus"></i> إنشاء حاضنة</button>
+        <button class="btn btn-primary" data-action="add-incubator"><i class="fas fa-plus"></i> إنشاء سريع</button>
       </div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>الحاضنة</th><th>القطاع</th><th>منصات</th><th>مكاتب</th><th>أعضاء</th><th>الصحة</th><th>إجراءات</th></tr></thead>
+        <thead><tr><th>الحاضنة</th><th>القطاع</th><th>منصات</th><th>مكاتب</th><th>أعضاء</th><th>الصحة</th>${metaHead()}<th>إجراءات</th></tr></thead>
         <tbody>
           ${org.incubators
             .map(
@@ -747,6 +786,7 @@
                 <td>${i.offices}</td>
                 <td>${i.members}</td>
                 <td style="min-width:110px">${bar(i.health)} <small>${i.health}%</small></td>
+                ${metaCells(i)}
                 <td>${rowActs('incubators', i.id)}</td>
               </tr>`
             )
@@ -910,18 +950,20 @@
     if (govTab === 'policies') {
       body = `
         <div class="toolbar">
+          ${pageActs('policies', 'إضافة سياسة')}
           <div class="field"><label>عنوان السياسة</label><input id="pol-title" placeholder="سياسة جديدة" /></div>
           <div class="field"><label>النطاق</label>
             <select id="pol-scope"><option>القوى العاملة</option><option>المهام</option><option>الأنظمة</option><option>التكامل</option></select>
           </div>
-          <button class="btn btn-primary" data-action="add-policy">إضافة مسودة</button>
+          <button class="btn btn-primary" data-action="add-policy">إضافة مسودة سريعة</button>
         </div>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الكود</th><th>العنوان</th><th>النطاق</th><th>الحالة</th><th></th></tr></thead>
+          <thead><tr><th>الكود</th><th>العنوان</th><th>النطاق</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
           <tbody>${g.policies
             .map(
               (p) => `<tr>
                 <td>${esc(p.code)}</td><td>${esc(p.title)}</td><td>${esc(p.scope)}</td><td>${badgeStatus(p.status)}</td>
+                ${metaCells(p)}
                 <td>${p.status !== 'active' ? `<button class="btn btn-sm btn-primary" data-action="activate-policy" data-id="${p.id}">تفعيل</button>` : '—'}${rowActs('policies', p.id)}</td>
               </tr>`
             )
@@ -996,13 +1038,14 @@
         <article class="card">
           <h3><span class="title-left"><i class="fas fa-users icon"></i> الموظفون</span></h3>
           <div class="table-wrap"><table class="data">
-            <thead><tr><th>الاسم</th><th>الدور</th><th>ساعات</th><th>إنتاجية</th><th>درجة</th><th>حالة</th><th>إجراءات</th></tr></thead>
+            <thead><tr><th>الاسم</th><th>الدور</th><th>ساعات</th><th>إنتاجية</th><th>درجة</th><th>حالة</th>${metaHead()}<th>إجراءات</th></tr></thead>
             <tbody>
               ${w.employees
                 .map(
                   (e) => `<tr>
                     <td>${esc(e.name)}</td><td>${esc(e.role)}</td><td>${e.hours}</td>
                     <td>${e.productivity}% ${bar(e.productivity)}</td><td>${e.score}</td><td>${badgeStatus(e.status)}</td>
+                    ${metaCells(e)}
                     <td>
                       <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
                         <button class="btn btn-sm btn-ghost" data-action="warn-emp" data-id="${e.id}">إنذار</button>
@@ -1038,12 +1081,13 @@
     const market = HubStore.get().empire.marketplace;
     return `
       <div class="toolbar">
+        ${pageActs('systems', 'إضافة')}
         <button class="btn btn-primary" data-action="sync-all"><i class="fas fa-sync"></i> مزامنة كل الأنظمة</button>
       </div>
       <article class="card" style="margin-bottom:12px">
         <h3><span class="title-left"><i class="fas fa-store icon"></i> System Marketplace</span></h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>النظام</th><th>التصنيف</th><th>المستأجرون</th><th>الحالة</th><th></th></tr></thead>
+          <thead><tr><th>النظام</th><th>التصنيف</th><th>المستأجرون</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
           <tbody>
             ${market.catalog
               .map(
@@ -1052,6 +1096,7 @@
                   <td>${esc(sys.category)}</td>
                   <td>${sys.tenants}</td>
                   <td>${badgeStatus(sys.status)}</td>
+                  ${metaCells(sys)}
                   <td><button class="btn btn-sm btn-dark" data-action="toggle-market" data-id="${sys.id}">تفعيل/إيقاف</button>${rowActs('systems', sys.id)}</td>
                 </tr>`
               )
@@ -1097,6 +1142,7 @@
     const people = HubStore.get().workforce.employees.map((e) => e.name);
     return `
       <div class="toolbar">
+        ${pageActs('tasks', 'إضافة')}
         <div class="field"><label>المهمة</label><input id="task-title" placeholder="عنوان المهمة" /></div>
         <div class="field"><label>المسؤول</label>
           <select id="task-assignee">${people.map((p) => `<option>${esc(p)}</option>`).join('')}</select>
@@ -1105,19 +1151,20 @@
           <select id="task-priority"><option>عاجل</option><option>عالي</option><option selected>متوسط</option></select>
         </div>
         <div class="field"><label>المشروع</label><input id="task-project" value="تشغيل يومي" /></div>
-        <button class="btn btn-primary" data-action="add-task">إضافة مهمة</button>
+        <button class="btn btn-primary" data-action="add-task">إضافة سريعة</button>
       </div>
       <div class="grid-2">
         <article class="card">
           <h3><span class="title-left"><i class="fas fa-list-check icon"></i> المهام</span></h3>
           <div class="table-wrap"><table class="data">
-            <thead><tr><th>المهمة</th><th>المسؤول</th><th>أولوية</th><th>حالة</th><th>جودة</th><th></th></tr></thead>
+            <thead><tr><th>المهمة</th><th>المسؤول</th><th>أولوية</th><th>حالة</th><th>جودة</th>${metaHead()}<th></th></tr></thead>
             <tbody>
               ${t.items
                 .map(
                   (item) => `<tr>
                     <td>${esc(item.title)}</td><td>${esc(item.assignee)}</td><td>${badgeStatus(item.priority)}</td>
                     <td>${badgeStatus(item.status)}</td><td>${item.quality || '—'}</td>
+                    ${metaCells(item)}
                     <td style="display:flex;gap:4px;flex-wrap:wrap">
                       ${item.status !== 'in_progress' && item.status !== 'done' ? `<button class="btn btn-sm btn-ghost" data-action="task-status" data-id="${item.id}" data-status="in_progress">بدء</button>` : ''}
                       ${item.status !== 'done' ? `<button class="btn btn-sm btn-primary" data-action="task-status" data-id="${item.id}" data-status="done">إتمام</button>` : ''}

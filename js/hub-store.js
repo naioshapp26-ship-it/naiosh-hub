@@ -514,14 +514,31 @@ const HubStore = (() => {
     return item;
   };
 
+  // —— Common ERP meta (طرف أول/ثاني · فرع · حاضنة · منصة · مكتب · مرفقات)
+  const pickCommonMeta = (payload = {}) => ({
+    party1Name: payload.party1Name || '',
+    party1Phone: payload.party1Phone || '',
+    party2Name: payload.party2Name || '',
+    party2Phone: payload.party2Phone || '',
+    branch: payload.branch || '',
+    incubator: payload.incubator || '',
+    platform: payload.platform || payload.platformCode || '',
+    office: payload.office || '',
+    docName: payload.docName || '',
+    imageName: payload.imageName || '',
+    videoName: payload.videoName || '',
+    imageDataUrl: payload.imageDataUrl || '',
+  });
+
   // —— Governance
-  const addPolicy = (title, scope) => {
+  const addPolicy = (title, scope, extra = {}) => {
     const item = {
       id: uid('pol'),
       code: `POL-${String(get().governance.policies.length + 1).padStart(2, '0')}`,
       title,
       status: 'draft',
       scope,
+      ...pickCommonMeta(extra),
     };
     get().governance.policies.unshift(item);
     pushFeed('compliance', `مسودة سياسة: ${title}`);
@@ -570,6 +587,7 @@ const HubStore = (() => {
       flagAlt: `علم ${nameAr}`,
       status: 'active',
       assignee: '',
+      ...pickCommonMeta(payload),
     };
     org.worldBranches.unshift(item);
     pushFeed('decision', `فرع جديد: ${item.nameAr}`);
@@ -590,6 +608,7 @@ const HubStore = (() => {
       status: payload.status || 'active',
       warned: false,
       assignee: '',
+      ...pickCommonMeta(payload),
     };
     get().workforce.employees.unshift(item);
     pushFeed('decision', `موظف جديد: ${item.name} · ${item.role}`);
@@ -649,7 +668,7 @@ const HubStore = (() => {
   };
 
   // —— Tasks
-  const addTask = (title, assignee, priority, project) => {
+  const addTask = (title, assignee, priority, project, extra = {}) => {
     const item = {
       id: uid('t'),
       title,
@@ -658,6 +677,7 @@ const HubStore = (() => {
       status: 'todo',
       quality: 0,
       project,
+      ...pickCommonMeta(extra),
     };
     get().tasks.items.unshift(item);
     pushFeed('decision', `مهمة جديدة: ${title}`);
@@ -834,7 +854,7 @@ const HubStore = (() => {
     return sys;
   };
 
-  const addIncubator = (name, sector) => {
+  const addIncubator = (name, sector, extra = {}) => {
     const item = {
       id: uid('inc'),
       name,
@@ -843,6 +863,7 @@ const HubStore = (() => {
       offices: 0,
       members: 0,
       health: 70,
+      ...pickCommonMeta(extra),
     };
     get().empire.organization.incubators.unshift(item);
     get().empire.command.incubators = Math.max(get().empire.command.incubators, get().empire.organization.incubators.length);
@@ -874,6 +895,7 @@ const HubStore = (() => {
       status: manifest.status || 'active',
       health: 88,
       registeredAt: nowIso(),
+      ...pickCommonMeta(manifest),
     };
     empire.apps.unshift(app);
     pushFeed('architecture', `نظام جديد ظهر في هوب: ${app.nameAr}`);
@@ -926,6 +948,7 @@ const HubStore = (() => {
       stock: Number(payload.stock) || 10,
       status: 'active',
       badge: payload.badge || 'جديد',
+      ...pickCommonMeta(payload),
     };
     store.items.unshift(item);
     pushFeed('decision', `منتج جديد في المتجر: ${item.title}`);
@@ -950,6 +973,8 @@ const HubStore = (() => {
       status: 'active',
       level: payload.level || 'متوسط',
       type: payload.type || 'منتج منصة',
+      scope: payload.scope || 'platforms',
+      ...pickCommonMeta(payload),
     };
     studio.listings.unshift(ad);
     pushFeed('decision', `إعلان جديد: ${ad.title}`);
@@ -982,6 +1007,7 @@ const HubStore = (() => {
       duration: payload.duration || '60 دقيقة',
       department: payload.department || 'غرفة العمليات',
       assignee: '',
+      ...pickCommonMeta(payload),
     };
     studio.events.unshift(event);
     pushFeed('decision', `فعالية جديدة: ${event.name}`);
@@ -1006,9 +1032,44 @@ const HubStore = (() => {
       movement: 'متوسط',
       icon: payload.icon || 'fa-cube',
       assignee: '',
+      ...pickCommonMeta(payload),
     };
     empire.productCatalog.unshift(item);
     pushFeed('decision', `منتج كتالوج: ${item.name}`);
+    save();
+    return item;
+  };
+
+  const addMarketSystem = (payload = {}) => {
+    const market = get().empire.marketplace;
+    if (!market?.catalog) return null;
+    const item = {
+      id: uid('sys'),
+      name: payload.name,
+      category: payload.category || 'تشغيل',
+      tenants: Number(payload.tenants) || 1,
+      status: 'active',
+      ...pickCommonMeta(payload),
+    };
+    market.catalog.unshift(item);
+    pushFeed('decision', `نظام سوق جديد: ${item.name}`);
+    save();
+    return item;
+  };
+
+  const addPlatform = (payload = {}) => {
+    const org = get().empire.organization;
+    if (!org.platforms) org.platforms = [];
+    const item = {
+      id: uid('plt'),
+      code: (payload.code || 'PLT').toUpperCase(),
+      nameAr: payload.nameAr || payload.name,
+      role: payload.role || 'تشغيل',
+      status: 'active',
+      ...pickCommonMeta(payload),
+    };
+    org.platforms.unshift(item);
+    pushFeed('architecture', `منصة جديدة: ${item.nameAr}`);
     save();
     return item;
   };
@@ -1039,6 +1100,8 @@ const HubStore = (() => {
         return { list: s.governance?.policies || [], nameKey: 'title' };
       case 'systems':
         return { list: s.empire?.marketplace?.catalog || s.systems?.registry || [], nameKey: 'name' };
+      case 'platforms':
+        return { list: empire.organization?.platforms || [], nameKey: 'nameAr' };
       case 'connectors':
         return { list: s.integration?.connectors || [], nameKey: 'name' };
       default:
@@ -1159,6 +1222,8 @@ const HubStore = (() => {
     toggleAd,
     addEvent,
     addProduct,
+    addMarketSystem,
+    addPlatform,
     entityAction,
     getEntity,
     refreshCommandStats,

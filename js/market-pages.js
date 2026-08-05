@@ -33,6 +33,7 @@
   };
 
   const actions = (entity, id) => (window.HubActions ? window.HubActions.rowHtml(entity, id) : '');
+  const metaLine = (item) => (window.HubActions?.metaCardLine ? window.HubActions.metaCardLine(item) : '');
 
   const renderApps = () => {
     const apps = store?.get?.().empire?.apps || data.APPS.map((a) => ({ ...a, id: a.code }));
@@ -54,6 +55,7 @@
             <h3>${esc(a.nameAr)}</h3>
             <p>أي نظام نايوش يمكنه الظهور هنا والارتباط بهوب للتشغيل الموحد.</p>
             <div class="meta">${a.status === 'active' ? 'متاح الآن' : 'قيد التجهيز'}${a.health ? ` · صحة ${a.health}%` : ''}${a.assignee ? ` · معيّن: ${esc(a.assignee)}` : ''}</div>
+            ${metaLine(a)}
             <div class="card-actions">
               <a class="btn-mini primary" href="${esc(a.url || 'apps.html')}"><i class="fas fa-arrow-left"></i> فتح</a>
             </div>
@@ -100,6 +102,7 @@
             <p>${esc(i.desc)}</p>
             <div class="price">${Number(i.price).toLocaleString('ar-EG')} ر.س</div>
             <div class="meta">نقاط: ${i.points} · مخزون: ${i.stock} · منصة: ${esc(i.platformCode || '—')}${i.assignee ? ` · معيّن: ${esc(i.assignee)}` : ''}</div>
+            ${metaLine(i)}
             <div class="card-actions">
               <button type="button" class="btn-mini primary" data-buy="${esc(i.id)}"><i class="fas fa-cart-plus"></i> اشترِ الآن</button>
               <a class="btn-mini" href="ads.html"><i class="fas fa-rectangle-ad"></i> إعلان المنتج</a>
@@ -181,6 +184,7 @@
               <h3 class="ads-item-title">${esc(a.title)}</h3>
               <p class="ads-meta">${esc(a.content)}</p>
               <p class="ads-meta" style="margin-top:8px">${Number(a.views || 0).toLocaleString('ar-EG')} مشاهدة · ${esc(a.category)}</p>
+              ${metaLine(a)}
               <div style="margin-top:10px">
                 <a class="btn-mini primary" href="products.html">عرض المنتجات</a>
                 <a class="btn-mini" href="store.html">المتجر</a>
@@ -240,6 +244,7 @@
           <p>${esc(e.description)}</p>
           <div class="meta">${esc(e.date)} · ${esc(e.time)} · ${esc(e.duration)}</div>
           <div class="meta">${esc(e.type)} · ${esc(e.speaker)} · ${esc(e.platform)}${e.assignee ? ` · معيّن: ${esc(e.assignee)}` : ''}</div>
+          ${metaLine(e)}
           <div class="card-actions">
             <a class="btn-mini primary" href="dashboard.html#events-studio"><i class="fas fa-ticket"></i> إدارة من غرفة العمليات</a>
           </div>
@@ -317,6 +322,7 @@
                   <h3>${esc(p.name)}</h3>
                   <div class="shop-card-meta">${esc(p.brand)} · ${esc(p.category)}</div>
                   <div class="shop-card-price">${Number(p.price).toLocaleString('ar-EG')} ر.س</div>
+                  ${metaLine(p)}
                   <div class="shop-card-actions">
                     <a class="primary" href="store.html">شراء</a>
                     <a href="ads.html">إعلان</a>
