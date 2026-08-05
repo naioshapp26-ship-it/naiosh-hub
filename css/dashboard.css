@@ -489,10 +489,12 @@ table.data tr:hover td { background: #fafafa; }
     justify-content: flex-start;
   }
   .topbar-user {
-    width: 100%;
-    justify-content: space-between;
+    margin-inline-start: auto;
   }
   .user-meta { text-align: right; }
+  .topbar-actions .btn .btn-label-full {
+    display: none;
+  }
   .grid-2,
   .grid-3,
   .kpi-grid,

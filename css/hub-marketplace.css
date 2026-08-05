@@ -407,6 +407,28 @@
 .move-pill.mid { background: rgba(245, 158, 11, 0.14); color: #b45309; }
 .move-pill.slow { background: #eef2f7; color: #64748b; }
 
+.market-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  max-width: min(92vw, 420px);
+  text-align: center;
+}
+
+.market-toast.is-visible {
+  opacity: 1;
+}
+
 /* Ads category grid - responsive layout for mobile */
 .ads-cats-grid {
   display: grid;
@@ -450,4 +472,5 @@
   .market-stat strong { font-size: 20px; }
   .market-hero h1 { font-size: clamp(24px, 7vw, 34px); }
   .market-hero p { font-size: 14px; }
+  .market-toast { bottom: 72px; }
 }

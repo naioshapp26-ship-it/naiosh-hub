@@ -16,15 +16,14 @@
     if (!el) {
       el = document.createElement('div');
       el.id = 'market-toast';
-      el.style.cssText =
-        'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;z-index:99999;opacity:0;transition:.2s';
+      el.className = 'market-toast';
       document.body.appendChild(el);
     }
     el.textContent = msg;
-    el.style.opacity = '1';
+    el.classList.add('is-visible');
     clearTimeout(toast._t);
     toast._t = setTimeout(() => {
-      el.style.opacity = '0';
+      el.classList.remove('is-visible');
     }, 2200);
   };
 
