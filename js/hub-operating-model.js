@@ -1,0 +1,145 @@
+/**
+ * آلية تشغيل نايوش هوب — المبادئ الـ11 + كتالوج الخدمات + واجهة مساعدة
+ */
+(() => {
+  const PRINCIPLES = [
+    {
+      id: 1,
+      title: 'عدم التكرار',
+      icon: 'fa-clone',
+      summary: 'سجل أنظمة واحد · خدمة واحدة · مصدر بيانات واحد',
+      detail: 'هوب هو المصدر المرجعي للأنظمة والخدمات. كل نظام يُسجَّل مرة واحدة بكود فريد، والخدمات تُعرَّف مرة وتُعرض موحّدة في هوب ومفلترة داخل النظام.',
+    },
+    {
+      id: 2,
+      title: 'أيقونات تفتح الأنظمة',
+      icon: 'fa-arrow-up-right-from-square',
+      summary: 'كل أيقونة تفتح النظام/الموقع المخصص مباشرة',
+      detail: 'الضغط على أيقونة النظام يفتح بوابته المخصصة (عبر هوب أو منفردًا) مع سياق العودة، دون صفحات وسيطة مكررة.',
+    },
+    {
+      id: 3,
+      title: 'صلاحيات حسب الاشتراك',
+      icon: 'fa-key',
+      summary: 'الاشتراك يمنح الصلاحية — لا وصول بدون اشتراك نشط',
+      detail: 'شراء/منح اشتراك لنظام معيّن يفعّل صلاحيات العميل (قراءة · كتابة · إدارة). الإطلاق يُفحص قبل الدخول.',
+    },
+    {
+      id: 4,
+      title: 'تقارير واضحة',
+      icon: 'fa-scroll',
+      summary: 'هوب يعكس كل الأنشطة الماضية والجارية',
+      detail: 'التقارير تُبنى من سجل النشاط الموحّد: تشغيل أنظمة · مزامنة · إشعارات · طلبات · منح هيكل · اشتراكات.',
+    },
+    {
+      id: 5,
+      title: 'التحكم من هوب',
+      icon: 'fa-satellite-dish',
+      summary: 'تشغيل · إيقاف · مزامنة · أوامر من غرفة العمليات',
+      detail: 'غرفة العمليات تتحكم بالأنظمة المسجّلة: فتح · تبديل حالة · رفع بيانات · إشعارات مركزية.',
+    },
+    {
+      id: 6,
+      title: 'منح الهيكل من هوب',
+      icon: 'fa-sitemap',
+      summary: 'فروع · حاضنات · منصات · مكاتب إلكترونية',
+      detail: 'إنشاء ومنح الفروع والحاضنات والمنصات والمكاتب الإلكترونية يتم من هوب ويرتبط بالصلاحيات والمحفظة.',
+    },
+    {
+      id: 7,
+      title: 'تسجيل مفتوح من هوب',
+      icon: 'fa-user-plus',
+      summary: 'التسجيل في الأنظمة والبرامج يبدأ من هوب',
+      detail: 'نقطة تسجيل واحدة في هوب لأي نظام أو برنامج؛ بعد الموافقة يظهر في السجل الموحّد.',
+    },
+    {
+      id: 8,
+      title: 'دخول حسب الصلاحية',
+      icon: 'fa-right-to-bracket',
+      summary: 'الدخول للنظام المشترك فيه فقط وبالصلاحية الممنوحة',
+      detail: 'من هوب يدخل العميل للنظام المشترك فيه فقط، ويُمرَّر رمز جلسة NAIOSH ID مع حدود الصلاحية.',
+    },
+    {
+      id: 9,
+      title: 'تسجيل دخول واحد (SSO)',
+      icon: 'fa-id-card',
+      summary: 'جلسة واحدة لكل الأنظمة والبرامج',
+      detail: 'NAIOSH ID جلسة موحّدة؛ بعد الدخول مرة واحدة تُفتح الأنظمة المصرّح بها دون إعادة تسجيل منفصلة.',
+    },
+    {
+      id: 10,
+      title: 'خدمات موحّدة / مفلترة',
+      icon: 'fa-layer-group',
+      summary: 'هوب = كل الخدمات · النظام = خدماته فقط',
+      detail: 'في هوب تظهر كل خدمات الأنظمة. داخل كل نظام تظهر فقط خدمات وأنشطة ذلك النظام.',
+    },
+    {
+      id: 11,
+      title: 'هوب يعكس كل الخدمات',
+      icon: 'fa-globe',
+      summary: 'خريطة خدمات كاملة عبر كل الأنظمة',
+      detail: 'لوحة خدمات هوب تجمع خدمات ERP · LAW · FIT · Academy وغيرها في عرض واحد قابل للفلترة.',
+    },
+  ];
+
+  /** خدمات كل نظام — تظهر كاملة في هوب ومفلترة داخل النظام */
+  const SYSTEM_SERVICES = {
+    ERP: [
+      { id: 'erp-inventory', nameAr: 'المخزون', icon: 'fa-boxes-stacked' },
+      { id: 'erp-sales', nameAr: 'المبيعات', icon: 'fa-cart-shopping' },
+      { id: 'erp-finance', nameAr: 'المالية', icon: 'fa-coins' },
+      { id: 'erp-hr', nameAr: 'الموارد البشرية', icon: 'fa-users' },
+    ],
+    LAW: [
+      { id: 'law-contracts', nameAr: 'العقود', icon: 'fa-file-contract' },
+      { id: 'law-cases', nameAr: 'القضايا', icon: 'fa-gavel' },
+      { id: 'law-compliance', nameAr: 'الامتثال', icon: 'fa-scale-balanced' },
+    ],
+    FIT: [
+      { id: 'fit-members', nameAr: 'الأعضاء', icon: 'fa-id-card' },
+      { id: 'fit-programs', nameAr: 'البرامج', icon: 'fa-dumbbell' },
+      { id: 'fit-subscriptions', nameAr: 'الاشتراكات', icon: 'fa-ticket' },
+    ],
+    NAIS: [
+      { id: 'nais-dashboard', nameAr: 'لوحة القرار', icon: 'fa-chart-line' },
+      { id: 'nais-alerts', nameAr: 'التنبيهات', icon: 'fa-bell' },
+      { id: 'nais-bridge', nameAr: 'جسر العملاء', icon: 'fa-bridge' },
+    ],
+    ACADEMY: [
+      { id: 'ac-courses', nameAr: 'الدورات', icon: 'fa-graduation-cap' },
+      { id: 'ac-workshops', nameAr: 'الورش', icon: 'fa-chalkboard-user' },
+      { id: 'ac-certs', nameAr: 'الشهادات', icon: 'fa-certificate' },
+    ],
+    LMS: [
+      { id: 'lms-paths', nameAr: 'المسارات', icon: 'fa-route' },
+      { id: 'lms-content', nameAr: 'المحتوى', icon: 'fa-book' },
+      { id: 'lms-assess', nameAr: 'التقييم', icon: 'fa-clipboard-check' },
+    ],
+    CRM: [
+      { id: 'crm-leads', nameAr: 'العملاء المحتملون', icon: 'fa-user-plus' },
+      { id: 'crm-pipeline', nameAr: 'خط المبيعات', icon: 'fa-filter' },
+      { id: 'crm-support', nameAr: 'الدعم', icon: 'fa-headset' },
+    ],
+  };
+
+  const PERMISSION_LEVELS = [
+    { id: 'read', nameAr: 'قراءة' },
+    { id: 'write', nameAr: 'كتابة' },
+    { id: 'admin', nameAr: 'إدارة' },
+  ];
+
+  const servicesFor = (code) => SYSTEM_SERVICES[String(code || '').toUpperCase()] || [];
+
+  const allServices = () =>
+    Object.entries(SYSTEM_SERVICES).flatMap(([systemCode, list]) =>
+      list.map((s) => ({ ...s, systemCode, systemName: window.HubLauncher?.SYSTEM_META?.[systemCode]?.nameAr || systemCode }))
+    );
+
+  window.HubOperatingModel = {
+    PRINCIPLES,
+    SYSTEM_SERVICES,
+    PERMISSION_LEVELS,
+    servicesFor,
+    allServices,
+  };
+})();

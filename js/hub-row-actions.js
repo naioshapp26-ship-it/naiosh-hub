@@ -21,6 +21,7 @@
     connectors: 'موصل',
     platforms: 'منصة',
     branches: 'فرع',
+    offices: 'مكتب إلكتروني',
     generic: 'سجل',
   };
 
@@ -778,6 +779,15 @@
         { id: 'role', label: 'الدور', value: 'تشغيل' },
       ],
       save: (v) => window.HubStore.addPlatform?.(v),
+    },
+    offices: {
+      title: 'منح مكتب إلكتروني',
+      fields: [
+        { id: 'nameAr', label: 'اسم المكتب الإلكتروني', required: true },
+        { id: 'manager', label: 'المسؤول', value: '' },
+        { id: 'type', label: 'النوع', value: 'إلكتروني' },
+      ],
+      save: (v) => window.HubStore.addOffice?.(v),
     },
   };
 

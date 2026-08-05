@@ -109,26 +109,42 @@ function fillLogin(email, password, autoSubmit = true) {
       platform: 'naiosh-hub-360',
     };
     const token = `hub360.${btoa(email)}.${Date.now()}`;
-    localStorage.removeItem('hubAuthToken');
-    localStorage.removeItem('hubUser');
-    sessionStorage.removeItem('hubAuthToken');
-    sessionStorage.removeItem('hubUser');
-    const storage = rememberMe ? localStorage : sessionStorage;
-    storage.setItem('hubAuthToken', token);
-    storage.setItem('hubUser', JSON.stringify(user));
+    if (window.HubAuth?.setSession) {
+      window.HubAuth.setSession(user, token, { remember: !!rememberMe });
+    } else {
+      localStorage.removeItem('hubAuthToken');
+      localStorage.removeItem('hubUser');
+      sessionStorage.removeItem('hubAuthToken');
+      sessionStorage.removeItem('hubUser');
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem('hubAuthToken', token);
+      storage.setItem('hubUser', JSON.stringify(user));
+    }
 
-    showAlert('تم تسجيل الدخول بنجاح! جاري تحويلك لغرفة العمليات...', 'success');
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next') || '';
+    const system = (params.get('system') || '').toUpperCase();
+    let dest = 'dashboard.html';
+    if (next && !next.startsWith('http') && !next.includes('://')) {
+      dest = next;
+    } else if (system && window.HubLauncher?.getDirectLaunchUrl) {
+      dest = window.HubLauncher.getDirectLaunchUrl(system);
+    }
+
+    showAlert('تم تسجيل الدخول بنجاح! جاري التحويل...', 'success');
     setTimeout(() => {
-      window.location.href = 'dashboard.html';
+      window.location.href = dest;
     }, 900);
   });
 
   window.addEventListener('load', () => {
     const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
     if (token) {
+      const params = new URLSearchParams(window.location.search);
+      const next = params.get('next') || 'dashboard.html';
       showAlert('لديك جلسة نشطة. جاري تحويلك...', 'success');
       setTimeout(() => {
-        window.location.href = 'dashboard.html';
+        window.location.href = next.startsWith('http') ? 'dashboard.html' : next;
       }, 800);
     }
   });
