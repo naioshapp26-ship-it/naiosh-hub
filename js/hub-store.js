@@ -154,6 +154,60 @@ const HubStore = (() => {
     };
   };
 
+  const seedInfoSecurity = () => ({
+    score: 91,
+    mfaCoverage: 67,
+    openIncidents: 2,
+    controls: [
+      { id: uid('sec'), name: 'OAuth2 / SSO', category: 'هوية', status: 'active', coverage: 98 },
+      { id: uid('sec'), name: 'MFA متعدد العوامل', category: 'هوية', status: 'active', coverage: 67 },
+      { id: uid('sec'), name: 'SIEM مراقبة الأحداث', category: 'رصد', status: 'active', coverage: 88 },
+      { id: uid('sec'), name: 'تشفير البيانات أثناء النقل', category: 'حماية', status: 'active', coverage: 100 },
+      { id: uid('sec'), name: 'إدارة الصلاحيات RBAC', category: 'صلاحيات', status: 'active', coverage: 94 },
+      { id: uid('sec'), name: 'اختبار اختراق دوري', category: 'اختبار', status: 'scheduled', coverage: 72 },
+    ],
+    incidents: [
+      { id: uid('inc'), title: 'محاولات دخول فاشلة مرتفعة', severity: 'متوسط', status: 'open', owner: 'أمن المعلومات' },
+      { id: uid('inc'), title: 'تنبيه صلاحيات متجاوزة', severity: 'عالي', status: 'investigating', owner: 'الحوكمة' },
+    ],
+  });
+
+  const seedDataGovernance = () => ({
+    qualityScore: 87,
+    classifiedPct: 74,
+    retentionOk: 91,
+    catalogs: [
+      { id: uid('dg'), name: 'بيانات العملاء', owner: 'CRM', classification: 'سري', quality: 92, status: 'active' },
+      { id: uid('dg'), name: 'سجلات التشغيل', owner: 'Hub Core', classification: 'داخلي', quality: 88, status: 'active' },
+      { id: uid('dg'), name: 'معاملات المحفظة', owner: 'Wallet', classification: 'حساس', quality: 95, status: 'active' },
+      { id: uid('dg'), name: 'أرشيف الإعلانات', owner: 'Ads Studio', classification: 'عام', quality: 81, status: 'review' },
+      { id: uid('dg'), name: 'مستندات الحاضنات', owner: 'Incubators', classification: 'داخلي', quality: 79, status: 'active' },
+    ],
+    policies: [
+      { id: uid('dgp'), title: 'تصنيف البيانات الإلزامي', status: 'active', scope: 'كل المنصات' },
+      { id: uid('dgp'), title: 'احتفاظ السجلات 24 شهرًا', status: 'active', scope: 'التشغيل' },
+      { id: uid('dgp'), title: 'حذف البيانات عند الطلب', status: 'draft', scope: 'العملاء' },
+    ],
+  });
+
+  const seedSystemsAutomation = () => ({
+    activeFlows: 12,
+    successRate: 96,
+    savedHours: 148,
+    flows: [
+      { id: uid('auto'), name: 'مزامنة الأنظمة الليلية', trigger: 'جدولة 02:00', system: 'ERP · LMS', status: 'active', runs: 128 },
+      { id: uid('auto'), name: 'تنبيه انخفاض الإنتاجية', trigger: 'حدث قياس', system: 'Workforce', status: 'active', runs: 64 },
+      { id: uid('auto'), name: 'تفعيل سياسة عند الاعتماد', trigger: 'اعتماد حوكمة', system: 'Governance', status: 'active', runs: 41 },
+      { id: uid('auto'), name: 'إصدار تقرير يومي للقائد', trigger: 'جدولة 08:00', system: 'Reports', status: 'active', runs: 90 },
+      { id: uid('auto'), name: 'أرشفة إعلانات منتهية', trigger: 'انتهاء حملة', system: 'Ads', status: 'paused', runs: 22 },
+      { id: uid('auto'), name: 'إنشاء مهمة من تنبيه أمني', trigger: 'حادثة أمن', system: 'Security · Tasks', status: 'active', runs: 17 },
+    ],
+    queue: [
+      { id: uid('aq'), name: 'أتمتة ترحيب العملاء الجدد', priority: 'عالي', status: 'queued' },
+      { id: uid('aq'), name: 'أتمتة نسخ احتياطي للمنصات', priority: 'متوسط', status: 'queued' },
+    ],
+  });
+
   const seed = () => ({
       meta: {
       version: 6,
@@ -320,12 +374,33 @@ const HubStore = (() => {
         { method: 'GET', path: '/api/reports/daily', calls: 96 },
       ],
     },
+    infoSecurity: seedInfoSecurity(),
+    dataGovernance: seedDataGovernance(),
+    systemsAutomation: seedSystemsAutomation(),
     timeline: {
       phase1: { name: 'التأسيس', days: 30, progress: 42, items: ['العقل المركزي', 'الحوكمة', 'القياس الموحد'] },
       phase2: { name: 'التشغيل', days: 45, progress: 18, items: ['ربط الأنظمة', 'المهام', 'القوى العاملة'] },
       phase3: { name: 'السيادة', days: 30, progress: 5, items: ['التقارير السيادية', 'التكامل الخارجي', 'الإطلاق'] },
     },
   });
+
+  const hydrateOpsDomains = () => {
+    if (!state) return false;
+    let changed = false;
+    if (!state.infoSecurity) {
+      state.infoSecurity = seedInfoSecurity();
+      changed = true;
+    }
+    if (!state.dataGovernance) {
+      state.dataGovernance = seedDataGovernance();
+      changed = true;
+    }
+    if (!state.systemsAutomation) {
+      state.systemsAutomation = seedSystemsAutomation();
+      changed = true;
+    }
+    return changed;
+  };
 
   let state = null;
 
@@ -407,6 +482,7 @@ const HubStore = (() => {
         } else if (hydrateMarketplace()) {
           save();
         }
+        if (hydrateOpsDomains()) save();
         return state;
       }
     } catch (_) {}
@@ -1074,6 +1150,64 @@ const HubStore = (() => {
     return item;
   };
 
+  const toggleSecurityControl = (id) => {
+    const c = get().infoSecurity?.controls?.find((x) => x.id === id);
+    if (!c) return null;
+    c.status = c.status === 'active' ? 'paused' : 'active';
+    pushFeed('alert', `أمن المعلومات · ${c.name}: ${c.status}`);
+    save();
+    return c;
+  };
+
+  const closeSecurityIncident = (id) => {
+    const inc = get().infoSecurity?.incidents?.find((x) => x.id === id);
+    if (!inc) return null;
+    inc.status = 'closed';
+    get().infoSecurity.openIncidents = get().infoSecurity.incidents.filter((x) => x.status !== 'closed').length;
+    pushFeed('alert', `إغلاق حادثة أمنية: ${inc.title}`);
+    save();
+    return inc;
+  };
+
+  const toggleDataCatalog = (id) => {
+    const row = get().dataGovernance?.catalogs?.find((x) => x.id === id);
+    if (!row) return null;
+    row.status = row.status === 'active' ? 'review' : 'active';
+    pushFeed('compliance', `حوكمة البيانات · ${row.name}: ${row.status}`);
+    save();
+    return row;
+  };
+
+  const activateDataPolicy = (id) => {
+    const p = get().dataGovernance?.policies?.find((x) => x.id === id);
+    if (!p) return null;
+    p.status = 'active';
+    pushFeed('compliance', `تفعيل سياسة بيانات: ${p.title}`);
+    save();
+    return p;
+  };
+
+  const toggleAutomationFlow = (id) => {
+    const f = get().systemsAutomation?.flows?.find((x) => x.id === id);
+    if (!f) return null;
+    f.status = f.status === 'active' ? 'paused' : 'active';
+    get().systemsAutomation.activeFlows = get().systemsAutomation.flows.filter((x) => x.status === 'active').length;
+    pushFeed('decision', `أتمتة · ${f.name}: ${f.status}`);
+    save();
+    return f;
+  };
+
+  const runAutomationFlow = (id) => {
+    const f = get().systemsAutomation?.flows?.find((x) => x.id === id);
+    if (!f) return null;
+    f.runs = (f.runs || 0) + 1;
+    f.status = 'active';
+    get().systemsAutomation.savedHours = (get().systemsAutomation.savedHours || 0) + 1;
+    pushFeed('decision', `تشغيل أتمتة: ${f.name}`);
+    save();
+    return f;
+  };
+
   const resolveCollection = (entity) => {
     const s = get();
     const empire = s.empire;
@@ -1224,6 +1358,12 @@ const HubStore = (() => {
     addProduct,
     addMarketSystem,
     addPlatform,
+    toggleSecurityControl,
+    closeSecurityIncident,
+    toggleDataCatalog,
+    activateDataPolicy,
+    toggleAutomationFlow,
+    runAutomationFlow,
     entityAction,
     getEntity,
     refreshCommandStats,

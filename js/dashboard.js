@@ -14,6 +14,9 @@
     { key: 'wallet', icon: 'fa-coins', label: 'محفظة النقاط' },
     { key: 'core', icon: 'fa-brain', label: 'العقل المركزي' },
     { key: 'governance', icon: 'fa-scale-balanced', label: 'الحوكمة' },
+    { key: 'info-security', icon: 'fa-shield-halved', label: 'أمن المعلومات' },
+    { key: 'data-governance', icon: 'fa-database', label: 'حوكمة البيانات' },
+    { key: 'systems-automation', icon: 'fa-robot', label: 'أتمتة الأنظمة' },
     { key: 'workforce', icon: 'fa-users-gear', label: 'القوى العاملة' },
     { key: 'systems', icon: 'fa-store', label: 'سوق الأنظمة' },
     { key: 'tasks', icon: 'fa-clipboard-list', label: 'المهام' },
@@ -37,6 +40,9 @@
     wallet: ['اقتصاد النقاط', 'شحن · استهلاك · تسعير · فواتير'],
     core: ['العقل المركزي', 'قرار · تنبؤ · تحسين · شذوذ · خريطة معرفة'],
     governance: ['الحوكمة الدستورية', 'سياسات · امتثال · جودة · عقوبات/مكافآت · دستور'],
+    'info-security': ['أمن المعلومات', 'ضوابط · MFA · SIEM · حوادث · صلاحيات'],
+    'data-governance': ['حوكمة البيانات', 'كتالوج · تصنيف · جودة · سياسات الاحتفاظ'],
+    'systems-automation': ['أتمتة الأنظمة', 'تدفقات · جدولة · تشغيل · طابور الأتمتة'],
     workforce: ['القوى العاملة عن بُعد', 'إضافة · تعديل · تعيين · حذف · إنذار · مكافآت'],
     systems: ['سوق الأنظمة التشغيلية', 'تفعيل · إيقاف · ربط'],
     tasks: ['المهام والمشاريع', 'توزيع · أولويات · اختناقات · جودة تنفيذ'],
@@ -124,6 +130,8 @@
       stopped: 'badge-red',
       beta: 'badge-gray',
       paused: 'badge-gray',
+      scheduled: 'badge-red',
+      review: 'badge-red',
       قادمة: 'badge-black',
       منتهية: 'badge-gray',
       مسودة: 'badge-red',
@@ -1350,6 +1358,160 @@
     `;
   };
 
+  const renderInfoSecurity = () => {
+    const s = HubStore.get().infoSecurity || { controls: [], incidents: [] };
+    return `
+      <div class="kpi-grid">
+        <article class="kpi"><span>درجة الأمن</span><strong>${s.score}%</strong><small>Security score</small></article>
+        <article class="kpi"><span>تغطية MFA</span><strong>${s.mfaCoverage}%</strong><small>Multi-factor</small></article>
+        <article class="kpi"><span>حوادث مفتوحة</span><strong>${s.openIncidents}</strong><small>Incidents</small></article>
+        <article class="kpi"><span>ضوابط نشطة</span><strong>${(s.controls || []).filter((c) => c.status === 'active').length}</strong><small>Controls</small></article>
+      </div>
+      <div class="grid-2" style="margin-top:12px">
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-shield-halved icon"></i> الضوابط الأمنية</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>الضابط</th><th>التصنيف</th><th>التغطية</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+              ${(s.controls || [])
+                .map(
+                  (c) => `<tr>
+                    <td><strong>${esc(c.name)}</strong></td>
+                    <td>${esc(c.category)}</td>
+                    <td>${c.coverage}% ${bar(c.coverage)}</td>
+                    <td>${badgeStatus(c.status)}</td>
+                    <td><button class="btn btn-sm btn-dark" data-action="toggle-sec-control" data-id="${c.id}">تفعيل/إيقاف</button></td>
+                  </tr>`
+                )
+                .join('')}
+            </tbody>
+          </table></div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-triangle-exclamation icon"></i> الحوادث الأمنية</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>الحادثة</th><th>الحدة</th><th>المسؤول</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+              ${(s.incidents || [])
+                .map(
+                  (inc) => `<tr>
+                    <td>${esc(inc.title)}</td>
+                    <td>${badgeStatus(inc.severity)}</td>
+                    <td>${esc(inc.owner)}</td>
+                    <td>${badgeStatus(inc.status)}</td>
+                    <td>${inc.status !== 'closed' ? `<button class="btn btn-sm btn-primary" data-action="close-sec-incident" data-id="${inc.id}">إغلاق</button>` : '—'}</td>
+                  </tr>`
+                )
+                .join('')}
+            </tbody>
+          </table></div>
+        </article>
+      </div>
+    `;
+  };
+
+  const renderDataGovernance = () => {
+    const d = HubStore.get().dataGovernance || { catalogs: [], policies: [] };
+    return `
+      <div class="kpi-grid">
+        <article class="kpi"><span>جودة البيانات</span><strong>${d.qualityScore}%</strong><small>Quality</small></article>
+        <article class="kpi"><span>مصنّفة</span><strong>${d.classifiedPct}%</strong><small>Classified</small></article>
+        <article class="kpi"><span>امتثال الاحتفاظ</span><strong>${d.retentionOk}%</strong><small>Retention</small></article>
+        <article class="kpi"><span>كتالوجات</span><strong>${(d.catalogs || []).length}</strong><small>Datasets</small></article>
+      </div>
+      <div class="grid-2" style="margin-top:12px">
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-database icon"></i> كتالوج البيانات</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>البيانات</th><th>المالك</th><th>التصنيف</th><th>الجودة</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+              ${(d.catalogs || [])
+                .map(
+                  (c) => `<tr>
+                    <td><strong>${esc(c.name)}</strong></td>
+                    <td>${esc(c.owner)}</td>
+                    <td>${esc(c.classification)}</td>
+                    <td>${c.quality}% ${bar(c.quality)}</td>
+                    <td>${badgeStatus(c.status)}</td>
+                    <td><button class="btn btn-sm btn-dark" data-action="toggle-data-catalog" data-id="${c.id}">مراجعة/تفعيل</button></td>
+                  </tr>`
+                )
+                .join('')}
+            </tbody>
+          </table></div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-file-shield icon"></i> سياسات البيانات</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>السياسة</th><th>النطاق</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+              ${(d.policies || [])
+                .map(
+                  (p) => `<tr>
+                    <td>${esc(p.title)}</td>
+                    <td>${esc(p.scope)}</td>
+                    <td>${badgeStatus(p.status)}</td>
+                    <td>${p.status !== 'active' ? `<button class="btn btn-sm btn-primary" data-action="activate-data-policy" data-id="${p.id}">تفعيل</button>` : '—'}</td>
+                  </tr>`
+                )
+                .join('')}
+            </tbody>
+          </table></div>
+        </article>
+      </div>
+    `;
+  };
+
+  const renderSystemsAutomation = () => {
+    const a = HubStore.get().systemsAutomation || { flows: [], queue: [] };
+    return `
+      <div class="kpi-grid">
+        <article class="kpi"><span>تدفقات نشطة</span><strong>${a.activeFlows}</strong><small>Active flows</small></article>
+        <article class="kpi"><span>نسبة النجاح</span><strong>${a.successRate}%</strong><small>Success</small></article>
+        <article class="kpi"><span>ساعات موفّرة</span><strong>${a.savedHours}</strong><small>Hours saved</small></article>
+        <article class="kpi"><span>طابور</span><strong>${(a.queue || []).length}</strong><small>Queued</small></article>
+      </div>
+      <div class="grid-2" style="margin-top:12px">
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-robot icon"></i> تدفقات الأتمتة</span></h3>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>التدفق</th><th>المحفّز</th><th>النظام</th><th>تشغيلات</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+              ${(a.flows || [])
+                .map(
+                  (f) => `<tr>
+                    <td><strong>${esc(f.name)}</strong></td>
+                    <td>${esc(f.trigger)}</td>
+                    <td>${esc(f.system)}</td>
+                    <td>${f.runs}</td>
+                    <td>${badgeStatus(f.status)}</td>
+                    <td style="display:flex;gap:4px;flex-wrap:wrap">
+                      <button class="btn btn-sm btn-primary" data-action="run-auto-flow" data-id="${f.id}">تشغيل</button>
+                      <button class="btn btn-sm btn-dark" data-action="toggle-auto-flow" data-id="${f.id}">تفعيل/إيقاف</button>
+                    </td>
+                  </tr>`
+                )
+                .join('')}
+            </tbody>
+          </table></div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-list-ol icon"></i> طابور الأتمتة القادمة</span></h3>
+          ${(a.queue || []).length
+            ? (a.queue || [])
+                .map(
+                  (q) => `<div style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center">
+                    <div><b>${esc(q.name)}</b><br><small style="color:var(--muted)">${esc(q.status)}</small></div>
+                    ${badgeStatus(q.priority)}
+                  </div>`
+                )
+                .join('')
+            : '<div class="empty">لا عناصر في الطابور</div>'}
+        </article>
+      </div>
+    `;
+  };
+
   const renderers = {
     overview: renderOverview,
     blueprint: renderBlueprint,
@@ -1365,6 +1527,9 @@
     wallet: renderWallet,
     core: renderCore,
     governance: renderGovernance,
+    'info-security': renderInfoSecurity,
+    'data-governance': renderDataGovernance,
+    'systems-automation': renderSystemsAutomation,
     workforce: renderWorkforce,
     systems: renderSystems,
     tasks: renderTasks,
