@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>بوابة النظام | نايوش</title>
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/system-portal.css" />
+</head>
+<body>
+  <header class="sp-top">
+    <a class="sp-brand" href="index.html">
+      <img src="assets/logo-hub.jpeg" alt="نايوش" />
+      <div>
+        <strong id="sp-name">النظام</strong>
+        <span id="sp-mode-label">تشغيل مستقل</span>
+      </div>
+    </a>
+    <div class="sp-actions">
+      <a class="sp-btn ghost" href="dashboard.html#notifications"><i class="fas fa-bell"></i> إشعارات هوب</a>
+      <a class="sp-btn dark" href="dashboard.html#apps"><i class="fas fa-gauge-high"></i> غرفة العمليات</a>
+    </div>
+  </header>
+
+  <main class="sp-main">
+    <section class="sp-hero" id="sp-hero">
+      <div class="sp-hero-icon"><i class="fas fa-cube" id="sp-icon"></i></div>
+      <p class="sp-kicker" id="sp-kicker">نظام نايوش</p>
+      <h1 id="sp-title">—</h1>
+      <p id="sp-desc"></p>
+      <div class="sp-mode-pill" id="sp-mode-pill">تشغيل مستقل</div>
+      <div class="sp-cta">
+        <button type="button" class="sp-btn red" id="btn-switch-standalone"><i class="fas fa-rocket"></i> تشغيل بشكل منفرد</button>
+        <button type="button" class="sp-btn outline" id="btn-switch-hub"><i class="fas fa-link"></i> التشغيل عبر هوب</button>
+      </div>
+    </section>
+
+    <section class="sp-grid">
+      <article class="sp-card">
+        <h2><i class="fas fa-puzzle-piece"></i> وحدات النظام</h2>
+        <ul id="sp-modules"></ul>
+      </article>
+
+      <article class="sp-card">
+        <h2><i class="fas fa-bell"></i> إرسال إشعار إلى هوب</h2>
+        <p class="sp-hint">كل إشعارات الأنظمة تصل إلى مركز إشعارات هوب.</p>
+        <label>عنوان الإشعار
+          <input id="notif-title" type="text" placeholder="تنبيه تشغيلي من النظام" />
+        </label>
+        <label>التفاصيل
+          <textarea id="notif-body" rows="3" placeholder="اكتب تفاصيل الإشعار…"></textarea>
+        </label>
+        <button type="button" class="sp-btn red" id="btn-send-notif"><i class="fas fa-paper-plane"></i> إرسال إلى هوب</button>
+      </article>
+
+      <article class="sp-card sp-card-wide">
+        <h2><i class="fas fa-cloud-arrow-up"></i> رفع معلومات النظام على هوب</h2>
+        <p class="sp-hint">ارفع ملخص تشغيل / بيانات / مستند ليُحفظ داخل هوب ويظهر في السجل والإشعارات.</p>
+        <div class="sp-form-grid">
+          <label>عنوان الحزمة
+            <input id="upload-title" type="text" placeholder="تقرير يومي / مزامنة بيانات" />
+          </label>
+          <label>نوع البيانات
+            <select id="upload-kind">
+              <option value="report">تقرير</option>
+              <option value="records">سجلات</option>
+              <option value="document">مستند</option>
+              <option value="sync">مزامنة كاملة</option>
+            </select>
+          </label>
+          <label class="sp-span-2">الملخص / البيانات
+            <textarea id="upload-payload" rows="4" placeholder="مثال: 120 فاتورة · 45 عميل · مخزون محدّث"></textarea>
+          </label>
+          <label class="sp-span-2">رفع ملف (اختياري)
+            <input id="upload-file" type="file" />
+          </label>
+        </div>
+        <button type="button" class="sp-btn red" id="btn-upload-hub"><i class="fas fa-upload"></i> رفع كل المعلومات على هوب</button>
+      </article>
+    </section>
+
+    <p class="sp-foot" id="sp-status"></p>
+  </main>
+
+  <div id="sp-toast" class="sp-toast" hidden></div>
+
+  <script src="js/empire-blueprint.js"></script>
+  <script src="js/sovereign-platforms.js"></script>
+  <script src="js/hub-marketplace-data.js"></script>
+  <script src="js/hub-branches-data.js"></script>
+  <script src="js/hub-incubators-data.js"></script>
+  <script src="js/hub-systems-registry.js"></script>
+  <script src="js/hub-store.js"></script>
+  <script src="js/system-portal.js"></script>
+</body>
+</html>

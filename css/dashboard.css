@@ -326,6 +326,30 @@ table.data tr:hover td { background: #fafafa; }
   line-height: 1.55;
 }
 .feed li small { display: block; color: var(--muted); margin-top: 4px; font-size: 11px; }
+.notif-feed { max-height: none; }
+.notif-feed li.is-unread {
+  border-color: rgba(215, 0, 0, 0.35);
+  background: #fff8f8;
+}
+.notif-feed li.is-read { opacity: 0.82; }
+.topbar-actions a.btn,
+.topbar-actions .btn { position: relative; }
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  inset-inline-end: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #d70000;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-grid;
+  place-items: center;
+  line-height: 1;
+}
 
 .engine-grid {
   display: grid;

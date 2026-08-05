@@ -4,6 +4,7 @@
     { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
     { key: 'platforms', icon: 'fa-layer-group', label: 'المنصات السيادية' },
     { key: 'apps', icon: 'fa-cubes', label: 'سجل الأنظمة' },
+    { key: 'notifications', icon: 'fa-bell', label: 'مركز الإشعارات' },
     { key: 'products', icon: 'fa-boxes-stacked', label: 'عرض المنتجات' },
     { key: 'store', icon: 'fa-bag-shopping', label: 'متجر المبيعات' },
     { key: 'ads-studio', icon: 'fa-rectangle-ad', label: 'استوديو الإعلانات' },
@@ -29,7 +30,8 @@
     overview: ['مركز التحكم العالمي', 'الفروع · الحاضنات · المنصات · المنتجات · المتجر · الإعلانات · الفعاليات'],
     blueprint: ['دستور المعمارية الإمبراطورية', 'هوب مركزي — طبقات · محاور · أول 6 أشهر'],
     platforms: ['المنصات السيادية لنايوش 360', '18 منصة تشغّل هوب — من الدماغ المركزي إلى السلطة العليا'],
-    apps: ['سجل أنظمة هوب', 'أي نظام نايوش يمكنه الظهور هنا والارتباط بالتشغيل الموحّد'],
+    apps: ['سجل أنظمة هوب', 'فتح مباشر للنظام · تشغيل منفرد أو عبر هوب · رفع بيانات'],
+    notifications: ['مركز الإشعارات', 'كل إشعارات الأنظمة تصل إلى هوب'],
     products: ['عرض المنتجات', 'بحث · علامة · سعر · مخزون · حركة البيع'],
     store: ['متجر المبيعات', 'باقات البيع · طلبات · نقاط المحفظة'],
     'ads-studio': ['استوديو الإعلانات', 'إعلانات منتجات المنصات — ظهور وميزانية ومشاهدات'],
@@ -540,46 +542,117 @@
 
   const renderApps = () => {
     const apps = HubStore.get().empire.apps || [];
+    const uploads = HubStore.get().systemUploads || [];
+    const launchOf = (a) =>
+      window.HubSystemsRegistry?.resolveLaunch
+        ? window.HubSystemsRegistry.resolveLaunch(a)
+        : { standaloneUrl: a.url || 'apps.html', hubUrl: a.hubLaunchUrl || a.url || 'apps.html', isExternalSystem: false };
+
     return `
       <div class="toolbar">
         ${pageActs('apps', 'إضافة')}
         <div class="field"><label>رمز النظام</label><input id="app-code" placeholder="LAW" /></div>
         <div class="field"><label>الاسم بالعربي</label><input id="app-name" placeholder="نظام جديد لنايوش" /></div>
         <div class="field"><label>التصنيف</label><input id="app-cat" placeholder="أنظمة نايوش" /></div>
-        <div class="field"><label>الرابط</label><input id="app-url" placeholder="apps.html" /></div>
+        <div class="field"><label>الرابط</label><input id="app-url" placeholder="system-portal.html?code=ERP" /></div>
         <button class="btn btn-primary" data-action="register-app"><i class="fas fa-plus"></i> تسجيل سريع</button>
         <a class="btn btn-ghost" href="apps.html" target="_blank">فتح السجل العام</a>
       </div>
       <div class="kpi-grid">
         <article class="kpi"><span>أنظمة مسجّلة</span><strong>${apps.length}</strong><small>في هوب</small></article>
         <article class="kpi"><span>نشطة</span><strong>${apps.filter((a) => a.status === 'active').length}</strong><small>متاحة</small></article>
-        <article class="kpi"><span>استوديوهات</span><strong>${apps.filter((a) => a.kind === 'studio').length}</strong><small>إعلانات · فعاليات · متجر</small></article>
-        <article class="kpi"><span>سيادية</span><strong>${apps.filter((a) => a.kind === 'sovereign').length}</strong><small>منصات</small></article>
+        <article class="kpi"><span>رفع إلى هوب</span><strong>${uploads.length}</strong><small>حزم بيانات</small></article>
+        <article class="kpi"><span>إشعارات</span><strong>${HubStore.unreadNotificationsCount?.() || 0}</strong><small>غير مقروء</small></article>
       </div>
       <article class="card" style="margin-top:12px">
-        <h3><span class="title-left"><i class="fas fa-cubes icon"></i> أي نظام نايوش يظهر هنا</span></h3>
+        <h3><span class="title-left"><i class="fas fa-cubes icon"></i> الأنظمة — فتح مباشر · منفرد · عبر هوب</span></h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>الصحة</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
+          <thead><tr><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>الصحة</th><th>الحالة</th>${metaHead()}<th>تشغيل</th></tr></thead>
           <tbody>
             ${apps
-              .map(
-                (a) => `<tr>
-                  <td><strong>${esc(a.nameAr)}</strong></td>
+              .map((a) => {
+                const launch = launchOf(a);
+                return `<tr>
+                  <td><strong>${esc(a.nameAr)}</strong><br><small>${esc(a.code || '')}</small></td>
                   <td>${esc(a.category)}</td>
                   <td>${esc(a.kind)}</td>
                   <td>${a.health || '—'}%</td>
                   <td>${badgeStatus(a.status)}</td>
                   ${metaCells(a)}
                   <td>
-                    <button class="btn btn-sm btn-dark" data-action="toggle-app" data-id="${a.id}">تفعيل/إيقاف</button>
-                    <a class="btn btn-sm btn-ghost" href="${esc(a.url || 'apps.html')}">فتح</a>
-                    ${rowActs('apps', a.id)}
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+                      <a class="btn btn-sm btn-primary" href="${esc(launch.standaloneUrl)}" target="_blank" rel="noopener">فتح النظام</a>
+                      <a class="btn btn-sm btn-dark" href="${esc(launch.hubUrl)}" target="_blank" rel="noopener">عبر هوب</a>
+                      <button class="btn btn-sm btn-ghost" data-action="toggle-app" data-id="${a.id}">تفعيل/إيقاف</button>
+                      ${rowActs('apps', a.id)}
+                    </div>
                   </td>
-                </tr>`
-              )
+                </tr>`;
+              })
               .join('')}
           </tbody>
         </table></div>
+      </article>
+      <article class="card" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-cloud-arrow-up icon"></i> معلومات مرفوعة من الأنظمة إلى هوب</span></h3>
+        ${uploads.length
+          ? `<div class="table-wrap"><table class="data">
+              <thead><tr><th>المصدر</th><th>العنوان</th><th>النوع</th><th>الوضع</th><th>الملف</th><th>الوقت</th></tr></thead>
+              <tbody>
+                ${uploads
+                  .slice(0, 12)
+                  .map(
+                    (u) => `<tr>
+                      <td><strong>${esc(u.sourceName || u.source)}</strong></td>
+                      <td>${esc(u.title)}<br><small>${esc(u.payload || '')}</small></td>
+                      <td>${esc(u.kind)}</td>
+                      <td>${esc(u.mode === 'hub' ? 'عبر هوب' : 'منفرد')}</td>
+                      <td>${esc(u.fileMeta?.name || '—')}</td>
+                      <td>${fmtTime(u.at)}</td>
+                    </tr>`
+                  )
+                  .join('')}
+              </tbody>
+            </table></div>`
+          : '<div class="empty">لا رفع بعد — افتح نظامًا (مثل ERP) واضغط «رفع كل المعلومات على هوب»</div>'}
+      </article>
+    `;
+  };
+
+  const renderNotifications = () => {
+    const list = HubStore.get().notifications || [];
+    const unread = list.filter((n) => !n.read).length;
+    return `
+      <div class="toolbar">
+        <button class="btn btn-primary" data-action="mark-all-notifications"><i class="fas fa-check-double"></i> تعليم الكل كمقروء</button>
+        <a class="btn btn-ghost" href="apps.html" target="_blank">سجل الأنظمة</a>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi"><span>كل الإشعارات</span><strong>${list.length}</strong><small>في هوب</small></article>
+        <article class="kpi"><span>غير مقروء</span><strong>${unread}</strong><small>يحتاج متابعة</small></article>
+        <article class="kpi"><span>من الأنظمة</span><strong>${list.filter((n) => n.source && n.source !== 'HUB').length}</strong><small>مصادر خارجية</small></article>
+        <article class="kpi"><span>تنبيهات</span><strong>${list.filter((n) => n.severity === 'alert').length}</strong><small>alert</small></article>
+      </div>
+      <article class="card" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-bell icon"></i> كل الإشعارات تصل إلى هوب</span></h3>
+        ${list.length
+          ? `<ul class="feed notif-feed">
+              ${list
+                .map(
+                  (n) => `<li class="${n.read ? 'is-read' : 'is-unread'}">
+                    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap">
+                      <div>
+                        <b>${esc(n.sourceName || n.source)}</b> · ${esc(n.title)}
+                        <div style="margin-top:4px;color:var(--muted);font-size:13px">${esc(n.body || '')}</div>
+                        <small>${fmtTime(n.at)} · ${esc(n.severity || 'info')}</small>
+                      </div>
+                      ${!n.read ? `<button class="btn btn-sm btn-dark" data-action="mark-notification" data-id="${n.id}">مقروء</button>` : '<span class="badge badge-gray">مقروء</span>'}
+                    </div>
+                  </li>`
+                )
+                .join('')}
+            </ul>`
+          : '<div class="empty">لا إشعارات بعد</div>'}
       </article>
     `;
   };
@@ -1517,6 +1590,7 @@
     blueprint: renderBlueprint,
     platforms: renderPlatforms,
     apps: renderApps,
+    notifications: renderNotifications,
     products: renderProductsPanel,
     store: renderStorePanel,
     'ads-studio': renderAdsStudio,
@@ -1538,8 +1612,17 @@
     integration: renderIntegration,
   };
 
+  const updateNotifBadge = () => {
+    const badge = $('#notif-badge');
+    if (!badge) return;
+    const n = HubStore.unreadNotificationsCount?.() || 0;
+    badge.textContent = String(n);
+    badge.hidden = n < 1;
+  };
+
   const render = () => {
     root.innerHTML = `<section class="panel active">${renderers[current]()}</section>`;
+    updateNotifBadge();
   };
   window.hubRerender = () => render();
 
@@ -1661,6 +1744,14 @@
         break;
       case 'refresh-feed':
         toast('التدفق محدّث');
+        break;
+      case 'mark-notification':
+        HubStore.markNotificationRead(id);
+        toast('تم تعليم الإشعار كمقروء');
+        break;
+      case 'mark-all-notifications':
+        HubStore.markAllNotificationsRead();
+        toast('كل الإشعارات مقروءة');
         break;
       case 'refresh-command':
         HubStore.refreshCommandStats();

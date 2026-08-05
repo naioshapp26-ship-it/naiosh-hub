@@ -131,12 +131,15 @@ const HubStore = (() => {
           role: p.role,
         })),
       },
-      apps: (window.HubMarketplaceData?.APPS || []).map((a) => ({
-        id: uid('app'),
-        ...a,
-        registeredAt: nowIso(),
-        health: a.status === 'active' ? 92 + Math.floor(Math.random() * 7) : 55,
-      })),
+      apps: (window.HubMarketplaceData?.APPS || []).map((a) => {
+        const base = {
+          id: uid('app'),
+          ...a,
+          registeredAt: nowIso(),
+          health: a.status === 'active' ? 92 + Math.floor(Math.random() * 7) : 55,
+        };
+        return window.HubSystemsRegistry?.enrichApp ? window.HubSystemsRegistry.enrichApp(base) : base;
+      }),
       salesStore: {
         items: (window.HubMarketplaceData?.STORE_ITEMS || []).map((x) => ({ ...x })),
         orders: [
@@ -223,6 +226,19 @@ const HubStore = (() => {
       { id: uid('f'), type: 'compliance', text: 'سياسة الجودة Q-17 فُعّلت على 3 أنظمة', at: nowIso() },
       { id: uid('f'), type: 'report', text: 'ملخص المخاطر اليومي جاهز للقائد', at: nowIso() },
     ],
+    notifications: [
+      {
+        id: uid('n'),
+        source: 'HUB',
+        sourceName: 'نايوش هوب',
+        title: 'مركز الإشعارات جاهز',
+        body: 'كل إشعارات الأنظمة المرتبطة تصل إلى هوب.',
+        severity: 'info',
+        read: false,
+        at: nowIso(),
+      },
+    ],
+    systemUploads: [],
     empire: seedEmpire(),
     core: {
       decisions: [
@@ -399,6 +415,33 @@ const HubStore = (() => {
       state.systemsAutomation = seedSystemsAutomation();
       changed = true;
     }
+    if (!Array.isArray(state.notifications)) {
+      state.notifications = [
+        {
+          id: uid('n'),
+          source: 'HUB',
+          sourceName: 'نايوش هوب',
+          title: 'مركز الإشعارات جاهز',
+          body: 'كل إشعارات الأنظمة المرتبطة تصل إلى هوب.',
+          severity: 'info',
+          read: false,
+          at: nowIso(),
+        },
+      ];
+      changed = true;
+    }
+    if (!Array.isArray(state.systemUploads)) {
+      state.systemUploads = [];
+      changed = true;
+    }
+    // Enrich product systems with direct portal launch URLs
+    if (state.empire?.apps?.length && window.HubSystemsRegistry?.enrichApp) {
+      state.empire.apps = state.empire.apps.map((a) => {
+        const enriched = window.HubSystemsRegistry.enrichApp(a);
+        if (enriched.url !== a.url || enriched.hubLaunchUrl !== a.hubLaunchUrl) changed = true;
+        return enriched;
+      });
+    }
     return changed;
   };
 
@@ -503,6 +546,85 @@ const HubStore = (() => {
     get().feed.unshift({ id: uid('f'), type, text, at: nowIso() });
     if (get().feed.length > 40) get().feed.length = 40;
     save();
+  };
+
+  const pushSystemNotification = ({ source, sourceName, title, body, severity = 'info' } = {}) => {
+    if (!title) return null;
+    const s = get();
+    if (!Array.isArray(s.notifications)) s.notifications = [];
+    const item = {
+      id: uid('n'),
+      source: source || 'SYSTEM',
+      sourceName: sourceName || source || 'نظام',
+      title,
+      body: body || '',
+      severity,
+      read: false,
+      at: nowIso(),
+    };
+    s.notifications.unshift(item);
+    if (s.notifications.length > 80) s.notifications.length = 80;
+    pushFeed('alert', `[${item.sourceName}] ${item.title}`);
+    save();
+    return item;
+  };
+
+  const markNotificationRead = (id) => {
+    const n = get().notifications?.find((x) => x.id === id);
+    if (!n) return null;
+    n.read = true;
+    save();
+    return n;
+  };
+
+  const markAllNotificationsRead = () => {
+    (get().notifications || []).forEach((n) => {
+      n.read = true;
+    });
+    save();
+    return get().notifications;
+  };
+
+  const unreadNotificationsCount = () => (get().notifications || []).filter((n) => !n.read).length;
+
+  const ingestSystemUpload = ({ source, sourceName, title, kind, payload, fileMeta, mode } = {}) => {
+    if (!title) return null;
+    const s = get();
+    if (!Array.isArray(s.systemUploads)) s.systemUploads = [];
+    const item = {
+      id: uid('up'),
+      source: source || 'SYSTEM',
+      sourceName: sourceName || source || 'نظام',
+      title,
+      kind: kind || 'sync',
+      payload: payload || '',
+      fileMeta: fileMeta || null,
+      mode: mode || 'standalone',
+      at: nowIso(),
+    };
+    s.systemUploads.unshift(item);
+    if (s.systemUploads.length > 60) s.systemUploads.length = 60;
+    pushSystemNotification({
+      source: item.source,
+      sourceName: item.sourceName,
+      title: `رفع بيانات: ${item.title}`,
+      body: item.payload,
+      severity: 'report',
+    });
+    pushFeed('report', `رفع من ${item.sourceName}: ${item.title}`);
+    save();
+    return item;
+  };
+
+  const recordSystemLaunch = ({ code, nameAr, mode } = {}) => {
+    const label = mode === 'hub' ? 'عبر هوب' : 'بشكل منفرد';
+    return pushSystemNotification({
+      source: code || 'SYSTEM',
+      sourceName: nameAr || code,
+      title: `تم فتح النظام (${label})`,
+      body: `المستخدم دخل إلى ${nameAr || code} في وضع ${label}.`,
+      severity: 'info',
+    });
   };
 
   const avg = (arr, key) => {
@@ -973,10 +1095,18 @@ const HubStore = (() => {
       registeredAt: nowIso(),
       ...pickCommonMeta(manifest),
     };
-    empire.apps.unshift(app);
-    pushFeed('architecture', `نظام جديد ظهر في هوب: ${app.nameAr}`);
+    const enriched = window.HubSystemsRegistry?.enrichApp ? window.HubSystemsRegistry.enrichApp(app) : app;
+    empire.apps.unshift(enriched);
+    pushFeed('architecture', `نظام جديد ظهر في هوب: ${enriched.nameAr}`);
+    pushSystemNotification({
+      source: enriched.code,
+      sourceName: enriched.nameAr,
+      title: 'نظام جديد مسجّل في هوب',
+      body: `تم ربط ${enriched.nameAr} ويمكن فتحه مباشرة أو عبر هوب.`,
+      severity: 'info',
+    });
     save();
-    return app;
+    return enriched;
   };
 
   const toggleApp = (id) => {
@@ -1321,6 +1451,12 @@ const HubStore = (() => {
     reset,
     kpis,
     pushFeed,
+    pushSystemNotification,
+    markNotificationRead,
+    markAllNotificationsRead,
+    unreadNotificationsCount,
+    ingestSystemUpload,
+    recordSystemLaunch,
     issueDecision,
     executeDecision,
     resolveAnomaly,
