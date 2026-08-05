@@ -128,6 +128,10 @@ CREATE TABLE IF NOT EXISTS hub_store_items (
   stock INT NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'active',
   badge TEXT,
+  brand TEXT,
+  item_kind TEXT NOT NULL DEFAULT 'منتج',
+  sku TEXT,
+  marketplaces JSONB NOT NULL DEFAULT '[]'::jsonb,
   assignee TEXT,
   archived_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -291,3 +295,9 @@ CREATE INDEX IF NOT EXISTS idx_hub_feed_created ON hub_feed(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_hub_wallet_ledger_created ON hub_wallet_ledger(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_hub_notifications_created ON hub_notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_hub_system_sync_code ON hub_system_sync(code, created_at DESC);
+
+-- Idempotent column upgrades for store marketplace linking
+ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS brand TEXT;
+ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS item_kind TEXT DEFAULT 'منتج';
+ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS sku TEXT;
+ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS marketplaces JSONB DEFAULT '[]'::jsonb;

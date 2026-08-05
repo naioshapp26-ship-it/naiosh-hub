@@ -455,6 +455,16 @@ const HubStore = (() => {
     e.productCatalog = fill(e.productCatalog, md.PRODUCT_CATALOG, (x) => ({ ...x }));
     if (!e.salesStore) e.salesStore = { items: [], orders: [] };
     e.salesStore.items = fill(e.salesStore.items, md.STORE_ITEMS, (x) => ({ ...x }));
+    // Merge any newly seeded academy/store items missing from existing lists
+    if (md.STORE_ITEMS?.length && e.salesStore.items?.length) {
+      const have = new Set(e.salesStore.items.map((x) => x.id));
+      md.STORE_ITEMS.forEach((src) => {
+        if (!have.has(src.id)) {
+          e.salesStore.items.push({ ...src });
+          changed = true;
+        }
+      });
+    }
     if (!e.adsStudio) e.adsStudio = { listings: [] };
     e.adsStudio.listings = fill(e.adsStudio.listings, md.ADS, (x) => ({
       ...x,
@@ -1196,24 +1206,116 @@ const HubStore = (() => {
     return order;
   };
 
+  const parseMarketplacePayload = (payload, connectors) => {
+    const linked = [];
+    (connectors || []).forEach((c) => {
+      if (c.id === 'custom') return; // handled via free-text fields below
+      const enabled = payload[`mp_${c.id}`] === '1' || payload[`mp_${c.id}`] === true || payload[`mp_${c.id}`] === 'on';
+      const url = (payload[`mp_url_${c.id}`] || '').trim();
+      if (enabled || url) {
+        linked.push({
+          id: c.id,
+          name: c.name,
+          nameAr: c.nameAr,
+          url: url || '',
+          externalSku: (payload[`mp_sku_${c.id}`] || '').trim(),
+          status: url ? 'linked' : 'draft',
+        });
+      }
+    });
+    // custom / أي متجر كبير — from checkbox+url or free-text name
+    const customEnabled =
+      payload.mp_custom === '1' ||
+      payload.mp_custom === true ||
+      !!(payload.mp_custom_name || '').trim() ||
+      !!(payload.mp_url_custom || '').trim();
+    if (customEnabled) {
+      linked.push({
+        id: 'custom',
+        name: payload.mp_custom_name || 'Other',
+        nameAr: payload.mp_custom_name || 'أي متجر كبير',
+        url: (payload.mp_url_custom || '').trim(),
+        externalSku: '',
+        status: (payload.mp_url_custom || '').trim() ? 'linked' : 'draft',
+      });
+    }
+    return linked;
+  };
+
   const addStoreItem = (payload) => {
     const store = get().empire.salesStore;
     if (!store) return null;
+    const title = payload.title || payload.name || '';
+    if (!title) return null;
+    const connectors = window.HubMarketplaceData?.MARKETPLACE_CONNECTORS || [];
+    const marketplaces = Array.isArray(payload.marketplaces)
+      ? payload.marketplaces
+      : parseMarketplacePayload(payload, connectors);
     const item = {
       id: uid('st'),
-      title: payload.title,
-      desc: payload.desc || '',
+      title,
+      name: title,
+      desc: payload.desc || payload.description || '',
+      brand: payload.brand || 'نايوش هوب',
+      platform: payload.platform || payload.platformCode || 'هوب',
       price: Number(payload.price) || 0,
       points: Number(payload.points) || 0,
-      category: payload.category || 'عام',
+      category: payload.category || 'تشغيل',
       platformCode: payload.platformCode || '',
       stock: Number(payload.stock) || 10,
+      sku: payload.sku || `ST-${Date.now().toString().slice(-6)}`,
+      itemKind: payload.itemKind || payload.kind || 'منتج',
       status: 'active',
-      badge: payload.badge || 'جديد',
+      badge: payload.badge || (payload.itemKind === 'خدمة' ? 'خدمة' : 'جديد'),
+      marketplaces,
+      mirrorToCatalog: payload.mirrorToCatalog !== false,
       ...pickCommonMeta(payload),
     };
     store.items.unshift(item);
-    pushFeed('decision', `منتج جديد في المتجر: ${item.title}`);
+    pushFeed('decision', `رفع على المتجر: ${item.title} · ${item.category}`);
+
+    if (item.mirrorToCatalog !== false) {
+      const empire = get().empire;
+      if (!empire.productCatalog) empire.productCatalog = [];
+      empire.productCatalog.unshift({
+        id: uid('pr'),
+        sku: item.sku,
+        name: item.title,
+        brand: item.brand,
+        platform: item.platform || 'متجر هوب',
+        category: item.category,
+        price: item.price,
+        stock: item.stock,
+        sold: 0,
+        status: 'متوفر',
+        movement: 'متوسط',
+        icon: item.itemKind === 'خدمة' ? 'fa-concierge-bell' : 'fa-bag-shopping',
+        storeItemId: item.id,
+        itemKind: item.itemKind,
+        ...pickCommonMeta(payload),
+      });
+    }
+    save();
+    return item;
+  };
+
+  const linkStoreMarketplace = (itemId, link = {}) => {
+    const item = get().empire.salesStore?.items?.find((x) => x.id === itemId);
+    if (!item) return null;
+    if (!Array.isArray(item.marketplaces)) item.marketplaces = [];
+    const id = link.id || 'custom';
+    const existing = item.marketplaces.find((m) => m.id === id && (!link.url || m.url === link.url));
+    const row = {
+      id,
+      name: link.name || id,
+      nameAr: link.nameAr || link.name || id,
+      url: link.url || '',
+      externalSku: link.externalSku || '',
+      status: link.url ? 'linked' : 'draft',
+    };
+    if (existing) Object.assign(existing, row);
+    else item.marketplaces.push(row);
+    pushFeed('decision', `ربط متجر · ${item.title} → ${row.nameAr}`);
     save();
     return item;
   };
@@ -1545,6 +1647,7 @@ const HubStore = (() => {
     toggleApp,
     placeStoreOrder,
     addStoreItem,
+    linkStoreMarketplace,
     addAdListing,
     toggleAd,
     addEvent,

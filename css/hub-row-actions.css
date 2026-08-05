@@ -431,3 +431,11 @@
     bottom: 72px;
   }
 }
+
+/* Marketplace link block inside add modal */
+.hub-marketplace-block .hub-form-hint { margin: 0 0 10px; color: #6b7280; font-size: 12px; font-weight: 600; }
+.hub-mp-grid { display: grid; gap: 8px; }
+.hub-mp-row { display: grid; grid-template-columns: minmax(140px, 190px) 1fr; gap: 8px; align-items: center; }
+.hub-mp-check { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; margin: 0; }
+.hub-mp-row input[type="url"] { width: 100%; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 10px; font: inherit; }
+@media (max-width: 720px) { .hub-mp-row { grid-template-columns: 1fr; } }

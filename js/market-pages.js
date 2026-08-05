@@ -104,20 +104,38 @@
     const tabs = document.getElementById('market-tabs');
     if (!root) return;
     let active = 'الكل';
-    const cats = data.STORE_CATEGORIES;
+    const shopCats = data.SHOP_CATEGORIES || data.STORE_CATEGORIES.map((c) => ({ id: c, name: c, icon: 'fa-tag' }));
+    const connectors = data.MARKETPLACE_CONNECTORS || [];
+
+    const mpBadges = (item) => {
+      const links = item.marketplaces || [];
+      if (!links.length) return '';
+      return `<div class="hub-mp-badges">${links
+        .map((m) => {
+          const meta = connectors.find((c) => c.id === m.id) || {};
+          const label = m.nameAr || meta.nameAr || m.name || m.id;
+          if (m.url) {
+            return `<a class="hub-mp-badge" href="${esc(m.url)}" target="_blank" rel="noopener"><i class="${esc(meta.icon || 'fa-store')}"></i> ${esc(label)}</a>`;
+          }
+          return `<span class="hub-mp-badge draft"><i class="${esc(meta.icon || 'fa-store')}"></i> ${esc(label)}</span>`;
+        })
+        .join('')}</div>`;
+    };
 
     const paint = () => {
       const list = (active === 'الكل' ? items : items.filter((i) => i.category === active)).filter(
         (i) => i.status !== 'archived'
       );
-      root.innerHTML = list
-        .map(
-          (i) => `<article class="market-card">
-            <span class="badge-soft">${esc(i.badge || i.category)}</span>
+      root.innerHTML = list.length
+        ? list
+            .map(
+              (i) => `<article class="market-card">
+            <span class="badge-soft">${esc(i.badge || i.itemKind || i.category)}</span>
             <h3>${esc(i.title)}</h3>
-            <p>${esc(i.desc)}</p>
+            <p>${esc(i.desc || '')}</p>
             <div class="price">${Number(i.price).toLocaleString('ar-EG')} ر.س</div>
-            <div class="meta">نقاط: ${i.points} · مخزون: ${i.stock} · منصة: ${esc(i.platformCode || '—')}${i.assignee ? ` · معيّن: ${esc(i.assignee)}` : ''}</div>
+            <div class="meta">${esc(i.itemKind || 'منتج')} · ${esc(i.brand || '—')} · نقاط: ${i.points || 0} · مخزون: ${i.stock}${i.assignee ? ` · معيّن: ${esc(i.assignee)}` : ''}</div>
+            ${mpBadges(i)}
             ${metaLine(i)}
             <div class="card-actions">
               <button type="button" class="btn-mini primary" data-buy="${esc(i.id)}"><i class="fas fa-cart-plus"></i> اشترِ الآن</button>
@@ -125,13 +143,17 @@
             </div>
             ${actions('store', i.id)}
           </article>`
-        )
-        .join('');
+            )
+            .join('')
+        : `<div class="shop-empty" style="grid-column:1/-1">لا توجد عناصر في هذا التصنيف — ارفع منتجًا أو خدمة من النموذج أعلاه.</div>`;
     };
 
     if (tabs) {
-      tabs.innerHTML = cats
-        .map((c) => `<button type="button" class="market-tab${c === active ? ' is-active' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`)
+      tabs.innerHTML = shopCats
+        .map(
+          (c) =>
+            `<button type="button" class="market-tab${c.id === active ? ' is-active' : ''}" data-cat="${esc(c.id)}"><i class="fas ${esc(c.icon || 'fa-tag')}"></i> ${esc(c.name)}</button>`
+        )
         .join('');
       tabs.onclick = (e) => {
         const btn = e.target.closest('[data-cat]');
@@ -142,7 +164,7 @@
       };
     }
 
-    root.addEventListener('click', (e) => {
+    root.onclick = (e) => {
       const btn = e.target.closest('[data-buy]');
       if (!btn || !store?.placeStoreOrder) return;
       const order = store.placeStoreOrder(btn.dataset.buy, 'زائر المتجر');
@@ -151,10 +173,13 @@
       paint();
       setStat('stat-orders', store.get().empire.salesStore.orders.length);
       setStat('stat-items', store.get().empire.salesStore.items.length);
-    });
+    };
 
+    const mpCount = items.reduce((n, i) => n + (i.marketplaces?.length || 0), 0);
     setStat('stat-items', items.length);
     setStat('stat-orders', store?.get?.().empire?.salesStore?.orders?.length || 0);
+    setStat('stat-cats', shopCats.length - 1);
+    setStat('stat-mp', mpCount);
     paint();
   };
 

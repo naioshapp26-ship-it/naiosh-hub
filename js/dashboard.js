@@ -687,34 +687,44 @@
 
   const renderStorePanel = () => {
     const store = HubStore.get().empire.salesStore || { items: [], orders: [] };
+    const cats = (window.HubMarketplaceData?.SHOP_CATEGORIES || []).filter((c) => c.id !== 'الكل');
+    const mpLinked = store.items.reduce((n, i) => n + (i.marketplaces?.length || 0), 0);
     return `
       <div class="toolbar">
-        ${pageActs('store', 'إضافة')}
-        <div class="field"><label>المنتج</label><input id="store-title" placeholder="اسم المنتج" /></div>
+        ${pageActs('store', 'رفع على المتجر')}
+        <div class="field"><label>الاسم</label><input id="store-title" placeholder="منتج أو خدمة" /></div>
+        <div class="field"><label>التصنيف</label>
+          <select id="store-cat">${cats.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>النوع</label>
+          <select id="store-kind"><option value="منتج">منتج</option><option value="خدمة">خدمة</option></select>
+        </div>
         <div class="field"><label>السعر</label><input id="store-price" type="number" value="500" /></div>
         <div class="field"><label>النقاط</label><input id="store-points" type="number" value="50" /></div>
-        <div class="field"><label>منصة</label><input id="store-platform" placeholder="UOS" /></div>
-        <button class="btn btn-primary" data-action="add-store-item"><i class="fas fa-plus"></i> إضافة سريعة</button>
+        <div class="field"><label>منصة</label><input id="store-platform" placeholder="ACADEMY" value="ACADEMY" /></div>
+        <button class="btn btn-primary" data-action="add-store-item"><i class="fas fa-cloud-arrow-up"></i> رفع</button>
         <a class="btn btn-ghost" href="store.html" target="_blank">فتح المتجر</a>
       </div>
       <div class="kpi-grid">
-        <article class="kpi"><span>منتجات</span><strong>${store.items.length}</strong><small>في المتجر</small></article>
+        <article class="kpi"><span>منتجات / خدمات</span><strong>${store.items.length}</strong><small>في المتجر</small></article>
         <article class="kpi"><span>طلبات</span><strong>${store.orders.length}</strong><small>مكتملة</small></article>
         <article class="kpi"><span>مخزون</span><strong>${store.items.reduce((s, i) => s + (i.stock || 0), 0)}</strong><small>وحدة</small></article>
-        <article class="kpi"><span>إعلانات</span><strong>${(HubStore.get().empire.adsStudio?.listings || []).length}</strong><small>مرتبطة</small></article>
+        <article class="kpi"><span>روابط أسواق</span><strong>${mpLinked}</strong><small>Amazon · Noon…</small></article>
       </div>
       <div class="grid-2" style="margin-top:12px">
         <article class="card">
-          <h3><span class="title-left"><i class="fas fa-bag-shopping icon"></i> المنتجات</span></h3>
+          <h3><span class="title-left"><i class="fas fa-bag-shopping icon"></i> المتجر الموحّد (نفس أكاديمية نايوش)</span></h3>
           <div class="table-wrap"><table class="data">
-            <thead><tr><th>المنتج</th><th>السعر</th><th>نقاط</th><th>مخزون</th>${metaHead()}<th></th></tr></thead>
+            <thead><tr><th>الاسم</th><th>النوع</th><th>التصنيف</th><th>السعر</th><th>أسواق</th><th>مخزون</th>${metaHead()}<th></th></tr></thead>
             <tbody>
               ${store.items
                 .map(
                   (i) => `<tr>
-                    <td><strong>${esc(i.title)}</strong><br><small>${esc(i.platformCode || '')}</small></td>
+                    <td><strong>${esc(i.title)}</strong><br><small>${esc(i.brand || i.platformCode || '')}</small></td>
+                    <td>${esc(i.itemKind || 'منتج')}</td>
+                    <td>${esc(i.category)}</td>
                     <td>${Number(i.price).toLocaleString('ar-EG')}</td>
-                    <td>${i.points}</td>
+                    <td>${(i.marketplaces || []).map((m) => m.nameAr || m.name).join(' · ') || '—'}</td>
                     <td>${i.stock}</td>
                     ${metaCells(i)}
                     <td><button class="btn btn-sm btn-primary" data-action="buy-store-item" data-id="${i.id}">بيع</button>${rowActs('store', i.id)}</td>
@@ -1807,16 +1817,19 @@
         break;
       case 'add-store-item': {
         const title = $('#store-title')?.value.trim();
-        if (!title) return toast('اسم المنتج مطلوب');
+        if (!title) return toast('اسم المنتج أو الخدمة مطلوب');
         HubStore.addStoreItem({
           title,
           price: $('#store-price')?.value,
           points: $('#store-points')?.value,
-          platformCode: $('#store-platform')?.value.trim(),
-          desc: 'منتج مضاف من غرفة العمليات',
-          category: 'تشغيل',
+          platformCode: $('#store-platform')?.value.trim() || 'ACADEMY',
+          category: $('#store-cat')?.value || 'أكاديمية',
+          itemKind: $('#store-kind')?.value || 'منتج',
+          brand: 'أكاديمية نايوش',
+          desc: 'مرفوع من غرفة العمليات — متجر موحّد مع الأكاديمية',
+          mirrorToCatalog: true,
         });
-        toast('أُضيف المنتج للمتجر');
+        toast('تم الرفع على المتجر');
         break;
       }
       case 'buy-store-item':

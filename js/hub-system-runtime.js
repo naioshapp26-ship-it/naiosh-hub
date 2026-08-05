@@ -187,6 +187,16 @@
               <a class="sys-btn" href="?mode=standalone"><i class="fas fa-window-restore"></i> منفرد</a>
             </div>
           </article>
+          ${
+            code === 'ACADEMY'
+              ? `<article class="sys-card">
+            <h3><i class="fas fa-bag-shopping"></i> متجر الأكاديمية</h3>
+            <p>نفس متجر هوب الموحّد — ارفع الدورات والخدمات واربطها بأسواق البيع المباشر.</p>
+            <a class="sys-btn primary" href="../store.html"><i class="fas fa-store"></i> فتح المتجر</a>
+            <a class="sys-btn" href="../products.html"><i class="fas fa-boxes-stacked"></i> المنتجات</a>
+          </article>`
+              : ''
+          }
         </div>
         <ul class="sys-log" id="sys-log"></ul>
       </main>
