@@ -361,8 +361,9 @@
                 <div class="shop-card-media"><div class="media-icon"><i class="fas ${esc(p.icon || 'fa-cube')}"></i></div></div>
                 <div class="shop-card-body">
                   <h3>${esc(p.name)}</h3>
-                  <div class="shop-card-meta">${esc(p.brand)} · ${esc(p.category)}</div>
+                  <div class="shop-card-meta">${esc(p.productType || p.itemKind || 'رقمية')} · ${esc(p.category)}${p.subcategory ? ` / ${esc(p.subcategory)}` : ''} · ${esc(p.brand || '')}</div>
                   <div class="shop-card-price">${Number(p.price).toLocaleString('ar-EG')} ر.س</div>
+                  <div class="shop-card-meta" style="margin-top:4px">${esc(p.status || 'متوفر')}${p.adStartDate ? ` · إعلان ${esc(p.adStartDate)}` : ''}${p.adEndDate ? ` → ${esc(p.adEndDate)}` : ''}</div>
                   ${metaLine(p)}
                   <div class="shop-card-actions">
                     <a class="primary" href="store.html">شراء</a>

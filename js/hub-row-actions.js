@@ -35,14 +35,24 @@
     platform: 'المنصة',
     platformCode: 'كود المنصة',
     category: 'التصنيف',
+    subcategory: 'التصنيف الفرعي',
+    productType: 'نوع المنتج',
+    itemKind: 'النوع',
     price: 'السعر',
     points: 'النقاط',
     stock: 'المخزون',
     sold: 'المبيعات',
     status: 'الحالة',
+    publishStatus: 'حالة النشر',
     movement: 'الحركة',
-    desc: 'الوصف',
-    description: 'الوصف',
+    desc: 'شرح مبسط عن المنتج',
+    description: 'شرح مبسط عن المنتج',
+    adStartDate: 'تاريخ بداية الإعلان',
+    adEndDate: 'تاريخ نهاية الإعلان',
+    appearancePlaces: 'مكان ظهور الإعلان',
+    socialShares: 'مشاركة منصات نايوش',
+    companyName: 'اسم الشركة',
+    companyAddress: 'عنوان الشركة',
     content: 'المحتوى',
     badge: 'الوسم',
     type: 'النوع',
@@ -91,6 +101,8 @@
   const HIDDEN_KEYS = new Set(['icon', 'flag', 'imageDataUrl']);
 
   const COMMON_META_KEYS = [
+    'companyName',
+    'companyAddress',
     'party1Name',
     'party1Phone',
     'party2Name',
@@ -145,8 +157,14 @@
     const opts = hierarchyOptions();
     return `
       <div class="hub-form-block hub-common-meta">
-        <h4><i class="fas fa-sitemap"></i> بيانات إلزامية لكل السجلات</h4>
+        <h4><i class="fas fa-sitemap"></i> الشركة · الأطراف · الفرع · الحاضنة · المنصة · المرفقات</h4>
         <div class="hub-form-grid">
+          <label>اسم الشركة
+            <input id="hub-field-companyName" type="text" value="${esc(values.companyName || '')}" required placeholder="اسم الشركة المقدِّمة للمنتج" />
+          </label>
+          <label>عنوان الشركة
+            <input id="hub-field-companyAddress" type="text" value="${esc(values.companyAddress || '')}" required placeholder="العنوان / المدينة" />
+          </label>
           <label>طرف أول
             <input id="hub-field-party1Name" type="text" value="${esc(values.party1Name || '')}" required placeholder="اسم الطرف الأول" />
           </label>
@@ -159,13 +177,13 @@
           <label>رقم جوال الطرف الثاني
             <input id="hub-field-party2Phone" type="tel" value="${esc(values.party2Phone || '')}" required placeholder="05xxxxxxxx" />
           </label>
-          ${selectHtml('branch', 'الفرع', opts.branches, values.branch || '', true)}
-          ${selectHtml('incubator', 'الحاضنة', opts.incubators, values.incubator || '', true)}
-          ${selectHtml('platform', 'المنصة', opts.platforms, values.platform || '', true)}
+          ${selectHtml('branch', 'الفرع (من قائمة الفروع)', opts.branches, values.branch || '', true)}
+          ${selectHtml('incubator', 'الحاضنة (من قائمة الحاضنات)', opts.incubators, values.incubator || '', true)}
+          ${selectHtml('platform', 'المنصة (من قائمة المنصات)', opts.platforms, values.platform || '', true)}
           ${selectHtml('office', 'المكتب', opts.offices, values.office || '', true)}
         </div>
         <div class="hub-upload-grid">
-          <label class="hub-upload-card">رفع مستندات
+          <label class="hub-upload-card">رفع ملف / مستند
             <input id="hub-field-docFile" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,image/*" />
             <small>${esc(values.docName || 'PDF · Word · Excel')}</small>
           </label>
@@ -198,6 +216,8 @@
 
   const collectCommonMeta = async (fallback = {}) => {
     const val = (id) => document.getElementById(`hub-field-${id}`)?.value.trim() || '';
+    const companyName = val('companyName');
+    const companyAddress = val('companyAddress');
     const party1Name = val('party1Name');
     const party1Phone = val('party1Phone');
     const party2Name = val('party2Name');
@@ -206,6 +226,8 @@
     const incubator = val('incubator');
     const platform = val('platform');
     const office = val('office');
+    if (!companyName) return { error: 'اسم الشركة مطلوب' };
+    if (!companyAddress) return { error: 'عنوان الشركة مطلوب' };
     if (!party1Name) return { error: 'طرف أول مطلوب' };
     if (!party1Phone) return { error: 'جوال الطرف الأول مطلوب' };
     if (!party2Name) return { error: 'طرف ثاني مطلوب' };
@@ -222,6 +244,8 @@
     ]);
 
     return {
+      companyName,
+      companyAddress,
       party1Name,
       party1Phone,
       party2Name,
@@ -614,10 +638,22 @@
       save: (v) => window.HubStore.addEvent({ ...v, status: 'قادمة' }),
     },
     products: {
-      title: 'إضافة منتج',
+      title: 'رفع منتج نايوش',
       fields: [
         { id: 'name', label: 'اسم المنتج', required: true },
-        { id: 'brand', label: 'العلامة', value: 'نايوش هوب' },
+        { id: 'brand', label: 'العلامة / العلامة التجارية', value: 'نايوش هوب' },
+        {
+          id: 'productType',
+          label: 'نوع المنتج',
+          type: 'select',
+          required: true,
+          options: [
+            { value: 'رقمية', label: 'رقمية' },
+            { value: 'خدمية', label: 'خدمية' },
+            { value: 'عينية', label: 'عينية' },
+          ],
+          value: 'رقمية',
+        },
         {
           id: 'category',
           label: 'التصنيف',
@@ -627,19 +663,26 @@
           value: 'تشغيل',
         },
         {
-          id: 'itemKind',
-          label: 'النوع',
+          id: 'subcategory',
+          label: 'التصنيف الفرعي',
           type: 'select',
-          options: [
-            { value: 'منتج', label: 'منتج' },
-            { value: 'خدمة', label: 'خدمة' },
-          ],
-          value: 'منتج',
+          optionsFrom: 'subcategories',
+          value: '',
         },
         { id: 'price', label: 'السعر', value: '1000', type: 'number' },
         { id: 'stock', label: 'المخزون', value: '20', type: 'number' },
+        { id: 'sku', label: 'رمز SKU', value: '' },
+        { id: 'adStartDate', label: 'تاريخ بداية الإعلان', type: 'date', required: true, value: new Date().toISOString().slice(0, 10) },
+        { id: 'adEndDate', label: 'تاريخ نهاية الإعلان', type: 'date', required: true, value: '' },
+        { id: 'desc', label: 'شرح مبسط عن المنتج', type: 'textarea', required: true, value: '' },
       ],
-      save: (v) => window.HubStore.addProduct?.({ ...v, icon: v.itemKind === 'خدمة' ? 'fa-concierge-bell' : 'fa-cube' }),
+      includeProductExtras: true,
+      save: (v) =>
+        window.HubStore.addProduct?.({
+          ...v,
+          itemKind: v.productType,
+          icon: v.productType === 'خدمية' ? 'fa-concierge-bell' : v.productType === 'عينية' ? 'fa-box' : 'fa-cloud',
+        }),
     },
     incubators: {
       title: 'إضافة حاضنة',
@@ -706,7 +749,7 @@
     },
   };
 
-  const resolveFieldOptions = (field) => {
+  const resolveFieldOptions = (field, ctx = {}) => {
     if (Array.isArray(field.options)) return field.options;
     if (field.optionsFrom === 'storeCategories') {
       return (
@@ -716,12 +759,20 @@
           .map((c) => ({ value: c.id, label: c.name }))
       );
     }
+    if (field.optionsFrom === 'subcategories') {
+      const cat = ctx.category || document.getElementById('hub-add-category')?.value || '';
+      const subs = window.HubMarketplaceData?.subcategoriesFor?.(cat) || [];
+      return subs.map((s) => ({ value: s, label: s }));
+    }
+    if (field.optionsFrom === 'productTypes') {
+      return (window.HubMarketplaceData?.PRODUCT_TYPES || []).map((t) => ({ value: t.value, label: t.label }));
+    }
     return [];
   };
 
-  const fieldHtml = (f) => {
+  const fieldHtml = (f, ctx = {}) => {
     if (f.type === 'select') {
-      const opts = resolveFieldOptions(f);
+      const opts = resolveFieldOptions(f, ctx);
       return `<label>${esc(f.label)}
         <select id="hub-add-${esc(f.id)}" ${f.required ? 'required' : ''}>
           <option value="">— اختر —</option>
@@ -736,13 +787,50 @@
       </label>`;
     }
     if (f.type === 'textarea') {
-      return `<label>${esc(f.label)}
-        <textarea id="hub-add-${esc(f.id)}" rows="3">${esc(f.value || '')}</textarea>
+      return `<label class="full-span">${esc(f.label)}
+        <textarea id="hub-add-${esc(f.id)}" rows="3" ${f.required ? 'required' : ''}>${esc(f.value || '')}</textarea>
       </label>`;
     }
     return `<label>${esc(f.label)}
       <input id="hub-add-${esc(f.id)}" type="${f.type || 'text'}" value="${esc(f.value || '')}" ${f.required ? 'required' : ''} />
     </label>`;
+  };
+
+  const multiSelectBlockHtml = (title, hint, idPrefix, items, iconClass = 'fa-check') => `
+    <div class="hub-form-block hub-multi-block">
+      <h4><i class="fas ${esc(iconClass)}"></i> ${esc(title)}</h4>
+      <p class="hub-form-hint">${esc(hint)}</p>
+      <div class="hub-multi-grid" id="${esc(idPrefix)}-grid">
+        ${items
+          .map(
+            (it) => `<label class="hub-multi-chip">
+              <input type="checkbox" data-multi="${esc(idPrefix)}" value="${esc(it.id)}" />
+              <span><i class="${esc(it.icon || 'fa-circle')}"></i> ${esc(it.nameAr || it.label || it.id)}</span>
+            </label>`
+          )
+          .join('')}
+      </div>
+    </div>`;
+
+  const productExtrasFormHtml = () => {
+    const places = window.HubMarketplaceData?.AD_APPEARANCE_PLACES || [];
+    const socials = window.HubMarketplaceData?.HUB_SOCIAL_PLATFORMS || [];
+    return (
+      multiSelectBlockHtml(
+        'مكان ظهور الإعلان',
+        'يمكن اختيار أكثر من مكان ظهور للمنتج داخل هوب',
+        'appear',
+        places,
+        'fa-map-location-dot'
+      ) +
+      multiSelectBlockHtml(
+        'مشاركة بمنصات تواصل نايوش هوب',
+        'اختر منصة أو أكثر — أو «كل المنصات»',
+        'social',
+        socials,
+        'fa-share-nodes'
+      )
+    );
   };
 
   const marketplaceFormHtml = () => {
@@ -775,25 +863,121 @@
     </div>`;
   };
 
+  const fillSubcategories = (category, selected = '') => {
+    const sel = document.getElementById('hub-add-subcategory');
+    if (!sel) return;
+    const subs = window.HubMarketplaceData?.subcategoriesFor?.(category) || [];
+    sel.innerHTML =
+      `<option value="">${subs.length ? '— اختر الفرعي —' : '— لا توجد قائمة فرعية —'}</option>` +
+      subs.map((s) => `<option value="${esc(s)}" ${s === selected ? 'selected' : ''}>${esc(s)}</option>`).join('');
+  };
+
+  const collectMulti = (prefix) =>
+    Array.from(document.querySelectorAll(`input[data-multi="${prefix}"]:checked`)).map((el) => el.value);
+
+  const saveProductForm = async (form, publishStatus) => {
+    const values = {};
+    for (const f of form.fields) {
+      values[f.id] = document.getElementById(`hub-add-${f.id}`)?.value.trim() || '';
+      if (f.required && !values[f.id]) return toast(`${f.label} مطلوب`);
+    }
+    if (values.adStartDate && values.adEndDate && values.adEndDate < values.adStartDate) {
+      return toast('تاريخ نهاية الإعلان يجب أن يكون بعد البداية');
+    }
+    const appearancePlaces = collectMulti('appear');
+    const socialShares = collectMulti('social');
+    if (form.includeProductExtras && !appearancePlaces.length) {
+      return toast('اختر مكان ظهور واحد على الأقل');
+    }
+    if (form.includeProductExtras && !socialShares.length) {
+      return toast('اختر منصة تواصل واحدة على الأقل أو كل المنصات');
+    }
+    // If "all" selected, expand to all social ids except "all"
+    if (socialShares.includes('all')) {
+      values.socialShares = (window.HubMarketplaceData?.HUB_SOCIAL_PLATFORMS || [])
+        .filter((s) => s.id !== 'all')
+        .map((s) => s.id);
+    } else {
+      values.socialShares = socialShares;
+    }
+    values.appearancePlaces = appearancePlaces;
+    values.publishStatus = publishStatus;
+    const meta = await collectCommonMeta();
+    if (meta.error) return toast(meta.error);
+    Object.assign(values, meta);
+    if (!values.brand && values.companyName) values.brand = values.companyName;
+    const ok = form.save(values);
+    if (!ok) return toast('تعذّرت الإضافة');
+    closeModal();
+    const msg =
+      publishStatus === 'deferred'
+        ? 'تم تأجيل نشر المنتج'
+        : publishStatus === 'draft'
+          ? 'تم حفظ المسودة'
+          : 'تم حفظ ونشر المنتج';
+    toast(msg);
+    afterChange('products', 'add');
+  };
+
   const openAdd = (entity) => {
     const form = ADD_FORMS[entity];
     if (!form) return toast('استخدم نموذج الإضافة في الصفحة');
+    const isProduct = entity === 'products';
+    const defaultEnd = new Date();
+    defaultEnd.setDate(defaultEnd.getDate() + 30);
+    if (isProduct) {
+      const endField = form.fields.find((f) => f.id === 'adEndDate');
+      if (endField && !endField.value) endField.value = defaultEnd.toISOString().slice(0, 10);
+    }
     openModal({
       title: form.title,
-      kicker: entity === 'store' ? 'نموذج رفع على المتجر — مطابق لنموذج المنتجات' : 'نموذج إضافة جديد — حقول هوب الإلزامية',
+      kicker: isProduct
+        ? 'منتجات رقمية · خدمية · عينية — توجيه حسب التصنيف والنوع عبر الفروع والحاضنات والمنصات'
+        : entity === 'store'
+          ? 'نموذج رفع على المتجر — مطابق لنموذج المنتجات'
+          : 'نموذج إضافة جديد — حقول هوب الإلزامية',
       body: `<div class="hub-form-block">
         <h4><i class="fas fa-plus-circle"></i> بيانات ${esc(ENTITY_LABELS[entity] || 'السجل')}</h4>
         <div class="hub-form-grid">
         ${form.fields.map((f) => fieldHtml(f)).join('')}
         </div>
       </div>
+      ${form.includeProductExtras ? productExtrasFormHtml() : ''}
       ${form.includeMarketplaces ? marketplaceFormHtml() : ''}
       ${commonMetaFormHtml()}`,
-      foot: `
-        <button type="button" class="hub-erp-btn ghost" data-hub-modal-close>إلغاء</button>
+      foot: isProduct
+        ? `
+        <button type="button" class="hub-erp-btn ghost" data-hub-modal-close title="إلغاء"><i class="fas fa-xmark"></i> إلغاء</button>
+        <button type="button" class="hub-erp-btn slate" id="hub-add-defer" title="تأجيل النشر"><i class="fas fa-clock"></i> تأجيل النشر</button>
+        <button type="button" class="hub-erp-btn red" id="hub-add-save" title="حفظ"><i class="fas fa-floppy-disk"></i> حفظ</button>`
+        : `
+        <button type="button" class="hub-erp-btn ghost" data-hub-modal-close><i class="fas fa-xmark"></i> إلغاء</button>
         <button type="button" class="hub-erp-btn red" id="hub-add-save"><i class="fas fa-cloud-arrow-up"></i> ${entity === 'store' ? 'رفع على المتجر' : 'حفظ'}</button>`,
     });
+
+    // cascading subcategory
+    const catSel = document.getElementById('hub-add-category');
+    if (catSel) {
+      fillSubcategories(catSel.value);
+      catSel.addEventListener('change', () => fillSubcategories(catSel.value));
+    }
+
+    // social "all" exclusivity
+    document.getElementById('social-grid')?.addEventListener('change', (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLInputElement) || t.dataset.multi !== 'social') return;
+      if (t.value === 'all' && t.checked) {
+        document.querySelectorAll('input[data-multi="social"]').forEach((el) => {
+          if (el !== t) el.checked = false;
+        });
+      } else if (t.value !== 'all' && t.checked) {
+        const all = document.querySelector('input[data-multi="social"][value="all"]');
+        if (all) all.checked = false;
+      }
+    });
+
     document.getElementById('hub-add-save')?.addEventListener('click', async () => {
+      if (isProduct) return saveProductForm(form, 'published');
       const values = {};
       for (const f of form.fields) {
         values[f.id] = document.getElementById(`hub-add-${f.id}`)?.value.trim() || '';
@@ -817,6 +1001,10 @@
       closeModal();
       toast(entity === 'store' ? 'تم رفع المنتج/الخدمة على المتجر' : 'تمت الإضافة مع بيانات الأطراف والهيكل');
       afterChange(entity, 'add');
+    });
+
+    document.getElementById('hub-add-defer')?.addEventListener('click', async () => {
+      if (isProduct) return saveProductForm(form, 'deferred');
     });
   };
 

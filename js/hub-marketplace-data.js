@@ -177,6 +177,62 @@
   const marketplaceOptions = () =>
     MARKETPLACE_CONNECTORS.map((m) => ({ value: m.id, label: `${m.nameAr} (${m.name})` }));
 
+  /** أنواع منتجات نايوش: رقمية · خدمية · عينية */
+  const PRODUCT_TYPES = [
+    { value: 'رقمية', label: 'رقمية', icon: 'fa-cloud' },
+    { value: 'خدمية', label: 'خدمية', icon: 'fa-concierge-bell' },
+    { value: 'عينية', label: 'عينية', icon: 'fa-box' },
+  ];
+
+  /** تصنيفات فرعية حسب التصنيف الرئيسي */
+  const PRODUCT_SUBCATEGORIES = {
+    'إي آر بي': ['رخص', 'وحدات', 'فروع', 'مخزون'],
+    'نايس': ['لوحات', 'تنبيهات', 'تكامل عملاء'],
+    'فيت': ['اشتراكات', 'برامج', 'بطاقات'],
+    'أكاديمية': ['دورات', 'ورش', 'شهادات', 'مسارات'],
+    'قانونية': ['عقود', 'قضايا', 'امتثال'],
+    'تشغيل': ['رخص تشغيل', 'لوحات قيادة', 'باقات'],
+    'حوكمة': ['سياسات', 'جودة', 'رقابة'],
+    'بيانات': ['تحليلات', 'تقارير', 'محركات'],
+    'مالية': ['محاسبة', 'فواتير', 'اشتراكات شهرية'],
+    'إعلانات': ['حملات', 'بطاقات ظهور', 'ميزانيات'],
+    'فعاليات': ['تذاكر', 'بث', 'استضافة'],
+    'تكامل': ['موصلات', 'واجهات API', 'مزامنة'],
+    'موارد': ['قوى عاملة', 'توظيف', 'تدريب'],
+    'تسويق': ['هوية', 'حملات', 'محتوى'],
+    'مبيعات': ['باقات عملاء', 'CRM', 'عروض'],
+    'خدمات': ['استشارات', 'دعم', 'تشغيل مفوّض'],
+  };
+
+  /** أماكن ظهور الإعلان — اختيار متعدد */
+  const AD_APPEARANCE_PLACES = [
+    { id: 'home', nameAr: 'الصفحة الرئيسية', icon: 'fa-house' },
+    { id: 'products', nameAr: 'صفحة المنتجات', icon: 'fa-boxes-stacked' },
+    { id: 'store', nameAr: 'المتجر', icon: 'fa-bag-shopping' },
+    { id: 'ads', nameAr: 'استوديو الإعلانات', icon: 'fa-rectangle-ad' },
+    { id: 'events', nameAr: 'الفعاليات', icon: 'fa-calendar-days' },
+    { id: 'platforms', nameAr: 'المنصات', icon: 'fa-layer-group' },
+    { id: 'branches', nameAr: 'الفروع', icon: 'fa-code-branch' },
+    { id: 'incubators', nameAr: 'الحاضنات', icon: 'fa-seedling' },
+    { id: 'dashboard', nameAr: 'غرفة العمليات', icon: 'fa-satellite-dish' },
+    { id: 'apps', nameAr: 'سجل الأنظمة', icon: 'fa-cubes' },
+  ];
+
+  /** منصات التواصل الخاصة بنايوش هوب — اختيار واحد أو أكثر أو الكل */
+  const HUB_SOCIAL_PLATFORMS = [
+    { id: 'all', nameAr: 'كل المنصات', icon: 'fa-share-nodes' },
+    { id: 'facebook', nameAr: 'فيسبوك نايوش', icon: 'fa-brands fa-facebook' },
+    { id: 'instagram', nameAr: 'إنستغرام نايوش', icon: 'fa-brands fa-instagram' },
+    { id: 'x', nameAr: 'منصة X نايوش', icon: 'fa-brands fa-x-twitter' },
+    { id: 'linkedin', nameAr: 'لينكدإن نايوش', icon: 'fa-brands fa-linkedin' },
+    { id: 'youtube', nameAr: 'يوتيوب نايوش', icon: 'fa-brands fa-youtube' },
+    { id: 'tiktok', nameAr: 'تيك توك نايوش', icon: 'fa-brands fa-tiktok' },
+    { id: 'whatsapp', nameAr: 'واتساب نايوش', icon: 'fa-brands fa-whatsapp' },
+    { id: 'telegram', nameAr: 'تيليجرام نايوش', icon: 'fa-brands fa-telegram' },
+  ];
+
+  const subcategoriesFor = (category) => PRODUCT_SUBCATEGORIES[category] || [];
+
   /** كتالوج المنتجات للعرض الشبكي */
   const PRODUCT_CATALOG = [
     { id: 'pr-erp-1', sku: 'NH-ERP-010', name: 'وحدة نايوش إي آر بي الكاملة', brand: 'نايوش إي آر بي', platform: 'إدارة الموارد', category: 'إي آر بي', price: 4800, stock: 22, sold: 51, status: 'متوفر', movement: 'متوسط', icon: 'fa-sitemap' },
@@ -226,8 +282,13 @@
     PRODUCT_CATALOG,
     PRODUCT_BRANDS,
     PRODUCT_CATEGORIES,
+    PRODUCT_TYPES,
+    PRODUCT_SUBCATEGORIES,
+    AD_APPEARANCE_PLACES,
+    HUB_SOCIAL_PLATFORMS,
     storeCategoryOptions,
     marketplaceOptions,
+    subcategoriesFor,
     uid,
   };
 })();
