@@ -241,7 +241,11 @@
     `<th>طرف أول</th><th>جوال ١</th><th>طرف ثاني</th><th>جوال ٢</th><th>الفرع</th><th>الحاضنة</th><th>المنصة</th><th>المكتب</th><th>مرفقات</th>`;
 
   const metaCells = (item = {}) => {
-    const files = [item.docName && '📄', item.imageName && '🖼️', item.videoName && '🎬'].filter(Boolean).join(' ') || '—';
+    const parts = [];
+    if (item.docName) parts.push(`<i class="fas fa-file-lines" title="${esc(item.docName)}"></i>`);
+    if (item.imageName) parts.push(`<i class="fas fa-image" title="${esc(item.imageName)}"></i>`);
+    if (item.videoName) parts.push(`<i class="fas fa-video" title="${esc(item.videoName)}"></i>`);
+    const files = parts.length ? parts.join(' ') : '—';
     return `<td>${esc(item.party1Name || '—')}</td>
       <td>${esc(item.party1Phone || '—')}</td>
       <td>${esc(item.party2Name || '—')}</td>
