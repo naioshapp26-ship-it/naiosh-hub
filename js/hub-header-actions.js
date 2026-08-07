@@ -1,7 +1,36 @@
 (() => {
   'use strict';
 
+  // ترتيب RTL: أول عنصر يظهر يمين المجموعة — زي الصورة
   const ACTIONS = [
+    {
+      id: 'info',
+      label: 'مركز المعلومات',
+      href: 'info-center.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-circle-info',
+    },
+    {
+      id: 'blog',
+      label: 'المدونة',
+      href: 'blog.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-newspaper',
+    },
+    {
+      id: 'chat',
+      label: 'الدردشة الداخلية',
+      href: 'chat.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-comments',
+    },
+    {
+      id: 'membership',
+      label: 'العضوية',
+      href: 'membership.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-id-card',
+    },
     {
       id: 'packages',
       label: 'الباقات',
@@ -9,25 +38,14 @@
       className: 'hub-hbtn hub-hbtn--packages',
       icon: 'fa-box',
     },
-    {
-      id: 'quality',
-      label: 'دليل الجودة',
-      href: 'quality.html',
-      className: 'hub-hbtn hub-hbtn--quality',
-      icon: 'fa-clipboard-check',
-    },
-    {
-      id: 'trial',
-      label: 'تجربة',
-      href: 'trial.html',
-      className: 'hub-hbtn hub-hbtn--trial',
-      icon: 'fa-flask',
-    },
   ];
 
   const inject = () => {
     const auth = document.querySelector('.auth-actions');
-    if (!auth || auth.querySelector('[data-hub-header-actions]')) return;
+    if (!auth) return;
+
+    const existing = auth.querySelector('[data-hub-header-actions]');
+    if (existing) existing.remove();
 
     const wrap = document.createElement('div');
     wrap.className = 'hub-header-actions';
@@ -42,7 +60,6 @@
       </a>`;
     }).join('');
 
-    // قبل غرفة العمليات / تسجيل الدخول
     auth.insertBefore(wrap, auth.firstChild);
   };
 

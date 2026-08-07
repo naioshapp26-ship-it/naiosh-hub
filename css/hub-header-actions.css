@@ -36,11 +36,13 @@
   box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
 }
 
+.hub-header-actions .hub-hbtn--red,
 .hub-header-actions .hub-hbtn--quality,
 .hub-header-actions .hub-hbtn--trial {
-  background: linear-gradient(135deg, #ff2d2d, #e50914);
+  background: linear-gradient(135deg, #9f0008, #6b0008);
   color: #fff;
-  box-shadow: 0 8px 18px rgba(229, 9, 20, 0.28);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 18px rgba(120, 0, 14, 0.28);
 }
 
 .hub-header-actions .hub-hbtn.is-active {
