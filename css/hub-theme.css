@@ -166,6 +166,9 @@ body.homepage .top-nav {
 body.homepage .top-nav .inner {
   min-height: 58px;
   gap: 14px;
+  padding: 6px clamp(20px, 2.2vw, 40px) !important;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 body.homepage .brand,
@@ -202,33 +205,10 @@ body.homepage .nav-links a {
   padding: 7px 11px !important;
 }
 
-/* Hero CTAs — صف أزرار مرتب زي ERP */
-body.homepage .hero-ctas {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  gap: 12px !important;
-  justify-content: flex-start !important;
-  align-items: center !important;
-  margin-top: 4px !important;
-}
-
-body.homepage .hero-ctas .btn {
-  margin: 0 !important;
-  min-height: 46px;
-  padding: 12px 20px !important;
-  white-space: nowrap;
-}
-
-/* زي صفحة ERP: الصورة ظاهرة واللوحة الزخرفية مخفية */
+/* لوحة زخرفية مخفية — الصورة ظاهرة زي ERP (التوزيع في hub-hero-erp.css) */
 body.homepage .hero-dashboard,
 body.homepage .hero-glass-search {
   display: none !important;
-}
-
-/* العمود البصري بعرض ERP (مش 100% عشان ما يضغطش على العنوان) */
-body.homepage .hero-media-stack {
-  width: min(calc(100% + var(--hero-visual-width-boost)), var(--hero-visual-max-width)) !important;
-  max-width: var(--hero-visual-max-width) !important;
 }
 
 @media (max-width: 740px) {
