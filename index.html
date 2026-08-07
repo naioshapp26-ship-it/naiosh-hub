@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="css/hub-marketplace.css" />
   <link rel="stylesheet" href="css/hub-product-gallery.css" />
   <link rel="stylesheet" href="css/hub-hero-erp.css?v=7" />
+  <link rel="stylesheet" href="css/hub-balance.css?v=1" />
 </head>
 <body class="homepage">
   <div class="announcement-bar" id="announcement-bar" role="status" aria-live="polite">
@@ -80,6 +81,30 @@
       </div>
 
       <div class="hero-media-stack">
+        <div class="hub-balance-strip" aria-label="رصيد النقاط">
+          <div class="hub-balance-row">
+            <div class="hub-balance-free" title="رصيدك المجاني">
+              <div class="hub-balance-free-points">
+                <strong data-hub-free-points>300</strong>
+                <span>نقطة</span>
+              </div>
+              <div class="hub-balance-free-meta">
+                <strong>رصيد مجاني</strong>
+                <span>يبدأ معك فورًا على هوب</span>
+              </div>
+            </div>
+            <div class="hub-balance-perk">
+              <i class="fas fa-bolt" aria-hidden="true"></i>
+              <span>استخدام بلا قيود · شحن لا ينتهي أبدًا</span>
+            </div>
+          </div>
+          <a class="hub-balance-charge" href="#charge" data-hub-charge-open>
+            <i class="fas fa-wallet" aria-hidden="true"></i>
+            إشحن رصيد
+          </a>
+          <p class="hub-balance-paid">الرصيد المدفوع: <strong data-hub-paid-points>0</strong> نقطة</p>
+        </div>
+
         <div class="hero-media-frame">
           <div class="hero-visual" role="img" aria-label="غرفة عمليات نايوش هوب">
             <div class="hero-visual-media" aria-hidden="true">
@@ -443,6 +468,31 @@
     </div>
   </footer>
 
+  <div class="hub-charge-modal" id="hub-charge-modal" hidden>
+    <div class="hub-charge-modal__backdrop" aria-hidden="true"></div>
+    <div class="hub-charge-modal__panel" role="dialog" aria-modal="true" aria-labelledby="hub-charge-title">
+      <button type="button" class="hub-charge-close" id="hub-charge-modal-close" aria-label="إغلاق">
+        <i class="fas fa-xmark"></i>
+      </button>
+      <h2 id="hub-charge-title">إشحن رصيد</h2>
+      <p>اختر باقة نقاط أو أدخل مبلغًا مخصصًا. الرصيد المجاني يبقى معك، والشحن يضاف للمحفظة المدفوعة.</p>
+      <div class="hub-charge-packs" role="group" aria-label="باقات الشحن">
+        <button type="button" class="hub-charge-pack is-active" data-amount="300"><strong>300</strong><span>نقطة</span></button>
+        <button type="button" class="hub-charge-pack" data-amount="500"><strong>500</strong><span>نقطة</span></button>
+        <button type="button" class="hub-charge-pack" data-amount="1000"><strong>1000</strong><span>نقطة</span></button>
+      </div>
+      <div class="hub-charge-custom">
+        <label for="hub-charge-amount">مبلغ مخصص</label>
+        <input id="hub-charge-amount" type="number" min="50" step="50" value="500" inputmode="numeric" />
+      </div>
+      <div class="hub-charge-actions">
+        <button type="button" class="btn btn-primary" id="hub-charge-submit"><i class="fas fa-bolt"></i> تأكيد الشحن</button>
+        <a class="btn btn-secondary" href="dashboard.html">غرفة العمليات</a>
+      </div>
+      <p class="hub-charge-feedback" id="hub-charge-feedback" aria-live="polite"></p>
+    </div>
+  </div>
+
   <script src="js/empire-blueprint.js"></script>
   <script src="js/sovereign-platforms.js"></script>
   <script src="js/hub-marketplace-data.js"></script>
@@ -457,6 +507,7 @@
   <script src="js/hub-ads-display.js"></script>
   <script src="js/mobile-nav.js"></script>
   <script src="js/hero-sidebar-nav.js"></script>
+  <script src="js/hub-hero-balance.js"></script>
   <script src="js/home.js"></script>
   <script src="js/hub-product-gallery.js"></script>
   <script src="js/hub-ops-path.js"></script>
