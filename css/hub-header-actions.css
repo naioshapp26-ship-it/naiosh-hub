@@ -22,8 +22,9 @@ body.homepage .nav-main {
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
-  flex: 1 1 auto !important;
+  flex: 0 1 auto !important;
   min-width: 0 !important;
+  max-width: calc(100% - 300px) !important;
 }
 
 body.homepage .nav-main > .brand {
@@ -34,7 +35,7 @@ body.homepage .nav-main > .nav-links {
   display: flex !important;
   align-items: center !important;
   flex-wrap: nowrap !important;
-  flex: 1 1 auto !important;
+  flex: 0 1 auto !important;
   min-width: 0 !important;
   justify-content: flex-start !important;
   gap: 2px !important;
