@@ -1,36 +1,44 @@
-/* صف أزرار الهيدر — ثابت تحت الناف، حجم واضح، بدون لف يخرّب الوجه */
+/* أزرار الاختصارات جوه صف الهيدر (مش صف تحتيه) */
 
 .hub-header-bar {
-  width: 100%;
-  background: #ffffff;
-  border-top: 1px solid #f0f0f3;
-  padding: 8px clamp(16px, 2vw, 40px) 10px;
-  box-sizing: border-box;
+  display: none !important;
+}
+
+.top-nav .inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .hub-header-actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 8px;
+  flex: 0 1 auto;
   flex-wrap: nowrap;
   overflow-x: auto;
-  scrollbar-width: thin;
-  max-width: 100%;
+  scrollbar-width: none;
+  max-width: min(52vw, 620px);
   margin: 0;
+  padding-inline: 4px;
+}
+
+.hub-header-actions::-webkit-scrollbar {
+  display: none;
 }
 
 .hub-header-actions .hub-hbtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   flex: 0 0 auto;
-  min-height: 42px;
-  padding: 10px 16px;
+  min-height: 38px;
+  padding: 8px 13px;
   border-radius: 999px;
   font-family: 'Cairo', 'Tajawal', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
@@ -66,17 +74,23 @@
 body.homepage .top-nav .inner {
   flex-wrap: nowrap !important;
   align-items: center !important;
-  min-height: 58px !important;
+  min-height: 64px !important;
 }
 
 body.homepage .auth-actions {
   flex-wrap: nowrap !important;
   flex: 0 0 auto !important;
   overflow: visible !important;
+  margin-inline-start: 0 !important;
 }
 
 body.homepage .nav-main {
+  flex: 1 1 auto !important;
   min-width: 0 !important;
+}
+
+body.homepage .nav-main > .nav-links {
+  max-width: 100%;
 }
 
 body.homepage .hero-sidebar-item.hub-sidebar-chat,

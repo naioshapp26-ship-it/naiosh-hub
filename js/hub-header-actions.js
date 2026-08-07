@@ -1,7 +1,6 @@
 (() => {
   'use strict';
 
-  // صف مستقل تحت الناف — عشان ما تتصغّرش وتتلف وسط الأزرار
   const ACTIONS = [
     {
       id: 'info',
@@ -42,32 +41,29 @@
 
   const inject = () => {
     const topNav = document.querySelector('header.top-nav');
-    if (!topNav) return;
+    const inner = topNav?.querySelector('.inner');
+    const auth = inner?.querySelector('.auth-actions');
+    if (!inner || !auth) return;
 
-    // نظّف أي حقن قديم جوه auth-actions
-    document.querySelectorAll('.auth-actions [data-hub-header-actions]').forEach((el) => el.remove());
+    // امسح الصف الثاني القديم والحقن القديم
+    topNav.querySelectorAll('[data-hub-header-bar]').forEach((el) => el.remove());
+    document.querySelectorAll('[data-hub-header-actions]').forEach((el) => el.remove());
 
-    let bar = topNav.querySelector('[data-hub-header-bar]');
-    if (!bar) {
-      bar = document.createElement('div');
-      bar.className = 'hub-header-bar';
-      bar.dataset.hubHeaderBar = '1';
-      bar.setAttribute('aria-label', 'اختصارات هوب');
-      const inner = topNav.querySelector('.inner');
-      if (inner && inner.parentElement === topNav) {
-        inner.insertAdjacentElement('afterend', bar);
-      } else {
-        topNav.appendChild(bar);
-      }
-    }
+    const wrap = document.createElement('div');
+    wrap.className = 'hub-header-actions';
+    wrap.dataset.hubHeaderActions = '1';
+    wrap.setAttribute('aria-label', 'اختصارات هوب');
 
     const path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
-    bar.innerHTML = `<div class="hub-header-actions" data-hub-header-actions="1">${ACTIONS.map((a) => {
+    wrap.innerHTML = ACTIONS.map((a) => {
       const active = path === a.href.toLowerCase() ? ' is-active' : '';
       return `<a class="${a.className}${active}" href="${a.href}" data-hub-hbtn="${a.id}">
         <i class="fas ${a.icon}" aria-hidden="true"></i>${a.label}
       </a>`;
-    }).join('')}</div>`;
+    }).join('');
+
+    // جوه الهيدر: بين الروابط وأزرار الحساب
+    inner.insertBefore(wrap, auth);
   };
 
   if (document.readyState === 'loading') {
