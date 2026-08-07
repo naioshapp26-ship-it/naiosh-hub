@@ -23,7 +23,7 @@
   --homepage-heading-color: #171a20;
   --homepage-paragraph-color: #5e636d;
   --homepage-link-color: #1f232b;
-  --hero-custom-image: url('/newhome/booking-workspace.svg');
+  --hero-custom-image: url('assets/hero-workspace.svg');
   --hero-custom-size: cover;
   --hero-custom-position: center;
   --hero-bg-image: none;
@@ -2310,8 +2310,12 @@ body.homepage .hero-content {
 
 body.homepage .hero-ctas {
   justify-content: flex-start;
-  gap: 16px;
-  flex-wrap: nowrap;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+body.homepage .hero-ctas .btn {
+  flex: 0 1 auto;
 }
 
 body.homepage .hero-stats {
@@ -2603,7 +2607,10 @@ body.homepage .hero-sidebar {
 }
 
 body.homepage .hero-sidebar-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 10px 16px;
   border-radius: 999px;
   background: rgba(10, 0, 4, 0.55);
@@ -2618,6 +2625,17 @@ body.homepage .hero-sidebar-item {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
   transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease, transform 0.18s ease, box-shadow 0.22s ease;
   white-space: nowrap;
+}
+
+body.homepage .hero-sidebar-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 11px;
+  flex-shrink: 0;
 }
 
 body.homepage .hero-sidebar-item:hover,

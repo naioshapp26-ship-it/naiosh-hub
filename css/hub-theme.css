@@ -202,6 +202,7 @@ body.homepage .nav-links a {
   padding: 7px 11px !important;
 }
 
+/* Hero CTAs — صف أزرار مرتب زي ERP */
 body.homepage .hero-ctas {
   display: flex !important;
   flex-wrap: wrap !important;
@@ -218,26 +219,16 @@ body.homepage .hero-ctas .btn {
   white-space: nowrap;
 }
 
-/* Keep hero dashboard visible (ERP CSS hides it) */
-body.homepage .hero-dashboard {
-  display: grid !important;
-}
-
+/* زي صفحة ERP: الصورة ظاهرة واللوحة الزخرفية مخفية */
+body.homepage .hero-dashboard,
 body.homepage .hero-glass-search {
-  display: flex !important;
+  display: none !important;
 }
 
-body.homepage .hero-panel {
-  background: linear-gradient(146deg, rgba(70, 10, 18, 0.96), rgba(28, 6, 12, 0.96)) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  color: #fff !important;
-}
-
+/* العمود البصري بعرض ERP (مش 100% عشان ما يضغطش على العنوان) */
 body.homepage .hero-media-stack {
-  width: 100% !important;
-  max-width: 100% !important;
-  transform: none !important;
-  animation: none !important;
+  width: min(calc(100% + var(--hero-visual-width-boost)), var(--hero-visual-max-width)) !important;
+  max-width: var(--hero-visual-max-width) !important;
 }
 
 @media (max-width: 740px) {

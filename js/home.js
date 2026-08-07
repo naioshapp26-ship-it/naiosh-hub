@@ -114,4 +114,16 @@
     );
     stats.forEach((el) => obs.observe(el));
   }
+
+  document.querySelectorAll('.hero-sidebar-toggle').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const menuId = btn.getAttribute('aria-controls');
+      const menu = menuId ? document.getElementById(menuId) : btn.parentElement?.querySelector('.hero-sidebar-submenu');
+      if (!menu) return;
+      const open = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+      menu.classList.toggle('open', !open);
+      menu.setAttribute('aria-hidden', open ? 'true' : 'false');
+    });
+  });
 })();
