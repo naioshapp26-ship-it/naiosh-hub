@@ -1,13 +1,12 @@
 /**
- * كوبي بيست حرفي لوجه هيرو ERP (body.homepage)
- * بيانات/نصوص هوب كما هي — الأحجام والتوزيع من ERP فقط
+ * كوبي بيست من ERP اللايف (web-production-419e2)
+ * styles.css + homepage-premium — وجه الهيرو فقط
  */
 
 :root {
-  --hero-sidebar-desktop-shift: clamp(56px, 5vw, 100px);
-  --hero-visual-width-boost: clamp(48px, 5vw, 82px);
-  --hero-visual-max-width: 720px;
-  --hero-visual-shift-x: clamp(-58px, -4vw, -34px);
+  --hero-visual-width-boost: 0px;
+  --hero-visual-max-width: 580px;
+  --hero-visual-shift-x: clamp(18px, 2vw, 36px);
   --hero-visual-shift-y: 52px;
   --homepage-btn-hover-brightness: 1.09;
   --homepage-hero-visual-fallback: linear-gradient(130deg, rgba(120, 8, 20, 0.94), rgba(36, 5, 10, 0.95));
@@ -16,7 +15,7 @@
 body.homepage .hero {
   display: flex !important;
   min-height: auto !important;
-  align-items: center !important;
+  align-items: stretch !important;
   justify-content: center !important;
   width: 100% !important;
   margin: 0 !important;
@@ -63,29 +62,27 @@ body.homepage .hero .hero-orb {
   opacity: 0.14 !important;
 }
 
-/* حاوية الهيرو بنفس عرض ERP */
-body.homepage .container.hero-inner {
+/* عرض كامل زي ERP اللايف — مش 1200 */
+body.homepage .container.hero-inner,
+body.homepage .hero-inner.container {
+  max-width: none !important;
   width: 100% !important;
-  max-width: 1200px !important;
-  margin-inline: auto !important;
+  margin-inline: 0 !important;
   display: grid !important;
-  /* نفس ERP حرفيًا */
-  grid-template-columns: minmax(0, 44%) minmax(0, 1fr) 200px !important;
+  grid-template-columns: minmax(0, 36%) minmax(0, 1fr) 228px !important;
   grid-template-areas: 'visual content sidebar' !important;
-  gap: 28px !important;
-  align-items: center !important;
+  gap: 34px !important;
+  align-items: stretch !important;
   align-self: stretch !important;
   align-content: center !important;
-  padding: 48px 24px !important;
+  min-height: clamp(620px, 82vh, 860px) !important;
+  padding: 48px clamp(18px, 2.4vw, 44px) 28px !important;
+  padding-inline-start: clamp(28px, 3.2vw, 56px) !important;
+  padding-inline-end: clamp(32px, 3.6vw, 68px) !important;
   direction: ltr !important;
   position: relative !important;
   z-index: 2 !important;
-  min-height: 560px !important;
   overflow: visible !important;
-}
-
-body.homepage .top-nav .container {
-  max-width: 1420px !important;
 }
 
 body.homepage .hero-content {
@@ -119,10 +116,6 @@ body.homepage .hero-content h1.hero-heading-white {
   z-index: 1 !important;
 }
 
-body.homepage .hero-content h1 .accent {
-  color: #ff7b8c !important;
-}
-
 body.homepage .hero-content p {
   max-width: 600px !important;
   margin: 0 0 28px !important;
@@ -133,86 +126,73 @@ body.homepage .hero-content p {
   text-align: right !important;
 }
 
-/* أزرار ERP: نفس padding/حجم — wrap عشان ما تتقصش زي nowrap+overflow */
+/* 4 أزرار حمرا · نفس ERP اللايف */
 body.homepage .hero-ctas {
   display: flex !important;
   flex-wrap: wrap !important;
   justify-content: flex-start !important;
   align-items: center !important;
-  gap: 16px !important;
+  gap: 12px !important;
   margin: 0 !important;
   overflow: visible !important;
   width: 100% !important;
-  max-width: 100% !important;
 }
 
-body.homepage .hero-ctas-break {
-  display: none !important;
-}
-
-body.homepage .hero-ctas .btn {
+body.homepage .hero-ctas .btn,
+body.homepage .hero-ctas .hero-cta-pill {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 9px !important;
+  gap: 8px !important;
   flex: 0 0 auto !important;
-  padding: 12px 22px !important;
+  min-width: 118px !important;
   min-height: 0 !important;
   height: auto !important;
+  padding: 11px 20px !important;
   border-radius: 999px !important;
-  font-size: 16px !important;
+  font-size: 13px !important;
   line-height: 1 !important;
   font-weight: 800 !important;
   white-space: nowrap !important;
   margin: 0 !important;
   text-decoration: none !important;
-  border: 1px solid transparent !important;
+  border: none !important;
   box-sizing: border-box !important;
-}
-
-body.homepage .hero-ctas .btn-primary,
-body.homepage .hero-ctas .hub-hero-packages {
   background: linear-gradient(135deg, #ff2d2d, #e50914) !important;
   color: #ffffff !important;
-  border: none !important;
-  box-shadow: 0 10px 30px rgba(229, 9, 20, 0.4) !important;
-}
-
-body.homepage .hero-ctas .btn-secondary,
-body.homepage .hero-ctas .hub-hero-membership {
-  background: rgba(255, 255, 255, 0.07) !important;
-  border: 1px solid rgba(255, 255, 255, 0.36) !important;
-  color: #fff !important;
-  box-shadow: none !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28) !important;
 }
 
 body.homepage .hero-ctas .btn:hover {
   transform: scale(1.05) translateY(-2px) !important;
+  filter: brightness(var(--homepage-btn-hover-brightness)) !important;
 }
 
 body.homepage .hero-stats {
-  margin: 24px 0 0 !important;
-  max-width: 680px !important;
+  margin: 28px 0 0 !important;
+  max-width: 700px !important;
   width: 100% !important;
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 16px !important;
-  text-align: right !important;
+  gap: 14px !important;
+  text-align: center !important;
   color: #ffffff !important;
 }
 
 body.homepage .hero-stats .stat {
   min-width: 0 !important;
-  padding: 14px 10px !important;
-  border: 1px solid rgba(255, 255, 255, 0.45) !important;
-  border-radius: 12px !important;
-  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.82) !important;
+  border-radius: 18px !important;
+  padding: 18px 12px 14px !important;
+  background: rgba(0, 0, 0, 0.16) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   text-align: center !important;
 }
 
 body.homepage .hero-stats .stat strong {
   display: block !important;
-  font-size: clamp(30px, 4.2vw, 44px) !important;
+  font-size: clamp(28px, 3.4vw, 40px) !important;
   line-height: 1.1 !important;
   font-weight: 900 !important;
   color: #ffffff !important;
@@ -221,19 +201,20 @@ body.homepage .hero-stats .stat strong {
 
 body.homepage .hero-stats .stat span {
   display: block !important;
-  color: #ffe4e8 !important;
-  font-size: 16px !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-size: 15px !important;
   font-weight: 400 !important;
-  margin-top: 4px !important;
+  margin-top: 6px !important;
 }
 
-/* البنر — نفس صيغة ERP */
+/* البنر — max 580 · نسبة 16/10 · radius 34 */
 body.homepage .hero-media-stack {
   position: relative !important;
   grid-area: visual !important;
-  width: min(calc(100% + var(--hero-visual-width-boost)), var(--hero-visual-max-width)) !important;
+  width: min(100%, var(--hero-visual-max-width)) !important;
   max-width: var(--hero-visual-max-width) !important;
   margin: 0 !important;
+  margin-inline-start: clamp(12px, 1.6vw, 28px) !important;
   justify-self: start !important;
   align-self: center !important;
   animation: heroVisualFloat 7s ease-in-out infinite !important;
@@ -253,15 +234,14 @@ body.homepage .hero-media-frame {
 body.homepage .hero-visual {
   width: 100% !important;
   max-width: 100% !important;
-  aspect-ratio: 16 / 9 !important;
+  aspect-ratio: 16 / 10 !important;
   height: auto !important;
-  border-radius: 24px !important;
-  background: var(--homepage-hero-visual-fallback) !important;
-  border: 1px solid rgba(248, 194, 184, 0.22) !important;
+  border-radius: 34px !important;
+  background: #000000 !important;
+  border: 2px solid rgba(255, 255, 255, 0.14) !important;
   box-shadow:
-    0 36px 80px rgba(4, 6, 10, 0.72),
-    0 12px 32px rgba(160, 0, 20, 0.28),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.07) !important;
+    0 34px 70px rgba(0, 0, 0, 0.62),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
   margin-inline: 0 !important;
   position: relative !important;
   overflow: hidden !important;
@@ -298,9 +278,9 @@ body.homepage .hero-glass-search {
 
 body.homepage .hero-float-card {
   position: absolute !important;
-  bottom: -18px !important;
-  right: -12px !important;
-  left: auto !important;
+  bottom: -20px !important;
+  left: -14px !important;
+  right: auto !important;
   z-index: 10 !important;
   display: flex !important;
   align-items: center !important;
@@ -330,52 +310,58 @@ body.homepage .hero-float-icon {
 }
 
 body.homepage #site-logo-hero-badge {
-  width: 52px !important;
-  height: 52px !important;
-  object-fit: contain !important;
-  position: absolute !important;
-  left: 18px !important;
-  bottom: 18px !important;
-  z-index: 4 !important;
-  opacity: 0.92 !important;
-  border-radius: 10px !important;
-  background: transparent !important;
-  padding: 0 !important;
-  border: none !important;
+  display: none !important;
 }
 
+/* ملاحظات ERP — صندوق أحمر كامل العرض */
 body.homepage .hero-media-note {
-  margin-top: 14px !important;
-  background: rgba(10, 0, 4, 0.52) !important;
-  border: 1px solid rgba(229, 9, 20, 0.22) !important;
-  border-radius: 16px !important;
-  padding: 14px 16px !important;
+  margin-top: 16px !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
   direction: rtl !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 10px !important;
+  gap: 12px !important;
+}
+
+body.homepage .hero-note-text {
+  width: 100% !important;
+  min-height: 92px !important;
+  background: linear-gradient(180deg, #d10814 0%, #a80010 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.92) !important;
+  border-radius: 16px !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  line-height: 1.65 !important;
+  padding: 14px 16px !important;
+  resize: vertical !important;
+}
+
+body.homepage .hero-note-text::placeholder {
+  color: rgba(255, 255, 255, 0.72) !important;
 }
 
 body.homepage .hero-note-upload {
   display: inline-flex !important;
   align-items: center !important;
+  justify-content: center !important;
   gap: 8px !important;
-  padding: 8px 16px !important;
-  border-radius: 999px !important;
-  background: rgba(229, 9, 20, 0.12) !important;
-  border: 1px solid rgba(229, 9, 20, 0.3) !important;
-  color: rgba(255, 200, 210, 0.88) !important;
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  align-self: flex-start !important;
+  width: 100% !important;
+  padding: 14px 18px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(180deg, #ef0f1d 0%, #c50812 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.92) !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  align-self: stretch !important;
+  cursor: pointer !important;
 }
 
-/* رصيد هوب تحت الملاحظات — البنر يبقى وش ERP */
-body.homepage .hub-balance-strip {
-  margin: 14px 0 0 !important;
-}
-
-/* منيو جانبية — نفس ERP */
+/* منيو جانبية */
 body.homepage .hero-sidebar {
   grid-area: sidebar !important;
   display: flex !important;
@@ -384,10 +370,14 @@ body.homepage .hero-sidebar {
   align-self: center !important;
   direction: rtl !important;
   padding: 4px 0 !important;
+  padding-inline-end: 6px !important;
   width: auto !important;
   max-width: none !important;
+  max-height: min(72vh, 620px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   justify-self: stretch !important;
-  transform: translateX(var(--hero-sidebar-desktop-shift)) !important;
+  transform: none !important;
 }
 
 body.homepage .hero-sidebar-item {
@@ -433,15 +423,16 @@ body.homepage .hero-sidebar-item.hub-sidebar-chat .hero-sidebar-label {
       'sidebar' !important;
     gap: 18px !important;
     padding: 24px 16px 40px !important;
+    min-height: 0 !important;
     direction: rtl !important;
   }
 
   body.homepage .hero-media-stack {
-    --hero-visual-width-boost: 0px;
     --hero-visual-shift-x: 0px;
     --hero-visual-shift-y: 0px;
     width: 100% !important;
     max-width: 640px !important;
+    margin-inline-start: 0 !important;
     justify-self: center !important;
     animation: none !important;
     transform: none !important;
@@ -452,19 +443,13 @@ body.homepage .hero-sidebar-item.hub-sidebar-chat .hero-sidebar-label {
     justify-self: stretch !important;
   }
 
-  body.homepage .hero-ctas {
-    flex-wrap: wrap !important;
-    overflow: visible !important;
-  }
-
   body.homepage .hero-sidebar {
     flex-direction: row !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
+    max-height: none !important;
     gap: 8px !important;
     transform: none !important;
-    max-width: none !important;
-    justify-self: stretch !important;
   }
 
   body.homepage .hero-sidebar-item {

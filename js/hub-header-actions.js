@@ -17,6 +17,20 @@
       icon: 'fa-newspaper',
     },
     {
+      id: 'packages',
+      label: 'الباقات',
+      href: 'packages.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-box',
+    },
+    {
+      id: 'membership',
+      label: 'العضوية',
+      href: 'membership.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-id-card',
+    },
+    {
       id: 'chat',
       label: 'الدردشة الداخلية',
       href: 'chat.html',
