@@ -42,6 +42,7 @@
   const inject = () => {
     const topNav = document.querySelector('header.top-nav');
     const inner = topNav?.querySelector('.inner');
+    const navLinks = inner?.querySelector('.nav-links');
     const auth = inner?.querySelector('.auth-actions');
     if (!inner || !auth) return;
 
@@ -62,8 +63,12 @@
       </a>`;
     }).join('');
 
-    // جوه الهيدر: بين الروابط وأزرار الحساب
-    inner.insertBefore(wrap, auth);
+    // جوه صف الروابط نفسه — صف واحد متصل بدون فجوة
+    if (navLinks) {
+      navLinks.appendChild(wrap);
+    } else {
+      inner.insertBefore(wrap, auth);
+    }
   };
 
   if (document.readyState === 'loading') {
