@@ -23,20 +23,6 @@
       className: 'hub-hbtn hub-hbtn--red',
       icon: 'fa-comments',
     },
-    {
-      id: 'membership',
-      label: 'العضوية',
-      href: 'membership.html',
-      className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-id-card',
-    },
-    {
-      id: 'packages',
-      label: 'الباقات',
-      href: 'packages.html',
-      className: 'hub-hbtn hub-hbtn--packages',
-      icon: 'fa-box',
-    },
   ];
 
   const inject = () => {

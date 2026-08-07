@@ -124,10 +124,10 @@ body.homepage .hero-content p {
 /* أزرار بنفس حجم/توزيع ERP */
 body.homepage .hero-ctas {
   display: flex !important;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important;
   justify-content: flex-start !important;
   align-items: center !important;
-  gap: 16px !important;
+  gap: 12px !important;
   margin: 0 !important;
   overflow: visible !important;
 }
@@ -160,6 +160,20 @@ body.homepage .hero-ctas .btn-secondary {
   border: 1px solid rgba(255, 255, 255, 0.36) !important;
   color: #fff !important;
   border-radius: 999px !important;
+}
+
+/* العضوية + الباقات جنب احجز جولة */
+body.homepage .hero-ctas .hub-hero-packages {
+  background: linear-gradient(135deg, #4f46e5, #2563eb) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.35) !important;
+}
+
+body.homepage .hero-ctas .hub-hero-membership {
+  background: rgba(10, 0, 4, 0.45) !important;
+  border: 1px solid rgba(229, 9, 20, 0.45) !important;
+  color: #ffe4e8 !important;
 }
 
 body.homepage .hero-stats {
