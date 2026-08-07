@@ -1,23 +1,36 @@
-/* أزرار الهيدر الجديدة — باقات · دليل الجودة · تجربة */
+/* صف أزرار الهيدر — ثابت تحت الناف، حجم واضح، بدون لف يخرّب الوجه */
+
+.hub-header-bar {
+  width: 100%;
+  background: #ffffff;
+  border-top: 1px solid #f0f0f3;
+  padding: 8px clamp(16px, 2vw, 40px) 10px;
+  box-sizing: border-box;
+}
 
 .hub-header-actions {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-inline-end: 4px;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  max-width: 100%;
+  margin: 0;
 }
 
 .hub-header-actions .hub-hbtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 7px 12px;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 10px 16px;
   border-radius: 999px;
   font-family: 'Cairo', 'Tajawal', sans-serif;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
@@ -39,15 +52,31 @@
 .hub-header-actions .hub-hbtn--red,
 .hub-header-actions .hub-hbtn--quality,
 .hub-header-actions .hub-hbtn--trial {
-  background: linear-gradient(135deg, #9f0008, #6b0008);
+  background: linear-gradient(135deg, #b10011, #7a000c);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 18px rgba(120, 0, 14, 0.28);
 }
 
 .hub-header-actions .hub-hbtn.is-active {
-  outline: 2px solid rgba(15, 23, 42, 0.18);
+  outline: 2px solid rgba(15, 23, 42, 0.16);
   outline-offset: 1px;
+}
+
+body.homepage .top-nav .inner {
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  min-height: 58px !important;
+}
+
+body.homepage .auth-actions {
+  flex-wrap: nowrap !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+}
+
+body.homepage .nav-main {
+  min-width: 0 !important;
 }
 
 body.homepage .hero-sidebar-item.hub-sidebar-chat,
@@ -68,7 +97,6 @@ body.homepage .hero-sidebar-item.hub-sidebar-chat:focus-visible {
   border-color: transparent !important;
 }
 
-/* صفحات المحتوى الجديدة */
 .hub-feature-page {
   padding: 28px 0 56px;
 }
@@ -259,7 +287,9 @@ body.homepage .hero-sidebar-item.hub-sidebar-chat:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .hub-header-actions {
-    width: 100%;
+  .hub-header-actions .hub-hbtn {
+    min-height: 40px;
+    padding: 9px 14px;
+    font-size: 13px;
   }
 }

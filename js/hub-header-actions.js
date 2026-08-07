@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  // ترتيب RTL: أول عنصر يظهر يمين المجموعة — زي الصورة
+  // صف مستقل تحت الناف — عشان ما تتصغّرش وتتلف وسط الأزرار
   const ACTIONS = [
     {
       id: 'info',
@@ -41,26 +41,33 @@
   ];
 
   const inject = () => {
-    const auth = document.querySelector('.auth-actions');
-    if (!auth) return;
+    const topNav = document.querySelector('header.top-nav');
+    if (!topNav) return;
 
-    const existing = auth.querySelector('[data-hub-header-actions]');
-    if (existing) existing.remove();
+    // نظّف أي حقن قديم جوه auth-actions
+    document.querySelectorAll('.auth-actions [data-hub-header-actions]').forEach((el) => el.remove());
 
-    const wrap = document.createElement('div');
-    wrap.className = 'hub-header-actions';
-    wrap.dataset.hubHeaderActions = '1';
-    wrap.setAttribute('aria-label', 'إجراءات هوب السريعة');
+    let bar = topNav.querySelector('[data-hub-header-bar]');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'hub-header-bar';
+      bar.dataset.hubHeaderBar = '1';
+      bar.setAttribute('aria-label', 'اختصارات هوب');
+      const inner = topNav.querySelector('.inner');
+      if (inner && inner.parentElement === topNav) {
+        inner.insertAdjacentElement('afterend', bar);
+      } else {
+        topNav.appendChild(bar);
+      }
+    }
 
     const path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
-    wrap.innerHTML = ACTIONS.map((a) => {
+    bar.innerHTML = `<div class="hub-header-actions" data-hub-header-actions="1">${ACTIONS.map((a) => {
       const active = path === a.href.toLowerCase() ? ' is-active' : '';
       return `<a class="${a.className}${active}" href="${a.href}" data-hub-hbtn="${a.id}">
         <i class="fas ${a.icon}" aria-hidden="true"></i>${a.label}
       </a>`;
-    }).join('');
-
-    auth.insertBefore(wrap, auth.firstChild);
+    }).join('')}</div>`;
   };
 
   if (document.readyState === 'loading') {

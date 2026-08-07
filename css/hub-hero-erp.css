@@ -328,30 +328,31 @@ body.homepage .hero-note-upload {
   align-self: flex-start !important;
 }
 
-/* منيو جانبية — نص فقط زي ERP (بدون إزاحة خارج الشاشة عند العرض الكامل) */
+/* منيو جانبية — حجم أوضح زي الوجه الأصلي */
 body.homepage .hero-sidebar {
   grid-area: sidebar !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 8px !important;
+  gap: 10px !important;
   align-self: center !important;
   direction: rtl !important;
   padding: 4px 0 !important;
   width: 100% !important;
-  max-width: 200px !important;
+  max-width: 210px !important;
   justify-self: end !important;
   transform: none !important;
 }
 
 body.homepage .hero-sidebar-item {
   display: block !important;
-  padding: 10px 16px !important;
+  padding: 12px 18px !important;
   border-radius: 999px !important;
   background: rgba(10, 0, 4, 0.55) !important;
   border: 1px solid rgba(229, 9, 20, 0.25) !important;
-  color: rgba(255, 220, 228, 0.88) !important;
-  font-size: 13.5px !important;
-  font-weight: 700 !important;
+  color: rgba(255, 220, 228, 0.92) !important;
+  font-size: 14.5px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
   text-align: center !important;
   text-decoration: none !important;
   white-space: nowrap !important;
