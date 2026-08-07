@@ -50,11 +50,11 @@ body.homepage {
 
 .hero-content h1 {
   font-weight: 900;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.2px;
 }
 
 .hero-content h1 .accent {
-  color: #ff3b3b;
+  color: inherit;
 }
 
 .layer-badge {

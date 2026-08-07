@@ -80,14 +80,16 @@ body.homepage .hero-content {
   direction: rtl !important;
   text-align: right !important;
   align-self: center !important;
-  max-width: none !important;
+  max-width: 620px !important;
   width: 100% !important;
-  justify-self: stretch !important;
+  justify-self: end !important;
   margin: 0 !important;
-  padding-inline: 0 8px !important;
+  padding-inline: 0 !important;
 }
 
-body.homepage .hero-content h1 {
+/* عنوان بنفس شكل ERP تمامًا — سطر يتلف طبيعيًا */
+body.homepage .hero-content h1,
+body.homepage .hero-content h1.hero-heading-white {
   font-family: 'Cairo', 'Tajawal', sans-serif !important;
   font-size: clamp(22px, 3vw, 40px) !important;
   font-weight: 900 !important;
@@ -96,6 +98,9 @@ body.homepage .hero-content h1 {
   text-align: right !important;
   color: #ffffff !important;
   letter-spacing: -0.2px !important;
+  position: relative !important;
+  z-index: 1 !important;
+  text-wrap: balance;
 }
 
 body.homepage .hero-content h1::after {
@@ -103,7 +108,7 @@ body.homepage .hero-content h1::after {
 }
 
 body.homepage .hero-content h1 .accent {
-  color: #ff7b8c !important;
+  color: inherit !important;
 }
 
 body.homepage .hero-content p {
