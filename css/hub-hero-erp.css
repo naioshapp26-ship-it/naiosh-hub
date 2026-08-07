@@ -7,7 +7,7 @@
   --hero-visual-width-boost: 0px;
   --hero-visual-max-width: 580px;
   --hero-visual-shift-x: clamp(18px, 2vw, 36px);
-  --hero-visual-shift-y: 52px;
+  --hero-visual-shift-y: 24px;
   --homepage-btn-hover-brightness: 1.09;
   --homepage-hero-visual-fallback: linear-gradient(130deg, rgba(120, 8, 20, 0.94), rgba(36, 5, 10, 0.95));
 }
@@ -19,6 +19,7 @@ body.homepage .hero {
   justify-content: center !important;
   width: 100% !important;
   margin: 0 !important;
+  padding-bottom: 8px !important;
   border: 1px solid rgba(229, 9, 20, 0.22) !important;
   border-radius: 0 !important;
   overflow: visible !important;
@@ -75,8 +76,8 @@ body.homepage .hero-inner.container {
   align-items: stretch !important;
   align-self: stretch !important;
   align-content: center !important;
-  min-height: clamp(620px, 82vh, 860px) !important;
-  padding: 48px clamp(18px, 2.4vw, 44px) 28px !important;
+  min-height: 0 !important;
+  padding: 28px clamp(18px, 2.4vw, 44px) 20px !important;
   padding-inline-start: clamp(28px, 3.2vw, 56px) !important;
   padding-inline-end: clamp(32px, 3.6vw, 68px) !important;
   direction: ltr !important;
@@ -412,6 +413,23 @@ body.homepage .hero-sidebar-item:focus-visible {
 body.homepage .hero-sidebar-item.hub-sidebar-chat,
 body.homepage .hero-sidebar-item.hub-sidebar-chat .hero-sidebar-label {
   color: #fbbf24 !important;
+}
+
+/* قلّل الفراغ تحت الهيرو — السكشن اللي بعده يطلع فوق */
+body.homepage .scroll-indicator {
+  bottom: 10px !important;
+  width: 40px !important;
+  height: 40px !important;
+}
+
+body.homepage .hub-product-gallery {
+  padding-top: 24px !important;
+  margin-top: 0 !important;
+}
+
+body.homepage .hub-ops-path {
+  margin-top: 8px !important;
+  margin-bottom: 12px !important;
 }
 
 @media (max-width: 1050px) {
