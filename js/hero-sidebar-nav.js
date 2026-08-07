@@ -25,18 +25,39 @@
       { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
       { label: 'شراكاتي', href: 'store.html', icon: 'fa-handshake' },
       { label: 'عملائي', href: 'systems/crm.html?from=hub&return=index.html', icon: 'fa-users', launchCode: 'CRM' },
+      { label: 'دردشة داخلية', href: 'chat.html', icon: 'fa-comments', chat: true },
       { label: 'اخرى', href: 'apps.html', icon: 'fa-ellipsis' },
     ];
+  };
+
+  const ensureChatBeforeOther = (pages) => {
+    const list = pages.slice();
+    const chatIdx = list.findIndex((p) => /دردشة/.test(p.label || ''));
+    const otherIdx = list.findIndex((p) => /^اخرى$|^أخرى$/.test(String(p.label || '').trim()));
+    const chatItem =
+      chatIdx >= 0
+        ? list.splice(chatIdx, 1)[0]
+        : { label: 'دردشة داخلية', href: 'chat.html', icon: 'fa-comments', chat: true };
+
+    if (otherIdx >= 0) {
+      const insertAt = list.findIndex((p) => /^اخرى$|^أخرى$/.test(String(p.label || '').trim()));
+      list.splice(insertAt >= 0 ? insertAt : list.length, 0, { ...chatItem, chat: true });
+    } else {
+      list.push({ ...chatItem, chat: true });
+    }
+    return list;
   };
 
   const renderSidebar = () => {
     const nav = document.querySelector('.hero-sidebar[data-hero-sidebar]');
     if (!nav) return;
-    const pages = fromCatalog().filter((p) => !window.HubReadySites?.isExcluded?.(p.label));
+    const pages = ensureChatBeforeOther(
+      fromCatalog().filter((p) => !window.HubReadySites?.isExcluded?.(p.label))
+    );
 
     nav.innerHTML = pages
       .map(
-        (item) => `<a class="hero-sidebar-item" href="${item.href}" title="ادخل ${item.label} مباشرة"${
+        (item) => `<a class="hero-sidebar-item${item.chat || /دردشة/.test(item.label) ? ' hub-sidebar-chat' : ''}" href="${item.href}" title="ادخل ${item.label} مباشرة"${
           item.launchCode ? ` data-launch-code="${item.launchCode}" data-launch-mode="hub"` : ''
         }>
         <span class="hero-sidebar-icon" aria-hidden="true"><i class="fas ${item.icon}"></i></span>

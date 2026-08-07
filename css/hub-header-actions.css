@@ -1,0 +1,263 @@
+/* أزرار الهيدر الجديدة — باقات · دليل الجودة · تجربة */
+
+.hub-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-inline-end: 4px;
+}
+
+.hub-header-actions .hub-hbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-size: 12.5px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.hub-header-actions .hub-hbtn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.hub-header-actions .hub-hbtn--packages {
+  background: linear-gradient(135deg, #4f46e5, #2563eb);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
+
+.hub-header-actions .hub-hbtn--quality,
+.hub-header-actions .hub-hbtn--trial {
+  background: linear-gradient(135deg, #ff2d2d, #e50914);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(229, 9, 20, 0.28);
+}
+
+.hub-header-actions .hub-hbtn.is-active {
+  outline: 2px solid rgba(15, 23, 42, 0.18);
+  outline-offset: 1px;
+}
+
+body.homepage .hero-sidebar-item.hub-sidebar-chat,
+body.homepage .hero-sidebar-item.hub-sidebar-chat .hero-sidebar-label {
+  color: #fbbf24 !important;
+  font-weight: 800 !important;
+}
+
+body.homepage .hero-sidebar-item.hub-sidebar-chat {
+  border-color: rgba(251, 191, 36, 0.45) !important;
+  background: rgba(20, 10, 0, 0.55) !important;
+}
+
+body.homepage .hero-sidebar-item.hub-sidebar-chat:hover,
+body.homepage .hero-sidebar-item.hub-sidebar-chat:focus-visible {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: #111 !important;
+  border-color: transparent !important;
+}
+
+/* صفحات المحتوى الجديدة */
+.hub-feature-page {
+  padding: 28px 0 56px;
+}
+
+.hub-feature-hero {
+  background: linear-gradient(128deg, #0c0003 0%, #230009 40%, #500014 100%);
+  color: #fff;
+  border-radius: 22px;
+  padding: 36px 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 24px 60px rgba(60, 0, 14, 0.35);
+}
+
+.hub-feature-hero h1 {
+  margin: 0 0 12px;
+  font-size: clamp(26px, 3.4vw, 40px);
+  font-weight: 900;
+  color: #fff;
+}
+
+.hub-feature-hero p {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 16px;
+  line-height: 1.8;
+  color: rgba(255, 220, 228, 0.86);
+}
+
+.hub-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.hub-feature-card {
+  background: #fff;
+  border: 1px solid #ececf1;
+  border-radius: 18px;
+  padding: 20px 18px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.hub-feature-card h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.hub-feature-card p {
+  margin: 0 0 14px;
+  color: #4b5563;
+  line-height: 1.75;
+  font-size: 14px;
+}
+
+.hub-feature-card .price {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 900;
+  color: #e50914;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.hub-feature-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hub-chat-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 16px;
+  min-height: 520px;
+}
+
+.hub-chat-rooms,
+.hub-chat-panel {
+  background: #fff;
+  border: 1px solid #ececf1;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.hub-chat-rooms h2,
+.hub-chat-panel-head {
+  margin: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f1f4;
+  font-size: 15px;
+  font-weight: 900;
+  background: #fffafb;
+}
+
+.hub-chat-room {
+  display: block;
+  width: 100%;
+  text-align: right;
+  border: 0;
+  border-bottom: 1px solid #f5f5f7;
+  background: #fff;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.hub-chat-room strong {
+  display: block;
+  font-size: 14px;
+  color: #111827;
+}
+
+.hub-chat-room span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.hub-chat-room.is-active {
+  background: #fff1f2;
+}
+
+.hub-chat-messages {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 360px;
+  max-height: 420px;
+  overflow: auto;
+  background: #fafafa;
+}
+
+.hub-chat-bubble {
+  max-width: 78%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.hub-chat-bubble.me {
+  align-self: flex-start;
+  background: #e50914;
+  color: #fff;
+}
+
+.hub-chat-bubble.them {
+  align-self: flex-end;
+  background: #fff;
+  border: 1px solid #ececf1;
+  color: #111827;
+}
+
+.hub-chat-compose {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #f1f1f4;
+}
+
+.hub-chat-compose input {
+  flex: 1;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.hub-chat-compose button {
+  border: 0;
+  border-radius: 12px;
+  background: #e50914;
+  color: #fff;
+  font-weight: 800;
+  padding: 0 16px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+@media (max-width: 900px) {
+  .hub-chat-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-header-actions {
+    width: 100%;
+  }
+}
