@@ -577,9 +577,39 @@ const HubStore = (() => {
     if (!e.adsStudio) e.adsStudio = { listings: [] };
     e.adsStudio.listings = fill(e.adsStudio.listings, md.ADS, (x) => ({
       ...x,
+      publishTargets: {
+        home: !!x.publishTargets?.home,
+        offices: x.publishTargets?.offices || [],
+        branches: x.publishTargets?.branches || [],
+        incubators: x.publishTargets?.incubators || [],
+        platforms: x.publishTargets?.platforms || [],
+      },
+      adLevel:
+        x.adLevel ||
+        (x.scope === 'branches'
+          ? 'branch'
+          : x.scope === 'incubators'
+            ? 'incubator'
+            : x.scope === 'offices'
+              ? 'office'
+              : 'platform'),
       impressions: (x.views || 0) * 3,
       clicks: Math.floor((x.views || 0) * 0.08),
     }));
+    (e.adsStudio.listings || []).forEach((ad) => {
+      if (!ad.publishTargets || typeof ad.publishTargets !== 'object') return;
+      if (!Array.isArray(ad.publishTargets.offices)) ad.publishTargets.offices = [];
+      if (!ad.adLevel) {
+        ad.adLevel =
+          ad.scope === 'branches'
+            ? 'branch'
+            : ad.scope === 'incubators'
+              ? 'incubator'
+              : ad.scope === 'offices'
+                ? 'office'
+                : 'platform';
+      }
+    });
     if (!e.eventsStudio) e.eventsStudio = { events: [] };
     e.eventsStudio.events = fill(e.eventsStudio.events, md.EVENTS, (x) => ({ ...x }));
     e.apps = fill(e.apps, md.APPS, (a) => ({
@@ -1598,23 +1628,27 @@ const HubStore = (() => {
 
   const normalizePublishTargets = (payload = {}) => {
     const fromObj = payload.publishTargets && typeof payload.publishTargets === 'object' ? payload.publishTargets : null;
+    const appearance = normalizeList(payload.appearancePlaces);
     const home =
       payload.publishHome === true ||
       payload.publishHome === '1' ||
       !!fromObj?.home ||
-      normalizeList(payload.appearancePlaces).includes('home');
+      appearance.includes('home') ||
+      appearance.includes('main_interface');
+    const offices = normalizeList(fromObj?.offices || payload.targetOffices);
     const branches = normalizeList(fromObj?.branches || payload.targetBranches);
     const incubators = normalizeList(fromObj?.incubators || payload.targetIncubators);
     const platforms = normalizeList(fromObj?.platforms || payload.targetPlatforms);
-    return { home, branches, incubators, platforms };
+    return { home, offices, branches, incubators, platforms };
   };
 
   const deriveAdScope = (targets) => {
     const hits = [];
     if (targets.home) hits.push('home');
-    if (targets.branches.length) hits.push('branches');
-    if (targets.incubators.length) hits.push('incubators');
-    if (targets.platforms.length) hits.push('platforms');
+    if ((targets.offices || []).length) hits.push('offices');
+    if ((targets.branches || []).length) hits.push('branches');
+    if ((targets.incubators || []).length) hits.push('incubators');
+    if ((targets.platforms || []).length) hits.push('platforms');
     if (!hits.length) return 'platforms';
     if (hits.length === 1) return hits[0];
     return 'multi';
@@ -1625,6 +1659,7 @@ const HubStore = (() => {
     const t = ad.publishTargets;
     if (t && typeof t === 'object') {
       if (scope === 'home') return !!t.home;
+      if (scope === 'offices') return (t.offices || []).length > 0 || ad.scope === 'offices' || ad.adLevel === 'office';
       if (scope === 'branches') return (t.branches || []).length > 0 || ad.scope === 'branches';
       if (scope === 'incubators') return (t.incubators || []).length > 0 || ad.scope === 'incubators';
       if (scope === 'platforms') return (t.platforms || []).length > 0 || ad.scope === 'platforms';
@@ -1638,9 +1673,13 @@ const HubStore = (() => {
     if (ad.publishStatus === 'deferred' || ad.publishStatus === 'draft') return false;
     if (ad.status && ad.status !== 'active') return false;
 
+    const places = normalizeList(ad.appearancePlaces);
     const t = ad.publishTargets;
     if (!t || typeof t !== 'object') {
-      if (kind === 'home') return normalizeList(ad.appearancePlaces).includes('home') || ad.scope === 'home';
+      if (kind === 'home') {
+        return places.includes('home') || places.includes('main_interface') || ad.scope === 'home';
+      }
+      if (kind === 'offices') return ad.adLevel === 'office' || ad.scope === 'offices' || places.includes('office_home');
       return (ad.scope || 'platforms') === kind;
     }
     if (kind === 'home') return !!t.home;
@@ -1668,17 +1707,43 @@ const HubStore = (() => {
     const appearancePlaces = normalizeList(payload.appearancePlaces);
     const socialShares = normalizeList(payload.socialShares);
     const publishTargets = normalizePublishTargets(payload);
-    if (!publishTargets.home && !publishTargets.branches.length && !publishTargets.incubators.length && !publishTargets.platforms.length) {
-      // fallback: use single branch/incubator/platform from common meta + ads studio
+    if (
+      !publishTargets.home &&
+      !publishTargets.offices.length &&
+      !publishTargets.branches.length &&
+      !publishTargets.incubators.length &&
+      !publishTargets.platforms.length
+    ) {
+      // fallback: use single branch/incubator/platform/office from common meta + ads studio
+      if (payload.office) publishTargets.offices = [payload.office];
       if (payload.branch) publishTargets.branches = [payload.branch];
       if (payload.incubator) publishTargets.incubators = [payload.incubator];
       if (payload.platform) publishTargets.platforms = [payload.platform];
-      if (!publishTargets.branches.length && !publishTargets.incubators.length && !publishTargets.platforms.length) {
+      if (
+        !publishTargets.offices.length &&
+        !publishTargets.branches.length &&
+        !publishTargets.incubators.length &&
+        !publishTargets.platforms.length
+      ) {
         publishTargets.platforms = ['*'];
       }
     }
     const productType = payload.productType || payload.itemKind || 'رقمية';
     const desc = payload.desc || payload.description || payload.content || '';
+    const adLevel =
+      payload.adLevel ||
+      (payload.type && String(payload.type).includes('مكتب')
+        ? 'office'
+        : payload.type && String(payload.type).includes('فرع')
+          ? 'branch'
+          : payload.type && String(payload.type).includes('حاضنة')
+            ? 'incubator'
+            : 'platform');
+    const adType =
+      payload.type ||
+      window.HubMarketplaceData?.adTypeForLevel?.(adLevel) ||
+      productType ||
+      'إعلان هوب';
     const ad = {
       id: uid('ad'),
       title: payload.title,
@@ -1697,7 +1762,8 @@ const HubStore = (() => {
       status: statusMap[publishStatus] || payload.status || 'active',
       publishStatus,
       level: payload.level || 'متوسط',
-      type: payload.type || productType || 'منتج منصة',
+      adLevel,
+      type: adType,
       brand: payload.brand || payload.companyName || 'نايوش هوب',
       adStartDate: payload.adStartDate || '',
       adEndDate: payload.adEndDate || '',
