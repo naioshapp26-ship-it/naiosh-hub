@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/hub-theme.css" />
   <link rel="stylesheet" href="css/hub-chrome.css" />
-  <link rel="stylesheet" href="css/hub-header-actions.css?v=6" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=10" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -33,35 +33,72 @@
 
   <main class="container hub-feature-page">
     <section class="hub-feature-hero">
-      <h1>تجربة مباشرة</h1>
-      <p>جرّب الأنظمة والمواقع الجاهزة فورًا — بدون التزام. بعدها اشترِ الباقة أو اشحن رصيدك للتفعيل الكامل.</p>
+      <p class="hub-feature-kicker"><i class="fas fa-flask"></i> تجربة مباشرة</p>
+      <h1>جرّب التشغيل قبل ما تلتزم</h1>
+      <p>ثلاثة مسارات واضحة: مواقع جاهزة · أنظمة · غرفة العمليات. بعدها اشترِ الباقة أو اشحن رصيدك للتفعيل الكامل.</p>
+      <div class="hub-feature-actions">
+        <a class="btn btn-primary" href="products.html"><i class="fas fa-play"></i> ابدأ بالمواقع الجاهزة</a>
+        <a class="btn btn-secondary" href="apps.html"><i class="fas fa-cubes"></i> سجل الأنظمة</a>
+        <a class="btn btn-secondary" href="login.html"><i class="fas fa-gauge-high"></i> دخول الغرفة</a>
+      </div>
     </section>
 
-    <section class="hub-feature-grid" aria-label="مسارات التجربة">
-      <article class="hub-feature-card">
-        <h3>تجربة المواقع الجاهزة</h3>
-        <p>ادخل لقطات المنتجات والمواقع الجاهزة وشغّلها مباشرة من المعرض.</p>
-        <div class="hub-feature-actions">
-          <a class="btn btn-primary" href="products.html">ابدأ التجربة</a>
-          <a class="btn btn-secondary" href="index.html#hub-products">معرض الرئيسية</a>
-        </div>
-      </article>
-      <article class="hub-feature-card">
-        <h3>تجربة الأنظمة</h3>
-        <p>سجّل الأنظمة من السجل الموحّد وجرّب مسار التشغيل عبر هوب.</p>
-        <div class="hub-feature-actions">
-          <a class="btn btn-primary" href="apps.html">سجل الأنظمة</a>
-          <a class="btn btn-secondary" href="operating.html">آلية التشغيل</a>
-        </div>
-      </article>
-      <article class="hub-feature-card">
-        <h3>تجربة غرفة العمليات</h3>
-        <p>ادخل لوحة السيادة بعد تسجيل الدخول واستعرض المحافظ والتنبيهات.</p>
-        <div class="hub-feature-actions">
-          <a class="btn btn-primary" href="login.html">تسجيل الدخول</a>
-          <a class="btn btn-secondary" href="dashboard.html">غرفة العمليات</a>
-        </div>
-      </article>
+    <aside class="hub-feature-purpose">
+      <span class="hub-feature-purpose-mark"><i class="fas fa-route"></i></span>
+      <div>
+        <strong>وظيفة هذه الصفحة</strong>
+        <p>تختار مسار تجربة واحد، تدخل مباشرة، وإذا ناسبك تنتقل للمتجر أو العضوية — بدون تشتيت.</p>
+      </div>
+    </aside>
+
+    <section class="hub-feature-section">
+      <h2 class="hub-feature-section-title">اختر مسار تجربتك</h2>
+      <p class="hub-feature-section-lead">كل مسار له هدف واحد وزر دخول واحد.</p>
+      <div class="hub-feature-grid">
+        <article class="hub-feature-card hub-feature-card--featured">
+          <div class="hub-feature-card-top">
+            <span class="hub-feature-icon"><i class="fas fa-images"></i></span>
+            <h3>المواقع الجاهزة</h3>
+          </div>
+          <p>ادخل لقطات المنتجات وشغّلها مباشرة من المعرض — أسرع طريق للفهم.</p>
+          <div class="hub-feature-actions">
+            <a class="btn btn-primary" href="products.html">ابدأ التجربة</a>
+            <a class="btn btn-secondary" href="index.html#hub-products">معرض الرئيسية</a>
+          </div>
+        </article>
+        <article class="hub-feature-card">
+          <div class="hub-feature-card-top">
+            <span class="hub-feature-icon"><i class="fas fa-cubes"></i></span>
+            <h3>الأنظمة</h3>
+          </div>
+          <p>افتح سجل الأنظمة وجرّب مسار التشغيل عبر هوب (دخول + اشتراك عند الحاجة).</p>
+          <div class="hub-feature-actions">
+            <a class="btn btn-primary" href="apps.html">سجل الأنظمة</a>
+            <a class="btn btn-secondary" href="operating.html">آلية التشغيل</a>
+          </div>
+        </article>
+        <article class="hub-feature-card">
+          <div class="hub-feature-card-top">
+            <span class="hub-feature-icon"><i class="fas fa-satellite-dish"></i></span>
+            <h3>غرفة العمليات</h3>
+          </div>
+          <p>بعد تسجيل الدخول استعرض المحافظ والتنبيهات ولوحة السيادة.</p>
+          <div class="hub-feature-actions">
+            <a class="btn btn-primary" href="login.html">تسجيل الدخول</a>
+            <a class="btn btn-secondary" href="dashboard.html">غرفة العمليات</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="hub-feature-hero hub-feature-closing">
+      <h2>أعجبتك التجربة؟</h2>
+      <p>فعّل عضويتك واشترِ الباقة المناسبة — التشغيل الكامل يبدأ من المتجر.</p>
+      <div class="hub-feature-actions">
+        <a class="btn btn-primary" href="membership.html"><i class="fas fa-id-card"></i> العضوية</a>
+        <a class="btn btn-secondary" href="packages.html"><i class="fas fa-box"></i> الباقات</a>
+        <a class="btn btn-secondary" href="store.html"><i class="fas fa-store"></i> المتجر</a>
+      </div>
     </section>
   </main>
 

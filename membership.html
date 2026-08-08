@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/hub-theme.css" />
   <link rel="stylesheet" href="css/hub-chrome.css" />
-  <link rel="stylesheet" href="css/hub-header-actions.css?v=6" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=10" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -33,45 +33,88 @@
 
   <main class="container hub-feature-page">
     <section class="hub-feature-hero">
-      <h1>العضوية في نايوش هوب</h1>
-      <p>عضوية واحدة عبر NAIOSH ID تفتح لك المكتب الإلكتروني، الرصيد، الباقات، والدردشة الداخلية.</p>
+      <p class="hub-feature-kicker"><i class="fas fa-id-card"></i> NAIOSH ID · العضوية</p>
+      <h1>هوية واحدة تفتح التشغيل كله</h1>
+      <p>عضويتك عبر NAIOSH ID هي مفتاح المكتب الإلكتروني، الرصيد، الباقات، الدردشة، ودخول الأنظمة بالاشتراك.</p>
+      <div class="hub-feature-actions">
+        <a class="btn btn-primary" href="index.html#register"><i class="fas fa-user-plus"></i> إنشاء حساب</a>
+        <a class="btn btn-secondary" href="login.html"><i class="fas fa-right-to-bracket"></i> تسجيل الدخول</a>
+        <a class="btn btn-secondary" href="trial.html"><i class="fas fa-flask"></i> جرّب أولًا</a>
+      </div>
     </section>
 
-    <section class="hub-feature-grid" aria-label="مستويات العضوية">
-      <article class="hub-feature-card">
-        <h3>عضو زائر</h3>
-        <div class="price"><i class="fas fa-gift"></i> 300 نقطة مجانية</div>
-        <p>تصفّح · تجربة المواقع الجاهزة · رصيد مجاني للبداية.</p>
-        <div class="hub-feature-actions">
-          <a class="btn btn-primary" href="trial.html">ابدأ تجربة</a>
-        </div>
-      </article>
-      <article class="hub-feature-card">
-        <h3>عضو تشغيلي</h3>
-        <div class="price"><i class="fas fa-user-check"></i> بعد التسجيل</div>
-        <p>دخول موحّد · مكتب إلكتروني · شحن رصيد · شراء باقات · دردشة داخلية.</p>
-        <div class="hub-feature-actions">
-          <a class="btn btn-primary" href="index.html#register">إنشاء حساب</a>
-          <a class="btn btn-secondary" href="login.html">تسجيل الدخول</a>
-        </div>
-      </article>
-      <article class="hub-feature-card">
-        <h3>عضو سيادي</h3>
-        <div class="price"><i class="fas fa-crown"></i> باقة الإمبراطورية</div>
-        <p>صلاحيات منصات وفروع · أولوية دعم · تقارير غرفة العمليات الكاملة.</p>
-        <div class="hub-feature-actions">
-          <a class="btn btn-primary" href="packages.html">عرض الباقات</a>
-          <a class="btn btn-secondary" href="dashboard.html">غرفة العمليات</a>
-        </div>
-      </article>
-      <article class="hub-feature-card">
-        <h3>مزايا العضوية</h3>
-        <p>NAIOSH ID · SSO · محفظة نقاط · إشعارات هوب · ربط الفروع والحاضنات والمنصات.</p>
-        <div class="hub-feature-actions">
-          <a class="btn btn-primary" href="info-center.html">مركز المعلومات</a>
-          <a class="btn btn-secondary" href="chat.html">الدردشة الداخلية</a>
-        </div>
-      </article>
+    <aside class="hub-feature-purpose">
+      <span class="hub-feature-purpose-mark"><i class="fas fa-fingerprint"></i></span>
+      <div>
+        <strong>وظيفة هذه الصفحة</strong>
+        <p>تعرف مستواك في هوب (زائر · تشغيلي · سيادي) وما الذي يُفتح لك في كل مستوى — ثم تنتقل للتسجيل أو الباقة المناسبة.</p>
+      </div>
+    </aside>
+
+    <section class="hub-feature-section">
+      <h2 class="hub-feature-section-title">من الزائر إلى المشغّل</h2>
+      <p class="hub-feature-section-lead">مسار واضح بدون تشتيت: جرّب → سجّل → فعّل باقة.</p>
+      <div class="hub-feature-steps">
+        <article><strong>زائر</strong><small>تصفّح وتجربة محدودة + 300 نقطة</small></article>
+        <article><strong>تشغيلي</strong><small>NAIOSH ID · مكتب · رصيد · دردشة</small></article>
+        <article><strong>سيادي</strong><small>منصات وفروع · أولوية غرفة العمليات</small></article>
+      </div>
+    </section>
+
+    <section class="hub-feature-section">
+      <h2 class="hub-feature-section-title">مستويات العضوية</h2>
+      <div class="hub-feature-grid">
+        <article class="hub-feature-card">
+          <div class="hub-feature-card-top">
+            <span class="hub-feature-icon"><i class="fas fa-gift"></i></span>
+            <h3>عضو زائر</h3>
+          </div>
+          <div class="price"><i class="fas fa-coins"></i> 300 نقطة مجانية</div>
+          <p>ابدأ بدون التزام: تصفّح المواقع الجاهزة وجرّب المسارات الأساسية.</p>
+          <div class="hub-feature-actions">
+            <a class="btn btn-primary" href="trial.html">ابدأ تجربة</a>
+          </div>
+        </article>
+        <article class="hub-feature-card hub-feature-card--featured">
+          <div class="hub-feature-card-top">
+            <span class="hub-feature-icon"><i class="fas fa-user-check"></i></span>
+            <h3>عضو تشغيلي</h3>
+          </div>
+          <div class="price"><i class="fas fa-user-check"></i> بعد التسجيل</div>
+          <p>الهوية الموحّدة تفتح المكتب والرصيد والباقات والدردشة الداخلية.</p>
+          <ul class="hub-feature-list">
+            <li>دخول موحّد SSO</li>
+            <li>مكتب إلكتروني</li>
+            <li>شراء باقات وتشغيل أنظمة</li>
+          </ul>
+          <div class="hub-feature-actions">
+            <a class="btn btn-primary" href="index.html#register">إنشاء حساب</a>
+            <a class="btn btn-secondary" href="login.html">تسجيل الدخول</a>
+          </div>
+        </article>
+        <article class="hub-feature-card">
+          <div class="hub-feature-card-top">
+            <span class="hub-feature-icon"><i class="fas fa-crown"></i></span>
+            <h3>عضو سيادي</h3>
+          </div>
+          <div class="price"><i class="fas fa-crown"></i> باقة الإمبراطورية</div>
+          <p>صلاحيات قيادية على المنصات والفروع مع أولوية دعم وتقارير كاملة.</p>
+          <div class="hub-feature-actions">
+            <a class="btn btn-primary" href="packages.html">عرض الباقات</a>
+            <a class="btn btn-secondary" href="dashboard.html">غرفة العمليات</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="hub-feature-hero hub-feature-closing">
+      <h2>عضويتك تبدأ بهوية واحدة</h2>
+      <p>NAIOSH ID · محفظة نقاط · إشعارات هوب · ربط الطبقات الأربع.</p>
+      <div class="hub-feature-actions">
+        <a class="btn btn-primary" href="index.html#register"><i class="fas fa-rocket"></i> ابدأ الآن</a>
+        <a class="btn btn-secondary" href="info-center.html"><i class="fas fa-circle-info"></i> مركز المعلومات</a>
+        <a class="btn btn-secondary" href="chat.html"><i class="fas fa-comments"></i> الدردشة</a>
+      </div>
     </section>
   </main>
 
