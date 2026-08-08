@@ -626,6 +626,14 @@
         { id: 'title', label: 'عنوان الإعلان', required: true },
         { id: 'brand', label: 'العلامة / العلامة التجارية', value: 'نايوش هوب' },
         {
+          id: 'adLevel',
+          label: 'المستوى التشغيلي',
+          type: 'select',
+          required: true,
+          optionsFrom: 'adOrgLevels',
+          value: 'platform',
+        },
+        {
           id: 'productType',
           label: 'نوع المنتج',
           type: 'select',
@@ -809,6 +817,12 @@
     if (field.optionsFrom === 'productTypes') {
       return (window.HubMarketplaceData?.PRODUCT_TYPES || []).map((t) => ({ value: t.value, label: t.label }));
     }
+    if (field.optionsFrom === 'adOrgLevels') {
+      return (window.HubMarketplaceData?.AD_ORG_LEVELS || []).map((l) => ({
+        value: l.id,
+        label: `${l.nameAr} — ${l.adType}`,
+      }));
+    }
     return [];
   };
 
@@ -854,13 +868,13 @@
       </div>
     </div>`;
 
-  const productExtrasFormHtml = () => {
-    const places = window.HubMarketplaceData?.AD_APPEARANCE_PLACES || [];
+  const productExtrasFormHtml = (opts = {}) => {
+    const places = opts.places || window.HubMarketplaceData?.AD_APPEARANCE_PLACES || [];
     const socials = window.HubMarketplaceData?.HUB_SOCIAL_PLATFORMS || [];
     return (
       multiSelectBlockHtml(
-        'مكان ظهور الإعلان',
-        'يمكن اختيار أكثر من مكان ظهور للمنتج داخل هوب',
+        opts.placesTitle || 'مكان ظهور الإعلان',
+        opts.placesHint || 'يمكن اختيار أكثر من مكان ظهور للمنتج داخل هوب',
         'appear',
         places,
         'fa-map-location-dot'
@@ -899,15 +913,16 @@
   const adTargetsFormHtml = () => {
     const opts = hierarchyOptions();
     return `<div class="hub-form-block hub-ad-targets-block">
-      <h4><i class="fas fa-bullhorn"></i> مكان رفع الإعلان</h4>
-      <p class="hub-form-hint">ارفع الإعلان على الصفحة الرئيسية و/أو فرع أو أكثر و/أو حاضنة أو أكثر و/أو منصة أو أكثر</p>
+      <h4><i class="fas fa-layer-group"></i> خيارات العرض — نظام متعدد الطبقات</h4>
+      <p class="hub-form-hint">اعرض في الواجهة الرئيسية و/أو المكتب و/أو المنصة و/أو الحاضنة و/أو الفرع — يمكن اختيار الكل أو عناصر محددة</p>
       <label class="hub-multi-chip hub-ad-home-chip">
         <input type="checkbox" id="hub-ad-target-home" value="home" />
-        <span><i class="fas fa-house"></i> الصفحة الرئيسية</span>
+        <span><i class="fas fa-house"></i> عرض في الواجهة الرئيسية</span>
       </label>
-      ${groupMultiHtml('الفروع', 'branches', opts.branches, 'كل الفروع')}
-      ${groupMultiHtml('الحاضنات', 'incubators', opts.incubators, 'كل الحاضنات')}
-      ${groupMultiHtml('المنصات', 'platforms', opts.platforms, 'كل المنصات')}
+      ${groupMultiHtml('المكتب', 'offices', opts.offices, 'كل المكاتب')}
+      ${groupMultiHtml('المنصة', 'platforms', opts.platforms, 'كل المنصات')}
+      ${groupMultiHtml('الحاضنة', 'incubators', opts.incubators, 'كل الحاضنات')}
+      ${groupMultiHtml('الفرع', 'branches', opts.branches, 'كل الفروع')}
     </div>`;
   };
 
@@ -920,6 +935,7 @@
     };
     return {
       home,
+      offices: pick('offices'),
       branches: pick('branches'),
       incubators: pick('incubators'),
       platforms: pick('platforms'),
@@ -1013,15 +1029,25 @@
       const publishTargets = collectAdTargets();
       const hasTarget =
         publishTargets.home ||
+        publishTargets.offices.length ||
         publishTargets.branches.length ||
         publishTargets.incubators.length ||
         publishTargets.platforms.length;
-      if (!hasTarget) return toast('اختر مكان رفع الإعلان: الرئيسية أو فرع/حاضنة/منصة');
+      if (!hasTarget) return toast('اختر خيار عرض: الواجهة الرئيسية أو مكتب/منصة/حاضنة/فرع');
       values.publishTargets = publishTargets;
       values.publishHome = publishTargets.home;
+      values.targetOffices = publishTargets.offices;
       values.targetBranches = publishTargets.branches;
       values.targetIncubators = publishTargets.incubators;
       values.targetPlatforms = publishTargets.platforms;
+      if (values.adLevel) {
+        values.type = window.HubMarketplaceData?.adTypeForLevel?.(values.adLevel) || values.type;
+        const meta = window.HubMarketplaceData?.adLevelMeta?.(values.adLevel);
+        const places = new Set(values.appearancePlaces || []);
+        if (meta?.appearance) places.add(meta.appearance);
+        if (publishTargets.home) places.add('main_interface');
+        values.appearancePlaces = Array.from(places);
+      }
     }
 
     const meta = await collectCommonMeta();
@@ -1055,7 +1081,7 @@
     }
     const kickers = {
       products: 'منتجات رقمية · خدمية · عينية — توجيه حسب التصنيف والنوع عبر الفروع والحاضنات والمنصات',
-      ads: 'رفع الإعلان على الرئيسية و/أو الفروع و/أو الحاضنات و/أو المنصات — نموذج مطابق للمنتجات',
+      ads: 'إدارة إعلانات متعددة الطبقات: مكتب · منصة · حاضنة · فرع — مع خيارات العرض ومكان الظهور على الواجهة الرئيسية',
       store: 'نموذج رفع على المتجر — مطابق لنموذج المنتجات',
     };
     openModal({
@@ -1068,7 +1094,19 @@
         </div>
       </div>
       ${form.includeAdTargets ? adTargetsFormHtml() : ''}
-      ${form.includeProductExtras ? productExtrasFormHtml() : ''}
+      ${
+        form.includeProductExtras
+          ? productExtrasFormHtml(
+              form.includeAdTargets
+                ? {
+                    places: window.HubMarketplaceData?.AD_LAYER_APPEARANCE || [],
+                    placesTitle: 'مكان الظهور',
+                    placesHint: 'الواجهة الرئيسية · الصفحة الرئيسية للمكتب / المنصة / الحاضنة / الفرع',
+                  }
+                : {}
+            )
+          : ''
+      }
       ${form.includeMarketplaces ? marketplaceFormHtml() : ''}
       ${commonMetaFormHtml()}`,
       foot: isPublishable
@@ -1088,7 +1126,18 @@
       catSel.addEventListener('change', () => fillSubcategories(catSel.value));
     }
 
-    if (form.includeAdTargets) wireAdTargetSelectAll();
+    if (form.includeAdTargets) {
+      wireAdTargetSelectAll();
+      const levelSel = document.getElementById('hub-add-adLevel');
+      const applyLevelHint = () => {
+        const meta = window.HubMarketplaceData?.adLevelMeta?.(levelSel?.value);
+        if (!meta?.appearance) return;
+        const chip = document.querySelector(`input[data-multi="appear"][value="${meta.appearance}"]`);
+        if (chip) chip.checked = true;
+      };
+      levelSel?.addEventListener('change', applyLevelHint);
+      applyLevelHint();
+    }
 
     // social "all" exclusivity
     document.getElementById('social-grid')?.addEventListener('change', (e) => {

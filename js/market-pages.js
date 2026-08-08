@@ -223,11 +223,12 @@
 
   const renderAds = () => {
     const scopeTitles = {
-      home: 'اعلانات الصفحة الرئيسية',
-      branches: 'اعلانات الفروع',
-      incubators: 'اعلانات الحاضنات',
-      platforms: 'اعلانات المنصات',
-      multi: 'اعلانات متعددة النطاق',
+      home: 'إعلانات الواجهة الرئيسية',
+      offices: 'إعلانات المكتب',
+      branches: 'إعلانات الفرع',
+      incubators: 'إعلانات الحاضنة',
+      platforms: 'إعلانات المنصة',
+      multi: 'إعلانات متعددة الطبقات',
     };
     const scopeParam = new URLSearchParams(window.location.search).get('scope') || '';
     const allListings = (store?.get?.().empire?.adsStudio?.listings || data.ADS).filter(
@@ -250,30 +251,33 @@
       heroTitle.textContent = scopeTitles[scopeParam];
     }
     if (heroDesc && scopeTitles[scopeParam]) {
-      heroDesc.textContent = `عرض إعلانات ${scopeTitles[scopeParam].replace('اعلانات ', '')} داخل هوب — مرتبطة بالتشغيل والمبيعات والظهور الموحّد.`;
+      heroDesc.textContent = `تشغيل إعلانات ${scopeTitles[scopeParam].replace('إعلانات ', '')} عبر نظام متعدد الطبقات — مكتب · منصة · حاضنة · فرع · الواجهة الرئيسية.`;
     }
 
     const targetBadge = (a) => {
       const t = a.publishTargets || {};
       const bits = [];
-      if (t.home) bits.push('الرئيسية');
-      if ((t.branches || []).length) bits.push('فروع');
-      if ((t.incubators || []).length) bits.push('حاضنات');
-      if ((t.platforms || []).length) bits.push('منصات');
-      if (!bits.length && a.scope) bits.push(scopeTitles[a.scope]?.replace('اعلانات ', '') || a.scope);
-      return bits.join(' · ') || 'منصات';
+      if (t.home) bits.push('الواجهة الرئيسية');
+      if ((t.offices || []).length) bits.push('مكتب');
+      if ((t.platforms || []).length) bits.push('منصة');
+      if ((t.incubators || []).length) bits.push('حاضنة');
+      if ((t.branches || []).length) bits.push('فرع');
+      if (!bits.length && a.scope) bits.push(scopeTitles[a.scope]?.replace('إعلانات ', '') || a.scope);
+      return bits.join(' · ') || 'منصة';
     };
 
     const paint = () => {
       const list = active === 'all' ? listings : listings.filter((a) => a.category === active);
       root.innerHTML = list.length
         ? list
-            .map(
-              (a) => `<article class="ads-item-card">
+            .map((a) => {
+              const levelMeta = window.HubMarketplaceData?.adLevelMeta?.(a.adLevel);
+              const typeLabel = a.type || levelMeta?.adType || a.productType || 'إعلان';
+              return `<article class="ads-item-card">
             <div class="ads-item-media">
               ${a.imageDataUrl ? `<img src="${esc(a.imageDataUrl)}" alt="" />` : `<i class="fas fa-rectangle-ad" style="font-size:28px"></i>`}
-              <span>${esc(a.productType || a.type || 'إعلان')}</span>
-              <small>${esc(a.platformCode || a.platform || '')}</small>
+              <span>${esc(typeLabel)}</span>
+              <small>${esc(levelMeta?.nameAr || a.adLevel || a.platformCode || '')}</small>
             </div>
             <div class="ads-item-body">
               <p class="ads-price">${Number(a.price || 0).toLocaleString('ar-EG')} ر.س</p>
@@ -288,18 +292,19 @@
               </div>
               ${actions('ads', a.id)}
             </div>
-          </article>`
-            )
+          </article>`;
+            })
             .join('')
         : `<div class="shop-empty" style="grid-column:1/-1">لا توجد إعلانات في هذا النطاق حاليًا.</div>`;
     };
 
     if (catsRoot) {
       const scopes = window.HubMarketplaceData?.AD_PUBLISH_SCOPES || [
-        { id: 'home', nameAr: 'الرئيسية', icon: 'fa-house' },
-        { id: 'branches', nameAr: 'الفروع', icon: 'fa-code-branch' },
-        { id: 'incubators', nameAr: 'الحاضنات', icon: 'fa-seedling' },
-        { id: 'platforms', nameAr: 'المنصات', icon: 'fa-layer-group' },
+        { id: 'home', nameAr: 'الواجهة الرئيسية', icon: 'fa-house' },
+        { id: 'offices', nameAr: 'المكتب', icon: 'fa-briefcase' },
+        { id: 'platforms', nameAr: 'المنصة', icon: 'fa-layer-group' },
+        { id: 'incubators', nameAr: 'الحاضنة', icon: 'fa-seedling' },
+        { id: 'branches', nameAr: 'الفرع', icon: 'fa-code-branch' },
       ];
       catsRoot.innerHTML =
         scopes
