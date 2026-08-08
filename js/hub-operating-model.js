@@ -106,7 +106,8 @@
       { id: 'nais-bridge', nameAr: 'جسر العملاء', icon: 'fa-bridge' },
     ],
     ACADEMY: [
-      { id: 'ac-courses', nameAr: 'الدورات', icon: 'fa-graduation-cap' },
+      { id: 'ac-courses', nameAr: 'الدورات', icon: 'fa-chalkboard' },
+      { id: 'ac-diplomas', nameAr: 'الدبلومات', icon: 'fa-graduation-cap' },
       { id: 'ac-workshops', nameAr: 'الورش', icon: 'fa-chalkboard-user' },
       { id: 'ac-certs', nameAr: 'الشهادات', icon: 'fa-certificate' },
     ],
