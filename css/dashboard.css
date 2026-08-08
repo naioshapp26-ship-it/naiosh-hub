@@ -660,10 +660,12 @@ table.data tr:hover td { background: #fafafa; }
   gap: 12px;
 }
 .axis-card {
-  background: #fff;
+  background: linear-gradient(180deg, #fff 0%, #fffafb 100%);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 14px;
+  border-top: 3px solid var(--red);
+  box-shadow: 0 10px 24px rgba(20, 0, 4, 0.04);
 }
 .axis-card h4 { margin: 6px 0 2px; font-size: 14px; }
 .axis-card small { color: var(--muted); display: block; margin-bottom: 8px; }

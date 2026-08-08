@@ -226,10 +226,15 @@
     return `
       <div class="empire-banner">
         <div>
-          <strong>Central Digital Hub</strong>
-          <p>ليس موقعًا — بل نظام التشغيل العالمي لإمبراطورية نايوش. أي مستخدم يدخل مرة واحدة ويصل فقط لما صُرّح له.</p>
+          <div class="empire-banner-kicker"><i class="fas fa-satellite-dish"></i> NAIOSH HUB · COMMAND</div>
+          <strong>مركز التحكم العالمي</strong>
+          <p>ليس موقعًا — بل نظام التشغيل العالمي لإمبراطورية نايوش. دخول موحّد · صلاحية بالاشتراك · مؤشرات لحظية لغرفة العمليات.</p>
         </div>
         <button class="btn btn-primary btn-sm" data-action="refresh-command"><i class="fas fa-rotate"></i> تحديث المؤشرات</button>
+      </div>
+      <div class="dash-section-head">
+        <h2>مؤشرات السيادة</h2>
+        <p>قراءة سريعة لحجم الشبكة وجاهزية التشغيل — اضغط التحديث بعد أي تغيير.</p>
       </div>
       <div class="kpi-grid">
         <article class="kpi"><span>الفروع</span><strong>${k.branches}</strong><small>Branches</small></article>
@@ -241,6 +246,10 @@
         <article class="kpi"><span>استخدام الأنظمة</span><strong>${cmd.systemsUsagePct || 0}%</strong><small>Usage</small></article>
         <article class="kpi"><span>صحة الأنظمة</span><strong>${k.systemsHealth}%</strong><small>Health</small></article>
       </div>
+      <div class="dash-section-head">
+        <h2>مراحل بناء السيادة</h2>
+        <p>تأسيس · تشغيل · سيادة — تقدّم كل مرحلة يحدد أولوية غرفة العمليات.</p>
+      </div>
       <div class="phase-cards">
         ${['phase1', 'phase2', 'phase3']
           .map((key) => {
@@ -248,11 +257,15 @@
             return `<article class="phase-card">
               <h4>${esc(p.name)} · ${p.days} يوم</h4>
               <div>${bar(p.progress)}</div>
-              <small style="color:var(--muted)">${p.progress}%</small>
+              <small>${p.progress}%</small>
               <ul>${p.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>
             </article>`;
           })
           .join('')}
+      </div>
+      <div class="dash-section-head">
+        <h2>النبض الحي للمحاور</h2>
+        <p>التدفق اللحظي يسارًا · صحة المحاور يمينًا — نفس غرفة القرار.</p>
       </div>
       <div class="grid-2">
         <article class="card">
