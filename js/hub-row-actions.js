@@ -1042,6 +1042,11 @@
       values.targetPlatforms = publishTargets.platforms;
       if (values.adLevel) {
         values.type = window.HubMarketplaceData?.adTypeForLevel?.(values.adLevel) || values.type;
+        const meta = window.HubMarketplaceData?.adLevelMeta?.(values.adLevel);
+        const places = new Set(values.appearancePlaces || []);
+        if (meta?.appearance) places.add(meta.appearance);
+        if (publishTargets.home) places.add('main_interface');
+        values.appearancePlaces = Array.from(places);
       }
     }
 
