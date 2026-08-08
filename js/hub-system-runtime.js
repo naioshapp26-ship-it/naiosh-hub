@@ -249,6 +249,28 @@
     logLine(fromHub ? 'تم الدخول مباشرة من هوب' : 'تشغيل منفرد جاهز', 'boot');
     if (ssoUser) logLine(`SSO: ${ssoUser}`, 'auth');
 
+    const focus = String(location.hash || '')
+      .replace(/^#/, '')
+      .toLowerCase();
+    if (code === 'ACADEMY' && (focus === 'courses' || focus === 'diplomas')) {
+      const focusLabel = focus === 'diplomas' ? 'الدبلومات' : 'الدورات';
+      const focusIcon = focus === 'diplomas' ? 'fa-graduation-cap' : 'fa-chalkboard-user';
+      const banner = document.createElement('article');
+      banner.className = 'sys-card';
+      banner.style.cssText = 'margin:16px 0;border-color:rgba(220,38,38,.35);background:linear-gradient(135deg,rgba(220,38,38,.08),transparent)';
+      banner.innerHTML = `
+        <h3><i class="fas ${focusIcon}"></i> قسم ${esc(focusLabel)}</h3>
+        <p>تم فتح الأكاديمية مباشرة على مسار ${esc(focusLabel)} من الصفحة الرئيسية لهوب.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <a class="sys-btn primary" href="#courses"><i class="fas fa-chalkboard-user"></i> الدورات</a>
+          <a class="sys-btn primary" href="#diplomas"><i class="fas fa-graduation-cap"></i> الدبلومات</a>
+          <a class="sys-btn" href="../store.html"><i class="fas fa-store"></i> متجر الأكاديمية</a>
+        </div>
+      `;
+      document.querySelector('.sys-grid')?.prepend(banner);
+      logLine(`تركيز القسم: ${focusLabel}`, 'focus');
+    }
+
     // Auto announce arrival to Hub when launched from Hub
     if (fromHub) {
       pushLocalNotification({

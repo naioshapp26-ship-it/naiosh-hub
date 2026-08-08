@@ -24,10 +24,24 @@
       { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },
       { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
       { label: 'شراكاتي', href: 'store.html', icon: 'fa-handshake' },
+      { label: 'دورات', href: 'systems/academy.html?from=hub&return=index.html#courses', icon: 'fa-chalkboard', launchCode: 'ACADEMY' },
+      { label: 'دبلومات', href: 'systems/academy.html?from=hub&return=index.html#diplomas', icon: 'fa-graduation-cap', launchCode: 'ACADEMY' },
       { label: 'عملائي', href: 'systems/crm.html?from=hub&return=index.html', icon: 'fa-users', launchCode: 'CRM' },
       { label: 'دردشة داخلية', href: 'chat.html', icon: 'fa-comments', chat: true },
       { label: 'اخرى', href: 'apps.html', icon: 'fa-ellipsis' },
     ];
+  };
+
+  const ensureLearningVisible = (pages) => {
+    const list = pages.slice();
+    const ensure = (label, href, icon, launchCode) => {
+      if (list.some((p) => p.label === label)) return;
+      const insertAt = list.findIndex((p) => p.label === 'عملائي' || p.label === 'دردشة داخلية' || /^اخرى$|^أخرى$/.test(String(p.label || '').trim()));
+      list.splice(insertAt >= 0 ? insertAt : list.length, 0, { label, href, icon, launchCode });
+    };
+    ensure('دورات', 'systems/academy.html?from=hub&return=index.html#courses', 'fa-chalkboard', 'ACADEMY');
+    ensure('دبلومات', 'systems/academy.html?from=hub&return=index.html#diplomas', 'fa-graduation-cap', 'ACADEMY');
+    return list;
   };
 
   const ensureChatBeforeOther = (pages) => {
@@ -52,7 +66,7 @@
     const nav = document.querySelector('.hero-sidebar[data-hero-sidebar]');
     if (!nav) return;
     const pages = ensureChatBeforeOther(
-      fromCatalog().filter((p) => !window.HubReadySites?.isExcluded?.(p.label))
+      ensureLearningVisible(fromCatalog().filter((p) => !window.HubReadySites?.isExcluded?.(p.label)))
     );
 
     nav.innerHTML = pages
