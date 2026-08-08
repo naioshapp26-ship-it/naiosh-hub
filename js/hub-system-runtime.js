@@ -255,13 +255,25 @@
     if (code === 'ACADEMY' && (focus === 'courses' || focus === 'diplomas')) {
       const focusLabel = focus === 'diplomas' ? 'الدبلومات' : 'الدورات';
       const focusIcon = focus === 'diplomas' ? 'fa-graduation-cap' : 'fa-chalkboard-user';
+      const catalogPage = focus === 'diplomas' ? '../diplomas.html' : '../courses.html';
+      const catalog = window.HubLearningCatalog?.[focus === 'diplomas' ? 'DIPLOMAS' : 'COURSES'] || [];
+      const preview = catalog
+        .slice(0, 4)
+        .map(
+          (item) =>
+            `<li><b>${esc(item.title)}</b> — ${esc(item.duration)} · ${esc(String(item.points))} نقطة</li>`
+        )
+        .join('');
       const banner = document.createElement('article');
       banner.className = 'sys-card';
-      banner.style.cssText = 'margin:16px 0;border-color:rgba(220,38,38,.35);background:linear-gradient(135deg,rgba(220,38,38,.08),transparent)';
+      banner.style.cssText =
+        'margin:16px 0;border-color:rgba(220,38,38,.35);background:linear-gradient(135deg,rgba(220,38,38,.08),transparent)';
       banner.innerHTML = `
         <h3><i class="fas ${focusIcon}"></i> قسم ${esc(focusLabel)}</h3>
-        <p>تم فتح الأكاديمية مباشرة على مسار ${esc(focusLabel)} من الصفحة الرئيسية لهوب.</p>
+        <p>تم فتح الأكاديمية على مسار ${esc(focusLabel)}. الكتالوج الكامل والمسارات والتسجيل متاحة في صفحة هوب المخصّصة.</p>
+        ${preview ? `<ul style="margin:10px 0 0;padding:0 18px 0 0;line-height:1.8">${preview}</ul>` : ''}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <a class="sys-btn primary" href="${catalogPage}"><i class="fas fa-book-open"></i> كتالوج ${esc(focusLabel)}</a>
           <a class="sys-btn primary" href="#courses"><i class="fas fa-chalkboard-user"></i> الدورات</a>
           <a class="sys-btn primary" href="#diplomas"><i class="fas fa-graduation-cap"></i> الدبلومات</a>
           <a class="sys-btn" href="../store.html"><i class="fas fa-store"></i> متجر الأكاديمية</a>

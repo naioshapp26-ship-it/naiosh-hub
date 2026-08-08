@@ -33,14 +33,14 @@
     {
       id: 'courses',
       label: 'دورات',
-      href: 'systems/academy.html?from=hub&return=index.html#courses',
+      href: 'courses.html',
       className: 'hub-hbtn hub-hbtn--red',
       icon: 'fa-chalkboard',
     },
     {
       id: 'diplomas',
       label: 'دبلومات',
-      href: 'systems/academy.html?from=hub&return=index.html#diplomas',
+      href: 'diplomas.html',
       className: 'hub-hbtn hub-hbtn--red',
       icon: 'fa-graduation-cap',
     },
