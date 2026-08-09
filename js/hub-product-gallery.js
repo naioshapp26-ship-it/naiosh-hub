@@ -124,49 +124,49 @@
   };
   paintDots();
 
-  const step = () => {
-    const card = track.querySelector('.hub-gallery-shot');
-    if (!card) return 340;
-    const styles = window.getComputedStyle(track);
-    const gap = parseFloat(styles.columnGap || styles.gap || '24') || 24;
-    return card.getBoundingClientRect().width + gap;
-  };
-
+  /** أقرب بطاقة ظاهرة — يعمل صح في RTL بدون اعتماد على scrollLeft */
   const activeIndex = () => {
     const list = cards();
     if (!list.length) return 0;
-    const left = track.scrollLeft;
+    const root = track.getBoundingClientRect();
     let best = 0;
-    let bestDist = Infinity;
+    let bestVisible = -1;
     list.forEach((card, i) => {
-      const dist = Math.abs(card.offsetLeft - left);
-      if (dist < bestDist) {
-        bestDist = dist;
+      const r = card.getBoundingClientRect();
+      const visible = Math.max(0, Math.min(r.right, root.right) - Math.max(r.left, root.left));
+      if (visible > bestVisible) {
+        bestVisible = visible;
         best = i;
       }
     });
     return best;
   };
 
+  const scrollToIndex = (index) => {
+    const list = cards();
+    if (!list.length) return;
+    const i = Math.max(0, Math.min(list.length - 1, index));
+    list[i].scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+  };
+
   const updateButtons = () => {
-    const max = track.scrollWidth - track.clientWidth - 4;
-    if (prev) prev.disabled = track.scrollLeft <= 4;
-    if (next) next.disabled = track.scrollLeft >= max;
+    const list = cards();
     const idx = activeIndex();
+    if (prev) prev.disabled = idx <= 0;
+    if (next) next.disabled = idx >= Math.max(0, list.length - 1);
     dots.querySelectorAll('button').forEach((b, i) => b.classList.toggle('is-active', i === idx));
   };
 
   prev?.addEventListener('click', () => {
-    track.scrollBy({ left: step(), behavior: 'smooth' });
+    scrollToIndex(activeIndex() - 1);
   });
   next?.addEventListener('click', () => {
-    track.scrollBy({ left: -step(), behavior: 'smooth' });
+    scrollToIndex(activeIndex() + 1);
   });
   dots.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-dot]');
     if (!btn) return;
-    const card = cards()[Number(btn.dataset.dot)];
-    card?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+    scrollToIndex(Number(btn.dataset.dot));
   });
   track.addEventListener('scroll', () => requestAnimationFrame(updateButtons), { passive: true });
   window.addEventListener('resize', updateButtons);
