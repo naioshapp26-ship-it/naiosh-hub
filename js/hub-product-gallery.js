@@ -18,11 +18,13 @@
     (s) => !window.HubReadySites?.isExcluded?.(s.nameAr)
   );
 
-  const cardHtml = (s) => {
-    const href =
-      s.launchCode && window.HubLauncher?.getDirectLaunchUrl
-        ? window.HubLauncher.getDirectLaunchUrl(s.launchCode)
-        : s.href;
+  const visualHtml = (s) => {
+    if (s.face || s.logo) {
+      return `<div class="hub-gallery-visual has-face tone-${esc(s.tone || 'hub')}">
+        ${s.face ? `<img class="hub-site-face" src="${esc(s.face)}" alt="${esc(s.nameAr)}" loading="lazy" />` : ''}
+        ${s.logo ? `<img class="hub-site-logo" src="${esc(s.logo)}" alt="شعار ${esc(s.nameAr)}" loading="lazy" />` : ''}
+      </div>`;
+    }
     const rows = (s.preview || [])
       .map(
         (r) =>
@@ -32,16 +34,7 @@
     const kpis = (s.kpi || [])
       .map((k) => `<span><b>${esc(k.b)}</b>${esc(k.s)}</span>`)
       .join('');
-    return `<a class="hub-gallery-shot" href="${esc(href)}" data-ready-site="${esc(s.id)}"${
-      s.launchCode ? ` data-launch-code="${esc(s.launchCode)}" data-launch-mode="hub"` : ''
-    }>
-      <div class="hub-gallery-copy">
-        <span class="tag">${esc(s.tag || 'موقع جاهز')}</span>
-        <h3>${esc(s.nameAr)}</h3>
-        <p>${esc(s.desc || '')}</p>
-        <span class="hub-gallery-enter"><i class="fas fa-arrow-up-left"></i> اضغط للدخول مباشرة</span>
-      </div>
-      <div class="hub-gallery-visual tone-${esc(s.tone || 'hub')}">
+    return `<div class="hub-gallery-visual tone-${esc(s.tone || 'hub')}">
         <div class="hub-phone" aria-hidden="true">
           <div class="hub-phone-notch"></div>
           <div class="hub-phone-screen">
@@ -52,7 +45,24 @@
             </div>
           </div>
         </div>
+      </div>`;
+  };
+
+  const cardHtml = (s) => {
+    const href =
+      s.launchCode && window.HubLauncher?.getDirectLaunchUrl
+        ? window.HubLauncher.getDirectLaunchUrl(s.launchCode)
+        : s.href;
+    return `<a class="hub-gallery-shot" href="${esc(href)}" data-ready-site="${esc(s.id)}"${
+      s.launchCode ? ` data-launch-code="${esc(s.launchCode)}" data-launch-mode="hub"` : ''
+    }>
+      <div class="hub-gallery-copy">
+        <span class="tag">${esc(s.tag || 'موقع جاهز')}</span>
+        <h3>${esc(s.nameAr)}</h3>
+        <p>${esc(s.desc || '')}</p>
+        <span class="hub-gallery-enter"><i class="fas fa-arrow-up-left"></i> اضغط للدخول مباشرة</span>
       </div>
+      ${visualHtml(s)}
     </a>`;
   };
 

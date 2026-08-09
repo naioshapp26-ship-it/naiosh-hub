@@ -55,8 +55,21 @@
           const openHtml = launcher
             ? launcher.openButtonsHtml(app, { compact: !isSystem })
             : `<a class="btn-mini primary" href="${esc(app.url || 'apps.html')}"><i class="fas fa-arrow-left"></i> فتح</a>`;
+          const site = window.HubReadySites?.findByLaunchCode?.(a.code || a.launchCode);
+          const media =
+            site?.face || site?.logo
+              ? `<div class="card-media has-face">${
+                  site.face
+                    ? `<img class="card-face" src="${esc(site.face)}" alt="${esc(a.nameAr)}" loading="lazy" />`
+                    : ''
+                }${
+                  site.logo
+                    ? `<img class="card-logo" src="${esc(site.logo)}" alt="شعار ${esc(a.nameAr)}" loading="lazy" />`
+                    : ''
+                }</div>`
+              : `<div class="card-icon"><i class="fas ${esc(a.icon || 'fa-cube')}"></i></div>`;
           return `<article class="market-card" id="${esc((a.code || '').toLowerCase())}">
-            <div class="card-icon"><i class="fas ${esc(a.icon || 'fa-cube')}"></i></div>
+            ${media}
             <span class="badge-soft">${esc(a.category)}</span>
             <h3>${esc(a.nameAr)}</h3>
             <p>${
@@ -132,7 +145,22 @@
       root.innerHTML = list.length
         ? list
             .map(
-              (i) => `<article class="market-card">
+              (i) => {
+                const site = window.HubReadySites?.siteForProduct?.(i);
+                const media =
+                  site?.face || site?.logo
+                    ? `<div class="card-media has-face">${
+                        site.face
+                          ? `<img class="card-face" src="${esc(site.face)}" alt="${esc(site.nameAr || i.title)}" loading="lazy" />`
+                          : ''
+                      }${
+                        site.logo
+                          ? `<img class="card-logo" src="${esc(site.logo)}" alt="شعار ${esc(site.nameAr || i.title)}" loading="lazy" />`
+                          : ''
+                      }</div>`
+                    : '';
+                return `<article class="market-card">
+            ${media}
             <span class="badge-soft">${esc(i.badge || i.itemKind || i.category)}</span>
             <h3>${esc(i.title)}</h3>
             <p>${esc(i.desc || '')}</p>
@@ -144,7 +172,6 @@
               <button type="button" class="btn-mini primary" data-buy="${esc(i.id)}"><i class="fas fa-cart-plus"></i> اشترِ الآن</button>
               ${
                 (() => {
-                  const site = window.HubReadySites?.siteForProduct?.(i);
                   if (!site) return '';
                   const href =
                     site.launchCode && window.HubLauncher?.getDirectLaunchUrl
@@ -157,7 +184,8 @@
               }
             </div>
             ${actions('store', i.id)}
-          </article>`
+          </article>`;
+              }
             )
             .join('')
         : `<div class="shop-empty" style="grid-column:1/-1">لا توجد عناصر في هذا التصنيف — ارفع منتجًا أو خدمة من النموذج أعلاه.</div>`;
@@ -450,8 +478,20 @@
               const site = window.HubReadySites?.siteForProduct?.(p);
               const openUrl = siteHref(p);
               const buyUrl = `store.html?buy=${encodeURIComponent(p.sku || p.id)}&site=${encodeURIComponent(site?.id || '')}`;
+              const media =
+                site?.face || site?.logo
+                  ? `<div class="shop-card-media has-face">${
+                      site.face
+                        ? `<img class="shop-face" src="${esc(site.face)}" alt="${esc(site.nameAr || p.name)}" loading="lazy" />`
+                        : ''
+                    }${
+                      site.logo
+                        ? `<img class="shop-logo" src="${esc(site.logo)}" alt="شعار ${esc(site.nameAr || p.name)}" loading="lazy" />`
+                        : ''
+                    }</div>`
+                  : `<div class="shop-card-media"><div class="media-icon"><i class="fas ${esc(p.icon || 'fa-cube')}"></i></div></div>`;
               return `<article class="shop-card">
-                <div class="shop-card-media"><div class="media-icon"><i class="fas ${esc(p.icon || 'fa-cube')}"></i></div></div>
+                ${media}
                 <div class="shop-card-body">
                   <h3>${esc(p.name)}</h3>
                   <div class="shop-card-meta">${esc(p.productType || p.itemKind || 'رقمية')} · ${esc(p.category)}${p.subcategory ? ` / ${esc(p.subcategory)}` : ''} · ${esc(p.brand || '')}</div>

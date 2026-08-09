@@ -26,6 +26,9 @@
       tone: 'erp',
       inProducts: true,
       inGallery: true,
+      /** وجه الموقع الحقيقي + اللوجو في المعرض والمنتجات */
+      face: 'assets/systems/erp-face.png',
+      logo: 'assets/systems/erp-logo.png',
       preview: [
         { icon: 'fa-sitemap', label: 'الموارد' },
         { icon: 'fa-boxes-stacked', label: 'المخزون' },
@@ -506,6 +509,13 @@
   const siteForProduct = (item = {}) => {
     const code = String(item.platformCode || item.launchCode || '').toUpperCase();
     if (code && findByLaunchCode(code)) return findByLaunchCode(code);
+    const brand = String(item.brand || item.platform || '').trim();
+    if (brand) {
+      const byBrand = READY_SITES.find(
+        (s) => s.nameAr === brand || brand.includes(s.nameAr) || s.nameAr.includes(brand)
+      );
+      if (byBrand) return byBrand;
+    }
     const cat = String(item.category || '');
     const map = {
       'إي آر بي': 'erp',
