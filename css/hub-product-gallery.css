@@ -155,6 +155,12 @@
   cursor: default;
   transform: none;
   box-shadow: none;
+  pointer-events: none;
+}
+
+.hub-gallery-controls button:not(:disabled) {
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .hub-gallery-track-wrap {

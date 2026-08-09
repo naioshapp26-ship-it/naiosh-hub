@@ -124,49 +124,82 @@
   };
   paintDots();
 
-  /** أقرب بطاقة ظاهرة — يعمل صح في RTL بدون اعتماد على scrollLeft */
+  const isRtl = () => getComputedStyle(track).direction === 'rtl';
+
+  /** البطاقة الأقرب لحافة البداية (يمين في RTL) */
   const activeIndex = () => {
     const list = cards();
     if (!list.length) return 0;
     const root = track.getBoundingClientRect();
     let best = 0;
-    let bestVisible = -1;
+    let bestDist = Infinity;
     list.forEach((card, i) => {
       const r = card.getBoundingClientRect();
-      const visible = Math.max(0, Math.min(r.right, root.right) - Math.max(r.left, root.left));
-      if (visible > bestVisible) {
-        bestVisible = visible;
+      const dist = isRtl() ? Math.abs(r.right - root.right) : Math.abs(r.left - root.left);
+      if (dist < bestDist) {
+        bestDist = dist;
         best = i;
       }
     });
     return best;
   };
 
+  /** تمرير أفقي فقط داخل المسار — RTL/LTR */
   const scrollToIndex = (index) => {
     const list = cards();
     if (!list.length) return;
-    const i = Math.max(0, Math.min(list.length - 1, index));
-    list[i].scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+    const i = Math.max(0, Math.min(list.length - 1, Number(index) || 0));
+    const card = list[i];
+    const root = track.getBoundingClientRect();
+    const rect = card.getBoundingClientRect();
+    const diff = isRtl() ? rect.right - root.right : rect.left - root.left;
+    if (Math.abs(diff) < 1) return;
+    track.scrollTo({ left: track.scrollLeft + diff, behavior: 'smooth' });
+  };
+
+  const atStart = () => {
+    const list = cards();
+    if (!list[0]) return true;
+    const root = track.getBoundingClientRect();
+    const r = list[0].getBoundingClientRect();
+    return isRtl() ? r.right >= root.right - 6 : r.left <= root.left + 6;
+  };
+
+  const atEnd = () => {
+    const list = cards();
+    const last = list[list.length - 1];
+    if (!last) return true;
+    const root = track.getBoundingClientRect();
+    const r = last.getBoundingClientRect();
+    return isRtl() ? r.left <= root.left + 6 : r.right >= root.right - 6;
   };
 
   const updateButtons = () => {
-    const list = cards();
     const idx = activeIndex();
-    if (prev) prev.disabled = idx <= 0;
-    if (next) next.disabled = idx >= Math.max(0, list.length - 1);
+    if (prev) prev.disabled = atStart();
+    if (next) next.disabled = atEnd();
     dots.querySelectorAll('button').forEach((b, i) => b.classList.toggle('is-active', i === idx));
   };
 
-  prev?.addEventListener('click', () => {
+  prev?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (atStart()) return;
     scrollToIndex(activeIndex() - 1);
+    requestAnimationFrame(() => setTimeout(updateButtons, 320));
   });
-  next?.addEventListener('click', () => {
+  next?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (atEnd()) return;
     scrollToIndex(activeIndex() + 1);
+    requestAnimationFrame(() => setTimeout(updateButtons, 320));
   });
   dots.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-dot]');
     if (!btn) return;
     scrollToIndex(Number(btn.dataset.dot));
+    requestAnimationFrame(() => setTimeout(updateButtons, 320));
   });
   track.addEventListener('scroll', () => requestAnimationFrame(updateButtons), { passive: true });
   window.addEventListener('resize', updateButtons);
