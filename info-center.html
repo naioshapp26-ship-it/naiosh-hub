@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>مركز المعلومات | نايوش هوب 360</title>
+  <title>مركز المعرفة والتشغيل والتعلم | نايوش هوب 360</title>
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/hub-theme.css" />
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=10" />
+  <link rel="stylesheet" href="css/hub-knowledge-center.css?v=2" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -19,6 +20,9 @@
         <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
         <nav class="nav-links">
           <a href="index.html">الرئيسية</a>
+          <a class="active" href="info-center.html">مركز المعرفة</a>
+          <a href="engine-specs.html">المواصفات</a>
+          <a href="policies.html">السياسات</a>
           <a href="operating.html">آلية التشغيل</a>
           <a href="apps.html">الأنظمة</a>
           <a href="dashboard.html">غرفة العمليات</a>
@@ -31,95 +35,79 @@
     </div>
   </header>
 
-  <main class="container hub-feature-page">
-    <section class="hub-feature-hero">
-      <p class="hub-feature-kicker"><i class="fas fa-circle-info"></i> مركز المعلومات</p>
-      <h1>افهم هوب قبل ما تشغّله</h1>
-      <p>مرجع مختصر: ما هو هوب، كيف يعمل، أين الأنظمة، وكيف تبدأ — مع روابط مباشرة للتشغيل لا صفحات شرح طويلة.</p>
-      <div class="hub-feature-actions">
-        <a class="btn btn-primary" href="operating.html"><i class="fas fa-gears"></i> آلية التشغيل</a>
-        <a class="btn btn-secondary" href="apps.html"><i class="fas fa-cubes"></i> سجل الأنظمة</a>
-        <a class="btn btn-secondary" href="trial.html"><i class="fas fa-flask"></i> تجربة مباشرة</a>
+  <main class="container kol-page" data-kol-root>
+    <section class="kol-hero" aria-label="مركز المعرفة والتشغيل والتعلم">
+      <h1>مركز المعرفة والتشغيل والتعلم</h1>
+      <p>
+        منصة واحدة داخل HUB 360 — Knowledge · Operations · Learning — بدل ثلاثة مراكز منفصلة.
+        كل معلومة كائن معرفي، كل إجراء قالب تشغيل، وكل مسار تعلّم يُربط بالمهارة والصلاحية.
+      </p>
+      <div class="kol-equation" aria-label="معادلة المنظومة">
+        <span>المعلومة</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <span>الإجراء</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <span>التعلّم</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <span>المهارة</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <span>الأداء</span>
       </div>
     </section>
 
-    <aside class="hub-feature-purpose">
-      <span class="hub-feature-purpose-mark"><i class="fas fa-book-open"></i></span>
-      <div>
-        <strong>وظيفة هذه الصفحة</strong>
-        <p>دليل سريع للإجابة: ما هذا؟ كيف أشتغل؟ أين أذهب؟ — كل بطاقة تنقلك لمسار تشغيل حقيقي.</p>
-      </div>
-    </aside>
+    <div class="kol-onboard" data-kol-onboard hidden></div>
 
-    <section class="hub-feature-section">
-      <h2 class="hub-feature-section-title">خريطة الفهم السريعة</h2>
-      <div class="hub-feature-steps">
-        <article><strong>ما هو هوب؟</strong><small>مركز تشغيل موحّد للإمبراطورية</small></article>
-        <article><strong>كيف يشتغل؟</strong><small>دخول · اشتراك · أيقونة · رفع</small></article>
-        <article><strong>أين أبدأ؟</strong><small>تجربة أو عضوية أو باقة</small></article>
+    <nav class="kol-layers" data-kol-layers aria-label="الطبقات الست للمحرك"></nav>
+
+    <section class="kol-kpis" data-kol-kpis aria-label="مؤشرات المركز"></section>
+
+    <div class="kol-tabs" role="tablist" aria-label="محركات المركز">
+      <button type="button" class="kol-tab is-active" data-kol-tab="knowledge" role="tab" aria-selected="true">محرك المعرفة</button>
+      <button type="button" class="kol-tab" data-kol-tab="operations" role="tab" aria-selected="false">محرك التشغيل</button>
+      <button type="button" class="kol-tab" data-kol-tab="learning" role="tab" aria-selected="false">محرك التعلّم والمهارات</button>
+    </div>
+
+    <section class="kol-panel is-active" data-kol-panel="knowledge" role="tabpanel">
+      <div class="kol-ask">
+        <label for="kol-ask">اسأل نايوش (معرفة معتمدة فقط — AI يقترح / الإنسان يعتمد)</label>
+        <div class="kol-ask-row">
+          <input id="kol-ask" data-kol-ask-input type="search" placeholder="مثال: كيف أشحن الرصيد؟ أو سياسة الحاضنات" />
+          <button type="button" data-kol-ask-btn>اسأل</button>
+        </div>
+        <p class="kol-ask-answer" data-kol-ask-answer></p>
       </div>
+      <div class="kol-toolbar">
+        <input type="search" data-kol-q placeholder="بحث في كائنات المعرفة…" aria-label="بحث المعرفة" />
+        <select data-kol-level aria-label="تصنيف المعرفة"></select>
+        <select data-kol-role aria-label="عرض حسب الدور"></select>
+      </div>
+      <div class="kol-list" data-kol-knowledge></div>
     </section>
 
-    <section class="hub-feature-section">
-      <h2 class="hub-feature-section-title">أقسام المعرفة</h2>
-      <div class="hub-feature-grid">
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-satellite-dish"></i></span>
-            <h3>ما هو نايوش هوب؟</h3>
-          </div>
-          <p>غرفة العمليات المركزية: وضوح · قياس · سيطرة عبر Core Platform و NAIOSH ID.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="index.html">العودة للرئيسية</a>
-          </div>
-        </article>
-        <article class="hub-feature-card hub-feature-card--featured">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-route"></i></span>
-            <h3>دليل التشغيل</h3>
-          </div>
-          <p>تسجيل موحّد · اشتراك · أيقونة النظام · تقارير موحّدة لغرفة العمليات.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="operating.html">آلية التشغيل</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-sitemap"></i></span>
-            <h3>خريطة الأنظمة</h3>
-          </div>
-          <p>كل المنصات والأنظمة في سجل واحد مع صلاحيات الاشتراك.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="apps.html">سجل الأنظمة</a>
-            <a class="btn btn-secondary" href="platforms.html">المنصات</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-circle-question"></i></span>
-            <h3>الأسئلة الشائعة</h3>
-          </div>
-          <p>كيف أشحن؟ كيف أفعّل باقة؟ كيف أدخل الدردشة بين الفرق؟</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="packages.html">الباقات</a>
-            <a class="btn btn-secondary" href="chat.html">الدردشة</a>
-          </div>
-        </article>
-      </div>
+    <section class="kol-panel" data-kol-panel="operations" role="tabpanel">
+      <p style="margin:0 0 12px;font-weight:800;color:#475569;font-size:14px;line-height:1.7">
+        من «ماذا نعرف؟» إلى «كيف ننفذ؟» — كل عملية لها قالب موحّد وخطوات Workflow قابلة للتنفيذ.
+      </p>
+      <div class="kol-list" data-kol-ops></div>
     </section>
 
-    <section class="hub-feature-hero hub-feature-closing">
-      <h2>من المعرفة إلى التشغيل</h2>
-      <p>اقرأ أقل · شغّل أكثر. ادخل آلية التشغيل أو ابدأ تجربة مباشرة.</p>
-      <div class="hub-feature-actions">
-        <a class="btn btn-primary" href="operating.html"><i class="fas fa-gears"></i> آلية التشغيل</a>
-        <a class="btn btn-secondary" href="membership.html"><i class="fas fa-id-card"></i> العضوية</a>
-        <a class="btn btn-secondary" href="quality.html"><i class="fas fa-clipboard-check"></i> دليل الجودة</a>
-      </div>
+    <section class="kol-panel" data-kol-panel="learning" role="tabpanel">
+      <p style="margin:0 0 12px;font-weight:800;color:#475569;font-size:14px;line-height:1.7">
+        ملف المتعلّم الذكي · مسارات مرتبطة بالإجراءات · عتبة إتقان قبل فتح بعض الصلاحيات.
+      </p>
+      <div class="kol-profile" data-kol-profile aria-label="ملف المتعلم"></div>
+      <div class="kol-list" data-kol-courses></div>
     </section>
+
+    <p style="margin:18px 0 0;text-align:center;display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+      <a href="engine-specs.html" style="font-weight:800;color:#0f3d6e;text-decoration:none">المواصفات</a>
+      <a href="policies.html" style="font-weight:800;color:#9a3412;text-decoration:none">السياسات</a>
+      <a href="ops-manuals.html" style="font-weight:800;color:#166534;text-decoration:none">الأدلة</a>
+      <a href="review-methodology.html" style="font-weight:800;color:#0f172a;text-decoration:none">المراجعة</a>
+      <a href="hub-checklist.html" style="font-weight:800;color:#7c2d12;text-decoration:none">قائمة الهوب</a>
+      <a href="directives.html" style="font-weight:800;color:#1e3a8a;text-decoration:none">التوجيه</a>
+      <a href="job-roles.html" style="font-weight:800;color:#4c1d95;text-decoration:none">الوصف الوظيفي</a>
+    </p>
   </main>
 
-  <script src="js/hub-header-actions.js"></script>
+  <script src="js/hub-header-actions.js?v=10"></script>
+  <script src="js/hub-knowledge-center.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js" defer></script>
 </body>

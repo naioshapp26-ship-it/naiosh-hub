@@ -4,7 +4,7 @@
   const ACTIONS = [
     {
       id: 'info',
-      label: 'مركز المعلومات',
+      label: 'مركز المعرفة',
       href: 'info-center.html',
       className: 'hub-hbtn hub-hbtn--red',
       icon: 'fa-circle-info',
