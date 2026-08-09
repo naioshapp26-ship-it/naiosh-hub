@@ -1,0 +1,250 @@
+/* نظام التوجيه المركزي — ملف 08 */
+
+.dir-page {
+  padding: 24px 0 64px;
+}
+
+.dir-hero {
+  background: linear-gradient(128deg, #1e1b4b 0%, #312e81 45%, #4338ca 100%);
+  color: #fff;
+  border-radius: 22px;
+  padding: 32px 28px;
+  margin-bottom: 18px;
+  box-shadow: 0 24px 60px rgba(49, 46, 129, 0.35);
+}
+
+.dir-hero h1 {
+  margin: 0 0 10px;
+  font-size: clamp(20px, 3vw, 30px);
+  font-weight: 900;
+}
+
+.dir-hero p {
+  margin: 0;
+  max-width: 72ch;
+  line-height: 1.75;
+  color: rgba(224, 231, 255, 0.92);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dir-hero strong {
+  color: #c4b5fd;
+}
+
+.dir-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.dir-kpi {
+  background: #fff;
+  border: 1px solid #e0e7ff;
+  border-radius: 14px;
+  padding: 14px 12px;
+  text-align: center;
+}
+
+.dir-kpi strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 900;
+  color: #4338ca;
+}
+
+.dir-kpi span {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.dir-form-wrap {
+  background: #fff;
+  border: 1px solid #e0e7ff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.dir-form-wrap h2 {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #1e1b4b;
+}
+
+.dir-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.dir-span2 {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 600px) {
+  .dir-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .dir-span2 {
+    grid-column: auto;
+  }
+}
+
+.dir-form label span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #475569;
+}
+
+.dir-form input,
+.dir-form select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.dir-submit {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #4338ca;
+  color: #fff;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.dir-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dir-toolbar input {
+  min-height: 42px;
+  border: 1px solid #e0e7ff;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.dir-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dir-filters button {
+  border: 1px solid #e0e7ff;
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 11px;
+  cursor: pointer;
+  color: #334155;
+}
+
+.dir-filters button.is-active {
+  background: #4338ca;
+  border-color: #4338ca;
+  color: #fff;
+}
+
+.dir-list {
+  display: grid;
+  gap: 12px;
+}
+
+.dir-card {
+  background: #fff;
+  border: 1px solid #e8eef5;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.dir-card header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dir-id {
+  font-size: 11px;
+  font-weight: 900;
+  color: #4338ca;
+  background: #eef2ff;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.dir-card h3 {
+  margin: 0;
+  flex: 1;
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.dir-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.dir-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dir-status button {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 11px;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.dir-status button.is-current {
+  background: #4338ca;
+  border-color: #4338ca;
+  color: #fff;
+}
+
+.dir-empty {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  font-weight: 800;
+}

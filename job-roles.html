@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>مكتبة سياسات نايوش | نايوش هوب 360</title>
+  <title>مكتبة الأوصاف الوظيفية | نايوش هوب 360</title>
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="css/hub-theme.css" />
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=10" />
-  <link rel="stylesheet" href="css/hub-policies.css?v=1" />
+  <link rel="stylesheet" href="css/hub-job-roles.css?v=1" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -21,40 +21,40 @@
         <nav class="nav-links">
           <a href="index.html">الرئيسية</a>
           <a href="info-center.html">مركز المعرفة</a>
-          <a class="active" href="policies.html">السياسات</a>
-          <a href="job-roles.html">الأوصاف الوظيفية</a>
-          <a href="quality.html">الجودة</a>
+          <a href="policies.html">السياسات</a>
+          <a class="active" href="job-roles.html">الأوصاف الوظيفية</a>
           <a href="dashboard.html">غرفة العمليات</a>
         </nav>
       </div>
       <div class="auth-actions">
-        <a href="quality.html" class="auth-btn primary">دليل الجودة</a>
+        <a href="policies.html" class="auth-btn primary">مكتبة السياسات</a>
         <a href="login.html" class="auth-btn">تسجيل الدخول</a>
       </div>
     </div>
   </header>
 
-  <main class="container pol-page" data-pol-root>
-    <section class="pol-hero" aria-label="مكتبة السياسات">
-      <h1>مكتبة سياسات نايوش</h1>
+  <main class="container jr-page" data-jr-root>
+    <section class="jr-hero" aria-label="مكتبة الأوصاف الوظيفية">
+      <h1>مكتبة الأوصاف الوظيفية</h1>
       <p>
-        قالب سياسات الشركة داخل هوب — ليست ملفات PDF مبعثرة، بل مكتبة قابلة للبحث والتصنيف وإقرار الاطلاع،
-        ومرتبطة بمركز المعرفة ودليل الجودة والحوكمة.
+        مرجع سريع للمهن الوظيفية: المهام، المؤهلات، التدرج الوظيفي، ونصائح المقابلات —
+        مع نموذج وصف وظيفي جاهز للنسخ لكل دور.
       </p>
     </section>
 
-    <section class="pol-kpis" data-pol-kpis aria-label="مؤشرات المكتبة"></section>
+    <section class="jr-kpis" data-jr-kpis aria-label="مؤشرات المكتبة"></section>
 
-    <div class="pol-toolbar">
-      <input type="search" data-pol-q placeholder="ابحث في عنوان أو ملخص السياسة…" aria-label="بحث السياسات" />
-      <div class="pol-cats" data-pol-cats role="group" aria-label="فئات السياسات"></div>
+    <div class="jr-toolbar">
+      <input type="search" data-jr-q placeholder="ابحث عن مهنة…" aria-label="بحث المهن" />
+      <div class="jr-cats" data-jr-cats role="group" aria-label="فئات المهن"></div>
     </div>
 
-    <section class="pol-list" data-pol-list aria-label="قائمة السياسات"></section>
+    <section class="jr-list" data-jr-list aria-label="قائمة المهن"></section>
+    <p class="jr-toast" data-jr-toast hidden role="status">تم نسخ نموذج الوصف الوظيفي</p>
   </main>
 
   <script src="js/hub-header-actions.js?v=10"></script>
-  <script src="js/hub-policies.js?v=1"></script>
+  <script src="js/hub-job-roles.js?v=1"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js" defer></script>
 </body>

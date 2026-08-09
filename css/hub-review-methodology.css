@@ -1,0 +1,243 @@
+/* منهجية المراجعة الهندسية — ملف 06 */
+
+.rev-page {
+  padding: 24px 0 64px;
+}
+
+.rev-hero {
+  background: linear-gradient(128deg, #0a1628 0%, #12263f 45%, #1a3a5c 100%);
+  color: #fff;
+  border-radius: 22px;
+  padding: 32px 28px;
+  margin-bottom: 18px;
+  box-shadow: 0 24px 60px rgba(10, 22, 40, 0.35);
+}
+
+.rev-hero h1 {
+  margin: 0 0 10px;
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 900;
+}
+
+.rev-hero p {
+  margin: 0 0 14px;
+  max-width: 75ch;
+  line-height: 1.75;
+  color: rgba(210, 230, 255, 0.88);
+  font-size: 15px;
+}
+
+.rev-hero strong {
+  color: #7dd3fc;
+}
+
+.rev-principle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.rev-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.rev-kpi {
+  background: #fff;
+  border: 1px solid #e8eef5;
+  border-radius: 14px;
+  padding: 14px 12px;
+  text-align: center;
+}
+
+.rev-kpi strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 900;
+  color: #0f3d6e;
+}
+
+.rev-kpi span {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.rev-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .rev-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rev-units {
+  background: #fff;
+  border: 1px solid #e8eef5;
+  border-radius: 16px;
+  padding: 14px;
+  position: sticky;
+  top: 80px;
+}
+
+.rev-units input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.rev-phase {
+  margin-bottom: 14px;
+}
+
+.rev-phase h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #0f3d6e;
+}
+
+.rev-unit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: right;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  color: #334155;
+}
+
+.rev-unit-btn.is-active {
+  border-color: #0f3d6e;
+  background: #e0f2fe;
+  color: #0f3d6e;
+}
+
+.rev-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 3px 7px;
+  border-radius: 999px;
+}
+
+.rev-badge--done { background: #dcfce7; color: #166534; }
+.rev-badge--partial { background: #fef9c3; color: #854d0e; }
+.rev-badge--missing { background: #fee2e2; color: #991b1b; }
+
+.rev-checklist {
+  background: #fff;
+  border: 1px solid #e8eef5;
+  border-radius: 16px;
+  padding: 20px;
+  min-height: 320px;
+}
+
+.rev-placeholder {
+  margin: 0;
+  color: #64748b;
+  font-weight: 800;
+  text-align: center;
+  padding: 48px 16px;
+}
+
+.rev-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e8eef5;
+}
+
+.rev-head h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.rev-head p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.rev-progress {
+  font-size: 13px;
+  font-weight: 900;
+  color: #0f3d6e;
+}
+
+.rev-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.rev-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.rev-field.is-done {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.rev-field input {
+  width: 18px;
+  height: 18px;
+  accent-color: #0f3d6e;
+}
+
+.rev-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: #0f3d6e;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 13px;
+}

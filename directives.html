@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>نظام التوجيه المركزي | نايوش هوب 360</title>
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/hub-theme.css" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=10" />
+  <link rel="stylesheet" href="css/hub-directives.css?v=1" />
+</head>
+<body class="homepage">
+  <header class="top-nav">
+    <div class="container inner">
+      <div class="nav-main">
+        <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
+        <nav class="nav-links">
+          <a href="index.html">الرئيسية</a>
+          <a href="operating.html">آلية التشغيل</a>
+          <a class="active" href="directives.html">التوجيه المركزي</a>
+          <a href="review-methodology.html">المراجعة</a>
+          <a href="dashboard.html">غرفة العمليات</a>
+        </nav>
+      </div>
+      <div class="auth-actions">
+        <a href="ops-manuals.html" class="auth-btn primary">الأدلة التشغيلية</a>
+        <a href="login.html" class="auth-btn">تسجيل الدخول</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container dir-page" data-dir-root>
+    <section class="dir-hero" aria-label="نظام التوجيه المركزي">
+      <h1>NAIOSH Central Directive &amp; Governance Engine</h1>
+      <p>
+        يحوّل قرار الإدارة من «نص مكتوب» إلى أمر قابل للتنفيذ: مسؤول → مهام → موعد → متابعة → إثبات → تقييم → إغلاق.
+        رقم تلقائي: <strong>NCDE-2026-XXXXX</strong>
+      </p>
+    </section>
+
+    <section class="dir-kpis" data-dir-kpis aria-label="مؤشرات التوجيهات"></section>
+
+    <section class="dir-form-wrap" aria-label="إنشاء توجيه">
+      <h2>إصدار توجيه جديد</h2>
+      <form class="dir-form" data-dir-form>
+        <div class="dir-form-grid">
+          <label>
+            <span>نوع التوجيه</span>
+            <select name="type" required>
+              <option value="أمر">أمر</option>
+              <option value="قرار">قرار</option>
+              <option value="تعميم">تعميم</option>
+              <option value="سياسة">سياسة</option>
+              <option value="إجراء">إجراء</option>
+              <option value="تكليف">تكليف</option>
+              <option value="طلب تنفيذ">طلب تنفيذ</option>
+              <option value="تحديث نظام">تحديث نظام</option>
+            </select>
+          </label>
+          <label>
+            <span>النطاق</span>
+            <select name="scope" required>
+              <option value="إمبراطورية">إمبراطورية</option>
+              <option value="دولة">دولة</option>
+              <option value="فرع">فرع</option>
+              <option value="حاضنة">حاضنة</option>
+              <option value="منصة">منصة</option>
+            </select>
+          </label>
+          <label class="dir-span2">
+            <span>العنوان</span>
+            <input type="text" name="title" required placeholder="مثال: تنفيذ مركز المعرفة في جميع الحاضنات" />
+          </label>
+          <label>
+            <span>المسؤول</span>
+            <input type="text" name="assignee" required placeholder="اسم المسؤول التنفيذي" />
+          </label>
+          <label>
+            <span>تاريخ الاستحقاق</span>
+            <input type="date" name="dueDate" required />
+          </label>
+        </div>
+        <button type="submit" class="dir-submit"><i class="fas fa-paper-plane"></i> إصدار التوجيه</button>
+      </form>
+    </section>
+
+    <div class="dir-toolbar">
+      <input type="search" data-dir-q placeholder="بحث في التوجيهات…" aria-label="بحث التوجيهات" />
+      <div class="dir-filters" data-dir-filters role="group" aria-label="تصفية الحالة"></div>
+    </div>
+
+    <section class="dir-list" data-dir-list aria-label="قائمة التوجيهات"></section>
+  </main>
+
+  <script src="js/hub-header-actions.js?v=10"></script>
+  <script src="js/hub-directives.js?v=1"></script>
+  <script src="js/hub-global-back.js" defer></script>
+  <script src="js/hub-page-guide.js" defer></script>
+</body>
+</html>
