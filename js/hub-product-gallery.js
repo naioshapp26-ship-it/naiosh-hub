@@ -1,5 +1,5 @@
 /**
- * معرض المواقع الجاهزة — وجه كبير · أنظمة واضحة · حركة
+ * معرض المواقع الجاهزة — عرض فاخر · وجه سينمائي
  */
 (() => {
   const track = document.getElementById('hub-gallery-track');
@@ -18,10 +18,19 @@
     (s) => !window.HubReadySites?.isExcluded?.(s.nameAr)
   );
 
+  const domainOf = (s) => {
+    const live = window.HubLiveSystems?.get?.(s.launchCode);
+    if (live?.domain) return live.domain;
+    try {
+      if (/^https?:\/\//i.test(s.href || '')) return new URL(s.href).hostname.replace(/^www\./, '');
+    } catch (_) {}
+    return s.barSub || '';
+  };
+
   const visualHtml = (s, index) => {
     const live = s.live || window.HubLiveSystems?.isLive?.(s.launchCode);
     const badges = `
-      ${live ? `<span class="hub-gallery-live"><i class="fas fa-circle"></i> مباشر</span>` : ''}
+      ${live ? `<span class="hub-gallery-live"><i class="fas fa-circle"></i> LIVE</span>` : ''}
       <span class="hub-gallery-index">${String(index + 1).padStart(2, '0')}</span>
     `;
     if (s.face || s.logo) {
@@ -60,6 +69,7 @@
       s.launchCode && window.HubLauncher?.getDirectLaunchUrl
         ? window.HubLauncher.getDirectLaunchUrl(s.launchCode)
         : s.href;
+    const domain = domainOf(s);
     return `<a class="hub-gallery-shot" href="${esc(href)}" data-ready-site="${esc(s.id)}" style="--i:${index}"${
       s.launchCode ? ` data-launch-code="${esc(s.launchCode)}" data-launch-mode="hub"` : ''
     }>
@@ -67,8 +77,9 @@
       <div class="hub-gallery-copy">
         <span class="tag">${esc(s.tag || 'موقع جاهز')}</span>
         <h3>${esc(s.nameAr)}</h3>
+        ${domain ? `<div class="hub-gallery-domain">${esc(domain)}</div>` : ''}
         <p>${esc(s.desc || '')}</p>
-        <span class="hub-gallery-enter"><i class="fas fa-bolt"></i> ادخل النظام الآن</span>
+        <span class="hub-gallery-enter"><i class="fas fa-arrow-left"></i> ادخل النظام</span>
       </div>
     </a>`;
   };
@@ -81,13 +92,13 @@
   if (head && !head.querySelector('.hub-gallery-kicker')) {
     const kicker = document.createElement('p');
     kicker.className = 'hub-gallery-kicker';
-    kicker.innerHTML = '<i class="fas fa-bolt"></i> أنظمة حية · وجه الموقع الحقيقي';
+    kicker.innerHTML = `<i class="fas fa-gem"></i> مجموعة الأنظمة الحية · ${sites.length} مواقع`;
     head.prepend(kicker);
   }
 
   const headP = document.querySelector('.hub-product-gallery-head p:not(.hub-gallery-kicker)');
   if (headP) {
-    headP.textContent = 'كل نظام بوجهه ولوجوه — مرّر، اختَر، وادخل مباشرة بدون تشتيت.';
+    headP.textContent = 'واجهة فاخرة لكل نظام بوجهه الحقيقي — مرّر بهدوء، اختَر، وادخل مباشرة.';
   }
   const headH = document.querySelector('.hub-product-gallery-head h2');
   if (headH) headH.textContent = 'مواقع نايوش الجاهزة';
@@ -97,7 +108,6 @@
     foot.textContent = 'مرّر للتصفح · الأنظمة المباشرة معلَّمة · اضغط للدخول فورًا';
   }
 
-  // نقاط التنقل
   let dots = document.querySelector('.hub-gallery-dots');
   if (!dots) {
     dots = document.createElement('div');
@@ -116,9 +126,9 @@
 
   const step = () => {
     const card = track.querySelector('.hub-gallery-shot');
-    if (!card) return 320;
+    if (!card) return 340;
     const styles = window.getComputedStyle(track);
-    const gap = parseFloat(styles.columnGap || styles.gap || '20') || 20;
+    const gap = parseFloat(styles.columnGap || styles.gap || '24') || 24;
     return card.getBoundingClientRect().width + gap;
   };
 
