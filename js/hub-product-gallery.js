@@ -126,6 +126,13 @@
 
   const isRtl = () => getComputedStyle(track).direction === 'rtl';
 
+  const stepPx = () => {
+    const card = cards()[0];
+    if (!card) return 360;
+    const gap = parseFloat(getComputedStyle(track).columnGap || getComputedStyle(track).gap || '24') || 24;
+    return card.getBoundingClientRect().width + gap;
+  };
+
   /** البطاقة الأقرب لحافة البداية (يمين في RTL) */
   const activeIndex = () => {
     const list = cards();
@@ -144,7 +151,42 @@
     return best;
   };
 
-  /** تمرير أفقي فقط داخل المسار — RTL/LTR */
+  const isVisibleInTrack = (el) => {
+    const root = track.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    return r.right > root.left + 8 && r.left < root.right - 8;
+  };
+
+  /** البداية: أول بطاقة ظاهرة ومحاذية للحافة */
+  const atStart = () => {
+    const list = cards();
+    if (!list[0]) return true;
+    const root = track.getBoundingClientRect();
+    const r = list[0].getBoundingClientRect();
+    if (!isVisibleInTrack(list[0])) return false;
+    return isRtl() ? r.right >= root.right - 10 : r.left <= root.left + 10;
+  };
+
+  /** النهاية: آخر بطاقة ظاهرة ومحاذية للحافة — مش بس موجودة شمال الشاشة */
+  const atEnd = () => {
+    const list = cards();
+    const last = list[list.length - 1];
+    if (!last) return true;
+    const root = track.getBoundingClientRect();
+    const r = last.getBoundingClientRect();
+    if (!isVisibleInTrack(last)) return false;
+    return isRtl() ? r.left <= root.left + 10 : r.right >= root.right - 10;
+  };
+
+  /** تمرير بخطوة ثابتة — Chrome RTL: السالب نحو النهاية */
+  const scrollByDir = (dir) => {
+    // dir +1 = التالي (نحو بطاقات أعلى رقمًا)، -1 = السابق
+    const amount = stepPx();
+    const rtl = isRtl();
+    const delta = rtl ? -dir * amount : dir * amount;
+    track.scrollBy({ left: delta, behavior: 'smooth' });
+  };
+
   const scrollToIndex = (index) => {
     const list = cards();
     if (!list.length) return;
@@ -155,23 +197,6 @@
     const diff = isRtl() ? rect.right - root.right : rect.left - root.left;
     if (Math.abs(diff) < 1) return;
     track.scrollTo({ left: track.scrollLeft + diff, behavior: 'smooth' });
-  };
-
-  const atStart = () => {
-    const list = cards();
-    if (!list[0]) return true;
-    const root = track.getBoundingClientRect();
-    const r = list[0].getBoundingClientRect();
-    return isRtl() ? r.right >= root.right - 6 : r.left <= root.left + 6;
-  };
-
-  const atEnd = () => {
-    const list = cards();
-    const last = list[list.length - 1];
-    if (!last) return true;
-    const root = track.getBoundingClientRect();
-    const r = last.getBoundingClientRect();
-    return isRtl() ? r.left <= root.left + 6 : r.right >= root.right - 6;
   };
 
   const updateButtons = () => {
@@ -185,21 +210,21 @@
     e.preventDefault();
     e.stopPropagation();
     if (atStart()) return;
-    scrollToIndex(activeIndex() - 1);
-    requestAnimationFrame(() => setTimeout(updateButtons, 320));
+    scrollByDir(-1);
+    requestAnimationFrame(() => setTimeout(updateButtons, 380));
   });
   next?.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (atEnd()) return;
-    scrollToIndex(activeIndex() + 1);
-    requestAnimationFrame(() => setTimeout(updateButtons, 320));
+    scrollByDir(1);
+    requestAnimationFrame(() => setTimeout(updateButtons, 380));
   });
   dots.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-dot]');
     if (!btn) return;
     scrollToIndex(Number(btn.dataset.dot));
-    requestAnimationFrame(() => setTimeout(updateButtons, 320));
+    requestAnimationFrame(() => setTimeout(updateButtons, 380));
   });
   track.addEventListener('scroll', () => requestAnimationFrame(updateButtons), { passive: true });
   window.addEventListener('resize', updateButtons);
