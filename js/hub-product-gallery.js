@@ -101,6 +101,9 @@
     const a = e.target.closest('[data-launch-code]');
     if (!a || !window.HubLauncher?.launch) return;
     e.preventDefault();
-    window.HubLauncher.launch(a.dataset.launchCode, { mode: 'hub', force: false });
+    window.HubLauncher.launch(a.dataset.launchCode, {
+      mode: 'hub',
+      force: window.HubLiveSystems?.isLive?.(a.dataset.launchCode),
+    });
   });
 })();

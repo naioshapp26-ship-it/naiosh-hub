@@ -2,7 +2,8 @@
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
   const sys = (code, nameAr, icon, status = 'active') => {
-    const launchUrl = `systems/${String(code).toLowerCase()}.html`;
+    const liveUrl = typeof window !== 'undefined' ? window.HubLiveSystems?.url?.(code) : null;
+    const launchUrl = liveUrl || `systems/${String(code).toLowerCase()}.html`;
     return {
       code,
       nameAr,
@@ -16,6 +17,7 @@
       status,
       supportsStandalone: true,
       launchViaHub: true,
+      isLive: Boolean(liveUrl),
     };
   };
 

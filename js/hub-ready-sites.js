@@ -19,8 +19,9 @@
       nameAr: 'نايوش إي آر بي',
       tag: 'نظام تشغيل مؤسسي',
       desc: 'المبيعات · المخزون · المالية · الموارد — اضغط وادخل فورًا.',
-      href: 'systems/erp.html?from=hub&return=index.html',
+      href: 'https://web-production-419e2.up.railway.app/',
       launchCode: 'ERP',
+      live: true,
       icon: 'fa-sitemap',
       tone: 'erp',
       inProducts: true,
@@ -490,7 +491,12 @@
     const site = typeof siteOrId === 'string' ? findById(siteOrId) : siteOrId;
     if (!site || isExcluded(site.nameAr)) return null;
     if (site.launchCode && window.HubLauncher?.launch) {
-      return window.HubLauncher.launch(site.launchCode, { mode: 'hub', force });
+      const live = window.HubLiveSystems?.isLive?.(site.launchCode);
+      return window.HubLauncher.launch(site.launchCode, { mode: 'hub', force: force || live || site.live });
+    }
+    if (/^https?:\/\//i.test(site.href)) {
+      window.open(site.href, '_blank', 'noopener');
+      return site.href;
     }
     window.location.href = site.href;
     return site.href;

@@ -1,8 +1,27 @@
 /**
  * Hub Launcher — فتح الأنظمة مباشرة من هوب أو بشكل منفرد
  * مع فحص الاشتراك/الصلاحية وتمرير جلسة NAIOSH ID
+ * الأنظمة الحية (HubLiveSystems) تفتح على الدومين الحقيقي
  */
 (() => {
+  // سجل الدومينات الحية — يُحدَّث عند وصول دومين من العميل
+  if (!window.HubLiveSystems) {
+    const LIVE = {
+      ERP: {
+        url: 'https://web-production-419e2.up.railway.app/',
+        domain: 'web-production-419e2.up.railway.app',
+        openInNewTab: true,
+        label: 'نايوش إي آر بي (مباشر)',
+      },
+    };
+    window.HubLiveSystems = {
+      LIVE,
+      get: (code) => LIVE[String(code || '').toUpperCase()] || null,
+      url: (code) => LIVE[String(code || '').toUpperCase()]?.url || null,
+      isLive: (code) => Boolean(LIVE[String(code || '').toUpperCase()]?.url),
+    };
+  }
+
   const SYSTEM_META = {
     ERP: { nameAr: 'نايوش إي آر بي', icon: 'fa-sitemap', domain: 'naiosherp.com', color: '#b91c1c' },
     LAW: { nameAr: 'نايوش لو', icon: 'fa-gavel', domain: 'naioshlaw.com', color: '#1e3a5f' },
@@ -13,24 +32,35 @@
     CRM: { nameAr: 'إدارة علاقات العملاء', icon: 'fa-handshake', domain: 'naioshhub360.com', color: '#854d0e' },
   };
 
+  const isAbsolute = (u) => /^https?:\/\//i.test(String(u || ''));
+
+  const liveOf = (code) => window.HubLiveSystems?.get?.(code) || null;
+
   const systemPath = (code) => `systems/${String(code || '').toLowerCase()}.html`;
 
   const normalizeApp = (app = {}) => {
     const code = String(app.code || '').toUpperCase();
     const meta = SYSTEM_META[code] || {};
-    const launchUrl = app.launchUrl || (SYSTEM_META[code] ? systemPath(code) : app.url || 'apps.html');
-    const standaloneUrl = app.standaloneUrl || launchUrl;
+    const live = liveOf(code);
+    const launchUrl =
+      live?.url || app.launchUrl || (SYSTEM_META[code] ? systemPath(code) : app.url || 'apps.html');
+    const standaloneUrl = live?.url || app.standaloneUrl || launchUrl;
     const hubPath = app.hubPath || (code ? `apps.html#${code.toLowerCase()}` : 'apps.html');
+    const external = isAbsolute(launchUrl);
     return {
       ...meta,
       ...app,
       code,
-      nameAr: app.nameAr || meta.nameAr || code,
+      nameAr: app.nameAr || live?.label || meta.nameAr || code,
       icon: app.icon || meta.icon || 'fa-cube',
+      domain: live?.domain || app.domain || meta.domain,
       launchUrl,
       standaloneUrl,
       hubPath,
-      url: app.url && !String(app.url).includes('apps.html#') ? app.url : launchUrl,
+      url: external ? launchUrl : app.url && !String(app.url).includes('apps.html#') ? app.url : launchUrl,
+      liveUrl: live?.url || null,
+      isLive: Boolean(live?.url),
+      openInNewTab: live ? live.openInNewTab !== false : external,
       supportsStandalone: app.supportsStandalone !== false,
       launchViaHub: app.launchViaHub !== false,
     };
@@ -43,13 +73,20 @@
     if (fromStore) return normalizeApp(fromStore);
     const fromCatalog = window.HubMarketplaceData?.APPS?.find((a) => a.code === code);
     if (fromCatalog) return normalizeApp(fromCatalog);
-    if (SYSTEM_META[code]) return normalizeApp({ code, ...SYSTEM_META[code] });
+    if (SYSTEM_META[code] || liveOf(code)) return normalizeApp({ code, ...SYSTEM_META[code] });
     return null;
   };
 
   const withLaunchParams = (url, { from = 'hub', returnUrl, systemCode = '' } = {}) => {
     try {
       const u = new URL(url, window.location.href);
+      const sameOrigin = u.origin === window.location.origin;
+      if (!sameOrigin) {
+        // نظام حي خارجي — أبقِ الرابط الكامل
+        if (from) u.searchParams.set('from', from);
+        if (systemCode) u.searchParams.set('system', systemCode);
+        return u.toString();
+      }
       u.searchParams.set('from', from);
       if (returnUrl) u.searchParams.set('return', returnUrl);
       u.searchParams.set('hub', '1');
@@ -59,6 +96,7 @@
       }
       return href;
     } catch (_) {
+      if (isAbsolute(url)) return url;
       const join = url.includes('?') ? '&' : '?';
       return `${url}${join}from=${encodeURIComponent(from)}&hub=1`;
     }
@@ -79,8 +117,10 @@
   const getStandaloneUrl = (codeOrApp) => {
     const app = findApp(codeOrApp);
     if (!app) return 'apps.html';
+    const base = app.standaloneUrl || app.launchUrl || app.url;
     try {
-      const u = new URL(app.standaloneUrl || app.launchUrl || app.url, window.location.href);
+      const u = new URL(base, window.location.href);
+      if (u.origin !== window.location.origin) return u.toString();
       u.searchParams.set('mode', 'standalone');
       u.searchParams.delete('from');
       u.searchParams.delete('hub');
@@ -88,7 +128,7 @@
       if (window.HubAuth?.attachSsoParams) href = window.HubAuth.attachSsoParams(href, app.code);
       return href;
     } catch (_) {
-      const base = app.standaloneUrl || app.launchUrl || app.url;
+      if (isAbsolute(base)) return base;
       const join = base.includes('?') ? '&' : '?';
       return `${base}${join}mode=standalone`;
     }
@@ -96,7 +136,10 @@
 
   const gateAccess = (app, { mode = 'hub', silent = false } = {}) => {
     if (!app) return { ok: false, reason: 'missing' };
-    // التشغيل المنفرد للتجربة مسموح بدون بوابة صارمة؛ عبر هوب يلزم جلسة + صلاحية
+    // الأنظمة الحية الخارجية تُفتح فعلياً للعميل بدون بوابة صارمة
+    if (app.isLive || (isAbsolute(app.launchUrl) && !String(app.launchUrl).includes(window.location.host))) {
+      return { ok: true, reason: 'live-external' };
+    }
     if (mode === 'standalone') return { ok: true, reason: 'standalone' };
     if (!window.HubAuth) return { ok: true, reason: 'no-auth-module' };
     if (!window.HubAuth.isLoggedIn()) {
@@ -133,7 +176,8 @@
     }
     const href = mode === 'standalone' ? getStandaloneUrl(app) : getDirectLaunchUrl(app);
     window.HubStore?.recordLaunch?.(app.code, mode);
-    if (target === '_blank') window.open(href, '_blank', 'noopener');
+    const useBlank = target === '_blank' || app.openInNewTab || app.isLive;
+    if (useBlank) window.open(href, '_blank', 'noopener');
     else window.location.href = href;
     return href;
   };
@@ -143,14 +187,16 @@
     if (!app) return '';
     const direct = getDirectLaunchUrl(app);
     const solo = getStandaloneUrl(app);
+    const blank = app.openInNewTab || app.isLive ? ' target="_blank" rel="noopener"' : '';
+    const liveBadge = app.isLive ? ' · مباشر' : '';
     if (compact) {
-      return `<a class="btn-mini primary hub-launch-direct" href="${direct}" data-launch-code="${app.code}" data-launch-mode="hub"><i class="fas fa-arrow-up-right-from-square"></i> فتح النظام</a>`;
+      return `<a class="btn-mini primary hub-launch-direct" href="${direct}" data-launch-code="${app.code}" data-launch-mode="hub"${blank}><i class="fas fa-arrow-up-right-from-square"></i> فتح النظام${liveBadge}</a>`;
     }
     return `
-      <a class="btn-mini primary hub-launch-direct" href="${direct}" data-launch-code="${app.code}" data-launch-mode="hub" title="تشغيل عبر هوب — انتقال مباشر للنظام">
-        <i class="fas fa-bolt"></i> فتح عبر هوب
+      <a class="btn-mini primary hub-launch-direct" href="${direct}" data-launch-code="${app.code}" data-launch-mode="hub"${blank} title="تشغيل عبر هوب — انتقال مباشر للنظام">
+        <i class="fas fa-bolt"></i> فتح عبر هوب${liveBadge}
       </a>
-      <a class="btn-mini hub-launch-solo" href="${solo}" data-launch-code="${app.code}" data-launch-mode="standalone" title="تشغيل منفرد بدون هوب">
+      <a class="btn-mini hub-launch-solo" href="${solo}" data-launch-code="${app.code}" data-launch-mode="standalone"${blank} title="تشغيل منفرد بدون هوب">
         <i class="fas fa-window-restore"></i> منفرد
       </a>`;
   };
@@ -159,7 +205,14 @@
     const a = e.target.closest('[data-launch-code]');
     if (!a) return;
     const mode = a.dataset.launchMode || 'hub';
-    if (mode === 'standalone') return; // allow default navigation
+    if (mode === 'standalone') {
+      const app = findApp(a.dataset.launchCode);
+      if (app?.isLive) {
+        e.preventDefault();
+        launch(app, { mode: 'standalone', target: '_blank', force: true });
+      }
+      return;
+    }
     e.preventDefault();
     launch(a.dataset.launchCode, { mode, target: a.target === '_blank' ? '_blank' : '_self' });
   });
@@ -175,5 +228,6 @@
     gateAccess,
     launch,
     openButtonsHtml,
+    isAbsolute,
   };
 })();
