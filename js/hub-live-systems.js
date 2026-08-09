@@ -36,6 +36,24 @@
       openInNewTab: true,
       label: 'نايوش فيت (مباشر)',
     },
+    SMARTX: {
+      url: 'https://smrttx.com/',
+      domain: 'smrttx.com',
+      openInNewTab: true,
+      label: 'سمارتكس (مباشر)',
+    },
+    EDUSMARTX: {
+      url: 'https://edusmrttx.com/',
+      domain: 'edusmrttx.com',
+      openInNewTab: true,
+      label: 'إيديو سمارتكس (مباشر)',
+    },
+    EDUNAIOSH: {
+      url: 'https://edunaiosh.com/',
+      domain: 'edunaiosh.com',
+      openInNewTab: true,
+      label: 'نايوش (مباشر)',
+    },
   };
 
   const get = (code) => LIVE[String(code || '').toUpperCase()] || null;

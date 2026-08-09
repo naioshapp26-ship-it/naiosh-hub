@@ -527,6 +527,9 @@
 .hub-gallery-visual.tone-fit { background: linear-gradient(160deg, #062820, #152033); }
 .hub-gallery-visual.tone-academy { background: linear-gradient(160deg, #3a1b05, #1a1f33); }
 .hub-gallery-visual.tone-law { background: linear-gradient(160deg, #0f1a2c, #1b1014); }
+.hub-gallery-visual.tone-smartx { background: linear-gradient(160deg, #0b1f3a, #152033); }
+.hub-gallery-visual.tone-edusmartx { background: linear-gradient(160deg, #2a1050, #151922); }
+.hub-gallery-visual.tone-edunaiosh { background: linear-gradient(160deg, #3a0810, #0f1a2c); }
 .hub-gallery-visual.tone-hub { background: linear-gradient(160deg, #3a0810, #151922); }
 
 .hub-gallery-dots {

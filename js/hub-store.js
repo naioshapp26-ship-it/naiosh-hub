@@ -39,7 +39,15 @@ const HubStore = (() => {
       })),
       identity: {
         totalUsers: 12840,
-        ssoDomains: ['naioshhub360.com', 'edunaiosh.com', 'naiosherp.com', 'naioshlaw.com', 'naioshfit.com'],
+        ssoDomains: [
+          'naioshhub360.com',
+          'edunaiosh.com',
+          'naiosherp.com',
+          'naioshlaw.com',
+          'naioshfit.com',
+          'smrttx.com',
+          'edusmrttx.com',
+        ],
         mfaEnabledPct: 67,
         activeSessions: 412,
         roles: (bp?.dashboardsByRole || []).map((r, i) => ({
@@ -156,7 +164,7 @@ const HubStore = (() => {
   };
 
   const seedOperating = () => {
-    const systems = ['ERP', 'LAW', 'FIT', 'NAIS', 'ACADEMY', 'LMS', 'CRM'];
+    const systems = ['ERP', 'LAW', 'FIT', 'NAIS', 'ACADEMY', 'SMARTX', 'EDUSMARTX', 'EDUNAIOSH', 'LMS', 'CRM'];
     const grantAll = (email, plan = 'enterprise') =>
       systems.map((systemCode) => ({
         id: uid('sub'),
