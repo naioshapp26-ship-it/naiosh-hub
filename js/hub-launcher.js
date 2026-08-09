@@ -13,6 +13,30 @@
         openInNewTab: true,
         label: 'نايوش إي آر بي (مباشر)',
       },
+      NAIS: {
+        url: 'https://nais-production.up.railway.app/',
+        domain: 'nais-production.up.railway.app',
+        openInNewTab: true,
+        label: 'نايس (مباشر)',
+      },
+      LAW: {
+        url: 'https://naiosh-law-production.up.railway.app/',
+        domain: 'naiosh-law-production.up.railway.app',
+        openInNewTab: true,
+        label: 'نايوش لو (مباشر)',
+      },
+      ACADEMY: {
+        url: 'https://betacdmy-production.up.railway.app/',
+        domain: 'betacdmy-production.up.railway.app',
+        openInNewTab: true,
+        label: 'أكاديمية نايوش (مباشر)',
+      },
+      FIT: {
+        url: 'https://naioshfit-production-f0b4.up.railway.app/',
+        domain: 'naioshfit-production-f0b4.up.railway.app',
+        openInNewTab: true,
+        label: 'نايوش فيت (مباشر)',
+      },
     };
     window.HubLiveSystems = {
       LIVE,

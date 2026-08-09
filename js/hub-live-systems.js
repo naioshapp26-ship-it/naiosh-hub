@@ -12,12 +12,30 @@
       openInNewTab: true,
       label: 'نايوش إي آر بي (مباشر)',
     },
-    // LAW: { url: 'https://…', domain: '…', openInNewTab: true },
-    // FIT: { url: 'https://…', domain: '…', openInNewTab: true },
-    // NAIS: { url: 'https://…', domain: '…', openInNewTab: true },
-    // ACADEMY: { url: 'https://…', domain: '…', openInNewTab: true },
-    // LMS: { url: 'https://…', domain: '…', openInNewTab: true },
-    // CRM: { url: 'https://…', domain: '…', openInNewTab: true },
+    NAIS: {
+      url: 'https://nais-production.up.railway.app/',
+      domain: 'nais-production.up.railway.app',
+      openInNewTab: true,
+      label: 'نايس (مباشر)',
+    },
+    LAW: {
+      url: 'https://naiosh-law-production.up.railway.app/',
+      domain: 'naiosh-law-production.up.railway.app',
+      openInNewTab: true,
+      label: 'نايوش لو (مباشر)',
+    },
+    ACADEMY: {
+      url: 'https://betacdmy-production.up.railway.app/',
+      domain: 'betacdmy-production.up.railway.app',
+      openInNewTab: true,
+      label: 'أكاديمية نايوش (مباشر)',
+    },
+    FIT: {
+      url: 'https://naioshfit-production-f0b4.up.railway.app/',
+      domain: 'naioshfit-production-f0b4.up.railway.app',
+      openInNewTab: true,
+      label: 'نايوش فيت (مباشر)',
+    },
   };
 
   const get = (code) => LIVE[String(code || '').toUpperCase()] || null;

@@ -5,11 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NAIS | نايوش</title>
   <link rel="icon" href="../assets/logo-hub.jpeg" type="image/jpeg" />
+  <script src="../js/hub-live-systems.js"></script>
+  <script>
+    (function () {
+      var live = window.HubLiveSystems && window.HubLiveSystems.url('NAIS');
+      if (live) {
+        var u = live;
+        try {
+          var q = window.location.search || '';
+          if (q && live.indexOf('?') === -1) u = live.replace(/\/?$/, '/') + q.replace(/^\?/, '?');
+          else if (q) u = live + (live.indexOf('?') >= 0 ? '&' : '?') + q.slice(1);
+        } catch (e) {}
+        window.location.replace(u);
+      }
+    })();
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="stylesheet" href="../css/hub-system-portal.css" />
 </head>
 <body class="system-portal" data-system-code="NAIS">
+  <p style="font-family:Cairo,sans-serif;padding:24px;text-align:center">
+    جارٍ فتح نظام نايس الحي…
+    <a href="https://nais-production.up.railway.app/">اضغط هنا إن لم يتم التحويل</a>
+  </p>
   <script src="../js/empire-blueprint.js"></script>
   <script src="../js/sovereign-platforms.js"></script>
   <script src="../js/hub-marketplace-data.js"></script>
