@@ -169,6 +169,7 @@
             ${mpBadges(i)}
             ${metaLine(i)}
             <div class="card-actions">
+              <button type="button" class="btn-mini" data-cart="${esc(i.id)}"><i class="fas fa-basket-shopping"></i> أضف للسلة</button>
               <button type="button" class="btn-mini primary" data-buy="${esc(i.id)}"><i class="fas fa-cart-plus"></i> اشترِ الآن</button>
               ${
                 (() => {
@@ -212,6 +213,15 @@
       if (launch && window.HubLauncher?.launch) {
         e.preventDefault();
         window.HubLauncher.launch(launch.dataset.launchCode, { mode: 'hub' });
+        return;
+      }
+      const cartBtn = e.target.closest('[data-cart]');
+      if (cartBtn && window.HubCart?.add) {
+        const item = items.find((x) => String(x.id) === String(cartBtn.dataset.cart));
+        if (item) {
+          window.HubCart.add(item);
+          toast(`أُضيف للسلة: ${item.title}`);
+        }
         return;
       }
       const btn = e.target.closest('[data-buy]');
@@ -499,6 +509,7 @@
                   <div class="shop-card-meta" style="margin-top:4px">${esc(p.status || 'متوفر')}${site ? ` · موقع: ${esc(site.nameAr)}` : ''}</div>
                   ${metaLine(p)}
                   <div class="shop-card-actions">
+                    <button type="button" class="primary" data-cart-product="${esc(p.id || p.sku)}"><i class="fas fa-basket-shopping"></i> أضف للسلة</button>
                     <a class="primary" href="${esc(buyUrl)}"><i class="fas fa-cart-shopping"></i> اشتري</a>
                     <a href="${esc(openUrl)}" ${
                       site?.launchCode ? `data-launch-code="${esc(site.launchCode)}" data-launch-mode="hub"` : ''
@@ -550,6 +561,22 @@
     });
 
     grid.addEventListener('click', (e) => {
+      const cartBtn = e.target.closest('[data-cart-product]');
+      if (cartBtn && window.HubCart?.add) {
+        const key = cartBtn.dataset.cartProduct;
+        const p = products.find((x) => String(x.id) === key || String(x.sku) === key);
+        if (p) {
+          window.HubCart.add({
+            id: p.id || p.sku,
+            title: p.name,
+            price: p.price,
+            points: p.points || 0,
+            platformCode: p.platformCode || '',
+          });
+          toast(`أُضيف للسلة: ${p.name}`);
+        }
+        return;
+      }
       const launch = e.target.closest('[data-launch-code]');
       if (!launch || !window.HubLauncher?.launch) return;
       e.preventDefault();
