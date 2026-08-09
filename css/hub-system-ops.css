@@ -1,0 +1,265 @@
+.sysops-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 18px;
+  align-items: start;
+  margin-top: 18px;
+}
+
+.sysops-sidebar {
+  position: sticky;
+  top: 88px;
+  background: #fff;
+  border: 1px solid #e8eaf0;
+  border-radius: 18px;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+  box-shadow: 0 8px 22px rgba(12, 14, 17, 0.06);
+}
+
+.sysops-sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #303848;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.sysops-sidebar a.is-active,
+.sysops-sidebar a:hover {
+  background: rgba(215, 0, 0, 0.08);
+  color: #d70000;
+}
+
+.sysops-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.sysops-kpi {
+  background: #fff;
+  border: 1px solid #e8eaf0;
+  border-radius: 14px;
+  padding: 12px;
+  text-align: center;
+}
+
+.sysops-kpi strong {
+  display: block;
+  color: #d70000;
+  font-size: 20px;
+}
+
+.sysops-kpi span {
+  font-size: 11px;
+  font-weight: 800;
+  color: #667085;
+}
+
+.sysops-caps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.sysops-cap {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #e8eaf0;
+  border-radius: 14px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.sysops-cap:hover {
+  border-color: #f0b4b4;
+  box-shadow: 0 8px 18px rgba(215, 0, 0, 0.08);
+}
+
+.sysops-cap i {
+  color: #d70000;
+  margin-top: 3px;
+}
+
+.sysops-cap strong {
+  display: block;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sysops-cap small {
+  color: #8891a0;
+  font-weight: 700;
+}
+
+.sysops-section {
+  background: #fff;
+  border: 1px solid #e8eaf0;
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.sysops-section h2,
+.sysops-section h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.sysops-form,
+.sysops-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sysops-form input,
+.sysops-form select,
+.sysops-form textarea,
+.sysops-form-row input,
+.sysops-form-row select {
+  font: inherit;
+  border: 1px solid #e6eaf2;
+  border-radius: 12px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.sysops-form label,
+.sysops-form-row label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sysops-list {
+  display: grid;
+  gap: 8px;
+}
+
+.sysops-list article {
+  border: 1px solid #edf0f5;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fafbfc;
+}
+
+.sysops-list strong {
+  display: block;
+  font-size: 13px;
+}
+
+.sysops-list span,
+.sysops-list small {
+  font-size: 12px;
+  color: #667085;
+  font-weight: 700;
+}
+
+.sysops-modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sysops-mod {
+  border: 1px solid #e6eaf2;
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  color: #303848;
+}
+
+.sysops-mod.is-on {
+  background: #d70000;
+  border-color: #d70000;
+  color: #fff;
+}
+
+.sysops-modules--dense .sysops-mod {
+  font-size: 11px;
+  padding: 6px 10px;
+}
+
+.sysops-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.sysops-chips span {
+  background: #fff5f5;
+  color: #b00000;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sysops-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.sysops-note {
+  font-size: 13px;
+  font-weight: 700;
+  color: #505868;
+}
+
+.sysops-empty {
+  color: #8891a0;
+  font-weight: 700;
+}
+
+.sysops-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #111;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.2s ease;
+  z-index: 100;
+}
+
+.sysops-toast.is-on {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 920px) {
+  .sysops-layout {
+    grid-template-columns: 1fr;
+  }
+  .sysops-sidebar {
+    position: static;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+  }
+}

@@ -45,7 +45,11 @@
     },
     operating: {
       title: 'آلية التشغيل الكاملة',
-      steps: ['تسجيل دخول موحّد', 'اشتراك = صلاحية', 'أيقونة → دخول الموقع الجاهز'],
+      steps: ['سجّل دخول موحّد', 'افتح تشغيل الأنظمة ونفّذ المنح والأدوار', 'فعّل وحدات ERPI/القانونية وادخل النظام الحي'],
+    },
+    'system-ops': {
+      title: 'تشغيل الأنظمة من ملف العميل',
+      steps: ['امنح دومين فرعي أو هيكل', 'عيّن الأدوار والصلاحيات', 'فعّل وحدات ERPI والقانونية وافتح نظام المستأجر'],
     },
   };
 
@@ -53,6 +57,7 @@
     const path = (window.location.pathname || '').toLowerCase();
     const page = document.body?.dataset?.marketPage || document.body?.dataset?.hubEntity || '';
     if (page && PATHS[page]) return page;
+    if (path.includes('system-ops') || path.includes('system_ops')) return 'system-ops';
     if (path.includes('operating')) return 'operating';
     if (path.includes('product')) return 'products';
     if (path.includes('store')) return 'store';
