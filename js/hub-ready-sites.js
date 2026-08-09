@@ -571,8 +571,16 @@
     },
   ].filter((s) => !isExcluded(s.nameAr) && !isExcluded(s.id));
 
-  const gallerySites = () => READY_SITES.filter((s) => s.inGallery !== false);
-  const productSites = () => READY_SITES.filter((s) => s.inProducts && !isExcluded(s.nameAr));
+  /** المواقع الشغّالة فقط — دومين حي أو live:true */
+  const isLiveSite = (s) => {
+    if (!s || isExcluded(s.nameAr)) return false;
+    if (s.live === true) return true;
+    const code = String(s.launchCode || '').toUpperCase();
+    return Boolean(code && window.HubLiveSystems?.isLive?.(code));
+  };
+
+  const gallerySites = () => READY_SITES.filter((s) => s.inGallery !== false && isLiveSite(s));
+  const productSites = () => READY_SITES.filter((s) => s.inProducts && isLiveSite(s));
   const sidebarSites = () => READY_SITES.filter((s) => s.sidebar);
 
   const findByLaunchCode = (code) =>
@@ -595,14 +603,19 @@
     return site.href;
   };
 
-  /** ربط منتج/عنصر متجر بموقع جاهز للفتح بعد الشراء */
+  /** ربط منتج/عنصر متجر بموقع شغّال فقط — لا رجوع لمواقع تجريبية */
   const siteForProduct = (item = {}) => {
     const code = String(item.platformCode || item.launchCode || '').toUpperCase();
-    if (code && findByLaunchCode(code)) return findByLaunchCode(code);
+    if (code) {
+      const byCode = findByLaunchCode(code);
+      if (byCode && isLiveSite(byCode)) return byCode;
+    }
     const brand = String(item.brand || item.platform || '').trim();
     if (brand) {
+      const exact = READY_SITES.find((s) => isLiveSite(s) && s.nameAr === brand);
+      if (exact) return exact;
       const byBrand = READY_SITES.find(
-        (s) => s.nameAr === brand || brand.includes(s.nameAr) || s.nameAr.includes(brand)
+        (s) => isLiveSite(s) && (brand.includes(s.nameAr) || s.nameAr.includes(brand))
       );
       if (byBrand) return byBrand;
     }
@@ -617,13 +630,12 @@
       سمارتكس: 'smartx',
       'إيديو سمارتكس': 'edusmartx',
       نايوش: 'edunaiosh',
-      إعلانات: 'ads',
-      فعاليات: 'events',
-      مبيعات: 'crm',
-      خدمات: 'store',
+      تعليم: 'edusmartx',
+      مناهج: 'edunaiosh',
     };
     const id = map[cat];
-    return id ? findById(id) : findById('store');
+    const site = id ? findById(id) : null;
+    return site && isLiveSite(site) ? site : null;
   };
 
   const buyThenOpen = (itemId) => {
@@ -646,6 +658,7 @@
     EXCLUDED: [...EXCLUDED],
     READY_SITES,
     isExcluded,
+    isLiveSite,
     gallerySites,
     productSites,
     sidebarSites,

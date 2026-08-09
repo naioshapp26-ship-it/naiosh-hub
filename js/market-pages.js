@@ -45,9 +45,14 @@
     const launcher = window.HubLauncher;
 
     const paint = () => {
-      const list = (active === 'الكل' ? apps : apps.filter((a) => a.category === active)).filter(
-        (a) => a.status !== 'archived'
-      );
+      const list = (active === 'الكل' ? apps : apps.filter((a) => a.category === active)).filter((a) => {
+        if (a.status === 'archived') return false;
+        // أنظمة نايوش: اعرض الشغّالة فقط (دومين حي)
+        if (a.kind === 'system' || a.category === 'أنظمة نايوش') {
+          return Boolean(window.HubLiveSystems?.isLive?.(a.code));
+        }
+        return true;
+      });
       root.innerHTML = list
         .map((a) => {
           const app = launcher?.normalizeApp?.(a) || a;
@@ -415,9 +420,11 @@
 
   const renderProducts = () => {
     const raw = store?.get?.().empire?.productCatalog || data?.PRODUCT_CATALOG || [];
-    const products = raw.filter(
-      (p) => !window.HubReadySites?.isExcluded?.(p.name) && !window.HubReadySites?.isExcluded?.(p.brand)
-    );
+    const products = raw.filter((p) => {
+      if (window.HubReadySites?.isExcluded?.(p.name) || window.HubReadySites?.isExcluded?.(p.brand)) return false;
+      const site = window.HubReadySites?.siteForProduct?.(p);
+      return Boolean(site && window.HubReadySites?.isLiveSite?.(site));
+    });
     const cats = data.SHOP_CATEGORIES || [{ id: 'الكل', name: 'كل المنتجات', icon: 'fa-border-all' }];
     const strip = document.getElementById('shop-cat-strip');
     const side = document.getElementById('shop-side-list');

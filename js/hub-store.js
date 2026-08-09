@@ -570,6 +570,20 @@ const HubStore = (() => {
       return src.map(mapFn);
     };
     e.productCatalog = fill(e.productCatalog, md.PRODUCT_CATALOG, (x) => ({ ...x }));
+    // أسقط المنتجات التجريبية القديمة من التخزين المحلي وأبقِ الشغّالة فقط
+    if (md.PRODUCT_CATALOG?.length) {
+      const allowed = new Set(md.PRODUCT_CATALOG.map((x) => x.id));
+      const before = e.productCatalog?.length || 0;
+      e.productCatalog = (e.productCatalog || []).filter((p) => allowed.has(p.id));
+      const have = new Set(e.productCatalog.map((x) => x.id));
+      md.PRODUCT_CATALOG.forEach((src) => {
+        if (!have.has(src.id)) {
+          e.productCatalog.push({ ...src });
+          changed = true;
+        }
+      });
+      if (e.productCatalog.length !== before) changed = true;
+    }
     if (!e.salesStore) e.salesStore = { items: [], orders: [] };
     e.salesStore.items = fill(e.salesStore.items, md.STORE_ITEMS, (x) => ({ ...x }));
     // Merge any newly seeded academy/store items missing from existing lists
