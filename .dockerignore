@@ -1,0 +1,14 @@
+node_modules
+.git
+.github
+.cursor
+.vscode
+.idea
+*.log
+.env
+.env.*
+_ops-docs
+data/hub-runtime.json
+**/*.md
+agent-transcripts
+terminals
