@@ -32,10 +32,10 @@
     },
     {
       id: 'side-projects',
-      label: 'مشاريع جانبية',
+      label: 'محرك الفرص',
       href: 'side-projects.html',
       className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-seedling',
+      icon: 'fa-compass',
     },
     {
       id: 'courses',

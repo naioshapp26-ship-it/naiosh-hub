@@ -18,7 +18,7 @@
     { href: 'ads.html', icon: 'fa-bullhorn', label: 'إعلاناتي', desc: 'إعلانات المستأجر' },
     { href: 'products.html', icon: 'fa-box-open', label: 'منتجاتي', desc: 'منتجات المستأجر' },
     { href: 'partnerships.html', icon: 'fa-handshake', label: 'شراكاتي', desc: 'صفحة الشراكات' },
-    { href: 'side-projects.html', icon: 'fa-seedling', label: 'مشاريع جانبية', desc: 'نموذج فتح مشروع جانبي' },
+    { href: 'side-projects.html', icon: 'fa-compass', label: 'محرك الفرص', desc: 'اكتشاف فرصة دخل مناسبة لملفك' },
     { href: 'courses.html', icon: 'fa-chalkboard', label: 'دوراتي', desc: 'دورات المستخدم/المدرب' },
     { href: 'diplomas.html', icon: 'fa-graduation-cap', label: 'دبلوماتي', desc: 'دبلومات المتدرب/المدرب' },
     { href: 'chat.html', icon: 'fa-comments', label: 'دردشتي', desc: 'دردشة المستأجر وعملائه' },
