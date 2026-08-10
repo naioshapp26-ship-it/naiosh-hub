@@ -101,6 +101,9 @@
     branch: 'الفرع',
     incubator: 'الحاضنة',
     office: 'المكتب',
+    projectCategory: 'فئة المشروع',
+    projectName: 'اسم المشروع',
+    projectId: 'معرّف المشروع',
     docName: 'مستند',
     imageName: 'صورة',
     videoName: 'فيديو',
@@ -119,6 +122,10 @@
     'incubator',
     'platform',
     'office',
+    'projectCategory',
+    'projectCategoryId',
+    'projectId',
+    'projectName',
     'docName',
     'imageName',
     'videoName',
@@ -705,6 +712,7 @@
       ],
       includeProductExtras: true,
       includeAdTargets: true,
+      includeProjectPicker: true,
       save: (v) => window.HubStore.addAdListing?.(v),
     },
     events: {
@@ -967,6 +975,156 @@
       </div>
     </div>`;
 
+  const PROJECT_AD_CATEGORIES = [
+    {
+      id: 'private',
+      nameAr: 'المشاريع الخاصة',
+      icon: 'fa-gem',
+      categoryIds: ['executable', 'experts', 'low-capital', 'low-loss', 'events', 'emotions'],
+    },
+    {
+      id: 'light',
+      nameAr: 'المشاريع الخفيفة',
+      icon: 'fa-feather',
+      categoryIds: ['home-light', 'cart', 'summer', 'winter', 'malls'],
+    },
+    {
+      id: 'home',
+      nameAr: 'المشاريع المنزلية',
+      icon: 'fa-house',
+      categoryIds: ['home-light', 'home-women'],
+    },
+  ];
+
+  const readOpenedSideProjects = () => {
+    try {
+      const cur = JSON.parse(localStorage.getItem('naiosh_opportunity_engine_v1') || '[]');
+      if (cur.length) return cur;
+      return JSON.parse(localStorage.getItem('naiosh_side_projects_opened_v1') || '[]');
+    } catch {
+      return [];
+    }
+  };
+
+  const projectsForAdCategory = (catId) => {
+    const data = window.HubSideProjectsData;
+    const cat = PROJECT_AD_CATEGORIES.find((c) => c.id === catId);
+    if (!data?.projects || !cat) return [];
+    const opened = readOpenedSideProjects();
+    const openedIds = new Set(opened.map((o) => o.id));
+    const list = data.projects.filter((p) => cat.categoryIds.includes(p.categoryId));
+    const mine = list.filter((p) => openedIds.has(p.id));
+    const rest = list.filter((p) => !openedIds.has(p.id));
+    // أظهر مشاريعه المفتوحة أولًا ثم باقي الكتالوج
+    return [...mine.map((p) => ({ ...p, mine: true })), ...rest].slice(0, 120);
+  };
+
+  const projectPickerFormHtml = () => `
+    <div class="hub-form-block hub-project-picker" data-project-picker>
+      <h4><i class="fas fa-compass"></i> المشاريع — خاصة · خفيفة · منزلية</h4>
+      <p class="hub-form-hint">اختر فئة المشروع من مشاريع نايوش، ثم اختر مشروعك ليظهر اسمه في الإعلان بعد الحفظ.</p>
+      <div class="hub-project-cats" role="radiogroup" aria-label="فئات المشاريع">
+        ${PROJECT_AD_CATEGORIES.map(
+          (c) => `<label class="hub-project-cat">
+            <input type="radio" name="hub-project-cat" value="${esc(c.id)}" data-project-cat="${esc(c.id)}" />
+            <span class="hub-project-cat-face">
+              <i class="fas ${esc(c.icon)}"></i>
+              <strong>${esc(c.nameAr)}</strong>
+            </span>
+          </label>`
+        ).join('')}
+      </div>
+      <div class="hub-project-tools" hidden data-project-tools>
+        <label class="grow">ابحث عن مشروعك
+          <input type="search" id="hub-project-search" placeholder="اسم المشروع…" />
+        </label>
+        <label class="grow">المشروع المختار
+          <input type="text" id="hub-field-projectName" readonly placeholder="سيظهر بعد الاختيار" />
+        </label>
+        <input type="hidden" id="hub-field-projectId" value="" />
+        <input type="hidden" id="hub-field-projectCategory" value="" />
+        <input type="hidden" id="hub-field-projectCategoryId" value="" />
+      </div>
+      <div class="hub-project-list" data-project-list hidden></div>
+      <p class="hub-form-hint" data-project-empty hidden>لا مشاريع في هذه الفئة حاليًا.</p>
+    </div>`;
+
+  const paintProjectList = (catId, query = '') => {
+    const listEl = document.querySelector('[data-project-list]');
+    const tools = document.querySelector('[data-project-tools]');
+    const empty = document.querySelector('[data-project-empty]');
+    if (!listEl || !tools) return;
+    const cat = PROJECT_AD_CATEGORIES.find((c) => c.id === catId);
+    const q = String(query || '').trim().toLowerCase();
+    let items = projectsForAdCategory(catId);
+    if (q) items = items.filter((p) => `${p.title} ${p.section || ''}`.toLowerCase().includes(q));
+    tools.hidden = false;
+    document.getElementById('hub-field-projectCategoryId').value = catId;
+    document.getElementById('hub-field-projectCategory').value = cat?.nameAr || '';
+    if (!items.length) {
+      listEl.hidden = true;
+      listEl.innerHTML = '';
+      if (empty) empty.hidden = false;
+      return;
+    }
+    if (empty) empty.hidden = true;
+    listEl.hidden = false;
+    listEl.innerHTML = items
+      .map(
+        (p) => `<label class="hub-project-item${p.mine ? ' is-mine' : ''}">
+          <input type="radio" name="hub-project-item" value="${esc(p.id)}" data-project-id="${esc(p.id)}" data-project-title="${esc(p.title)}" />
+          <span>
+            <strong>${esc(p.title)}</strong>
+            <small>${p.mine ? 'مشروعك المفتوح · ' : ''}${esc(p.capital || '')} · ${esc(p.mode || '')}</small>
+          </span>
+        </label>`
+      )
+      .join('');
+  };
+
+  const wireProjectPicker = () => {
+    const root = document.querySelector('[data-project-picker]');
+    if (!root) return;
+    if (!window.HubSideProjectsData?.projects?.length) {
+      root.insertAdjacentHTML(
+        'beforeend',
+        '<p class="hub-form-hint warn">كتالوج المشاريع غير محمّل — أعد تحميل الصفحة.</p>'
+      );
+      return;
+    }
+    root.addEventListener('change', (e) => {
+      const cat = e.target.closest('[data-project-cat]');
+      if (cat) {
+        document.getElementById('hub-field-projectId').value = '';
+        document.getElementById('hub-field-projectName').value = '';
+        paintProjectList(cat.value, document.getElementById('hub-project-search')?.value || '');
+        return;
+      }
+      const item = e.target.closest('[data-project-id]');
+      if (item) {
+        const title = item.getAttribute('data-project-title') || '';
+        document.getElementById('hub-field-projectId').value = item.value;
+        document.getElementById('hub-field-projectName').value = title;
+        const titleInput = document.getElementById('hub-add-title');
+        if (titleInput && !titleInput.value.trim()) titleInput.value = `إعلان: ${title}`;
+      }
+    });
+    document.getElementById('hub-project-search')?.addEventListener('input', (e) => {
+      const catId = document.querySelector('input[name="hub-project-cat"]:checked')?.value;
+      if (catId) paintProjectList(catId, e.target.value);
+    });
+  };
+
+  const collectProjectPicker = () => {
+    const projectCategoryId = document.getElementById('hub-field-projectCategoryId')?.value || '';
+    const projectCategory = document.getElementById('hub-field-projectCategory')?.value || '';
+    const projectId = document.getElementById('hub-field-projectId')?.value || '';
+    const projectName = document.getElementById('hub-field-projectName')?.value || '';
+    if (!projectCategoryId) return { error: 'اختر فئة المشروع (خاصة · خفيفة · منزلية)' };
+    if (!projectId || !projectName) return { error: 'اختر مشروعك من القائمة حسب الفئة' };
+    return { projectCategoryId, projectCategory, projectId, projectName };
+  };
+
   const adTargetsFormHtml = () => {
     const opts = hierarchyOptions();
     return `<div class="hub-form-block hub-ad-targets-block">
@@ -1107,6 +1265,13 @@
       }
     }
 
+    if (form.includeProjectPicker) {
+      const proj = collectProjectPicker();
+      if (proj.error) return toast(proj.error);
+      Object.assign(values, proj);
+      if (!values.title) values.title = `إعلان: ${proj.projectName}`;
+    }
+
     const meta = await collectCommonMeta();
     if (meta.error) return toast(meta.error);
     Object.assign(values, meta);
@@ -1138,7 +1303,7 @@
     }
     const kickers = {
       products: 'منتجات رقمية · خدمية · عينية — توجيه حسب التصنيف والنوع عبر الفروع والحاضنات والمنصات',
-      ads: 'إدارة إعلانات متعددة الطبقات: مكتب · منصة · حاضنة · فرع — مع خيارات العرض ومكان الظهور على الواجهة الرئيسية',
+      ads: 'إدارة إعلانات متعددة الطبقات + اختيار المشروع (خاصة · خفيفة · منزلية) من كتالوج نايوش',
       store: 'نموذج رفع على المتجر — مطابق لنموذج المنتجات',
     };
     openModal({
@@ -1151,6 +1316,7 @@
         </div>
       </div>
       ${form.includeAdTargets ? adTargetsFormHtml() : ''}
+      ${form.includeProjectPicker ? projectPickerFormHtml() : ''}
       ${
         form.includeProductExtras
           ? productExtrasFormHtml(
@@ -1182,6 +1348,8 @@
       fillSubcategories(catSel.value);
       catSel.addEventListener('change', () => fillSubcategories(catSel.value));
     }
+
+    if (form.includeProjectPicker) wireProjectPicker();
 
     if (form.includeAdTargets) {
       wireAdTargetSelectAll();

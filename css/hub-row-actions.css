@@ -563,6 +563,89 @@
   padding: 2px 8px;
   border-radius: 999px;
 }
+
+/* Ad form — project category then project list */
+.hub-project-picker .hub-form-hint.warn { color: #b00010; font-weight: 800; }
+.hub-project-cats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 10px 0 14px;
+}
+.hub-project-cat { margin: 0; cursor: pointer; }
+.hub-project-cat input { position: absolute; opacity: 0; pointer-events: none; }
+.hub-project-cat-face {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  text-align: center;
+  min-height: 110px;
+  padding: 14px 10px;
+  border: 1px solid #eadfe2;
+  border-radius: 16px;
+  background: #fff;
+  transition: 0.15s ease;
+}
+.hub-project-cat-face i {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: #faf6f7;
+  color: #d70000;
+  font-size: 18px;
+  border: 1px solid #eadfe2;
+}
+.hub-project-cat-face strong { font-size: 13px; font-weight: 900; }
+.hub-project-cat:has(input:checked) .hub-project-cat-face {
+  border-color: #d70000;
+  background: #fff5f5;
+  box-shadow: 0 8px 18px rgba(215, 0, 0, 0.12);
+}
+.hub-project-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.hub-project-tools .grow { display: grid; gap: 4px; font-size: 12px; font-weight: 800; }
+.hub-project-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid #f0e4e7;
+  border-radius: 12px;
+  background: #fafafa;
+}
+.hub-project-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #eadfe2;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+.hub-project-item input { margin-top: 3px; accent-color: #d70000; }
+.hub-project-item strong { display: block; font-size: 13px; font-weight: 900; }
+.hub-project-item small { color: #777; font-weight: 700; }
+.hub-project-item.is-mine { border-color: #0a7a3e; background: #f3fbf6; }
+.hub-project-item:has(input:checked) {
+  border-color: #d70000;
+  background: #fff5f5;
+}
+@media (max-width: 720px) {
+  .hub-project-cats,
+  .hub-project-tools { grid-template-columns: 1fr; }
+}
+
 .hub-inline-ad-foot {
   display: flex;
   align-items: center;
