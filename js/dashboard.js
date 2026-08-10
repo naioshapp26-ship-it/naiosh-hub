@@ -1237,10 +1237,17 @@
       const map = { todo: 'badge-gray', in_progress: 'badge-red', blocked: 'badge-red', done: 'badge-black' };
       return `<span class="badge ${map[s] || 'badge-outline'}">${esc(statusLabel(s))}</span>`;
     };
-    const short = (text, n = 72) => {
+    const short = (text, n = 90) => {
       const s = String(text || '').trim();
       if (!s) return '—';
       return s.length > n ? `${s.slice(0, n)}…` : s;
+    };
+    const filesCell = (item) => {
+      const parts = [];
+      if (item.docName) parts.push(`<i class="fas fa-file-lines" title="${esc(item.docName)}"></i>`);
+      if (item.imageName) parts.push(`<i class="fas fa-image" title="${esc(item.imageName)}"></i>`);
+      if (item.videoName) parts.push(`<i class="fas fa-video" title="${esc(item.videoName)}"></i>`);
+      return parts.length ? parts.join(' ') : '—';
     };
     return `
       <div class="toolbar">
@@ -1257,81 +1264,98 @@
         <div class="field"><label>موعد الانتهاء</label><input id="task-due" type="date" /></div>
         <button class="btn btn-primary" data-action="add-task">إضافة سريعة</button>
       </div>
+      <article class="card" style="margin-bottom:12px">
+        <h3><span class="title-left"><i class="fas fa-list-check icon"></i> المهام</span></h3>
+        <div class="table-wrap"><table class="data tasks-data">
+          <thead>
+            <tr>
+              <th>المهمة والتفاصيل</th>
+              <th>المسؤول</th>
+              <th>الأولوية</th>
+              <th>الحالة</th>
+              <th>المشروع</th>
+              <th>الموعد</th>
+              <th>جودة</th>
+              <th>الشركة</th>
+              <th>طرف أول</th>
+              <th>جوال ١</th>
+              <th>طرف ثاني</th>
+              <th>جوال ٢</th>
+              <th>الفرع</th>
+              <th>الحاضنة</th>
+              <th>المنصة</th>
+              <th>المكتب</th>
+              <th>مرفقات</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              t.items.length
+                ? t.items
+                    .map((item) => {
+                      const quality = Number(item.quality) > 0 ? `${item.quality}%` : '—';
+                      return `<tr>
+                        <td class="tasks-main-cell">
+                          <strong>${esc(item.title)}</strong>
+                          <small title="${esc(item.details || '')}">${esc(short(item.details))}</small>
+                        </td>
+                        <td>${esc(item.assignee || '—')}</td>
+                        <td>${badgeStatus(item.priority)}</td>
+                        <td>${statusBadge(item.status)}</td>
+                        <td>${esc(item.project || '—')}</td>
+                        <td>${esc(item.dueDate || '—')}</td>
+                        <td>${esc(quality)}</td>
+                        <td>${esc(item.companyName || '—')}</td>
+                        <td>${esc(item.party1Name || '—')}</td>
+                        <td>${esc(item.party1Phone || '—')}</td>
+                        <td>${esc(item.party2Name || '—')}</td>
+                        <td>${esc(item.party2Phone || '—')}</td>
+                        <td>${esc(item.branch || '—')}</td>
+                        <td>${esc(item.incubator || '—')}</td>
+                        <td>${esc(item.platform || '—')}</td>
+                        <td>${esc(item.office || '—')}</td>
+                        <td>${filesCell(item)}</td>
+                        <td class="tasks-acts-cell">
+                          <div class="tasks-row-acts">
+                            ${item.status !== 'in_progress' && item.status !== 'done' ? `<button class="btn btn-sm btn-ghost" data-action="task-status" data-id="${item.id}" data-status="in_progress">بدء</button>` : ''}
+                            ${item.status !== 'done' ? `<button class="btn btn-sm btn-primary" data-action="task-status" data-id="${item.id}" data-status="done">إتمام</button>` : ''}
+                            ${item.status !== 'blocked' && item.status !== 'done' ? `<button class="btn btn-sm btn-dark" data-action="task-status" data-id="${item.id}" data-status="blocked">اختناق</button>` : ''}
+                            ${rowActs('tasks', item.id)}
+                          </div>
+                        </td>
+                      </tr>`;
+                    })
+                    .join('')
+                : `<tr><td colspan="18" class="empty">لا توجد مهام بعد</td></tr>`
+            }
+          </tbody>
+        </table></div>
+      </article>
       <div class="grid-2">
         <article class="card">
-          <h3><span class="title-left"><i class="fas fa-list-check icon"></i> المهام</span></h3>
-          <div class="table-wrap"><table class="data tasks-data">
-            <thead>
-              <tr>
-                <th>المهمة</th>
-                <th>المسؤول</th>
-                <th>الأولوية</th>
-                <th>الحالة</th>
-                <th>المشروع</th>
-                <th>الموعد</th>
-                <th>جودة</th>
-                <th>إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${
-                t.items.length
-                  ? t.items
-                      .map((item) => {
-                        const quality = Number(item.quality) > 0 ? `${item.quality}%` : '—';
-                        const details = short(item.details);
-                        return `<tr>
-                          <td class="tasks-main-cell">
-                            <strong>${esc(item.title)}</strong>
-                            <small title="${esc(item.details || '')}">${esc(details)}</small>
-                          </td>
-                          <td>${esc(item.assignee || '—')}</td>
-                          <td>${badgeStatus(item.priority)}</td>
-                          <td>${statusBadge(item.status)}</td>
-                          <td>${esc(item.project || '—')}</td>
-                          <td>${esc(item.dueDate || '—')}</td>
-                          <td>${esc(quality)}</td>
-                          <td>
-                            <div class="tasks-row-acts">
-                              ${item.status !== 'in_progress' && item.status !== 'done' ? `<button class="btn btn-sm btn-ghost" data-action="task-status" data-id="${item.id}" data-status="in_progress">بدء</button>` : ''}
-                              ${item.status !== 'done' ? `<button class="btn btn-sm btn-primary" data-action="task-status" data-id="${item.id}" data-status="done">إتمام</button>` : ''}
-                              ${item.status !== 'blocked' && item.status !== 'done' ? `<button class="btn btn-sm btn-dark" data-action="task-status" data-id="${item.id}" data-status="blocked">اختناق</button>` : ''}
-                              ${rowActs('tasks', item.id)}
-                            </div>
-                          </td>
-                        </tr>`;
-                      })
-                      .join('')
-                  : `<tr><td colspan="8" class="empty">لا توجد مهام بعد</td></tr>`
-              }
-            </tbody>
-          </table></div>
+          <h3><span class="title-left"><i class="fas fa-diagram-project icon"></i> المشاريع</span></h3>
+          ${t.projects
+            .map(
+              (p) => `<div style="margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800"><span>${esc(p.name)}</span><span>${p.progress}%</span></div>
+                <small style="color:var(--muted)">${esc(p.phase)} · ${esc(p.owner)}</small>
+                <div style="margin-top:6px">${bar(p.progress)}</div>
+              </div>`
+            )
+            .join('')}
         </article>
-        <div style="display:grid;gap:12px">
-          <article class="card">
-            <h3><span class="title-left"><i class="fas fa-diagram-project icon"></i> المشاريع</span></h3>
-            ${t.projects
-              .map(
-                (p) => `<div style="margin-bottom:12px">
-                  <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800"><span>${esc(p.name)}</span><span>${p.progress}%</span></div>
-                  <small style="color:var(--muted)">${esc(p.phase)} · ${esc(p.owner)}</small>
-                  <div style="margin-top:6px">${bar(p.progress)}</div>
-                </div>`
-              )
-              .join('')}
-          </article>
-          <article class="card">
-            <h3><span class="title-left"><i class="fas fa-road-barrier icon"></i> الاختناقات</span></h3>
-            ${t.bottlenecks
-              .map(
-                (b) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-                  <span><b>${esc(b.area)}</b><br/><small style="color:var(--muted)">${b.waitHours} ساعة انتظار</small></span>
-                  ${badgeStatus(b.severity)}
-                </div>`
-              )
-              .join('')}
-          </article>
-        </div>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-road-barrier icon"></i> الاختناقات</span></h3>
+          ${t.bottlenecks
+            .map(
+              (b) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+                <span><b>${esc(b.area)}</b><br/><small style="color:var(--muted)">${b.waitHours} ساعة انتظار</small></span>
+                ${badgeStatus(b.severity)}
+              </div>`
+            )
+            .join('')}
+        </article>
       </div>
     `;
   };
