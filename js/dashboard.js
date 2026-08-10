@@ -1231,67 +1231,108 @@
   const renderTasks = () => {
     const t = HubStore.get().tasks;
     const people = HubStore.get().workforce.employees.map((e) => e.name);
+    const statusLabel = (s) =>
+      ({ todo: 'معلّقة', in_progress: 'قيد التنفيذ', blocked: 'مختنق', done: 'مكتملة' }[s] || s);
+    const statusClass = (s) =>
+      ({ todo: 'task-st-todo', in_progress: 'task-st-run', blocked: 'task-st-blocked', done: 'task-st-done' }[s] || '');
+    const statusBadge = (s) => {
+      const map = { todo: 'badge-gray', in_progress: 'badge-red', blocked: 'badge-red', done: 'badge-black' };
+      return `<span class="badge ${map[s] || 'badge-outline'}">${esc(statusLabel(s))}</span>`;
+    };
+    const counts = {
+      all: t.items.length,
+      run: t.items.filter((i) => i.status === 'in_progress').length,
+      blocked: t.items.filter((i) => i.status === 'blocked').length,
+      done: t.items.filter((i) => i.status === 'done').length,
+    };
+    const taskCard = (item) => {
+      const meta = window.HubActions?.metaCardLine?.(item) || '';
+      const quality = Number(item.quality) > 0 ? `${item.quality}%` : '—';
+      return `<article class="task-card ${statusClass(item.status)}" data-task-id="${esc(item.id)}">
+        <div class="task-card-body">
+          <div class="task-card-top">
+            <h4>${esc(item.title)}</h4>
+            <div class="task-card-badges">
+              ${badgeStatus(item.priority)}
+              ${statusBadge(item.status)}
+            </div>
+          </div>
+          <div class="task-card-facts">
+            <span><i class="fas fa-user"></i> ${esc(item.assignee || '—')}</span>
+            <span><i class="fas fa-diagram-project"></i> ${esc(item.project || '—')}</span>
+            <span><i class="fas fa-star-half-stroke"></i> جودة ${esc(String(quality))}</span>
+          </div>
+          ${meta}
+        </div>
+        <div class="task-card-actions">
+          ${item.status !== 'in_progress' && item.status !== 'done' ? `<button class="btn btn-sm btn-ghost" data-action="task-status" data-id="${item.id}" data-status="in_progress"><i class="fas fa-play"></i> بدء</button>` : ''}
+          ${item.status !== 'done' ? `<button class="btn btn-sm btn-primary" data-action="task-status" data-id="${item.id}" data-status="done"><i class="fas fa-check"></i> إتمام</button>` : ''}
+          ${item.status !== 'blocked' && item.status !== 'done' ? `<button class="btn btn-sm btn-dark" data-action="task-status" data-id="${item.id}" data-status="blocked"><i class="fas fa-ban"></i> اختناق</button>` : ''}
+          ${rowActs('tasks', item.id)}
+        </div>
+      </article>`;
+    };
     return `
-      <div class="toolbar">
-        ${pageActs('tasks', 'إضافة')}
-        <div class="field"><label>المهمة</label><input id="task-title" placeholder="عنوان المهمة" /></div>
-        <div class="field"><label>المسؤول</label>
-          <select id="task-assignee">${people.map((p) => `<option>${esc(p)}</option>`).join('')}</select>
+      <div class="tasks-page">
+        <div class="tasks-kpis">
+          <article class="tasks-kpi"><strong>${counts.all}</strong><span>كل المهام</span></article>
+          <article class="tasks-kpi is-run"><strong>${counts.run}</strong><span>قيد التنفيذ</span></article>
+          <article class="tasks-kpi is-blocked"><strong>${counts.blocked}</strong><span>مختنق</span></article>
+          <article class="tasks-kpi is-done"><strong>${counts.done}</strong><span>مكتمل</span></article>
         </div>
-        <div class="field"><label>الأولوية</label>
-          <select id="task-priority"><option>عاجل</option><option>عالي</option><option selected>متوسط</option></select>
+        <div class="toolbar tasks-toolbar">
+          ${pageActs('tasks', 'إضافة مهمة')}
+          <div class="field"><label>المهمة</label><input id="task-title" placeholder="عنوان المهمة" /></div>
+          <div class="field"><label>المسؤول</label>
+            <select id="task-assignee">${people.map((p) => `<option>${esc(p)}</option>`).join('')}</select>
+          </div>
+          <div class="field"><label>الأولوية</label>
+            <select id="task-priority"><option>عاجل</option><option>عالي</option><option selected>متوسط</option></select>
+          </div>
+          <div class="field"><label>المشروع</label><input id="task-project" value="تشغيل يومي" /></div>
+          <button class="btn btn-primary" data-action="add-task"><i class="fas fa-plus"></i> إضافة سريعة</button>
         </div>
-        <div class="field"><label>المشروع</label><input id="task-project" value="تشغيل يومي" /></div>
-        <button class="btn btn-primary" data-action="add-task">إضافة سريعة</button>
-      </div>
-      <div class="grid-2">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-list-check icon"></i> المهام</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>المهمة</th><th>المسؤول</th><th>أولوية</th><th>حالة</th><th>جودة</th>${metaHead()}<th></th></tr></thead>
-            <tbody>
-              ${t.items
-                .map(
-                  (item) => `<tr>
-                    <td>${esc(item.title)}</td><td>${esc(item.assignee)}</td><td>${badgeStatus(item.priority)}</td>
-                    <td>${badgeStatus(item.status)}</td><td>${item.quality || '—'}</td>
-                    ${metaCells(item)}
-                    <td style="display:flex;gap:4px;flex-wrap:wrap">
-                      ${item.status !== 'in_progress' && item.status !== 'done' ? `<button class="btn btn-sm btn-ghost" data-action="task-status" data-id="${item.id}" data-status="in_progress">بدء</button>` : ''}
-                      ${item.status !== 'done' ? `<button class="btn btn-sm btn-primary" data-action="task-status" data-id="${item.id}" data-status="done">إتمام</button>` : ''}
-                      ${item.status !== 'blocked' && item.status !== 'done' ? `<button class="btn btn-sm btn-dark" data-action="task-status" data-id="${item.id}" data-status="blocked">اختناق</button>` : ''}
-                      ${rowActs('tasks', item.id)}
-                    </td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-        <div style="display:grid;gap:12px">
-          <article class="card">
-            <h3><span class="title-left"><i class="fas fa-diagram-project icon"></i> المشاريع</span></h3>
-            ${t.projects
-              .map(
-                (p) => `<div style="margin-bottom:12px">
-                  <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800"><span>${esc(p.name)}</span><span>${p.progress}%</span></div>
-                  <small style="color:var(--muted)">${esc(p.phase)} · ${esc(p.owner)}</small>
-                  <div style="margin-top:6px">${bar(p.progress)}</div>
-                </div>`
-              )
-              .join('')}
-          </article>
-          <article class="card">
-            <h3><span class="title-left"><i class="fas fa-road-barrier icon"></i> الاختناقات</span></h3>
-            ${t.bottlenecks
-              .map(
-                (b) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-                  <span><b>${esc(b.area)}</b><br/><small style="color:var(--muted)">${b.waitHours} ساعة انتظار</small></span>
-                  ${badgeStatus(b.severity)}
-                </div>`
-              )
-              .join('')}
-          </article>
+        <div class="tasks-layout">
+          <section class="card tasks-board">
+            <h3><span class="title-left"><i class="fas fa-list-check icon"></i> لوحة المهام</span>
+              <small class="tasks-board-count">${counts.all} مهمة</small>
+            </h3>
+            <div class="tasks-list">
+              ${t.items.length ? t.items.map(taskCard).join('') : '<p class="tasks-empty">لا توجد مهام بعد — أضف مهمة من الشريط أعلاه.</p>'}
+            </div>
+          </section>
+          <aside class="tasks-side">
+            <article class="card">
+              <h3><span class="title-left"><i class="fas fa-diagram-project icon"></i> المشاريع</span></h3>
+              <div class="tasks-projects">
+                ${t.projects
+                  .map(
+                    (p) => `<div class="tasks-project">
+                      <div class="tasks-project-head"><span>${esc(p.name)}</span><strong>${p.progress}%</strong></div>
+                      <small>${esc(p.phase)} · ${esc(p.owner)}</small>
+                      <div class="tasks-project-bar">${bar(p.progress)}</div>
+                    </div>`
+                  )
+                  .join('')}
+              </div>
+            </article>
+            <article class="card">
+              <h3><span class="title-left"><i class="fas fa-road-barrier icon"></i> الاختناقات</span></h3>
+              <div class="tasks-bottlenecks">
+                ${t.bottlenecks
+                  .map(
+                    (b) => `<div class="tasks-bn">
+                      <div>
+                        <b>${esc(b.area)}</b>
+                        <small>${b.waitHours} ساعة انتظار</small>
+                      </div>
+                      ${badgeStatus(b.severity)}
+                    </div>`
+                  )
+                  .join('')}
+              </div>
+            </article>
+          </aside>
         </div>
       </div>
     `;
