@@ -48,6 +48,12 @@
     movement: 'الحركة',
     desc: 'شرح مبسط عن المنتج',
     description: 'شرح مبسط عن المنتج',
+    details: 'التفاصيل',
+    project: 'المشروع',
+    assignee: 'المسؤول',
+    priority: 'الأولوية',
+    quality: 'الجودة',
+    dueDate: 'موعد الانتهاء',
     adStartDate: 'تاريخ بداية الإعلان',
     adEndDate: 'تاريخ نهاية الإعلان',
     appearancePlaces: 'مكان ظهور الإعلان',
@@ -497,7 +503,30 @@
         ? `<label>الدور
             <input id="hub-edit-role" type="text" value="${esc(item.role || '')}" />
           </label>`
-        : '';
+        : entity === 'tasks'
+          ? `<label class="full-span">التفاصيل
+              <textarea id="hub-edit-details" rows="3">${esc(item.details || '')}</textarea>
+            </label>
+            <label>المسؤول
+              <input id="hub-edit-assignee" type="text" value="${esc(item.assignee || '')}" />
+            </label>
+            <label>الأولوية
+              <select id="hub-edit-priority">
+                ${['عاجل', 'عالي', 'متوسط', 'عادي']
+                  .map(
+                    (p) =>
+                      `<option value="${esc(p)}" ${p === (item.priority || 'متوسط') ? 'selected' : ''}>${esc(p)}</option>`
+                  )
+                  .join('')}
+              </select>
+            </label>
+            <label>المشروع
+              <input id="hub-edit-project" type="text" value="${esc(item.project || '')}" />
+            </label>
+            <label>موعد الانتهاء
+              <input id="hub-edit-dueDate" type="date" value="${esc(item.dueDate || '')}" />
+            </label>`
+          : '';
     openModal({
       title: `تعديل · ${current}`,
       kicker: `نموذج تعديل ${ENTITY_LABELS[entity] || 'سجل'}`,
@@ -505,10 +534,12 @@
         ${detailsGrid(item)}
         <div class="hub-form-block">
           <h4><i class="fas fa-pen"></i> تعديل البيانات</h4>
-          <label>الاسم / العنوان
-            <input id="hub-edit-title" type="text" value="${esc(current)}" />
-          </label>
-          ${extraFields}
+          <div class="hub-form-grid">
+            <label class="${entity === 'tasks' ? 'full-span' : ''}">الاسم / العنوان
+              <input id="hub-edit-title" type="text" value="${esc(current)}" />
+            </label>
+            ${extraFields}
+          </div>
         </div>
         ${commonMetaFormHtml(item)}`,
       foot: `
@@ -523,6 +554,13 @@
       const patch = { title, ...meta };
       if (entity === 'employees') {
         patch.role = document.getElementById('hub-edit-role')?.value.trim() || item.role || 'تشغيل';
+      }
+      if (entity === 'tasks') {
+        patch.details = document.getElementById('hub-edit-details')?.value.trim() || '';
+        patch.assignee = document.getElementById('hub-edit-assignee')?.value.trim() || item.assignee || '';
+        patch.priority = document.getElementById('hub-edit-priority')?.value || item.priority || 'متوسط';
+        patch.project = document.getElementById('hub-edit-project')?.value.trim() || item.project || '';
+        patch.dueDate = document.getElementById('hub-edit-dueDate')?.value || '';
       }
       const ok = window.HubStore.entityAction(entity, id, 'edit', patch);
       if (!ok) return toast('تعذّر التعديل');
@@ -737,10 +775,24 @@
       title: 'إضافة مهمة',
       fields: [
         { id: 'title', label: 'عنوان المهمة', required: true },
+        { id: 'details', label: 'التفاصيل', type: 'textarea', required: true, value: '' },
         { id: 'assignee', label: 'المسؤول', value: 'فريق هوب' },
-        { id: 'priority', label: 'الأولوية', value: 'عادي' },
+        {
+          id: 'priority',
+          label: 'الأولوية',
+          type: 'select',
+          value: 'متوسط',
+          options: ['عاجل', 'عالي', 'متوسط', 'عادي'],
+        },
+        { id: 'project', label: 'المشروع', value: 'تشغيل يومي' },
+        { id: 'dueDate', label: 'موعد الانتهاء', type: 'date', value: '' },
       ],
-      save: (v) => window.HubStore.addTask(v.title, v.assignee || 'فريق هوب', v.priority || 'عادي', v.project || 'تشغيل يومي', v),
+      save: (v) =>
+        window.HubStore.addTask(v.title, v.assignee || 'فريق هوب', v.priority || 'متوسط', v.project || 'تشغيل يومي', {
+          ...v,
+          details: v.details || '',
+          dueDate: v.dueDate || '',
+        }),
     },
     employees: {
       title: 'إضافة موظف',
@@ -845,6 +897,11 @@
     if (f.type === 'textarea') {
       return `<label class="full-span">${esc(f.label)}
         <textarea id="hub-add-${esc(f.id)}" rows="3" ${f.required ? 'required' : ''}>${esc(f.value || '')}</textarea>
+      </label>`;
+    }
+    if (f.type === 'date') {
+      return `<label>${esc(f.label)}
+        <input id="hub-add-${esc(f.id)}" type="date" value="${esc(f.value || '')}" ${f.required ? 'required' : ''} />
       </label>`;
     }
     return `<label>${esc(f.label)}

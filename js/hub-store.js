@@ -373,10 +373,88 @@ const HubStore = (() => {
     },
     tasks: {
       items: [
-        { id: uid('t'), title: 'مراجعة سياسة POL-02', assignee: 'ليلى كريم', priority: 'عالي', status: 'in_progress', quality: 0, project: 'حوكمة Q1' },
-        { id: uid('t'), title: 'مزامنة بيانات ERP', assignee: 'محمد حسن', priority: 'عاجل', status: 'blocked', quality: 0, project: 'تكامل الأنظمة' },
-        { id: uid('t'), title: 'تقرير مخاطر أسبوعي', assignee: 'نور فهد', priority: 'متوسط', status: 'todo', quality: 0, project: 'تقارير سيادية' },
-        { id: uid('t'), title: 'تحسين مسار Academy', assignee: 'سارة أحمد', priority: 'عالي', status: 'done', quality: 91, project: 'تشغيل Academy' },
+        {
+          id: uid('t'),
+          title: 'مراجعة سياسة POL-02',
+          details: 'مراجعة بنود سياسة الحوكمة POL-02 واعتماد التعديلات مع لجنة الامتثال قبل النشر.',
+          assignee: 'ليلى كريم',
+          priority: 'عالي',
+          status: 'in_progress',
+          quality: 0,
+          project: 'حوكمة Q1',
+          dueDate: '2026-08-20',
+          companyName: 'نايوش',
+          party1Name: 'ليلى كريم',
+          party1Phone: '0500000001',
+          party2Name: 'لجنة الحوكمة',
+          party2Phone: '0500000002',
+          branch: 'الفرع الرئيسي',
+          incubator: 'حاضنة التشغيل',
+          platform: 'NAIOSH HUB',
+          office: 'مكتب الحوكمة',
+          docName: 'POL-02.pdf',
+        },
+        {
+          id: uid('t'),
+          title: 'مزامنة بيانات ERP',
+          details: 'إغلاق فجوة المزامنة بين ERP وهوب ومعالجة السجلات المعلّقة في طابور التكامل.',
+          assignee: 'محمد حسن',
+          priority: 'عاجل',
+          status: 'blocked',
+          quality: 0,
+          project: 'تكامل الأنظمة',
+          dueDate: '2026-08-15',
+          companyName: 'نايوش',
+          party1Name: 'محمد حسن',
+          party1Phone: '0500000003',
+          party2Name: 'فريق التكامل',
+          party2Phone: '0500000004',
+          branch: 'الفرع الرئيسي',
+          incubator: 'حاضنة الأنظمة',
+          platform: 'ERP',
+          office: 'مكتب التشغيل',
+        },
+        {
+          id: uid('t'),
+          title: 'تقرير مخاطر أسبوعي',
+          details: 'إعداد تقرير المخاطر الأسبوعي للقائد الأعلى مع مؤشرات الاختناقات والتنبؤ.',
+          assignee: 'نور فهد',
+          priority: 'متوسط',
+          status: 'todo',
+          quality: 0,
+          project: 'تقارير سيادية',
+          dueDate: '2026-08-22',
+          companyName: 'نايوش',
+          party1Name: 'نور فهد',
+          party1Phone: '0500000005',
+          party2Name: 'غرفة العمليات',
+          party2Phone: '0500000006',
+          branch: 'الفرع الرئيسي',
+          incubator: 'حاضنة التقارير',
+          platform: 'NAIOSH HUB',
+          office: 'مكتب التقارير',
+        },
+        {
+          id: uid('t'),
+          title: 'تحسين مسار Academy',
+          details: 'تحسين مسار التسجيل في الأكاديمية من المتجر حتى فتح الدورة وإصدار الشهادة.',
+          assignee: 'سارة أحمد',
+          priority: 'عالي',
+          status: 'done',
+          quality: 91,
+          project: 'تشغيل Academy',
+          dueDate: '2026-08-08',
+          companyName: 'نايوش',
+          party1Name: 'سارة أحمد',
+          party1Phone: '0500000007',
+          party2Name: 'أكاديمية نايوش',
+          party2Phone: '0500000008',
+          branch: 'الفرع الرئيسي',
+          incubator: 'حاضنة التعليم',
+          platform: 'ACADEMY',
+          office: 'مكتب الأكاديمية',
+          imageName: 'academy-path.png',
+        },
       ],
       projects: [
         { id: uid('pj'), name: 'تأسيس العقل المركزي', phase: 'التأسيس', progress: 64, owner: 'مليكة' },
@@ -467,6 +545,89 @@ const HubStore = (() => {
       state.notifications = [];
       changed = true;
     }
+    if (hydrateTasksDetails()) changed = true;
+    return changed;
+  };
+
+  /** إثراء المهام القديمة بحقول التفاصيل/الموعد إن كانت ناقصة */
+  const hydrateTasksDetails = () => {
+    const items = state?.tasks?.items;
+    if (!Array.isArray(items) || !items.length) return false;
+    const defaults = {
+      'مراجعة سياسة POL-02': {
+        details: 'مراجعة بنود سياسة الحوكمة POL-02 واعتماد التعديلات مع لجنة الامتثال قبل النشر.',
+        dueDate: '2026-08-20',
+        branch: 'الفرع الرئيسي',
+        incubator: 'حاضنة التشغيل',
+        platform: 'NAIOSH HUB',
+        office: 'مكتب الحوكمة',
+        party1Name: 'ليلى كريم',
+        party2Name: 'لجنة الحوكمة',
+        companyName: 'نايوش',
+        docName: 'POL-02.pdf',
+      },
+      'مزامنة بيانات ERP': {
+        details: 'إغلاق فجوة المزامنة بين ERP وهوب ومعالجة السجلات المعلّقة في طابور التكامل.',
+        dueDate: '2026-08-15',
+        branch: 'الفرع الرئيسي',
+        incubator: 'حاضنة الأنظمة',
+        platform: 'ERP',
+        office: 'مكتب التشغيل',
+        party1Name: 'محمد حسن',
+        party2Name: 'فريق التكامل',
+        companyName: 'نايوش',
+      },
+      'تقرير مخاطر أسبوعي': {
+        details: 'إعداد تقرير المخاطر الأسبوعي للقائد الأعلى مع مؤشرات الاختناقات والتنبؤ.',
+        dueDate: '2026-08-22',
+        branch: 'الفرع الرئيسي',
+        incubator: 'حاضنة التقارير',
+        platform: 'NAIOSH HUB',
+        office: 'مكتب التقارير',
+        party1Name: 'نور فهد',
+        party2Name: 'غرفة العمليات',
+        companyName: 'نايوش',
+      },
+      'تحسين مسار Academy': {
+        details: 'تحسين مسار التسجيل في الأكاديمية من المتجر حتى فتح الدورة وإصدار الشهادة.',
+        dueDate: '2026-08-08',
+        branch: 'الفرع الرئيسي',
+        incubator: 'حاضنة التعليم',
+        platform: 'ACADEMY',
+        office: 'مكتب الأكاديمية',
+        party1Name: 'سارة أحمد',
+        party2Name: 'أكاديمية نايوش',
+        companyName: 'نايوش',
+        imageName: 'academy-path.png',
+      },
+    };
+    let changed = false;
+    items.forEach((item) => {
+      const fill = defaults[item.title] || {};
+      const keys = [
+        'details',
+        'dueDate',
+        'branch',
+        'incubator',
+        'platform',
+        'office',
+        'party1Name',
+        'party2Name',
+        'party1Phone',
+        'party2Phone',
+        'companyName',
+        'companyAddress',
+        'docName',
+        'imageName',
+        'videoName',
+      ];
+      keys.forEach((k) => {
+        if (item[k] == null) {
+          item[k] = fill[k] || '';
+          changed = true;
+        }
+      });
+    });
     return changed;
   };
 
@@ -1224,11 +1385,13 @@ const HubStore = (() => {
     const item = {
       id: uid('t'),
       title,
+      details: String(extra.details || '').trim(),
       assignee,
       priority,
       status: 'todo',
       quality: 0,
       project,
+      dueDate: String(extra.dueDate || '').trim(),
       ...pickCommonMeta(extra),
     };
     get().tasks.items.unshift(item);
