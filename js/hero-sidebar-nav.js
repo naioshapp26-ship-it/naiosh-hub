@@ -25,6 +25,7 @@
       { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
       { label: 'شراكاتي', href: 'partnerships.html', icon: 'fa-handshake' },
       { label: 'محرك الفرص', href: 'side-projects.html', icon: 'fa-compass' },
+      { label: 'نظام التشغيل', href: 'global-os.html', icon: 'fa-network-wired' },
       { label: 'دورات', href: 'courses.html', icon: 'fa-chalkboard' },
       { label: 'دبلومات', href: 'diplomas.html', icon: 'fa-graduation-cap' },
       { label: 'عملائي', href: 'systems/crm.html?from=hub&return=index.html', icon: 'fa-users', launchCode: 'CRM' },
@@ -42,6 +43,7 @@
     };
     ensure('شراكاتي', 'partnerships.html', 'fa-handshake');
     ensure('محرك الفرص', 'side-projects.html', 'fa-compass');
+    ensure('نظام التشغيل', 'global-os.html', 'fa-network-wired');
     ensure('دورات', 'courses.html', 'fa-chalkboard');
     ensure('دبلومات', 'diplomas.html', 'fa-graduation-cap');
     return list;

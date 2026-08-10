@@ -46,6 +46,17 @@
         'بعد «اختبر هذه الفرصة» اتبع مسار التشغيل حتى الحاضنة.',
       ],
     },
+    globalOs: {
+      test: (path) => path.includes('global-os'),
+      title: 'دليل نظام التشغيل العالمي',
+      subtitle: 'NAIOSH GLOBAL OPERATING SYSTEM — معماريّة وسجل وتكامل وذكاء.',
+      purpose: 'راجع الطبقات العشر، سجل الأنظمة الـ41، المصفوفات، Integration Hub، AI Gateway، وقاموس البيانات قبل أي تطوير نظام جديد.',
+      tips: [
+        'ابدأ بتبويب المعمارية ثم سجل الأنظمة.',
+        'جرّب إطلاق حدث من Integration Hub لفهم Event Bus.',
+        'أي وظيفة مشتركة تُنقل إلى Core — لا تكرار داخل الأنظمة.',
+      ],
+    },
     platforms: {
       test: (path) => path.includes('platforms'),
       title: 'دليل المنصات السيادية',

@@ -38,6 +38,13 @@
       icon: 'fa-compass',
     },
     {
+      id: 'global-os',
+      label: 'نظام التشغيل',
+      href: 'global-os.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-network-wired',
+    },
+    {
       id: 'courses',
       label: 'دورات',
       href: 'courses.html',
