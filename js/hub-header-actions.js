@@ -31,6 +31,13 @@
       icon: 'fa-id-card',
     },
     {
+      id: 'side-projects',
+      label: 'مشاريع جانبية',
+      href: 'side-projects.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-seedling',
+    },
+    {
       id: 'courses',
       label: 'دورات',
       href: 'courses.html',

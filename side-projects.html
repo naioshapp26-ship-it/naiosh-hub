@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مشاريع جانبية | نايوش هوب 360</title>
+  <meta name="description" content="NAIOSH SIDE BUSINESS HUB — نموذج فتح مشروع جانبي مع اقتراح أفضل المشاريع المناسبة لملفك." />
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/hub-theme.css" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=10" />
+  <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
+  <link rel="stylesheet" href="css/hub-side-projects.css?v=1" />
+</head>
+<body class="homepage">
+  <header class="top-nav">
+    <div class="container inner">
+      <div class="nav-main">
+        <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
+        <nav class="nav-links">
+          <a href="index.html">الرئيسية</a>
+          <a href="office.html">مكتبي</a>
+          <a class="active" href="side-projects.html">مشاريع جانبية</a>
+          <a href="incubators.html">الحاضنات</a>
+        </nav>
+      </div>
+      <div class="auth-actions">
+        <a href="packages.html" class="auth-btn">الباقات</a>
+        <a href="login.html" class="auth-btn primary">تسجيل الدخول</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container hub-feature-page" data-side-projects-page>
+    <section class="hub-feature-hero sp-hero">
+      <p class="hub-feature-kicker"><i class="fas fa-seedling"></i> NAIOSH SIDE BUSINESS HUB</p>
+      <h1>مشروعك الجانبي... قد يصبح مشروعك الرئيسي</h1>
+      <p>
+        منصة المشاريع والدخل الجانبي داخل هوب 360: أجب عن أسئلة بسيطة، واحصل على أفضل المشاريع المناسبة لملفك،
+        ثم افتح مشروعك بخطوات تشغيل واضحة.
+      </p>
+      <div class="hub-feature-actions">
+        <a class="btn btn-primary" href="#sp-form"><i class="fas fa-file-signature"></i> نموذج فتح مشروع</a>
+        <a class="btn btn-secondary" href="#sp-catalog"><i class="fas fa-layer-group"></i> تصفّح الكتالوج</a>
+        <a class="btn btn-secondary" href="#sp-opened"><i class="fas fa-folder-open"></i> مشاريعي المفتوحة</a>
+      </div>
+    </section>
+
+    <section class="sp-stats" data-sp-stats aria-label="مؤشرات الكتالوج"></section>
+
+    <section class="sp-panel" id="sp-form" aria-labelledby="sp-form-title">
+      <div class="sp-panel-head">
+        <h2 id="sp-form-title"><i class="fas fa-clipboard-list"></i> نموذج فتح مشاريع جانبية</h2>
+        <p>أجب عن الأسئلة — ثم يحسب النظام ملاءمة كل مشروع ويقترح أفضل 10 لك.</p>
+      </div>
+      <form class="sp-form" data-sp-form novalidate></form>
+      <div class="sp-form-actions">
+        <button type="button" class="btn btn-primary" data-sp-match><i class="fas fa-wand-magic-sparkles"></i> اقترح مشاريعي</button>
+        <button type="reset" class="btn btn-secondary" data-sp-reset>إعادة تعيين</button>
+      </div>
+    </section>
+
+    <section class="sp-panel" id="sp-results" hidden aria-labelledby="sp-results-title">
+      <div class="sp-panel-head">
+        <h2 id="sp-results-title"><i class="fas fa-ranking-star"></i> أفضل المشاريع المناسبة لك</h2>
+        <p data-sp-results-lead>نتائج محرك الاكتشاف حسب إجاباتك.</p>
+      </div>
+      <div class="sp-results-grid" data-sp-results></div>
+    </section>
+
+    <section class="sp-panel" id="sp-catalog" aria-labelledby="sp-catalog-title">
+      <div class="sp-panel-head">
+        <h2 id="sp-catalog-title"><i class="fas fa-book-open"></i> كتالوج المشاريع من ملفات العميل</h2>
+        <p>١٤ قائمة معتمدة — تصفّح حسب التصنيف أو ابحث بالاسم.</p>
+      </div>
+      <div class="sp-catalog-toolbar">
+        <label class="sp-field grow">بحث
+          <input type="search" data-sp-search placeholder="ابحث عن مشروع…" />
+        </label>
+        <label class="sp-field">التصنيف
+          <select data-sp-cat-filter>
+            <option value="">كل التصنيفات</option>
+          </select>
+        </label>
+      </div>
+      <div class="sp-cat-chips" data-sp-cat-chips></div>
+      <div class="sp-catalog-grid" data-sp-catalog></div>
+    </section>
+
+    <section class="sp-panel" id="sp-opened" aria-labelledby="sp-opened-title">
+      <div class="sp-panel-head">
+        <h2 id="sp-opened-title"><i class="fas fa-briefcase"></i> مشاريعي المفتوحة</h2>
+        <p>المشاريع التي فتحتها عبر النموذج تُحفظ محليًا وتربطك بمسار التشغيل داخل هوب.</p>
+      </div>
+      <div class="sp-opened-list" data-sp-opened></div>
+    </section>
+  </main>
+
+  <div class="sp-toast" id="sp-toast" role="status" aria-live="polite"></div>
+
+  <script src="js/hub-side-projects-data.js"></script>
+  <script src="js/hub-side-projects.js"></script>
+  <script src="js/hub-header-actions.js?v=10"></script>
+  <script src="js/hub-global-back.js" defer></script>
+  <script src="js/hub-page-guide.js" defer></script>
+</body>
+</html>

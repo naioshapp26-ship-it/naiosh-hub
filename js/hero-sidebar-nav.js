@@ -24,6 +24,7 @@
       { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },
       { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
       { label: 'شراكاتي', href: 'partnerships.html', icon: 'fa-handshake' },
+      { label: 'مشاريع جانبية', href: 'side-projects.html', icon: 'fa-seedling' },
       { label: 'دورات', href: 'courses.html', icon: 'fa-chalkboard' },
       { label: 'دبلومات', href: 'diplomas.html', icon: 'fa-graduation-cap' },
       { label: 'عملائي', href: 'systems/crm.html?from=hub&return=index.html', icon: 'fa-users', launchCode: 'CRM' },
@@ -39,6 +40,8 @@
       const insertAt = list.findIndex((p) => p.label === 'عملائي' || p.label === 'دردشة داخلية' || /^اخرى$|^أخرى$/.test(String(p.label || '').trim()));
       list.splice(insertAt >= 0 ? insertAt : list.length, 0, { label, href, icon, launchCode });
     };
+    ensure('شراكاتي', 'partnerships.html', 'fa-handshake');
+    ensure('مشاريع جانبية', 'side-projects.html', 'fa-seedling');
     ensure('دورات', 'courses.html', 'fa-chalkboard');
     ensure('دبلومات', 'diplomas.html', 'fa-graduation-cap');
     return list;
