@@ -1237,137 +1237,101 @@
       const map = { todo: 'badge-gray', in_progress: 'badge-red', blocked: 'badge-red', done: 'badge-black' };
       return `<span class="badge ${map[s] || 'badge-outline'}">${esc(statusLabel(s))}</span>`;
     };
-    const counts = {
-      all: t.items.length,
-      run: t.items.filter((i) => i.status === 'in_progress').length,
-      blocked: t.items.filter((i) => i.status === 'blocked').length,
-      done: t.items.filter((i) => i.status === 'done').length,
-    };
-    const dash = (v) => (v ? esc(String(v)) : '—');
-    const filesCell = (item) => {
-      const parts = [];
-      if (item.docName) parts.push(`<span title="${esc(item.docName)}"><i class="fas fa-file-lines"></i></span>`);
-      if (item.imageName) parts.push(`<span title="${esc(item.imageName)}"><i class="fas fa-image"></i></span>`);
-      if (item.videoName) parts.push(`<span title="${esc(item.videoName)}"><i class="fas fa-video"></i></span>`);
-      return parts.length ? `<div class="tasks-files">${parts.join('')}</div>` : '—';
-    };
-    const taskRow = (item) => {
-      const quality = Number(item.quality) > 0 ? `${item.quality}%` : '—';
-      return `<tr class="tasks-row tasks-row--${esc(item.status)}">
-        <td class="tasks-col-main">
-          <strong class="tasks-title">${esc(item.title)}</strong>
-          <p class="tasks-details">${esc(item.details || 'لا توجد تفاصيل مكتوبة لهذه المهمة.')}</p>
-          <div class="tasks-inline-meta">
-            <span><i class="fas fa-building"></i> ${dash(item.companyName)}</span>
-            <span><i class="fas fa-star-half-stroke"></i> جودة ${esc(quality)}</span>
-          </div>
-        </td>
-        <td><span class="tasks-person">${dash(item.assignee)}</span></td>
-        <td>${badgeStatus(item.priority)}</td>
-        <td>${statusBadge(item.status)}</td>
-        <td>${dash(item.project)}</td>
-        <td>${dash(item.dueDate)}</td>
-        <td class="tasks-col-org">
-          <div><b>فرع</b> ${dash(item.branch)}</div>
-          <div><b>حاضنة</b> ${dash(item.incubator)}</div>
-          <div><b>منصة</b> ${dash(item.platform)}</div>
-          <div><b>مكتب</b> ${dash(item.office)}</div>
-        </td>
-        <td class="tasks-col-parties">
-          <div><b>١</b> ${dash(item.party1Name)} <small>${dash(item.party1Phone)}</small></div>
-          <div><b>٢</b> ${dash(item.party2Name)} <small>${dash(item.party2Phone)}</small></div>
-        </td>
-        <td>${filesCell(item)}</td>
-        <td class="tasks-col-actions">
-          <div class="tasks-actions">
-            ${item.status !== 'in_progress' && item.status !== 'done' ? `<button class="btn btn-sm btn-ghost" data-action="task-status" data-id="${item.id}" data-status="in_progress" title="بدء"><i class="fas fa-play"></i></button>` : ''}
-            ${item.status !== 'done' ? `<button class="btn btn-sm btn-primary" data-action="task-status" data-id="${item.id}" data-status="done" title="إتمام"><i class="fas fa-check"></i></button>` : ''}
-            ${item.status !== 'blocked' && item.status !== 'done' ? `<button class="btn btn-sm btn-dark" data-action="task-status" data-id="${item.id}" data-status="blocked" title="اختناق"><i class="fas fa-ban"></i></button>` : ''}
-            ${rowActs('tasks', item.id)}
-          </div>
-        </td>
-      </tr>`;
+    const short = (text, n = 72) => {
+      const s = String(text || '').trim();
+      if (!s) return '—';
+      return s.length > n ? `${s.slice(0, n)}…` : s;
     };
     return `
-      <div class="tasks-page">
-        <div class="tasks-kpis">
-          <article class="tasks-kpi"><strong>${counts.all}</strong><span>كل المهام</span></article>
-          <article class="tasks-kpi is-run"><strong>${counts.run}</strong><span>قيد التنفيذ</span></article>
-          <article class="tasks-kpi is-blocked"><strong>${counts.blocked}</strong><span>مختنق</span></article>
-          <article class="tasks-kpi is-done"><strong>${counts.done}</strong><span>مكتمل</span></article>
+      <div class="toolbar">
+        ${pageActs('tasks', 'إضافة مهمة')}
+        <div class="field"><label>عنوان المهمة</label><input id="task-title" placeholder="عنوان المهمة" /></div>
+        <div class="field"><label>التفاصيل</label><input id="task-details" placeholder="تفاصيل مختصرة" /></div>
+        <div class="field"><label>المسؤول</label>
+          <select id="task-assignee">${people.map((p) => `<option>${esc(p)}</option>`).join('')}</select>
         </div>
-        <div class="tasks-context">
-          <article class="card tasks-context-card">
+        <div class="field"><label>الأولوية</label>
+          <select id="task-priority"><option>عاجل</option><option>عالي</option><option selected>متوسط</option></select>
+        </div>
+        <div class="field"><label>المشروع</label><input id="task-project" value="تشغيل يومي" /></div>
+        <div class="field"><label>موعد الانتهاء</label><input id="task-due" type="date" /></div>
+        <button class="btn btn-primary" data-action="add-task">إضافة سريعة</button>
+      </div>
+      <div class="grid-2">
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-list-check icon"></i> المهام</span></h3>
+          <div class="table-wrap"><table class="data tasks-data">
+            <thead>
+              <tr>
+                <th>المهمة</th>
+                <th>المسؤول</th>
+                <th>الأولوية</th>
+                <th>الحالة</th>
+                <th>المشروع</th>
+                <th>الموعد</th>
+                <th>جودة</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                t.items.length
+                  ? t.items
+                      .map((item) => {
+                        const quality = Number(item.quality) > 0 ? `${item.quality}%` : '—';
+                        const details = short(item.details);
+                        return `<tr>
+                          <td class="tasks-main-cell">
+                            <strong>${esc(item.title)}</strong>
+                            <small title="${esc(item.details || '')}">${esc(details)}</small>
+                          </td>
+                          <td>${esc(item.assignee || '—')}</td>
+                          <td>${badgeStatus(item.priority)}</td>
+                          <td>${statusBadge(item.status)}</td>
+                          <td>${esc(item.project || '—')}</td>
+                          <td>${esc(item.dueDate || '—')}</td>
+                          <td>${esc(quality)}</td>
+                          <td>
+                            <div class="tasks-row-acts">
+                              ${item.status !== 'in_progress' && item.status !== 'done' ? `<button class="btn btn-sm btn-ghost" data-action="task-status" data-id="${item.id}" data-status="in_progress">بدء</button>` : ''}
+                              ${item.status !== 'done' ? `<button class="btn btn-sm btn-primary" data-action="task-status" data-id="${item.id}" data-status="done">إتمام</button>` : ''}
+                              ${item.status !== 'blocked' && item.status !== 'done' ? `<button class="btn btn-sm btn-dark" data-action="task-status" data-id="${item.id}" data-status="blocked">اختناق</button>` : ''}
+                              ${rowActs('tasks', item.id)}
+                            </div>
+                          </td>
+                        </tr>`;
+                      })
+                      .join('')
+                  : `<tr><td colspan="8" class="empty">لا توجد مهام بعد</td></tr>`
+              }
+            </tbody>
+          </table></div>
+        </article>
+        <div style="display:grid;gap:12px">
+          <article class="card">
             <h3><span class="title-left"><i class="fas fa-diagram-project icon"></i> المشاريع</span></h3>
-            <div class="tasks-projects tasks-projects--row">
-              ${t.projects
-                .map(
-                  (p) => `<div class="tasks-project">
-                    <div class="tasks-project-head"><span>${esc(p.name)}</span><strong>${p.progress}%</strong></div>
-                    <small>${esc(p.phase)} · ${esc(p.owner)}</small>
-                    <div class="tasks-project-bar">${bar(p.progress)}</div>
-                  </div>`
-                )
-                .join('')}
-            </div>
+            ${t.projects
+              .map(
+                (p) => `<div style="margin-bottom:12px">
+                  <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800"><span>${esc(p.name)}</span><span>${p.progress}%</span></div>
+                  <small style="color:var(--muted)">${esc(p.phase)} · ${esc(p.owner)}</small>
+                  <div style="margin-top:6px">${bar(p.progress)}</div>
+                </div>`
+              )
+              .join('')}
           </article>
-          <article class="card tasks-context-card">
+          <article class="card">
             <h3><span class="title-left"><i class="fas fa-road-barrier icon"></i> الاختناقات</span></h3>
-            <div class="tasks-bottlenecks tasks-bottlenecks--row">
-              ${t.bottlenecks
-                .map(
-                  (b) => `<div class="tasks-bn">
-                    <div>
-                      <b>${esc(b.area)}</b>
-                      <small>${b.waitHours} ساعة انتظار</small>
-                    </div>
-                    ${badgeStatus(b.severity)}
-                  </div>`
-                )
-                .join('')}
-            </div>
+            ${t.bottlenecks
+              .map(
+                (b) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+                  <span><b>${esc(b.area)}</b><br/><small style="color:var(--muted)">${b.waitHours} ساعة انتظار</small></span>
+                  ${badgeStatus(b.severity)}
+                </div>`
+              )
+              .join('')}
           </article>
         </div>
-        <div class="toolbar tasks-toolbar">
-          ${pageActs('tasks', 'إضافة مهمة')}
-          <div class="field grow"><label>عنوان المهمة</label><input id="task-title" placeholder="عنوان المهمة" /></div>
-          <div class="field grow"><label>التفاصيل</label><input id="task-details" placeholder="اكتب تفاصيل المهمة…" /></div>
-          <div class="field"><label>المسؤول</label>
-            <select id="task-assignee">${people.map((p) => `<option>${esc(p)}</option>`).join('')}</select>
-          </div>
-          <div class="field"><label>الأولوية</label>
-            <select id="task-priority"><option>عاجل</option><option>عالي</option><option selected>متوسط</option></select>
-          </div>
-          <div class="field"><label>المشروع</label><input id="task-project" value="تشغيل يومي" /></div>
-          <div class="field"><label>موعد الانتهاء</label><input id="task-due" type="date" /></div>
-          <button class="btn btn-primary" data-action="add-task"><i class="fas fa-plus"></i> إضافة سريعة</button>
-        </div>
-        <section class="card tasks-board tasks-board--table">
-          <h3><span class="title-left"><i class="fas fa-list-check icon"></i> جدول المهام</span>
-            <small class="tasks-board-count">${counts.all} مهمة · كل حقول النموذج ظاهرة</small>
-          </h3>
-          <div class="tasks-table-wrap">
-            <table class="tasks-table">
-              <thead>
-                <tr>
-                  <th>المهمة والتفاصيل</th>
-                  <th>المسؤول</th>
-                  <th>الأولوية</th>
-                  <th>الحالة</th>
-                  <th>المشروع</th>
-                  <th>موعد الانتهاء</th>
-                  <th>الفرع / الحاضنة / المنصة / المكتب</th>
-                  <th>الأطراف</th>
-                  <th>المرفقات</th>
-                  <th>الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${t.items.length ? t.items.map(taskRow).join('') : `<tr><td colspan="10" class="tasks-empty">لا توجد مهام بعد — أضف مهمة من النموذج أعلاه.</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        </section>
       </div>
     `;
   };
