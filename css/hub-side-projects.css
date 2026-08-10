@@ -239,6 +239,45 @@
 .sp-opened-card h3 { margin: 0 0 4px; font-size: 15px; }
 .sp-opened-card small { color: #777; font-size: 11px; font-weight: 700; }
 .sp-opened-card p { margin: 8px 0 0; color: #555; font-size: 12px; font-weight: 650; }
+.sp-opened-main { flex: 1 1 280px; min-width: 0; }
+.sp-ops-steps {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.sp-ops-steps a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #eadfe2;
+  border-radius: 12px;
+  background: #faf6f7;
+  color: #222;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 800;
+  transition: 0.15s ease;
+}
+.sp-ops-steps a:hover {
+  border-color: #d70000;
+  background: #fff;
+}
+.sp-ops-steps span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #d70000;
+  color: #fff;
+  display: inline-grid;
+  place-items: center;
+  font-size: 10px;
+  flex: 0 0 auto;
+}
+.sp-ops-steps i { color: #d70000; width: 14px; text-align: center; }
 
 .sp-empty {
   margin: 0;

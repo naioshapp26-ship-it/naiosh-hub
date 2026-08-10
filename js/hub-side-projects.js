@@ -147,7 +147,7 @@
       <strong>تسويق</strong>
       <p>${esc((p.marketing || []).join(' · '))}</p>
       <strong>نموذج مالي مبسط</strong>
-      <p>${esc(p.revenue)} — مع ضبط المصاريف: ${esc(p.expenses)}</p>
+      <p>إيراد تقديري بالدولار: ${esc(p.revenue)} — المصاريف: ${esc(p.expenses)}</p>
     </div>`;
 
   const projectCard = (p, opts = {}) => {
@@ -243,17 +243,35 @@
       openedEl.innerHTML = '<p class="sp-empty">لم تفتح أي مشروع بعد — استخدم النموذج أو الكتالوج ثم اضغط «فتح المشروع».</p>';
       return;
     }
+    const steps = [
+      { n: '1', label: 'دراسة جدوى مبسطة', href: 'incubators.html', icon: 'fa-chart-line' },
+      { n: '2', label: 'خطة العمل', href: 'office.html', icon: 'fa-clipboard-list' },
+      { n: '3', label: 'الهوية والعرض', href: 'store.html', icon: 'fa-palette' },
+      { n: '4', label: 'التسويق', href: 'ads.html', icon: 'fa-bullhorn' },
+      { n: '5', label: 'CRM وعملاء', href: 'systems/crm.html?from=hub&return=side-projects.html', icon: 'fa-users' },
+      { n: '6', label: 'فواتير ومحاسبة', href: 'systems/erp.html?from=hub&return=side-projects.html', icon: 'fa-file-invoice-dollar' },
+      { n: '7', label: 'تدريب', href: 'courses.html', icon: 'fa-graduation-cap' },
+      { n: '8', label: 'قياس الربحية', href: 'dashboard.html', icon: 'fa-gauge-high' },
+    ];
     openedEl.innerHTML = list
       .map((item) => {
         const p = data.projects.find((x) => x.id === item.id);
         return `<article class="sp-opened-card">
-          <div>
+          <div class="sp-opened-main">
             <h3>${esc(item.title || p?.title || 'مشروع')}</h3>
             <small>فُتح ${esc(new Date(item.openedAt).toLocaleString('ar-EG'))}</small>
-            <p>المسار المقترح: دراسة جدوى مبسطة → هوية → تسويق → CRM → فواتير → تدريب → قياس ربحية.</p>
+            <p>نايوش تساعدك تشغّل المشروع خطوة بخطوة — مش فكرة فقط.</p>
+            <ol class="sp-ops-steps">
+              ${steps
+                .map(
+                  (s) =>
+                    `<li><a href="${esc(s.href)}"><span>${s.n}</span><i class="fas ${s.icon}" aria-hidden="true"></i>${esc(s.label)}</a></li>`
+                )
+                .join('')}
+            </ol>
           </div>
           <div class="sp-card-actions">
-            <a class="btn btn-primary" href="systems/crm.html?from=hub&return=side-projects.html">CRM</a>
+            <a class="btn btn-primary" href="systems/crm.html?from=hub&return=side-projects.html">ابدأ من CRM</a>
             <a class="btn btn-secondary" href="ads.html">Marketing</a>
             <a class="btn btn-secondary" href="courses.html">تدريب</a>
             <button type="button" class="btn btn-secondary" data-sp-remove="${esc(item.id)}">إزالة</button>
