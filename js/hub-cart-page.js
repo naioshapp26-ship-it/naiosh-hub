@@ -9,6 +9,7 @@
 
   const list = root.querySelector('[data-cart-list]');
   const summary = root.querySelector('[data-cart-summary]');
+  const money = (n) => (window.HubCurrency?.format ? window.HubCurrency.format(n) : `$${Number(n) || 0}`);
 
   const paint = () => {
     const items = window.HubCart.read();
@@ -24,7 +25,7 @@
             <span class="hub-feature-icon"><i class="fas fa-box"></i></span>
             <h3>${i.title}</h3>
           </div>
-          <p>${Number(i.price).toLocaleString('ar-EG')} ر.س · نقاط: ${i.points || 0}</p>
+          <p>${money(i.price)} · نقاط: ${i.points || 0}</p>
           <div class="hub-feature-actions">
             <button type="button" class="btn btn-secondary" data-qty="-1">−</button>
             <strong>${i.qty}</strong>
@@ -35,7 +36,7 @@
       )
       .join('');
     summary.innerHTML = `<div class="hub-feature-card hub-feature-card--featured">
-      <h3>الإجمالي: ${window.HubCart.total().toLocaleString('ar-EG')} ر.س</h3>
+      <h3>الإجمالي: ${money(window.HubCart.total())}</h3>
       <p>${window.HubCart.count()} عنصر</p>
       <div class="hub-feature-actions">
         <button type="button" class="btn btn-primary" data-checkout>إتمام الشراء وتفعيل الصلاحية</button>

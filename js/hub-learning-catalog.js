@@ -12,6 +12,8 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
 
+  const money = (n) => (window.HubCurrency?.format ? window.HubCurrency.format(n) : `$${Number(n) || 0}`);
+
   const COURSES = [
     {
       id: 'course-ops',
@@ -265,7 +267,7 @@
           <span class="hub-learn-icon" aria-hidden="true"><i class="fas ${esc(item.icon)}"></i></span>
           <h3>${esc(item.title)}</h3>
         </div>
-        <div class="price"><i class="fas fa-coins"></i> ${esc(String(item.points))} نقطة · ${esc(String(item.price))} ج.م</div>
+        <div class="price"><i class="fas fa-coins"></i> ${esc(String(item.points))} نقطة · ${esc(money(item.price))}</div>
         ${metaRow(item)}
         <p>${esc(item.desc)}</p>
         ${listBlock('ماذا تتقن؟', item.outcomes)}

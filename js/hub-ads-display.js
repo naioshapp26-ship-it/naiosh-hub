@@ -6,6 +6,8 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
 
+  const money = (n) => (window.HubCurrency?.format ? window.HubCurrency.format(n) : `$${Number(n) || 0}`);
+
   const kindTitles = {
     home: 'إعلانات الواجهة الرئيسية',
     offices: 'إعلانات المكتب',
@@ -26,7 +28,7 @@
       <h3>${esc(a.title)}</h3>
       <p>${esc(a.desc || a.content || '')}</p>
       <div class="hub-inline-ad-foot">
-        <strong>${Number(a.price || 0).toLocaleString('ar-EG')} ر.س</strong>
+        <strong>${money(a.price || 0)}</strong>
         <a href="ads.html?scope=${esc(a.adLevel === 'office' ? 'offices' : a.scope === 'multi' ? 'home' : a.scope || 'home')}">تفاصيل الإعلان</a>
       </div>
     </div>

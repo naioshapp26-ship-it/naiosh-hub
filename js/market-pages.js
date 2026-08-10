@@ -11,6 +11,8 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
 
+  const money = (n) => (window.HubCurrency?.format ? window.HubCurrency.format(n) : `$${Number(n) || 0}`);
+
   const toast = (msg) => {
     let el = document.getElementById('market-toast');
     if (!el) {
@@ -169,7 +171,7 @@
             <span class="badge-soft">${esc(i.badge || i.itemKind || i.category)}</span>
             <h3>${esc(i.title)}</h3>
             <p>${esc(i.desc || '')}</p>
-            <div class="price">${Number(i.price).toLocaleString('ar-EG')} ر.س</div>
+            <div class="price">${money(i.price)}</div>
             <div class="meta">${esc(i.itemKind || 'منتج')} · ${esc(i.brand || '—')} · نقاط: ${i.points || 0} · مخزون: ${i.stock}${i.assignee ? ` · معيّن: ${esc(i.assignee)}` : ''}</div>
             ${mpBadges(i)}
             ${metaLine(i)}
@@ -323,7 +325,7 @@
               <small>${esc(levelMeta?.nameAr || a.adLevel || a.platformCode || '')}</small>
             </div>
             <div class="ads-item-body">
-              <p class="ads-price">${Number(a.price || 0).toLocaleString('ar-EG')} ر.س</p>
+              <p class="ads-price">${money(a.price || 0)}</p>
               <h3 class="ads-item-title">${esc(a.title)}</h3>
               <p class="ads-meta">${esc(a.desc || a.content || '')}</p>
               <p class="ads-meta" style="margin-top:8px">${esc(a.category || '')}${a.subcategory ? ' / ' + esc(a.subcategory) : ''} · ${esc(targetBadge(a))}</p>
@@ -512,7 +514,7 @@
                 <div class="shop-card-body">
                   <h3>${esc(p.name)}</h3>
                   <div class="shop-card-meta">${esc(p.productType || p.itemKind || 'رقمية')} · ${esc(p.category)}${p.subcategory ? ` / ${esc(p.subcategory)}` : ''} · ${esc(p.brand || '')}</div>
-                  <div class="shop-card-price">${Number(p.price).toLocaleString('ar-EG')} ر.س</div>
+                  <div class="shop-card-price">${money(p.price)}</div>
                   <div class="shop-card-meta" style="margin-top:4px">${esc(p.status || 'متوفر')}${site ? ` · موقع: ${esc(site.nameAr)}` : ''}</div>
                   ${metaLine(p)}
                   <div class="shop-card-actions">
