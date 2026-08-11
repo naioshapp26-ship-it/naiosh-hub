@@ -32,10 +32,10 @@
     },
     {
       id: 'side-projects',
-      label: 'محرك الفرص',
+      label: 'المشاريع الجانبية',
       href: 'side-projects.html',
       className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-compass',
+      icon: 'fa-lightbulb',
     },
     {
       id: 'global-os',

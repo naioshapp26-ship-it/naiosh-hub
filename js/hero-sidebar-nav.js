@@ -24,7 +24,7 @@
       { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },
       { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
       { label: 'شراكاتي', href: 'partnerships.html', icon: 'fa-handshake' },
-      { label: 'محرك الفرص', href: 'side-projects.html', icon: 'fa-compass' },
+      { label: 'مشاريع جانبية', href: 'side-projects.html', icon: 'fa-lightbulb' },
       { label: 'نظام التشغيل', href: 'global-os.html', icon: 'fa-network-wired' },
       { label: 'دورات', href: 'courses.html', icon: 'fa-chalkboard' },
       { label: 'دبلومات', href: 'diplomas.html', icon: 'fa-graduation-cap' },
@@ -37,12 +37,28 @@
   const ensureLearningVisible = (pages) => {
     const list = pages.slice();
     const ensure = (label, href, icon, launchCode) => {
-      if (list.some((p) => p.label === label)) return;
+      if (list.some((p) => p.label === label || (href && (p.href || '').includes(href.replace(/\.html.*/, ''))))) return;
       const insertAt = list.findIndex((p) => p.label === 'عملائي' || p.label === 'دردشة داخلية' || /^اخرى$|^أخرى$/.test(String(p.label || '').trim()));
       list.splice(insertAt >= 0 ? insertAt : list.length, 0, { label, href, icon, launchCode });
     };
+    // أيقونة واحدة للمشاريع الجانبية — توحيد الاسم القديم «محرك الفرص»
+    let keptSp = false;
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      const isSp =
+        (list[i].href || '').includes('side-projects') ||
+        list[i].label === 'محرك الفرص' ||
+        list[i].label === 'مشاريع جانبية' ||
+        list[i].label === 'المشاريع الجانبية';
+      if (!isSp) continue;
+      if (keptSp) {
+        list.splice(i, 1);
+        continue;
+      }
+      list[i] = { ...list[i], label: 'مشاريع جانبية', href: 'side-projects.html', icon: 'fa-lightbulb' };
+      keptSp = true;
+    }
     ensure('شراكاتي', 'partnerships.html', 'fa-handshake');
-    ensure('محرك الفرص', 'side-projects.html', 'fa-compass');
+    ensure('مشاريع جانبية', 'side-projects.html', 'fa-lightbulb');
     ensure('نظام التشغيل', 'global-os.html', 'fa-network-wired');
     ensure('دورات', 'courses.html', 'fa-chalkboard');
     ensure('دبلومات', 'diplomas.html', 'fa-graduation-cap');

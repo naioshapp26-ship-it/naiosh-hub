@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="css/hub-marketplace.css" />
   <link rel="stylesheet" href="css/hub-product-gallery.css?v=30" />
   <link rel="stylesheet" href="css/hub-hero-erp.css?v=23" />
-  <link rel="stylesheet" href="css/hub-balance.css?v=4" />
+  <link rel="stylesheet" href="css/hub-balance.css?v=6" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=9" />
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
 </head>
@@ -80,7 +80,7 @@
           <a class="btn btn-primary hero-cta-pill" href="dashboard.html"><i class="fas fa-gauge-high"></i> غرفة العمليات</a>
           <a class="btn btn-primary hero-cta-pill hub-hero-packages" href="packages.html"><i class="fas fa-box"></i> الباقات</a>
           <a class="btn btn-primary hero-cta-pill hub-hero-membership" href="membership.html"><i class="fas fa-id-card"></i> العضوية</a>
-          <a class="btn btn-primary hero-cta-pill hub-hero-side-projects" href="side-projects.html"><i class="fas fa-compass"></i> محرك الفرص</a>
+          <a class="btn btn-primary hero-cta-pill hub-hero-side-projects" href="side-projects.html"><i class="fas fa-lightbulb"></i> المشاريع الجانبية</a>
           <a class="btn btn-primary hero-cta-pill" href="global-os.html"><i class="fas fa-network-wired"></i> نظام التشغيل</a>
           <a class="btn btn-primary hero-cta-pill hub-hero-courses" href="courses.html"><i class="fas fa-chalkboard"></i> دورات</a>
           <a class="btn btn-primary hero-cta-pill hub-hero-diplomas" href="diplomas.html"><i class="fas fa-graduation-cap"></i> دبلومات</a>
@@ -95,24 +95,30 @@
       </div>
 
       <div class="hero-media-stack">
-        <div class="hub-balance-strip" aria-label="رصيد النقاط">
-          <div class="hub-balance-bar">
-            <div class="hub-balance-free" title="رصيدك المجاني">
-              <div class="hub-balance-free-points">
-                <strong data-hub-free-points>300</strong>
-                <span>نقطة</span>
+        <div class="hub-balance-strip" aria-label="رصيد النقاط والمشاريع الجانبية">
+          <div class="hub-balance-top-row">
+            <div class="hub-balance-bar">
+              <div class="hub-balance-free" title="رصيدك المجاني">
+                <div class="hub-balance-free-points">
+                  <strong data-hub-free-points>300</strong>
+                  <span>نقطة</span>
+                </div>
+                <div class="hub-balance-free-meta">
+                  <strong>رصيد مجاني</strong>
+                </div>
               </div>
-              <div class="hub-balance-free-meta">
-                <strong>رصيد مجاني</strong>
+              <div class="hub-balance-perk" aria-hidden="false">
+                <span class="hub-balance-perk-icon" aria-hidden="true"><i class="fas fa-ban"></i></span>
+                <div class="hub-balance-perk-copy">
+                  <strong>استخدام بلا قيود</strong>
+                  <span>شحن لا ينتهي بمدة</span>
+                </div>
               </div>
             </div>
-            <div class="hub-balance-perk" aria-hidden="false">
-              <span class="hub-balance-perk-icon" aria-hidden="true"><i class="fas fa-ban"></i></span>
-              <div class="hub-balance-perk-copy">
-                <strong>استخدام بلا قيود</strong>
-                <span>شحن لا ينتهي بمدة</span>
-              </div>
-            </div>
+            <a class="hub-balance-side-projects" href="side-projects.html" title="المشاريع الجانبية" aria-label="المشاريع الجانبية">
+              <span class="hub-balance-side-projects-icon" aria-hidden="true"><i class="fas fa-lightbulb"></i></span>
+              <span class="hub-balance-side-projects-label">المشاريع الجانبية</span>
+            </a>
           </div>
           <a class="hub-balance-charge" href="#charge" data-hub-charge-open>
             إشحن رصيد
@@ -519,7 +525,7 @@
   <script src="js/hub-branches-data.js"></script>
   <script src="js/hub-incubators-data.js"></script>
   <script src="js/hub-operating-model.js"></script>
-  <script src="js/hub-ready-sites.js"></script>
+  <script src="js/hub-ready-sites.js?v=2"></script>
   <script src="js/hub-live-systems.js"></script>
   <script src="js/hub-store.js"></script>
   <script src="js/hub-auth.js"></script>
@@ -529,9 +535,9 @@
   <script src="js/hub-currency.js"></script>
   <script src="js/hub-ads-display.js"></script>
   <script src="js/mobile-nav.js"></script>
-  <script src="js/hero-sidebar-nav.js"></script>
+  <script src="js/hero-sidebar-nav.js?v=2"></script>
   <script src="js/hub-hero-balance.js?v=2"></script>
-  <script src="js/hub-header-actions.js?v=8"></script>
+  <script src="js/hub-header-actions.js?v=9"></script>
   <script src="js/home.js"></script>
   <script src="js/hub-product-gallery.js?v=30"></script>
   <script src="js/hub-ops-path.js"></script>
