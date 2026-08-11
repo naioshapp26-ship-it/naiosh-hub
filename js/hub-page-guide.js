@@ -37,7 +37,7 @@
     },
     sideProjects: {
       test: (path) => path.includes('side-projects'),
-      title: 'دليل محرك الفرص',
+      title: 'دليل المشاريع الجانبية',
       subtitle: 'NAIOSH OPPORTUNITY ENGINE — نظام اتخاذ قرار للفرص.',
       purpose: 'أدخل بياناتك، احصل على فرص محتملة مع المخاطر والمتطلبات، ثم اختبر على نطاق صغير واربط التشغيل بـ Learning وMarketing وCRM وERP والحاضنات.',
       tips: [

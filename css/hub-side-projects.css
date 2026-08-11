@@ -1,5 +1,120 @@
-/* NAIOSH OPPORTUNITY ENGINE — محرك اكتشاف فرص الدخل والمشاريع */
+/* المشاريع الجانبية — خاصة · خفيفة · منزلية */
 .sp-hero .hub-feature-kicker { color: #b00010; font-weight: 800; }
+
+.sp-type-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sp-type-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: start;
+  border: 1px solid #eadfe2;
+  background: #fffafb;
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font: inherit;
+  color: #222;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.sp-type-tab i { color: #d70000; font-size: 16px; }
+.sp-type-tab strong { font-size: 15px; font-weight: 900; }
+.sp-type-tab span { font-size: 12px; font-weight: 800; color: #777; }
+.sp-type-tab:hover { border-color: #d70000; transform: translateY(-1px); }
+.sp-type-tab.is-active {
+  border-color: #d70000;
+  background: linear-gradient(180deg, #fff 0%, #ffe8ea 100%);
+  box-shadow: 0 10px 22px rgba(215, 0, 0, 0.12);
+}
+
+.sp-cat-dir {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.sp-cat-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: start;
+  border: 1px solid #eadfe2;
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px;
+  cursor: pointer;
+  font: inherit;
+  color: #222;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.sp-cat-card:hover,
+.sp-cat-card.is-active {
+  border-color: #d70000;
+  background: #fff7f8;
+}
+.sp-cat-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: #111;
+  color: #fff;
+  flex: 0 0 auto;
+}
+.sp-cat-card-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sp-cat-card-copy strong {
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+.sp-cat-card-copy small {
+  font-size: 11px;
+  font-weight: 800;
+  color: #777;
+}
+
+.sp-catalog-groups { display: grid; gap: 18px; }
+.sp-cat-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.sp-cat-group-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sp-cat-group-head h3 i { color: #d70000; }
+.sp-cat-group-head span {
+  font-size: 12px;
+  font-weight: 800;
+  color: #777;
+}
+.sp-load-more {
+  margin-top: 10px;
+  width: 100%;
+}
+.sp-card.is-compact .sp-card-details {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #eadfe2;
+}
 .sp-promise {
   display: flex;
   gap: 12px;
@@ -374,8 +489,13 @@
 
 @media (max-width: 980px) {
   .sp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sp-type-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sp-form-grid,
   .sp-results-grid,
   .sp-catalog-grid,
   .sp-detail-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .sp-type-tabs { grid-template-columns: 1fr; }
 }

@@ -1,6 +1,5 @@
 /**
- * NAIOSH OPPORTUNITY ENGINE — نظام اتخاذ قرار للفرص
- * القوائم = مادة خام · المخرج = فرصة قابلة للاختبار ثم تشغيل داخل هوب
+ * المشاريع الجانبية — تصفح قوائم العميل (خاصة · خفيفة · منزلية) + اقتراح حسب الملف
  */
 (() => {
   'use strict';
@@ -23,13 +22,42 @@
   const resultsGrid = root.querySelector('[data-sp-results]');
   const resultsLead = root.querySelector('[data-sp-results-lead]');
   const catalogGrid = root.querySelector('[data-sp-catalog]');
+  const catalogLead = root.querySelector('[data-sp-catalog-lead]');
   const catFilter = root.querySelector('[data-sp-cat-filter]');
-  const catChips = root.querySelector('[data-sp-cat-chips]');
+  const typeTabs = root.querySelector('[data-sp-type-tabs]');
+  const catDir = root.querySelector('[data-sp-cat-dir]');
   const searchEl = root.querySelector('[data-sp-search]');
   const openedEl = root.querySelector('[data-sp-opened]');
   const statsEl = root.querySelector('[data-sp-stats]');
   const pathEl = root.querySelector('[data-sp-path]');
   const toastEl = document.getElementById('sp-toast');
+
+  const TYPE_GROUPS = [
+    {
+      id: 'all',
+      nameAr: 'كل القوائم',
+      icon: 'fa-border-all',
+      categoryIds: null,
+    },
+    {
+      id: 'special',
+      nameAr: 'خاصة',
+      icon: 'fa-star',
+      categoryIds: ['executable', 'experts', 'low-capital', 'low-loss', 'events', 'emotions'],
+    },
+    {
+      id: 'light',
+      nameAr: 'خفيفة',
+      icon: 'fa-feather',
+      categoryIds: ['home-light', 'cart', 'summer', 'winter', 'malls'],
+    },
+    {
+      id: 'home',
+      nameAr: 'منزلية',
+      icon: 'fa-house',
+      categoryIds: ['home-light', 'home-women'],
+    },
+  ];
 
   const ENGINE_PATH = [
     { label: 'بيانات الشخص', icon: 'fa-id-card' },
@@ -62,6 +90,11 @@
     { n: '10', label: 'التوسع للحاضنة', href: 'incubators.html', icon: 'fa-seedling' },
   ];
 
+  let activeType = 'all';
+  let pageByCat = {};
+
+  const PAGE_SIZE = 24;
+
   const toast = (msg) => {
     if (!toastEl) return;
     toastEl.textContent = msg;
@@ -87,6 +120,26 @@
 
   const writeOpened = (list) => {
     localStorage.setItem(KEY, JSON.stringify(list.slice(0, 40)));
+  };
+
+  const countByCat = (() => {
+    const map = {};
+    data.categories.forEach((c) => {
+      map[c.id] = 0;
+    });
+    data.projects.forEach((p) => {
+      map[p.categoryId] = (map[p.categoryId] || 0) + 1;
+    });
+    return map;
+  })();
+
+  const typeOf = (id) => TYPE_GROUPS.find((t) => t.id === id) || TYPE_GROUPS[0];
+
+  const catsForType = (typeId) => {
+    const t = typeOf(typeId);
+    if (!t.categoryIds) return data.categories.slice();
+    const set = new Set(t.categoryIds);
+    return data.categories.filter((c) => set.has(c.id));
   };
 
   const enrich = (p) => {
@@ -178,11 +231,14 @@
 
   const paintStats = () => {
     if (!statsEl) return;
+    const special = typeOf('special').categoryIds.reduce((n, id) => n + (countByCat[id] || 0), 0);
+    const light = typeOf('light').categoryIds.reduce((n, id) => n + (countByCat[id] || 0), 0);
+    const home = typeOf('home').categoryIds.reduce((n, id) => n + (countByCat[id] || 0), 0);
     statsEl.innerHTML = `
-      <article><strong>${data.projects.length.toLocaleString('ar-EG')}</strong><span>فرصة في قاعدة المعرفة</span></article>
-      <article><strong>${data.categories.length}</strong><span>فئة قرار</span></article>
-      <article><strong>10</strong><span>فرص مقترحة لكل ملف</span></article>
-      <article><strong>${readOpened().length}</strong><span>قيد الاختبار</span></article>`;
+      <article><strong>${data.projects.length.toLocaleString('ar-EG')}</strong><span>مشروع في القوائم</span></article>
+      <article><strong>${special.toLocaleString('ar-EG')}</strong><span>خاصة</span></article>
+      <article><strong>${light.toLocaleString('ar-EG')}</strong><span>خفيفة</span></article>
+      <article><strong>${home.toLocaleString('ar-EG')}</strong><span>منزلية</span></article>`;
   };
 
   const scoreProject = (raw, answers) => {
@@ -287,7 +343,7 @@
   const detailRows = (p) => `
     <div class="sp-disclaimer">فرصة محتملة — ليست ضمان ربح. اختبر على نطاق صغير أولًا.</div>
     <div class="sp-detail-grid">
-      <div><span>الفئة</span><strong>${esc(p.categoryName)}</strong></div>
+      <div><span>القائمة</span><strong>${esc(p.categoryName)}</strong></div>
       <div><span>نوع المشروع</span><strong>${esc(p.projectType)}</strong></div>
       <div><span>رأس المال</span><strong>${esc(p.capital)}</strong></div>
       <div><span>المهارات</span><strong>${esc((p.skills || []).join(' · '))}</strong></div>
@@ -323,10 +379,11 @@
     const reasons = opts.reasons?.length
       ? `<p class="sp-reasons">${opts.reasons.map(esc).join(' · ')}</p>`
       : '';
-    return `<article class="sp-card" data-id="${esc(p.id)}">
+    const compact = opts.compact !== false && opts.score == null;
+    return `<article class="sp-card${compact ? ' is-compact' : ''}" data-id="${esc(p.id)}">
       <div class="sp-card-top">
         <span class="sp-card-icon"><i class="fas ${esc(
-          data.categories.find((c) => c.id === p.categoryId)?.icon || 'fa-compass'
+          data.categories.find((c) => c.id === p.categoryId)?.icon || 'fa-lightbulb'
         )}"></i></span>
         <div>
           <h3>${esc(p.title)}</h3>
@@ -341,13 +398,15 @@
         <span>${esc(p.season)}</span>
       </div>
       ${reasons}
-      ${detailRows(p)}
+      ${compact ? '' : detailRows(p)}
       <div class="sp-card-actions">
-        <button type="button" class="btn btn-primary" data-sp-open="${esc(p.id)}"><i class="fas fa-flask"></i> اختبر هذه الفرصة</button>
-        <a class="btn btn-secondary" href="courses.html">تدريب مصغر</a>
-        <a class="btn btn-secondary" href="ads.html">Marketing</a>
-        <a class="btn btn-secondary" href="incubators.html">الحاضنات</a>
+        ${compact ? `<button type="button" class="btn btn-secondary" data-sp-expand="${esc(p.id)}"><i class="fas fa-chevron-down"></i> التفاصيل</button>` : ''}
+        <button type="button" class="btn btn-primary" data-sp-open="${esc(p.id)}"><i class="fas fa-flask"></i> اختبر المشروع</button>
+        <a class="btn btn-secondary" href="courses.html">تدريب</a>
+        <a class="btn btn-secondary" href="ads.html">تسويق</a>
+        <a class="btn btn-secondary" href="incubators.html">حاضنة</a>
       </div>
+      ${compact ? `<div class="sp-card-details" hidden>${detailRows(p)}</div>` : ''}
     </article>`;
   };
 
@@ -364,43 +423,128 @@
 
     if (resultsPanel) resultsPanel.hidden = false;
     if (resultsLead) {
-      resultsLead.textContent = `تحليل ملفك (${answers.age || ''} · ${answers.location || ''} · رأس مال ${answers.capital} · ${answers.season || ''}) — أعلى 10 فرص محتملة للاختبار، وليست ضمان ربح.`;
+      resultsLead.textContent = `تحليل ملفك (${answers.age || ''} · ${answers.location || ''} · رأس مال ${answers.capital} · ${answers.season || ''}) — أعلى 10 فرص محتملة للاختبار.`;
     }
     if (resultsGrid) {
-      resultsGrid.innerHTML = ranked.map((r) => projectCard(r.p, { score: r.score, reasons: r.reasons, p: r.p })).join('');
+      resultsGrid.innerHTML = ranked.map((r) => projectCard(r.p, { score: r.score, reasons: r.reasons, p: r.p, compact: false })).join('');
     }
     resultsPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    toast('تم اقتراح 10 فرص قابلة للاختبار');
+    toast('تم اقتراح 10 مشاريع مناسبة');
+  };
+
+  const filteredProjects = () => {
+    const q = (searchEl?.value || '').trim().toLowerCase();
+    const cat = catFilter?.value || '';
+    const allowed = new Set(catsForType(activeType).map((c) => c.id));
+    let list = data.projects.filter((p) => allowed.has(p.categoryId));
+    if (cat) list = list.filter((p) => p.categoryId === cat);
+    if (q) list = list.filter((p) => `${p.title} ${p.section}`.toLowerCase().includes(q));
+    return list;
+  };
+
+  const paintTypeTabs = () => {
+    if (!typeTabs) return;
+    typeTabs.innerHTML = TYPE_GROUPS.map((t) => {
+      const count =
+        t.id === 'all'
+          ? data.projects.length
+          : t.categoryIds.reduce((n, id) => n + (countByCat[id] || 0), 0);
+      return `<button type="button" class="sp-type-tab${activeType === t.id ? ' is-active' : ''}" data-sp-type="${esc(t.id)}" role="tab" aria-selected="${activeType === t.id}">
+        <i class="fas ${esc(t.icon)}" aria-hidden="true"></i>
+        <strong>${esc(t.nameAr)}</strong>
+        <span>${count.toLocaleString('ar-EG')}</span>
+      </button>`;
+    }).join('');
+  };
+
+  const paintCatDir = () => {
+    if (!catDir) return;
+    const cats = catsForType(activeType);
+    catDir.innerHTML = cats
+      .map((c) => {
+        const n = countByCat[c.id] || 0;
+        const active = catFilter?.value === c.id ? ' is-active' : '';
+        return `<button type="button" class="sp-cat-card${active}" data-sp-chip="${esc(c.id)}">
+          <span class="sp-cat-card-icon"><i class="fas ${esc(c.icon)}"></i></span>
+          <span class="sp-cat-card-copy">
+            <strong>${esc(c.nameAr)}</strong>
+            <small>${n.toLocaleString('ar-EG')} مشروع</small>
+          </span>
+        </button>`;
+      })
+      .join('');
+  };
+
+  const paintCatFilter = () => {
+    if (!catFilter) return;
+    const cats = catsForType(activeType);
+    const prev = catFilter.value;
+    catFilter.innerHTML =
+      `<option value="">كل القوائم في النوع</option>` +
+      cats.map((c) => `<option value="${esc(c.id)}">${esc(c.nameAr)} (${(countByCat[c.id] || 0).toLocaleString('ar-EG')})</option>`).join('');
+    if (prev && cats.some((c) => c.id === prev)) catFilter.value = prev;
+    else catFilter.value = '';
   };
 
   const paintCatalog = () => {
-    const q = (searchEl?.value || '').trim().toLowerCase();
-    const cat = catFilter?.value || '';
-    let list = data.projects;
-    if (cat) list = list.filter((p) => p.categoryId === cat);
-    if (q) list = list.filter((p) => `${p.title} ${p.section}`.toLowerCase().includes(q));
-    list = list.slice(0, 36);
-    if (catalogGrid) {
-      catalogGrid.innerHTML = list.length
-        ? list.map((p) => projectCard(p)).join('')
-        : '<p class="sp-empty">لا نتائج مطابقة في قاعدة المعرفة.</p>';
+    const list = filteredProjects();
+    const typeName = typeOf(activeType).nameAr;
+    const catId = catFilter?.value || '';
+    const catName = data.categories.find((c) => c.id === catId)?.nameAr;
+
+    if (catalogLead) {
+      catalogLead.textContent = catName
+        ? `عرض قائمة «${catName}» — ${list.length.toLocaleString('ar-EG')} مشروع`
+        : `عرض نوع «${typeName}» — ${list.length.toLocaleString('ar-EG')} مشروع · اضغط قائمة أعلاه للتصفية`;
     }
+
+    if (!catalogGrid) return;
+    if (!list.length) {
+      catalogGrid.innerHTML = '<p class="sp-empty">لا مشاريع مطابقة — جرّب نوعًا أو بحثًا آخر.</p>';
+      return;
+    }
+
+    const byCat = {};
+    list.forEach((p) => {
+      if (!byCat[p.categoryId]) byCat[p.categoryId] = [];
+      byCat[p.categoryId].push(p);
+    });
+
+    const order = catsForType(activeType).map((c) => c.id);
+    catalogGrid.innerHTML = order
+      .filter((id) => byCat[id]?.length)
+      .map((id) => {
+        const cat = data.categories.find((c) => c.id === id);
+        const all = byCat[id];
+        const page = pageByCat[id] || 1;
+        const shown = all.slice(0, page * PAGE_SIZE);
+        const more = all.length - shown.length;
+        return `<section class="sp-cat-group" data-cat-group="${esc(id)}">
+          <header class="sp-cat-group-head">
+            <h3><i class="fas ${esc(cat?.icon || 'fa-folder')}"></i> ${esc(cat?.nameAr || id)}</h3>
+            <span>${all.length.toLocaleString('ar-EG')} مشروع</span>
+          </header>
+          <div class="sp-catalog-grid">
+            ${shown.map((p) => projectCard(p)).join('')}
+          </div>
+          ${
+            more > 0
+              ? `<button type="button" class="btn btn-secondary sp-load-more" data-sp-more="${esc(id)}">عرض المزيد (${more.toLocaleString('ar-EG')})</button>`
+              : ''
+          }
+        </section>`;
+      })
+      .join('');
   };
 
-  const paintCatUi = () => {
-    if (catFilter) {
-      catFilter.innerHTML =
-        `<option value="">كل الفئات</option>` +
-        data.categories.map((c) => `<option value="${esc(c.id)}">${esc(c.nameAr)}</option>`).join('');
-    }
-    if (catChips) {
-      catChips.innerHTML = data.categories
-        .map(
-          (c) =>
-            `<button type="button" class="sp-chip" data-sp-chip="${esc(c.id)}"><i class="fas ${esc(c.icon)}"></i> ${esc(c.nameAr)}</button>`
-        )
-        .join('');
-    }
+  const setType = (typeId, { resetCat = true } = {}) => {
+    activeType = typeId || 'all';
+    pageByCat = {};
+    if (resetCat && catFilter) catFilter.value = '';
+    paintTypeTabs();
+    paintCatFilter();
+    paintCatDir();
+    paintCatalog();
   };
 
   const paintOpened = () => {
@@ -408,7 +552,7 @@
     if (!openedEl) return;
     if (!list.length) {
       openedEl.innerHTML =
-        '<p class="sp-empty">لا فرص قيد الاختبار بعد — حلّل ملفك أو تصفّح قاعدة المعرفة ثم اضغط «اختبر هذه الفرصة».</p>';
+        '<p class="sp-empty">لا مشاريع قيد الاختبار بعد — تصفّح القوائم أو اقترح حسب ملفك ثم اضغط «اختبر المشروع».</p>';
       return;
     }
     openedEl.innerHTML = list
@@ -416,7 +560,7 @@
         const p = data.projects.find((x) => x.id === item.id);
         return `<article class="sp-opened-card">
           <div class="sp-opened-main">
-            <h3>${esc(item.title || p?.title || 'فرصة')}</h3>
+            <h3>${esc(item.title || p?.title || 'مشروع')}</h3>
             <small>بدأ الاختبار ${esc(new Date(item.openedAt).toLocaleString('ar-EG'))}</small>
             <p>مسار التشغيل: تعلّم ← خطة ← جدوى ← تسعير ← موردون ← تسويق ← CRM ← قياس ← تحسين ← حاضنة.</p>
             <ol class="sp-ops-steps">
@@ -427,8 +571,8 @@
             </ol>
           </div>
           <div class="sp-card-actions">
-            <a class="btn btn-primary" href="courses.html">Learning</a>
-            <a class="btn btn-secondary" href="ads.html">Marketing</a>
+            <a class="btn btn-primary" href="courses.html">تدريب</a>
+            <a class="btn btn-secondary" href="ads.html">تسويق</a>
             <a class="btn btn-secondary" href="systems/crm.html?from=hub&return=side-projects.html">CRM</a>
             <a class="btn btn-secondary" href="systems/erp.html?from=hub&return=side-projects.html">ERP</a>
             <a class="btn btn-secondary" href="incubators.html">الحاضنات</a>
@@ -441,7 +585,7 @@
 
   const openProject = (id) => {
     const p = data.projects.find((x) => x.id === id);
-    if (!p) return toast('الفرصة غير موجودة');
+    if (!p) return toast('المشروع غير موجود');
     const list = readOpened().filter((x) => x.id !== id);
     list.unshift({
       id: p.id,
@@ -452,15 +596,14 @@
     writeOpened(list);
     paintOpened();
     paintStats();
-    toast(`تم فتح فرصة للاختبار: ${p.title}`);
+    toast(`تم فتح المشروع للاختبار: ${p.title}`);
     document.getElementById('sp-opened')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   paintPath();
   paintForm();
   paintStats();
-  paintCatUi();
-  paintCatalog();
+  setType('all');
   paintOpened();
 
   root.querySelector('[data-sp-match]')?.addEventListener('click', match);
@@ -468,15 +611,51 @@
     formEl?.reset();
     if (resultsPanel) resultsPanel.hidden = true;
   });
-  searchEl?.addEventListener('input', () => paintCatalog());
-  catFilter?.addEventListener('change', () => paintCatalog());
-  catChips?.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-sp-chip]');
-    if (!btn || !catFilter) return;
-    catFilter.value = btn.getAttribute('data-sp-chip') || '';
+  searchEl?.addEventListener('input', () => {
+    pageByCat = {};
     paintCatalog();
   });
+  catFilter?.addEventListener('change', () => {
+    pageByCat = {};
+    paintCatDir();
+    paintCatalog();
+  });
+  typeTabs?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-sp-type]');
+    if (!btn) return;
+    setType(btn.getAttribute('data-sp-type') || 'all');
+  });
+  catDir?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-sp-chip]');
+    if (!btn || !catFilter) return;
+    const id = btn.getAttribute('data-sp-chip') || '';
+    catFilter.value = catFilter.value === id ? '' : id;
+    pageByCat = {};
+    paintCatDir();
+    paintCatalog();
+    document.getElementById('sp-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   root.addEventListener('click', (e) => {
+    const more = e.target.closest('[data-sp-more]');
+    if (more) {
+      const id = more.getAttribute('data-sp-more');
+      pageByCat[id] = (pageByCat[id] || 1) + 1;
+      paintCatalog();
+      return;
+    }
+    const expand = e.target.closest('[data-sp-expand]');
+    if (expand) {
+      const card = expand.closest('.sp-card');
+      const details = card?.querySelector('.sp-card-details');
+      if (!details) return;
+      const open = details.hasAttribute('hidden');
+      if (open) details.removeAttribute('hidden');
+      else details.setAttribute('hidden', '');
+      expand.innerHTML = open
+        ? '<i class="fas fa-chevron-up"></i> إخفاء'
+        : '<i class="fas fa-chevron-down"></i> التفاصيل';
+      return;
+    }
     const openBtn = e.target.closest('[data-sp-open]');
     if (openBtn) openProject(openBtn.getAttribute('data-sp-open'));
     const rm = e.target.closest('[data-sp-remove]');
