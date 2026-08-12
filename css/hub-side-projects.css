@@ -417,6 +417,40 @@
   gap: 6px;
 }
 
+/* أزرار ثانوية على خلفية بيضاء — نص غامق (يتغلب على body.homepage .btn-secondary) */
+body.homepage [data-side-projects-page] .sp-card .btn-secondary,
+body.homepage [data-side-projects-page] .sp-opened-card .btn-secondary,
+body.homepage [data-side-projects-page] .sp-reg-card .btn-secondary,
+body.homepage [data-side-projects-page] .sp-form-actions .btn-secondary,
+body.homepage [data-side-projects-page] .sp-catalog-groups .btn-secondary,
+body.homepage [data-side-projects-page] .sp-load-more.btn-secondary,
+[data-side-projects-page] .sp-card .btn-secondary,
+[data-side-projects-page] .sp-opened-card .btn-secondary,
+[data-side-projects-page] .sp-reg-card .btn-secondary,
+[data-side-projects-page] .sp-form-actions .btn-secondary,
+[data-side-projects-page] .sp-catalog-groups .btn-secondary,
+[data-side-projects-page] .sp-load-more.btn-secondary {
+  background: #fff !important;
+  border: 1px solid #d9c7cb !important;
+  color: #1a1a1a !important;
+  box-shadow: none;
+}
+body.homepage [data-side-projects-page] .sp-card .btn-secondary:hover,
+body.homepage [data-side-projects-page] .sp-opened-card .btn-secondary:hover,
+body.homepage [data-side-projects-page] .sp-reg-card .btn-secondary:hover,
+body.homepage [data-side-projects-page] .sp-form-actions .btn-secondary:hover,
+body.homepage [data-side-projects-page] .sp-load-more.btn-secondary:hover,
+[data-side-projects-page] .sp-card .btn-secondary:hover,
+[data-side-projects-page] .sp-opened-card .btn-secondary:hover,
+[data-side-projects-page] .sp-reg-card .btn-secondary:hover,
+[data-side-projects-page] .sp-form-actions .btn-secondary:hover,
+[data-side-projects-page] .sp-load-more.btn-secondary:hover {
+  background: #fff7f8 !important;
+  border-color: #d70000 !important;
+  color: #9f1239 !important;
+  box-shadow: none;
+}
+
 .sp-opened-list { display: grid; gap: 10px; }
 .sp-opened-card {
   display: flex;
