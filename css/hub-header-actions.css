@@ -172,6 +172,50 @@ body.homepage .hero-sidebar-item.hub-sidebar-chat:focus-visible {
   pointer-events: none;
 }
 
+/* خلفية غامقة → كتابة فاتحة (يتغلب على body.homepage h1/p الغامقة) */
+body.homepage .hub-feature-hero,
+body.homepage .hub-feature-hero h1,
+body.homepage .hub-feature-hero h2,
+body.homepage .hub-feature-hero h3,
+body.homepage .hub-feature-hero h4,
+body.homepage .hub-feature-closing,
+body.homepage .hub-feature-closing h1,
+body.homepage .hub-feature-closing h2,
+body.homepage .hub-feature-closing h3,
+body.homepage .hub-learn-closing,
+body.homepage .hub-learn-closing h1,
+body.homepage .hub-learn-closing h2,
+body.homepage .hub-learn-closing h3 {
+  color: #ffffff !important;
+}
+
+body.homepage .hub-feature-hero p,
+body.homepage .hub-feature-hero li,
+body.homepage .hub-feature-hero small,
+body.homepage .hub-feature-closing p,
+body.homepage .hub-feature-closing li,
+body.homepage .hub-learn-closing p,
+body.homepage .hub-learn-closing li {
+  color: rgba(255, 245, 247, 0.96) !important;
+}
+
+body.homepage .hub-feature-hero .hub-feature-kicker,
+body.homepage .hub-feature-hero .hub-learn-kicker,
+body.homepage .hub-feature-closing .hub-feature-kicker,
+body.homepage .hub-learn-closing .hub-learn-kicker {
+  color: #ffe8ec !important;
+}
+
+body.homepage .hub-feature-hero .hub-feature-purpose,
+body.homepage .hub-feature-hero .hub-feature-purpose strong,
+body.homepage .hub-feature-hero .hub-feature-purpose p {
+  color: #ffffff !important;
+}
+
+body.homepage .hub-feature-hero .hub-feature-purpose p {
+  color: rgba(255, 230, 234, 0.92) !important;
+}
+
 .hub-feature-kicker,
 .hub-learn-kicker {
   position: relative;
@@ -197,7 +241,7 @@ body.homepage .hero-sidebar-item.hub-sidebar-chat:focus-visible {
   margin: 0 0 12px;
   font-size: clamp(28px, 4vw, 44px);
   font-weight: 900;
-  color: #fff;
+  color: #fff !important;
   line-height: 1.2;
   max-width: 18ch;
 }
@@ -209,7 +253,7 @@ body.homepage .hero-sidebar-item.hub-sidebar-chat:focus-visible {
   max-width: 58ch;
   font-size: 16px;
   line-height: 1.85;
-  color: rgba(255, 220, 228, 0.9);
+  color: rgba(255, 245, 247, 0.96) !important;
   font-weight: 600;
 }
 
@@ -479,13 +523,14 @@ body.homepage .hero-sidebar-item.hub-sidebar-chat:focus-visible {
   margin: 0 0 10px;
   font-size: clamp(22px, 2.8vw, 32px);
   font-weight: 900;
-  color: #fff;
+  color: #fff !important;
 }
 
 .hub-feature-closing > p,
 .hub-learn-closing > p {
   position: relative;
   z-index: 1;
+  color: rgba(255, 245, 247, 0.96) !important;
 }
 
 .hub-learn-catalog {
