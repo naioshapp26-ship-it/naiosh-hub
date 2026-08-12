@@ -30,13 +30,13 @@
   margin: 0 0 10px;
   font-size: clamp(1.8rem, 4vw, 2.6rem);
   font-weight: 900;
-  color: #fff;
+  color: #fff !important;
   max-width: 16ch;
 }
 .op-hero p {
   margin: 0;
   max-width: 52rem;
-  color: rgba(255, 220, 228, 0.9);
+  color: rgba(255, 245, 247, 0.96) !important;
   font-weight: 600;
   line-height: 1.7;
 }

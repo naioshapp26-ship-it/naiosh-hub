@@ -1,0 +1,85 @@
+/* نص فاتح على كل الأسطح/الهيروهات الغامقة — يتجاوز body.homepage h1/p */
+body.homepage :is(
+  .hub-feature-hero,
+  .hub-feature-closing,
+  .hub-learn-closing,
+  .kol-hero,
+  .pol-hero,
+  .op-hero,
+  .spec-hero,
+  .hcl-hero,
+  .jr-hero,
+  .rev-hero,
+  .dir-hero,
+  .ops-man-hero,
+  .incubators-hero,
+  .incubators-hero-head,
+  .hero.law-hero .hero-content,
+  .law-hero .hero-content
+) {
+  color: #ffffff;
+}
+
+body.homepage :is(
+  .hub-feature-hero,
+  .hub-feature-closing,
+  .hub-learn-closing,
+  .kol-hero,
+  .pol-hero,
+  .op-hero,
+  .spec-hero,
+  .hcl-hero,
+  .jr-hero,
+  .rev-hero,
+  .dir-hero,
+  .ops-man-hero,
+  .incubators-hero,
+  .incubators-hero-head,
+  .hero.law-hero .hero-content,
+  .law-hero .hero-content
+) :is(h1, h2, h3, h4, strong) {
+  color: #ffffff !important;
+}
+
+body.homepage :is(
+  .hub-feature-hero,
+  .hub-feature-closing,
+  .hub-learn-closing,
+  .kol-hero,
+  .pol-hero,
+  .op-hero,
+  .spec-hero,
+  .hcl-hero,
+  .jr-hero,
+  .rev-hero,
+  .dir-hero,
+  .ops-man-hero,
+  .incubators-hero,
+  .incubators-hero-head,
+  .hero.law-hero .hero-content,
+  .law-hero .hero-content
+) :is(p, li, small, label) {
+  color: rgba(255, 245, 247, 0.96) !important;
+}
+
+body.homepage :is(
+  .hub-feature-hero,
+  .kol-hero,
+  .pol-hero,
+  .op-hero,
+  .spec-hero,
+  .hcl-hero,
+  .jr-hero,
+  .rev-hero,
+  .dir-hero,
+  .ops-man-hero
+) :is(.hub-feature-kicker, .hub-learn-kicker, .op-kicker) {
+  color: #ffe8ec !important;
+}
+
+/* شارات/معادلات داخل الهيرو الغامق */
+body.homepage .kol-equation span,
+body.homepage .spec-chain span,
+body.homepage .kol-hero .kol-equation span {
+  color: #ffffff !important;
+}

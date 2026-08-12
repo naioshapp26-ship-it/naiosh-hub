@@ -17,13 +17,14 @@
   margin: 0 0 10px;
   font-size: clamp(24px, 3.2vw, 38px);
   font-weight: 900;
+  color: #ffffff !important;
 }
 
 .kol-hero p {
   margin: 0 0 16px;
   max-width: 70ch;
   line-height: 1.75;
-  color: rgba(255, 220, 228, 0.86);
+  color: rgba(255, 245, 247, 0.96) !important;
   font-size: 15px;
 }
 

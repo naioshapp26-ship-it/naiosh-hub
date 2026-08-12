@@ -1051,13 +1051,13 @@ a {
 
 .incubators-hero-head h1 {
   margin: 0;
-  color: #fff;
+  color: #fff !important;
   font-size: clamp(28px, 3.8vw, 44px);
 }
 
 .incubators-hero-head p {
   margin: 10px 0 0;
-  color: rgba(255, 255, 255, 0.84);
+  color: rgba(255, 255, 255, 0.92) !important;
   font-size: clamp(15px, 1.5vw, 18px);
 }
 
