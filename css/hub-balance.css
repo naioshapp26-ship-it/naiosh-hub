@@ -23,10 +23,10 @@ body.homepage .hub-balance-side-projects {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   text-decoration: none;
   color: #fff;
-  min-width: 64px;
+  min-width: 110px;
   transition: transform 0.15s ease;
 }
 body.homepage .hub-balance-side-projects:hover,
@@ -46,11 +46,11 @@ body.homepage .hub-balance-side-projects-icon {
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28), 0 0 0 2px rgba(215, 0, 0, 0.55);
 }
 body.homepage .hub-balance-side-projects-label {
-  font-size: 10px;
+  font-size: 17px;
   font-weight: 900;
-  line-height: 1.15;
+  line-height: 1.2;
   text-align: center;
-  max-width: 72px;
+  max-width: 120px;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
