@@ -10,7 +10,7 @@
 
   const KEY = 'naiosh_opportunity_engine_v1';
   const LEGACY_KEY = 'naiosh_side_projects_opened_v1';
-  const REG_KEY = 'naiosh_side_project_registrations_v1';
+  const regApi = window.HubSideProjectRegistrations;
   const esc = (v = '') =>
     String(v)
       .replace(/&/g, '&amp;')
@@ -154,17 +154,7 @@
     localStorage.setItem(KEY, JSON.stringify(list.slice(0, 40)));
   };
 
-  const readRegistrations = () => {
-    try {
-      return JSON.parse(localStorage.getItem(REG_KEY) || '[]');
-    } catch {
-      return [];
-    }
-  };
-
-  const writeRegistrations = (list) => {
-    localStorage.setItem(REG_KEY, JSON.stringify(list.slice(0, 80)));
-  };
+  const readRegistrations = () => (regApi?.read ? regApi.read() : []);
 
   const fileMeta = (input) => {
     const f = input?.files?.[0];
@@ -188,16 +178,17 @@
     const list = readRegistrations();
     if (!list.length) {
       regListEl.innerHTML =
-        '<p class="sp-empty">لا طلبات تسجيل بعد — اختر مشروعاً واضغط على أيقونة أو اسم المشروع لفتح نموذج التسجيل.</p>';
+        '<p class="sp-empty">لا طلبات تسجيل بعد — اختر مشروعاً واضغط على أيقونة أو اسم المشروع لفتح نموذج التسجيل. الطلبات تُرسل لصفحة الفريق الداخلية.</p>';
       return;
     }
     regListEl.innerHTML = list
+      .slice(0, 8)
       .map(
         (r) => `<article class="sp-reg-card">
           <div class="sp-reg-card-main">
             <h3>${esc(r.projectName)}</h3>
-            <small>${esc(r.ownerName)} · ${esc(r.phone)} · ${esc(r.email)}</small>
-            <p>${esc(r.country)} · ${esc(r.education)} · خبرة ${esc(String(r.experienceYears))} سنة</p>
+            <small>${esc(r.ownerName)} · ${esc(r.phone || '—')} · ${esc(r.email || '—')}</small>
+            <p>${esc(r.country)} · ${esc(r.education)} · خبرة ${esc(String(r.experienceYears))} سنة · حالة: ${esc(r.status || 'جديد')}</p>
             <p class="sp-reg-exp">مجالات: ${esc([r.experience1, r.experience2, r.experience3].filter(Boolean).join(' · ') || '—')}</p>
             <p class="sp-reg-files">
               ملف: ${esc(r.fileDoc?.name || '—')} ·
@@ -208,10 +199,16 @@
             ${r.commercialOrNotes ? `<p>ملاحظات / سجل: ${esc(r.commercialOrNotes)}</p>` : ''}
             <small>تاريخ التسجيل ${esc(new Date(r.createdAt).toLocaleString('ar-EG'))}</small>
           </div>
-          <button type="button" class="btn btn-secondary" data-sp-reg-remove="${esc(r.id)}">حذف</button>
+          <a class="btn btn-secondary" href="side-project-registrations.html">متابعة الفريق</a>
         </article>`
       )
       .join('');
+    if (list.length > 8) {
+      regListEl.insertAdjacentHTML(
+        'beforeend',
+        `<p class="sp-empty"><a href="side-project-registrations.html">عرض كل الطلبات (${list.length.toLocaleString('ar-EG')}) في صفحة الفريق</a></p>`
+      );
+    }
   };
 
   const closeRegModal = () => {
@@ -230,7 +227,7 @@
     if (nameInput) nameInput.value = project.title;
     regModal.hidden = false;
     document.body.classList.add('sp-reg-open');
-    nameInput?.focus();
+    regForm.querySelector('[name="ownerName"]')?.focus();
   };
 
   const fillCountries = () => {
@@ -244,18 +241,24 @@
   const submitRegistration = (e) => {
     e.preventDefault();
     if (!regForm) return;
+    if (!regApi?.create) return toast('نظام استقبال التسجيلات غير متاح');
     if (!regForm.checkValidity()) {
       regForm.reportValidity();
       return toast('أكمل حقول التسجيل المطلوبة');
     }
     const fd = new FormData(regForm);
-    const record = {
-      id: `reg-${Date.now()}`,
+    const phone = String(fd.get('phone') || '').trim();
+    const email = String(fd.get('email') || '').trim();
+    if (!phone && !email) {
+      return toast('أضف رقم جوال أو بريداً إلكترونياً حتى يتمكن الفريق من التواصل معك');
+    }
+    const payload = {
       projectId: String(fd.get('projectId') || selectedProject?.id || ''),
       projectName: String(fd.get('projectName') || '').trim(),
       ownerName: String(fd.get('ownerName') || '').trim(),
-      phone: String(fd.get('phone') || '').trim(),
-      email: String(fd.get('email') || '').trim(),
+      phone,
+      email,
+      preferredContact: String(fd.get('preferredContact') || '').trim(),
       country: String(fd.get('country') || '').trim(),
       education: String(fd.get('education') || '').trim(),
       experienceYears: Number(fd.get('experienceYears') || 0),
@@ -267,14 +270,9 @@
       fileVideo: fileMeta(regForm.querySelector('[name="fileVideo"]')),
       currentWork: String(fd.get('currentWork') || '').trim(),
       commercialOrNotes: String(fd.get('commercialOrNotes') || '').trim(),
-      createdAt: new Date().toISOString(),
     };
-    if (!record.projectName || !record.ownerName || !record.phone || !record.email) {
-      return toast('اسم المشروع وصاحب المشروع والجوال والبريد مطلوبة');
-    }
-    const list = readRegistrations().filter((x) => x.id !== record.id);
-    list.unshift(record);
-    writeRegistrations(list);
+    const result = regApi.create(payload);
+    if (!result?.ok) return toast(result?.error || 'تعذّر إرسال التسجيل');
     paintRegistrations();
     closeRegModal();
     regForm.reset();
@@ -284,7 +282,7 @@
       if (nameInput) nameInput.value = selectedProject.title;
       if (idInput) idInput.value = selectedProject.id;
     }
-    toast(`تم تسجيل المشروع: ${record.projectName}`);
+    toast(`تم إرسال التسجيل للفريق: ${result.record.projectName}`);
     document.getElementById('sp-registrations')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -863,7 +861,7 @@
     }
     const regRm = e.target.closest('[data-sp-reg-remove]');
     if (regRm) {
-      writeRegistrations(readRegistrations().filter((x) => x.id !== regRm.getAttribute('data-sp-reg-remove')));
+      regApi?.remove?.(regRm.getAttribute('data-sp-reg-remove'));
       paintRegistrations();
       toast('تم حذف طلب التسجيل');
     }

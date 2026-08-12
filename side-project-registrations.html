@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>طلبات تسجيل المشاريع | نايوش هوب 360</title>
+  <meta name="description" content="صندوق استقبال طلبات تسجيل المشاريع الجانبية لمتابعة أصحاب المشاريع والتواصل معهم." />
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/hub-theme.css" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=11" />
+  <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
+  <link rel="stylesheet" href="css/hub-side-project-registrations.css?v=1" />
+</head>
+<body class="homepage">
+  <header class="top-nav">
+    <div class="container inner">
+      <div class="nav-main">
+        <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
+        <nav class="nav-links">
+          <a href="index.html">الرئيسية</a>
+          <a href="dashboard.html">غرفة العمليات</a>
+          <a href="side-projects.html">المشاريع الجانبية</a>
+          <a class="active" href="side-project-registrations.html">طلبات التسجيل</a>
+        </nav>
+      </div>
+      <div class="auth-actions">
+        <a href="office.html" class="auth-btn">مكتبي</a>
+        <a href="dashboard.html" class="auth-btn primary">غرفة العمليات</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container hub-feature-page" data-sp-admin-page>
+    <section class="hub-feature-hero spr-hero">
+      <p class="hub-feature-kicker"><i class="fas fa-inbox"></i> نظام داخلي · استقبال التسجيلات</p>
+      <h1>طلبات تسجيل المشاريع الجانبية</h1>
+      <p>
+        هنا تصل كل طلبات التسجيل من صفحة المشاريع الجانبية — باشر الطلب، تابع صاحب المشروع، وتواصل معه عبر الجوال أو الإيميل.
+      </p>
+      <div class="hub-feature-actions">
+        <a class="btn btn-primary" href="side-projects.html"><i class="fas fa-lightbulb"></i> صفحة المشاريع</a>
+        <a class="btn btn-secondary" href="office.html"><i class="fas fa-briefcase"></i> مكتبي</a>
+      </div>
+    </section>
+
+    <section class="spr-stats" data-spr-stats aria-label="مؤشرات الطلبات"></section>
+
+    <section class="sp-panel spr-panel">
+      <div class="sp-panel-head">
+        <h2><i class="fas fa-filter"></i> صندوق الطلبات</h2>
+        <p>فلتر حسب الحالة أو ابحث باسم المشروع / صاحب المشروع / الجوال / الإيميل.</p>
+      </div>
+      <div class="spr-toolbar">
+        <label class="sp-field grow">بحث
+          <input type="search" data-spr-search placeholder="اسم المشروع، صاحب المشروع، جوال، إيميل…" />
+        </label>
+        <label class="sp-field">الحالة
+          <select data-spr-status-filter>
+            <option value="">كل الحالات</option>
+            <option value="جديد">جديد</option>
+            <option value="قيد المتابعة">قيد المتابعة</option>
+            <option value="تم التواصل">تم التواصل</option>
+            <option value="مقبول">مقبول</option>
+            <option value="مرفوض">مرفوض</option>
+            <option value="مغلق">مغلق</option>
+          </select>
+        </label>
+      </div>
+      <div class="spr-list" data-spr-list></div>
+    </section>
+  </main>
+
+  <div class="spr-toast" id="spr-toast" role="status" aria-live="polite"></div>
+
+  <script src="js/hub-store.js"></script>
+  <script src="js/hub-side-project-registrations.js?v=1"></script>
+  <script src="js/hub-side-project-registrations-page.js?v=1"></script>
+  <script src="js/hub-header-actions.js?v=10"></script>
+  <script src="js/hub-global-back.js" defer></script>
+  <script src="js/hub-page-guide.js" defer></script>
+</body>
+</html>

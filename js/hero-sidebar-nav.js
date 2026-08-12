@@ -59,6 +59,7 @@
     }
     ensure('شراكاتي', 'partnerships.html', 'fa-handshake');
     ensure('مشاريع جانبية', 'side-projects.html', 'fa-lightbulb');
+    ensure('طلبات المشاريع', 'side-project-registrations.html', 'fa-inbox');
     ensure('نظام التشغيل', 'global-os.html', 'fa-network-wired');
     ensure('دورات', 'courses.html', 'fa-chalkboard');
     ensure('دبلومات', 'diplomas.html', 'fa-graduation-cap');

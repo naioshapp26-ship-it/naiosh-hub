@@ -1,0 +1,243 @@
+/* صندوق استقبال طلبات تسجيل المشاريع الجانبية */
+.spr-hero .hub-feature-kicker {
+  color: #ffe8ec !important;
+  font-weight: 800;
+}
+
+.spr-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+.spr-stats article {
+  background: #fff;
+  border: 1px solid #eadfe2;
+  border-radius: 14px;
+  padding: 14px;
+}
+.spr-stats strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 900;
+  color: #111;
+  margin-bottom: 4px;
+}
+.spr-stats span {
+  font-size: 12px;
+  font-weight: 800;
+  color: #777;
+}
+
+.spr-panel {
+  border: 1px solid #eadfe2;
+  border-radius: 18px;
+  background: #fff;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+.spr-toolbar {
+  display: grid;
+  grid-template-columns: 1.6fr 0.8fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.spr-list {
+  display: grid;
+  gap: 12px;
+}
+
+.spr-card {
+  border: 1px solid #eadfe2;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fff 0%, #fffafb 100%);
+  padding: 14px;
+}
+.spr-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.spr-card-head h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 900;
+}
+.spr-card-head small {
+  color: #777;
+  font-size: 12px;
+  font-weight: 700;
+}
+.spr-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  background: #ffe5e5;
+  color: #a00010;
+}
+.spr-status.is-follow {
+  background: #fff4d6;
+  color: #8a5a00;
+}
+.spr-status.is-contacted,
+.spr-status.is-accepted {
+  background: #e7f8ee;
+  color: #0d6b38;
+}
+.spr-status.is-rejected,
+.spr-status.is-closed {
+  background: #eee;
+  color: #555;
+}
+
+.spr-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.spr-contact a,
+.spr-contact span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  border: 1px solid #eadfe2;
+  background: #fff;
+  color: #222;
+}
+.spr-contact a:hover {
+  border-color: #d70000;
+  color: #d70000;
+}
+.spr-contact .is-primary {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+.spr-contact .is-primary:hover {
+  background: #d70000;
+  border-color: #d70000;
+  color: #fff;
+}
+
+.spr-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.spr-meta div {
+  background: #faf6f7;
+  border-radius: 10px;
+  padding: 8px;
+}
+.spr-meta span {
+  display: block;
+  color: #888;
+  font-size: 10px;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+.spr-meta strong {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.spr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.spr-actions select,
+.spr-actions input {
+  border: 1px solid #e2d6d9;
+  border-radius: 12px;
+  padding: 9px 12px;
+  font: inherit;
+  background: #fafafa;
+  min-width: 140px;
+}
+.spr-actions input {
+  flex: 1 1 220px;
+}
+
+.spr-notes {
+  border-top: 1px dashed #eadfe2;
+  padding-top: 10px;
+  margin: 0;
+  list-style: none;
+}
+.spr-notes li {
+  font-size: 12px;
+  font-weight: 700;
+  color: #555;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+.spr-notes time {
+  color: #999;
+  font-weight: 800;
+  margin-inline-start: 6px;
+}
+
+.spr-empty {
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  color: #777;
+  font-weight: 700;
+}
+
+.spr-toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #111;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.2s ease;
+  z-index: 80;
+}
+.spr-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 980px) {
+  .spr-stats,
+  .spr-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .spr-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .spr-stats,
+  .spr-meta {
+    grid-template-columns: 1fr;
+  }
+}

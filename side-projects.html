@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=11" />
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
-  <link rel="stylesheet" href="css/hub-side-projects.css?v=6" />
+  <link rel="stylesheet" href="css/hub-side-projects.css?v=7" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -117,7 +117,11 @@
     <section class="sp-panel" id="sp-registrations" aria-labelledby="sp-reg-title">
       <div class="sp-panel-head">
         <h2 id="sp-reg-title"><i class="fas fa-clipboard-list"></i> طلبات تسجيل المشاريع</h2>
-        <p>بعد اختيار المشروع والضغط على أيقونة أو اسم المشروع يظهر نموذج التسجيل — الطلبات المحفوظة تظهر هنا.</p>
+        <p>
+          بعد الإرسال يصل الطلب لصفحة الفريق الداخلية
+          <a href="side-project-registrations.html">طلبات تسجيل المشاريع</a>
+          للمتابعة والتواصل عبر الجوال أو الإيميل.
+        </p>
       </div>
       <div class="sp-selected-project" data-sp-selected-project hidden>
         <span class="sp-selected-label">المشروع المختار للتسجيل</span>
@@ -146,11 +150,18 @@
           <label class="sp-field grow">اسم صاحب المشروع
             <input name="ownerName" type="text" required autocomplete="name" placeholder="الاسم الكامل" />
           </label>
-          <label class="sp-field">رقم الجوال
+          <label class="sp-field">رقم الجوال <span class="sp-req-hint">(للتواصل)</span>
             <input name="phone" type="tel" required autocomplete="tel" placeholder="05xxxxxxxx" />
           </label>
-          <label class="sp-field">البريد الإلكتروني
+          <label class="sp-field">البريد الإلكتروني <span class="sp-req-hint">(للتواصل)</span>
             <input name="email" type="email" required autocomplete="email" placeholder="name@example.com" />
+          </label>
+          <label class="sp-field">وسيلة التواصل المفضّلة
+            <select name="preferredContact" required>
+              <option value="جوال">جوال</option>
+              <option value="إيميل">إيميل</option>
+              <option value="الاتنين">الجوال والإيميل</option>
+            </select>
           </label>
           <label class="sp-field grow">اسم المشروع
             <input name="projectName" type="text" required data-sp-reg-project-name placeholder="اسم المشروع المختار" />
@@ -209,8 +220,10 @@
 
   <div class="sp-toast" id="sp-toast" role="status" aria-live="polite"></div>
 
+  <script src="js/hub-store.js"></script>
+  <script src="js/hub-side-project-registrations.js?v=1"></script>
   <script src="js/hub-side-projects-data.js?v=5"></script>
-  <script src="js/hub-side-projects.js?v=6"></script>
+  <script src="js/hub-side-projects.js?v=7"></script>
   <script src="js/hub-header-actions.js?v=10"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js" defer></script>
