@@ -658,8 +658,8 @@
                         </td>
                         <td>${fmtTime(r.createdAt)}</td>
                         <td>
+                          <button class="btn btn-sm btn-primary" data-action="sp-reg-details" data-id="${esc(r.id)}"><i class="fas fa-eye"></i> تفاصيل الطلب</button>
                           <button class="btn btn-sm btn-dark" data-action="sp-reg-contacted" data-id="${esc(r.id)}">تم التواصل</button>
-                          <a class="btn btn-sm btn-ghost" href="side-project-registrations.html">تفاصيل</a>
                         </td>
                       </tr>`;
                     })
@@ -2082,6 +2082,11 @@
         window.HubSideProjectRegistrations?.setStatus?.(id, 'تم التواصل', 'تم التواصل من غرفة العمليات');
         toast('تم تسجيل التواصل مع صاحب المشروع');
         break;
+      case 'sp-reg-details': {
+        const rec = window.HubSideProjectRegistrations?.openDetails?.(id);
+        if (!rec) toast('الطلب غير موجود');
+        return;
+      }
       case 'add-store-item': {
         const title = $('#store-title')?.value.trim();
         if (!title) return toast('اسم المنتج أو الخدمة مطلوب');

@@ -117,6 +117,7 @@
       </div>
 
       <div class="spr-actions">
+        <button type="button" class="btn btn-primary" data-spr-details="${esc(r.id)}"><i class="fas fa-eye"></i> تفاصيل الطلب</button>
         <select data-spr-status="${esc(r.id)}" aria-label="تغيير الحالة">
           ${api.STATUSES.map((s) => `<option value="${esc(s)}" ${s === r.status ? 'selected' : ''}>${esc(s)}</option>`).join('')}
         </select>
@@ -162,6 +163,12 @@
   });
 
   root.addEventListener('click', (e) => {
+    const detailsBtn = e.target.closest('[data-spr-details]');
+    if (detailsBtn) {
+      const id = detailsBtn.getAttribute('data-spr-details');
+      if (!api.openDetails?.(id)) toast('الطلب غير موجود');
+      return;
+    }
     const noteBtn = e.target.closest('[data-spr-save-note]');
     if (noteBtn) {
       const id = noteBtn.getAttribute('data-spr-save-note');
