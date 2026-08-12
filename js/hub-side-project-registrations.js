@@ -77,7 +77,7 @@
         body: `${record.ownerName} · ${record.projectName} · ${record.phone || record.email}`,
         level: 'info',
         category: 'side-projects',
-        link: 'side-project-registrations.html',
+        link: 'dashboard.html#side-project-regs',
         meta: { registrationId: record.id },
       });
     } catch (_) {}

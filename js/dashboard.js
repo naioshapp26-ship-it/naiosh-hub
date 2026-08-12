@@ -3,6 +3,7 @@
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
     { key: 'operating', icon: 'fa-gears', label: 'آلية التشغيل' },
     { key: 'notifications', icon: 'fa-bell', label: 'إشعارات هوب' },
+    { key: 'side-project-regs', icon: 'fa-inbox', label: 'طلبات تسجيل المشاريع' },
     { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
     { key: 'platforms', icon: 'fa-layer-group', label: 'المنصات السيادية' },
     { key: 'apps', icon: 'fa-cubes', label: 'سجل الأنظمة' },
@@ -31,6 +32,7 @@
     overview: ['مركز التحكم العالمي', 'الفروع · الحاضنات · المنصات · المنتجات · المتجر · الإعلانات · الفعاليات'],
     operating: ['آلية تشغيل نايوش هوب', 'بدون تكرار · اشتراك=صلاحية · SSO · تقارير نشاط · خدمات موحّدة'],
     notifications: ['مركز إشعارات هوب', 'كل تنبيهات الأنظمة تصل هنا — ERP · LAW · FIT · Academy'],
+    'side-project-regs': ['طلبات تسجيل المشاريع', 'استقبال طلبات المشاريع الجانبية · متابعة · تواصل بالجوال أو الإيميل'],
     blueprint: ['دستور المعمارية الإمبراطورية', 'هوب مركزي — طبقات · محاور · أول 6 أشهر'],
     platforms: ['المنصات السيادية لنايوش 360', '18 منصة تشغّل هوب — من الدماغ المركزي إلى السلطة العليا'],
     apps: ['سجل أنظمة هوب', 'أي نظام نايوش يمكنه الظهور هنا والارتباط بالتشغيل الموحّد'],
@@ -594,6 +596,75 @@
                     )
                     .join('')
                 : '<tr><td colspan="7">لا إشعارات بعد — افتح نظامًا من سجل الأنظمة أو ارفع معلوماته إلى هوب.</td></tr>'
+            }
+          </tbody>
+        </table></div>
+      </article>
+    `;
+  };
+
+  const renderSideProjectRegs = () => {
+    const api = window.HubSideProjectRegistrations;
+    const list = api?.read?.() || [];
+    const counts = api?.counts?.() || { total: list.length, byStatus: {}, newCount: 0 };
+    const statuses = api?.STATUSES || ['جديد', 'قيد المتابعة', 'تم التواصل', 'مقبول', 'مرفوض', 'مغلق'];
+    return `
+      <div class="toolbar">
+        <a class="btn btn-primary" href="side-project-registrations.html"><i class="fas fa-inbox"></i> فتح صندوق الطلبات الكامل</a>
+        <a class="btn btn-ghost" href="side-projects.html" target="_blank"><i class="fas fa-lightbulb"></i> صفحة المشاريع الجانبية</a>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi"><span>كل الطلبات</span><strong>${counts.total || 0}</strong><small>تسجيلات</small></article>
+        <article class="kpi"><span>جديد</span><strong>${counts.byStatus?.['جديد'] || 0}</strong><small>يحتاج مباشرة</small></article>
+        <article class="kpi"><span>قيد المتابعة</span><strong>${counts.byStatus?.['قيد المتابعة'] || 0}</strong><small>مع الفريق</small></article>
+        <article class="kpi"><span>تم التواصل</span><strong>${counts.byStatus?.['تم التواصل'] || 0}</strong><small>تم الاتصال</small></article>
+      </div>
+      <article class="card" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-inbox icon"></i> طلبات تسجيل المشاريع الجانبية</span>
+          <span class="badge badge-red">Admin Inbox</span>
+        </h3>
+        <div class="table-wrap"><table class="data">
+          <thead>
+            <tr>
+              <th>المشروع</th>
+              <th>صاحب المشروع</th>
+              <th>التواصل</th>
+              <th>الدولة / الخبرة</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+              <th>إجراء</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              list.length
+                ? list
+                    .map((r) => {
+                      const phone = (r.phone || '').replace(/\s+/g, '');
+                      const wa = phone ? `https://wa.me/${phone.replace(/[^\d+]/g, '').replace(/^0/, '966')}` : '';
+                      return `<tr>
+                        <td><strong>${esc(r.projectName)}</strong></td>
+                        <td>${esc(r.ownerName)}</td>
+                        <td>
+                          ${r.phone ? `<a href="tel:${esc(phone)}">${esc(r.phone)}</a><br>` : ''}
+                          ${r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a><br>` : ''}
+                          ${wa ? `<a class="btn btn-sm btn-ghost" href="${esc(wa)}" target="_blank" rel="noopener">واتساب</a>` : '—'}
+                        </td>
+                        <td>${esc(r.country || '—')}<br><small>${esc(r.experience1 || '—')} · ${esc(String(r.experienceYears ?? '—'))} سنة</small></td>
+                        <td>
+                          <select data-action="sp-reg-status" data-id="${esc(r.id)}">
+                            ${statuses.map((s) => `<option value="${esc(s)}" ${s === (r.status || 'جديد') ? 'selected' : ''}>${esc(s)}</option>`).join('')}
+                          </select>
+                        </td>
+                        <td>${fmtTime(r.createdAt)}</td>
+                        <td>
+                          <button class="btn btn-sm btn-dark" data-action="sp-reg-contacted" data-id="${esc(r.id)}">تم التواصل</button>
+                          <a class="btn btn-sm btn-ghost" href="side-project-registrations.html">تفاصيل</a>
+                        </td>
+                      </tr>`;
+                    })
+                    .join('')
+                : '<tr><td colspan="7">لا طلبات بعد — ستظهر هنا تلقائياً عند إرسال التسجيل من صفحة المشاريع الجانبية.</td></tr>'
             }
           </tbody>
         </table></div>
@@ -1756,6 +1827,7 @@
     overview: renderOverview,
     operating: renderOperating,
     notifications: renderNotifications,
+    'side-project-regs': renderSideProjectRegs,
     blueprint: renderBlueprint,
     platforms: renderPlatforms,
     apps: renderApps,
@@ -2006,6 +2078,10 @@
         });
         toast('أُضيف إشعار إلى هوب');
         break;
+      case 'sp-reg-contacted':
+        window.HubSideProjectRegistrations?.setStatus?.(id, 'تم التواصل', 'تم التواصل من غرفة العمليات');
+        toast('تم تسجيل التواصل مع صاحب المشروع');
+        break;
       case 'add-store-item': {
         const title = $('#store-title')?.value.trim();
         if (!title) return toast('اسم المنتج أو الخدمة مطلوب');
@@ -2062,6 +2138,16 @@
         break;
     }
     renderNav();
+    render();
+  });
+
+  root.addEventListener('change', (e) => {
+    const sel = e.target.closest('[data-action="sp-reg-status"]');
+    if (!sel) return;
+    const id = sel.dataset.id;
+    const status = sel.value;
+    window.HubSideProjectRegistrations?.setStatus?.(id, status, `تحديث الحالة من غرفة العمليات إلى ${status}`);
+    toast(`تم تحديث الحالة: ${status}`);
     render();
   });
 
