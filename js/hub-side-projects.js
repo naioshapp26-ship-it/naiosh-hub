@@ -10,6 +10,7 @@
 
   const KEY = 'naiosh_opportunity_engine_v1';
   const LEGACY_KEY = 'naiosh_side_projects_opened_v1';
+  const REG_KEY = 'naiosh_side_project_registrations_v1';
   const esc = (v = '') =>
     String(v)
       .replace(/&/g, '&amp;')
@@ -31,6 +32,37 @@
   const statsEl = root.querySelector('[data-sp-stats]');
   const pathEl = root.querySelector('[data-sp-path]');
   const toastEl = document.getElementById('sp-toast');
+  const regModal = document.getElementById('sp-reg-modal');
+  const regForm = document.querySelector('[data-sp-reg-form]');
+  const regListEl = root.querySelector('[data-sp-reg-list]');
+  const selectedBox = root.querySelector('[data-sp-selected-project]');
+  const selectedNameEl = root.querySelector('[data-sp-selected-name]');
+
+  const COUNTRIES = [
+    'المملكة العربية السعودية',
+    'الإمارات العربية المتحدة',
+    'الكويت',
+    'قطر',
+    'البحرين',
+    'عُمان',
+    'الأردن',
+    'مصر',
+    'العراق',
+    'سوريا',
+    'لبنان',
+    'فلسطين',
+    'اليمن',
+    'المغرب',
+    'الجزائر',
+    'تونس',
+    'ليبيا',
+    'السودان',
+    'موريتانيا',
+    'تركيا',
+    'أخرى',
+  ];
+
+  let selectedProject = null;
 
   const TYPE_GROUPS = [
     {
@@ -120,6 +152,140 @@
 
   const writeOpened = (list) => {
     localStorage.setItem(KEY, JSON.stringify(list.slice(0, 40)));
+  };
+
+  const readRegistrations = () => {
+    try {
+      return JSON.parse(localStorage.getItem(REG_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  };
+
+  const writeRegistrations = (list) => {
+    localStorage.setItem(REG_KEY, JSON.stringify(list.slice(0, 80)));
+  };
+
+  const fileMeta = (input) => {
+    const f = input?.files?.[0];
+    if (!f) return null;
+    return { name: f.name, size: f.size, type: f.type || '' };
+  };
+
+  const paintSelectedProject = () => {
+    if (!selectedBox || !selectedNameEl) return;
+    if (!selectedProject) {
+      selectedBox.hidden = true;
+      selectedNameEl.textContent = '—';
+      return;
+    }
+    selectedBox.hidden = false;
+    selectedNameEl.textContent = selectedProject.title;
+  };
+
+  const paintRegistrations = () => {
+    if (!regListEl) return;
+    const list = readRegistrations();
+    if (!list.length) {
+      regListEl.innerHTML =
+        '<p class="sp-empty">لا طلبات تسجيل بعد — اختر مشروعاً واضغط على أيقونة أو اسم المشروع لفتح نموذج التسجيل.</p>';
+      return;
+    }
+    regListEl.innerHTML = list
+      .map(
+        (r) => `<article class="sp-reg-card">
+          <div class="sp-reg-card-main">
+            <h3>${esc(r.projectName)}</h3>
+            <small>${esc(r.ownerName)} · ${esc(r.phone)} · ${esc(r.email)}</small>
+            <p>${esc(r.country)} · ${esc(r.education)} · خبرة ${esc(String(r.experienceYears))} سنة</p>
+            <p class="sp-reg-exp">مجالات: ${esc([r.experience1, r.experience2, r.experience3].filter(Boolean).join(' · ') || '—')}</p>
+            <p class="sp-reg-files">
+              ملف: ${esc(r.fileDoc?.name || '—')} ·
+              صورة: ${esc(r.fileImage?.name || '—')} ·
+              فيديو: ${esc(r.fileVideo?.name || '—')}
+            </p>
+            ${r.currentWork ? `<p>عمل حالي: ${esc(r.currentWork)}</p>` : ''}
+            ${r.commercialOrNotes ? `<p>ملاحظات / سجل: ${esc(r.commercialOrNotes)}</p>` : ''}
+            <small>تاريخ التسجيل ${esc(new Date(r.createdAt).toLocaleString('ar-EG'))}</small>
+          </div>
+          <button type="button" class="btn btn-secondary" data-sp-reg-remove="${esc(r.id)}">حذف</button>
+        </article>`
+      )
+      .join('');
+  };
+
+  const closeRegModal = () => {
+    if (!regModal) return;
+    regModal.hidden = true;
+    document.body.classList.remove('sp-reg-open');
+  };
+
+  const openRegModal = (project) => {
+    if (!regModal || !regForm || !project) return;
+    selectedProject = { id: project.id, title: project.title, categoryId: project.categoryId };
+    paintSelectedProject();
+    const idInput = regForm.querySelector('[data-sp-reg-project-id]');
+    const nameInput = regForm.querySelector('[data-sp-reg-project-name]');
+    if (idInput) idInput.value = project.id;
+    if (nameInput) nameInput.value = project.title;
+    regModal.hidden = false;
+    document.body.classList.add('sp-reg-open');
+    nameInput?.focus();
+  };
+
+  const fillCountries = () => {
+    const sel = regForm?.querySelector('[data-sp-reg-country]');
+    if (!sel || sel.options.length > 1) return;
+    sel.innerHTML =
+      `<option value="">— اختر الدولة —</option>` +
+      COUNTRIES.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  };
+
+  const submitRegistration = (e) => {
+    e.preventDefault();
+    if (!regForm) return;
+    if (!regForm.checkValidity()) {
+      regForm.reportValidity();
+      return toast('أكمل حقول التسجيل المطلوبة');
+    }
+    const fd = new FormData(regForm);
+    const record = {
+      id: `reg-${Date.now()}`,
+      projectId: String(fd.get('projectId') || selectedProject?.id || ''),
+      projectName: String(fd.get('projectName') || '').trim(),
+      ownerName: String(fd.get('ownerName') || '').trim(),
+      phone: String(fd.get('phone') || '').trim(),
+      email: String(fd.get('email') || '').trim(),
+      country: String(fd.get('country') || '').trim(),
+      education: String(fd.get('education') || '').trim(),
+      experienceYears: Number(fd.get('experienceYears') || 0),
+      experience1: String(fd.get('experience1') || '').trim(),
+      experience2: String(fd.get('experience2') || '').trim(),
+      experience3: String(fd.get('experience3') || '').trim(),
+      fileDoc: fileMeta(regForm.querySelector('[name="fileDoc"]')),
+      fileImage: fileMeta(regForm.querySelector('[name="fileImage"]')),
+      fileVideo: fileMeta(regForm.querySelector('[name="fileVideo"]')),
+      currentWork: String(fd.get('currentWork') || '').trim(),
+      commercialOrNotes: String(fd.get('commercialOrNotes') || '').trim(),
+      createdAt: new Date().toISOString(),
+    };
+    if (!record.projectName || !record.ownerName || !record.phone || !record.email) {
+      return toast('اسم المشروع وصاحب المشروع والجوال والبريد مطلوبة');
+    }
+    const list = readRegistrations().filter((x) => x.id !== record.id);
+    list.unshift(record);
+    writeRegistrations(list);
+    paintRegistrations();
+    closeRegModal();
+    regForm.reset();
+    if (selectedProject) {
+      const nameInput = regForm.querySelector('[data-sp-reg-project-name]');
+      const idInput = regForm.querySelector('[data-sp-reg-project-id]');
+      if (nameInput) nameInput.value = selectedProject.title;
+      if (idInput) idInput.value = selectedProject.id;
+    }
+    toast(`تم تسجيل المشروع: ${record.projectName}`);
+    document.getElementById('sp-registrations')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const countByCat = (() => {
@@ -382,11 +548,17 @@
     const compact = opts.compact !== false && opts.score == null;
     return `<article class="sp-card${compact ? ' is-compact' : ''}" data-id="${esc(p.id)}">
       <div class="sp-card-top">
-        <span class="sp-card-icon"><i class="fas ${esc(
-          data.categories.find((c) => c.id === p.categoryId)?.icon || 'fa-lightbulb'
-        )}"></i></span>
+        <button type="button" class="sp-card-icon sp-card-icon-btn" data-sp-register="${esc(p.id)}" title="تسجيل المشروع" aria-label="تسجيل المشروع ${esc(p.title)}">
+          <i class="fas ${esc(
+            data.categories.find((c) => c.id === p.categoryId)?.icon || 'fa-lightbulb'
+          )}"></i>
+        </button>
         <div>
-          <h3>${esc(p.title)}</h3>
+          <h3>
+            <button type="button" class="sp-card-title-btn" data-sp-register="${esc(p.id)}" title="تسجيل المشروع">
+              ${esc(p.title)}
+            </button>
+          </h3>
           <small>${esc(p.categoryName)}${p.section ? ` · ${esc(p.section)}` : ''}</small>
         </div>
         ${score}
@@ -401,7 +573,8 @@
       ${compact ? '' : detailRows(p)}
       <div class="sp-card-actions">
         ${compact ? `<button type="button" class="btn btn-secondary" data-sp-expand="${esc(p.id)}"><i class="fas fa-chevron-down"></i> التفاصيل</button>` : ''}
-        <button type="button" class="btn btn-primary" data-sp-open="${esc(p.id)}"><i class="fas fa-flask"></i> اختبر المشروع</button>
+        <button type="button" class="btn btn-primary" data-sp-register="${esc(p.id)}"><i class="fas fa-file-signature"></i> تسجيل المشروع</button>
+        <button type="button" class="btn btn-secondary" data-sp-open="${esc(p.id)}"><i class="fas fa-flask"></i> اختبر المشروع</button>
         <a class="btn btn-secondary" href="courses.html">تدريب</a>
         <a class="btn btn-secondary" href="ads.html">تسويق</a>
         <a class="btn btn-secondary" href="incubators.html">حاضنة</a>
@@ -605,6 +778,9 @@
   paintStats();
   setType('all');
   paintOpened();
+  fillCountries();
+  paintRegistrations();
+  paintSelectedProject();
 
   root.querySelector('[data-sp-match]')?.addEventListener('click', match);
   root.querySelector('[data-sp-reset]')?.addEventListener('click', () => {
@@ -635,6 +811,18 @@
     paintCatalog();
     document.getElementById('sp-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+  regForm?.addEventListener('submit', submitRegistration);
+  document.querySelectorAll('[data-sp-reg-close]').forEach((el) => {
+    el.addEventListener('click', closeRegModal);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && regModal && !regModal.hidden) closeRegModal();
+  });
+  root.querySelector('[data-sp-open-reg-selected]')?.addEventListener('click', () => {
+    if (!selectedProject) return toast('اختر مشروعاً أولاً من القائمة');
+    const p = data.projects.find((x) => x.id === selectedProject.id) || selectedProject;
+    openRegModal(p);
+  });
   root.addEventListener('click', (e) => {
     const more = e.target.closest('[data-sp-more]');
     if (more) {
@@ -656,6 +844,14 @@
         : '<i class="fas fa-chevron-down"></i> التفاصيل';
       return;
     }
+    const regBtn = e.target.closest('[data-sp-register]');
+    if (regBtn) {
+      const id = regBtn.getAttribute('data-sp-register');
+      const p = data.projects.find((x) => x.id === id);
+      if (!p) return toast('المشروع غير موجود');
+      openRegModal(p);
+      return;
+    }
     const openBtn = e.target.closest('[data-sp-open]');
     if (openBtn) openProject(openBtn.getAttribute('data-sp-open'));
     const rm = e.target.closest('[data-sp-remove]');
@@ -664,6 +860,12 @@
       paintOpened();
       paintStats();
       toast('تمت الإزالة');
+    }
+    const regRm = e.target.closest('[data-sp-reg-remove]');
+    if (regRm) {
+      writeRegistrations(readRegistrations().filter((x) => x.id !== regRm.getAttribute('data-sp-reg-remove')));
+      paintRegistrations();
+      toast('تم حذف طلب التسجيل');
     }
   });
 })();
