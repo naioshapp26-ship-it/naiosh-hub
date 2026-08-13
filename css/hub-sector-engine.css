@@ -1,0 +1,289 @@
+/* Universal Sector Opportunity Engine — UI on side-projects */
+
+.uso-root {
+  display: grid;
+  gap: 18px;
+}
+
+.uso-hero-note {
+  margin: 0;
+  color: #4b5563;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.uso-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.uso-stats article {
+  background: #0f172a;
+  color: #f8fafc;
+  border-radius: 14px;
+  padding: 14px 12px;
+  text-align: center;
+}
+
+.uso-stats strong {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.uso-stats span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.uso-discovery {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  background: linear-gradient(180deg, #fff, #f8fafc);
+}
+
+.uso-discovery label {
+  display: grid;
+  gap: 8px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.uso-discovery input {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  font-weight: 600;
+}
+
+.uso-discovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.uso-sectors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.uso-sector-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.uso-sector-chip i {
+  color: #dc2626;
+}
+
+.uso-sector-chip strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.uso-sector-chip small {
+  color: #6b7280;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.uso-sector-chip:hover {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.uso-hit-sectors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.uso-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #111827;
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.uso-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.uso-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+  background: #fff;
+  display: grid;
+  gap: 8px;
+}
+
+.uso-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: start;
+}
+
+.uso-card strong {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.uso-confidence {
+  background: #dc2626;
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-style: normal;
+  font-weight: 900;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.uso-meta,
+.uso-skills,
+.uso-missing {
+  margin: 0;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.uso-gate {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.uso-gate.is-ready {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.uso-gate.is-need {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.uso-gate.is-risk {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.uso-empty {
+  margin: 0;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.uso-cycle {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.uso-cycle li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.uso-cycle li span {
+  color: #fca5a5;
+}
+
+.uso-publish {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px dashed #fca5a5;
+  background: #fff8f8;
+}
+
+.uso-publish-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.uso-publish label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #374151;
+}
+
+.uso-publish input,
+.uso-publish textarea {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 600;
+  background: #fff;
+}
+
+.uso-publish-msg {
+  margin: 0;
+  color: #047857;
+  font-weight: 800;
+}
+
+.uso-arch {
+  margin: 0;
+  padding: 14px;
+  border-radius: 14px;
+  background: #111827;
+  color: #e5e7eb;
+  font-size: 12px;
+  line-height: 1.8;
+  font-weight: 700;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 720px) {
+  .uso-card header {
+    flex-direction: column;
+  }
+}

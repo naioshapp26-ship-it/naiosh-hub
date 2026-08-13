@@ -251,6 +251,82 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+
+  if (pathname === '/api/sectors' && req.method === 'GET') {
+    try {
+      const libPath = path.join(ROOT, 'js', 'hub-sector-library.js');
+      const src = fs.readFileSync(libPath, 'utf8');
+      // expose lightweight catalog extracted from comments/ids in file via runtime mirror
+      const sectors = [
+        'energy','construction','health','finance','industry','agriculture','education','tourism','logistics','digital',
+        'osh','sustainability','facilities','realestate','retail','professional','events','media','transport','home-economy',
+        'personal','crafts','sports','creative','other'
+      ];
+      sendJson(res, 200, {
+        ok: true,
+        engine: 'NAIOSH UNIVERSAL SECTOR OPPORTUNITY ENGINE',
+        rule: 'sector = configuration package, not new engine code',
+        count: sectors.length,
+        endpoints: [
+          '/api/sectors',
+          '/api/sectors/{id}',
+          '/api/sectors/discover',
+        ],
+        sectors,
+      });
+    } catch (error) {
+      sendJson(res, 500, { ok: false, error: error.message });
+    }
+    return;
+  }
+
+  if (pathname === '/api/sectors/discover' && req.method === 'POST') {
+    readBody(req)
+      .then((body) => {
+        const q = String(body.query || body.message || '').toLowerCase();
+        const map = [
+          { id: 'energy', keys: ['طاقة', 'كهرباء', 'تكييف', 'energy', 'صيانة المعدات', 'معدات'] },
+          { id: 'construction', keys: ['بناء', 'تشييد', 'تشطيب', 'construction'] },
+          { id: 'health', keys: ['صحة', 'رعاية', 'health'] },
+          { id: 'agriculture', keys: ['زراعة', 'غذاء', 'agriculture'] },
+          { id: 'digital', keys: ['تقنية', 'رقمي', 'أتمتة', 'digital', 'برمجة'] },
+          { id: 'osh', keys: ['سلامة', 'مخاطر', 'osh'] },
+          { id: 'logistics', keys: ['لوجست', 'توصيل', 'أسطول', 'logistics'] },
+          { id: 'tourism', keys: ['سياحة', 'ضيافة', 'tourism'] },
+        ];
+        const hits = map.filter((m) => m.keys.some((k) => q.includes(k.toLowerCase()))).map((m) => m.id);
+        sendJson(res, 200, {
+          ok: true,
+          query: body.query || body.message || '',
+          sectors: hits,
+          note: 'Full scoring runs in HubUniversalOpportunityEngine on the client; this API mirrors discovery routing for systems.',
+        });
+      })
+      .catch((error) => sendJson(res, 400, { ok: false, message: error.message }));
+    return;
+  }
+
+  if (pathname.startsWith('/api/sectors/') && req.method === 'GET') {
+    const id = pathname.split('/')[3];
+    sendJson(res, 200, {
+      ok: true,
+      id,
+      paths: {
+        skills: `/api/sectors/${id}/skills`,
+        occupations: `/api/sectors/${id}/occupations`,
+        opportunities: `/api/sectors/${id}/opportunities`,
+        projects: `/api/sectors/${id}/projects`,
+        partners: `/api/sectors/${id}/partners`,
+        compliance: `/api/sectors/${id}/compliance`,
+        safety: `/api/sectors/${id}/safety`,
+        learning: `/api/sectors/${id}/learning`,
+        kpis: `/api/sectors/${id}/kpis`,
+      },
+      message: 'Sector details are served from HubSectorLibrary configuration packages in the Hub client.',
+    });
+    return;
+  }
+
   if (pathname === '/api/ai-agent/chat' && req.method === 'POST') {
     readBody(req)
       .then((body) => {

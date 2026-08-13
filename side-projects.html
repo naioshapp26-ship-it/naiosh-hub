@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="css/hub-header-actions.css?v=11" />
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
   <link rel="stylesheet" href="css/hub-side-projects.css?v=8" />
+  <link rel="stylesheet" href="css/hub-sector-engine.css?v=1" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -37,20 +38,78 @@
 
   <main class="container hub-feature-page" data-side-projects-page>
     <section class="hub-feature-hero sp-hero">
-      <p class="hub-feature-kicker"><i class="fas fa-lightbulb"></i> NAIOSH SIDE PROJECTS</p>
-      <h1>المشاريع الجانبية</h1>
+      <p class="hub-feature-kicker"><i class="fas fa-lightbulb"></i> NAIOSH UNIVERSAL SECTOR OPPORTUNITY ENGINE</p>
+      <h1>المشاريع الجانبية · محرك الفرص القطاعي</h1>
       <p>
-        تصفّح قوائم العميل الـ١٤ حسب النوع: <strong>خاصة · خفيفة · منزلية</strong> — أو أدخل ملفك ليقترح النظام فرصًا مناسبة للاختبار.
+        نواة واحدة لكل القطاعات: اكتشف الفرص بجملة طبيعية، أو تصفّح القوائم
+        <strong>خاصة · خفيفة · منزلية</strong> — القطاع = بيانات وليس كودًا جديدًا.
       </p>
       <div class="hub-feature-actions">
-        <a class="btn btn-primary" href="#sp-types"><i class="fas fa-folder-open"></i> تصفح القوائم</a>
+        <a class="btn btn-primary" href="#uso-engine"><i class="fas fa-magnifying-glass"></i> Universal Discovery</a>
+        <a class="btn btn-secondary" href="#sp-types"><i class="fas fa-folder-open"></i> تصفح القوائم</a>
         <a class="btn btn-secondary" href="#sp-form"><i class="fas fa-user-check"></i> اقترح حسب ملفي</a>
         <a class="btn btn-secondary" href="#sp-registrations"><i class="fas fa-file-signature"></i> تسجيل المشروع</a>
-        <a class="btn btn-secondary" href="#sp-opened"><i class="fas fa-flask"></i> قيد الاختبار</a>
       </div>
     </section>
 
     <section class="sp-stats" data-sp-stats aria-label="مؤشرات المشاريع الجانبية"></section>
+
+    <section class="sp-panel" id="uso-engine" aria-labelledby="uso-title" data-uso-root>
+      <div class="sp-panel-head">
+        <h2 id="uso-title"><i class="fas fa-satellite-dish"></i> NAIOSH Universal Discovery</h2>
+        <p class="uso-hero-note">محرك فرص قطاعي موحّد — لا محرك لكل قطاع. اكتب احتياجك؛ يحدد النظام القطاعات والمهارات والفرص والتقاطعات وبوابة التحقق.</p>
+      </div>
+      <div class="uso-root">
+        <div class="uso-stats" data-uso-stats aria-label="Sector Command Center"></div>
+        <form class="uso-discovery" data-uso-form>
+          <label>اكتب بجملة طبيعية
+            <input data-uso-query type="search" placeholder="مثال: لدي خبرة في صيانة المعدات وأريد مشروعًا جانبيًا" />
+          </label>
+          <div class="uso-discovery-actions">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-brain"></i> اكتشف الفرص</button>
+            <a class="btn btn-secondary" href="#uso-publish"><i class="fas fa-plus"></i> إضافة قطاع</a>
+          </div>
+        </form>
+        <div>
+          <h3 style="margin:0 0 8px;font-size:15px">Sector Library</h3>
+          <div class="uso-sectors" data-uso-sectors></div>
+        </div>
+        <div data-uso-results></div>
+        <div>
+          <h3 style="margin:0 0 8px;font-size:15px">دورة التشغيل الموحّدة</h3>
+          <ol class="uso-cycle" data-uso-cycle></ol>
+        </div>
+        <pre class="uso-arch" aria-label="معمارية المحرك">UNIVERSAL ENGINE + SECTOR CONFIG + SKILL TAXONOMY + MARKET DATA + RULES + COMPLIANCE + SAFETY + TEMPLATES
+→ Sector Opportunity Engine
+القاعدة: القطاع الجديد = بيانات + مهارات + قواعد + قوالب — وليس كودًا جديدًا.</pre>
+        <form class="uso-publish" id="uso-publish" data-uso-publish>
+          <h3 style="margin:0;font-size:15px"><i class="fas fa-upload"></i> ADD NEW SECTOR · نشر قطاع بدون تعديل النواة</h3>
+          <div class="uso-publish-grid">
+            <label>Sector ID
+              <input name="sectorId" required placeholder="example-sector" />
+            </label>
+            <label>الاسم بالعربي
+              <input name="sectorNameAr" required placeholder="اسم القطاع" />
+            </label>
+            <label>الاسم بالإنجليزي
+              <input name="sectorNameEn" placeholder="Sector name" />
+            </label>
+            <label>قطاعات فرعية
+              <input name="subSectors" placeholder="فرعي ١، فرعي ٢" />
+            </label>
+            <label class="full" style="grid-column:1/-1">مهارات
+              <input name="skills" placeholder="مهارة١، مهارة٢" />
+            </label>
+            <label class="full" style="grid-column:1/-1">قالب فرصة أول
+              <input name="template" placeholder="عنوان فرصة قابلة للاختبار" />
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> PUBLISH SECTOR</button>
+          <p class="uso-publish-msg" data-uso-publish-msg hidden></p>
+        </form>
+      </div>
+    </section>
+
 
     <section class="sp-panel" id="sp-types" aria-labelledby="sp-types-title">
       <div class="sp-panel-head">
@@ -224,7 +283,10 @@
   <script src="js/hub-store.js"></script>
   <script src="js/hub-side-project-registrations.js?v=1"></script>
   <script src="js/hub-side-projects-data.js?v=5"></script>
+  <script src="js/hub-sector-library.js?v=1"></script>
+  <script src="js/hub-universal-opportunity-engine.js?v=1"></script>
   <script src="js/hub-side-projects.js?v=7"></script>
+  <script src="js/hub-sector-engine-ui.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=10"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js" defer></script>

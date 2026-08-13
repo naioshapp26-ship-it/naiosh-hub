@@ -66,10 +66,10 @@
       links: [{ href: 'ads.html', label: 'استوديو الإعلانات' }],
     },
     {
-      keys: ['مشروع', 'جانبي', 'فرصة', 'side'],
+      keys: ['مشروع', 'جانبي', 'فرصة', 'side', 'قطاع', 'discovery'],
       reply:
-        'محرك المشاريع الجانبية يساعدك تختار فرصة مناسبة لرأس مالك ومهاراتك. املأ بياناتك، راجع المخاطر، ثم سجّل المشروع للفريق أو اختبره على نطاق صغير.',
-      links: [{ href: 'side-projects.html', label: 'المشاريع الجانبية' }],
+        'محرك الفرص القطاعي الموحّد (Universal Sector Opportunity Engine) على صفحة المشاريع الجانبية: اكتب جملة في Universal Discovery أو تصفّح Sector Library. القطاع = إعدادات وليس كودًا جديدًا.',
+      links: [{ href: 'side-projects.html#uso-engine', label: 'Universal Discovery' }],
     },
     {
       keys: ['نظام', 'أنظمة', 'apps', 'erp', 'فيت', 'fit'],
