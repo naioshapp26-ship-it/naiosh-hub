@@ -86,7 +86,7 @@ body.homepage {
 
 .imperial-strip {
   background: #0a0a0a;
-  color: #fff;
+  color: #f3f4f6;
   border-radius: 18px;
   padding: 28px 24px;
   display: grid;
@@ -98,13 +98,13 @@ body.homepage {
 
 .imperial-strip h3 {
   margin: 0;
-  color: #fff;
+  color: #ffffff;
   font-size: 22px;
 }
 
 .imperial-strip p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.78);
+  color: #e5e7eb;
 }
 
 .imperial-strip .principles {
@@ -121,6 +121,21 @@ body.homepage {
   font-size: 13px;
   padding: 8px 14px;
   border-radius: 999px;
+}
+
+/* Beat body.homepage h3/p dark text cascade on this dark strip */
+body.homepage .imperial-strip,
+body.homepage .imperial-strip h3,
+body.homepage .imperial-strip h4 {
+  color: #ffffff !important;
+}
+
+body.homepage .imperial-strip p {
+  color: #e5e7eb !important;
+}
+
+body.homepage .imperial-strip .principles span {
+  color: #ffffff !important;
 }
 
 .brand img,
