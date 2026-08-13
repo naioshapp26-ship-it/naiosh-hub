@@ -183,6 +183,8 @@
   color: #d70000;
   font-size: 20px;
   font-weight: 900;
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 .market-card .meta {
@@ -297,6 +299,8 @@
   color: #c2081c;
   font-size: 22px;
   font-weight: 900;
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 .ads-item-title {

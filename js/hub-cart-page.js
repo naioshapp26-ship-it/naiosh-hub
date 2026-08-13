@@ -9,7 +9,7 @@
 
   const list = root.querySelector('[data-cart-list]');
   const summary = root.querySelector('[data-cart-summary]');
-  const money = (n) => (window.HubCurrency?.format ? window.HubCurrency.format(n) : `$${Number(n) || 0}`);
+  const money = (n) => (window.HubCurrency?.format ? window.HubCurrency.format(n) : `${Number(n) || 0}$`);
 
   const paint = () => {
     const items = window.HubCart.read();

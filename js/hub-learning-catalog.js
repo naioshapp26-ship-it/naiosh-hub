@@ -12,7 +12,7 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
 
-  const money = (n) => (window.HubCurrency?.format ? window.HubCurrency.format(n) : `$${Number(n) || 0}`);
+  const money = (n) => (window.HubCurrency?.format ? window.HubCurrency.format(n) : `${Number(n) || 0}$`);
 
   const COURSES = [
     {

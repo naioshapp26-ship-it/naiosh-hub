@@ -92,6 +92,10 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
 
+  /** عملة موحّدة بالدولار — مثال: 400$ */
+  const money = (n) =>
+    window.HubCurrency?.format ? window.HubCurrency.format(n) : `${Number(n) || 0}$`;
+
   const fmtTime = (iso) => {
     try {
       return new Date(iso).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
@@ -746,7 +750,7 @@
       <article class="card" style="margin-top:12px">
         <h3><span class="title-left"><i class="fas fa-boxes-stacked icon"></i> كتالوج المنتجات</span></h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الرمز</th><th>المنتج</th><th>العلامة</th><th>المنصة</th><th>السعر</th><th>المخزون</th><th>المبيعات</th><th>الحركة</th><th>الحالة</th>${metaHead()}<th>إجراءات</th></tr></thead>
+          <thead><tr><th>الرمز</th><th>المنتج</th><th>العلامة</th><th>المنصة</th><th>السعر ($)</th><th>المخزون</th><th>المبيعات</th><th>الحركة</th><th>الحالة</th>${metaHead()}<th>إجراءات</th></tr></thead>
           <tbody>
             ${catalog
               .map(
@@ -755,7 +759,7 @@
                   <td>${esc(p.name)}<br><small>${esc(p.category)}</small></td>
                   <td>${esc(p.brand)}</td>
                   <td>${esc(p.platform)}</td>
-                  <td>${Number(p.price).toLocaleString('ar-EG')}</td>
+                  <td>${money(p.price)}</td>
                   <td>${p.stock}</td>
                   <td>${Number(p.sold).toLocaleString('ar-EG')}</td>
                   <td>${esc(p.movement)}</td>
@@ -785,7 +789,7 @@
         <div class="field"><label>النوع</label>
           <select id="store-kind"><option value="منتج">منتج</option><option value="خدمة">خدمة</option></select>
         </div>
-        <div class="field"><label>السعر</label><input id="store-price" type="number" value="500" /></div>
+        <div class="field"><label>السعر ($)</label><input id="store-price" type="number" value="500" /></div>
         <div class="field"><label>النقاط</label><input id="store-points" type="number" value="50" /></div>
         <div class="field"><label>منصة</label><input id="store-platform" placeholder="ACADEMY" value="ACADEMY" /></div>
         <button class="btn btn-primary" data-action="add-store-item"><i class="fas fa-cloud-arrow-up"></i> رفع</button>
@@ -801,7 +805,7 @@
         <article class="card">
           <h3><span class="title-left"><i class="fas fa-bag-shopping icon"></i> المتجر الموحّد (نفس أكاديمية نايوش)</span></h3>
           <div class="table-wrap"><table class="data">
-            <thead><tr><th>الاسم</th><th>النوع</th><th>التصنيف</th><th>السعر</th><th>أسواق</th><th>مخزون</th>${metaHead()}<th></th></tr></thead>
+            <thead><tr><th>الاسم</th><th>النوع</th><th>التصنيف</th><th>السعر ($)</th><th>أسواق</th><th>مخزون</th>${metaHead()}<th></th></tr></thead>
             <tbody>
               ${store.items
                 .map(
@@ -809,7 +813,7 @@
                     <td><strong>${esc(i.title)}</strong><br><small>${esc(i.brand || i.platformCode || '')}</small></td>
                     <td>${esc(i.itemKind || 'منتج')}</td>
                     <td>${esc(i.category)}</td>
-                    <td>${Number(i.price).toLocaleString('ar-EG')}</td>
+                    <td>${money(i.price)}</td>
                     <td>${(i.marketplaces || []).map((m) => m.nameAr || m.name).join(' · ') || '—'}</td>
                     <td>${i.stock}</td>
                     ${metaCells(i)}
@@ -823,14 +827,14 @@
         <article class="card">
           <h3><span class="title-left"><i class="fas fa-receipt icon"></i> الطلبات</span></h3>
           <div class="table-wrap"><table class="data">
-            <thead><tr><th>المنتج</th><th>المشتري</th><th>المبلغ</th><th>الوقت</th></tr></thead>
+            <thead><tr><th>المنتج</th><th>المشتري</th><th>المبلغ ($)</th><th>الوقت</th></tr></thead>
             <tbody>
               ${store.orders
                 .map(
                   (o) => `<tr>
                     <td>${esc(o.title)}</td>
                     <td>${esc(o.buyer)}</td>
-                    <td>${Number(o.amount).toLocaleString('ar-EG')}</td>
+                    <td>${money(o.amount)}</td>
                     <td>${fmtTime(o.at)}</td>
                   </tr>`
                 )
@@ -848,7 +852,7 @@
       <div class="toolbar">
         ${pageActs('ads', 'إضافة')}
         <div class="field"><label>عنوان الإعلان</label><input id="ad-title" placeholder="عرض منتج المنصة" /></div>
-        <div class="field"><label>السعر</label><input id="ad-price" type="number" value="1000" /></div>
+        <div class="field"><label>السعر ($)</label><input id="ad-price" type="number" value="1000" /></div>
         <div class="field"><label>التصنيف</label><input id="ad-cat" placeholder="تشغيل" /></div>
         <div class="field"><label>منصة</label><input id="ad-platform" placeholder="UOS" /></div>
         <button class="btn btn-primary" data-action="add-ad"><i class="fas fa-plus"></i> نشر سريع</button>
@@ -863,14 +867,14 @@
       <article class="card" style="margin-top:12px">
         <h3><span class="title-left"><i class="fas fa-rectangle-ad icon"></i> إعلانات منتجات المنصات</span></h3>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>الإعلان</th><th>المنصة</th><th>السعر</th><th>مشاهدات</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
+          <thead><tr><th>الإعلان</th><th>المنصة</th><th>السعر ($)</th><th>مشاهدات</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
           <tbody>
             ${listings
               .map(
                 (a) => `<tr>
                   <td><strong>${esc(a.title)}</strong><br><small>${esc(a.content || '')}</small></td>
                   <td>${esc(a.platformCode || '—')}</td>
-                  <td>${Number(a.price || 0).toLocaleString('ar-EG')}</td>
+                  <td>${money(a.price || 0)}</td>
                   <td>${Number(a.views || 0).toLocaleString('ar-EG')}</td>
                   <td>${badgeStatus(a.status)}</td>
                   ${metaCells(a)}

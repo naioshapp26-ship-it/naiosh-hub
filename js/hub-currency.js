@@ -11,10 +11,10 @@
     labelAr: 'دولار',
   });
 
-  /** @param {number|string} amount */
+  /** @param {number|string} amount — مثال العرض: 400$ */
   const format = (amount) => {
     const n = Number(amount) || 0;
-    return `${CUSTOMER.symbol}${n.toLocaleString('en-US')}`;
+    return `${n.toLocaleString('en-US')}${CUSTOMER.symbol}`;
   };
 
   window.HubCurrency = {

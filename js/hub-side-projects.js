@@ -520,7 +520,7 @@
       <div><span>التدريب المطلوب</span><strong>${esc(p.training)}</strong></div>
       <div><span>التسويق</span><strong>${esc((p.marketing || []).join(' · '))}</strong></div>
       <div><span>قابلية التوسع</span><strong>${esc(p.scale)}</strong></div>
-      <div><span>إيراد تقديري (USD)</span><strong>${esc(p.revenue)}</strong></div>
+      <div><span>إيراد تقديري ($)</span><strong>${esc(p.revenue)}</strong></div>
       <div><span>المصاريف</span><strong>${esc(p.expenses)}</strong></div>
       <div><span>التراخيص</span><strong>${esc(p.licenses)}</strong></div>
     </div>
