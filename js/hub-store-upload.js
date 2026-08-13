@@ -24,8 +24,8 @@
   if (chips) {
     chips.innerHTML = connectors
       .map(
-        (m) => `<button type="button" class="store-mp-chip" data-mp="${m.id}" aria-pressed="false">
-          <i class="${m.icon}"></i> ${m.nameAr}
+        (m) => `<button type="button" class="store-mp-chip${m.featured ? ' is-featured' : ''}" data-mp="${m.id}" aria-pressed="false">
+          <i class="${m.icon}" style="color:${m.color || '#fecaca'}"></i> ${m.nameAr}
         </button>`
       )
       .join('');

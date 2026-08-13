@@ -137,10 +137,13 @@
         .map((m) => {
           const meta = connectors.find((c) => c.id === m.id) || {};
           const label = m.nameAr || meta.nameAr || m.name || m.id;
+          const featured = meta.featured ? ' is-featured' : '';
+          const iconStyle = meta.color ? ` style="color:${esc(meta.color)}"` : '';
+          const icon = `<i class="${esc(meta.icon || 'fas fa-store')}"${iconStyle}></i>`;
           if (m.url) {
-            return `<a class="hub-mp-badge" href="${esc(m.url)}" target="_blank" rel="noopener"><i class="${esc(meta.icon || 'fa-store')}"></i> ${esc(label)}</a>`;
+            return `<a class="hub-mp-badge${featured}" data-mp="${esc(m.id)}" href="${esc(m.url)}" target="_blank" rel="noopener">${icon} ${esc(label)}</a>`;
           }
-          return `<span class="hub-mp-badge draft"><i class="${esc(meta.icon || 'fa-store')}"></i> ${esc(label)}</span>`;
+          return `<span class="hub-mp-badge draft${featured}" data-mp="${esc(m.id)}">${icon} ${esc(label)}</span>`;
         })
         .join('')}</div>`;
     };

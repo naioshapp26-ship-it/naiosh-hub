@@ -91,7 +91,25 @@
   font-size: 12px;
   font-weight: 700;
 }
-.store-mp-chip i { color: #fecaca; }
+.store-mp-chip i { color: #fecaca; font-size: 14px; line-height: 1; }
+.store-mp-chip.is-featured,
+.store-mp-chip[data-mp="amazon"],
+.store-mp-chip[data-mp="temu"],
+.store-mp-chip[data-mp="shein"] {
+  padding: 10px 14px;
+  font-size: 14px;
+  gap: 8px;
+  border-color: rgba(255,255,255,.28);
+  background: rgba(255,255,255,.1);
+}
+.store-mp-chip.is-featured i,
+.store-mp-chip[data-mp="amazon"] i,
+.store-mp-chip[data-mp="temu"] i,
+.store-mp-chip[data-mp="shein"] i {
+  font-size: 1.55rem;
+  width: 1.55rem;
+  text-align: center;
+}
 .hub-mp-badges {
   display: flex;
   flex-wrap: wrap;
@@ -111,6 +129,23 @@
   text-decoration: none;
 }
 .hub-mp-badge.draft { opacity: .55; }
+.hub-mp-badge i { font-size: 13px; line-height: 1; }
+.hub-mp-badge.is-featured,
+.hub-mp-badge[data-mp="amazon"],
+.hub-mp-badge[data-mp="temu"],
+.hub-mp-badge[data-mp="shein"] {
+  padding: 7px 12px;
+  font-size: 13px;
+  gap: 8px;
+}
+.hub-mp-badge.is-featured i,
+.hub-mp-badge[data-mp="amazon"] i,
+.hub-mp-badge[data-mp="temu"] i,
+.hub-mp-badge[data-mp="shein"] i {
+  font-size: 1.35rem;
+  width: 1.35rem;
+  text-align: center;
+}
 .hub-form-hint {
   margin: 0 0 10px;
   color: #6b7280;
