@@ -128,6 +128,27 @@ async function checkDatabase() {
   }
 }
 
+
+function buildAiAgentReply(message = '', meta = {}) {
+  const q = String(message || '').toLowerCase();
+  const rules = [
+    { keys: ['متجر', 'شراء', 'باقة', 'سعر', 'store'], text: 'افتح متجر المبيعات، اختر المنتج، ثم اشترِ الآن. الأسعار بالدولار مثل 400$.' },
+    { keys: ['غرفة', 'عمليات', 'dashboard'], text: 'غرفة العمليات تحتاج تسجيل دخول، ومنها تدير المتجر والإعلانات والفروع والمؤشرات.' },
+    { keys: ['فرع', 'فروع'], text: 'من صفحة الفروع ابحث بالدولة أو صفِّ حسب النوع ثم اعرض التفاصيل.' },
+    { keys: ['حاضن'], text: 'الحاضنات تربط مشروعك بقطاع ومنصة ومكتب تشغيلي داخل هوب.' },
+    { keys: ['دورة', 'دبلوم', 'أكاديم'], text: 'سجّل الدورات/الدبلومات عبر المتجر ثم ادخل الأكاديمية بعد التفعيل.' },
+    { keys: ['إعلان', 'اعلان'], text: 'استوديو الإعلانات ينشر عروض المنتجات والمنصات حسب المستوى التشغيلي.' },
+    { keys: ['مشروع', 'جانبي'], text: 'محرك المشاريع الجانبية يقترح فرصًا حسب رأس المال والمهارات مع مسار اختبار.' },
+    { keys: ['نظام', 'أنظمة', 'apps', 'fit', 'فيت'], text: 'من الأنظمة أو المواقع الجاهزة افتح النظام المطلوب بعد تفعيل الاشتراك من المتجر.' },
+  ];
+  const hit = rules.find((r) => r.keys.some((k) => q.includes(String(k).toLowerCase())));
+  const base = hit
+    ? hit.text
+    : 'أنا وكيل نايوش هوب: أوجّهك للمتجر والأنظمة والدورات والفروع والحاضنات وغرفة العمليات. اكتب طلبك بوضوح.';
+  const mode = meta.guest ? 'وضع الضيف' : 'وضع مسجّل';
+  return `${base}\n\n(${mode} · صفحة: ${meta.path || '/'})`;
+}
+
 async function handleHubApi(req, res, pathname) {
   if (req.method === 'OPTIONS') {
     sendJson(res, 204, {});
@@ -227,6 +248,24 @@ const server = http.createServer((req, res) => {
           error: error.message,
         })
       );
+    return;
+  }
+
+  if (pathname === '/api/ai-agent/chat' && req.method === 'POST') {
+    readBody(req)
+      .then((body) => {
+        const response = buildAiAgentReply(body.message, {
+          guest: !!body.guest,
+          path: body.path || '/',
+        });
+        sendJson(res, 200, { ok: true, response, language: body.language || 'ar' });
+      })
+      .catch((error) => sendJson(res, 400, { ok: false, message: error.message || 'Invalid JSON body' }));
+    return;
+  }
+
+  if (pathname === '/api/ai-agent/chat' && req.method === 'OPTIONS') {
+    sendJson(res, 204, {});
     return;
   }
 
