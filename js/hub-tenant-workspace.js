@@ -74,12 +74,12 @@
         if (!res.ok) {
           alert(res.error || 'تعذّر فتح النظام');
           btn.disabled = false;
-          btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> فتح بـ SSO من هوب';
+          btn.innerHTML = '<i class="fas fa-shield-halved"></i> فتح عبر جسر SSO';
           return;
         }
         window.open(res.url, '_blank', 'noopener');
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-right-to-bracket"></i> فتح بـ SSO من هوب';
+        btn.innerHTML = '<i class="fas fa-shield-halved"></i> فتح عبر جسر SSO';
       });
     });
   };
