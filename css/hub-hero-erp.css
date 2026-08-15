@@ -175,6 +175,55 @@ body.homepage .hero-ctas .hero-cta-book:focus-visible {
   color: #ffffff !important;
 }
 
+/* زر استئجار النظام — بارز ومميز عن الحجز والأحمر */
+body.homepage .hero-ctas .hero-cta-rent {
+  order: -1 !important;
+  min-width: 148px !important;
+  padding: 13px 24px !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.02em !important;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 48%, #4f46e5 100%) !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(255, 255, 255, 0.55) !important;
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.28),
+    0 14px 32px rgba(37, 99, 235, 0.45) !important;
+  animation: hubRentCtaPulse 2.4s ease-in-out infinite;
+}
+
+body.homepage .hero-ctas .hero-cta-rent i {
+  font-size: 15px !important;
+}
+
+body.homepage .hero-ctas .hero-cta-rent:hover,
+body.homepage .hero-ctas .hero-cta-rent:focus-visible {
+  background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 50%, #6366f1 100%) !important;
+  color: #ffffff !important;
+  filter: brightness(1.06) !important;
+  transform: scale(1.07) translateY(-2px) !important;
+}
+
+@keyframes hubRentCtaPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgba(37, 99, 235, 0.28),
+      0 14px 32px rgba(37, 99, 235, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(14, 165, 233, 0.22),
+      0 18px 36px rgba(79, 70, 229, 0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.homepage .hero-ctas .hero-cta-rent {
+    animation: none !important;
+  }
+}
+
 body.homepage .hero-ctas .btn:hover {
   transform: scale(1.05) translateY(-2px) !important;
   filter: brightness(var(--homepage-btn-hover-brightness)) !important;

@@ -4,6 +4,13 @@
   /** اختصارات الهيدر الحمراء — فقط ما طُلب إبقاؤه (بدون المعلّم بـ X) */
   const ACTIONS = [
     {
+      id: 'rent',
+      label: 'استأجر نظام',
+      href: 'rent-system.html',
+      className: 'hub-hbtn hub-hbtn--rent',
+      icon: 'fa-key',
+    },
+    {
       id: 'info',
       label: 'مركز المعرفة',
       href: 'info-center.html',
