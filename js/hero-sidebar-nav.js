@@ -3,7 +3,7 @@
 
   /**
    * منيو جانبي في الهيرو — مواقع جاهزة · اضغط تدخل مباشرة
-   * كونزو مستبعد
+   * كونزو مستبعد · المشاريع الجانبية من بطاقة الرصيد فقط (بدون تكرار)
    */
   const fromCatalog = () => {
     const list = window.HubReadySites?.sidebarSites?.() || [];
@@ -24,45 +24,34 @@
       { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },
       { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
       { label: 'شراكاتي', href: 'partnerships.html', icon: 'fa-handshake' },
-      { label: 'مشاريع جانبية', href: 'side-projects.html', icon: 'fa-lightbulb' },
       { label: 'نظام التشغيل', href: 'global-os.html', icon: 'fa-network-wired' },
-      { label: 'دورات', href: 'courses.html', icon: 'fa-chalkboard' },
-      { label: 'دبلومات', href: 'diplomas.html', icon: 'fa-graduation-cap' },
       { label: 'عملائي', href: 'systems/crm.html?from=hub&return=index.html', icon: 'fa-users', launchCode: 'CRM' },
       { label: 'دردشة داخلية', href: 'chat.html', icon: 'fa-comments', chat: true },
       { label: 'اخرى', href: 'apps.html', icon: 'fa-ellipsis' },
     ];
   };
 
+  const isSideProjectsItem = (item) => {
+    const href = item.href || '';
+    const label = item.label || '';
+    return (
+      href.includes('side-projects') ||
+      label === 'محرك الفرص' ||
+      label === 'مشاريع جانبية' ||
+      label === 'المشاريع الجانبية'
+    );
+  };
+
   const ensureLearningVisible = (pages) => {
-    const list = pages.slice();
+    const list = pages.filter((p) => !isSideProjectsItem(p));
     const ensure = (label, href, icon, launchCode) => {
       if (list.some((p) => p.label === label || (href && (p.href || '').includes(href.replace(/\.html.*/, ''))))) return;
       const insertAt = list.findIndex((p) => p.label === 'عملائي' || p.label === 'دردشة داخلية' || /^اخرى$|^أخرى$/.test(String(p.label || '').trim()));
       list.splice(insertAt >= 0 ? insertAt : list.length, 0, { label, href, icon, launchCode });
     };
-    // أيقونة واحدة للمشاريع الجانبية — توحيد الاسم القديم «محرك الفرص»
-    let keptSp = false;
-    for (let i = list.length - 1; i >= 0; i -= 1) {
-      const isSp =
-        (list[i].href || '').includes('side-projects') ||
-        list[i].label === 'محرك الفرص' ||
-        list[i].label === 'مشاريع جانبية' ||
-        list[i].label === 'المشاريع الجانبية';
-      if (!isSp) continue;
-      if (keptSp) {
-        list.splice(i, 1);
-        continue;
-      }
-      list[i] = { ...list[i], label: 'مشاريع جانبية', href: 'side-projects.html', icon: 'fa-lightbulb' };
-      keptSp = true;
-    }
     ensure('شراكاتي', 'partnerships.html', 'fa-handshake');
-    ensure('مشاريع جانبية', 'side-projects.html', 'fa-lightbulb');
     ensure('طلبات المشاريع', 'side-project-registrations.html', 'fa-inbox');
     ensure('نظام التشغيل', 'global-os.html', 'fa-network-wired');
-    ensure('دورات', 'courses.html', 'fa-chalkboard');
-    ensure('دبلومات', 'diplomas.html', 'fa-graduation-cap');
     return list;
   };
 

@@ -1,48 +1,14 @@
 (() => {
   'use strict';
 
+  /** اختصارات الهيدر — بدون تكرار لما موجود في الناف/الهيرو/السايدبار */
   const ACTIONS = [
-    {
-      id: 'info',
-      label: 'مركز المعرفة',
-      href: 'info-center.html',
-      className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-circle-info',
-    },
-    {
-      id: 'blog',
-      label: 'المدونة',
-      href: 'blog.html',
-      className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-newspaper',
-    },
     {
       id: 'packages',
       label: 'الباقات',
       href: 'packages.html',
       className: 'hub-hbtn hub-hbtn--red',
       icon: 'fa-box',
-    },
-    {
-      id: 'membership',
-      label: 'العضوية',
-      href: 'membership.html',
-      className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-id-card',
-    },
-    {
-      id: 'side-projects',
-      label: 'المشاريع الجانبية',
-      href: 'side-projects.html',
-      className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-lightbulb',
-    },
-    {
-      id: 'global-os',
-      label: 'نظام التشغيل',
-      href: 'global-os.html',
-      className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-network-wired',
     },
     {
       id: 'courses',
@@ -58,13 +24,6 @@
       className: 'hub-hbtn hub-hbtn--red',
       icon: 'fa-graduation-cap',
     },
-    {
-      id: 'chat',
-      label: 'الدردشة الداخلية',
-      href: 'chat.html',
-      className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-comments',
-    },
   ];
 
   const inject = () => {
@@ -74,7 +33,7 @@
     const auth = inner?.querySelector('.auth-actions');
     if (!inner || !auth) return;
 
-    // امسح الصف الثاني القديم والحقن القديم
+    // امسح الصف الثاني القديم والحقن القديمة
     topNav.querySelectorAll('[data-hub-header-bar]').forEach((el) => el.remove());
     document.querySelectorAll('[data-hub-header-actions]').forEach((el) => el.remove());
 

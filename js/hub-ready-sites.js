@@ -417,7 +417,6 @@
       tone: 'academy',
       inProducts: true,
       inGallery: true,
-      sidebar: { label: 'مشاريع جانبية', icon: 'fa-lightbulb' },
       preview: [
         { icon: 'fa-id-card', label: 'الملف' },
         { icon: 'fa-brain', label: 'التحليل' },
@@ -526,7 +525,6 @@
       tone: 'academy',
       inProducts: true,
       inGallery: true,
-      sidebar: { label: 'دورات', icon: 'fa-chalkboard' },
       preview: [
         { icon: 'fa-chalkboard', label: 'الدورات' },
         { icon: 'fa-play', label: 'البدء' },
@@ -549,7 +547,6 @@
       tone: 'academy',
       inProducts: true,
       inGallery: true,
-      sidebar: { label: 'دبلومات', icon: 'fa-graduation-cap' },
       preview: [
         { icon: 'fa-graduation-cap', label: 'الدبلوم' },
         { icon: 'fa-route', label: 'المسار' },
