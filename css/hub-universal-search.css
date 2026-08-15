@@ -340,3 +340,55 @@ body.hus-open {
   background: #fff1f2;
   color: #9f1239;
 }
+
+.hus-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 16px 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fff5f5, #ffffff);
+  border: 1px solid #f0d0d0;
+}
+
+.hus-section-head[hidden] {
+  display: none !important;
+}
+
+.hus-section-head strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.hus-section-head span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.hus-section-head a {
+  flex: 0 0 auto;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #ff2d2d, #b10011);
+  border-radius: 999px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.hus-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  align-items: center;
+}

@@ -48,8 +48,8 @@
       <div>
         <strong>التدفق السريع للعميل</strong>
         <p>
-          1) املأ النموذج واختر النوع · 2) ارفع صورة/ملف أو ضع رابط فيديو · 3) احفظ ·
-          4) افتح الرئيسية → محرك البحث الشامل واكتب كلمة من العنوان أو الكلمات المفتاحية.
+          1) اختَر التصنيف (حاضنات · منصات · أنظمة · صور…) · 2) اكتب المسمّى والعنوان ·
+          3) ارفع صورة/ملف أو رابط · 4) احفظ ثم افتح البحث أو صفحة التصنيف.
         </p>
       </div>
     </aside>
@@ -62,23 +62,38 @@
         <form class="sca-form" data-sca-form>
           <input type="hidden" name="id" value="" />
           <div class="sca-grid-2">
-            <label>نوع المحتوى
+            <label>التصنيف في محرك البحث (فين يظهر؟)
+              <select name="section" required>
+                <option value="incubator">الحاضنات</option>
+                <option value="platform">المنصات</option>
+                <option value="system">الأنظمة</option>
+                <option value="content">المحتوى</option>
+                <option value="image" selected>الصور</option>
+                <option value="file">الملفات</option>
+                <option value="video">الفيديو</option>
+              </select>
+            </label>
+            <label>نوع الوسائط
               <select name="kind" required>
-                <option value="content">محتوى / نص / معلومة</option>
-                <option value="image">صورة</option>
+                <option value="content">محتوى / نص</option>
+                <option value="image" selected>صورة</option>
                 <option value="file">ملف (PDF · وثيقة…)</option>
                 <option value="video">فيديو</option>
               </select>
             </label>
+          </div>
+
+          <div class="sca-grid-2">
             <label>الحالة
               <select name="status">
                 <option value="published">منشور (يظهر في البحث)</option>
                 <option value="draft">مسودة (مخفي)</option>
               </select>
             </label>
+            <label>المسمّى الظاهر في الصفحة <input name="pageTitle" placeholder="مثال: صور الحاضنة التعليمية" /></label>
           </div>
 
-          <label>العنوان (يظهر في نتائج البحث) <input name="title" required placeholder="مثال: دليل تشغيل الحاضنة التعليمية" /></label>
+          <label>العنوان في نتائج البحث <input name="title" required placeholder="مثال: دليل تشغيل الحاضنة التعليمية" /></label>
           <label>الوصف المختصر <textarea name="description" placeholder="جملة تظهر تحت العنوان في نتيجة البحث"></textarea></label>
           <label>كلمات مفتاحية (افصل بمسافة أو فاصلة) <input name="keywords" placeholder="تعليم حاضنة دليل تشغيل نايوش" /></label>
 
@@ -93,7 +108,7 @@
             <input type="file" data-sca-file accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip,application/pdf" />
           </label>
           <div class="sca-preview" data-sca-preview hidden></div>
-          <p class="sca-hint">بعد الحفظ: نتيجة البحث تفتح صفحة عرض مثل الحاضنات (`search-content.html`) وتعرض الصورة/الفيديو مع النص. الحد الأقصى للرفع ≈ 2.5MB.</p>
+          <p class="sca-hint">اختَر التصنيف (حاضنات/منصات/أنظمة/صور…) عشان يظهر تحت الفلتر المناسب. المسمّى يظهر كعنوان صفحة عند فتح العنصر. بعد الحفظ افتح البحث أو صفحة التصنيف.</p>
 
           <div class="sca-actions">
             <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> حفظ في محرك البحث</button>
@@ -118,8 +133,8 @@
 
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-header-actions.js?v=12"></script>
-  <script src="js/hub-search-catalog.js?v=2"></script>
-  <script src="js/hub-search-admin.js?v=2"></script>
+  <script src="js/hub-search-catalog.js?v=3"></script>
+  <script src="js/hub-search-admin.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>

@@ -45,9 +45,11 @@
             <button type="button" data-hus-filter="video">فيديو</button>
           </div>
         </div>
+        <div class="hus-section-head" data-hus-section-head hidden></div>
         <div class="hus-results" data-hus-results></div>
         <footer class="hus-foot">
           <a href="search-admin.html"><i class="fas fa-sliders"></i> إدارة محتوى البحث (أدمن)</a>
+          <a href="search-content.html" data-hus-library-link><i class="fas fa-folder-open"></i> صفحات التصنيفات</a>
         </footer>
       </div>`;
     document.body.appendChild(modal);
@@ -83,12 +85,41 @@
     return `<span class="hus-item-ico"><i class="fas ${esc(item.icon)}"></i></span>`;
   };
 
+  const sectionLabel = (type) => {
+    const map = window.HubSearchCatalog?.SECTION_META || {};
+    if (map[type]?.pageTitle) return map[type];
+    if (type === 'all') return { pageTitle: 'الكل', pageLead: 'كل نتائج محرك البحث', icon: 'fa-border-all' };
+    return { pageTitle: typeBadge(type), pageLead: '', icon: 'fa-folder' };
+  };
+
+  const renderSectionHead = (modal) => {
+    const head = modal.querySelector('[data-hus-section-head]');
+    const lib = modal.querySelector('[data-hus-library-link]');
+    if (!head) return;
+    const meta = sectionLabel(filter);
+    if (filter === 'all') {
+      head.hidden = true;
+      head.innerHTML = '';
+      if (lib) lib.href = 'search-content.html';
+      return;
+    }
+    head.hidden = false;
+    head.innerHTML = `
+      <div>
+        <strong><i class="fas ${esc(meta.icon || 'fa-folder')}"></i> ${esc(meta.pageTitle)}</strong>
+        <span>${esc(meta.pageLead || `نتائج تصنيف ${meta.pageTitle}`)}</span>
+      </div>
+      <a href="search-content.html?type=${encodeURIComponent(filter)}">فتح صفحة ${esc(meta.pageTitle)}</a>`;
+    if (lib) lib.href = `search-content.html?type=${encodeURIComponent(filter)}`;
+  };
+
   const renderResults = (modal, query) => {
+    renderSectionHead(modal);
     const list = searchApi.search(query, filter);
     const box = modal.querySelector('[data-hus-results]');
     if (!box) return;
     if (!list.length) {
-      box.innerHTML = `<p class="hus-empty">لا نتائج — جرّب اسم حاضنة أو محتوى مرفوع من الأدمن.</p>`;
+      box.innerHTML = `<p class="hus-empty">لا نتائج في «${esc(sectionLabel(filter).pageTitle)}» — أضف محتوى من الأدمن لهذا التصنيف.</p>`;
       return;
     }
     box.innerHTML = list
@@ -97,7 +128,7 @@
         (item) => `<a class="hus-item" href="${esc(item.href)}">
           ${mediaThumb(item)}
           <span class="hus-item-body">
-            <strong>${esc(item.title)}</strong>
+            <strong>${esc(item.pageTitle || item.title)}</strong>
             <small>${esc(item.subtitle)}</small>
           </span>
           <span class="hus-item-meta">

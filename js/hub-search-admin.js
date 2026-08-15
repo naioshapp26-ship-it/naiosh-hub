@@ -61,17 +61,20 @@
     }
     listEl.innerHTML = items
       .map((item) => {
+        const section = item.section || item.kind;
+        const sectionMeta = api.SECTION_META?.[section] || api.TYPE_META[item.kind] || {};
+        const name = item.pageTitle || item.title;
         const thumb =
           item.mediaDataUrl && (item.kind === 'image' || String(item.mediaMime || '').startsWith('image/'))
-            ? `<img src="${item.mediaDataUrl}" alt="" />`
-            : `<span class="sca-ico"><i class="fas ${api.TYPE_META[item.kind]?.icon || 'fa-file'}"></i></span>`;
+            ? `<img src="${item.mediaDataUrl}" alt="${escapeHtml(name)}" />`
+            : `<span class="sca-ico"><i class="fas ${sectionMeta.icon || 'fa-file'}"></i></span>`;
         return `<article class="sca-item" data-id="${item.id}">
           ${thumb}
           <div>
-            <strong>${escapeHtml(item.title)}</strong>
-            <small>${escapeHtml(api.TYPE_META[item.kind]?.typeAr || item.kind)} · ${
+            <strong>${escapeHtml(name)}</strong>
+            <small>${escapeHtml(sectionMeta.pageTitle || sectionMeta.typeAr || section)} · ${
           item.status === 'draft' ? 'مسودة' : 'منشور'
-        }<br/>${escapeHtml(item.description || item.keywords || '')}</small>
+        }<br/>${escapeHtml(item.title)}${item.description ? ' — ' + escapeHtml(item.description) : ''}</small>
           </div>
           <div class="sca-item-actions">
             <a href="search-content.html?id=${encodeURIComponent(item.id)}" target="_blank" style="border:1px solid #e5e7eb;background:#fff;color:#111827;border-radius:999px;padding:7px 12px;font:inherit;font-size:12px;font-weight:800;text-decoration:none;display:inline-flex;align-items:center">عرض</a>
@@ -101,10 +104,14 @@
         mediaMime: file.type || '',
       };
       const kindSelect = form?.querySelector('[name="kind"]');
-      if (kindSelect && !kindSelect.value) {
+      const sectionSelect = form?.querySelector('[name="section"]');
+      if (kindSelect) {
         if (file.type.startsWith('image/')) kindSelect.value = 'image';
         else if (file.type.startsWith('video/')) kindSelect.value = 'video';
         else kindSelect.value = 'file';
+      }
+      if (sectionSelect && (!sectionSelect.value || sectionSelect.value === 'content')) {
+        sectionSelect.value = kindSelect?.value || 'file';
       }
       renderPreview(dataUrl, file.type);
       showFeedback(`تم تجهيز الملف: ${file.name}`);
@@ -123,7 +130,9 @@
     const data = new FormData(form);
     const result = api.upsert({
       id: data.get('id') || undefined,
+      section: data.get('section'),
       kind: data.get('kind'),
+      pageTitle: data.get('pageTitle'),
       title: data.get('title'),
       description: data.get('description'),
       keywords: data.get('keywords'),
@@ -140,10 +149,12 @@
       return;
     }
     const sync = await api.pushRemote();
+    const section = result.item.section || result.item.kind;
+    const pageName = api.SECTION_META?.[section]?.pageTitle || 'المحتوى';
     showFeedback(
       sync.ok
-        ? `تم الحفظ والمزامنة مع السيرفر — سيظهر في محرك البحث فورًا.`
-        : `تم الحفظ محليًا — افتح محرك البحث وجرّب البحث عن: ${result.item.title}`
+        ? `تم الحفظ في «${pageName}» — المسمّى: ${result.item.pageTitle || result.item.title}`
+        : `تم الحفظ محليًا في «${pageName}» — افتح البحث أو صفحة التصنيف`
     );
     resetForm();
     renderList();
@@ -164,7 +175,13 @@
     const item = api.get(editId);
     if (!item || !form) return;
     form.querySelector('[name="id"]').value = item.id;
+    if (form.querySelector('[name="section"]')) {
+      form.querySelector('[name="section"]').value = item.section || item.kind || 'content';
+    }
     form.querySelector('[name="kind"]').value = item.kind;
+    if (form.querySelector('[name="pageTitle"]')) {
+      form.querySelector('[name="pageTitle"]').value = item.pageTitle || item.title || '';
+    }
     form.querySelector('[name="title"]').value = item.title;
     form.querySelector('[name="description"]').value = item.description || '';
     form.querySelector('[name="keywords"]').value = item.keywords || '';

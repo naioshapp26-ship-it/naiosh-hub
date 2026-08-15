@@ -1,19 +1,34 @@
 /**
- * كتالوج محتوى محرك البحث — يضيفه الأدمن (نصوص · صور · ملفات · فيديو)
- * تخزين: localStorage + مزامنة اختيارية مع /api/hub/search-catalog
+ * كتالوج محتوى محرك البحث — يضيفه الأدمن لأي تصنيف:
+ * حاضنات · منصات · أنظمة · محتوى · صور · ملفات · فيديو
  */
 (() => {
   'use strict';
 
   const KEY = 'naiosh_hub_search_catalog_v1';
-  const MAX_FILE_BYTES = 2.5 * 1024 * 1024; // 2.5MB للكتالوج المحلي
+  const MAX_FILE_BYTES = 2.5 * 1024 * 1024;
 
-  const TYPE_META = {
+  /** نوع الوسائط (طريقة العرض) */
+  const MEDIA_META = {
     content: { typeAr: 'محتوى', icon: 'fa-file-lines' },
     image: { typeAr: 'صورة', icon: 'fa-image' },
     file: { typeAr: 'ملف', icon: 'fa-paperclip' },
     video: { typeAr: 'فيديو', icon: 'fa-video' },
   };
+
+  /** تصنيف الظهور في فلاتر محرك البحث + اسم صفحة التصنيف */
+  const SECTION_META = {
+    incubator: { typeAr: 'حاضنة', pageTitle: 'الحاضنات', pageLead: 'محتوى مضاف ضمن تصنيف الحاضنات', icon: 'fa-seedling', type: 'incubator' },
+    platform: { typeAr: 'منصة', pageTitle: 'المنصات', pageLead: 'محتوى مضاف ضمن تصنيف المنصات', icon: 'fa-layer-group', type: 'platform' },
+    system: { typeAr: 'نظام', pageTitle: 'الأنظمة', pageLead: 'محتوى مضاف ضمن تصنيف الأنظمة', icon: 'fa-cube', type: 'system' },
+    content: { typeAr: 'محتوى', pageTitle: 'المحتوى', pageLead: 'مقالات ومعلومات مضافة لمحرك البحث', icon: 'fa-file-lines', type: 'content' },
+    image: { typeAr: 'صورة', pageTitle: 'الصور', pageLead: 'معرض الصور المرفوعة لمحرك البحث', icon: 'fa-image', type: 'image' },
+    file: { typeAr: 'ملف', pageTitle: 'الملفات', pageLead: 'الملفات والمستندات المرفوعة لمحرك البحث', icon: 'fa-paperclip', type: 'file' },
+    video: { typeAr: 'فيديو', pageTitle: 'الفيديو', pageLead: 'مقاطع الفيديو المرفوعة لمحرك البحث', icon: 'fa-video', type: 'video' },
+  };
+
+  /** توافق خلفي */
+  const TYPE_META = { ...MEDIA_META, ...Object.fromEntries(Object.entries(SECTION_META).map(([k, v]) => [k, { typeAr: v.typeAr, icon: v.icon }])) };
 
   const readLocal = () => {
     try {
@@ -35,15 +50,32 @@
 
   const get = (id) => readLocal().find((x) => String(x.id) === String(id)) || null;
 
+  const normalizeSection = (section, kind) => {
+    if (SECTION_META[section]) return section;
+    if (SECTION_META[kind]) return kind;
+    return 'content';
+  };
+
+  const normalizeKind = (kind, mime = '') => {
+    if (MEDIA_META[kind]) return kind;
+    if (String(mime).startsWith('image/')) return 'image';
+    if (String(mime).startsWith('video/')) return 'video';
+    if (mime) return 'file';
+    return 'content';
+  };
+
   const upsert = (payload = {}) => {
     const now = new Date().toISOString();
-    const kind = TYPE_META[payload.kind] ? payload.kind : 'content';
+    const kind = normalizeKind(payload.kind, payload.mediaMime);
+    const section = normalizeSection(payload.section, kind);
     const title = String(payload.title || '').trim();
     if (!title) return { ok: false, error: 'العنوان مطلوب' };
 
     const item = {
       id: payload.id || uid(),
       kind,
+      section,
+      pageTitle: String(payload.pageTitle || title).trim(),
       title,
       description: String(payload.description || '').trim(),
       keywords: String(payload.keywords || '').trim(),
@@ -67,8 +99,7 @@
   };
 
   const remove = (id) => {
-    const next = readLocal().filter((x) => String(x.id) !== String(id));
-    saveLocal(next);
+    saveLocal(readLocal().filter((x) => String(x.id) !== String(id)));
     return { ok: true };
   };
 
@@ -90,25 +121,45 @@
     });
 
   const viewUrl = (id) => `search-content.html?id=${encodeURIComponent(id)}`;
+  const sectionPageUrl = (section) => `search-content.html?type=${encodeURIComponent(section || 'content')}`;
 
   const toSearchItems = () =>
     list()
       .filter((x) => x.status !== 'draft')
       .map((x) => {
-        const meta = TYPE_META[x.kind] || TYPE_META.content;
+        const section = normalizeSection(x.section, x.kind);
+        const sectionMeta = SECTION_META[section] || SECTION_META.content;
+        const mediaMeta = MEDIA_META[normalizeKind(x.kind, x.mediaMime)] || MEDIA_META.content;
+        const pageName = x.pageTitle || x.title;
         return {
           id: x.id,
-          type: x.kind,
-          typeAr: meta.typeAr,
-          icon: meta.icon,
+          type: sectionMeta.type,
+          typeAr: sectionMeta.typeAr,
+          icon: sectionMeta.icon || mediaMeta.icon,
           title: x.title,
-          subtitle: x.description || meta.typeAr,
-          meta: x.mediaName || x.kind,
-          // زي الحاضنة/المنصة: يفتح صفحة عرض المحتوى
+          subtitle: x.description || pageName || sectionMeta.typeAr,
+          meta: pageName || x.mediaName || sectionMeta.typeAr,
           href: viewUrl(x.id),
           preview: x.mediaDataUrl || x.mediaUrl || '',
           mediaMime: x.mediaMime || '',
-          keywords: [x.title, x.description, x.keywords, x.mediaName, meta.typeAr, x.kind, 'محتوى', 'بحث'].filter(Boolean).join(' '),
+          pageTitle: pageName,
+          section,
+          keywords: [
+            x.title,
+            pageName,
+            x.description,
+            x.keywords,
+            x.mediaName,
+            sectionMeta.typeAr,
+            sectionMeta.pageTitle,
+            mediaMeta.typeAr,
+            x.kind,
+            section,
+            'محتوى',
+            'بحث',
+          ]
+            .filter(Boolean)
+            .join(' '),
           source: 'admin-catalog',
         };
       });
@@ -124,7 +175,6 @@
     return { ok: true, count: items.length };
   };
 
-  /** مزامنة مع السيرفر إن وُجد */
   const pullRemote = async () => {
     try {
       const res = await fetch('/api/hub/search-catalog', { cache: 'no-store' });
@@ -157,6 +207,8 @@
     KEY,
     MAX_FILE_BYTES,
     TYPE_META,
+    MEDIA_META,
+    SECTION_META,
     list,
     get,
     upsert,
@@ -164,6 +216,7 @@
     clear,
     fileToDataUrl,
     viewUrl,
+    sectionPageUrl,
     toSearchItems,
     exportJson,
     importJson,

@@ -1,5 +1,32 @@
 /* صفحة عرض محتوى البحث — تفاصيل + مكتبة */
 
+.sc-type-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.sc-type-nav a {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #111827;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sc-type-nav a.is-active,
+.sc-type-nav a:hover {
+  background: linear-gradient(135deg, #ff2d2d, #b10011);
+  border-color: transparent;
+  color: #fff;
+}
+
 .sc-page {
   padding-bottom: 48px;
 }
