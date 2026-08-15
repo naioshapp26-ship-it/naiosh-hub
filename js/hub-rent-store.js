@@ -178,18 +178,28 @@
 
   const validateSubdomain = (slug) => validateSubdomainLocal(slug);
 
-  const validateSubdomainAsync = async (slug) => {
+  const validateSubdomainAsync = async (slug, { checkErp = true } = {}) => {
     const local = validateSubdomainLocal(slug);
     if (!local.available) return local;
+    if (!checkErp) return { ...local, message: 'متاح في هوب' };
     try {
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
       const res = await fetch(ERP_VALIDATE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subdomain: local.slug }),
+        signal: ctrl?.signal,
       });
-      const data = await res.json();
+      if (timer) clearTimeout(timer);
+      const data = await res.json().catch(() => ({}));
       if (data?.available === false) {
-        return { ok: false, available: false, message: data.message || 'غير متاح في ERP', slug: local.slug };
+        const msg = String(data.message || '');
+        // حد محاولات ERP أو انشغال مؤقت → لا نمنع الحجز في هوب
+        if (/محاولات|انتظر|rate|تجاوز|busy|timeout|تعذ/i.test(msg)) {
+          return { ...local, message: 'متاح في هوب (ERP مشغول مؤقتًا)', erpDeferred: true };
+        }
+        return { ok: false, available: false, message: msg || 'غير متاح في ERP', slug: local.slug };
       }
       if (data?.available) {
         return {
@@ -200,6 +210,9 @@
           host: local.host,
           erpChecked: true,
         };
+      }
+      if (data?.degraded) {
+        return { ...local, message: data.message || 'متاح في هوب (تحقق ERP مؤجل)', erpDeferred: true };
       }
     } catch {
       /* fallback local-only */

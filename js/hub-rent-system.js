@@ -99,6 +99,8 @@
         if (state.systems.has(code)) state.systems.delete(code);
         else state.systems.add(code);
         renderSystems();
+        // أعد فحص النطاق إذا تغيّر احتياج تحقق ERP
+        checkSubdomain().catch(() => {});
       });
     });
   };
@@ -111,7 +113,9 @@
     input.value = raw;
     status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ التحقق من هوب وERP…';
     status.className = 'hub-rent-subdomain-status';
-    const res = await store().validateSubdomainAsync(raw);
+    // تحقق ERP فقط إذا كان ضمن الأنظمة المحتملة أو الاختيار الحالي يشمل ERP
+    const needsErp = state.systems.has('ERP') || !state.systems.size;
+    const res = await store().validateSubdomainAsync(raw, { checkErp: needsErp });
     state.subdomainOk = Boolean(res.available);
     status.innerHTML = res.available
       ? `<i class="fas fa-circle-check"></i> ${res.message}`
