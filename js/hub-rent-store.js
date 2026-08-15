@@ -420,18 +420,18 @@
     return all.filter((r) => String(r.adminEmail || '').toLowerCase() === key);
   };
 
-  /** رابط فتح النظام المستأجر مع SSO من هوب */
+  /** رابط فتح النظام المستأجر عبر جسر SSO في هوب */
   const buildOpenUrl = async (rental, { systemCode } = {}) => {
     if (!rental) return { ok: false, error: 'لا يوجد طلب' };
     const code = String(systemCode || rental.systems?.[0] || 'ERP').toUpperCase();
     const erpOrigin = 'https://web-production-419e2.up.railway.app';
 
-    let base;
+    let directTarget;
     if (code === 'ERP' && rental.slug) {
-      // صفحة الدخول تحتفظ بـ query (مسار /t/{slug} يعمل redirect ويمسح المعاملات)
-      base = `${erpOrigin}/login-page.html?tenant=${encodeURIComponent(rental.slug)}`;
+      // صفحة الدخول تحت مسار المستأجر مع login=1 (تحتفظ بالسياق ولا تُحوَّل للرئيسية)
+      directTarget = `${erpOrigin}/t/${encodeURIComponent(rental.slug)}/login-page.html?login=1&tenant=${encodeURIComponent(rental.slug)}`;
     } else {
-      base =
+      directTarget =
         rental.erp?.loginUrl ||
         window.HubLiveSystems?.url?.(code) ||
         `apps.html#${code.toLowerCase()}`;
@@ -460,6 +460,23 @@
       permissions: ['read', 'write'],
     });
 
+    if (ticket?.ok && ticket.token) {
+      const bridge = new URL('sso-bridge.html', window.location.href);
+      bridge.searchParams.set('token', ticket.token);
+      if (ticket.sig) bridge.searchParams.set('sig', ticket.sig);
+      return {
+        ok: true,
+        url: bridge.pathname + bridge.search,
+        absoluteUrl: bridge.toString(),
+        targetUrl: directTarget,
+        tenantHome: rental.erp?.loginUrl || (rental.slug ? `${erpOrigin}/t/${rental.slug}` : ''),
+        ticket,
+        via: 'hub-sso-bridge',
+      };
+    }
+
+    // سقوط آمن: افتح الهدف مباشرة مع باراميترات SSO إن وُجدت
+    let base = directTarget;
     if (window.HubAuth?.attachSsoParams) {
       base = window.HubAuth.attachSsoParams(base, code, {
         tenant: rental.slug,
@@ -481,6 +498,7 @@
       url: base,
       tenantHome: rental.erp?.loginUrl || (rental.slug ? `${erpOrigin}/t/${rental.slug}` : ''),
       ticket: ticket?.ok ? ticket : null,
+      via: 'direct',
     };
   };
 

@@ -1,0 +1,178 @@
+/* جسر SSO — تحقق هوب ثم فتح النظام */
+.hub-sso-bridge-body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 480px at 10% -10%, rgba(153, 14, 30, 0.14), transparent 55%),
+    radial-gradient(900px 420px at 100% 0%, rgba(29, 78, 216, 0.1), transparent 50%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+}
+
+.hub-sso-bridge {
+  display: grid;
+  place-items: center;
+  padding: 48px 16px 72px;
+  min-height: calc(100vh - 72px);
+}
+
+.hub-sso-panel {
+  width: min(520px, 100%);
+  padding: 28px 24px 22px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(8px);
+  animation: hubSsoIn 0.45s ease both;
+}
+
+.hub-sso-panel[data-sso-state='error'] {
+  border-color: rgba(153, 14, 30, 0.28);
+}
+
+.hub-sso-panel[data-sso-state='ready'] {
+  border-color: rgba(22, 163, 74, 0.28);
+}
+
+.hub-sso-kicker {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #990e1e;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hub-sso-panel h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.45rem, 3vw, 1.85rem);
+  font-weight: 900;
+  color: #111827 !important;
+  letter-spacing: -0.02em;
+}
+
+.hub-sso-lead {
+  margin: 0 0 18px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.7;
+  color: #4b5563 !important;
+}
+
+.hub-sso-status {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  background: #f0fdf4;
+  color: #166534 !important;
+  border: 1px solid #bbf7d0;
+}
+
+.hub-sso-panel[data-sso-state='error'] .hub-sso-status {
+  background: #fef2f2;
+  color: #991b1b !important;
+  border-color: #fecaca;
+}
+
+.hub-sso-meta {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+.hub-sso-meta > div {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.hub-sso-meta dt {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: #6b7280;
+}
+
+.hub-sso-meta dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827 !important;
+  word-break: break-word;
+}
+
+.hub-sso-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.hub-sso-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.hub-sso-btn:hover {
+  transform: translateY(-1px);
+}
+
+.hub-sso-btn.is-primary {
+  background: #990e1e;
+  color: #fff !important;
+}
+
+.hub-sso-btn.is-secondary {
+  background: #fff;
+  border-color: #e5e7eb;
+  color: #111827 !important;
+}
+
+.hub-sso-btn.is-ghost {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8 !important;
+}
+
+.hub-sso-note {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.65;
+  color: #6b7280 !important;
+}
+
+@keyframes hubSsoIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .hub-sso-meta > div {
+    grid-template-columns: 1fr;
+  }
+}

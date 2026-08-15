@@ -55,7 +55,7 @@
           <div class="hub-mine-actions">
             ${
               r.status === 'active'
-                ? `<button type="button" class="is-primary" data-open-rental="${esc(r.id)}"><i class="fas fa-right-to-bracket"></i> فتح بـ SSO من هوب</button>`
+                ? `<button type="button" class="is-primary" data-open-rental="${esc(r.id)}"><i class="fas fa-shield-halved"></i> فتح عبر جسر SSO</button>`
                 : ''
             }
             <a class="is-secondary" href="rent-system.html?system=${encodeURIComponent(r.systems?.[0] || 'ERP')}"><i class="fas fa-plus"></i> استأجر المزيد</a>
