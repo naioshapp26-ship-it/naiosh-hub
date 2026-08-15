@@ -295,3 +295,48 @@ body.hus-open {
     gap: 8px;
   }
 }
+
+.hus-foot {
+  padding: 10px 16px 14px;
+  border-top: 1px solid #f1f5f9;
+  background: #fafafa;
+}
+
+.hus-foot a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #b91c1c;
+  text-decoration: none;
+}
+
+.hus-foot a:hover {
+  text-decoration: underline;
+}
+
+.hus-item-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  background: #f1f5f9;
+  border: 1px solid #e5e7eb;
+}
+
+.hus-item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hus-badge-content,
+.hus-badge-image,
+.hus-badge-file,
+.hus-badge-video {
+  background: #fff1f2;
+  color: #9f1239;
+}

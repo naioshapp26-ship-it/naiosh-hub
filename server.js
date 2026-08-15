@@ -193,6 +193,47 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  // —— كتالوج محرك البحث (أدمن) ——
+  const catalogPath = path.join(ROOT, 'data', 'search-catalog.json');
+  const ensureCatalogFile = () => {
+    const dir = path.dirname(catalogPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(catalogPath)) {
+      fs.writeFileSync(catalogPath, JSON.stringify({ version: 1, items: [] }, null, 2), 'utf8');
+    }
+  };
+  const readCatalogFile = () => {
+    ensureCatalogFile();
+    try {
+      const raw = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
+      return Array.isArray(raw?.items) ? raw.items : Array.isArray(raw) ? raw : [];
+    } catch {
+      return [];
+    }
+  };
+  const writeCatalogFile = (items) => {
+    ensureCatalogFile();
+    fs.writeFileSync(
+      catalogPath,
+      JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), items }, null, 2),
+      'utf8'
+    );
+  };
+
+  if (pathname === '/api/hub/search-catalog' && req.method === 'GET') {
+    const items = readCatalogFile();
+    sendJson(res, 200, { ok: true, count: items.length, items });
+    return true;
+  }
+
+  if (pathname === '/api/hub/search-catalog' && req.method === 'POST') {
+    const body = await readBody(req);
+    const items = Array.isArray(body?.items) ? body.items : [];
+    writeCatalogFile(items);
+    sendJson(res, 200, { ok: true, count: items.length });
+    return true;
+  }
+
   return false;
 }
 

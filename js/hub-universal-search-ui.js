@@ -24,7 +24,7 @@
         <header class="hus-head">
           <div>
             <h2 id="hus-title"><i class="fas fa-magnifying-glass"></i> محرك البحث الشامل</h2>
-            <p>ابحث في مسميات وتصنيفات الحاضنات والمنصات والأنظمة</p>
+            <p>حاضنات · منصات · أنظمة · محتوى مرفوع من الأدمن</p>
           </div>
           <button type="button" class="hus-close" data-hus-close aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
         </header>
@@ -32,16 +32,23 @@
         <div class="hus-toolbar">
           <label class="hus-input-wrap">
             <i class="fas fa-magnifying-glass"></i>
-            <input type="search" data-hus-input placeholder="مثال: تعليم · UOS · فيت · تسويق رقمي…" autocomplete="off" />
+            <input type="search" data-hus-input placeholder="مثال: تعليم · فيديو · دليل · UOS…" autocomplete="off" />
           </label>
           <div class="hus-filters" role="tablist" aria-label="تصفية النوع">
             <button type="button" class="is-active" data-hus-filter="all">الكل</button>
             <button type="button" data-hus-filter="incubator">حاضنات</button>
             <button type="button" data-hus-filter="platform">منصات</button>
             <button type="button" data-hus-filter="system">أنظمة</button>
+            <button type="button" data-hus-filter="content">محتوى</button>
+            <button type="button" data-hus-filter="image">صور</button>
+            <button type="button" data-hus-filter="file">ملفات</button>
+            <button type="button" data-hus-filter="video">فيديو</button>
           </div>
         </div>
         <div class="hus-results" data-hus-results></div>
+        <footer class="hus-foot">
+          <a href="search-admin.html"><i class="fas fa-sliders"></i> إدارة محتوى البحث (أدمن)</a>
+        </footer>
       </div>`;
     document.body.appendChild(modal);
     return modal;
@@ -50,6 +57,10 @@
   const typeBadge = (type) => {
     if (type === 'incubator') return 'حاضنة';
     if (type === 'platform') return 'منصة';
+    if (type === 'content') return 'محتوى';
+    if (type === 'image') return 'صورة';
+    if (type === 'file') return 'ملف';
+    if (type === 'video') return 'فيديو';
     return 'نظام';
   };
 
@@ -61,7 +72,15 @@
       <article><strong>${s.all}</strong><span>إجمالي</span></article>
       <article><strong>${s.incubator}</strong><span>حاضنة</span></article>
       <article><strong>${s.platform}</strong><span>منصة</span></article>
-      <article><strong>${s.system}</strong><span>نظام</span></article>`;
+      <article><strong>${s.system}</strong><span>نظام</span></article>
+      <article><strong>${s.custom || 0}</strong><span>مرفوع</span></article>`;
+  };
+
+  const mediaThumb = (item) => {
+    if (item.preview && (item.type === 'image' || String(item.mediaMime || '').startsWith('image/'))) {
+      return `<span class="hus-item-thumb"><img src="${esc(item.preview)}" alt="" /></span>`;
+    }
+    return `<span class="hus-item-ico"><i class="fas ${esc(item.icon)}"></i></span>`;
   };
 
   const renderResults = (modal, query) => {
@@ -69,14 +88,16 @@
     const box = modal.querySelector('[data-hus-results]');
     if (!box) return;
     if (!list.length) {
-      box.innerHTML = `<p class="hus-empty">لا نتائج — جرّب اسم حاضنة أو كود منصة أو نظام.</p>`;
+      box.innerHTML = `<p class="hus-empty">لا نتائج — جرّب اسم حاضنة أو محتوى مرفوع من الأدمن.</p>`;
       return;
     }
     box.innerHTML = list
       .slice(0, 80)
       .map(
-        (item) => `<a class="hus-item" href="${esc(item.href)}">
-          <span class="hus-item-ico"><i class="fas ${esc(item.icon)}"></i></span>
+        (item) => `<a class="hus-item" href="${esc(item.href)}" ${
+          String(item.href || '').startsWith('data:') ? 'download target="_blank" rel="noopener"' : ''
+        }>
+          ${mediaThumb(item)}
           <span class="hus-item-body">
             <strong>${esc(item.title)}</strong>
             <small>${esc(item.subtitle)}</small>
@@ -129,12 +150,12 @@
     card.classList.add('is-search-trigger');
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
-    card.setAttribute('aria-label', 'محرك البحث الشامل — حاضنات ومنصات وأنظمة');
+    card.setAttribute('aria-label', 'محرك البحث الشامل — حاضنات ومنصات وأنظمة ومحتوى');
     card.innerHTML = `
       <div class="hero-float-icon" aria-hidden="true"><i class="fas fa-magnifying-glass"></i></div>
       <div class="hero-float-body">
         <strong class="hero-float-title">محرك البحث الشامل</strong>
-        <span class="hero-float-desc">حاضنات · منصات · أنظمة</span>
+        <span class="hero-float-desc">حاضنات · منصات · أنظمة · محتوى</span>
       </div>`;
 
     const openSearch = (e) => {
@@ -147,9 +168,20 @@
     });
   };
 
-  const init = () => {
+  const init = async () => {
+    try {
+      await window.HubSearchCatalog?.pullRemote?.();
+    } catch {
+      /* offline / no API */
+    }
     wireModal();
     upgradeFloatCard();
+    if (location.hash === '#open-search') {
+      setTimeout(() => setOpen(true), 120);
+    }
+    window.addEventListener('hashchange', () => {
+      if (location.hash === '#open-search') setOpen(true);
+    });
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });

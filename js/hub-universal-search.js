@@ -1,5 +1,5 @@
 /**
- * NAIOSH Universal Search — بحث موحّد: حاضنات · منصات · أنظمة.
+ * NAIOSH Universal Search — بحث موحّد: حاضنات · منصات · أنظمة · محتوى الأدمن.
  */
 (() => {
   'use strict';
@@ -52,7 +52,7 @@
 
     const apps = window.HubMarketplaceData?.APPS || [];
     apps.forEach((app) => {
-      if (app.kind === 'sovereign') return; // covered by platforms
+      if (app.kind === 'sovereign') return;
       const href =
         app.launchUrl ||
         app.url ||
@@ -70,6 +70,10 @@
         keywords: [app.nameAr, app.name, app.code, app.category, app.kind, 'نظام', 'system', 'استوديو'].filter(Boolean).join(' '),
       });
     });
+
+    // محتوى يضيفه الأدمن من صفحة إدارة محرك البحث
+    const custom = window.HubSearchCatalog?.toSearchItems?.() || [];
+    custom.forEach((c) => items.push(c));
 
     return items;
   };
@@ -91,6 +95,7 @@
         else if (q && t.includes(q)) score += 8;
         if (q && norm(item.meta) === q) score += 10;
         if (q && norm(item.subtitle).includes(q)) score += 4;
+        if (item.source === 'admin-catalog' && q) score += 2;
         return { ...item, score };
       })
       .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, 'ar'));
@@ -98,11 +103,17 @@
 
   const stats = () => {
     const catalog = collectCatalog();
+    const count = (type) => catalog.filter((i) => i.type === type).length;
     return {
       all: catalog.length,
-      incubator: catalog.filter((i) => i.type === 'incubator').length,
-      platform: catalog.filter((i) => i.type === 'platform').length,
-      system: catalog.filter((i) => i.type === 'system').length,
+      incubator: count('incubator'),
+      platform: count('platform'),
+      system: count('system'),
+      content: count('content'),
+      image: count('image'),
+      file: count('file'),
+      video: count('video'),
+      custom: catalog.filter((i) => i.source === 'admin-catalog').length,
     };
   };
 
