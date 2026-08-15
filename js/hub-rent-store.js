@@ -423,18 +423,34 @@
   /** رابط فتح النظام المستأجر عبر جسر SSO في هوب */
   const buildOpenUrl = async (rental, { systemCode } = {}) => {
     if (!rental) return { ok: false, error: 'لا يوجد طلب' };
+    if (rental.status !== 'active') {
+      return { ok: false, error: 'الاستئجار غير مفعّل بعد' };
+    }
     const code = String(systemCode || rental.systems?.[0] || 'ERP').toUpperCase();
     const erpOrigin = 'https://web-production-419e2.up.railway.app';
 
     let directTarget;
-    if (code === 'ERP' && rental.slug) {
-      // صفحة الدخول تحت مسار المستأجر مع login=1 (تحتفظ بالسياق ولا تُحوَّل للرئيسية)
-      directTarget = `${erpOrigin}/t/${encodeURIComponent(rental.slug)}/login-page.html?login=1&tenant=${encodeURIComponent(rental.slug)}`;
+    let viaExpected = 'direct';
+
+    if (code === 'ERP') {
+      // لا تفتح مسار ERP إلا بعد تجهيز مستأجر حقيقي — وإلا يظهر «المستأجر غير موجود»
+      if (!rental.erp?.loginUrl && !rental.erp?.hostPath) {
+        return {
+          ok: false,
+          error: 'مستأجر ERP غير مجهّز بعد — أعد التفعيل أو راجع ربط ERP',
+        };
+      }
+      if (rental.slug) {
+        directTarget = `${erpOrigin}/t/${encodeURIComponent(rental.slug)}/login-page.html?login=1&tenant=${encodeURIComponent(rental.slug)}`;
+      } else {
+        directTarget = rental.erp.loginUrl;
+      }
+      viaExpected = 'hub-sso-bridge';
     } else {
       directTarget =
-        rental.erp?.loginUrl ||
         window.HubLiveSystems?.url?.(code) ||
         `apps.html#${code.toLowerCase()}`;
+      viaExpected = window.HubLiveSystems?.url?.(code) ? 'hub-sso-bridge' : 'hub-catalog';
     }
 
     // جلسة هوب خفيفة إن لم يكن مسجلاً — من بيانات الاستئجار
@@ -454,8 +470,8 @@
       email: rental.adminEmail || window.HubAuth?.getUser?.()?.email,
       name: rental.adminName || rental.companyName,
       systemCode: code,
-      tenant: rental.slug,
-      subdomain: rental.slug,
+      tenant: code === 'ERP' ? rental.slug : rental.slug || '',
+      subdomain: code === 'ERP' ? rental.slug : rental.slug || '',
       rentalId: rental.id,
       permissions: ['read', 'write'],
     });
@@ -469,9 +485,9 @@
         url: bridge.pathname + bridge.search,
         absoluteUrl: bridge.toString(),
         targetUrl: directTarget,
-        tenantHome: rental.erp?.loginUrl || (rental.slug ? `${erpOrigin}/t/${rental.slug}` : ''),
+        tenantHome: code === 'ERP' ? rental.erp?.loginUrl || `${erpOrigin}/t/${rental.slug}` : directTarget,
         ticket,
-        via: 'hub-sso-bridge',
+        via: viaExpected,
       };
     }
 
@@ -496,7 +512,7 @@
     return {
       ok: true,
       url: base,
-      tenantHome: rental.erp?.loginUrl || (rental.slug ? `${erpOrigin}/t/${rental.slug}` : ''),
+      tenantHome: code === 'ERP' ? rental.erp?.loginUrl || (rental.slug ? `${erpOrigin}/t/${rental.slug}` : '') : directTarget,
       ticket: ticket?.ok ? ticket : null,
       via: 'direct',
     };

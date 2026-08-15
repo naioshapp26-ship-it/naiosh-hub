@@ -357,7 +357,10 @@ async function handleHubApi(req, res, pathname) {
     const wantJson =
       url.searchParams.get('format') === 'json' ||
       String(req.headers.accept || '').includes('application/json');
-    const result = hubSso.bridge(token, { consume, sig });
+    const proto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim();
+    const host = String(req.headers['x-forwarded-host'] || req.headers.host || 'localhost').split(',')[0].trim();
+    const hubOrigin = `${proto}://${host}`;
+    const result = hubSso.bridge(token, { consume, sig, hubOrigin });
     if (!result.ok) {
       sendJson(res, 404, result);
       return true;

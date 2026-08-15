@@ -185,12 +185,16 @@
     mark(3, 'is-run');
     await wait(350);
     steps.forEach((s) => s.classList.add('is-done'));
+    const systems = act.rental.systems || [];
     const linkedErp = Boolean(act.rental.erp?.loginUrl);
+    const onlyNonErp = systems.length && !systems.includes('ERP');
     fillSuccess(
       act.rental,
       linkedErp
         ? 'تم تجهيز المستأجر عبر نايوش هوب وربطه بمحرك ERP.'
-        : 'تم تفعيل الاستئجار ومنح النطاق من نايوش هوب.'
+        : onlyNonErp
+          ? 'تم تفعيل الاستئجار في هوب. افتح النظام على محركه المباشر (ليس مسار مستأجر ERP).'
+          : 'تم تفعيل الاستئجار ومنح النطاق من نايوش هوب.'
     );
     setStep(5);
   };
@@ -221,14 +225,20 @@
       openBtn.href = 'my-systems.html';
       openBtn.removeAttribute('target');
       openBtn.innerHTML = '<i class="fas fa-cubes"></i> أنظمتي وفتح SSO';
-      // حضّر رابط فتح فوري بـ SSO إن أمكن
+      // حضّر رابط فتح فوري بـ SSO إن أمكن (ERP فقط بعد التجهيز؛ FIT/LAW على محركهم)
       try {
-        const opened = await store().buildOpenUrl(rental);
-        if (opened.ok && opened.url) {
-          openBtn.href = opened.url;
-          openBtn.target = '_blank';
-          openBtn.rel = 'noopener';
-          openBtn.innerHTML = '<i class="fas fa-right-to-bracket"></i> فتح النظام بـ SSO';
+        if (rental.status === 'active') {
+          const opened = await store().buildOpenUrl(rental);
+          if (opened.ok && opened.url) {
+            openBtn.href = opened.url;
+            openBtn.target = '_blank';
+            openBtn.rel = 'noopener';
+            const code = String(rental.systems?.[0] || 'ERP').toUpperCase();
+            openBtn.innerHTML =
+              code === 'ERP'
+                ? '<i class="fas fa-right-to-bracket"></i> فتح ERP بـ SSO'
+                : `<i class="fas fa-right-to-bracket"></i> فتح ${code} بـ SSO`;
+          }
         }
       } catch {
         /* keep my-systems fallback */
