@@ -185,7 +185,11 @@ body.homepage .hub-feature-closing h3,
 body.homepage .hub-learn-closing,
 body.homepage .hub-learn-closing h1,
 body.homepage .hub-learn-closing h2,
-body.homepage .hub-learn-closing h3 {
+body.homepage .hub-learn-closing h3,
+body.homepage .sc-hero,
+body.homepage .sc-hero h1,
+body.homepage .sc-hero h2,
+body.homepage .sc-hero h3 {
   color: #ffffff !important;
 }
 
@@ -195,7 +199,10 @@ body.homepage .hub-feature-hero small,
 body.homepage .hub-feature-closing p,
 body.homepage .hub-feature-closing li,
 body.homepage .hub-learn-closing p,
-body.homepage .hub-learn-closing li {
+body.homepage .hub-learn-closing li,
+body.homepage .sc-hero p,
+body.homepage .sc-hero .sc-lead,
+body.homepage .sc-hero .sc-kicker {
   color: rgba(255, 245, 247, 0.96) !important;
 }
 
