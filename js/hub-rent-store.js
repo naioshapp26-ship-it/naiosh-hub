@@ -40,7 +40,11 @@
   const saveLocal = (state) => {
     state.updatedAt = new Date().toISOString();
     localStorage.setItem(KEY, JSON.stringify(state));
-    window.dispatchEvent(new CustomEvent('hub:system-rentals', { detail: state }));
+    try {
+      window.dispatchEvent?.(new CustomEvent('hub:system-rentals', { detail: state }));
+    } catch {
+      /* ignore */
+    }
     return state;
   };
 
