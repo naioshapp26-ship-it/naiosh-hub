@@ -1840,6 +1840,7 @@
         <p>من هنا يغذّي الأدمن محرك البحث بالنصوص والصور والملفات والفيديو. كل عنصر منشور يظهر فورًا في زر «محرك البحث الشامل» على الرئيسية.</p>
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px">
           <a class="btn btn-primary" href="search-admin.html"><i class="fas fa-sliders"></i> فتح صفحة إدارة البحث</a>
+          <a class="btn btn-ghost" href="search-content.html" target="_blank"><i class="fas fa-images"></i> مكتبة المحتوى المرفوع</a>
           <a class="btn btn-ghost" href="index.html#open-search" target="_blank"><i class="fas fa-magnifying-glass"></i> تجربة محرك البحث</a>
         </div>
         <ul style="margin:16px 0 0;padding:0 18px 0 0;line-height:1.9;font-weight:700;color:#4b5563">

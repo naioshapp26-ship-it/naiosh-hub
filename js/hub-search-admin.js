@@ -74,6 +74,7 @@
         }<br/>${escapeHtml(item.description || item.keywords || '')}</small>
           </div>
           <div class="sca-item-actions">
+            <a href="search-content.html?id=${encodeURIComponent(item.id)}" target="_blank" style="border:1px solid #e5e7eb;background:#fff;color:#111827;border-radius:999px;padding:7px 12px;font:inherit;font-size:12px;font-weight:800;text-decoration:none;display:inline-flex;align-items:center">عرض</a>
             <button type="button" data-sca-edit="${item.id}">تعديل</button>
             <button type="button" class="is-danger" data-sca-del="${item.id}">حذف</button>
           </div>

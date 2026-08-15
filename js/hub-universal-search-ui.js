@@ -94,9 +94,7 @@
     box.innerHTML = list
       .slice(0, 80)
       .map(
-        (item) => `<a class="hus-item" href="${esc(item.href)}" ${
-          String(item.href || '').startsWith('data:') ? 'download target="_blank" rel="noopener"' : ''
-        }>
+        (item) => `<a class="hus-item" href="${esc(item.href)}">
           ${mediaThumb(item)}
           <span class="hus-item-body">
             <strong>${esc(item.title)}</strong>

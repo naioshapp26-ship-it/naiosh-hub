@@ -89,17 +89,13 @@
       reader.readAsDataURL(file);
     });
 
+  const viewUrl = (id) => `search-content.html?id=${encodeURIComponent(id)}`;
+
   const toSearchItems = () =>
     list()
       .filter((x) => x.status !== 'draft')
       .map((x) => {
         const meta = TYPE_META[x.kind] || TYPE_META.content;
-        const href =
-          x.href ||
-          x.externalUrl ||
-          x.mediaUrl ||
-          (x.mediaDataUrl ? x.mediaDataUrl : '') ||
-          `search-admin.html#${encodeURIComponent(x.id)}`;
         return {
           id: x.id,
           type: x.kind,
@@ -108,7 +104,8 @@
           title: x.title,
           subtitle: x.description || meta.typeAr,
           meta: x.mediaName || x.kind,
-          href,
+          // زي الحاضنة/المنصة: يفتح صفحة عرض المحتوى
+          href: viewUrl(x.id),
           preview: x.mediaDataUrl || x.mediaUrl || '',
           mediaMime: x.mediaMime || '',
           keywords: [x.title, x.description, x.keywords, x.mediaName, meta.typeAr, x.kind, 'محتوى', 'بحث'].filter(Boolean).join(' '),
@@ -166,6 +163,7 @@
     remove,
     clear,
     fileToDataUrl,
+    viewUrl,
     toSearchItems,
     exportJson,
     importJson,
