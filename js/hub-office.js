@@ -18,7 +18,7 @@
     { href: 'ads.html', icon: 'fa-bullhorn', label: 'إعلاناتي', desc: 'إعلانات المستأجر' },
     { href: 'products.html', icon: 'fa-box-open', label: 'منتجاتي', desc: 'منتجات المستأجر' },
     { href: 'partnerships.html', icon: 'fa-handshake', label: 'شراكاتي', desc: 'صفحة الشراكات' },
-    { href: 'side-projects.html', icon: 'fa-lightbulb', label: 'المشاريع الجانبية', desc: 'اكتشاف فرصة دخل مناسبة لملفك' },
+    { href: 'side-projects.html', icon: 'fa-lightbulb', label: 'قناتي', desc: 'اكتشاف فرصة دخل مناسبة لملفك' },
     { href: 'side-project-registrations.html', icon: 'fa-inbox', label: 'طلبات تسجيل المشاريع', desc: 'استقبال ومتابعة تسجيلات أصحاب المشاريع' },
     { href: 'global-os.html', icon: 'fa-network-wired', label: 'نظام التشغيل', desc: 'المعمارية · سجل 41 · تكامل · AI' },
     { href: 'system-ops.html', icon: 'fa-gears', label: 'تشغيل الأنظمة', desc: 'تنفيذ بنود النظام = على هوب' },

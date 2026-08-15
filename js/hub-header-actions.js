@@ -1,30 +1,8 @@
 (() => {
   'use strict';
 
-  /** اختصارات الهيدر — بدون تكرار لما موجود في الناف/الهيرو/السايدبار */
-  const ACTIONS = [
-    {
-      id: 'packages',
-      label: 'الباقات',
-      href: 'packages.html',
-      className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-box',
-    },
-    {
-      id: 'courses',
-      label: 'دورات',
-      href: 'courses.html',
-      className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-chalkboard',
-    },
-    {
-      id: 'diplomas',
-      label: 'دبلومات',
-      href: 'diplomas.html',
-      className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-graduation-cap',
-    },
-  ];
+  /** اختصارات الهيدر أُلغيت — كل وظيفة تظهر مرة واحدة فقط في مكانها المعتمد */
+  const ACTIONS = [];
 
   const inject = () => {
     const topNav = document.querySelector('header.top-nav');
@@ -33,9 +11,10 @@
     const auth = inner?.querySelector('.auth-actions');
     if (!inner || !auth) return;
 
-    // امسح الصف الثاني القديم والحقن القديمة
     topNav.querySelectorAll('[data-hub-header-bar]').forEach((el) => el.remove());
     document.querySelectorAll('[data-hub-header-actions]').forEach((el) => el.remove());
+
+    if (!ACTIONS.length) return;
 
     const wrap = document.createElement('div');
     wrap.className = 'hub-header-actions';
@@ -50,7 +29,6 @@
       </a>`;
     }).join('');
 
-    // جوه صف الروابط نفسه — صف واحد متصل بدون فجوة
     if (navLinks) {
       navLinks.appendChild(wrap);
     } else {

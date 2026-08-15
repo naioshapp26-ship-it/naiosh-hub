@@ -164,6 +164,17 @@ body.homepage .hero-ctas .hero-cta-pill {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28) !important;
 }
 
+body.homepage .hero-ctas .hero-cta-book {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35) !important;
+}
+
+body.homepage .hero-ctas .hero-cta-book:hover,
+body.homepage .hero-ctas .hero-cta-book:focus-visible {
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  color: #ffffff !important;
+}
+
 body.homepage .hero-ctas .btn:hover {
   transform: scale(1.05) translateY(-2px) !important;
   filter: brightness(var(--homepage-btn-hover-brightness)) !important;

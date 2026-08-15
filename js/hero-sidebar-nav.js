@@ -2,8 +2,7 @@
   'use strict';
 
   /**
-   * منيو جانبي في الهيرو — مواقع جاهزة · اضغط تدخل مباشرة
-   * كونزو مستبعد · المشاريع الجانبية من بطاقة الرصيد فقط (بدون تكرار)
+   * منيو جانبي في الهيرو — قناتي · دوراتي · دبلوماتي · بدون تكرار مع الهيرو/الهيدر
    */
   const fromCatalog = () => {
     const list = window.HubReadySites?.sidebarSites?.() || [];
@@ -24,6 +23,9 @@
       { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },
       { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
       { label: 'شراكاتي', href: 'partnerships.html', icon: 'fa-handshake' },
+      { label: 'قناتي', href: 'side-projects.html', icon: 'fa-lightbulb' },
+      { label: 'دوراتي', href: 'courses.html', icon: 'fa-chalkboard' },
+      { label: 'دبلوماتي', href: 'diplomas.html', icon: 'fa-graduation-cap' },
       { label: 'نظام التشغيل', href: 'global-os.html', icon: 'fa-network-wired' },
       { label: 'عملائي', href: 'systems/crm.html?from=hub&return=index.html', icon: 'fa-users', launchCode: 'CRM' },
       { label: 'دردشة داخلية', href: 'chat.html', icon: 'fa-comments', chat: true },
@@ -31,25 +33,55 @@
     ];
   };
 
-  const isSideProjectsItem = (item) => {
-    const href = item.href || '';
-    const label = item.label || '';
-    return (
-      href.includes('side-projects') ||
-      label === 'محرك الفرص' ||
-      label === 'مشاريع جانبية' ||
-      label === 'المشاريع الجانبية'
-    );
+  const renameChannelLabels = (pages) => {
+    const list = pages.slice();
+    for (let i = 0; i < list.length; i += 1) {
+      const href = list[i].href || '';
+      const label = list[i].label || '';
+      if (
+        href.includes('side-projects') ||
+        label === 'محرك الفرص' ||
+        label === 'مشاريع جانبية' ||
+        label === 'المشاريع الجانبية'
+      ) {
+        list[i] = { ...list[i], label: 'قناتي', href: 'side-projects.html', icon: 'fa-lightbulb' };
+      }
+      if (href.includes('courses') || label === 'دورات') {
+        list[i] = { ...list[i], label: 'دوراتي', href: 'courses.html', icon: list[i].icon || 'fa-chalkboard' };
+      }
+      if (href.includes('diplomas') || label === 'دبلومات') {
+        list[i] = { ...list[i], label: 'دبلوماتي', href: 'diplomas.html', icon: list[i].icon || 'fa-graduation-cap' };
+      }
+    }
+    // أزل تكرار قناتي إن وُجد أكثر من مرة
+    let keptChannel = false;
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      const isChannel =
+        (list[i].href || '').includes('side-projects') ||
+        list[i].label === 'قناتي' ||
+        list[i].label === 'مشاريع جانبية';
+      if (!isChannel) continue;
+      if (keptChannel) {
+        list.splice(i, 1);
+        continue;
+      }
+      list[i] = { ...list[i], label: 'قناتي', href: 'side-projects.html', icon: 'fa-lightbulb' };
+      keptChannel = true;
+    }
+    return list;
   };
 
   const ensureLearningVisible = (pages) => {
-    const list = pages.filter((p) => !isSideProjectsItem(p));
+    const list = renameChannelLabels(pages);
     const ensure = (label, href, icon, launchCode) => {
       if (list.some((p) => p.label === label || (href && (p.href || '').includes(href.replace(/\.html.*/, ''))))) return;
       const insertAt = list.findIndex((p) => p.label === 'عملائي' || p.label === 'دردشة داخلية' || /^اخرى$|^أخرى$/.test(String(p.label || '').trim()));
       list.splice(insertAt >= 0 ? insertAt : list.length, 0, { label, href, icon, launchCode });
     };
     ensure('شراكاتي', 'partnerships.html', 'fa-handshake');
+    ensure('قناتي', 'side-projects.html', 'fa-lightbulb');
+    ensure('دوراتي', 'courses.html', 'fa-chalkboard');
+    ensure('دبلوماتي', 'diplomas.html', 'fa-graduation-cap');
     ensure('طلبات المشاريع', 'side-project-registrations.html', 'fa-inbox');
     ensure('نظام التشغيل', 'global-os.html', 'fa-network-wired');
     return list;

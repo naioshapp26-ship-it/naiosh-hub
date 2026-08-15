@@ -1,0 +1,135 @@
+/* صفحات الحجز — حاضنة · منصة · مكتب */
+.hub-book-page .hub-feature-hero {
+  margin-bottom: 20px;
+}
+
+.hub-book-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 28px;
+}
+
+.hub-book-card {
+  background: #fff;
+  border: 1px solid #ececf1;
+  border-radius: 18px;
+  padding: 22px 20px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.hub-book-card h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.hub-book-card > p {
+  margin: 0 0 18px;
+  color: #4b5563;
+  font-weight: 600;
+  line-height: 1.7;
+}
+
+.hub-book-form {
+  display: grid;
+  gap: 10px;
+}
+
+.hub-book-form label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.hub-book-form input,
+.hub-book-form select,
+.hub-book-form textarea {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font: inherit;
+  font-weight: 700;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.hub-book-form textarea {
+  resize: vertical;
+  min-height: 88px;
+}
+
+.hub-book-form .btn {
+  margin-top: 6px;
+  justify-self: start;
+}
+
+.hub-book-feedback {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.hub-book-aside h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.hub-book-aside ul {
+  margin: 0;
+  padding: 0 18px 0 0;
+  color: #374151;
+  font-weight: 700;
+  line-height: 1.85;
+  font-size: 13px;
+}
+
+.hub-book-aside .hub-book-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.hub-book-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 0 0 10px;
+}
+
+.hub-book-steps article {
+  background: #fff;
+  border: 1px solid #ececf1;
+  border-radius: 16px;
+  padding: 16px 14px;
+  border-top: 3px solid #2563eb;
+}
+
+.hub-book-steps strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.hub-book-steps small {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+@media (max-width: 860px) {
+  .hub-book-grid {
+    grid-template-columns: 1fr;
+  }
+}
