@@ -234,6 +234,53 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  const rentalsPath = path.join(ROOT, 'data', 'system-rentals.json');
+  const ensureRentalsFile = () => {
+    const dir = path.dirname(rentalsPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(rentalsPath)) {
+      fs.writeFileSync(
+        rentalsPath,
+        JSON.stringify({ version: 1, visibility: {}, rentals: [] }, null, 2),
+        'utf8'
+      );
+    }
+  };
+  const readRentalsFile = () => {
+    ensureRentalsFile();
+    try {
+      return JSON.parse(fs.readFileSync(rentalsPath, 'utf8'));
+    } catch {
+      return { version: 1, visibility: {}, rentals: [] };
+    }
+  };
+  const writeRentalsFile = (state) => {
+    ensureRentalsFile();
+    fs.writeFileSync(
+      rentalsPath,
+      JSON.stringify({ ...state, updatedAt: new Date().toISOString() }, null, 2),
+      'utf8'
+    );
+  };
+
+  if (pathname === '/api/hub/system-rentals' && req.method === 'GET') {
+    const state = readRentalsFile();
+    sendJson(res, 200, { ok: true, state });
+    return true;
+  }
+
+  if (pathname === '/api/hub/system-rentals' && req.method === 'POST') {
+    const body = await readBody(req);
+    const state = {
+      version: 1,
+      visibility: body?.visibility && typeof body.visibility === 'object' ? body.visibility : {},
+      rentals: Array.isArray(body?.rentals) ? body.rentals : [],
+    };
+    writeRentalsFile(state);
+    sendJson(res, 200, { ok: true, count: state.rentals.length });
+    return true;
+  }
+
   return false;
 }
 

@@ -1,0 +1,713 @@
+/* استئجار الأنظمة — نفس شكل وتنسيق نماذج ERP (saas-signup) */
+
+.hub-rent-page {
+  --rent-brand: #2563eb;
+  --rent-brand-dark: #1d4ed8;
+  --rent-brand-light: #dbeafe;
+  --rent-slate-800: #1e293b;
+  --rent-slate-600: #475569;
+  --rent-slate-500: #64748b;
+  --rent-slate-400: #94a3b8;
+  --rent-border: #e2e8f0;
+  padding-bottom: 48px;
+}
+
+.hub-rent-shell {
+  width: 100%;
+  max-width: 36rem;
+  margin: 18px auto 0;
+  transition: max-width 0.2s ease;
+}
+
+.hub-rent-shell.is-wide {
+  max-width: 56rem;
+}
+
+.hub-rent-head {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.hub-rent-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2563eb, #4338ca);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 900;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.28);
+  margin-bottom: 12px;
+}
+
+.hub-rent-head h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--rent-slate-800) !important;
+}
+
+.hub-rent-head p {
+  margin: 6px 0 0;
+  color: var(--rent-slate-500) !important;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hub-rent-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 28px;
+  padding: 0 8px;
+  overflow-x: auto;
+}
+
+.hub-rent-step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  flex-shrink: 0;
+  background: #e2e8f0;
+  color: #94a3b8;
+  transition: all 0.3s;
+}
+
+.hub-rent-step-circle.is-active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.hub-rent-step-circle.is-done {
+  background: #16a34a;
+  color: #fff;
+}
+
+.hub-rent-step-line {
+  flex: 1;
+  height: 2px;
+  margin: 0 8px;
+  border-radius: 2px;
+  background: #e2e8f0;
+  min-width: 18px;
+  max-width: 64px;
+}
+
+.hub-rent-step-line.is-done {
+  background: #2563eb;
+}
+
+.hub-rent-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 32px rgba(37, 99, 235, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 28px;
+}
+
+.hub-rent-card h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--rent-slate-800) !important;
+}
+
+.hub-rent-card > .hub-rent-lead {
+  margin: 0 0 22px;
+  color: var(--rent-slate-500) !important;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hub-rent-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.hub-rent-fields label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rent-slate-600);
+  margin-bottom: 4px;
+}
+
+.hub-rent-fields input,
+.hub-rent-fields select,
+.hub-rent-fields textarea {
+  border: 1.5px solid var(--rent-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font: inherit;
+  font-weight: 600;
+  box-sizing: border-box;
+  background: #fff;
+  color: var(--rent-slate-800);
+}
+
+.hub-rent-fields input:focus,
+.hub-rent-fields select:focus,
+.hub-rent-fields textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.hub-rent-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.hub-rent-subdomain-row {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--rent-border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #fff;
+}
+
+.hub-rent-subdomain-row:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.hub-rent-subdomain-row input {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.hub-rent-subdomain-suffix {
+  background: #f8fafc;
+  padding: 10px 14px;
+  color: #94a3b8;
+  font-weight: 700;
+  white-space: nowrap;
+  border-right: 1.5px solid #e2e8f0;
+  font-size: 13px;
+}
+
+.hub-rent-subdomain-status {
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.hub-rent-subdomain-status.is-ok {
+  color: #16a34a;
+}
+
+.hub-rent-subdomain-status.is-bad {
+  color: #dc2626;
+}
+
+.hub-rent-subdomain-status.is-warn {
+  color: #d97706;
+}
+
+.hub-rent-plans-title {
+  margin: 22px 0 12px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.hub-rent-plans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.hub-rent-plan {
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+  text-align: start;
+}
+
+.hub-rent-plan:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.hub-rent-plan.is-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.hub-rent-plan-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.hub-rent-plan-top span {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.hub-rent-plan-check {
+  opacity: 0;
+  color: #2563eb;
+  transition: opacity 0.2s;
+}
+
+.hub-rent-plan.is-selected .hub-rent-plan-check {
+  opacity: 1;
+}
+
+.hub-rent-plan strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 17px;
+  font-weight: 900;
+  color: #1e293b;
+}
+
+.hub-rent-plan small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.hub-rent-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 11px 24px;
+  transition: all 0.15s;
+  cursor: pointer;
+  border: 0;
+  font-family: inherit;
+  width: 100%;
+  margin-top: 18px;
+}
+
+.hub-rent-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.hub-rent-btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.hub-rent-btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.hub-rent-btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  margin-top: 10px;
+}
+
+.hub-rent-btn-secondary:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.hub-rent-hint {
+  font-size: 12px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 0 0 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.hub-rent-systems-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f8fafc, #eff6ff);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.hub-rent-systems-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hub-rent-systems-toolbar-row > div > p {
+  margin: 0;
+  font-weight: 800;
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.hub-rent-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 28px;
+  margin-top: 8px;
+}
+
+.hub-rent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hub-rent-search {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+}
+
+.hub-rent-search i {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.hub-rent-search input {
+  width: 100%;
+  padding: 10px 38px 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.hub-rent-section-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 18px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hub-rent-systems-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.hub-rent-system-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+  background: #fff;
+  transition: all 0.2s;
+  text-align: start;
+}
+
+.hub-rent-system-card:hover {
+  border-color: #93c5fd;
+}
+
+.hub-rent-system-card.is-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.hub-rent-system-card.is-locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.hub-rent-system-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 900;
+  color: #1e293b;
+}
+
+.hub-rent-system-card small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.hub-rent-system-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+
+.hub-rent-pay-box {
+  background: #eff6ff;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.hub-rent-pay-box > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.hub-rent-pay-box > div:first-child {
+  margin-top: 0;
+}
+
+.hub-rent-pay-box span:last-child {
+  color: #1d4ed8;
+  font-weight: 900;
+}
+
+.hub-rent-pay-methods {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.hub-rent-pay-methods label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  color: #334155;
+}
+
+.hub-rent-pay-methods label:has(input:checked) {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.hub-rent-provision-list {
+  display: grid;
+  gap: 0;
+  margin-top: 8px;
+}
+
+.hub-rent-provision-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed #f1f5f9;
+  font-weight: 700;
+  color: #475569;
+  font-size: 13px;
+}
+
+.hub-rent-provision-step:last-child {
+  border-bottom: 0;
+}
+
+.hub-rent-provision-step i {
+  width: 22px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.hub-rent-provision-step.is-done i {
+  color: #16a34a;
+}
+
+.hub-rent-provision-step.is-run i {
+  color: #2563eb;
+}
+
+.hub-rent-success {
+  text-align: center;
+}
+
+.hub-rent-success .hub-rent-ok {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: #ecfdf5;
+  color: #16a34a;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+}
+
+.hub-rent-host {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-weight: 800;
+  color: #1d4ed8;
+  direction: ltr;
+}
+
+.hub-rent-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.hub-rent-toast.is-show {
+  opacity: 1;
+}
+
+.hub-rent-admin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.hub-rent-admin-list {
+  display: grid;
+  gap: 10px;
+}
+
+.hub-rent-admin-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  background: #fff;
+}
+
+.hub-rent-admin-item h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #111827 !important;
+}
+
+.hub-rent-admin-item p {
+  margin: 0;
+  font-size: 12px;
+  color: #4b5563 !important;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.hub-rent-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.hub-rent-status {
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.hub-rent-status.is-active {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.hub-rent-status.is-pending {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.hub-rent-vis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.hub-rent-vis-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+  background: #fff;
+}
+
+@media (max-width: 720px) {
+  .hub-rent-row-2,
+  .hub-rent-plans,
+  .hub-rent-pay-methods,
+  .hub-rent-admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-rent-card {
+    padding: 20px 16px;
+  }
+}

@@ -56,9 +56,9 @@
       .slice(0, 40) || `tenant-${Date.now().toString(36)}`;
 
   /** منح دومين فرعي */
-  const grantSubdomain = ({ tenantName, systemCode = 'ERP', baseDomain = 'naiosh.app' } = {}) => {
+  const grantSubdomain = ({ tenantName, systemCode = 'ERP', baseDomain = 'naiosh.app', slug: slugIn } = {}) => {
     const state = read();
-    const slug = slugify(tenantName);
+    const slug = slugIn ? slugify(slugIn) : slugify(tenantName);
     const host = `${slug}.${baseDomain}`;
     const row = {
       id: uid('sd'),
