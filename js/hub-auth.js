@@ -74,24 +74,56 @@
     if (isStaff(user)) return { ok: true, reason: 'staff', permissions: ['read', 'write', 'admin'] };
     const check = window.HubStore?.checkEntitlement?.(user.email, systemCode, minPermission);
     if (check?.ok) return check;
+    // اشتراك عبر استئجار هوب النشط
+    try {
+      const code = String(systemCode || '').toUpperCase();
+      const mine = window.HubRentStore?.listMine?.(user.email) || [];
+      const hit = mine.find((r) => r.status === 'active' && (r.systems || []).includes(code));
+      if (hit) return { ok: true, reason: 'hub-rental', permissions: ['read', 'write'], rentalId: hit.id };
+    } catch {
+      /* ignore */
+    }
     return { ok: false, reason: 'subscription', permissions: [] };
   };
 
-  const attachSsoParams = (url, systemCode = '') => {
+  const attachSsoParams = (url, systemCode = '', extra = {}) => {
     try {
       const u = new URL(url, window.location.href);
       const token = getToken();
       const user = getUser();
       if (token) u.searchParams.set('sso', token);
       if (user?.email) u.searchParams.set('hubUser', user.email);
+      if (user?.name) u.searchParams.set('hubName', user.name);
       if (systemCode) u.searchParams.set('system', String(systemCode).toUpperCase());
       const ent = canAccessSystem(systemCode);
       if (ent.ok && ent.permissions?.length) {
         u.searchParams.set('perms', ent.permissions.join(','));
       }
+      if (extra.tenant) u.searchParams.set('tenant', String(extra.tenant).toLowerCase());
+      if (extra.subdomain) u.searchParams.set('subdomain', String(extra.subdomain).toLowerCase());
+      if (extra.hubTicket) u.searchParams.set('hubTicket', String(extra.hubTicket));
+      if (extra.hubSig) u.searchParams.set('hubSig', String(extra.hubSig));
+      u.searchParams.set('from', extra.from || 'hub');
+      u.searchParams.set('hubOrigin', window.location.origin);
+      // مطلق → أعد الرابط كاملًا (مهم لـ ERP الخارجي)
+      if (u.origin !== window.location.origin) return u.toString();
       return u.pathname + u.search + u.hash;
     } catch (_) {
       return url;
+    }
+  };
+
+  /** إصدار تذكرة SSO من سيرفر هوب وربطها برابط فتح النظام */
+  const issueHubTicket = async (payload = {}) => {
+    try {
+      const res = await fetch('/api/hub/sso/issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return await res.json();
+    } catch (error) {
+      return { ok: false, error: error.message || 'تعذّر إصدار تذكرة SSO' };
     }
   };
 
@@ -108,6 +140,7 @@
     requireLogin,
     canAccessSystem,
     attachSsoParams,
+    issueHubTicket,
     storageOf,
   };
 })();

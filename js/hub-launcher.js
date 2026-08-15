@@ -122,22 +122,31 @@
     return null;
   };
 
-  const withLaunchParams = (url, { from = 'hub', returnUrl, systemCode = '' } = {}) => {
+  const withLaunchParams = (url, { from = 'hub', returnUrl, systemCode = '', tenant = '', subdomain = '' } = {}) => {
     try {
       const u = new URL(url, window.location.href);
       const sameOrigin = u.origin === window.location.origin;
+      if (from) u.searchParams.set('from', from);
+      if (systemCode) u.searchParams.set('system', systemCode);
+      if (tenant) u.searchParams.set('tenant', String(tenant).toLowerCase());
+      if (subdomain) u.searchParams.set('subdomain', String(subdomain).toLowerCase());
       if (!sameOrigin) {
-        // نظام حي خارجي — أبقِ الرابط الكامل
-        if (from) u.searchParams.set('from', from);
-        if (systemCode) u.searchParams.set('system', systemCode);
-        return u.toString();
+        // نظام حي خارجي — مرّر SSO كاملًا على الرابط المطلق
+        const href = u.toString();
+        if (window.HubAuth?.attachSsoParams) {
+          return window.HubAuth.attachSsoParams(href, systemCode, { tenant, subdomain, from });
+        }
+        return href;
       }
-      u.searchParams.set('from', from);
       if (returnUrl) u.searchParams.set('return', returnUrl);
       u.searchParams.set('hub', '1');
       let href = u.pathname + u.search + u.hash;
       if (window.HubAuth?.attachSsoParams) {
-        href = window.HubAuth.attachSsoParams(href, systemCode || u.searchParams.get('system') || '');
+        href = window.HubAuth.attachSsoParams(href, systemCode || u.searchParams.get('system') || '', {
+          tenant,
+          subdomain,
+          from,
+        });
       }
       return href;
     } catch (_) {

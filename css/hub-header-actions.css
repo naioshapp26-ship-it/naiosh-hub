@@ -112,6 +112,13 @@ body.homepage .nav-links a {
   filter: brightness(1.08);
 }
 
+.hub-header-actions .hub-hbtn--mine {
+  background: linear-gradient(135deg, #0f766e, #115e59) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.28) !important;
+}
+
 .hub-header-actions .hub-hbtn.is-active {
   outline: 2px solid rgba(15, 23, 42, 0.16);
   outline-offset: 1px;

@@ -6,6 +6,7 @@ const { checkEnvironment } = require('./db/env-check');
 const { getDatabaseUrl, migrate, listTables } = require('./db/migrate');
 const hubRuntime = require('./db/hub-runtime');
 const erpAdapter = require('./lib/erp-saas-adapter');
+const hubSso = require('./lib/hub-sso');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -312,6 +313,30 @@ async function handleHubApi(req, res, pathname) {
     } catch (error) {
       sendJson(res, 502, { ok: false, error: error.message || 'ERP adapter failure' });
     }
+    return true;
+  }
+
+  // —— SSO tickets ——
+  if (pathname === '/api/hub/sso/issue' && req.method === 'POST') {
+    const body = await readBody(req);
+    const result = hubSso.issue(body || {});
+    sendJson(res, result.ok ? 200 : 400, result);
+    return true;
+  }
+
+  if (pathname === '/api/hub/sso/verify' && req.method === 'GET') {
+    const url = new URL(req.url, 'http://localhost');
+    const token = url.searchParams.get('token') || '';
+    const consume = url.searchParams.get('consume') === '1';
+    const result = hubSso.verify(token, { consume });
+    sendJson(res, result.ok ? 200 : 404, result);
+    return true;
+  }
+
+  if (pathname === '/api/hub/sso/verify' && req.method === 'POST') {
+    const body = await readBody(req);
+    const result = hubSso.verify(body?.token, { consume: Boolean(body?.consume) });
+    sendJson(res, result.ok ? 200 : 404, result);
     return true;
   }
 

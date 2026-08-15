@@ -411,6 +411,79 @@
     return { ok: true, rental: row };
   };
 
+  const listMine = (email = '') => {
+    const key = String(email || window.HubAuth?.getUser?.()?.email || '')
+      .trim()
+      .toLowerCase();
+    const all = listRentals().filter((r) => r.status === 'active' || r.status === 'pending' || r.status === 'provisioning');
+    if (!key) return all;
+    return all.filter((r) => String(r.adminEmail || '').toLowerCase() === key);
+  };
+
+  /** رابط فتح النظام المستأجر مع SSO من هوب */
+  const buildOpenUrl = async (rental, { systemCode } = {}) => {
+    if (!rental) return { ok: false, error: 'لا يوجد طلب' };
+    const code = String(systemCode || rental.systems?.[0] || 'ERP').toUpperCase();
+    const erpOrigin = 'https://web-production-419e2.up.railway.app';
+
+    let base;
+    if (code === 'ERP' && rental.slug) {
+      // صفحة الدخول تحتفظ بـ query (مسار /t/{slug} يعمل redirect ويمسح المعاملات)
+      base = `${erpOrigin}/login-page.html?tenant=${encodeURIComponent(rental.slug)}`;
+    } else {
+      base =
+        rental.erp?.loginUrl ||
+        window.HubLiveSystems?.url?.(code) ||
+        `apps.html#${code.toLowerCase()}`;
+    }
+
+    // جلسة هوب خفيفة إن لم يكن مسجلاً — من بيانات الاستئجار
+    if (!window.HubAuth?.isLoggedIn?.() && rental.adminEmail) {
+      window.HubAuth?.setSession?.(
+        {
+          email: rental.adminEmail,
+          name: rental.adminName || rental.companyName,
+          role: 'tenant_admin',
+        },
+        `rent-${rental.id}`,
+        { remember: true }
+      );
+    }
+
+    const ticket = await window.HubAuth?.issueHubTicket?.({
+      email: rental.adminEmail || window.HubAuth?.getUser?.()?.email,
+      name: rental.adminName || rental.companyName,
+      systemCode: code,
+      tenant: rental.slug,
+      subdomain: rental.slug,
+      rentalId: rental.id,
+      permissions: ['read', 'write'],
+    });
+
+    if (window.HubAuth?.attachSsoParams) {
+      base = window.HubAuth.attachSsoParams(base, code, {
+        tenant: rental.slug,
+        subdomain: rental.slug,
+        hubTicket: ticket?.token || '',
+        hubSig: ticket?.sig || '',
+        from: 'hub-rent',
+      });
+    } else if (window.HubLauncher?.withLaunchParams) {
+      base = window.HubLauncher.withLaunchParams(base, {
+        from: 'hub-rent',
+        systemCode: code,
+        tenant: rental.slug,
+        subdomain: rental.slug,
+      });
+    }
+    return {
+      ok: true,
+      url: base,
+      tenantHome: rental.erp?.loginUrl || (rental.slug ? `${erpOrigin}/t/${rental.slug}` : ''),
+      ticket: ticket?.ok ? ticket : null,
+    };
+  };
+
   window.HubRentStore = {
     KEY,
     BASE_DOMAIN,
@@ -425,11 +498,13 @@
     validateSubdomainAsync,
     normalizeSlug,
     listRentals,
+    listMine,
     getRental,
     submitRental,
     activateRental,
     activateRentalAsync,
     rejectRental,
     provisionErp,
+    buildOpenUrl,
   };
 })();

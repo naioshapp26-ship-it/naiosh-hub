@@ -195,7 +195,7 @@
     setStep(5);
   };
 
-  const fillSuccess = (rental, note) => {
+  const fillSuccess = async (rental, note) => {
     state.rentalId = rental.id;
     $('[data-success-company]').textContent = rental.companyName;
     $('[data-success-host]').textContent = rental.host;
@@ -218,11 +218,20 @@
     }
 
     if (openBtn) {
-      if (erpUrl) openBtn.href = erpUrl;
-      else {
-        const primary = rental.systems?.[0] || 'ERP';
-        const live = window.HubLiveSystems?.url?.(primary);
-        openBtn.href = live || `apps.html#${String(primary).toLowerCase()}`;
+      openBtn.href = 'my-systems.html';
+      openBtn.removeAttribute('target');
+      openBtn.innerHTML = '<i class="fas fa-cubes"></i> أنظمتي وفتح SSO';
+      // حضّر رابط فتح فوري بـ SSO إن أمكن
+      try {
+        const opened = await store().buildOpenUrl(rental);
+        if (opened.ok && opened.url) {
+          openBtn.href = opened.url;
+          openBtn.target = '_blank';
+          openBtn.rel = 'noopener';
+          openBtn.innerHTML = '<i class="fas fa-right-to-bracket"></i> فتح النظام بـ SSO';
+        }
+      } catch {
+        /* keep my-systems fallback */
       }
     }
   };

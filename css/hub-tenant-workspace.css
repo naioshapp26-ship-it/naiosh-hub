@@ -1,0 +1,135 @@
+/* مساحة أنظمتي / دوميناتي */
+.hub-mine-page {
+  padding-bottom: 48px;
+}
+
+.hub-mine-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+  margin: 0 0 16px;
+}
+
+.hub-mine-toolbar label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.hub-mine-toolbar input {
+  min-width: 240px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 700;
+}
+
+.hub-mine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.hub-mine-card {
+  background: #fff;
+  border: 1px solid #ececf1;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+
+.hub-mine-card h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 900;
+  color: #111827 !important;
+}
+
+.hub-mine-card p {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4b5563 !important;
+  line-height: 1.6;
+}
+
+.hub-mine-host {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-weight: 800;
+  color: #1d4ed8;
+  direction: ltr;
+  font-size: 12px;
+}
+
+.hub-mine-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.hub-mine-actions .btn,
+.hub-mine-actions a,
+.hub-mine-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-weight: 800;
+  font-size: 12px;
+  border: 0;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.hub-mine-actions .is-primary {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb 55%, #4f46e5);
+  color: #fff;
+}
+
+.hub-mine-actions .is-secondary {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.hub-mine-empty {
+  padding: 24px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #ececf1;
+  font-weight: 700;
+  color: #111827;
+}
+
+.hub-mine-status {
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.hub-mine-status.is-active {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.hub-mine-status.is-pending {
+  background: #fffbeb;
+  color: #b45309;
+}
