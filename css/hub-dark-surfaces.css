@@ -14,6 +14,7 @@ body.homepage :is(
   .ops-man-hero,
   .incubators-hero,
   .incubators-hero-head,
+  .sc-hero,
   .hero.law-hero .hero-content,
   .law-hero .hero-content
 ) {
@@ -35,6 +36,7 @@ body.homepage :is(
   .ops-man-hero,
   .incubators-hero,
   .incubators-hero-head,
+  .sc-hero,
   .hero.law-hero .hero-content,
   .law-hero .hero-content
 ) :is(h1, h2, h3, h4, strong) {
@@ -56,10 +58,11 @@ body.homepage :is(
   .ops-man-hero,
   .incubators-hero,
   .incubators-hero-head,
+  .sc-hero,
   .hero.law-hero .hero-content,
   .law-hero .hero-content
-) :is(p, li, small, label) {
-  color: rgba(255, 245, 247, 0.96) !important;
+) :is(p, li, small, label, .sc-lead, .sc-kicker) {
+  color: rgba(255, 255, 255, 0.96) !important;
 }
 
 body.homepage :is(
@@ -75,6 +78,46 @@ body.homepage :is(
   .ops-man-hero
 ) :is(.hub-feature-kicker, .hub-learn-kicker, .op-kicker) {
   color: #ffe8ec !important;
+}
+
+body.homepage .sc-hero .sc-chips span {
+  color: #ffffff !important;
+}
+
+/* المساحات الفاتحة: نص أسود واضح */
+body.homepage :is(
+  .sc-body,
+  .sc-empty,
+  .sc-card-body,
+  .sca-card,
+  .sca-item,
+  .hub-book-card,
+  .hub-feature-card,
+  .book-card,
+  .svc-card
+) :is(h1, h2, h3, h4, p, li, small, span, label, strong):not(i) {
+  color: #111827 !important;
+}
+
+body.homepage .hub-feature-section .hub-feature-card .hub-feature-purpose,
+body.homepage .hub-feature-section .hub-feature-card .hub-feature-purpose p,
+body.homepage .hub-feature-section .hub-feature-card .hub-feature-purpose strong {
+  color: #111827 !important;
+}
+
+body.homepage .sca-card h2,
+body.homepage .sca-card .lead,
+body.homepage .sca-form label,
+body.homepage .sca-item strong,
+body.homepage .sca-item small,
+body.homepage .sca-hint,
+body.homepage .sca-empty,
+body.homepage .sca-meta {
+  color: #111827 !important;
+}
+
+body.homepage .sc-type-nav a:not(.is-active) {
+  color: #111827 !important;
 }
 
 /* شارات/معادلات داخل الهيرو الغامق */

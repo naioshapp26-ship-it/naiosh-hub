@@ -29,6 +29,7 @@
 
 .sc-page {
   padding-bottom: 48px;
+  color: #111827;
 }
 
 .sc-hero {
@@ -37,11 +38,24 @@
   background:
     radial-gradient(120% 80% at 100% 0%, rgba(215, 0, 0, 0.38), transparent 55%),
     linear-gradient(128deg, #0c0003 0%, #230009 42%, #500014 100%);
-  color: #fff;
+  color: #ffffff;
   border-radius: 26px;
   padding: clamp(28px, 4vw, 44px) clamp(20px, 3vw, 36px);
   margin-bottom: 18px;
   box-shadow: 0 28px 70px rgba(60, 0, 14, 0.38);
+}
+
+/* يتغلب على body.homepage h1/p الغامقة */
+body.homepage .sc-hero,
+body.homepage .sc-hero h1,
+body.homepage .sc-hero h2,
+body.homepage .sc-hero h3,
+body.homepage .sc-hero p,
+body.homepage .sc-hero .sc-lead,
+body.homepage .sc-hero .sc-kicker,
+body.homepage .sc-hero .sc-chips span,
+body.homepage .sc-hero a {
+  color: #ffffff !important;
 }
 
 .sc-kicker {
@@ -55,21 +69,21 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
   font-size: 12px;
   font-weight: 800;
-  color: #ffe8ec;
+  color: #ffffff;
 }
 
 .sc-hero h1 {
   margin: 0 0 10px;
   font-size: clamp(28px, 4vw, 42px);
   font-weight: 900;
-  color: #fff;
+  color: #ffffff !important;
   line-height: 1.25;
 }
 
 .sc-lead {
   margin: 0;
   max-width: 62ch;
-  color: rgba(255, 245, 247, 0.95);
+  color: rgba(255, 255, 255, 0.96) !important;
   font-weight: 600;
   line-height: 1.8;
 }
@@ -88,6 +102,7 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
   font-size: 12px;
   font-weight: 800;
+  color: #ffffff !important;
 }
 
 .sc-media {
@@ -154,19 +169,41 @@
   border-radius: 18px;
   padding: 22px 18px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+  color: #111827;
 }
 
 .sc-body h2 {
   margin: 0 0 8px;
   font-size: 22px;
   font-weight: 900;
+  color: #111827 !important;
 }
 
 .sc-body > p {
   margin: 0 0 14px;
-  color: #374151;
+  color: #111827 !important;
   font-weight: 650;
   line-height: 1.8;
+}
+
+body.homepage .sc-body,
+body.homepage .sc-body h2,
+body.homepage .sc-body p,
+body.homepage .sc-body li,
+body.homepage .sc-empty,
+body.homepage .sc-card-body,
+body.homepage .sc-card-body strong,
+body.homepage .sc-card-body small,
+body.homepage .sc-type-nav a:not(.is-active) {
+  color: #111827 !important;
+}
+
+body.homepage .sc-card-body em {
+  color: #b91c1c !important;
+}
+
+body.homepage .sc-type-nav a.is-active {
+  color: #ffffff !important;
 }
 
 .sc-actions {
@@ -249,5 +286,10 @@
   border-radius: 16px;
   border: 1px solid #ececf1;
   font-weight: 700;
-  color: #4b5563;
+  color: #111827 !important;
+}
+
+.sc-empty a {
+  color: #b91c1c !important;
+  font-weight: 800;
 }
