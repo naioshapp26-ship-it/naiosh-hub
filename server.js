@@ -328,15 +328,49 @@ async function handleHubApi(req, res, pathname) {
     const url = new URL(req.url, 'http://localhost');
     const token = url.searchParams.get('token') || '';
     const consume = url.searchParams.get('consume') === '1';
-    const result = hubSso.verify(token, { consume });
+    const sig = url.searchParams.get('sig') || '';
+    const result = hubSso.verify(token, { consume, sig });
     sendJson(res, result.ok ? 200 : 404, result);
     return true;
   }
 
   if (pathname === '/api/hub/sso/verify' && req.method === 'POST') {
     const body = await readBody(req);
-    const result = hubSso.verify(body?.token, { consume: Boolean(body?.consume) });
+    const result = hubSso.verify(body?.token, {
+      consume: Boolean(body?.consume),
+      sig: body?.sig || '',
+    });
     sendJson(res, result.ok ? 200 : 404, result);
+    return true;
+  }
+
+  // جسر SSO: تحقق ثم JSON أو إعادة توجيه 302 لصفحة دخول النظام
+  if (pathname === '/api/hub/sso/bridge' && (req.method === 'GET' || req.method === 'POST')) {
+    const url = new URL(req.url, 'http://localhost');
+    const body = req.method === 'POST' ? await readBody(req) : {};
+    const token = String(body?.token || url.searchParams.get('token') || '').trim();
+    const sig = String(body?.sig || url.searchParams.get('sig') || '').trim();
+    const consume =
+      body?.consume === true ||
+      body?.consume === 1 ||
+      url.searchParams.get('consume') === '1';
+    const wantJson =
+      url.searchParams.get('format') === 'json' ||
+      String(req.headers.accept || '').includes('application/json');
+    const result = hubSso.bridge(token, { consume, sig });
+    if (!result.ok) {
+      sendJson(res, 404, result);
+      return true;
+    }
+    if (wantJson || req.method === 'POST') {
+      sendJson(res, 200, result);
+      return true;
+    }
+    res.writeHead(302, {
+      Location: result.targetUrl,
+      'Cache-Control': 'no-store',
+    });
+    res.end();
     return true;
   }
 
