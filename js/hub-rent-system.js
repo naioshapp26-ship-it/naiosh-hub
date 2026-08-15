@@ -185,7 +185,13 @@
     mark(3, 'is-run');
     await wait(350);
     steps.forEach((s) => s.classList.add('is-done'));
-    fillSuccess(act.rental, 'تم تجهيز المستأجر عبر نايوش هوب وربطه بمحرك ERP.');
+    const linkedErp = Boolean(act.rental.erp?.loginUrl);
+    fillSuccess(
+      act.rental,
+      linkedErp
+        ? 'تم تجهيز المستأجر عبر نايوش هوب وربطه بمحرك ERP.'
+        : 'تم تفعيل الاستئجار ومنح النطاق من نايوش هوب.'
+    );
     setStep(5);
   };
 
