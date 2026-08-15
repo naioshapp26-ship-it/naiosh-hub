@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الشكاوي | نايوش هوب 360</title>
+  <meta name="description" content="قدّم شكوى تشغيلية مربوطة بنظام هوب — تُسجَّل وتُتابع من غرفة العمليات." />
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/hub-theme.css" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=14" />
+  <link rel="stylesheet" href="css/hub-service-requests.css?v=1" />
+</head>
+<body class="homepage">
+  <header class="top-nav">
+    <div class="container inner">
+      <div class="nav-main">
+        <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
+        <nav class="nav-links">
+          <a href="index.html">الرئيسية</a>
+          <a href="consultation.html">اطلب استشارة</a>
+          <a href="suggestions.html">المقترحات</a>
+          <a class="active" href="complaints.html">الشكاوي</a>
+        </nav>
+      </div>
+      <div class="auth-actions">
+        <a href="dashboard.html" class="auth-btn primary">غرفة العمليات</a>
+        <a href="login.html" class="auth-btn">تسجيل الدخول</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container hub-feature-page" data-hub-service="complaint">
+    <section class="hub-feature-hero">
+      <p class="hub-feature-kicker"><i class="fas fa-triangle-exclamation"></i> شكاوي تشغيلية · مربوطة بالنظام</p>
+      <h1>الشكاوي</h1>
+      <p>سجّل شكوى مرتبطة بنظام أو خدمة داخل هوب — مع الأولوية والمرجع إن وُجد — للمتابعة المركزية من غرفة العمليات.</p>
+    </section>
+
+    <section class="hub-feature-section">
+      <h2 class="hub-feature-section-title">نموذج الشكوى</h2>
+      <form class="hub-service-form" data-service-form>
+        <div class="hub-service-grid-2">
+          <label>الاسم بالكامل <input name="fullName" required autocomplete="name" /></label>
+          <label>الجوال <input name="phone" type="tel" required autocomplete="tel" /></label>
+        </div>
+        <label>البريد الإلكتروني <input name="email" type="email" required autocomplete="email" /></label>
+        <div class="hub-service-grid-2">
+          <label>النظام المعني
+            <select name="system" required>
+              <option value="HUB">هوب</option>
+              <option value="ERP">إي آر بي</option>
+              <option value="NAIS">نايس</option>
+              <option value="LAW">لو</option>
+              <option value="ACADEMY">أكاديمية</option>
+              <option value="FIT">فيت</option>
+              <option value="BILLING">الرصيد / الدفع</option>
+              <option value="MEMBERSHIP">العضوية</option>
+              <option value="STORE">المتجر</option>
+              <option value="SUPPORT">الدعم السابق</option>
+            </select>
+          </label>
+          <label>نوع الشكوى
+            <select name="category" required>
+              <option value="تقني">خلل تقني</option>
+              <option value="خدمة">جودة خدمة</option>
+              <option value="مالي">مالي / رصيد</option>
+              <option value="تشغيل">تشغيل وصلاحيات</option>
+              <option value="محتوى">محتوى أو بيانات</option>
+              <option value="اخرى">أخرى</option>
+            </select>
+          </label>
+        </div>
+        <div class="hub-service-grid-2">
+          <label>الأولوية
+            <select name="priority" required>
+              <option>عادي</option>
+              <option>عاجل</option>
+              <option>حرج</option>
+            </select>
+          </label>
+          <label>طريقة التواصل المفضّلة
+            <select name="contactMethod">
+              <option value="هاتف">هاتف</option>
+              <option value="واتساب">واتساب</option>
+              <option value="بريد">بريد</option>
+              <option value="دردشة هوب">دردشة هوب</option>
+            </select>
+          </label>
+        </div>
+        <label>رقم مرجع / تذكرة سابقة (إن وُجد) <input name="reference" placeholder="مثال: tkt-xxxx أو رقم فاتورة" /></label>
+        <label>عنوان الشكوى <input name="title" required placeholder="مثال: خصم رصيد بدون تفعيل الخدمة" /></label>
+        <label>تفاصيل الشكوى <textarea name="body" rows="5" required placeholder="ماذا حدث؟ متى؟ وما الأثر على التشغيل؟"></textarea></label>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-triangle-exclamation"></i> إرسال الشكوى</button>
+        <p class="hub-service-feedback" data-service-feedback hidden role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="hub-feature-section">
+      <h2 class="hub-feature-section-title">شكاواي الأخيرة</h2>
+      <div class="hub-feature-grid" data-service-list></div>
+    </section>
+  </main>
+
+  <script src="js/hub-marketplace-data.js"></script>
+  <script src="js/hub-store.js"></script>
+  <script src="js/hub-auth.js"></script>
+  <script src="js/hub-header-actions.js?v=12"></script>
+  <script src="js/hub-service-requests.js?v=1"></script>
+  <script src="js/hub-service-pages.js?v=1"></script>
+  <script src="js/hub-global-back.js" defer></script>
+  <script src="js/hub-ai-assistant.js?v=4" defer></script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+/* أزرار الخدمة فوق بنر الهيرو + صفحات النماذج */
+
+body.homepage .hero-service-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 12px;
+  z-index: 5;
+}
+
+body.homepage .hero-service-actions .hero-service-consult {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  background: #0b0b0b;
+  color: #fff;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+body.homepage .hero-service-actions .hero-service-consult:hover,
+body.homepage .hero-service-actions .hero-service-consult:focus-visible {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+body.homepage .hero-service-actions .hero-service-suggest,
+body.homepage .hero-service-actions .hero-service-complaint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #ff2d2d, #b10011);
+  color: #fff;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 12px 26px rgba(177, 0, 17, 0.35);
+}
+
+body.homepage .hero-service-actions .hero-service-suggest:hover,
+body.homepage .hero-service-actions .hero-service-complaint:hover,
+body.homepage .hero-service-actions .hero-service-suggest:focus-visible,
+body.homepage .hero-service-actions .hero-service-complaint:focus-visible {
+  filter: brightness(1.06);
+  color: #fff;
+}
+
+.hub-service-form {
+  display: grid;
+  gap: 10px;
+}
+
+.hub-service-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.hub-service-form input,
+.hub-service-form select,
+.hub-service-form textarea {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font: inherit;
+  font-weight: 700;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.hub-service-form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.hub-service-form .btn {
+  justify-self: start;
+  margin-top: 4px;
+}
+
+.hub-service-feedback {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.hub-service-empty {
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.hub-service-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .hub-service-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  body.homepage .hero-service-actions {
+    gap: 8px;
+  }
+
+  body.homepage .hero-service-actions .hero-service-suggest,
+  body.homepage .hero-service-actions .hero-service-complaint,
+  body.homepage .hero-service-actions .hero-service-consult {
+    font-size: 14px;
+    min-height: 46px;
+  }
+}
