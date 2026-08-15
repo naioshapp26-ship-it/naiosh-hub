@@ -1,8 +1,30 @@
 (() => {
   'use strict';
 
-  /** اختصارات الهيدر أُلغيت — كل وظيفة تظهر مرة واحدة فقط في مكانها المعتمد */
-  const ACTIONS = [];
+  /** اختصارات الهيدر الحمراء — فقط ما طُلب إبقاؤه (بدون المعلّم بـ X) */
+  const ACTIONS = [
+    {
+      id: 'info',
+      label: 'مركز المعرفة',
+      href: 'info-center.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-circle-info',
+    },
+    {
+      id: 'blog',
+      label: 'المدونة',
+      href: 'blog.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-newspaper',
+    },
+    {
+      id: 'membership',
+      label: 'العضوية',
+      href: 'membership.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-id-card',
+    },
+  ];
 
   const inject = () => {
     const topNav = document.querySelector('header.top-nav');
@@ -11,8 +33,12 @@
     const auth = inner?.querySelector('.auth-actions');
     if (!inner || !auth) return;
 
+    // امسح الصف الثاني القديم والحقن القديمة (شريط الأيقونات المكرر)
     topNav.querySelectorAll('[data-hub-header-bar]').forEach((el) => el.remove());
     document.querySelectorAll('[data-hub-header-actions]').forEach((el) => el.remove());
+
+    // احذف تكرار «مركز المعرفة» من الروابط النصية إن وُجد — يبقى الزر الأحمر فقط
+    navLinks?.querySelectorAll('a[href="info-center.html"]').forEach((a) => a.remove());
 
     if (!ACTIONS.length) return;
 
