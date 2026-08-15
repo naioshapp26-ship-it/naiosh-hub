@@ -1,11 +1,13 @@
 /**
- * مخزن استئجار الأنظمة من HUB — صلاحيات الظهور + طلبات + صب دومين
+ * مخزن استئجار الأنظمة من HUB — صلاحيات الظهور + طلبات + صب دومين + Adapter ERP
  */
 (() => {
   'use strict';
 
   const KEY = 'naiosh_hub_system_rentals_v1';
   const API = '/api/hub/system-rentals';
+  const ERP_VALIDATE = '/api/hub/adapters/erp/validate-subdomain';
+  const ERP_PROVISION = '/api/hub/adapters/erp/provision';
   const BASE_DOMAIN = 'naiosh.app';
   const RESERVED = new Set(['www', 'app', 'api', 'admin', 'saas', 'hub', 'mail', 'ftp']);
   const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
@@ -16,15 +18,11 @@
     enterprise: { label: 'Enterprise — $199/شهر', amount: '$199', price: 199 },
   };
 
-  /** أنظمة قابلة للاستئجار عبر HUB (مرحلة أولى) */
   const RENTABLE_CODES = ['ERP', 'LAW', 'NAIS', 'FIT', 'ACADEMY', 'SMARTX', 'EDUSMARTX', 'EDUNAIOSH', 'LMS', 'CRM'];
 
   const blank = () => ({
     version: 1,
-    visibility: {
-      // email -> { codes: string[], mode: 'allow'|'deny-all' }
-      // default: كل أنظمة RENTABLE ظاهرة للتجربة حتى يقيّدها الأدمن
-    },
+    visibility: {},
     rentals: [],
     updatedAt: new Date().toISOString(),
   });
@@ -50,12 +48,23 @@
 
   const uid = (p = 'rent') => `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
+  /** لا ترفع كلمة المرور لملف السيرفر — تبقى محلية حتى التجهيز */
+  const publicState = (state) => ({
+    version: state.version || 1,
+    visibility: state.visibility || {},
+    rentals: (state.rentals || []).map((r) => {
+      const copy = { ...r };
+      delete copy.adminPassword;
+      return copy;
+    }),
+  });
+
   const syncRemote = async (state) => {
     try {
       await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state),
+        body: JSON.stringify(publicState(state)),
       });
     } catch {
       /* offline ok */
@@ -68,7 +77,23 @@
       if (!res.ok) return readLocal();
       const data = await res.json();
       if (data?.ok && data?.state) {
-        return saveLocal({ ...blank(), ...data.state });
+        const local = readLocal();
+        const remoteRentals = Array.isArray(data.state.rentals) ? data.state.rentals : [];
+        // حافظ على كلمات المرور المحلية إن وُجدت لنفس الـ id
+        const pwdMap = Object.fromEntries(
+          (local.rentals || []).filter((r) => r.adminPassword).map((r) => [r.id, r.adminPassword])
+        );
+        const merged = {
+          ...blank(),
+          ...data.state,
+          rentals: remoteRentals.map((r) => (pwdMap[r.id] ? { ...r, adminPassword: pwdMap[r.id] } : r)),
+        };
+        // أبقِ الطلبات المحلية الأحدث غير الموجودة في السيرفر
+        const remoteIds = new Set(merged.rentals.map((r) => r.id));
+        (local.rentals || []).forEach((r) => {
+          if (!remoteIds.has(r.id)) merged.rentals.unshift(r);
+        });
+        return saveLocal(merged);
       }
     } catch {
       /* use local */
@@ -80,12 +105,14 @@
     const apps = window.HubMarketplaceData?.APPS || [];
     const list = Array.isArray(apps) ? apps : [];
     const filtered = list.filter((a) => RENTABLE_CODES.includes(String(a.code || '').toUpperCase()));
-    if (filtered.length) return filtered.map((a) => ({
-      code: String(a.code).toUpperCase(),
-      nameAr: a.nameAr || a.code,
-      icon: a.icon || 'fa-cube',
-      isLive: Boolean(a.isLive || window.HubLiveSystems?.isLive?.(a.code)),
-    }));
+    if (filtered.length) {
+      return filtered.map((a) => ({
+        code: String(a.code).toUpperCase(),
+        nameAr: a.nameAr || a.code,
+        icon: a.icon || 'fa-cube',
+        isLive: Boolean(a.isLive || window.HubLiveSystems?.isLive?.(a.code)),
+      }));
+    }
     return RENTABLE_CODES.map((code) => ({
       code,
       nameAr: code,
@@ -127,7 +154,7 @@
       .replace(/[^a-z0-9-]/g, '')
       .slice(0, 40);
 
-  const validateSubdomain = (slug) => {
+  const validateSubdomainLocal = (slug) => {
     const val = normalizeSlug(slug);
     if (!val) return { ok: false, available: false, message: 'أدخل النطاق الفرعي للتحقق من توفره' };
     if (val.length < 2) return { ok: false, available: false, message: 'أدخل حرفين على الأقل' };
@@ -137,8 +164,7 @@
     const taken = readLocal().rentals.some(
       (r) => r.slug === val && ['pending', 'active', 'provisioning'].includes(r.status)
     );
-    if (taken) return { ok: false, available: false, message: 'غير متاح' };
-    // أيضاً من system-ops إن وُجد
+    if (taken) return { ok: false, available: false, message: 'غير متاح في هوب' };
     try {
       const ops = window.HubSystemOps?.read?.();
       if (ops?.subdomains?.some((s) => s.slug === val && s.status === 'active')) {
@@ -147,7 +173,38 @@
     } catch {
       /* ignore */
     }
-    return { ok: true, available: true, message: 'متاح!', slug: val, host: `${val}.${BASE_DOMAIN}` };
+    return { ok: true, available: true, message: 'متاح في هوب', slug: val, host: `${val}.${BASE_DOMAIN}` };
+  };
+
+  const validateSubdomain = (slug) => validateSubdomainLocal(slug);
+
+  const validateSubdomainAsync = async (slug) => {
+    const local = validateSubdomainLocal(slug);
+    if (!local.available) return local;
+    try {
+      const res = await fetch(ERP_VALIDATE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subdomain: local.slug }),
+      });
+      const data = await res.json();
+      if (data?.available === false) {
+        return { ok: false, available: false, message: data.message || 'غير متاح في ERP', slug: local.slug };
+      }
+      if (data?.available) {
+        return {
+          ok: true,
+          available: true,
+          message: 'متاح في هوب وERP',
+          slug: local.slug,
+          host: local.host,
+          erpChecked: true,
+        };
+      }
+    } catch {
+      /* fallback local-only */
+    }
+    return { ...local, message: 'متاح في هوب (تعذّر التحقق من ERP مؤقتًا)' };
   };
 
   const listRentals = () =>
@@ -159,19 +216,21 @@
 
   const submitRental = (payload = {}) => {
     const companyName = String(payload.companyName || '').trim();
-    const slugCheck = validateSubdomain(payload.slug || payload.subdomain);
+    const slugCheck = validateSubdomainLocal(payload.slug || payload.subdomain);
     const adminName = String(payload.adminName || '').trim();
     const adminPhone = String(payload.adminPhone || '').trim();
     const adminEmail = String(payload.adminEmail || '').trim().toLowerCase();
+    const adminPassword = String(payload.adminPassword || '');
     const plan = PLAN_META[payload.plan] ? payload.plan : 'basic';
     const systems = [...new Set((payload.systems || []).map((c) => String(c).toUpperCase()))].filter((c) =>
       RENTABLE_CODES.includes(c)
     );
     const payMethod = String(payload.payMethod || 'hub').trim();
 
-    if (!companyName || !adminName || !adminPhone) {
+    if (!companyName || !adminName || !adminPhone || !adminPassword) {
       return { ok: false, error: 'يرجى ملء جميع الحقول المطلوبة *' };
     }
+    if (adminPassword.length < 8) return { ok: false, error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' };
     if (!slugCheck.available) return { ok: false, error: slugCheck.message || 'النطاق الفرعي غير صالح' };
     if (!systems.length) return { ok: false, error: 'اختر نظامًا واحدًا على الأقل' };
 
@@ -190,12 +249,14 @@
       adminName,
       adminPhone,
       adminEmail,
+      adminPassword,
       plan,
       planLabel: PLAN_META[plan].label,
       amount: PLAN_META[plan].amount,
       systems,
       payMethod,
       status: plan === 'basic' ? 'provisioning' : 'pending',
+      erp: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -207,16 +268,12 @@
     return { ok: true, rental };
   };
 
-  const activateRental = (id) => {
-    const state = readLocal();
-    const row = state.rentals.find((r) => String(r.id) === String(id));
-    if (!row) return { ok: false, error: 'الطلب غير موجود' };
-
+  const applyLocalActivation = (row) => {
     row.status = 'active';
     row.activatedAt = new Date().toISOString();
     row.updatedAt = row.activatedAt;
+    delete row.adminPassword;
 
-    // منح صب دومين عبر محرك تشغيل الأنظمة
     try {
       if (window.HubSystemOps?.grantSubdomain) {
         row.systems.forEach((code) => {
@@ -229,10 +286,9 @@
         });
       }
     } catch {
-      /* keep rental active even if ops mock fails */
+      /* ignore */
     }
 
-    // اشتراكات HUB
     try {
       row.systems.forEach((code) => {
         window.HubStore?.grantSubscription?.({
@@ -245,7 +301,85 @@
     } catch {
       /* ignore */
     }
+  };
 
+  const provisionErp = async (row) => {
+    if (!(row.systems || []).includes('ERP')) {
+      return { ok: true, skipped: true };
+    }
+    if (!row.adminPassword) {
+      return { ok: false, error: 'كلمة المرور غير متوفرة لتجهيز ERP — أعد تقديم الطلب' };
+    }
+    const res = await fetch(ERP_PROVISION, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subdomain: row.slug,
+        companyName: row.companyName,
+        plan: row.plan,
+        adminName: row.adminName,
+        adminPhone: row.adminPhone,
+        adminEmail: row.adminEmail,
+        adminPassword: row.adminPassword,
+        systems: row.systems,
+        payMethod: row.payMethod || 'hub',
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data.pendingPayment) {
+      return {
+        ok: false,
+        pendingPayment: true,
+        paymentUrl: data.paymentUrl,
+        token: data.token,
+        error: data.message || 'يلزم دفع ERP',
+      };
+    }
+    if (!res.ok || !data.ok) {
+      return { ok: false, error: data.error || data.message || 'فشل ربط ERP' };
+    }
+    return {
+      ok: true,
+      erp: {
+        token: data.token,
+        loginUrl: data.loginUrl,
+        hostPath: data.hostPath,
+        provisionedAt: new Date().toISOString(),
+        message: data.message,
+      },
+    };
+  };
+
+  const activateRental = (id) => {
+    const state = readLocal();
+    const row = state.rentals.find((r) => String(r.id) === String(id));
+    if (!row) return { ok: false, error: 'الطلب غير موجود' };
+    applyLocalActivation(row);
+    saveLocal(state);
+    syncRemote(state);
+    return { ok: true, rental: row };
+  };
+
+  const activateRentalAsync = async (id) => {
+    const state = readLocal();
+    const row = state.rentals.find((r) => String(r.id) === String(id));
+    if (!row) return { ok: false, error: 'الطلب غير موجود' };
+
+    row.status = 'provisioning';
+    row.updatedAt = new Date().toISOString();
+    saveLocal(state);
+
+    const erp = await provisionErp(row);
+    if (!erp.ok) {
+      row.status = row.plan === 'basic' ? 'provisioning' : 'pending';
+      row.erpError = erp.error;
+      saveLocal(state);
+      syncRemote(state);
+      return { ok: false, error: erp.error, pendingPayment: erp.pendingPayment, paymentUrl: erp.paymentUrl };
+    }
+
+    if (erp.erp) row.erp = erp.erp;
+    applyLocalActivation(row);
     saveLocal(state);
     syncRemote(state);
     return { ok: true, rental: row };
@@ -258,6 +392,7 @@
     row.status = 'rejected';
     row.rejectReason = String(reason || '').trim();
     row.updatedAt = new Date().toISOString();
+    delete row.adminPassword;
     saveLocal(state);
     syncRemote(state);
     return { ok: true, rental: row };
@@ -274,11 +409,14 @@
     visibleCodesFor,
     setVisibility,
     validateSubdomain,
+    validateSubdomainAsync,
     normalizeSlug,
     listRentals,
     getRental,
     submitRental,
     activateRental,
+    activateRentalAsync,
     rejectRental,
+    provisionErp,
   };
 })();

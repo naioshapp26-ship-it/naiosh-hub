@@ -103,13 +103,15 @@
     });
   };
 
-  const checkSubdomain = () => {
+  const checkSubdomain = async () => {
     const input = $('#subdomain');
     const status = $('[data-subdomain-status]');
     if (!input || !status) return;
     const raw = store().normalizeSlug(input.value);
     input.value = raw;
-    const res = store().validateSubdomain(raw);
+    status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ التحقق من هوب وERP…';
+    status.className = 'hub-rent-subdomain-status';
+    const res = await store().validateSubdomainAsync(raw);
     state.subdomainOk = Boolean(res.available);
     status.innerHTML = res.available
       ? `<i class="fas fa-circle-check"></i> ${res.message}`
@@ -164,34 +166,55 @@
     };
 
     mark(0, 'is-run');
-    await wait(500);
+    await wait(400);
     mark(1, 'is-run');
-    await wait(600);
+    await wait(300);
     mark(2, 'is-run');
 
-    const act = store().activateRental(rental.id);
+    const act = await store().activateRentalAsync(rental.id);
     if (!act.ok) {
-      toast(act.error || 'فشل التفعيل');
+      toast(act.error || 'فشل التفعيل / ربط ERP');
       setStep(3);
       return;
     }
 
-    await wait(500);
     mark(3, 'is-run');
-    await wait(400);
+    await wait(350);
     steps.forEach((s) => s.classList.add('is-done'));
-
-    state.rentalId = act.rental.id;
-    $('[data-success-company]').textContent = act.rental.companyName;
-    $('[data-success-host]').textContent = act.rental.host;
-    $('[data-success-systems]').textContent = act.rental.systems.join(' · ');
-    const openBtn = $('[data-success-open]');
-    if (openBtn) {
-      const primary = act.rental.systems[0] || 'ERP';
-      const live = window.HubLiveSystems?.url?.(primary);
-      openBtn.href = live || `apps.html#${primary.toLowerCase()}`;
-    }
+    fillSuccess(act.rental, 'تم تجهيز المستأجر عبر نايوش هوب وربطه بمحرك ERP.');
     setStep(5);
+  };
+
+  const fillSuccess = (rental, note) => {
+    state.rentalId = rental.id;
+    $('[data-success-company]').textContent = rental.companyName;
+    $('[data-success-host]').textContent = rental.host;
+    $('[data-success-systems]').textContent = (rental.systems || []).join(' · ');
+    if (note) $('[data-success-note]').textContent = note;
+
+    const erpBox = $('[data-success-erp]');
+    const erpLink = $('[data-success-erp-link]');
+    const openBtn = $('[data-success-open]');
+    const erpUrl = rental.erp?.loginUrl || '';
+
+    if (erpBox && erpLink) {
+      if (erpUrl) {
+        erpBox.hidden = false;
+        erpLink.href = erpUrl;
+        erpLink.textContent = erpUrl;
+      } else {
+        erpBox.hidden = true;
+      }
+    }
+
+    if (openBtn) {
+      if (erpUrl) openBtn.href = erpUrl;
+      else {
+        const primary = rental.systems?.[0] || 'ERP';
+        const live = window.HubLiveSystems?.url?.(primary);
+        openBtn.href = live || `apps.html#${String(primary).toLowerCase()}`;
+      }
+    }
   };
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -202,12 +225,10 @@
     if (!res.ok) return toast(res.error || 'تعذّر إرسال الطلب');
 
     if (res.rental.status === 'pending') {
-      state.rentalId = res.rental.id;
-      $('[data-success-company]').textContent = res.rental.companyName;
-      $('[data-success-host]').textContent = res.rental.host;
-      $('[data-success-systems]').textContent = res.rental.systems.join(' · ');
-      $('[data-success-note]').textContent =
-        'الطلب بانتظار اعتماد غرفة العمليات في هوب — بعد الموافقة يُفعَّل الصب دومين والصلاحيات.';
+      fillSuccess(
+        res.rental,
+        'الطلب بانتظار اعتماد غرفة العمليات في هوب — بعد الموافقة يُجهَّز مستأجر ERP ويُمنح الصب دومين.'
+      );
       const openBtn = $('[data-success-open]');
       if (openBtn) openBtn.href = 'rent-admin.html';
       setStep(5);
@@ -224,10 +245,13 @@
       clearTimeout(timer);
       const status = $('[data-subdomain-status]');
       if (status) {
-        status.textContent = 'جارٍ التحقق…';
+        status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ التحقق…';
         status.className = 'hub-rent-subdomain-status';
       }
-      timer = setTimeout(checkSubdomain, 450);
+      state.subdomainOk = false;
+      timer = setTimeout(() => {
+        checkSubdomain().catch(() => {});
+      }, 500);
     });
 
     $$('[data-plan]').forEach((card) => {

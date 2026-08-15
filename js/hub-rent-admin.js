@@ -34,20 +34,28 @@
         <h3>${escapeHtml(r.companyName)} <span class="hub-rent-status ${statusClass(r.status)}">${statusAr[r.status] || r.status}</span></h3>
         <p>المسؤول: ${escapeHtml(r.adminName)} · ${escapeHtml(r.adminEmail || '—')}</p>
         <p>النطاق: <span dir="ltr">${escapeHtml(r.host)}</span></p>
+        ${r.erp?.loginUrl ? `<p>ERP: <a href="${escapeHtml(r.erp.loginUrl)}" target="_blank" rel="noopener" dir="ltr">${escapeHtml(r.erp.loginUrl)}</a></p>` : r.erpError ? `<p style="color:#b91c1c">ERP: ${escapeHtml(r.erpError)}</p>` : ''}
         <p>الخطة: ${escapeHtml(r.planLabel || r.plan)} · الأنظمة: ${escapeHtml((r.systems || []).join(' · '))}</p>
         <div class="hub-rent-admin-actions">
-          ${r.status === 'pending' || r.status === 'provisioning' ? `<button type="button" class="hub-rent-btn hub-rent-btn-primary" style="width:auto;margin:0;padding:8px 14px" data-approve="${r.id}"><i class="fas fa-check"></i> اعتماد وتفعيل</button>` : ''}
+          ${r.status === 'pending' || r.status === 'provisioning' ? `<button type="button" class="hub-rent-btn hub-rent-btn-primary" style="width:auto;margin:0;padding:8px 14px" data-approve="${r.id}"><i class="fas fa-check"></i> اعتماد وربط ERP</button>` : ''}
           ${r.status === 'pending' ? `<button type="button" class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px" data-reject="${r.id}"><i class="fas fa-xmark"></i> رفض</button>` : ''}
-          ${r.status === 'active' ? `<a class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px;text-decoration:none" href="apps.html#${String(r.systems?.[0] || 'erp').toLowerCase()}"><i class="fas fa-arrow-up-right-from-square"></i> فتح</a>` : ''}
+          ${r.status === 'active' && r.erp?.loginUrl ? `<a class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px;text-decoration:none" href="${escapeHtml(r.erp.loginUrl)}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i> فتح ERP</a>` : ''}
+          ${r.status === 'active' && !r.erp?.loginUrl ? `<a class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px;text-decoration:none" href="apps.html#${String(r.systems?.[0] || 'erp').toLowerCase()}"><i class="fas fa-arrow-up-right-from-square"></i> فتح</a>` : ''}
         </div>
       </article>`
       )
       .join('');
 
     root.querySelectorAll('[data-approve]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const res = store().activateRental(btn.getAttribute('data-approve'));
-        if (!res.ok) return alert(res.error || 'فشل الاعتماد');
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الربط…';
+        const res = await store().activateRentalAsync(btn.getAttribute('data-approve'));
+        if (!res.ok) {
+          alert(res.error || 'فشل الاعتماد / ربط ERP');
+          renderList();
+          return;
+        }
         renderList();
       });
     });

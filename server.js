@@ -5,6 +5,7 @@ const { URL } = require('url');
 const { checkEnvironment } = require('./db/env-check');
 const { getDatabaseUrl, migrate, listTables } = require('./db/migrate');
 const hubRuntime = require('./db/hub-runtime');
+const erpAdapter = require('./lib/erp-saas-adapter');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -278,6 +279,39 @@ async function handleHubApi(req, res, pathname) {
     };
     writeRentalsFile(state);
     sendJson(res, 200, { ok: true, count: state.rentals.length });
+    return true;
+  }
+
+  // —— محوّل ERP: تحقق نطاق / تجهيز مستأجر ——
+  if (pathname === '/api/hub/adapters/erp/config' && req.method === 'GET') {
+    try {
+      const config = await erpAdapter.getConfig();
+      sendJson(res, 200, { ok: true, erpBase: erpAdapter.DEFAULT_ERP_BASE, config });
+    } catch (error) {
+      sendJson(res, 502, { ok: false, error: error.message });
+    }
+    return true;
+  }
+
+  if (pathname === '/api/hub/adapters/erp/validate-subdomain' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const result = await erpAdapter.validateSubdomain(body?.subdomain || body?.slug);
+      sendJson(res, 200, { ok: true, ...result });
+    } catch (error) {
+      sendJson(res, 502, { ok: false, available: false, error: error.message });
+    }
+    return true;
+  }
+
+  if (pathname === '/api/hub/adapters/erp/provision' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const result = await erpAdapter.provisionTenant(body || {});
+      sendJson(res, result.ok ? 200 : result.pendingPayment ? 202 : 400, result);
+    } catch (error) {
+      sendJson(res, 502, { ok: false, error: error.message || 'ERP adapter failure' });
+    }
     return true;
   }
 
