@@ -1,0 +1,219 @@
+/* تعليمات أنظمة نايوش — قواعد المنح والتشغيل */
+:root {
+  --si-ink: #14181f;
+  --si-muted: #5b6472;
+  --si-surface: #ffffff;
+  --si-line: rgba(20, 24, 31, 0.1);
+  --si-brand: #d70000;
+  --si-brand-deep: #9a0000;
+  --si-soft: #f4f6f9;
+}
+
+.si-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 85% -10%, rgba(215, 0, 0, 0.14), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(20, 24, 31, 0.06), transparent 50%),
+    linear-gradient(180deg, #f7f8fb 0%, #eef1f6 100%);
+  color: var(--si-ink);
+}
+
+.si-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 44px 0 30px;
+  border-bottom: 1px solid var(--si-line);
+  background:
+    linear-gradient(120deg, rgba(215, 0, 0, 0.06), transparent 42%),
+    linear-gradient(180deg, #ffffff, transparent);
+}
+
+.si-hero::after {
+  content: '';
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  right: 8%;
+  bottom: -90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(215, 0, 0, 0.16), transparent 70%);
+  animation: si-pulse 6.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.si-hero-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+}
+
+.si-logo-wrap {
+  width: 96px;
+  height: 96px;
+  border-radius: 28px;
+  padding: 7px;
+  background: #fff;
+  border: 1px solid rgba(215, 0, 0, 0.16);
+  box-shadow: 0 16px 36px rgba(154, 0, 0, 0.12);
+  animation: si-rise 0.65s ease both;
+}
+
+.si-logo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 22px;
+  display: block;
+}
+
+.si-kicker {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--si-brand);
+  animation: si-rise 0.7s ease 0.05s both;
+}
+
+.si-title {
+  margin: 0;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-size: clamp(1.75rem, 3.5vw, 2.6rem);
+  font-weight: 900;
+  line-height: 1.25;
+  animation: si-rise 0.75s ease 0.1s both;
+}
+
+.si-lead {
+  margin: 0;
+  max-width: 40rem;
+  color: var(--si-muted);
+  font-weight: 700;
+  line-height: 1.85;
+  animation: si-rise 0.8s ease 0.14s both;
+}
+
+.si-main {
+  padding: 30px 0 70px;
+}
+
+.si-rules {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 860px;
+  display: grid;
+  gap: 12px;
+  counter-reset: si-rule;
+}
+
+.si-rule {
+  --i: 1;
+  counter-increment: si-rule;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--si-surface);
+  border: 1px solid var(--si-line);
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  animation: si-rise 0.5s ease both;
+  animation-delay: calc(0.035s * var(--i));
+}
+
+.si-rule:hover {
+  transform: translateY(-2px);
+  border-color: rgba(215, 0, 0, 0.28);
+  box-shadow: 0 12px 28px rgba(20, 24, 31, 0.06);
+}
+
+.si-rule::before {
+  content: counter(si-rule, decimal-leading-zero);
+  font-family: 'Cairo', sans-serif;
+  font-weight: 900;
+  font-size: 1rem;
+  color: #fff;
+  background: linear-gradient(145deg, var(--si-brand), var(--si-brand-deep));
+  min-width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+}
+
+.si-rule p {
+  margin: 0;
+  font-size: clamp(1rem, 1.5vw, 1.14rem);
+  font-weight: 800;
+  line-height: 1.9;
+  color: var(--si-ink);
+}
+
+.si-rule em {
+  font-style: normal;
+  color: var(--si-brand-deep);
+  font-weight: 900;
+}
+
+.si-foot {
+  margin: 28px auto 0;
+  max-width: 860px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--si-soft);
+  border: 1px solid var(--si-line);
+  text-align: center;
+  color: var(--si-muted);
+  font-weight: 700;
+  line-height: 1.8;
+}
+
+.si-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+@keyframes si-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes si-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.08);
+  }
+}
+
+@media (max-width: 720px) {
+  .si-rule {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .si-rule::before {
+    width: fit-content;
+    padding: 0 14px;
+  }
+}
