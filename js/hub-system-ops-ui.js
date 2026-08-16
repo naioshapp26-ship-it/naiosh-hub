@@ -60,11 +60,17 @@
     const nav = root.querySelector('[data-ops-sidebar]');
     if (!nav) return;
     const items = window.HubSystemOps.sidebarFor(user, systemCode);
+    const onRolesPage = /roles-permissions\.html/i.test(window.location.pathname || '');
     nav.innerHTML = items
       .map((i) => {
         const t = (i.href.match(/tab=([^&]+)/) || [])[1] || (i.id === 'home' ? 'panel' : '');
-        const active = t === tab || (i.id === 'home' && tab === 'panel');
-        return `<a class="${active ? 'is-active' : ''}" href="${esc(i.href)}" data-tab-link="${esc(t || 'panel')}"><i class="fas fa-angle-left"></i> ${esc(i.label)}</a>`;
+        const isExternalPage = /\.html(?:$|\?)/i.test(i.href) && !/system-ops\.html/i.test(i.href);
+        const active =
+          (i.id === 'roles' && (onRolesPage || tab === 'access')) ||
+          (!isExternalPage && (t === tab || (i.id === 'home' && tab === 'panel')));
+        const icon = i.icon ? `fas ${esc(i.icon)}` : 'fas fa-angle-left';
+        const tabAttr = isExternalPage ? '' : ` data-tab-link="${esc(t || 'panel')}"`;
+        return `<a class="${active ? 'is-active' : ''}" href="${esc(i.href)}"${tabAttr}><i class="${icon}"></i> ${esc(i.label)}</a>`;
       })
       .join('');
   };
@@ -162,7 +168,16 @@
     if (tab === 'access') {
       host.innerHTML =
         section(
-          'الأدوار والصلاحيات للأنظمة المختارة',
+          'إدارة الأدوار والصلاحيات',
+          `<p class="sysops-note">نفس صفحة ERP بالكامل: الأدوار · مصفوفة الصلاحيات · المستخدمون · سجل التدقيق · صفحات المكاتب والمستأجرين · القائمة حسب نوع الحساب.</p>
+          <div class="sysops-actions">
+            <a class="btn btn-primary" href="roles-permissions.html"><i class="fas fa-shield-alt"></i> فتح إدارة الأدوار والصلاحيات</a>
+            <a class="btn btn-secondary" href="roles-permissions.html?tab=permissions">مصفوفة صلاحيات الأنظمة</a>
+            <a class="btn btn-secondary" href="roles-permissions.html?tab=users">المستخدمون وتعيين الأدوار</a>
+          </div>`
+        ) +
+        section(
+          'تعيين سريع داخل غرفة التشغيل',
           `<form class="sysops-form" data-form="role">
             <input name="user" required placeholder="اسم المستخدم" value="${esc(user)}" />
             <select name="roleId">${window.HubSystemOpsSpec.ROLES.map(

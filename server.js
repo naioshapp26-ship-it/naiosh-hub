@@ -9,6 +9,7 @@ const { getDatabaseUrl, migrate, listTables } = require('./db/migrate');
 const hubRuntime = require('./db/hub-runtime');
 const erpAdapter = require('./lib/erp-saas-adapter');
 const hubSso = require('./lib/hub-sso');
+const { handleAdminApi } = require('./lib/hub-rbac-admin');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -565,6 +566,13 @@ const server = http.createServer((req, res) => {
 
   if (pathname === '/api/ai-agent/chat' && req.method === 'OPTIONS') {
     sendJson(res, 204, {});
+    return;
+  }
+
+  if (pathname.startsWith('/api/admin') || pathname === '/api/auth/logout') {
+    handleAdminApi(req, res, pathname).catch((error) =>
+      sendJson(res, error.status || 500, { ok: false, success: false, error: error.message || 'Admin API error' })
+    );
     return;
   }
 
