@@ -827,16 +827,16 @@
       home: /منزل|بيتي|من البيت/i.test(`${project} ${need}`) ? 'نعم' : 'مرن',
       experience: /مبتدئ/i.test(role) ? 'مبتدئ' : /خبير|محترف/i.test(role) ? 'خبير' : 'متوسط',
       location: /مول/i.test(`${project} ${need}`)
-        ? 'مول'
+        ? 'مول / موقع تجاري'
         : /منزل|بيت/i.test(`${project} ${need}`)
           ? 'منزل'
-          : /رقمي|اونلاين/i.test(`${project} ${need}`)
-            ? 'رقمي'
-            : 'مدينة',
+          : /رقمي|اونلاين|أونلاين|online/i.test(`${project} ${need}`)
+            ? 'عن بُعد / رقمي'
+            : 'مدينة / حي',
       season: 'على مدار السنة',
       age: '٢٥–٣٥',
       hours: '٥–١٠',
-      income: '',
+      income: '٢٠٠٠–٥٠٠٠',
     };
   };
 
@@ -902,8 +902,23 @@
     pageByCat = {};
     paintCatDir();
     paintCatalog();
-    document.getElementById('sp-types')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    toast('تصفّح الملخصات حسب النوع والقائمة');
+
+    const samples = data.projects.slice(0, 6).map((raw) => {
+      const p = enrich(raw);
+      return { score: null, reasons: ['خلاصة سريعة'], p };
+    });
+    if (introResults) introResults.hidden = false;
+    if (introResultsLead) {
+      introResultsLead.textContent =
+        'ملخصات مركّزة من القوائم — اضغط التفاصيل أو سجّل المشروع، أو أكمل النموذج أعلاه لترشيح أدق.';
+    }
+    if (introResultsGrid) {
+      introResultsGrid.innerHTML = samples
+        .map((r) => projectCard(r.p, { score: r.score, reasons: r.reasons, p: r.p, compact: true }))
+        .join('');
+    }
+    introResults?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast('ملخصات سريعة جاهزة — بدون قراءة طويلة');
   };
 
   const runIntroAct = () => {
