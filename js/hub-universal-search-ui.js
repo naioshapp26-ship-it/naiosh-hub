@@ -32,7 +32,7 @@
         <div class="hus-toolbar">
           <label class="hus-input-wrap">
             <i class="fas fa-magnifying-glass"></i>
-            <input type="search" data-hus-input placeholder="مثال: تعليم · فيديو · دليل · UOS…" autocomplete="off" />
+            <input type="search" data-hus-input placeholder="مثال: مشاريع جانبية · تعليم · فيديو · UOS…" autocomplete="off" />
           </label>
           <div class="hus-filters" role="tablist" aria-label="تصفية النوع">
             <button type="button" class="is-active" data-hus-filter="all">الكل</button>
@@ -48,6 +48,7 @@
         <div class="hus-section-head" data-hus-section-head hidden></div>
         <div class="hus-results" data-hus-results></div>
         <footer class="hus-foot">
+          <a href="side-projects.html#sp-client-intro"><i class="fas fa-lightbulb"></i> المشاريع الجانبية</a>
           <a href="search-admin.html"><i class="fas fa-sliders"></i> إدارة محتوى البحث (أدمن)</a>
           <a href="search-content.html" data-hus-library-link><i class="fas fa-folder-open"></i> صفحات التصنيفات</a>
         </footer>

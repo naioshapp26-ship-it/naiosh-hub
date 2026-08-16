@@ -25,7 +25,7 @@
       { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },
       { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
       { label: 'شراكاتي', href: 'partnerships.html', icon: 'fa-handshake' },
-      { label: 'قناتي', href: 'side-projects.html', icon: 'fa-lightbulb' },
+      { label: 'قناتي', href: 'side-projects.html#sp-client-intro', icon: 'fa-lightbulb' },
       { label: 'دوراتي', href: 'courses.html', icon: 'fa-chalkboard' },
       { label: 'دبلوماتي', href: 'diplomas.html', icon: 'fa-graduation-cap' },
       { label: 'نظام التشغيل', href: 'global-os.html', icon: 'fa-network-wired' },
@@ -46,7 +46,7 @@
         label === 'مشاريع جانبية' ||
         label === 'المشاريع الجانبية'
       ) {
-        list[i] = { ...list[i], label: 'قناتي', href: 'side-projects.html', icon: 'fa-lightbulb' };
+        list[i] = { ...list[i], label: 'قناتي', href: 'side-projects.html#sp-client-intro', icon: 'fa-lightbulb' };
       }
       if (href.includes('courses') || label === 'دورات') {
         list[i] = { ...list[i], label: 'دوراتي', href: 'courses.html', icon: list[i].icon || 'fa-chalkboard' };
@@ -67,7 +67,7 @@
         list.splice(i, 1);
         continue;
       }
-      list[i] = { ...list[i], label: 'قناتي', href: 'side-projects.html', icon: 'fa-lightbulb' };
+      list[i] = { ...list[i], label: 'قناتي', href: 'side-projects.html#sp-client-intro', icon: 'fa-lightbulb' };
       keptChannel = true;
     }
     return list;
@@ -81,7 +81,7 @@
       list.splice(insertAt >= 0 ? insertAt : list.length, 0, { label, href, icon, launchCode });
     };
     ensure('شراكاتي', 'partnerships.html', 'fa-handshake');
-    ensure('قناتي', 'side-projects.html', 'fa-lightbulb');
+    ensure('قناتي', 'side-projects.html#sp-client-intro', 'fa-lightbulb');
     ensure('دوراتي', 'courses.html', 'fa-chalkboard');
     ensure('دبلوماتي', 'diplomas.html', 'fa-graduation-cap');
     ensure('طلبات المشاريع', 'side-project-registrations.html', 'fa-inbox');

@@ -75,6 +75,20 @@
     const custom = window.HubSearchCatalog?.toSearchItems?.() || [];
     custom.forEach((c) => items.push(c));
 
+    // صفحة المشاريع الجانبية — تعريف مباشر للعميل
+    items.push({
+      id: 'hub-side-projects',
+      type: 'content',
+      typeAr: 'مشاريع',
+      icon: 'fa-lightbulb',
+      title: 'المشاريع الجانبية',
+      subtitle: 'ابدأ من التحدي الذي أمامك، وليس من الكتاب',
+      meta: 'Side Projects',
+      href: 'side-projects.html#sp-client-intro',
+      keywords:
+        'مشاريع جانبية مشروع جانبي side projects قناتي تحدي نايوش افهم الفكرة خذ ما يناسب حوّلها إلى خطوة تعريف العميل',
+    });
+
     return items;
   };
 

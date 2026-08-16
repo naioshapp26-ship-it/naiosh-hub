@@ -6,8 +6,9 @@
   background: #faf9f6;
   border-radius: 24px;
   padding: clamp(28px, 4vw, 48px) clamp(18px, 3vw, 36px);
-  margin: 0 0 18px;
+  margin: 18px 0;
   text-align: center;
+  scroll-margin-top: 88px;
 }
 .sp-client-intro__head {
   max-width: 720px;
