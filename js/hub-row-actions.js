@@ -1085,34 +1085,41 @@
   const wireProjectPicker = () => {
     const root = document.querySelector('[data-project-picker]');
     if (!root) return;
-    if (!window.HubSideProjectsData?.projects?.length) {
-      root.insertAdjacentHTML(
-        'beforeend',
-        '<p class="hub-form-hint warn">كتالوج المشاريع غير محمّل — أعد تحميل الصفحة.</p>'
-      );
-      return;
-    }
-    root.addEventListener('change', (e) => {
-      const cat = e.target.closest('[data-project-cat]');
-      if (cat) {
-        document.getElementById('hub-field-projectId').value = '';
-        document.getElementById('hub-field-projectName').value = '';
-        paintProjectList(cat.value, document.getElementById('hub-project-search')?.value || '');
+
+    const start = () => {
+      if (!window.HubSideProjectsData?.projects?.length) {
+        root.insertAdjacentHTML(
+          'beforeend',
+          '<p class="hub-form-hint warn">كتالوج المشاريع غير محمّل — أعد تحميل الصفحة.</p>'
+        );
         return;
       }
-      const item = e.target.closest('[data-project-id]');
-      if (item) {
-        const title = item.getAttribute('data-project-title') || '';
-        document.getElementById('hub-field-projectId').value = item.value;
-        document.getElementById('hub-field-projectName').value = title;
-        const titleInput = document.getElementById('hub-add-title');
-        if (titleInput && !titleInput.value.trim()) titleInput.value = `إعلان: ${title}`;
-      }
-    });
-    document.getElementById('hub-project-search')?.addEventListener('input', (e) => {
-      const catId = document.querySelector('input[name="hub-project-cat"]:checked')?.value;
-      if (catId) paintProjectList(catId, e.target.value);
-    });
+      root.addEventListener('change', (e) => {
+        const cat = e.target.closest('[data-project-cat]');
+        if (cat) {
+          document.getElementById('hub-field-projectId').value = '';
+          document.getElementById('hub-field-projectName').value = '';
+          paintProjectList(cat.value, document.getElementById('hub-project-search')?.value || '');
+          return;
+        }
+        const item = e.target.closest('[data-project-id]');
+        if (item) {
+          const title = item.getAttribute('data-project-title') || '';
+          document.getElementById('hub-field-projectId').value = item.value;
+          document.getElementById('hub-field-projectName').value = title;
+          const titleInput = document.getElementById('hub-add-title');
+          if (titleInput && !titleInput.value.trim()) titleInput.value = `إعلان: ${title}`;
+        }
+      });
+      document.getElementById('hub-project-search')?.addEventListener('input', (e) => {
+        const catId = document.querySelector('input[name="hub-project-cat"]:checked')?.value;
+        if (catId) paintProjectList(catId, e.target.value);
+      });
+    };
+
+    if (window.HubSideProjectsData?.projects?.length) start();
+    else if (window.HubSideProjectsDataReady?.then) window.HubSideProjectsDataReady.then(start).catch(start);
+    else start();
   };
 
   const collectProjectPicker = () => {
