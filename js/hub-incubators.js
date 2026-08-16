@@ -68,13 +68,16 @@
       grid.className = 'cards incubator-grid';
 
       groupItems.forEach((incubator) => {
+        const cardId = incubator.id || `inc-${String(incubator.num).padStart(3, '0')}`;
         const card = document.createElement('article');
         card.className = 'card incubator-card';
+        card.id = cardId;
+        card.dataset.id = cardId;
         card.dataset.name = incubator.name;
-        const actions =
-          window.HubActions?.rowHtml?.('incubators', incubator.id || `inc-${String(incubator.num).padStart(3, '0')}`, {
-            extra: '',
-          }) || '';
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', `فتح حاضنة ${incubator.name}`);
+        const actions = window.HubActions?.rowHtml?.('incubators', cardId, { extra: '' }) || '';
         card.innerHTML = `
           <span class="incubator-number">${esc(incubator.num)}</span>
           <div class="icon-box"><i class="fas ${esc(sectionData.icon)}" aria-hidden="true"></i></div>
@@ -82,6 +85,16 @@
           <p class="incubator-category">${esc(sectionData.title)}</p>
           ${actions ? `<div class="incubator-card-actions">${actions}</div>` : ''}
         `;
+        const openCard = (e) => {
+          if (e.target.closest('[data-hub-act], a, button')) return;
+          openIncubator(cardId, { updateHash: true });
+        };
+        card.addEventListener('click', openCard);
+        card.addEventListener('keydown', (e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          e.preventDefault();
+          openCard(e);
+        });
         grid.appendChild(card);
       });
 
@@ -136,10 +149,62 @@
     window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
   });
 
+  const clearFocus = () => {
+    sectionsRoot.querySelectorAll('.incubator-card.is-hash-focus').forEach((el) => {
+      el.classList.remove('is-hash-focus');
+    });
+  };
+
+  const openIncubator = (rawId, { updateHash = false, openModal = true } = {}) => {
+    const id = String(rawId || '')
+      .replace(/^#/, '')
+      .trim()
+      .toLowerCase();
+    if (!id || !/^inc-\d{3}$/i.test(id)) return false;
+
+    const card =
+      sectionsRoot.querySelector(`#${CSS.escape(id)}`) ||
+      sectionsRoot.querySelector(`.incubator-card[data-id="${CSS.escape(id)}"]`);
+    if (!card) return false;
+
+    clearFocus();
+    card.classList.add('is-hash-focus');
+    card.style.display = '';
+    const group = card.closest('.incubator-group');
+    if (group) group.style.display = '';
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    card.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+
+    if (updateHash && location.hash.replace(/^#/, '').toLowerCase() !== id) {
+      history.replaceState(null, '', `#${id}`);
+    }
+
+    if (openModal && window.HubActions?.openView) {
+      window.setTimeout(() => window.HubActions.openView('incubators', id), reduced ? 0 : 280);
+    }
+    return true;
+  };
+
+  const focusFromHash = () => {
+    const hash = (location.hash || '').replace(/^#/, '').trim();
+    if (!hash) {
+      clearFocus();
+      return;
+    }
+    openIncubator(hash, { updateHash: false, openModal: true });
+  };
+
   window.hubRerender = () => {
     render();
     filterCards();
+    focusFromHash();
   };
 
+  window.addEventListener('hashchange', focusFromHash);
+
   render();
+  filterCards();
+  // Wait a tick so layout/fonts settle before scrolling to the deep-linked card.
+  window.requestAnimationFrame(() => focusFromHash());
 })();

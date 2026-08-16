@@ -55,6 +55,22 @@ body.incubators-body .incubators-page .incubator-card.card {
   gap: 6px;
 }
 
+body.incubators-body .incubators-page .incubator-card.card {
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+
+body.incubators-body .incubators-page .incubator-card.card:focus-visible,
+body.incubators-body .incubators-page .incubator-card.card.is-hash-focus {
+  border-color: rgba(var(--brand-red-rgb), 0.95) !important;
+  box-shadow:
+    0 0 0 3px rgba(var(--brand-red-rgb), 0.28),
+    0 12px 28px rgba(15, 23, 42, 0.14) !important;
+  transform: translateY(-2px);
+  z-index: 2;
+}
+
 .incubators-tab.active {
   background: rgba(var(--brand-red-rgb), 0.45);
   border-color: rgba(var(--brand-red-rgb), 0.8);
