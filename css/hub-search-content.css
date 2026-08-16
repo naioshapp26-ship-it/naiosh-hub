@@ -27,6 +27,81 @@
   color: #fff;
 }
 
+/* بوابات تفاعلية — أخف من فلاتر التصنيف */
+.sc-portals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: #fafafa;
+  border: 1px solid #ececf1;
+}
+
+.sc-portals-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.sc-portals-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+
+.sc-portal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #1f2937;
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 800;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.sc-portal i {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.sc-portal:hover,
+.sc-portal.is-active {
+  border-color: rgba(185, 28, 28, 0.45);
+  color: #991b1b;
+  background: #fff7f7;
+}
+
+.sc-portal:hover i,
+.sc-portal.is-active i {
+  color: #b91c1c;
+}
+
+body.homepage .sc-portals-label {
+  color: #6b7280 !important;
+}
+
+body.homepage .sc-portal {
+  color: #1f2937 !important;
+}
+
+body.homepage .sc-portal:hover,
+body.homepage .sc-portal.is-active {
+  color: #991b1b !important;
+}
+
 .sc-page {
   padding-bottom: 48px;
   color: #111827;
