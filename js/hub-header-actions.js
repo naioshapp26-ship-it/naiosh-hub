@@ -1,15 +1,8 @@
 (() => {
   'use strict';
 
-  /** اختصارات الهيدر الحمراء — فقط ما طُلب إبقاؤه (بدون المعلّم بـ X) */
+  /** اختصارات الهيدر — استأجر نظام موجود في الهيرو فقط (بدون تكرار) */
   const ACTIONS = [
-    {
-      id: 'rent',
-      label: 'استأجر نظام',
-      href: 'rent-system.html',
-      className: 'hub-hbtn hub-hbtn--rent',
-      icon: 'fa-key',
-    },
     {
       id: 'mine',
       label: 'أنظمتي',
