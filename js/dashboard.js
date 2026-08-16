@@ -2,6 +2,7 @@
   const NAV = [
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
     { key: 'operating', icon: 'fa-gears', label: 'آلية التشغيل' },
+    { key: 'roles-permissions', icon: 'fa-shield-alt', label: 'إدارة الأدوار والصلاحيات', href: 'roles-permissions.html' },
     { key: 'notifications', icon: 'fa-bell', label: 'إشعارات هوب' },
     { key: 'side-project-regs', icon: 'fa-inbox', label: 'طلبات تسجيل المشاريع' },
     { key: 'search-admin', icon: 'fa-magnifying-glass', label: 'إدارة محرك البحث' },
@@ -33,6 +34,7 @@
   const TITLES = {
     overview: ['مركز التحكم العالمي', 'الفروع · الحاضنات · المنصات · المنتجات · المتجر · الإعلانات · الفعاليات'],
     operating: ['آلية تشغيل نايوش هوب', 'بدون تكرار · اشتراك=صلاحية · SSO · تقارير نشاط · خدمات موحّدة'],
+    'roles-permissions': ['إدارة الأدوار والصلاحيات', 'منح أنظمة هوب عبر الأدوار ومستويات الصلاحيات — نفس تشغيل ERP'],
     notifications: ['مركز إشعارات هوب', 'كل تنبيهات الأنظمة تصل هنا — ERP · LAW · FIT · Academy'],
     'side-project-regs': ['طلبات تسجيل المشاريع', 'استقبال طلبات المشاريع الجانبية · متابعة · تواصل بالجوال أو الإيميل'],
     'search-admin': ['إدارة محرك البحث', 'أضف نصوصًا وصورًا وملفات وفيديو لتغذية محرك البحث الشامل'],
@@ -197,13 +199,19 @@
 
   // —— Nav
   const renderNav = () => {
-    $('#sidebar-nav').innerHTML = NAV.map(
-      (n) =>
-        `<a href="#${n.key}" data-panel="${n.key}" class="${n.key === current ? 'active' : ''}"><i class="fas ${n.icon}"></i> ${n.label}</a>`
-    ).join('');
+    $('#sidebar-nav').innerHTML = NAV.map((n) => {
+      const href = n.href || `#${n.key}`;
+      const active = n.key === current ? 'active' : '';
+      return `<a href="${href}" data-panel="${n.key}" ${n.href ? 'data-external="1"' : ''} class="${active}"><i class="fas ${n.icon}"></i> ${n.label}</a>`;
+    }).join('');
     $('#sidebar-nav').onclick = (e) => {
       const a = e.target.closest('a[data-panel]');
       if (!a) return;
+      if (a.dataset.external === '1') {
+        // افتح الصفحة الخارجية مباشرة (مثل ERP → super-admin-page)
+        document.body.classList.remove('nav-open');
+        return;
+      }
       e.preventDefault();
       activate(a.dataset.panel);
       document.body.classList.remove('nav-open');
@@ -1850,6 +1858,25 @@
           <li>ارفع صورة أو ملف أو ضع رابط فيديو</li>
           <li>احفظ → ابحث من الرئيسية بنفس الكلمة</li>
         </ul>
+      </div>`,
+    'search-admin': () => `
+      <div class="card">
+        <h3><span class="title-left"><i class="fas fa-magnifying-glass icon"></i> إدارة محرك البحث</span></h3>
+        <ul class="muted" style="margin:8px 0 0;padding-inline-start:18px;line-height:1.8">
+          <li>ارفع صورة أو ملف أو ضع رابط فيديو</li>
+          <li>احفظ → ابحث من الرئيسية بنفس الكلمة</li>
+        </ul>
+      </div>`,
+    'roles-permissions': () => `
+      <div class="card">
+        <h3><span class="title-left"><i class="fas fa-shield-alt icon"></i> إدارة الأدوار والصلاحيات</span></h3>
+        <p>نفس صفحة ERP: الأدوار · مصفوفة صلاحيات الأنظمة · المستخدمون · التدقيق · صفحات المكاتب والمستأجرين · القائمة حسب نوع الحساب.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px">
+          <a class="btn btn-primary" href="roles-permissions.html"><i class="fas fa-shield-alt"></i> فتح إدارة الأدوار والصلاحيات</a>
+          <a class="btn btn-ghost" href="roles-permissions.html?tab=permissions"><i class="fas fa-table"></i> مصفوفة الصلاحيات</a>
+          <a class="btn btn-ghost" href="roles-permissions.html?tab=users"><i class="fas fa-users"></i> المستخدمون</a>
+          <a class="btn btn-ghost" href="system-ops.html"><i class="fas fa-gears"></i> تشغيل الأنظمة</a>
+        </div>
       </div>`,
     'rent-admin': () => `
       <div class="card">
