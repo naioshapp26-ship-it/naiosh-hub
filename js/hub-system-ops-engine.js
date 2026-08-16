@@ -68,9 +68,17 @@
   const formatGrantId = (prefix, num) => `${prefix}-${String(num).padStart(3, '0')}`;
 
   /** منح دومين فرعي */
-  const grantSubdomain = ({ tenantName, systemCode = 'ERP', baseDomain = 'naiosh.app', slug: slugIn } = {}) => {
+  const grantSubdomain = ({
+    tenantName,
+    systemCode = 'ERP',
+    baseDomain = 'naiosh.app',
+    slug: slugIn,
+    branchOrHq = '',
+    incubator = '',
+    platformName = '',
+  } = {}) => {
     const state = read();
-    const slug = slugIn ? slugify(slugIn) : slugify(tenantName);
+    const slug = slugIn ? slugify(slugIn) : slugify(tenantName || platformName);
     const host = `${slug}.${baseDomain}`;
     const num = nextGrantNum(state, 'subdomain');
     const grantId = formatGrantId('SD', num);
@@ -78,15 +86,22 @@
       id: uid('sd'),
       num,
       grantId,
-      tenantName: tenantName || slug,
+      tenantName: tenantName || platformName || slug,
       slug,
       host,
       systemCode: String(systemCode || 'ERP').toUpperCase(),
+      branchOrHq: String(branchOrHq || '').trim(),
+      incubator: String(incubator || '').trim(),
+      platformName: String(platformName || '').trim(),
       status: 'active',
       at: new Date().toISOString(),
     };
     state.subdomains.unshift(row);
-    log(state, 'منح دومين فرعي', `${grantId} · ${host}`);
+    log(
+      state,
+      'منح دومين فرعي',
+      `${grantId} · ${host} · ${row.branchOrHq || '—'} · ${row.incubator || '—'} · ${row.platformName || '—'}`
+    );
     save(state);
     return row;
   };
@@ -235,17 +250,38 @@
   };
 
   /** استئجار منصة + دومين فرعي */
-  const rentPlatform = ({ nameAr, tenantName, systemCode = 'ERP' } = {}) => {
-    const state = read();
-    const subdomain = grantSubdomain({ tenantName: tenantName || nameAr, systemCode });
-    const structure = grantStructure({ type: 'platform', nameAr: nameAr || 'منصة مستأجرة', tenantName, systemCode });
+  const rentPlatform = ({
+    nameAr,
+    tenantName,
+    systemCode = 'ERP',
+    branchOrHq = '',
+    incubator = '',
+    platformName = '',
+  } = {}) => {
+    const platform = String(platformName || nameAr || '').trim() || 'منصة مستأجرة';
+    const subdomain = grantSubdomain({
+      tenantName: tenantName || platform,
+      systemCode,
+      branchOrHq,
+      incubator,
+      platformName: platform,
+    });
+    const structure = grantStructure({
+      type: 'platform',
+      nameAr: platform,
+      tenantName: tenantName || platform,
+      systemCode,
+    });
     const rental = {
       id: uid('rent'),
-      nameAr: nameAr || structure.nameAr,
+      nameAr: platform,
       subdomainId: subdomain.id,
       structureId: structure.id,
       host: subdomain.host,
       systemCode: String(systemCode || 'ERP').toUpperCase(),
+      branchOrHq: String(branchOrHq || '').trim(),
+      incubator: String(incubator || '').trim(),
+      platformName: platform,
       status: 'rented',
       at: new Date().toISOString(),
     };

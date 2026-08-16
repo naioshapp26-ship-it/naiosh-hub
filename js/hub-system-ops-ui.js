@@ -30,8 +30,57 @@
     el.textContent = msg;
     el.classList.add('is-on');
     clearTimeout(toast._t);
-    toast._t = setTimeout(() => el.classList.remove('is-on'), 2200);
+    toast._t = setTimeout(() => el.classList.remove('is-on'), 2600);
   };
+
+  const branchOrHqOptions = () => {
+    const branches = window.HubBranchesData?.BRANCHES || [];
+    if (branches.length) {
+      return branches.map((b) => {
+        const isHq = String(b.code || '').toUpperCase() === 'HQ' || /مقر|المكتب الرئيسي/i.test(b.nameAr || '');
+        const label = isHq ? 'المكتب الرئيسي' : b.nameAr;
+        const value = isHq ? 'المكتب الرئيسي' : b.nameAr;
+        return { value, label: `${label}${b.erpCode ? ` · ${b.erpCode}` : ''}` };
+      });
+    }
+    return [
+      { value: 'المكتب الرئيسي', label: 'المكتب الرئيسي' },
+      { value: 'السعودية', label: 'السعودية' },
+      { value: 'مصر', label: 'مصر' },
+      { value: 'الإمارات', label: 'الإمارات' },
+    ];
+  };
+
+  const incubatorOptions = () => {
+    const list = window.HubIncubatorsData?.INCUBATORS || [];
+    if (list.length) {
+      return list.map((i) => ({
+        value: i.name,
+        label: `${i.num ? `INC-${String(i.num).padStart(3, '0')} · ` : ''}${i.name}`,
+      }));
+    }
+    return [
+      { value: 'التعليم والتعلم', label: 'التعليم والتعلم' },
+      { value: 'التسويق الرقمي', label: 'التسويق الرقمي' },
+      { value: 'عالم الأعمال', label: 'عالم الأعمال' },
+    ];
+  };
+
+  const selectOptionsHtml = (items, placeholder) =>
+    `<option value="">${esc(placeholder)}</option>${items
+      .map((o) => `<option value="${esc(o.value)}">${esc(o.label)}</option>`)
+      .join('')}`;
+
+  const grantHierarchyFields = () => `
+    <label>الفرع أو المكتب الرئيسي
+      <select name="branchOrHq" required>${selectOptionsHtml(branchOrHqOptions(), '— اختر فرعًا أو المكتب الرئيسي —')}</select>
+    </label>
+    <label>الحاضنة
+      <select name="incubator" required>${selectOptionsHtml(incubatorOptions(), '— اختر الحاضنة —')}</select>
+    </label>
+    <label>اسم المنصة
+      <input name="platformName" required placeholder="اسم المنصة" />
+    </label>`;
 
   const systems = ['ERP', 'NAIS', 'LAW', 'ACADEMY', 'FIT', 'LMS', 'CRM'];
 
@@ -132,12 +181,23 @@
         section(
           'منح دومين فرعي للمستأجرين',
           `<form class="sysops-form" data-form="subdomain">
-            <input name="tenantName" required placeholder="اسم المستأجر" />
-            <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
-            <input name="baseDomain" value="naiosh.app" />
-            <button class="btn btn-primary">منح صب دومين</button>
+            <label>اسم المستأجر
+              <input name="tenantName" required placeholder="اسم المستأجر" />
+            </label>
+            ${grantHierarchyFields()}
+            <label>النظام
+              <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
+            </label>
+            <label>النطاق الأساسي
+              <input name="baseDomain" value="naiosh.app" />
+            </label>
+            <button type="submit" class="btn btn-primary">منح صب دومين</button>
           </form>
-          ${listRows(state.subdomains.slice(0, 20), (r) => `<article><strong>${esc(r.grantId || '')} · ${esc(r.host)}</strong><span>${esc(r.tenantName)} · ${esc(r.systemCode)}</span></article>`)}`
+          ${listRows(
+            state.subdomains.slice(0, 20),
+            (r) =>
+              `<article><strong>${esc(r.grantId || '')} · ${esc(r.host)}</strong><span>${esc(r.tenantName)} · ${esc(r.systemCode)} · ${esc(r.branchOrHq || '—')} · ${esc(r.incubator || '—')} · ${esc(r.platformName || '—')}</span></article>`
+          )}`
         ) +
         section(
           'منح فروع · حاضنات · منصات · مكاتب إلكترونية',
@@ -155,12 +215,20 @@
         section(
           'استئجار منصة + دومين فرعي',
           `<form class="sysops-form" data-form="rent">
-            <input name="nameAr" required placeholder="اسم المنصة" />
-            <input name="tenantName" placeholder="المستأجر" />
-            <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
-            <button class="btn btn-primary">استأجر وامنح الدومين</button>
+            ${grantHierarchyFields()}
+            <label>المستأجر
+              <input name="tenantName" placeholder="المستأجر" />
+            </label>
+            <label>النظام
+              <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
+            </label>
+            <button type="submit" class="btn btn-primary">استأجر وامنح الدومين</button>
           </form>
-          ${listRows(state.rentals.slice(0, 20), (r) => `<article><strong>${esc(r.nameAr)}</strong><span>${esc(r.host)} · ${esc(r.status)}</span></article>`)}`
+          ${listRows(
+            state.rentals.slice(0, 20),
+            (r) =>
+              `<article><strong>${esc(r.platformName || r.nameAr)}</strong><span>${esc(r.host)} · ${esc(r.branchOrHq || '—')} · ${esc(r.incubator || '—')} · ${esc(r.status)}</span></article>`
+          )}`
         );
       return;
     }
@@ -457,11 +525,14 @@
         tenantName: fd.get('tenantName'),
         systemCode: fd.get('systemCode'),
         baseDomain: fd.get('baseDomain'),
+        branchOrHq: fd.get('branchOrHq'),
+        incubator: fd.get('incubator'),
+        platformName: fd.get('platformName'),
       });
-      toast(`تم منح الدومين: ${row.grantId || ''} · ${row.host}`);
+      toast(`تم منح الدومين: ${row.grantId || ''} · ${row.host} · ${row.platformName || ''}`);
     }
     if (type === 'structure') {
-      window.HubSystemOps.grantStructure({
+      const row = window.HubSystemOps.grantStructure({
         type: fd.get('type'),
         nameAr: fd.get('nameAr'),
         tenantName: fd.get('tenantName'),
@@ -471,11 +542,14 @@
     }
     if (type === 'rent') {
       const r = window.HubSystemOps.rentPlatform({
-        nameAr: fd.get('nameAr'),
+        nameAr: fd.get('platformName'),
         tenantName: fd.get('tenantName'),
         systemCode: fd.get('systemCode'),
+        branchOrHq: fd.get('branchOrHq'),
+        incubator: fd.get('incubator'),
+        platformName: fd.get('platformName'),
       });
-      toast(`تم الاستئجار: ${r.rental.host}`);
+      toast(`تم الاستئجار: ${r.rental.host} · ${r.rental.platformName || ''}`);
     }
     if (type === 'role') {
       const row = window.HubSystemOps.assignRole({
