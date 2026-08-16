@@ -452,7 +452,7 @@
         tenantName: fd.get('tenantName'),
         systemCode: fd.get('systemCode'),
       });
-      toast('تم منح الهيكل');
+      toast(`تم منح الهيكل: ${row.grantId || ''} · ${row.nameAr || ''}`);
     }
     if (type === 'rent') {
       const r = window.HubSystemOps.rentPlatform({
