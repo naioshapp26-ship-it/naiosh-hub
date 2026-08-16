@@ -1859,14 +1859,6 @@
           <li>احفظ → ابحث من الرئيسية بنفس الكلمة</li>
         </ul>
       </div>`,
-    'search-admin': () => `
-      <div class="card">
-        <h3><span class="title-left"><i class="fas fa-magnifying-glass icon"></i> إدارة محرك البحث</span></h3>
-        <ul class="muted" style="margin:8px 0 0;padding-inline-start:18px;line-height:1.8">
-          <li>ارفع صورة أو ملف أو ضع رابط فيديو</li>
-          <li>احفظ → ابحث من الرئيسية بنفس الكلمة</li>
-        </ul>
-      </div>`,
     'roles-permissions': () => `
       <div class="card">
         <h3><span class="title-left"><i class="fas fa-shield-alt icon"></i> إدارة الأدوار والصلاحيات</span></h3>
