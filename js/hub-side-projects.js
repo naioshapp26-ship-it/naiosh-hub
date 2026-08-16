@@ -771,6 +771,180 @@
     document.getElementById('sp-opened')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const introRoot = root.querySelector('[data-sp-intro]');
+  const introForm = root.querySelector('[data-sp-intake]');
+  const introResults = root.querySelector('[data-sp-intro-results]');
+  const introResultsGrid = root.querySelector('[data-sp-intro-results-grid]');
+  const introResultsLead = root.querySelector('[data-sp-intro-results-lead]');
+  const INTRO_KEY = 'naiosh_sp_client_intro_v1';
+
+  const setIntroStep = (step) => {
+    introRoot?.querySelectorAll('[data-sp-intro-step]').forEach((btn) => {
+      btn.classList.toggle('is-active', btn.getAttribute('data-sp-intro-step') === step);
+    });
+  };
+
+  const readIntroDraft = () => {
+    try {
+      return JSON.parse(localStorage.getItem(INTRO_KEY) || '{}') || {};
+    } catch {
+      return {};
+    }
+  };
+
+  const writeIntroDraft = (payload) => {
+    try {
+      localStorage.setItem(INTRO_KEY, JSON.stringify(payload));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const fillIntroDraft = () => {
+    if (!introForm) return;
+    const draft = readIntroDraft();
+    if (draft.project) introForm.project.value = draft.project;
+    if (draft.role) introForm.role.value = draft.role;
+    if (draft.need) introForm.need.value = draft.need;
+  };
+
+  const introAnswersFromForm = () => {
+    const fd = new FormData(introForm);
+    const project = String(fd.get('project') || '').trim();
+    const role = String(fd.get('role') || '').trim();
+    const need = String(fd.get('need') || '').trim();
+    return {
+      project,
+      role,
+      need,
+      skills: [project, role, need].filter(Boolean).join(' · '),
+      mode: /رقمي|اونلاين|أونلاين|online/i.test(`${project} ${need}`)
+        ? 'رقمي'
+        : /ميدان|محل|مول|عربة|منزلي|منزل/i.test(`${project} ${need}`)
+          ? 'ميداني'
+          : 'مختلط',
+      capital: /بدون رأس|منخفض|رخيص|صفر/i.test(need) ? 'منخفض' : 'متوسط',
+      home: /منزل|بيتي|من البيت/i.test(`${project} ${need}`) ? 'نعم' : 'مرن',
+      experience: /مبتدئ/i.test(role) ? 'مبتدئ' : /خبير|محترف/i.test(role) ? 'خبير' : 'متوسط',
+      location: /مول/i.test(`${project} ${need}`)
+        ? 'مول'
+        : /منزل|بيت/i.test(`${project} ${need}`)
+          ? 'منزل'
+          : /رقمي|اونلاين/i.test(`${project} ${need}`)
+            ? 'رقمي'
+            : 'مدينة',
+      season: 'على مدار السنة',
+      age: '٢٥–٣٥',
+      hours: '٥–١٠',
+      income: '',
+    };
+  };
+
+  const showIntroMatches = (answers, ranked) => {
+    if (introResults) introResults.hidden = false;
+    if (introResultsLead) {
+      introResultsLead.textContent = `حسب تحديك «${answers.project}» ودورك «${answers.role}» واحتياجك «${answers.need}» — أعلى فرص للاختبار الآن.`;
+    }
+    if (introResultsGrid) {
+      introResultsGrid.innerHTML = ranked
+        .map((r) => projectCard(r.p, { score: r.score, reasons: r.reasons, p: r.p, compact: true }))
+        .join('');
+    }
+    if (resultsPanel) resultsPanel.hidden = false;
+    if (resultsLead) {
+      resultsLead.textContent = `من تعريف العميل: ${answers.project} · ${answers.role} — أعلى 10 فرص.`;
+    }
+    if (resultsGrid) {
+      resultsGrid.innerHTML = ranked.map((r) => projectCard(r.p, { score: r.score, reasons: r.reasons, p: r.p, compact: false })).join('');
+    }
+    // Prefill detailed profile form when present
+    if (formEl) {
+      const map = {
+        skills: answers.skills,
+        mode: answers.mode,
+        capital: answers.capital,
+        home: answers.home,
+        experience: answers.experience,
+        location: answers.location,
+      };
+      Object.entries(map).forEach(([name, value]) => {
+        const el = formEl.elements?.namedItem?.(name);
+        if (el && 'value' in el) el.value = value;
+      });
+    }
+  };
+
+  const runIntroMatch = ({ scrollToResults = true } = {}) => {
+    if (!introForm) return;
+    if (!introForm.checkValidity()) {
+      introForm.reportValidity();
+      setIntroStep('match');
+      return toast('أكمل مشروعك ودورك وما تحتاجه من نايوش');
+    }
+    const answers = introAnswersFromForm();
+    writeIntroDraft({ project: answers.project, role: answers.role, need: answers.need, at: Date.now() });
+    const ranked = data.projects
+      .map((raw) => scoreProject(raw, answers))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+    setIntroStep('match');
+    showIntroMatches(answers, ranked);
+    if (scrollToResults) {
+      introResults?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    toast('تم تقييم تحديك واقتراح فرص مناسبة');
+  };
+
+  const runIntroUnderstand = () => {
+    setIntroStep('understand');
+    setType('all');
+    if (catFilter) catFilter.value = '';
+    pageByCat = {};
+    paintCatDir();
+    paintCatalog();
+    document.getElementById('sp-types')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast('تصفّح الملخصات حسب النوع والقائمة');
+  };
+
+  const runIntroAct = () => {
+    setIntroStep('act');
+    const draft = readIntroDraft();
+    if (draft.project && introForm && !introForm.project.value) {
+      introForm.project.value = draft.project || '';
+      introForm.role.value = draft.role || '';
+      introForm.need.value = draft.need || '';
+    }
+    if (selectedProject) {
+      document.getElementById('sp-path')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toast('مسار التشغيل جاهز — سجّل المشروع أو ابدأ الاختبار');
+      return;
+    }
+    if (introResults && !introResults.hidden) {
+      document.getElementById('sp-path')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      toast('اختر مشروعًا من النتائج ثم سجّله للخطوة العملية');
+      return;
+    }
+    if (introForm?.checkValidity()) {
+      runIntroMatch({ scrollToResults: true });
+      setTimeout(() => {
+        document.getElementById('sp-path')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 350);
+      return;
+    }
+    introForm?.project?.focus();
+    toast('اكتب تحديك أولًا لنحوّله إلى خطوة عملية');
+  };
+
+  const focusClientIntro = () => {
+    const hash = (location.hash || '').replace(/^#/, '');
+    if (hash && hash !== 'sp-client-intro') return;
+    const intro = document.getElementById('sp-client-intro');
+    if (!intro) return;
+    requestAnimationFrame(() => {
+      intro.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   paintPath();
   paintForm();
   paintStats();
@@ -779,6 +953,21 @@
   fillCountries();
   paintRegistrations();
   paintSelectedProject();
+  fillIntroDraft();
+  focusClientIntro();
+
+  introForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    runIntroMatch();
+  });
+  introRoot?.addEventListener('click', (e) => {
+    const stepBtn = e.target.closest('[data-sp-intro-step]');
+    if (!stepBtn) return;
+    const step = stepBtn.getAttribute('data-sp-intro-step');
+    if (step === 'understand') runIntroUnderstand();
+    else if (step === 'match') runIntroMatch();
+    else if (step === 'act') runIntroAct();
+  });
 
   root.querySelector('[data-sp-match]')?.addEventListener('click', match);
   root.querySelector('[data-sp-reset]')?.addEventListener('click', () => {

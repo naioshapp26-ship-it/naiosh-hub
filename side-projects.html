@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=11" />
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
-  <link rel="stylesheet" href="css/hub-side-projects.css?v=10" />
+  <link rel="stylesheet" href="css/hub-side-projects.css?v=11" />
   <link rel="stylesheet" href="css/hub-sector-engine.css?v=1" />
 </head>
 <body class="homepage">
@@ -37,15 +37,35 @@
   </header>
 
   <main class="container hub-feature-page" data-side-projects-page>
-    <section class="sp-client-intro" id="sp-client-intro" aria-labelledby="sp-client-intro-title">
+    <section class="sp-client-intro" id="sp-client-intro" aria-labelledby="sp-client-intro-title" data-sp-intro>
       <header class="sp-client-intro__head">
+        <p class="sp-client-intro__kicker"><i class="fas fa-handshake"></i> تعريف مباشر للعميل</p>
         <h2 id="sp-client-intro-title">ابدأ من التحدي الذي أمامك، وليس من الكتاب.</h2>
         <p>
           أخبر نايوش عن مشروعك.. دورك في المشروع.. وماذا تحتاج من نايوش .. نقيم لك ما تحتاجه ونكون معاك خطوة بخطوة
         </p>
       </header>
-      <div class="sp-client-intro__cards">
-        <article class="sp-client-intro__card sp-client-intro__card--blue">
+
+      <form class="sp-client-intake" data-sp-intake novalidate>
+        <label class="sp-client-intake__field">
+          <span>مشروعك / التحدي</span>
+          <textarea name="project" rows="2" required placeholder="مثال: أبي أفتح خدمة صيانة منزلية بجانب وظيفتي"></textarea>
+        </label>
+        <label class="sp-client-intake__field">
+          <span>دورك في المشروع</span>
+          <input name="role" type="text" required placeholder="مثال: صاحب المشروع · تسويق · تنفيذ" />
+        </label>
+        <label class="sp-client-intake__field">
+          <span>ماذا تحتاج من نايوش؟</span>
+          <input name="need" type="text" required placeholder="مثال: فكرة مناسبة · خطة · تدريب · تسجيل" />
+        </label>
+        <button type="submit" class="btn btn-primary sp-client-intake__submit">
+          <i class="fas fa-wand-magic-sparkles"></i> قيّم لي وابدأ الخطوة
+        </button>
+      </form>
+
+      <div class="sp-client-intro__cards" role="list">
+        <button type="button" class="sp-client-intro__card sp-client-intro__card--blue" data-sp-intro-step="understand" role="listitem">
           <span class="sp-client-intro__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -54,8 +74,9 @@
           </span>
           <h3>افهم الفكرة بسرعة</h3>
           <p>شرح واضح وخلاصة مركّزة، دون قراءة طويلة.</p>
-        </article>
-        <article class="sp-client-intro__card sp-client-intro__card--green">
+          <span class="sp-client-intro__cta">افتح ملخصات المشاريع</span>
+        </button>
+        <button type="button" class="sp-client-intro__card sp-client-intro__card--green" data-sp-intro-step="match" role="listitem">
           <span class="sp-client-intro__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="8" />
@@ -65,8 +86,9 @@
           </span>
           <h3>خذ ما يناسب مشروعك</h3>
           <p>توصيات أقرب لدورك ومرحلتك والتحدي الذي تعمل عليه.</p>
-        </article>
-        <article class="sp-client-intro__card sp-client-intro__card--purple">
+          <span class="sp-client-intro__cta">اقترح حسب التحدي</span>
+        </button>
+        <button type="button" class="sp-client-intro__card sp-client-intro__card--purple" data-sp-intro-step="act" role="listitem">
           <span class="sp-client-intro__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <path d="M5 12.5l4.5 4.5L19 7.5" />
@@ -74,7 +96,16 @@
           </span>
           <h3>حوّلها إلى خطوة</h3>
           <p>خطوات عملية وقوالب وقوائم تساعدك على التطبيق.</p>
-        </article>
+          <span class="sp-client-intro__cta">افتح مسار التشغيل</span>
+        </button>
+      </div>
+
+      <div class="sp-client-intro__results" data-sp-intro-results hidden>
+        <div class="sp-client-intro__results-head">
+          <h3><i class="fas fa-ranking-star"></i> فرص مناسبة لتحديك</h3>
+          <p data-sp-intro-results-lead>نتائج التقييم — اختر مشروعًا للتسجيل أو الاختبار.</p>
+        </div>
+        <div class="sp-client-intro__results-grid" data-sp-intro-results-grid></div>
       </div>
     </section>
 
@@ -326,7 +357,7 @@
   <script src="js/hub-side-projects-data.js?v=5"></script>
   <script src="js/hub-sector-library.js?v=1"></script>
   <script src="js/hub-universal-opportunity-engine.js?v=1"></script>
-  <script src="js/hub-side-projects.js?v=7"></script>
+  <script src="js/hub-side-projects.js?v=8"></script>
   <script src="js/hub-sector-engine-ui.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=10"></script>
   <script src="js/hub-global-back.js" defer></script>
