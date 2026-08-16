@@ -324,7 +324,7 @@
       { id: 'packages', label: 'الباقات', href: 'packages.html', need: 'read' },
       { id: 'info', label: 'مركز المعلومات', href: 'info-center.html', need: 'read' },
       { id: 'structure', label: 'الفروع والمنصات', href: 'system-ops.html?tab=grants', need: 'grant' },
-      { id: 'roles', label: 'إدارة الأدوار والصلاحيات', href: 'roles-permissions.html', need: 'admin', icon: 'fa-shield-alt' },
+      { id: 'roles', label: 'إدارة الأدوار والصلاحيات', href: 'roles-permissions.html', need: 'read', icon: 'fa-shield-alt' },
       { id: 'erpi', label: 'وحدات ERPI', href: 'system-ops.html?tab=erpi', need: 'ops' },
       { id: 'law', label: 'القانونية', href: 'system-ops.html?tab=law', need: 'legal' },
       { id: 'assets', label: 'الأصول', href: 'system-ops.html?tab=assets', need: 'admin' },
@@ -333,7 +333,7 @@
     const has = (need) => !need || perms.includes(need) || perms.includes('admin') || (need === 'ops' && (perms.includes('write') || perms.includes('ops')));
     // إن لم يُعيَّن دور بعد: اعرض الحد الأدنى للقراءة
     if (!perms.length) {
-      return all.filter((x) => ['home', 'panel', 'products', 'services', 'packages', 'info', 'tenant'].includes(x.id));
+      return all.filter((x) => ['home', 'panel', 'products', 'services', 'packages', 'info', 'tenant', 'roles'].includes(x.id));
     }
     return all.filter((x) => has(x.need));
   };
