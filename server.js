@@ -1,6 +1,8 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
+const { pipeline } = require('stream');
 const { URL } = require('url');
 const { checkEnvironment } = require('./db/env-check');
 const { getDatabaseUrl, migrate, listTables } = require('./db/migrate');
@@ -27,6 +29,9 @@ const MIME = {
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
 };
+
+const GZIP_EXTS = new Set(['.html', '.css', '.js', '.json', '.svg', '.txt', '.xml', '.mjs']);
+const LONG_CACHE_EXTS = new Set(['.css', '.js', '.json', '.png', '.jpg', '.jpeg', '.webp', '.svg', '.woff', '.woff2', '.ico']);
 
 function send(res, status, body, headers = {}) {
   res.writeHead(status, headers);
@@ -70,6 +75,27 @@ function resolveSafePath(pathname) {
   return filePath;
 }
 
+function cacheControlFor(ext) {
+  if (ext === '.html') return 'no-cache';
+  if (LONG_CACHE_EXTS.has(ext)) return 'public, max-age=86400, stale-while-revalidate=604800';
+  return 'public, max-age=300';
+}
+
+function streamFile(filePath, res, headers, useGzip) {
+  const src = fs.createReadStream(filePath);
+  if (useGzip) {
+    res.writeHead(200, { ...headers, 'Content-Encoding': 'gzip', Vary: 'Accept-Encoding' });
+    pipeline(src, zlib.createGzip({ level: 6 }), res, (err) => {
+      if (err && !res.headersSent) send(res, 500, 'Compression error');
+    });
+    return;
+  }
+  res.writeHead(200, headers);
+  pipeline(src, res, (err) => {
+    if (err && !res.headersSent) send(res, 500, 'Read error');
+  });
+}
+
 function serveStatic(req, res) {
   let pathname = new URL(req.url, 'http://localhost').pathname;
   if (pathname === '/') pathname = '/index.html';
@@ -79,18 +105,31 @@ function serveStatic(req, res) {
     return send(res, 403, 'Forbidden');
   }
 
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
+  fs.stat(filePath, (err, stat) => {
+    if (err || !stat.isFile()) {
       if (pathname !== '/index.html') {
-        return fs.readFile(path.join(ROOT, 'index.html'), (e2, html) => {
-          if (e2) return send(res, 404, 'Not Found');
-          send(res, 200, html, { 'Content-Type': 'text/html; charset=utf-8' });
+        const fallback = path.join(ROOT, 'index.html');
+        return fs.stat(fallback, (e2, st2) => {
+          if (e2 || !st2.isFile()) return send(res, 404, 'Not Found');
+          const headers = {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-cache',
+          };
+          const accept = String(req.headers['accept-encoding'] || '');
+          streamFile(fallback, res, headers, /\bgzip\b/.test(accept));
         });
       }
       return send(res, 404, 'Not Found');
     }
+
     const ext = path.extname(filePath).toLowerCase();
-    send(res, 200, data, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+    const accept = String(req.headers['accept-encoding'] || '');
+    const useGzip = GZIP_EXTS.has(ext) && /\bgzip\b/.test(accept) && stat.size >= 1024;
+    const headers = {
+      'Content-Type': MIME[ext] || 'application/octet-stream',
+      'Cache-Control': cacheControlFor(ext),
+    };
+    streamFile(filePath, res, headers, useGzip);
   });
 }
 

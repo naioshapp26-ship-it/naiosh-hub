@@ -1,5 +1,22 @@
-/* المشاريع الجانبية — خاصة · خفيفة · منزلية */
-.sp-hero .hub-feature-kicker { color: #ffe8ec !important; font-weight: 800; }
+.sp-data-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff7f8;
+  border: 1px solid #f0d4d8;
+  color: #444;
+  font-size: 13px;
+  font-weight: 800;
+}
+.sp-data-loading.is-error {
+  background: #fff1f1;
+  color: #8a1020;
+}
+.sp-data-loading i { color: #d70000; }
 
 /* تعريف مباشر للعميل — مسار شغّال: فورم + بطاقات إجراءات */
 .sp-client-intro {
