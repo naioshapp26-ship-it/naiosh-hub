@@ -1,6 +1,96 @@
 /* المشاريع الجانبية — خاصة · خفيفة · منزلية */
 .sp-hero .hub-feature-kicker { color: #ffe8ec !important; font-weight: 800; }
 
+/* تعريف مباشر للعميل — نفس شكل البطاقة الثلاثية */
+.sp-client-intro {
+  background: #faf9f6;
+  border-radius: 24px;
+  padding: clamp(28px, 4vw, 48px) clamp(18px, 3vw, 36px);
+  margin: 0 0 18px;
+  text-align: center;
+}
+.sp-client-intro__head {
+  max-width: 720px;
+  margin: 0 auto 44px;
+}
+.sp-client-intro__head h2 {
+  margin: 0 0 14px;
+  font-size: clamp(22px, 3.2vw, 32px);
+  font-weight: 900;
+  line-height: 1.45;
+  color: #1a1a1a;
+}
+.sp-client-intro__head p {
+  margin: 0;
+  font-size: clamp(14px, 1.7vw, 16px);
+  font-weight: 650;
+  line-height: 1.85;
+  color: #555;
+}
+.sp-client-intro__cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.sp-client-intro__card {
+  border-radius: 20px;
+  padding: clamp(28px, 3vw, 40px) clamp(18px, 2vw, 28px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+.sp-client-intro__card--blue {
+  background: #eef6ff;
+}
+.sp-client-intro__card--green {
+  background: #f0f9dc;
+}
+.sp-client-intro__card--purple {
+  background: #f1eaff;
+}
+.sp-client-intro__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: inline-grid;
+  place-items: center;
+  margin-bottom: 18px;
+}
+.sp-client-intro__icon svg {
+  width: 22px;
+  height: 22px;
+}
+.sp-client-intro__card--blue .sp-client-intro__icon {
+  background: #d7e9fb;
+  color: #1e4f8c;
+}
+.sp-client-intro__card--green .sp-client-intro__icon {
+  background: #e0efc0;
+  color: #3d6b14;
+}
+.sp-client-intro__card--purple .sp-client-intro__icon {
+  background: #e2d5f8;
+  color: #5b3d9a;
+}
+.sp-client-intro__card h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 900;
+  color: #2a2a2a;
+  line-height: 1.4;
+}
+.sp-client-intro__card p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.75;
+  color: #666;
+  max-width: 260px;
+}
+
 .sp-type-tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -735,9 +825,15 @@ body.sp-reg-open {
   .sp-results-grid,
   .sp-catalog-grid,
   .sp-detail-grid { grid-template-columns: 1fr; }
+  .sp-client-intro__cards { grid-template-columns: 1fr; }
+  .sp-client-intro__head { margin-bottom: 28px; }
 }
 
 @media (max-width: 560px) {
   .sp-type-tabs { grid-template-columns: 1fr; }
   .sp-reg-card { flex-direction: column; }
+  .sp-client-intro {
+    padding: 24px 14px;
+    border-radius: 18px;
+  }
 }
