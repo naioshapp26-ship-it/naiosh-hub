@@ -1,16 +1,18 @@
 /**
- * UI: الزر الأبيض في الهيرو → محرك البحث الشامل
- * قوائم مقترحة: جميع الفروع · الحاضنات · المنصات · الدومينات الفرعية الممنوحة
+ * UI: محرك البحث الشامل + كلمات البداية (Intent Starters)
+ * كل بداية = Intent ID تشغيلي يوجّه النتائج.
  */
 (() => {
   'use strict';
 
   const searchApi = window.HubUniversalSearch;
+  const intentsApi = window.HubSearchIntents;
   if (!searchApi) return;
 
   const esc = searchApi.esc;
   let filter = 'all';
   let open = false;
+  let activeIntentId = null;
 
   const ensureModal = () => {
     let modal = document.getElementById('hub-universal-search-modal');
@@ -25,16 +27,20 @@
         <header class="hus-head">
           <div>
             <h2 id="hus-title"><i class="fas fa-magnifying-glass"></i> محرك البحث الشامل</h2>
-            <p>فروع · حاضنات · منصات · دومينات فرعية · أنظمة · محتوى</p>
+            <p>NAIOSH SMART SEARCH · كلمات البداية تفهم النية وتوجّه المحركات</p>
           </div>
           <button type="button" class="hus-close" data-hus-close aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
         </header>
         <div class="hus-stats" data-hus-stats></div>
         <div class="hus-toolbar">
+          <p class="hus-ask-label"><i class="fas fa-comments"></i> ماذا تبحث اليوم؟</p>
+          <div class="hus-starters" data-hus-starters aria-label="كلمات البداية الذكية"></div>
           <label class="hus-input-wrap">
             <i class="fas fa-magnifying-glass"></i>
-            <input type="search" data-hus-input placeholder="ابحث بالاسم أو الرقم: INC-001 · PLT-003 · SD-012 · BR-005…" autocomplete="off" />
+            <input type="search" data-hus-input placeholder="اكتب ما تفكر فيه… وسيساعدك NAIOSH HUB في تحديد ما تبحث عنه" autocomplete="off" />
           </label>
+          <div class="hus-intent-bar" data-hus-intent-bar hidden></div>
+          <div class="hus-followups" data-hus-followups hidden></div>
           <div class="hus-suggest" data-hus-suggest aria-label="قوائم مقترحة"></div>
           <div class="hus-filters" role="tablist" aria-label="تصفية النوع">
             <button type="button" class="is-active" data-hus-filter="all">الكل</button>
@@ -82,8 +88,59 @@
       <article><strong>${s.branch || 0}</strong><span>فرع</span></article>
       <article><strong>${s.incubator}</strong><span>حاضنة</span></article>
       <article><strong>${s.platform}</strong><span>منصة</span></article>
-      <article><strong>${s.subdomain || 0}</strong><span>دومين فرعي</span></article>
-      <article><strong>${s.system}</strong><span>نظام</span></article>`;
+      <article><strong>${s.system}</strong><span>نظام</span></article>
+      <article><strong>${s.intents || 0}</strong><span>نية بحث</span></article>`;
+  };
+
+  const renderStarters = (modal) => {
+    const box = modal.querySelector('[data-hus-starters]');
+    if (!box || !intentsApi?.PRIMARY_STARTERS) return;
+    box.innerHTML = intentsApi.PRIMARY_STARTERS.map(
+      (s) => `<button type="button" class="hus-starter${activeIntentId === s.intentId ? ' is-active' : ''}" data-hus-intent="${esc(s.intentId)}" data-hus-starter="${esc(s.starter)}">
+        <i class="fas ${esc(s.icon)}" aria-hidden="true"></i>
+        <span>${esc(s.label)}</span>
+      </button>`
+    ).join('');
+  };
+
+  const renderIntentBar = (modal, intent) => {
+    const bar = modal.querySelector('[data-hus-intent-bar]');
+    if (!bar) return;
+    if (!intent) {
+      bar.hidden = true;
+      bar.innerHTML = '';
+      return;
+    }
+    bar.hidden = false;
+    bar.innerHTML = `
+      <div class="hus-intent-chip">
+        <strong><i class="fas fa-bullseye"></i> ${esc(intent.label)}</strong>
+        <code>${esc(intent.id)}</code>
+        <span>${esc(intent.explain || '')}</span>
+      </div>
+      <button type="button" class="hus-intent-clear" data-hus-clear-intent>مسح النية</button>`;
+  };
+
+  const renderFollowUps = (modal, followUps, baseQuery) => {
+    const box = modal.querySelector('[data-hus-followups]');
+    if (!box) return;
+    if (!followUps?.length) {
+      box.hidden = true;
+      box.innerHTML = '';
+      return;
+    }
+    box.hidden = false;
+    box.innerHTML = `
+      <p class="hus-followups-label"><i class="fas fa-sitemap"></i> حدّد أكثر (بحث متعدد المراحل)</p>
+      <div class="hus-followups-grid">
+        ${followUps
+          .map(
+            (f) =>
+              `<button type="button" class="hus-followup" data-hus-follow-intent="${esc(f.intentId || '')}" data-hus-follow-append="${esc(f.append || '')}">${esc(f.label)}</button>`
+          )
+          .join('')}
+      </div>`;
+    box.dataset.baseQuery = baseQuery || '';
   };
 
   const renderSuggest = (modal) => {
@@ -92,7 +149,7 @@
     const lists = searchApi.suggestedLists || [];
     const s = searchApi.stats();
     box.innerHTML = `
-      <p class="hus-suggest-label"><i class="fas fa-list-ul"></i> قوائم مقترحة</p>
+      <p class="hus-suggest-label"><i class="fas fa-list-ul"></i> قوائم سريعة</p>
       <div class="hus-suggest-grid">
         ${lists
           .map((list) => {
@@ -160,35 +217,56 @@
     if (lib) lib.href = `search-content.html?type=${encodeURIComponent(filter)}`;
   };
 
+  const runSearch = (modal, query) => {
+    const orchestrate = searchApi.searchOrchestrated || ((q, t, o) => ({ results: searchApi.search(q, t), intent: null, followUps: [], query: q }));
+    return orchestrate(query, filter, { intentId: activeIntentId || undefined });
+  };
+
   const renderResults = (modal, query) => {
     renderSectionHead(modal);
+    renderStarters(modal);
     renderSuggest(modal);
-    const list = searchApi.search(query, filter);
+    const pack = runSearch(modal, query);
+    if (!activeIntentId && pack.intent) activeIntentId = pack.intent.id;
+    renderIntentBar(modal, pack.intent || (activeIntentId && intentsApi?.byId?.(activeIntentId)));
+    renderFollowUps(modal, pack.followUps, pack.query || query);
+
+    const list = pack.results || [];
     const box = modal.querySelector('[data-hus-results]');
     if (!box) return;
     if (!list.length) {
       const emptyMsg =
         filter === 'subdomain'
           ? 'لا دومينات فرعية ممنوحة بعد — امنح دومينًا من تشغيل الأنظمة.'
-          : `لا نتائج في «${esc(sectionLabel(filter).pageTitle)}».`;
+          : `لا نتائج في «${esc(sectionLabel(filter).pageTitle)}». جرّب كلمة بداية أو اكتب سؤالك بحرية.`;
       box.innerHTML = `<p class="hus-empty">${emptyMsg}</p>`;
       return;
     }
     box.innerHTML = list
       .slice(0, 120)
-      .map(
-        (item) => `<a class="hus-item" href="${esc(item.href)}">
+      .map((item) => {
+        const why =
+          item.why && item.why.length
+            ? `<span class="hus-why" title="${esc(item.why.join(' · '))}"><i class="fas fa-circle-info"></i> لماذا؟</span>`
+            : '';
+        const score =
+          item.matchScore != null
+            ? `<span class="hus-match" title="NAIOSH Match Score">${esc(String(item.matchScore))}%</span>`
+            : '';
+        return `<a class="hus-item${item.source === 'intent-route' ? ' is-route' : ''}" href="${esc(item.href)}">
           ${mediaThumb(item)}
           <span class="hus-item-body">
             <strong>${esc(item.pageTitle || item.title)}</strong>
             <small>${esc(item.subtitle)}</small>
           </span>
           <span class="hus-item-meta">
+            ${score}
+            ${why}
             <em class="hus-badge hus-badge-${esc(item.type)}">${esc(item.typeAr || typeBadge(item.type))}</em>
-            <code title="المعرّف الرقمي">${esc(item.grantId || item.meta || '')}</code>
+            <code title="المعرّف">${esc(item.grantId || item.meta || '')}</code>
           </span>
-        </a>`
-      )
+        </a>`;
+      })
       .join('');
   };
 
@@ -198,6 +276,26 @@
       b.classList.toggle('is-active', b.getAttribute('data-hus-filter') === filter);
     });
     renderResults(modal, modal.querySelector('[data-hus-input]')?.value || '');
+  };
+
+  const applyIntent = (modal, intentId, starterText) => {
+    activeIntentId = intentId || null;
+    const input = modal.querySelector('[data-hus-input]');
+    const intent = intentsApi?.byId?.(intentId);
+    if (input && starterText != null) {
+      // لا تمسح نص المستخدم إن كان يكمل الجملة
+      if (!input.value || intent?.starters?.some((s) => input.value.startsWith(s))) {
+        input.value = starterText;
+      } else if (!input.value.includes(starterText)) {
+        input.value = starterText;
+      }
+    }
+    filter = 'all';
+    modal.querySelectorAll('[data-hus-filter]').forEach((b) => {
+      b.classList.toggle('is-active', b.getAttribute('data-hus-filter') === 'all');
+    });
+    renderResults(modal, input?.value || starterText || '');
+    input?.focus();
   };
 
   const setOpen = (next) => {
@@ -217,6 +315,11 @@
     const modal = ensureModal();
     modal.addEventListener('click', (e) => {
       if (e.target.closest('[data-hus-close]')) setOpen(false);
+      if (e.target.closest('[data-hus-clear-intent]')) {
+        activeIntentId = null;
+        renderResults(modal, modal.querySelector('[data-hus-input]')?.value || '');
+        return;
+      }
       const filterBtn = e.target.closest('[data-hus-filter]');
       if (filterBtn) {
         applyFilter(modal, filterBtn.getAttribute('data-hus-filter') || 'all');
@@ -224,12 +327,38 @@
       }
       const suggestBtn = e.target.closest('[data-hus-suggest-type]');
       if (suggestBtn) {
+        activeIntentId = null;
         applyFilter(modal, suggestBtn.getAttribute('data-hus-suggest-type') || 'all');
         modal.querySelector('[data-hus-input]')?.focus();
+        return;
+      }
+      const starterBtn = e.target.closest('[data-hus-intent]');
+      if (starterBtn) {
+        applyIntent(
+          modal,
+          starterBtn.getAttribute('data-hus-intent'),
+          starterBtn.getAttribute('data-hus-starter') || ''
+        );
+        return;
+      }
+      const followBtn = e.target.closest('[data-hus-follow-append]');
+      if (followBtn) {
+        const append = followBtn.getAttribute('data-hus-follow-append') || '';
+        const nextIntent = followBtn.getAttribute('data-hus-follow-intent') || activeIntentId;
+        const input = modal.querySelector('[data-hus-input]');
+        const base = (input?.value || modal.querySelector('[data-hus-followups]')?.dataset.baseQuery || '').trim();
+        const nextQ = `${base} ${append}`.replace(/\s+/g, ' ').trim();
+        if (input) input.value = nextQ;
+        activeIntentId = nextIntent;
+        renderResults(modal, nextQ);
       }
     });
     modal.querySelector('[data-hus-input]')?.addEventListener('input', (e) => {
-      renderResults(modal, e.target.value || '');
+      const val = e.target.value || '';
+      const detected = intentsApi?.detectIntent?.(val);
+      if (!val.trim()) activeIntentId = null;
+      else if (detected) activeIntentId = detected.id;
+      renderResults(modal, val);
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && open) setOpen(false);
@@ -243,12 +372,12 @@
     card.classList.add('is-search-trigger');
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
-    card.setAttribute('aria-label', 'محرك البحث الشامل — فروع وحاضنات ومنصات ودومينات');
+    card.setAttribute('aria-label', 'محرك البحث الشامل — كلمات بداية ذكية');
     card.innerHTML = `
       <div class="hero-float-icon" aria-hidden="true"><i class="fas fa-magnifying-glass"></i></div>
       <div class="hero-float-body">
         <strong class="hero-float-title">محرك البحث الشامل</strong>
-        <span class="hero-float-desc">فروع · حاضنات · منصات · دومينات</span>
+        <span class="hero-float-desc">ماذا تبحث اليوم؟ · نية ذكية</span>
       </div>`;
 
     const openSearch = (e) => {
@@ -269,12 +398,23 @@
     }
     wireModal();
     upgradeFloatCard();
-    if (location.hash === '#open-search') {
-      setTimeout(() => setOpen(true), 120);
-    }
-    window.addEventListener('hashchange', () => {
-      if (location.hash === '#open-search') setOpen(true);
-    });
+    const openFromHash = () => {
+      const hash = location.hash || '';
+      if (hash.startsWith('#open-search')) {
+        const params = new URLSearchParams(hash.replace(/^#open-search\/?/, '').replace(/^\?/, ''));
+        // support #open-search?intent=PROJECT_SEEK
+        const qs = hash.includes('?') ? new URLSearchParams(hash.split('?')[1]) : params;
+        const intent = qs.get('intent');
+        setOpen(true);
+        if (intent) {
+          const modal = ensureModal();
+          const meta = intentsApi?.byId?.(intent);
+          applyIntent(modal, intent, meta?.starters?.[0] || '');
+        }
+      }
+    };
+    if (location.hash.startsWith('#open-search')) setTimeout(openFromHash, 120);
+    window.addEventListener('hashchange', openFromHash);
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });

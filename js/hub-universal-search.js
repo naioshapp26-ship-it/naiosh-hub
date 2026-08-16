@@ -1,6 +1,6 @@
 /**
- * NAIOSH Universal Search — بحث موحّد:
- * فروع · حاضنات · منصات · دومينات فرعية ممنوحة · أنظمة · محتوى الأدمن.
+ * NAIOSH Universal Search Orchestrator
+ * فروع · حاضنات · منصات · دومينات · أنظمة · محتوى + Intent Engine
  */
 (() => {
   'use strict';
@@ -64,7 +64,6 @@
     const items = [];
     const ops = readOps();
 
-    // —— الفروع ——
     (window.HubBranchesData?.BRANCHES || []).forEach((br, idx) => {
       const num = Number(String(br.erpCode || '').replace(/\D/g, '')) || idx + 1;
       const grantId = br.erpCode || padId('BR', num);
@@ -85,7 +84,6 @@
       });
     });
 
-    // —— الحاضنات (معرف رقم حاضنة) ——
     (window.HubIncubatorsData?.INCUBATORS || []).forEach((inc) => {
       const num = Number(inc.num) || 0;
       const grantId = padId('INC', num);
@@ -104,7 +102,6 @@
       });
     });
 
-    // —— المنصات (رقم منصة) ——
     const platforms = window.HubSovereignPlatforms?.list || [];
     platforms.forEach((p, idx) => {
       const num = Number(p.num) || idx + 1;
@@ -127,7 +124,6 @@
       });
     });
 
-    // —— دومينات فرعية ممنوحة ——
     (ops.subdomains || []).forEach((sd, idx) => {
       const num = Number(sd.num) || idx + 1;
       const grantId = sd.grantId || padId('SD', num);
@@ -162,7 +158,6 @@
       });
     });
 
-    // —— هياكل ممنوحة (حاضنة/منصة/فرع إضافية) ——
     (ops.structures || []).forEach((st, idx) => {
       const kind = st.type || 'platform';
       const type =
@@ -188,7 +183,6 @@
       });
     });
 
-    // —— الأنظمة ——
     const apps = window.HubMarketplaceData?.APPS || [];
     apps.forEach((app) => {
       if (app.kind === 'sovereign') return;
@@ -210,7 +204,6 @@
       });
     });
 
-    // محتوى يضيفه الأدمن
     const custom = window.HubSearchCatalog?.toSearchItems?.() || [];
     custom.forEach((c) => items.push(c));
 
@@ -221,27 +214,73 @@
       icon: 'fa-lightbulb',
       title: 'المشاريع الجانبية',
       subtitle: 'ابدأ من التحدي الذي أمامك، وليس من الكتاب',
-      meta: 'Side Projects',
+      meta: 'Side Projects · Opportunity',
       href: 'side-projects.html#sp-client-intro',
       keywords:
-        'مشاريع جانبية مشروع جانبي side projects قناتي تحدي نايوش افهم الفكرة خذ ما يناسب حوّلها إلى خطوة تعريف العميل',
+        'مشاريع جانبية مشروع جانبي side projects قناتي تحدي نايوش دخل إضافي منزلي متنقل موسمي فرصة opportunity engine رأس مال قليل',
+    });
+
+    items.push({
+      id: 'hub-systems-instructions',
+      type: 'content',
+      typeAr: 'تعليمات',
+      icon: 'fa-book-open',
+      title: 'تعليمات أنظمة نايوش',
+      subtitle: 'قواعد منح الفروع والحاضنات والمنصات والمكاتب والأنظمة',
+      meta: 'Instructions',
+      href: 'systems-instructions.html',
+      keywords: 'تعليمات أنظمة منح فرع حاضنة منصة مكتب نظام',
     });
 
     return items;
   };
 
-  const search = (query, typeFilter = 'all') => {
-    const q = norm(query);
-    return collectCatalog()
+  /**
+   * Orchestrated search:
+   * query + optional typeFilter + optional intentId
+   * returns { results, intent, followUps, query }
+   */
+  const search = (query, typeFilter = 'all', options = {}) => {
+    const intentsApi = window.HubSearchIntents;
+    const qRaw = String(query || '').trim();
+    const q = norm(qRaw);
+    const intent =
+      (options.intentId && intentsApi?.byId?.(options.intentId)) ||
+      (options.intent !== undefined ? options.intent : intentsApi?.detectIntent?.(qRaw)) ||
+      null;
+
+    const preferredTypes = intent?.routes?.types?.filter((t) => t !== 'all') || [];
+    let effectiveType = typeFilter;
+    // إذا لم يختر المستخدم فلترًا يدويًا وكان للنية نوع واحد واضح
+    if (typeFilter === 'all' && preferredTypes.length === 1) {
+      effectiveType = preferredTypes[0];
+    }
+
+    const catalog = collectCatalog();
+    const routed = intent && intentsApi?.destinationCards ? intentsApi.destinationCards(intent) : [];
+    const pool = [...routed, ...catalog];
+
+    const results = pool
       .filter((item) => {
-        if (typeFilter !== 'all' && item.type !== typeFilter) return false;
+        if (effectiveType !== 'all' && item.type !== effectiveType && item.source !== 'intent-route') return false;
         if (!q) return true;
+        // لنتائج التوجيه: تظهر دائمًا مع النية
+        if (item.source === 'intent-route') return true;
         const hay = norm(`${item.keywords} ${item.title} ${item.subtitle} ${item.meta} ${item.grantId || ''}`);
+        // نية نشطة: مرّر إن طابقت أي توكن من الاستعلام أو كلمات النية
+        if (intent) {
+          const tokens = q.split(' ').filter(Boolean);
+          const intentKws = (intent.routes?.keywords || []).map((k) => norm(k)).filter(Boolean);
+          const hitQuery = !tokens.length || tokens.some((t) => hay.includes(t));
+          const hitIntent = intentKws.some((k) => hay.includes(k));
+          return hitQuery || hitIntent || preferredTypes.includes(item.type);
+        }
         return q.split(' ').every((t) => !t || hay.includes(t));
       })
       .map((item) => {
         const t = norm(item.title);
-        let score = 1;
+        let score = item.matchScore || 1;
+        const why = [...(item.why || [])];
         if (q && t === q) score += 20;
         else if (q && t.startsWith(q)) score += 12;
         else if (q && t.includes(q)) score += 8;
@@ -250,10 +289,29 @@
         if (q && String(item.num || '') === q.replace(/^#/, '')) score += 12;
         if (q && norm(item.subtitle).includes(q)) score += 4;
         if (item.source === 'admin-catalog' && q) score += 2;
-        return { ...item, score };
+
+        if (intent && intentsApi?.scoreAgainstIntent) {
+          const intentScore = intentsApi.scoreAgainstIntent(item, intent, q);
+          score += intentScore.score;
+          why.push(...(intentScore.why || []));
+        }
+
+        const matchScore = Math.max(1, Math.min(99, Math.round(score)));
+        return { ...item, score, matchScore, why: why.slice(0, 5), intentId: intent?.id || item.intentId || null };
       })
       .sort((a, b) => b.score - a.score || Number(a.num || 0) - Number(b.num || 0) || a.title.localeCompare(b.title, 'ar'));
+
+    return {
+      results,
+      intent,
+      followUps: intent?.followUps || [],
+      query: qRaw,
+      typeFilter: effectiveType,
+    };
   };
+
+  /** توافق خلفي: searchLegacy يعيد مصفوفة فقط */
+  const searchItems = (query, typeFilter = 'all', options = {}) => search(query, typeFilter, options).results;
 
   const stats = () => {
     const catalog = collectCatalog();
@@ -270,11 +328,13 @@
       file: count('file'),
       video: count('video'),
       custom: catalog.filter((i) => i.source === 'admin-catalog').length,
+      intents: window.HubSearchIntents?.INTENTS?.length || 0,
     };
   };
 
   window.HubUniversalSearch = {
-    search,
+    search: searchItems,
+    searchOrchestrated: search,
     stats,
     collectCatalog,
     suggestedLists: SUGGESTED_LISTS,

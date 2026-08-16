@@ -218,6 +218,166 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   flex: 0 0 auto;
 }
 
+.hus-ask-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 900;
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hus-ask-label i {
+  color: #dc2626;
+}
+
+.hus-starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 92px;
+  overflow: auto;
+  padding-bottom: 2px;
+}
+
+.hus-starter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hus-starter i {
+  color: #dc2626;
+  font-size: 11px;
+}
+
+.hus-starter:hover,
+.hus-starter.is-active {
+  border-color: #dc2626;
+  background: #fff1f2;
+  color: #991b1b;
+}
+
+.hus-intent-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #fff;
+}
+
+.hus-intent-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hus-intent-chip strong {
+  font-weight: 900;
+}
+
+.hus-intent-chip code {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+}
+
+.hus-intent-chip span {
+  color: #cbd5e1;
+}
+
+.hus-intent-clear {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #fff;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.hus-followups {
+  display: grid;
+  gap: 6px;
+}
+
+.hus-followups-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 850;
+  color: #64748b;
+}
+
+.hus-followups-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hus-followup {
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hus-followup:hover {
+  border-color: #dc2626;
+  color: #991b1b;
+  background: #fff1f2;
+}
+
+.hus-item.is-route {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: linear-gradient(90deg, #fff7f7, #fff);
+}
+
+.hus-match {
+  font-size: 11px;
+  font-weight: 900;
+  color: #166534;
+  background: #dcfce7;
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.hus-why {
+  font-size: 11px;
+  font-weight: 800;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-radius: 999px;
+  padding: 2px 7px;
+  cursor: help;
+}
+
 .hus-toolbar {
   padding: 10px 18px;
   display: grid;
