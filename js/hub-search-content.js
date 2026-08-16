@@ -1,5 +1,6 @@
 /**
  * صفحة عرض محتوى محرك البحث — تفاصيل عنصر أو مكتبة تصنيف بمسمّى واضح
+ * مع بحث بالموضوع ووضع بطاقات / قائمة
  */
 (() => {
   'use strict';
@@ -12,6 +13,7 @@
   const type = params.get('type') || '';
   const stage = root.querySelector('[data-sc-stage]');
   const library = root.querySelector('[data-sc-library]');
+  const VIEW_KEY = 'hub-search-content-view';
 
   const esc = (v = '') =>
     String(v)
@@ -19,6 +21,18 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+
+  const normalize = (value) =>
+    String(value || '')
+      .normalize('NFKD')
+      .replace(/[\u064B-\u065F\u0670]/g, '')
+      .replace(/[إأآٱ]/g, 'ا')
+      .replace(/ى/g, 'ي')
+      .replace(/ة/g, 'ه')
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
 
   const sectionMeta = (key) =>
     window.HubSearchCatalog?.SECTION_META?.[key] || {
@@ -81,6 +95,125 @@
     </nav>`;
   };
 
+  const getViewMode = () => {
+    const saved = localStorage.getItem(VIEW_KEY);
+    return saved === 'list' ? 'list' : 'cards';
+  };
+
+  const setViewMode = (mode) => {
+    localStorage.setItem(VIEW_KEY, mode === 'list' ? 'list' : 'cards');
+  };
+
+  const itemMatches = (item, query) => {
+    if (!query) return true;
+    const hay = normalize(
+      [item.pageTitle, item.title, item.description, item.keywords, item.mediaName, item.section, item.kind]
+        .filter(Boolean)
+        .join(' ')
+    );
+    return query.split(/\s+/).filter(Boolean).every((token) => hay.includes(token));
+  };
+
+  const cardHtml = (item) => {
+    const itemSec = sectionMeta(item.section || item.kind);
+    const name = item.pageTitle || item.title;
+    const thumb =
+      item.mediaDataUrl && (item.kind === 'image' || String(item.mediaMime || '').startsWith('image/'))
+        ? `<img src="${esc(item.mediaDataUrl)}" alt="${esc(name)}" />`
+        : `<span class="sc-card-ico"><i class="fas ${esc(itemSec.icon)}"></i></span>`;
+    return `<a class="sc-card" href="search-content.html?id=${encodeURIComponent(item.id)}">
+      <div class="sc-card-media">${thumb}</div>
+      <div class="sc-card-body">
+        <em>${esc(itemSec.pageTitle)}</em>
+        <strong>${esc(name)}</strong>
+        <small>${esc(item.description || item.title || '')}</small>
+      </div>
+    </a>`;
+  };
+
+  const listRowHtml = (item) => {
+    const itemSec = sectionMeta(item.section || item.kind);
+    const name = item.pageTitle || item.title;
+    const kindLabel = mediaMeta(item.kind).typeAr;
+    return `<a class="sc-list-row" href="search-content.html?id=${encodeURIComponent(item.id)}">
+      <span class="sc-list-ico" aria-hidden="true"><i class="fas ${esc(itemSec.icon)}"></i></span>
+      <span class="sc-list-main">
+        <strong>${esc(name)}</strong>
+        <small>${esc(item.description || item.title || 'اضغط لعرض المنشور')}</small>
+      </span>
+      <span class="sc-list-meta">
+        <em>${esc(itemSec.pageTitle)}</em>
+        <span>${esc(kindLabel)}</span>
+      </span>
+      <span class="sc-list-open" aria-hidden="true"><i class="fas fa-chevron-left"></i></span>
+    </a>`;
+  };
+
+  const renderLibraryItems = (items, query, viewMode) => {
+    if (!library) return;
+    const filtered = items.filter((item) => itemMatches(item, query));
+    const countEl = root.querySelector('[data-sc-count]');
+    if (countEl) {
+      countEl.textContent = query
+        ? `عرض ${filtered.length} من ${items.length}`
+        : `${items.length} منشور`;
+    }
+
+    if (!items.length) {
+      library.innerHTML = `<p class="sc-empty">لا عناصر بعد — أضِف من <a href="search-admin.html">إدارة محرك البحث</a> واختر التصنيف المناسب.</p>`;
+      return;
+    }
+    if (!filtered.length) {
+      library.innerHTML = `<p class="sc-empty">لا نتائج لـ «${esc(query)}» — جرّب كلمة أخرى أو امسح البحث.</p>`;
+      return;
+    }
+
+    if (viewMode === 'list') {
+      library.innerHTML = `<div class="sc-list" role="list">${filtered.map(listRowHtml).join('')}</div>`;
+      return;
+    }
+    library.innerHTML = `<div class="sc-grid">${filtered.map(cardHtml).join('')}</div>`;
+  };
+
+  const bindLibraryControls = (items) => {
+    const searchInput = root.querySelector('[data-sc-search]');
+    const clearBtn = root.querySelector('[data-sc-search-clear]');
+    const viewBtns = root.querySelectorAll('[data-sc-view]');
+
+    const refresh = () => {
+      const query = normalize(searchInput?.value || '');
+      const viewMode = getViewMode();
+      viewBtns.forEach((btn) => {
+        const active = btn.getAttribute('data-sc-view') === viewMode;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      if (clearBtn) clearBtn.hidden = !String(searchInput?.value || '').trim();
+      renderLibraryItems(items, query, viewMode);
+    };
+
+    searchInput?.addEventListener('input', refresh);
+    searchInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        refresh();
+      }
+    });
+    clearBtn?.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      searchInput?.focus();
+      refresh();
+    });
+    viewBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setViewMode(btn.getAttribute('data-sc-view') || 'cards');
+        refresh();
+      });
+    });
+
+    refresh();
+  };
+
   const renderDetail = (item) => {
     const sec = sectionMeta(item.section || item.kind);
     const displayName = item.pageTitle || item.title;
@@ -121,7 +254,7 @@
   const renderLibrary = (items, sectionKey) => {
     const sec = sectionKey ? sectionMeta(sectionKey) : null;
     const title = sec ? sec.pageTitle : 'كل المحتوى المرفوع';
-    const lead = sec ? sec.pageLead : 'كل العناصر المنشورة من الأدمن حسب التصنيف — اضغط أي بطاقة لعرض المحتوى.';
+    const lead = sec ? sec.pageLead : 'كل العناصر المنشورة من الأدمن حسب التصنيف — ابحث أو اعرض كقائمة، ثم اضغط الموضوع لفتح المنشور.';
     document.title = `${title} | محرك البحث | نايوش هوب`;
     if (stage) {
       stage.innerHTML = `
@@ -130,31 +263,27 @@
           <p class="sc-kicker"><i class="fas ${esc(sec?.icon || 'fa-layer-group')}"></i> مكتبة محرك البحث</p>
           <h1>${esc(title)}</h1>
           <p class="sc-lead">${esc(lead)}</p>
-        </section>`;
-    }
-    if (!library) return;
-    if (!items.length) {
-      library.innerHTML = `<p class="sc-empty">لا عناصر في «${esc(title)}» بعد — أضِف من <a href="search-admin.html">إدارة محرك البحث</a> واختر التصنيف المناسب.</p>`;
-      return;
-    }
-    library.innerHTML = `<div class="sc-grid">${items
-      .map((item) => {
-        const itemSec = sectionMeta(item.section || item.kind);
-        const name = item.pageTitle || item.title;
-        const thumb =
-          item.mediaDataUrl && (item.kind === 'image' || String(item.mediaMime || '').startsWith('image/'))
-            ? `<img src="${esc(item.mediaDataUrl)}" alt="${esc(name)}" />`
-            : `<span class="sc-card-ico"><i class="fas ${esc(itemSec.icon)}"></i></span>`;
-        return `<a class="sc-card" href="search-content.html?id=${encodeURIComponent(item.id)}">
-          <div class="sc-card-media">${thumb}</div>
-          <div class="sc-card-body">
-            <em>${esc(itemSec.pageTitle)}</em>
-            <strong>${esc(name)}</strong>
-            <small>${esc(item.description || item.title || '')}</small>
+        </section>
+        <div class="sc-toolbar" role="search">
+          <label class="sc-search">
+            <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+            <input data-sc-search type="search" placeholder="ابحث عن موضوع أو وصف أو كلمة مفتاحية…" aria-label="بحث في المنشورات" autocomplete="off" />
+            <button type="button" class="sc-search-clear" data-sc-search-clear hidden aria-label="مسح البحث"><i class="fas fa-xmark"></i></button>
+          </label>
+          <div class="sc-toolbar-side">
+            <span class="sc-count" data-sc-count></span>
+            <div class="sc-view-toggle" role="group" aria-label="طريقة العرض">
+              <button type="button" class="sc-view-btn" data-sc-view="cards" aria-pressed="true" title="عرض بطاقات">
+                <i class="fas fa-grip" aria-hidden="true"></i> بطاقات
+              </button>
+              <button type="button" class="sc-view-btn" data-sc-view="list" aria-pressed="false" title="عرض قائمة">
+                <i class="fas fa-list-ul" aria-hidden="true"></i> قائمة
+              </button>
+            </div>
           </div>
-        </a>`;
-      })
-      .join('')}</div>`;
+        </div>`;
+    }
+    bindLibraryControls(items);
   };
 
   const boot = async () => {

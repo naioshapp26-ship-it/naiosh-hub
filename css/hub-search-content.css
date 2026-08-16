@@ -293,3 +293,232 @@ body.homepage .sc-type-nav a.is-active {
   color: #b91c1c !important;
   font-weight: 800;
 }
+
+/* بحث + تبديل العرض */
+.sc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.sc-search {
+  position: relative;
+  flex: 1 1 280px;
+  display: flex;
+  align-items: center;
+  min-width: min(100%, 240px);
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 0 12px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.sc-search > i {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.sc-search input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 12px 10px;
+  font: inherit;
+  font-weight: 700;
+  color: #111827;
+  min-width: 0;
+}
+
+.sc-search input::placeholder {
+  color: #9ca3af;
+  font-weight: 650;
+}
+
+.sc-search-clear {
+  border: 0;
+  background: #f3f4f6;
+  color: #4b5563;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sc-search-clear:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.sc-toolbar-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-inline-start: auto;
+}
+
+.sc-count {
+  font-size: 13px;
+  font-weight: 800;
+  color: #6b7280;
+}
+
+.sc-view-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.sc-view-btn {
+  border: 0;
+  background: transparent;
+  color: #4b5563;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sc-view-btn.is-active,
+.sc-view-btn[aria-pressed='true'] {
+  background: linear-gradient(135deg, #ff2d2d, #b10011);
+  color: #fff;
+}
+
+body.homepage .sc-view-btn:not(.is-active) {
+  color: #4b5563 !important;
+}
+
+body.homepage .sc-view-btn.is-active {
+  color: #fff !important;
+}
+
+body.homepage .sc-search input,
+body.homepage .sc-count,
+body.homepage .sc-list-main strong,
+body.homepage .sc-list-main small {
+  color: #111827 !important;
+}
+
+body.homepage .sc-list-meta em {
+  color: #b91c1c !important;
+}
+
+/* وضع القائمة */
+.sc-list {
+  display: grid;
+  gap: 8px;
+}
+
+.sc-list-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #ececf1;
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.sc-list-row:hover {
+  border-color: rgba(185, 28, 28, 0.35);
+  box-shadow: 0 12px 28px rgba(120, 0, 20, 0.1);
+  transform: translateY(-1px);
+}
+
+.sc-list-ico {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #1a0008, #500014);
+  color: #fecdd3;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.sc-list-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sc-list-main strong {
+  font-size: 15px;
+  font-weight: 900;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-list-main small {
+  color: #6b7280;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-list-meta {
+  display: grid;
+  gap: 2px;
+  justify-items: end;
+  text-align: end;
+}
+
+.sc-list-meta em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  color: #b91c1c;
+}
+
+.sc-list-meta span {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.sc-list-open {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .sc-list-row {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .sc-list-meta {
+    display: none;
+  }
+
+  .sc-toolbar-side {
+    width: 100%;
+    justify-content: space-between;
+    margin-inline-start: 0;
+  }
+}
