@@ -104,7 +104,7 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 
 .hus-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   padding: 12px 18px 0;
 }
@@ -127,6 +127,89 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   font-size: 11px;
   font-weight: 700;
   color: #cbd5e1;
+}
+
+.hus-suggest {
+  display: grid;
+  gap: 8px;
+}
+
+.hus-suggest-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 850;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hus-suggest-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hus-suggest-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: start;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font: inherit;
+  color: #0f172a;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hus-suggest-card:hover,
+.hus-suggest-card.is-active {
+  border-color: #dc2626;
+  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.08);
+}
+
+.hus-suggest-ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-grid;
+  place-items: center;
+  background: #fff1f2;
+  color: #dc2626;
+  flex: 0 0 auto;
+}
+
+.hus-suggest-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.hus-suggest-copy strong {
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.hus-suggest-copy small {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.hus-suggest-card em {
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 900;
+  color: #0f172a;
+  background: #f1f5f9;
+  border-radius: 999px;
+  padding: 4px 8px;
 }
 
 .hus-toolbar {
@@ -256,6 +339,16 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   color: #1d4ed8;
 }
 
+.hus-badge-branch {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.hus-badge-subdomain {
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
 .hus-badge-system {
   background: #fef2f2;
   color: #b91c1c;
@@ -281,6 +374,10 @@ body.hus-open {
 @media (max-width: 640px) {
   .hus-stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hus-suggest-grid {
+    grid-template-columns: 1fr;
   }
 
   .hus-item {

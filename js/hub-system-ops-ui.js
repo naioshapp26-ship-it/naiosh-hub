@@ -131,7 +131,7 @@
             <input name="baseDomain" value="naiosh.app" />
             <button class="btn btn-primary">منح صب دومين</button>
           </form>
-          ${listRows(state.subdomains.slice(0, 20), (r) => `<article><strong>${esc(r.host)}</strong><span>${esc(r.tenantName)} · ${esc(r.systemCode)}</span></article>`)}`
+          ${listRows(state.subdomains.slice(0, 20), (r) => `<article><strong>${esc(r.grantId || '')} · ${esc(r.host)}</strong><span>${esc(r.tenantName)} · ${esc(r.systemCode)}</span></article>`)}`
         ) +
         section(
           'منح فروع · حاضنات · منصات · مكاتب إلكترونية',
@@ -144,7 +144,7 @@
             <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
             <button class="btn btn-primary">منح</button>
           </form>
-          ${listRows(state.structures.slice(0, 20), (r) => `<article><strong>${esc(r.nameAr)}</strong><span>${esc(r.type)} · ${esc(r.tenantName)} · ${esc(r.systemCode)}</span></article>`)}`
+          ${listRows(state.structures.slice(0, 20), (r) => `<article><strong>${esc(r.grantId || '')} · ${esc(r.nameAr)}</strong><span>${esc(r.type)} · ${esc(r.tenantName)} · ${esc(r.systemCode)}</span></article>`)}`
         ) +
         section(
           'استئجار منصة + دومين فرعي',
@@ -443,7 +443,7 @@
         systemCode: fd.get('systemCode'),
         baseDomain: fd.get('baseDomain'),
       });
-      toast(`تم منح الدومين: ${row.host}`);
+      toast(`تم منح الدومين: ${row.grantId || ''} · ${row.host}`);
     }
     if (type === 'structure') {
       window.HubSystemOps.grantStructure({

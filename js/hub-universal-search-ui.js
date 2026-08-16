@@ -1,5 +1,6 @@
 /**
  * UI: الزر الأبيض في الهيرو → محرك البحث الشامل
+ * قوائم مقترحة: جميع الفروع · الحاضنات · المنصات · الدومينات الفرعية الممنوحة
  */
 (() => {
   'use strict';
@@ -24,7 +25,7 @@
         <header class="hus-head">
           <div>
             <h2 id="hus-title"><i class="fas fa-magnifying-glass"></i> محرك البحث الشامل</h2>
-            <p>حاضنات · منصات · أنظمة · محتوى مرفوع من الأدمن</p>
+            <p>فروع · حاضنات · منصات · دومينات فرعية · أنظمة · محتوى</p>
           </div>
           <button type="button" class="hus-close" data-hus-close aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
         </header>
@@ -32,12 +33,15 @@
         <div class="hus-toolbar">
           <label class="hus-input-wrap">
             <i class="fas fa-magnifying-glass"></i>
-            <input type="search" data-hus-input placeholder="مثال: مشاريع جانبية · تعليم · فيديو · UOS…" autocomplete="off" />
+            <input type="search" data-hus-input placeholder="ابحث بالاسم أو الرقم: INC-001 · PLT-003 · SD-012 · BR-005…" autocomplete="off" />
           </label>
+          <div class="hus-suggest" data-hus-suggest aria-label="قوائم مقترحة"></div>
           <div class="hus-filters" role="tablist" aria-label="تصفية النوع">
             <button type="button" class="is-active" data-hus-filter="all">الكل</button>
+            <button type="button" data-hus-filter="branch">فروع</button>
             <button type="button" data-hus-filter="incubator">حاضنات</button>
             <button type="button" data-hus-filter="platform">منصات</button>
+            <button type="button" data-hus-filter="subdomain">دومينات فرعية</button>
             <button type="button" data-hus-filter="system">أنظمة</button>
             <button type="button" data-hus-filter="content">محتوى</button>
             <button type="button" data-hus-filter="image">صور</button>
@@ -60,6 +64,8 @@
   const typeBadge = (type) => {
     if (type === 'incubator') return 'حاضنة';
     if (type === 'platform') return 'منصة';
+    if (type === 'branch') return 'فرع';
+    if (type === 'subdomain') return 'دومين فرعي';
     if (type === 'content') return 'محتوى';
     if (type === 'image') return 'صورة';
     if (type === 'file') return 'ملف';
@@ -73,10 +79,44 @@
     if (!el) return;
     el.innerHTML = `
       <article><strong>${s.all}</strong><span>إجمالي</span></article>
+      <article><strong>${s.branch || 0}</strong><span>فرع</span></article>
       <article><strong>${s.incubator}</strong><span>حاضنة</span></article>
       <article><strong>${s.platform}</strong><span>منصة</span></article>
-      <article><strong>${s.system}</strong><span>نظام</span></article>
-      <article><strong>${s.custom || 0}</strong><span>مرفوع</span></article>`;
+      <article><strong>${s.subdomain || 0}</strong><span>دومين فرعي</span></article>
+      <article><strong>${s.system}</strong><span>نظام</span></article>`;
+  };
+
+  const renderSuggest = (modal) => {
+    const box = modal.querySelector('[data-hus-suggest]');
+    if (!box) return;
+    const lists = searchApi.suggestedLists || [];
+    const s = searchApi.stats();
+    box.innerHTML = `
+      <p class="hus-suggest-label"><i class="fas fa-list-ul"></i> قوائم مقترحة</p>
+      <div class="hus-suggest-grid">
+        ${lists
+          .map((list) => {
+            const count =
+              list.type === 'branch'
+                ? s.branch
+                : list.type === 'incubator'
+                  ? s.incubator
+                  : list.type === 'platform'
+                    ? s.platform
+                    : list.type === 'subdomain'
+                      ? s.subdomain
+                      : 0;
+            return `<button type="button" class="hus-suggest-card${filter === list.type ? ' is-active' : ''}" data-hus-suggest-type="${esc(list.type)}">
+              <span class="hus-suggest-ico" aria-hidden="true"><i class="fas ${esc(list.icon)}"></i></span>
+              <span class="hus-suggest-copy">
+                <strong>${esc(list.label)}</strong>
+                <small>${esc(list.lead)}</small>
+              </span>
+              <em>${Number(count || 0).toLocaleString('ar-EG')}</em>
+            </button>`;
+          })
+          .join('')}
+      </div>`;
   };
 
   const mediaThumb = (item) => {
@@ -90,6 +130,12 @@
     const map = window.HubSearchCatalog?.SECTION_META || {};
     if (map[type]?.pageTitle) return map[type];
     if (type === 'all') return { pageTitle: 'الكل', pageLead: 'كل نتائج محرك البحث', icon: 'fa-border-all' };
+    if (type === 'branch') return { pageTitle: 'الفروع', pageLead: 'جميع الفروع مع رقم الفرع', icon: 'fa-code-branch' };
+    if (type === 'incubator')
+      return { pageTitle: 'الحاضنات', pageLead: 'جميع الحاضنات مع معرف رقم الحاضنة', icon: 'fa-seedling' };
+    if (type === 'platform') return { pageTitle: 'المنصات', pageLead: 'جميع المنصات مع رقم المنصة', icon: 'fa-layer-group' };
+    if (type === 'subdomain')
+      return { pageTitle: 'الدومينات الفرعية', pageLead: 'كل دومين فرعي ممنوح مع رقمه', icon: 'fa-globe' };
     return { pageTitle: typeBadge(type), pageLead: '', icon: 'fa-folder' };
   };
 
@@ -116,15 +162,20 @@
 
   const renderResults = (modal, query) => {
     renderSectionHead(modal);
+    renderSuggest(modal);
     const list = searchApi.search(query, filter);
     const box = modal.querySelector('[data-hus-results]');
     if (!box) return;
     if (!list.length) {
-      box.innerHTML = `<p class="hus-empty">لا نتائج في «${esc(sectionLabel(filter).pageTitle)}» — أضف محتوى من الأدمن لهذا التصنيف.</p>`;
+      const emptyMsg =
+        filter === 'subdomain'
+          ? 'لا دومينات فرعية ممنوحة بعد — امنح دومينًا من تشغيل الأنظمة.'
+          : `لا نتائج في «${esc(sectionLabel(filter).pageTitle)}».`;
+      box.innerHTML = `<p class="hus-empty">${emptyMsg}</p>`;
       return;
     }
     box.innerHTML = list
-      .slice(0, 80)
+      .slice(0, 120)
       .map(
         (item) => `<a class="hus-item" href="${esc(item.href)}">
           ${mediaThumb(item)}
@@ -134,11 +185,19 @@
           </span>
           <span class="hus-item-meta">
             <em class="hus-badge hus-badge-${esc(item.type)}">${esc(item.typeAr || typeBadge(item.type))}</em>
-            <code>${esc(item.meta || '')}</code>
+            <code title="المعرّف الرقمي">${esc(item.grantId || item.meta || '')}</code>
           </span>
         </a>`
       )
       .join('');
+  };
+
+  const applyFilter = (modal, nextFilter) => {
+    filter = nextFilter || 'all';
+    modal.querySelectorAll('[data-hus-filter]').forEach((b) => {
+      b.classList.toggle('is-active', b.getAttribute('data-hus-filter') === filter);
+    });
+    renderResults(modal, modal.querySelector('[data-hus-input]')?.value || '');
   };
 
   const setOpen = (next) => {
@@ -160,9 +219,13 @@
       if (e.target.closest('[data-hus-close]')) setOpen(false);
       const filterBtn = e.target.closest('[data-hus-filter]');
       if (filterBtn) {
-        filter = filterBtn.getAttribute('data-hus-filter') || 'all';
-        modal.querySelectorAll('[data-hus-filter]').forEach((b) => b.classList.toggle('is-active', b === filterBtn));
-        renderResults(modal, modal.querySelector('[data-hus-input]')?.value || '');
+        applyFilter(modal, filterBtn.getAttribute('data-hus-filter') || 'all');
+        return;
+      }
+      const suggestBtn = e.target.closest('[data-hus-suggest-type]');
+      if (suggestBtn) {
+        applyFilter(modal, suggestBtn.getAttribute('data-hus-suggest-type') || 'all');
+        modal.querySelector('[data-hus-input]')?.focus();
       }
     });
     modal.querySelector('[data-hus-input]')?.addEventListener('input', (e) => {
@@ -180,12 +243,12 @@
     card.classList.add('is-search-trigger');
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
-    card.setAttribute('aria-label', 'محرك البحث الشامل — حاضنات ومنصات وأنظمة ومحتوى');
+    card.setAttribute('aria-label', 'محرك البحث الشامل — فروع وحاضنات ومنصات ودومينات');
     card.innerHTML = `
       <div class="hero-float-icon" aria-hidden="true"><i class="fas fa-magnifying-glass"></i></div>
       <div class="hero-float-body">
         <strong class="hero-float-title">محرك البحث الشامل</strong>
-        <span class="hero-float-desc">حاضنات · منصات · أنظمة · محتوى</span>
+        <span class="hero-float-desc">فروع · حاضنات · منصات · دومينات</span>
       </div>`;
 
     const openSearch = (e) => {

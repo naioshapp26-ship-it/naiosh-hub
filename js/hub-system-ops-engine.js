@@ -10,6 +10,7 @@
   const blank = () => ({
     subdomains: [],
     structures: [],
+    grantCounters: { incubator: 0, platform: 0, subdomain: 0, branch: 0, office: 0 },
     roleAssignments: [],
     memberships: [],
     certificates: [],
@@ -55,13 +56,28 @@
       .replace(/[^a-z0-9\u0600-\u06ff-]/gi, '')
       .slice(0, 40) || `tenant-${Date.now().toString(36)}`;
 
+  /** تسلسل أرقام المنح: حاضنة / منصة / دومين فرعي / فرع */
+  const nextGrantNum = (state, kind) => {
+    const counters = state.grantCounters || {};
+    const n = Number(counters[kind] || 0) + 1;
+    counters[kind] = n;
+    state.grantCounters = counters;
+    return n;
+  };
+
+  const formatGrantId = (prefix, num) => `${prefix}-${String(num).padStart(3, '0')}`;
+
   /** منح دومين فرعي */
   const grantSubdomain = ({ tenantName, systemCode = 'ERP', baseDomain = 'naiosh.app', slug: slugIn } = {}) => {
     const state = read();
     const slug = slugIn ? slugify(slugIn) : slugify(tenantName);
     const host = `${slug}.${baseDomain}`;
+    const num = nextGrantNum(state, 'subdomain');
+    const grantId = formatGrantId('SD', num);
     const row = {
       id: uid('sd'),
+      num,
+      grantId,
       tenantName: tenantName || slug,
       slug,
       host,
@@ -70,16 +86,29 @@
       at: new Date().toISOString(),
     };
     state.subdomains.unshift(row);
-    log(state, 'منح دومين فرعي', host);
+    log(state, 'منح دومين فرعي', `${grantId} · ${host}`);
     save(state);
     return row;
   };
 
   /** منح فرع/حاضنة/منصة/مكتب */
-  const grantStructure = ({ type, nameAr, tenantName, systemCode = 'ERP' } = {}) => {
+  const grantStructure = ({ type, nameAr, tenantName, systemCode = 'ERP', refId = '', refNum = null } = {}) => {
     const state = read();
     const types = (spec().STRUCTURE_TYPES || []).map((t) => t.id);
     const kind = types.includes(type) ? type : 'platform';
+    const counterKey =
+      kind === 'incubator' ? 'incubator' : kind === 'platform' ? 'platform' : kind === 'branch' ? 'branch' : kind;
+    const prefix =
+      kind === 'incubator' ? 'INC' : kind === 'platform' ? 'PLT' : kind === 'branch' ? 'BR' : kind === 'office' ? 'OFF' : 'GR';
+    const num = refNum != null ? Number(refNum) : nextGrantNum(state, counterKey);
+    if (refNum == null) {
+      /* counter already advanced */
+    } else {
+      const counters = state.grantCounters || {};
+      counters[counterKey] = Math.max(Number(counters[counterKey] || 0), num);
+      state.grantCounters = counters;
+    }
+    const grantId = formatGrantId(prefix, num);
     const row = {
       id: uid(kind),
       type: kind,
@@ -87,6 +116,9 @@
       tenantName: tenantName || 'مستأجر',
       systemCode: String(systemCode || 'ERP').toUpperCase(),
       status: 'granted',
+      num,
+      grantId,
+      refId: refId || '',
       at: new Date().toISOString(),
     };
     state.structures.unshift(row);
@@ -96,7 +128,7 @@
         window.HubStore.grantOffice({ nameAr: row.nameAr, platform: row.systemCode });
       }
     } catch {}
-    log(state, 'منح هيكل', `${kind}: ${row.nameAr}`);
+    log(state, 'منح هيكل', `${grantId} · ${kind}: ${row.nameAr}`);
     save(state);
     return row;
   };
