@@ -95,28 +95,6 @@
     </nav>`;
   };
 
-  /** بوابات تفاعلية — صف هادئ منفصل عن فلاتر التصنيف حتى لا يصير زحمة */
-  const PORTALS = [
-    { href: 'competitions.html', label: 'مسابقات', icon: 'fa-trophy' },
-    { href: 'news.html', label: 'آخر الأخبار', icon: 'fa-newspaper' },
-    { href: 'publish-research.html', label: 'انشر بحثك', icon: 'fa-flask' },
-    { href: 'self-assess.html', label: 'قيّم نفسك', icon: 'fa-clipboard-check' },
-    { href: 'communities.html', label: 'المجتمعات', icon: 'fa-people-group' },
-  ];
-
-  const portalsNav = () => {
-    const path = (location.pathname.split('/').pop() || '').toLowerCase();
-    return `<nav class="sc-portals" aria-label="بوابات تفاعلية">
-      <span class="sc-portals-label"><i class="fas fa-compass" aria-hidden="true"></i> استكشف</span>
-      <div class="sc-portals-links">
-        ${PORTALS.map((p) => {
-          const active = path === p.href.toLowerCase() ? ' is-active' : '';
-          return `<a class="sc-portal${active}" href="${esc(p.href)}"><i class="fas ${esc(p.icon)}" aria-hidden="true"></i>${esc(p.label)}</a>`;
-        }).join('')}
-      </div>
-    </nav>`;
-  };
-
   const getViewMode = () => {
     const saved = localStorage.getItem(VIEW_KEY);
     return saved === 'list' ? 'list' : 'cards';
@@ -281,7 +259,6 @@
     if (stage) {
       stage.innerHTML = `
         ${sectionNav()}
-        ${portalsNav()}
         <section class="sc-hero">
           <p class="sc-kicker"><i class="fas ${esc(sec?.icon || 'fa-layer-group')}"></i> مكتبة محرك البحث</p>
           <h1>${esc(title)}</h1>

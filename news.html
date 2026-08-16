@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>آخر الأخبار | نايوش هوب 360</title>
-  <meta name="description" content="آخر أخبار نايوش هوب — تحديثات التشغيل والحوكمة والمنصات." />
+  <meta name="description" content="آخر أخبار نايوش هوب — تحديثات تشغيلية تنتهي بخطوة." />
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=17" />
+  <link rel="stylesheet" href="css/hub-home-engage.css?v=1" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -21,7 +22,7 @@
         <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
         <nav class="nav-links">
           <a href="index.html">الرئيسية</a>
-          <a href="search-content.html">المحتوى</a>
+          <a href="index.html#hub-engage">بوابات التفاعل</a>
           <a class="active" href="news.html">آخر الأخبار</a>
           <a href="blog.html">المدونة</a>
         </nav>
@@ -37,62 +38,50 @@
     <section class="hub-feature-hero">
       <p class="hub-feature-kicker"><i class="fas fa-newspaper"></i> آخر الأخبار</p>
       <h1>تحديثات قصيرة… تنتهي بخطوة تشغيل</h1>
-      <p>ملخص ما يحدث في هوب: تشغيل · حوكمة · حاضنات · منصات. كل خبر يقودك لمكان التنفيذ.</p>
+      <p>الأخبار أدناه نفس التغذية الظاهرة في سيكشن الرئيسية — مع ربط مباشر للفعاليات القادمة من استوديو الفعاليات.</p>
       <div class="hub-feature-actions">
-        <a class="btn btn-primary" href="blog.html#posts"><i class="fas fa-book-open"></i> مقالات المدونة</a>
-        <a class="btn btn-secondary" href="search-content.html"><i class="fas fa-folder-open"></i> المحتوى المرفوع</a>
-        <a class="btn btn-secondary" href="events.html"><i class="fas fa-calendar"></i> الفعاليات</a>
+        <a class="btn btn-primary" href="#news-feed"><i class="fas fa-bolt"></i> أحدث الأخبار</a>
+        <a class="btn btn-secondary" href="blog.html#posts"><i class="fas fa-book-open"></i> المدونة</a>
+        <a class="btn btn-secondary" href="index.html#hub-engage"><i class="fas fa-house"></i> سيكشن الرئيسية</a>
       </div>
     </section>
 
-    <aside class="hub-feature-purpose">
-      <span class="hub-feature-purpose-mark"><i class="fas fa-bolt"></i></span>
-      <div>
-        <strong>وظيفة هذه الصفحة</strong>
-        <p>تعرض آخر المستجدات بسرعة — والتفاصيل الأطول تبقى في المدونة ومكتبة المحتوى.</p>
-      </div>
-    </aside>
-
-    <section class="hub-feature-section">
-      <h2 class="hub-feature-section-title">أحدث التحديثات</h2>
-      <div class="hub-feature-grid">
-        <article class="hub-feature-card hub-feature-card--featured">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-magnifying-glass"></i></span>
-            <h3>مكتبة المحتوى: بحث + عرض قائمة</h3>
-          </div>
-          <p>صار أسهل تلاقي المنشور لما تكثر العناصر — ابحث أو اعرض كقائمة وافتح الموضوع مباشرة.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="search-content.html">افتح المكتبة</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-seedling"></i></span>
-            <h3>البحث يفتح الحاضنة نفسها</h3>
-          </div>
-          <p>الضغط على حاضنة من محرك البحث يمرّرك للبطاقة ويفتح معاينتها — مش قائمة عامة فقط.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="index.html#open-search">محرك البحث</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-calendar"></i></span>
-            <h3>فعاليات وورش قادمة</h3>
-          </div>
-          <p>تابع الاستوديو للمواعيد والبث والورش المرتبطة بالمنصات والحاضنات.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="events.html">الفعاليات</a>
-            <a class="btn btn-secondary" href="blog.html">المدونة</a>
-          </div>
-        </article>
-      </div>
+    <section class="hub-feature-section" id="news-feed">
+      <h2 class="hub-feature-section-title">التغذية الإخبارية</h2>
+      <div class="hub-engage-feed-list" data-engage-page="news"></div>
     </section>
   </main>
 
   <script src="js/hub-auth.js"></script>
+  <script src="js/hub-marketplace-data.js"></script>
   <script src="js/hub-header-actions.js?v=17"></script>
+  <script src="js/hub-home-engage.js?v=1"></script>
+  <script>
+    (() => {
+      const root = document.querySelector('[data-engage-page="news"]');
+      const eng = window.HubHomeEngage;
+      if (!root || !eng) return;
+      const events = (window.HubMarketplaceData?.EVENTS || [])
+        .filter((e) => e.status === 'قادمة')
+        .map((e) => ({
+          tag: 'فعالية قادمة',
+          title: e.name,
+          blurb: e.description,
+          date: e.date,
+          href: 'events.html',
+        }));
+      const items = [...events, ...eng.NEWS];
+      root.innerHTML = items
+        .map(
+          (n) => `<a class="hub-engage-feed-item" href="${eng.esc(n.href)}">
+            <em>${eng.esc(n.tag || 'خبر')} · ${eng.esc(n.date || '')}</em>
+            <strong>${eng.esc(n.title)}</strong>
+            <p>${eng.esc(n.blurb)}</p>
+          </a>`
+        )
+        .join('');
+    })();
+  </script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>المسابقات | نايوش هوب 360</title>
-  <meta name="description" content="مسابقات نايوش هوب — شارك وتنافس وتابع الجوائز والمسارات التشغيلية." />
+  <meta name="description" content="مسابقات نايوش هوب — شارك وتنافس بنتيجة قابلة للتشغيل." />
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=17" />
+  <link rel="stylesheet" href="css/hub-home-engage.css?v=1" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -21,7 +22,7 @@
         <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
         <nav class="nav-links">
           <a href="index.html">الرئيسية</a>
-          <a href="search-content.html">المحتوى</a>
+          <a href="index.html#hub-engage">بوابات التفاعل</a>
           <a class="active" href="competitions.html">المسابقات</a>
           <a href="events.html">الفعاليات</a>
         </nav>
@@ -37,63 +38,39 @@
     <section class="hub-feature-hero">
       <p class="hub-feature-kicker"><i class="fas fa-trophy"></i> مسابقات نايوش</p>
       <h1>تنافس بوضوح — وارجع بنتيجة قابلة للتشغيل</h1>
-      <p>مسابقات مرتبطة بالحاضنات والمنصات والمعرفة. اختر مسارًا، سجّل مشاركتك، وتابع النتائج من هوب.</p>
+      <p>المسابقات أدناه متغذية من نفس محتوى سيكشن الرئيسية — كل مسابقة لها جائزة وموعد ومسار دخول.</p>
       <div class="hub-feature-actions">
-        <a class="btn btn-primary" href="events.html"><i class="fas fa-calendar-star"></i> فعاليات مرتبطة</a>
-        <a class="btn btn-secondary" href="search-content.html"><i class="fas fa-folder-open"></i> مكتبة المحتوى</a>
-        <a class="btn btn-secondary" href="membership.html"><i class="fas fa-id-card"></i> العضوية</a>
+        <a class="btn btn-primary" href="#competitions-feed"><i class="fas fa-list"></i> المسابقات المفتوحة</a>
+        <a class="btn btn-secondary" href="events.html"><i class="fas fa-calendar"></i> الفعاليات</a>
+        <a class="btn btn-secondary" href="index.html#hub-engage"><i class="fas fa-house"></i> سيكشن الرئيسية</a>
       </div>
     </section>
 
-    <aside class="hub-feature-purpose">
-      <span class="hub-feature-purpose-mark"><i class="fas fa-flag-checkered"></i></span>
-      <div>
-        <strong>وظيفة هذه الصفحة</strong>
-        <p>تجمع مسارات المسابقات في مكان واحد — بدون تشتيت داخل مكتبة المحتوى.</p>
-      </div>
-    </aside>
-
-    <section class="hub-feature-section">
-      <h2 class="hub-feature-section-title">مسارات جاهزة للانطلاق</h2>
-      <p class="hub-feature-section-lead">ابدأ من مسار واضح، ثم اربط مشاركتك بالفعالية أو المحتوى المناسب.</p>
-      <div class="hub-feature-grid">
-        <article class="hub-feature-card hub-feature-card--featured">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-lightbulb"></i></span>
-            <h3>مسابقة الأفكار التشغيلية</h3>
-          </div>
-          <p>قدّم فكرة قابلة للتنفيذ داخل فرع أو حاضنة — مع خطوة تشغيل خلال أسبوع.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="events.html">سجّل عبر الفعاليات</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-seedling"></i></span>
-            <h3>تحدي الحاضنات</h3>
-          </div>
-          <p>تنافس ضمن حاضنتك القطاعية واعرض مخرجًا يمكن ربطه بمنتج أو إعلان.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="incubators.html">الحاضنات</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-graduation-cap"></i></span>
-            <h3>مسابقة المعرفة</h3>
-          </div>
-          <p>أسئلة تشغيلية من مركز المعرفة — قيّم فهمك وادخل المسار التعليمي المناسب.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="self-assess.html">قيّم نفسك</a>
-            <a class="btn btn-secondary" href="info-center.html">مركز المعرفة</a>
-          </div>
-        </article>
-      </div>
+    <section class="hub-feature-section" id="competitions-feed">
+      <h2 class="hub-feature-section-title">المسابقات الحالية</h2>
+      <p class="hub-feature-section-lead">محتوى هادف من محرك بوابات هوب — يتحدّث مع السيكشن على الصفحة الرئيسية.</p>
+      <div class="hub-engage-feed-list" data-engage-page="competitions"></div>
     </section>
   </main>
 
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-header-actions.js?v=17"></script>
+  <script src="js/hub-home-engage.js?v=1"></script>
+  <script>
+    (() => {
+      const root = document.querySelector('[data-engage-page="competitions"]');
+      const eng = window.HubHomeEngage;
+      if (!root || !eng) return;
+      root.innerHTML = eng.COMPETITIONS.map(
+        (c) => `<a class="hub-engage-feed-item" id="${eng.esc(c.id)}" href="${eng.esc(c.href)}">
+          <em>${eng.esc(c.status)} · آخر موعد ${eng.esc(c.deadline)}</em>
+          <strong>${eng.esc(c.title)}</strong>
+          <p>${eng.esc(c.blurb)}</p>
+          <p><b>الجائزة:</b> ${eng.esc(c.prize)}</p>
+        </a>`
+      ).join('');
+    })();
+  </script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>

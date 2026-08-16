@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=17" />
+  <link rel="stylesheet" href="css/hub-home-engage.css?v=1" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -21,7 +22,7 @@
         <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
         <nav class="nav-links">
           <a href="index.html">الرئيسية</a>
-          <a href="search-content.html">المحتوى</a>
+          <a href="index.html#hub-engage">بوابات التفاعل</a>
           <a class="active" href="self-assess.html">قيّم نفسك</a>
           <a href="side-projects.html">فرص المشاريع</a>
         </nav>
@@ -37,63 +38,37 @@
     <section class="hub-feature-hero">
       <p class="hub-feature-kicker"><i class="fas fa-clipboard-check"></i> قيّم نفسك</p>
       <h1>اعرف مستواك… واختر خطوتك التالية</h1>
-      <p>تقييم سريع لمهاراتك ووقتك ورأس المال — ثم مسار واضح: مشروع جانبي · دورة · حاضنة · عضوية.</p>
+      <p>مسارات التقييم أدناه هي نفسها المعروضة في سيكشن الرئيسية — كل مسار ينتهي بأداة تشغيل حقيقية.</p>
       <div class="hub-feature-actions">
-        <a class="btn btn-primary" href="side-projects.html#sp-client-intro"><i class="fas fa-rocket"></i> تقييم فرص المشاريع</a>
-        <a class="btn btn-secondary" href="courses.html"><i class="fas fa-chalkboard"></i> الدورات</a>
-        <a class="btn btn-secondary" href="membership.html"><i class="fas fa-id-card"></i> العضوية</a>
+        <a class="btn btn-primary" href="#assess-feed"><i class="fas fa-list-check"></i> مسارات التقييم</a>
+        <a class="btn btn-secondary" href="side-projects.html#sp-client-intro"><i class="fas fa-rocket"></i> تقييم فرصة</a>
+        <a class="btn btn-secondary" href="index.html#hub-engage"><i class="fas fa-house"></i> سيكشن الرئيسية</a>
       </div>
     </section>
 
-    <aside class="hub-feature-purpose">
-      <span class="hub-feature-purpose-mark"><i class="fas fa-gauge-high"></i></span>
-      <div>
-        <strong>وظيفة هذه الصفحة</strong>
-        <p>تجمع أدوات التقييم في مكان واحد — بدون زحمة داخل مكتبة المحتوى.</p>
-      </div>
-    </aside>
-
-    <section class="hub-feature-section">
-      <h2 class="hub-feature-section-title">اختر نوع التقييم</h2>
-      <div class="hub-feature-grid">
-        <article class="hub-feature-card hub-feature-card--featured">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-lightbulb"></i></span>
-            <h3>تقييم فرصة دخل / مشروع</h3>
-          </div>
-          <p>أجب عن العمر والمهارات والوقت ورأس المال — واحصل على فرصة قابلة للاختبار.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="side-projects.html#sp-client-intro">ابدأ التقييم</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-graduation-cap"></i></span>
-            <h3>تقييم المسار التعليمي</h3>
-          </div>
-          <p>من الدورات إلى الدبلومات — اختر مستوى يناسب خبرتك وادخل الأكاديمية بعد التفعيل.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="courses.html">الدورات</a>
-            <a class="btn btn-secondary" href="diplomas.html">الدبلومات</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-seedling"></i></span>
-            <h3>تقييم ملاءمة الحاضنة</h3>
-          </div>
-          <p>استعرض الحاضنات القطاعية واختر المجال الأقرب لمهارتك ثم ادخل البرنامج.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="incubators.html">الحاضنات</a>
-            <a class="btn btn-secondary" href="info-center.html">مركز المعرفة</a>
-          </div>
-        </article>
-      </div>
+    <section class="hub-feature-section" id="assess-feed">
+      <h2 class="hub-feature-section-title">مسارات التقييم الهادفة</h2>
+      <div class="hub-engage-feed-list" data-engage-page="assess"></div>
     </section>
   </main>
 
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-header-actions.js?v=17"></script>
+  <script src="js/hub-home-engage.js?v=1"></script>
+  <script>
+    (() => {
+      const root = document.querySelector('[data-engage-page="assess"]');
+      const eng = window.HubHomeEngage;
+      if (!root || !eng) return;
+      root.innerHTML = eng.ASSESS_PATHS.map(
+        (a) => `<a class="hub-engage-feed-item" href="${eng.esc(a.href)}">
+          <em><i class="fas ${eng.esc(a.icon)}"></i> مسار تقييم</em>
+          <strong>${eng.esc(a.title)}</strong>
+          <p>${eng.esc(a.blurb)}</p>
+        </a>`
+      ).join('');
+    })();
+  </script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>
