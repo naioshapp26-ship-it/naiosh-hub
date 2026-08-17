@@ -2903,7 +2903,7 @@
                                          log.action === 'DELETE' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800';
                         
                         tr.innerHTML = `
-                            <td class="py-3 px-6 text-right whitespace-nowrap">${new Date(log.created_at).toLocaleString('ar-EG')}</td>
+                            <td class="py-3 px-6 text-right whitespace-nowrap">${new Date(log.created_at).toLocaleString('en-US')}</td>
                             <td class="py-3 px-6 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${badgeColor}">${log.action}</span></td>
                             <td class="py-3 px-6 text-right font-mono text-xs">${log.ENTITY_ID_PLACEHOLDER_OR_VALUE}</td>
                             <td class="py-3 px-6 text-right text-xs truncate max-w-xs" title='${JSON.stringify(log.details)}'>${log.details ? 'تفاصيل...' : '-'}</td>
@@ -2913,7 +2913,7 @@
                         // Correcting data mapping from original:
                         // Original: date, log.entity_type, log.entity_id, log.action, log.performed_by
                         tr.innerHTML = `
-                            <td class="py-3 px-6 text-right whitespace-nowrap">${new Date(log.created_at).toLocaleString('ar-EG')}</td>
+                            <td class="py-3 px-6 text-right whitespace-nowrap">${new Date(log.created_at).toLocaleString('en-US')}</td>
                             <td class="py-3 px-6 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800">${log.entity_type}</span></td>
                             <td class="py-3 px-6 text-right font-mono text-xs">${log.entity_id || '-'}</td>
                             <td class="py-3 px-6 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">${log.action}</span></td>

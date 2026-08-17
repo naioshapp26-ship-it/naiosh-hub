@@ -197,7 +197,7 @@
             </p>
             ${r.currentWork ? `<p>عمل حالي: ${esc(r.currentWork)}</p>` : ''}
             ${r.commercialOrNotes ? `<p>ملاحظات / سجل: ${esc(r.commercialOrNotes)}</p>` : ''}
-            <small>تاريخ التسجيل ${esc(new Date(r.createdAt).toLocaleString('ar-EG'))}</small>
+            <small>تاريخ التسجيل ${esc(new Date(r.createdAt).toLocaleString('en-US'))}</small>
           </div>
           <a class="btn btn-secondary" href="side-project-registrations.html">متابعة الفريق</a>
         </article>`
@@ -206,7 +206,7 @@
     if (list.length > 8) {
       regListEl.insertAdjacentHTML(
         'beforeend',
-        `<p class="sp-empty"><a href="side-project-registrations.html">عرض كل الطلبات (${list.length.toLocaleString('ar-EG')}) في صفحة الفريق</a></p>`
+        `<p class="sp-empty"><a href="side-project-registrations.html">عرض كل الطلبات (${list.length.toLocaleString('en-US')}) في صفحة الفريق</a></p>`
       );
     }
   };
@@ -399,10 +399,10 @@
     const light = typeOf('light').categoryIds.reduce((n, id) => n + (countByCat[id] || 0), 0);
     const home = typeOf('home').categoryIds.reduce((n, id) => n + (countByCat[id] || 0), 0);
     statsEl.innerHTML = `
-      <article><strong>${data.projects.length.toLocaleString('ar-EG')}</strong><span>مشروع في القوائم</span></article>
-      <article><strong>${special.toLocaleString('ar-EG')}</strong><span>خاصة</span></article>
-      <article><strong>${light.toLocaleString('ar-EG')}</strong><span>خفيفة</span></article>
-      <article><strong>${home.toLocaleString('ar-EG')}</strong><span>منزلية</span></article>`;
+      <article><strong>${data.projects.length.toLocaleString('en-US')}</strong><span>مشروع في القوائم</span></article>
+      <article><strong>${special.toLocaleString('en-US')}</strong><span>خاصة</span></article>
+      <article><strong>${light.toLocaleString('en-US')}</strong><span>خفيفة</span></article>
+      <article><strong>${home.toLocaleString('en-US')}</strong><span>منزلية</span></article>`;
   };
 
   const scoreProject = (raw, answers) => {
@@ -623,7 +623,7 @@
       return `<button type="button" class="sp-type-tab${activeType === t.id ? ' is-active' : ''}" data-sp-type="${esc(t.id)}" role="tab" aria-selected="${activeType === t.id}">
         <i class="fas ${esc(t.icon)}" aria-hidden="true"></i>
         <strong>${esc(t.nameAr)}</strong>
-        <span>${count.toLocaleString('ar-EG')}</span>
+        <span>${count.toLocaleString('en-US')}</span>
       </button>`;
     }).join('');
   };
@@ -639,7 +639,7 @@
           <span class="sp-cat-card-icon"><i class="fas ${esc(c.icon)}"></i></span>
           <span class="sp-cat-card-copy">
             <strong>${esc(c.nameAr)}</strong>
-            <small>${n.toLocaleString('ar-EG')} مشروع</small>
+            <small>${n.toLocaleString('en-US')} مشروع</small>
           </span>
         </button>`;
       })
@@ -652,7 +652,7 @@
     const prev = catFilter.value;
     catFilter.innerHTML =
       `<option value="">كل القوائم في النوع</option>` +
-      cats.map((c) => `<option value="${esc(c.id)}">${esc(c.nameAr)} (${(countByCat[c.id] || 0).toLocaleString('ar-EG')})</option>`).join('');
+      cats.map((c) => `<option value="${esc(c.id)}">${esc(c.nameAr)} (${(countByCat[c.id] || 0).toLocaleString('en-US')})</option>`).join('');
     if (prev && cats.some((c) => c.id === prev)) catFilter.value = prev;
     else catFilter.value = '';
   };
@@ -665,8 +665,8 @@
 
     if (catalogLead) {
       catalogLead.textContent = catName
-        ? `عرض قائمة «${catName}» — ${list.length.toLocaleString('ar-EG')} مشروع`
-        : `عرض نوع «${typeName}» — ${list.length.toLocaleString('ar-EG')} مشروع · اضغط قائمة أعلاه للتصفية`;
+        ? `عرض قائمة «${catName}» — ${list.length.toLocaleString('en-US')} مشروع`
+        : `عرض نوع «${typeName}» — ${list.length.toLocaleString('en-US')} مشروع · اضغط قائمة أعلاه للتصفية`;
     }
 
     if (!catalogGrid) return;
@@ -693,14 +693,14 @@
         return `<section class="sp-cat-group" data-cat-group="${esc(id)}">
           <header class="sp-cat-group-head">
             <h3><i class="fas ${esc(cat?.icon || 'fa-folder')}"></i> ${esc(cat?.nameAr || id)}</h3>
-            <span>${all.length.toLocaleString('ar-EG')} مشروع</span>
+            <span>${all.length.toLocaleString('en-US')} مشروع</span>
           </header>
           <div class="sp-catalog-grid">
             ${shown.map((p) => projectCard(p)).join('')}
           </div>
           ${
             more > 0
-              ? `<button type="button" class="btn btn-secondary sp-load-more" data-sp-more="${esc(id)}">عرض المزيد (${more.toLocaleString('ar-EG')})</button>`
+              ? `<button type="button" class="btn btn-secondary sp-load-more" data-sp-more="${esc(id)}">عرض المزيد (${more.toLocaleString('en-US')})</button>`
               : ''
           }
         </section>`;
@@ -732,7 +732,7 @@
         return `<article class="sp-opened-card">
           <div class="sp-opened-main">
             <h3>${esc(item.title || p?.title || 'مشروع')}</h3>
-            <small>بدأ الاختبار ${esc(new Date(item.openedAt).toLocaleString('ar-EG'))}</small>
+            <small>بدأ الاختبار ${esc(new Date(item.openedAt).toLocaleString('en-US'))}</small>
             <p>مسار التشغيل: تعلّم ← خطة ← جدوى ← تسعير ← موردون ← تسويق ← CRM ← قياس ← تحسين ← حاضنة.</p>
             <ol class="sp-ops-steps">
               ${OPS_STEPS.map(

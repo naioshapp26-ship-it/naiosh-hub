@@ -8,7 +8,7 @@ const HubStore = (() => {
 
   const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const nowIso = () => new Date().toISOString();
-  const today = () => new Date().toLocaleDateString('ar-EG');
+  const today = () => new Date().toLocaleDateString('ar-EG', { numberingSystem: 'latn' });
 
   const seedEmpire = () => {
     const bp = window.EmpireBlueprint;

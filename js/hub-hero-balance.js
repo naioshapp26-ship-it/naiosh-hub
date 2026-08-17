@@ -6,7 +6,7 @@
   const DEFAULT_FREE = 300;
   const OWNER_FALLBACK = 'زائر هوب';
 
-  const fmt = (n) => Number(n || 0).toLocaleString('ar-EG');
+  const fmt = (n) => Number(n || 0).toLocaleString('en-US');
 
   const readFree = () => {
     const raw = localStorage.getItem(FREE_KEY);

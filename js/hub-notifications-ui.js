@@ -11,7 +11,7 @@
 
   const fmt = (iso) => {
     try {
-      return new Date(iso).toLocaleString('ar-EG');
+      return new Date(iso).toLocaleString('en-US');
     } catch (_) {
       return iso || '';
     }

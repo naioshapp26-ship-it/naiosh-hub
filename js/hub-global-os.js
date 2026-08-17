@@ -256,7 +256,7 @@
             (e) => `<li>
             <strong>${esc(e.code)}</strong>
             <span>${esc(e.targets?.join(' · ') || '')}</span>
-            <small>${esc(new Date(e.at).toLocaleString('ar-EG'))}</small>
+            <small>${esc(new Date(e.at).toLocaleString('en-US'))}</small>
           </li>`
           )
           .join('')

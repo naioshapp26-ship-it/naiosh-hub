@@ -157,7 +157,7 @@
   };
 
   const timeLabel = (date) =>
-    date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', numberingSystem: 'latn' });
 
   const init = () => {
     try {

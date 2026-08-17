@@ -333,7 +333,7 @@
               ${a.projectName ? `<p class="ads-meta"><i class="fas fa-compass"></i> المشروع: <strong>${esc(a.projectName)}</strong>${a.projectCategory ? ` · ${esc(a.projectCategory)}` : ''}</p>` : ''}
               <p class="ads-meta">${esc(a.desc || a.content || '')}</p>
               <p class="ads-meta" style="margin-top:8px">${esc(a.category || '')}${a.subcategory ? ' / ' + esc(a.subcategory) : ''} · ${esc(targetBadge(a))}</p>
-              <p class="ads-meta">${Number(a.views || 0).toLocaleString('ar-EG')} مشاهدة${a.adStartDate ? ` · ${esc(a.adStartDate)} → ${esc(a.adEndDate || '—')}` : ''}</p>
+              <p class="ads-meta">${Number(a.views || 0).toLocaleString('en-US')} مشاهدة${a.adStartDate ? ` · ${esc(a.adStartDate)} → ${esc(a.adEndDate || '—')}` : ''}</p>
               ${metaLine(a)}
               <div style="margin-top:10px">
                 <a class="btn-mini primary" href="products.html">عرض المنتجات</a>

@@ -41,10 +41,10 @@
     if (!statsEl) return;
     const c = api.counts();
     statsEl.innerHTML = `
-      <article><strong>${c.total.toLocaleString('ar-EG')}</strong><span>كل الطلبات</span></article>
-      <article><strong>${(c.byStatus['جديد'] || 0).toLocaleString('ar-EG')}</strong><span>جديد</span></article>
-      <article><strong>${(c.byStatus['قيد المتابعة'] || 0).toLocaleString('ar-EG')}</strong><span>قيد المتابعة</span></article>
-      <article><strong>${(c.byStatus['تم التواصل'] || 0).toLocaleString('ar-EG')}</strong><span>تم التواصل</span></article>`;
+      <article><strong>${c.total.toLocaleString('en-US')}</strong><span>كل الطلبات</span></article>
+      <article><strong>${(c.byStatus['جديد'] || 0).toLocaleString('en-US')}</strong><span>جديد</span></article>
+      <article><strong>${(c.byStatus['قيد المتابعة'] || 0).toLocaleString('en-US')}</strong><span>قيد المتابعة</span></article>
+      <article><strong>${(c.byStatus['تم التواصل'] || 0).toLocaleString('en-US')}</strong><span>تم التواصل</span></article>`;
   };
 
   const filtered = () => {
@@ -71,7 +71,7 @@
       .map(
         (n) =>
           `<li><strong>${esc(n.status || r.status)}</strong> — ${esc(n.note || '')}<time>${esc(
-            new Date(n.at).toLocaleString('ar-EG')
+            new Date(n.at).toLocaleString('en-US')
           )}</time></li>`
       )
       .join('');
@@ -80,7 +80,7 @@
       <div class="spr-card-head">
         <div>
           <h3>${esc(r.projectName)}</h3>
-          <small>${esc(r.ownerName)} · سجّل ${esc(new Date(r.createdAt).toLocaleString('ar-EG'))}</small>
+          <small>${esc(r.ownerName)} · سجّل ${esc(new Date(r.createdAt).toLocaleString('en-US'))}</small>
         </div>
         <span class="spr-status ${statusClass(r.status)}">${esc(r.status || 'جديد')}</span>
       </div>

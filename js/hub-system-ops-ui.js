@@ -370,7 +370,7 @@
             <input name="value" type="number" placeholder="قيمة" value="0" />
             <button class="btn btn-primary">تسجيل تحت السيطرة</button>
           </form>
-          ${listRows(state.assets.slice(0, 30), (a) => `<article><strong>${esc(a.nameAr)}</strong><span>${esc(a.tenantName)} · ${esc(a.kind)} · ${Number(a.value).toLocaleString('ar-EG')}</span></article>`)}`
+          ${listRows(state.assets.slice(0, 30), (a) => `<article><strong>${esc(a.nameAr)}</strong><span>${esc(a.tenantName)} · ${esc(a.kind)} · ${Number(a.value).toLocaleString('en-US')}</span></article>`)}`
         ) +
         section(
           'منظمة متكاملة لخفض التكاليف',
@@ -379,7 +379,7 @@
             <input name="saving" type="number" placeholder="الوفر المتوقع" value="1000" />
             <button class="btn btn-primary">تسجيل إجراء</button>
           </form>
-          ${listRows(state.costActions.slice(0, 20), (c) => `<article><strong>${esc(c.title)}</strong><span>وفر ${Number(c.saving).toLocaleString('ar-EG')}</span></article>`)}`
+          ${listRows(state.costActions.slice(0, 20), (c) => `<article><strong>${esc(c.title)}</strong><span>وفر ${Number(c.saving).toLocaleString('en-US')}</span></article>`)}`
         );
       return;
     }

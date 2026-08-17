@@ -171,7 +171,7 @@
       ['هل لديك عمل حالي؟', r.currentWork || '—'],
       ['سجل تجاري / معلومات أخرى', r.commercialOrNotes || '—'],
       ['حالة الطلب', r.status || 'جديد'],
-      ['تاريخ التسجيل', r.createdAt ? new Date(r.createdAt).toLocaleString('ar-EG') : '—'],
+      ['تاريخ التسجيل', r.createdAt ? new Date(r.createdAt).toLocaleString('en-US') : '—'],
     ];
     const notes = (r.adminNotes || [])
       .slice()
@@ -179,7 +179,7 @@
       .map(
         (n) =>
           `<li><strong>${escHtml(n.status || r.status)}</strong> — ${escHtml(n.note || '')} <small>${escHtml(
-            n.at ? new Date(n.at).toLocaleString('ar-EG') : ''
+            n.at ? new Date(n.at).toLocaleString('en-US') : ''
           )}</small></li>`
       )
       .join('');

@@ -40,7 +40,7 @@
     const list = document.getElementById('sys-log');
     if (!list) return;
     const li = document.createElement('li');
-    li.innerHTML = `<b>${esc(type)}:</b> ${esc(text)} <small>${new Date().toLocaleTimeString('ar-EG')}</small>`;
+    li.innerHTML = `<b>${esc(type)}:</b> ${esc(text)} <small>${new Date().toLocaleTimeString('ar-EG', { numberingSystem: 'latn' })}</small>`;
     list.prepend(li);
   };
 

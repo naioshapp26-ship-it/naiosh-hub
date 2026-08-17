@@ -104,7 +104,7 @@
 
   const fmtTime = (iso) => {
     try {
-      return new Date(iso).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+      return new Date(iso).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short', numberingSystem: 'latn' });
     } catch {
       return iso;
     }
@@ -258,8 +258,8 @@
         <article class="kpi"><span>الفروع</span><strong>${k.branches}</strong><small>Branches</small></article>
         <article class="kpi"><span>الحاضنات</span><strong>${k.incubators}</strong><small>Incubators</small></article>
         <article class="kpi"><span>المنصات / الأنظمة</span><strong>${k.platforms}</strong><small>Platforms</small></article>
-        <article class="kpi"><span>المتدربون</span><strong>${Number(k.trainees).toLocaleString('ar-EG')}</strong><small>Trainees</small></article>
-        <article class="kpi"><span>خزينة النقاط</span><strong>${Number(k.treasury).toLocaleString('ar-EG')}</strong><small>Wallet</small></article>
+        <article class="kpi"><span>المتدربون</span><strong>${Number(k.trainees).toLocaleString('en-US')}</strong><small>Trainees</small></article>
+        <article class="kpi"><span>خزينة النقاط</span><strong>${Number(k.treasury).toLocaleString('en-US')}</strong><small>Wallet</small></article>
         <article class="kpi"><span>جاهزية Core</span><strong>${k.coreReadyPct}%</strong><small>Core Platform</small></article>
         <article class="kpi"><span>استخدام الأنظمة</span><strong>${cmd.systemsUsagePct || 0}%</strong><small>Usage</small></article>
         <article class="kpi"><span>صحة الأنظمة</span><strong>${k.systemsHealth}%</strong><small>Health</small></article>
@@ -422,7 +422,7 @@
     const bp = window.EmpireBlueprint;
     return `
       <div class="kpi-grid">
-        <article class="kpi"><span>المستخدمون</span><strong>${idn.totalUsers.toLocaleString('ar-EG')}</strong><small>NAIOSH ID</small></article>
+        <article class="kpi"><span>المستخدمون</span><strong>${idn.totalUsers.toLocaleString('en-US')}</strong><small>NAIOSH ID</small></article>
         <article class="kpi"><span>جلسات نشطة</span><strong>${idn.activeSessions}</strong><small>SSO</small></article>
         <article class="kpi"><span>تفعيل MFA</span><strong>${idn.mfaEnabledPct}%</strong><small>Security</small></article>
         <article class="kpi"><span>الدومينات المربوطة</span><strong>${idn.ssoDomains.length}</strong><small>Single Sign-On</small></article>
@@ -438,7 +438,7 @@
             <thead><tr><th>الدور</th><th>النطاق</th><th>المستخدمون</th></tr></thead>
             <tbody>
               ${idn.roles
-                .map((r) => `<tr><td>${esc(r.nameAr)}</td><td>${esc(r.scope)}</td><td>${r.users.toLocaleString('ar-EG')}</td></tr>`)
+                .map((r) => `<tr><td>${esc(r.nameAr)}</td><td>${esc(r.scope)}</td><td>${r.users.toLocaleString('en-US')}</td></tr>`)
                 .join('')}
             </tbody>
           </table></div>
@@ -756,8 +756,8 @@
       <div class="kpi-grid">
         <article class="kpi"><span>منتجات</span><strong>${catalog.length}</strong><small>في الكتالوج</small></article>
         <article class="kpi"><span>علامات</span><strong>${new Set(catalog.map((p) => p.brand)).size}</strong><small>تجارية</small></article>
-        <article class="kpi"><span>مخزون</span><strong>${catalog.reduce((s, p) => s + (p.stock || 0), 0).toLocaleString('ar-EG')}</strong><small>وحدة</small></article>
-        <article class="kpi"><span>مبيعات</span><strong>${catalog.reduce((s, p) => s + (p.sold || 0), 0).toLocaleString('ar-EG')}</strong><small>تراكمي</small></article>
+        <article class="kpi"><span>مخزون</span><strong>${catalog.reduce((s, p) => s + (p.stock || 0), 0).toLocaleString('en-US')}</strong><small>وحدة</small></article>
+        <article class="kpi"><span>مبيعات</span><strong>${catalog.reduce((s, p) => s + (p.sold || 0), 0).toLocaleString('en-US')}</strong><small>تراكمي</small></article>
       </div>
       <article class="card" style="margin-top:12px">
         <h3><span class="title-left"><i class="fas fa-boxes-stacked icon"></i> كتالوج المنتجات</span></h3>
@@ -773,7 +773,7 @@
                   <td>${esc(p.platform)}</td>
                   <td>${money(p.price)}</td>
                   <td>${p.stock}</td>
-                  <td>${Number(p.sold).toLocaleString('ar-EG')}</td>
+                  <td>${Number(p.sold).toLocaleString('en-US')}</td>
                   <td>${esc(p.movement)}</td>
                   <td>${esc(p.status)}</td>
                   ${metaCells(p)}
@@ -873,7 +873,7 @@
       <div class="kpi-grid">
         <article class="kpi"><span>إعلانات</span><strong>${listings.length}</strong><small>الكل</small></article>
         <article class="kpi"><span>نشطة</span><strong>${listings.filter((a) => a.status === 'active').length}</strong><small>ظاهرة</small></article>
-        <article class="kpi"><span>مشاهدات</span><strong>${listings.reduce((s, a) => s + (a.views || 0), 0).toLocaleString('ar-EG')}</strong><small>تراكمي</small></article>
+        <article class="kpi"><span>مشاهدات</span><strong>${listings.reduce((s, a) => s + (a.views || 0), 0).toLocaleString('en-US')}</strong><small>تراكمي</small></article>
         <article class="kpi"><span>منتجات منصات</span><strong>${listings.filter((a) => a.type === 'منتج منصة').length}</strong><small>مهمة</small></article>
       </div>
       <article class="card" style="margin-top:12px">
@@ -887,7 +887,7 @@
                   <td><strong>${esc(a.title)}</strong><br><small>${esc(a.content || '')}</small></td>
                   <td>${esc(a.platformCode || '—')}</td>
                   <td>${money(a.price || 0)}</td>
-                  <td>${Number(a.views || 0).toLocaleString('ar-EG')}</td>
+                  <td>${Number(a.views || 0).toLocaleString('en-US')}</td>
                   <td>${badgeStatus(a.status)}</td>
                   ${metaCells(a)}
                   <td><button class="btn btn-sm btn-dark" data-action="toggle-ad" data-id="${a.id}">تشغيل/إيقاف</button>${rowActs('ads', a.id)}</td>
@@ -978,7 +978,7 @@
     const w = HubStore.get().empire.wallet;
     return `
       <div class="kpi-grid">
-        <article class="kpi"><span>خزينة الإمبراطورية</span><strong>${w.treasury.toLocaleString('ar-EG')}</strong><small>نقطة</small></article>
+        <article class="kpi"><span>خزينة الإمبراطورية</span><strong>${w.treasury.toLocaleString('en-US')}</strong><small>نقطة</small></article>
         <article class="kpi"><span>محافظ نشطة</span><strong>${w.wallets.length}</strong><small>Wallets</small></article>
         <article class="kpi"><span>خدمات مسعّرة</span><strong>${w.pricing.length}</strong><small>Pricing</small></article>
         <article class="kpi"><span>حركات السجل</span><strong>${w.ledger.length}</strong><small>Ledger</small></article>
@@ -998,7 +998,7 @@
             <thead><tr><th>المالك</th><th>الرصيد</th><th>استهلاك 30 يوم</th></tr></thead>
             <tbody>
               ${w.wallets
-                .map((x) => `<tr><td>${esc(x.owner)}</td><td>${x.balance.toLocaleString('ar-EG')}</td><td>${x.burn30d.toLocaleString('ar-EG')}</td></tr>`)
+                .map((x) => `<tr><td>${esc(x.owner)}</td><td>${x.balance.toLocaleString('en-US')}</td><td>${x.burn30d.toLocaleString('en-US')}</td></tr>`)
                 .join('')}
             </tbody>
           </table></div>

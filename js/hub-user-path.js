@@ -79,7 +79,7 @@
   if (kpis) {
     kpis.innerHTML = `
       <article class="hub-feature-card"><h3>سياقك الآن</h3><p>${tenant?.nameAr || 'مستأجر تجريبي'}</p></article>
-      <article class="hub-feature-card"><h3>الرصيد</h3><p>${Number(localStorage.getItem('naiosh_hub_balance_points') || 300).toLocaleString('ar-EG')} نقطة</p></article>
+      <article class="hub-feature-card"><h3>الرصيد</h3><p>${Number(localStorage.getItem('naiosh_hub_balance_points') || 300).toLocaleString('en-US')} نقطة</p></article>
       <article class="hub-feature-card"><h3>السلة</h3><p>${window.HubCart?.count?.() || 0} عنصر</p></article>
       <article class="hub-feature-card"><h3>تذاكر الدعم</h3><p>${window.HubSupport?.read?.()?.length || 0}</p></article>`;
   }

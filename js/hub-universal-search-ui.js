@@ -169,7 +169,7 @@
                 <strong>${esc(list.label)}</strong>
                 <small>${esc(list.lead)}</small>
               </span>
-              <em>${Number(count || 0).toLocaleString('ar-EG')}</em>
+              <em>${Number(count || 0).toLocaleString('en-US')}</em>
             </button>`;
           })
           .join('')}
