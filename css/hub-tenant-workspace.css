@@ -105,6 +105,58 @@
   color: #334155;
 }
 
+.hub-mine-meta {
+  margin: 0 0 14px;
+  font-weight: 800;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.hub-mine-steps {
+  padding: 24px;
+  background: linear-gradient(135deg, #fff7ed, #fff);
+  border: 2px solid #fdba74;
+  border-radius: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.hub-mine-steps h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #9a3412 !important;
+}
+
+.hub-mine-steps ol {
+  margin: 0;
+  padding-right: 20px;
+  line-height: 1.9;
+}
+
+.hub-mine-note {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.hub-mine-note.is-pending {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.hub-mine-note.is-rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.hub-mine-note.is-info {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
 .hub-mine-empty {
   padding: 24px;
   background: #fff;
