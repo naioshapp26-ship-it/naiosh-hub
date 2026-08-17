@@ -12,7 +12,7 @@
     incubators: { href: 'incubators.html', title: 'الحاضنات القطاعية', type: 'incubator', typeAr: 'حاضنة', icon: 'fa-seedling' },
     platforms: { href: 'platforms.html', title: 'المنصات السيادية', type: 'platform', typeAr: 'منصة', icon: 'fa-layer-group' },
     systems: { href: 'apps.html', title: 'دليل الأنظمة', type: 'system', typeAr: 'نظام', icon: 'fa-cubes' },
-    rent: { href: 'rent-system.html', title: 'استأجر نظامًا', type: 'system', typeAr: 'نظام', icon: 'fa-key' },
+    rent: { href: 'rent-system.html', title: 'ابدأ رحلتك · منصة مجانية', type: 'system', typeAr: 'منصة', icon: 'fa-key' },
     network: { href: 'partnerships.html', title: 'التشبيك والشركاء', type: 'content', typeAr: 'تشبيك', icon: 'fa-handshake' },
     learning: { href: 'info-center.html', title: 'مركز المعرفة والتعلم', type: 'content', typeAr: 'تعلم', icon: 'fa-graduation-cap' },
     marketing: { href: 'ads.html', title: 'استديو التسويق والإعلانات', type: 'content', typeAr: 'تسويق', icon: 'fa-bullhorn' },

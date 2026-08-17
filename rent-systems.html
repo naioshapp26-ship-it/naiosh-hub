@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>استأجر أنظمة | نايوش هوب 360</title>
+  <meta name="description" content="استئجار الأنظمة ومنح الصب دومين من خلال نايوش هوب — نفس نماذج ERP داخل نظام التشغيل المركزي." />
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/hub-theme.css" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=20260815-contrast" />
+  <link rel="stylesheet" href="css/hub-dark-surfaces.css?v=20260815-contrast" />
+  <link rel="stylesheet" href="css/hub-rent-system.css?v=1" />
+</head>
+<body class="homepage">
+  <header class="top-nav">
+    <div class="container inner">
+      <div class="nav-main">
+        <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
+        <nav class="nav-links">
+          <a href="index.html">الرئيسية</a>
+          <a href="apps.html">الأنظمة</a>
+          <a class="active" href="rent-systems.html">استأجر أنظمة</a>
+          <a href="rent-admin.html">إدارة الاستئجار</a>
+        </nav>
+      </div>
+      <div class="auth-actions">
+        <a href="apps.html" class="auth-btn">سجل الأنظمة</a>
+        <a href="dashboard.html" class="auth-btn primary">غرفة العمليات</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container hub-rent-page">
+    <div class="hub-rent-shell" data-rent-shell data-rent-systems-flow>
+      <div class="hub-rent-head">
+        <div class="hub-rent-badge">HUB</div>
+        <h1>استأجر أنظمة</h1>
+        <p>مسار منفصل لاستئجار الأنظمة ومنح الصب دومين — الحصول على المنصة يتم من <a href="rent-system.html">ابدأ رحلتك</a> بدون دفع.</p>
+      </div>
+
+      <div class="hub-rent-steps" aria-label="خطوات الاستئجار">
+        <div class="hub-rent-step-circle is-active" data-rent-circle="1">1</div>
+        <div class="hub-rent-step-line" data-rent-line="1"></div>
+        <div class="hub-rent-step-circle" data-rent-circle="2">2</div>
+        <div class="hub-rent-step-line" data-rent-line="2"></div>
+        <div class="hub-rent-step-circle" data-rent-circle="3">3</div>
+        <div class="hub-rent-step-line" data-rent-line="3"></div>
+        <div class="hub-rent-step-circle" data-rent-circle="4">4</div>
+        <div class="hub-rent-step-line" data-rent-line="4"></div>
+        <div class="hub-rent-step-circle" data-rent-circle="5"><i class="fas fa-check" style="font-size:12px"></i></div>
+      </div>
+
+      <!-- STEP 1 -->
+      <section class="hub-rent-card" data-rent-panel="1">
+        <h2>بيانات شركتك</h2>
+        <p class="hub-rent-lead">الخطوة 1 من 5 — معلومات الشركة والحساب (نفس نموذج ERP)</p>
+        <div class="hub-rent-fields">
+          <div>
+            <label for="companyName">اسم الشركة *</label>
+            <input id="companyName" type="text" placeholder="مثال: شركة الأفق للتقنية" autocomplete="organization" />
+          </div>
+          <div>
+            <label for="subdomain">النطاق الفرعي *</label>
+            <div class="hub-rent-subdomain-row">
+              <input id="subdomain" type="text" placeholder="acme" autocomplete="off" dir="ltr" />
+              <span class="hub-rent-subdomain-suffix" data-subdomain-suffix>.naiosh.app</span>
+            </div>
+            <p class="hub-rent-subdomain-status" data-subdomain-status>أدخل النطاق الفرعي للتحقق من توفره</p>
+          </div>
+          <div class="hub-rent-row-2">
+            <div>
+              <label for="adminName">الاسم الكامل للمسؤول *</label>
+              <input id="adminName" type="text" placeholder="محمد أحمد" autocomplete="name" />
+            </div>
+            <div>
+              <label for="adminPhone">رقم الجوال *</label>
+              <input id="adminPhone" type="tel" placeholder="966500000000" dir="ltr" autocomplete="tel" />
+            </div>
+          </div>
+          <div>
+            <label for="adminEmail">البريد الإلكتروني</label>
+            <input id="adminEmail" type="email" placeholder="admin@company.com" autocomplete="email" />
+          </div>
+          <div>
+            <label for="adminPassword">كلمة المرور *</label>
+            <input id="adminPassword" type="password" placeholder="••••••••" autocomplete="new-password" />
+          </div>
+        </div>
+
+        <h3 class="hub-rent-plans-title">اختر خطة الاشتراك</h3>
+        <div class="hub-rent-plans">
+          <button type="button" class="hub-rent-plan is-selected" data-plan="basic">
+            <div class="hub-rent-plan-top"><span>Basic</span><i class="fas fa-circle-check hub-rent-plan-check"></i></div>
+            <strong>مجانياً</strong>
+            <small>للبدء والتجربة — تفعيل فوري من هوب</small>
+          </button>
+          <button type="button" class="hub-rent-plan" data-plan="pro">
+            <div class="hub-rent-plan-top"><span>Pro</span><i class="fas fa-circle-check hub-rent-plan-check"></i></div>
+            <strong>$49/شهر</strong>
+            <small>للفرق المتنامية — بانتظار اعتماد هوب</small>
+          </button>
+          <button type="button" class="hub-rent-plan" data-plan="enterprise">
+            <div class="hub-rent-plan-top"><span>Enterprise</span><i class="fas fa-circle-check hub-rent-plan-check"></i></div>
+            <strong>$199/شهر</strong>
+            <small>للمؤسسات الكبرى — بانتظار اعتماد هوب</small>
+          </button>
+        </div>
+
+        <button type="button" class="hub-rent-btn hub-rent-btn-primary" data-go-step2>
+          التالي — اختيار الأنظمة <i class="fas fa-arrow-left"></i>
+        </button>
+      </section>
+
+      <!-- STEP 2 -->
+      <section class="hub-rent-card" data-rent-panel="2" hidden>
+        <h2>اختر أنظمتك</h2>
+        <p class="hub-rent-lead">الخطوة 2 من 5 — الأنظمة الظاهرة حسب صلاحياتك في هوب</p>
+        <p class="hub-rent-hint"><i class="fas fa-circle-info"></i> نفس فكرة اختيار الأنظمة في ERP — والتحكم بالظهور يتم من هوب عبر إدارة الاستئجار.</p>
+
+        <div class="hub-rent-systems-toolbar">
+          <div class="hub-rent-systems-toolbar-row">
+            <div>
+              <p>ملخص اختيارك</p>
+              <div class="hub-rent-chips" data-rent-chips></div>
+            </div>
+            <div class="hub-rent-search">
+              <i class="fas fa-search"></i>
+              <input type="search" placeholder="ابحث عن نظام أو صفحة…" data-rent-search />
+            </div>
+          </div>
+        </div>
+
+        <p class="hub-rent-section-title">الأنظمة الرئيسية</p>
+        <div class="hub-rent-systems-grid" data-rent-systems></div>
+
+        <button type="button" class="hub-rent-btn hub-rent-btn-primary" data-go-step3>
+          التالي — الدفع / الاعتماد <i class="fas fa-arrow-left"></i>
+        </button>
+        <button type="button" class="hub-rent-btn hub-rent-btn-secondary" data-back-step1>
+          <i class="fas fa-arrow-right"></i> رجوع
+        </button>
+      </section>
+
+      <!-- STEP 3 -->
+      <section class="hub-rent-card" data-rent-panel="3" hidden>
+        <h2>إتمام الدفع</h2>
+        <p class="hub-rent-lead">الخطوة 3 من 5 — مراجعة الطلب قبل منح الصب دومين من هوب</p>
+
+        <div class="hub-rent-pay-box">
+          <div><span>الخطة المختارة:</span><span data-pay-plan>—</span></div>
+          <div><span>المبلغ:</span><span data-pay-amount>—</span></div>
+          <div><span>النطاق:</span><span data-pay-host dir="ltr">—</span></div>
+          <div><span>الأنظمة:</span><span data-pay-systems>—</span></div>
+        </div>
+
+        <div class="hub-rent-fields">
+          <label>طريقة الدفع</label>
+          <div class="hub-rent-pay-methods">
+            <label><input type="radio" name="payMethod" value="hub" checked /> هوب</label>
+            <label><input type="radio" name="payMethod" value="stripe" /> Stripe</label>
+            <label><input type="radio" name="payMethod" value="paymob" /> Paymob</label>
+          </div>
+        </div>
+
+        <button type="button" class="hub-rent-btn hub-rent-btn-primary" data-submit-rent>
+          <i class="fas fa-key"></i> تأكيد الاستئجار ومنح الصب دومين
+        </button>
+        <button type="button" class="hub-rent-btn hub-rent-btn-secondary" data-back-step2>
+          <i class="fas fa-arrow-right"></i> رجوع
+        </button>
+      </section>
+
+      <!-- STEP 4 -->
+      <section class="hub-rent-card" data-rent-panel="4" hidden>
+        <h2>جارٍ التجهيز</h2>
+        <p class="hub-rent-lead">الخطوة 4 من 5 — نجهّز بيئتك الآن من هوب</p>
+        <div class="hub-rent-provision-list">
+          <div class="hub-rent-provision-step" data-provision-step><i class="fas fa-circle"></i> تسجيل هوية المستأجر في هوب</div>
+          <div class="hub-rent-provision-step" data-provision-step><i class="fas fa-circle"></i> منح النطاق الفرعي في هوب</div>
+          <div class="hub-rent-provision-step" data-provision-step><i class="fas fa-circle"></i> ربط وتجهيز مستأجر ERP</div>
+          <div class="hub-rent-provision-step" data-provision-step><i class="fas fa-circle"></i> تفعيل صلاحيات الدخول</div>
+        </div>
+      </section>
+
+      <!-- STEP 5 -->
+      <section class="hub-rent-card hub-rent-success" data-rent-panel="5" hidden>
+        <div class="hub-rent-ok"><i class="fas fa-check"></i></div>
+        <h2>مبروك!</h2>
+        <p class="hub-rent-lead" data-success-note>تم إنشاء مساحة المستأجر عبر نايوش هوب 360.</p>
+        <p><strong data-success-company>—</strong></p>
+        <div class="hub-rent-host" data-success-host>—</div>
+        <div class="hub-rent-pay-box" data-success-erp hidden style="text-align:start;margin-top:12px">
+          <div><span>دخول ERP:</span></div>
+          <a data-success-erp-link href="#" target="_blank" rel="noopener" dir="ltr" style="color:#1d4ed8;font-weight:800;word-break:break-all"></a>
+        </div>
+        <p class="hub-rent-lead">الأنظمة: <span data-success-systems>—</span></p>
+        <a class="hub-rent-btn hub-rent-btn-primary" data-success-open href="apps.html" target="_blank" rel="noopener">
+          <i class="fas fa-arrow-up-right-from-square"></i> فتح النظام
+        </a>
+        <a class="hub-rent-btn hub-rent-btn-secondary" href="my-systems.html">أنظمتي في هوب</a>
+        <a class="hub-rent-btn hub-rent-btn-secondary" href="rent-admin.html">إدارة الطلبات في هوب</a>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/hub-live-systems.js"></script>
+  <script src="js/hub-marketplace-data.js"></script>
+  <script src="js/hub-store.js"></script>
+  <script src="js/hub-auth.js"></script>
+  <script src="js/hub-system-ops-spec.js"></script>
+  <script src="js/hub-system-ops-engine.js"></script>
+  <script src="js/hub-rent-store.js?v=9"></script>
+  <script src="js/hub-rent-system.js?v=8"></script>
+  <script src="js/hub-header-actions.js?v=17"></script>
+  <script src="js/hub-global-back.js" defer></script>
+  <script src="js/hub-ai-assistant.js?v=4" defer></script>
+</body>
+</html>

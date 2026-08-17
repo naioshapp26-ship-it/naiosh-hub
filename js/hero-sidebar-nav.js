@@ -21,7 +21,7 @@
       { label: 'منصتي', href: 'platforms.html', icon: 'fa-layer-group' },
       { label: 'مكتبي', href: 'office.html', icon: 'fa-briefcase' },
       { label: 'أنظمتي', href: 'my-systems.html', icon: 'fa-cubes' },
-      { label: 'استأجر نظام', href: 'rent-system.html', icon: 'fa-key' },
+      { label: 'ابدأ رحلتك', href: 'rent-system.html', icon: 'fa-key' },
       { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },
       { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
       { label: 'شراكاتي', href: 'partnerships.html', icon: 'fa-handshake' },

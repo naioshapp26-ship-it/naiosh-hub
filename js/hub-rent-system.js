@@ -1,20 +1,18 @@
 /**
- * معالج صفحة استئجار النظام — نفس تدفق saas-signup في ERP داخل HUB
+ * صفحة ابدأ رحلتك:
+ * - data-platform-easy → نموذج منصة واحد بدون دفع (موافقة أدمن + باقة مجانية)
+ * - data-rent-systems-flow → مسار استئجار الأنظمة متعدد الخطوات (كما كان)
  */
 (() => {
   'use strict';
 
-  const store = () => window.HubRentStore;
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+  const shell = $('[data-rent-shell]');
+  if (!shell) return;
 
-  const state = {
-    step: 1,
-    plan: 'basic',
-    systems: new Set(),
-    subdomainOk: false,
-    rentalId: null,
-  };
+  const isEasyPlatform = shell.hasAttribute('data-platform-easy');
+  const isSystemsFlow = shell.hasAttribute('data-rent-systems-flow') || !isEasyPlatform;
 
   const toast = (msg) => {
     let el = $('#hub-rent-toast');
@@ -26,256 +24,361 @@
     }
     el.textContent = msg;
     el.classList.add('is-show');
-    setTimeout(() => el.classList.remove('is-show'), 2600);
+    setTimeout(() => el.classList.remove('is-show'), 2800);
   };
 
-  const setStep = (n) => {
-    state.step = n;
-    const shell = $('[data-rent-shell]');
-    shell?.classList.toggle('is-wide', n === 2);
+  /* ——— مسار المنصة السهل ——— */
+  const bindEasyPlatform = async () => {
+    const grants = () => window.HubPlatformGrants;
+    await grants()?.hydrate?.();
 
-    $$('[data-rent-panel]').forEach((p) => {
-      p.hidden = Number(p.dataset.rentPanel) !== n;
-    });
+    let subdomainOk = false;
+    const feedback = $('[data-platform-feedback]');
+    const status = $('[data-subdomain-status]');
+    const formPanel = $('[data-rent-panel="form"]');
+    const donePanel = $('[data-rent-panel="done"]');
 
-    $$('[data-rent-circle]').forEach((c) => {
-      const i = Number(c.dataset.rentCircle);
-      c.classList.toggle('is-active', i === n);
-      c.classList.toggle('is-done', i < n);
+    const setFeedback = (msg, ok = false) => {
+      if (!feedback) return;
+      feedback.hidden = false;
+      feedback.textContent = msg;
+      feedback.style.color = ok ? '#047857' : '#b91c1c';
+    };
+
+    const fillPlatforms = () => {
+      const select = $('[data-platform-select]');
+      if (!select) return;
+      const list = window.HubSovereignPlatforms?.list || [];
+      const params = new URLSearchParams(location.search);
+      const pre = params.get('platform') || params.get('code') || '';
+      const options = list.length
+        ? list.map((p) => ({ id: p.code, label: `${p.nameAr}${p.role ? ` — ${p.role}` : ''}` }))
+        : [
+            { id: 'core', label: 'المنصة المركزية' },
+            { id: 'ops', label: 'منصة التشغيل' },
+            { id: 'gov', label: 'منصة الحوكمة' },
+          ];
+      select.innerHTML =
+        '<option value="">— اختر المنصة —</option>' +
+        options.map((o) => `<option value="${o.id}">${o.label}</option>`).join('');
+      if (pre && options.some((o) => o.id === pre)) select.value = pre;
+    };
+
+    const checkSubdomain = () => {
+      const input = $('#subdomain');
+      if (!input || !grants()) return;
+      const raw = grants().normalizeSlug(input.value);
+      input.value = raw;
+      const res = grants().validateSubdomain(raw);
+      subdomainOk = Boolean(res.available);
+      if (status) {
+        status.innerHTML = res.available
+          ? `<i class="fas fa-circle-check"></i> ${res.message}`
+          : raw
+            ? `<i class="fas fa-circle-xmark"></i> ${res.message}`
+            : res.message;
+        status.className = `hub-rent-subdomain-status ${res.available ? 'is-ok' : raw ? 'is-bad' : ''}`;
+      }
+    };
+
+    const submit = () => {
+      if (!grants()) return toast('نظام طلبات المنصة غير متاح');
+      const companyName = $('#companyName')?.value.trim() || '';
+      const subdomain = $('#subdomain')?.value.trim() || '';
+      const adminName = $('#adminName')?.value.trim() || '';
+      const adminPhone = $('#adminPhone')?.value.trim() || '';
+      const adminEmail = $('#adminEmail')?.value.trim() || '';
+      const adminPassword = $('#adminPassword')?.value || '';
+      const platformEl = $('[data-platform-select]');
+      const platform = platformEl?.value || '';
+      const platformLabel = platformEl?.selectedOptions?.[0]?.textContent?.trim() || platform;
+
+      if (!companyName || !subdomain || !adminName || !adminPhone || !adminEmail || !adminPassword) {
+        return toast('يرجى ملء جميع الحقول المطلوبة *');
+      }
+      if (!platform) return toast('اختر المنصة المطلوبة');
+      checkSubdomain();
+      if (!subdomainOk) return toast('تحقق من توفر النطاق الفرعي أولًا');
+
+      const res = grants().submitRequest({
+        companyName,
+        subdomain,
+        adminName,
+        adminPhone,
+        adminEmail,
+        adminPassword,
+        platform,
+        platformLabel,
+      });
+      if (!res.ok) {
+        setFeedback(res.error || 'تعذّر إرسال الطلب');
+        return toast(res.error || 'تعذّر إرسال الطلب');
+      }
+
+      if (formPanel) formPanel.hidden = true;
+      if (donePanel) donePanel.hidden = false;
+      $('[data-success-company]').textContent = res.grant.companyName;
+      $('[data-success-host]').textContent = res.grant.host;
+      $('[data-success-platform]').textContent = res.grant.platformLabel || res.grant.platform;
+      setFeedback('تم إرسال الطلب لموافقة الأدمن', true);
+      toast('تم إرسال طلب المنصة لموافقة الأدمن');
+    };
+
+    fillPlatforms();
+    const suffix = $('[data-subdomain-suffix]');
+    if (suffix && grants()) suffix.textContent = `.${grants().BASE_DOMAIN}`;
+
+    let timer = null;
+    $('#subdomain')?.addEventListener('input', () => {
+      clearTimeout(timer);
+      subdomainOk = false;
+      if (status) {
+        status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ التحقق…';
+        status.className = 'hub-rent-subdomain-status';
+      }
+      timer = setTimeout(checkSubdomain, 400);
     });
-    $$('[data-rent-line]').forEach((l) => {
-      const i = Number(l.dataset.rentLine);
-      l.classList.toggle('is-done', i < n);
-    });
+    $('[data-submit-platform]')?.addEventListener('click', submit);
   };
 
-  const currentEmail = () => String($('#adminEmail')?.value || '').trim().toLowerCase();
+  /* ——— مسار استئجار الأنظمة (متعدد الخطوات) ——— */
+  const bindSystemsFlow = () => {
+    const store = () => window.HubRentStore;
+    const state = {
+      step: 1,
+      plan: 'basic',
+      systems: new Set(),
+      subdomainOk: false,
+      rentalId: null,
+    };
 
-  const renderSystems = () => {
-    const grid = $('[data-rent-systems]');
-    const chips = $('[data-rent-chips]');
-    const q = String($('[data-rent-search]')?.value || '').trim().toLowerCase();
-    if (!grid) return;
+    const setStep = (n) => {
+      state.step = n;
+      shell.classList.toggle('is-wide', n === 2);
+      $$('[data-rent-panel]').forEach((p) => {
+        p.hidden = Number(p.dataset.rentPanel) !== n;
+      });
+      $$('[data-rent-circle]').forEach((c) => {
+        const i = Number(c.dataset.rentCircle);
+        c.classList.toggle('is-active', i === n);
+        c.classList.toggle('is-done', i < n);
+      });
+      $$('[data-rent-line]').forEach((l) => {
+        const i = Number(l.dataset.rentLine);
+        l.classList.toggle('is-done', i < n);
+      });
+    };
 
-    const email = currentEmail();
-    const visible = new Set(store().visibleCodesFor(email));
-    const all = store().catalogSystems();
-    const list = all.filter((s) => {
-      if (q && !`${s.code} ${s.nameAr}`.toLowerCase().includes(q)) return false;
-      return true;
-    });
+    const currentEmail = () => String($('#adminEmail')?.value || '').trim().toLowerCase();
 
-    if (!list.length) {
-      grid.innerHTML = '<p class="hub-rent-hint">لا أنظمة ظاهرة لصلاحيات هذا الحساب — راجع إدارة الاستئجار في هوب.</p>';
-      chips.innerHTML = '<span style="color:#94a3b8;font-size:12px;font-weight:700">لم يتم اختيار أي نظام بعد</span>';
-      return;
-    }
-
-    grid.innerHTML = list
-      .map((s) => {
-        const allowed = visible.has(s.code);
-        const selected = state.systems.has(s.code);
-        return `<button type="button" class="hub-rent-system-card ${selected ? 'is-selected' : ''} ${allowed ? '' : 'is-locked'}" data-sys="${s.code}" ${allowed ? '' : 'disabled'}>
+    const renderSystems = () => {
+      const grid = $('[data-rent-systems]');
+      const chips = $('[data-rent-chips]');
+      const q = String($('[data-rent-search]')?.value || '').trim().toLowerCase();
+      if (!grid) return;
+      const email = currentEmail();
+      const visible = new Set(store().visibleCodesFor(email));
+      const all = store().catalogSystems();
+      const list = all.filter((s) => {
+        if (q && !`${s.code} ${s.nameAr}`.toLowerCase().includes(q)) return false;
+        return true;
+      });
+      if (!list.length) {
+        grid.innerHTML = '<p class="hub-rent-hint">لا أنظمة ظاهرة لصلاحيات هذا الحساب — راجع إدارة الاستئجار في هوب.</p>';
+        chips.innerHTML = '<span style="color:#94a3b8;font-size:12px;font-weight:700">لم يتم اختيار أي نظام بعد</span>';
+        return;
+      }
+      grid.innerHTML = list
+        .map((s) => {
+          const allowed = visible.has(s.code);
+          const selected = state.systems.has(s.code);
+          return `<button type="button" class="hub-rent-system-card ${selected ? 'is-selected' : ''} ${allowed ? '' : 'is-locked'}" data-sys="${s.code}" ${allowed ? '' : 'disabled'}>
           <div class="hub-rent-system-ico"><i class="fas ${s.icon}"></i></div>
           <strong>${s.nameAr}</strong>
           <small>${s.code}${s.isLive ? ' · مباشر' : ''}${allowed ? '' : ' · غير مسموح'}</small>
         </button>`;
-      })
-      .join('');
-
-    chips.innerHTML = state.systems.size
-      ? [...state.systems]
-          .map((c) => {
-            const meta = all.find((x) => x.code === c);
-            return `<span class="hub-rent-chip"><i class="fas ${meta?.icon || 'fa-cube'}"></i>${meta?.nameAr || c}</span>`;
-          })
-          .join('')
-      : '<span style="color:#94a3b8;font-size:12px;font-weight:700">لم يتم اختيار أي نظام بعد</span>';
-
-    grid.querySelectorAll('[data-sys]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const code = btn.getAttribute('data-sys');
-        if (!visible.has(code)) return;
-        if (state.systems.has(code)) state.systems.delete(code);
-        else state.systems.add(code);
-        renderSystems();
-        // أعد فحص النطاق إذا تغيّر احتياج تحقق ERP
-        checkSubdomain().catch(() => {});
-      });
-    });
-  };
-
-  const checkSubdomain = async () => {
-    const input = $('#subdomain');
-    const status = $('[data-subdomain-status]');
-    if (!input || !status) return;
-    const raw = store().normalizeSlug(input.value);
-    input.value = raw;
-    status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ التحقق من هوب وERP…';
-    status.className = 'hub-rent-subdomain-status';
-    // تحقق ERP فقط إذا كان ضمن الأنظمة المحتملة أو الاختيار الحالي يشمل ERP
-    const needsErp = state.systems.has('ERP') || !state.systems.size;
-    const res = await store().validateSubdomainAsync(raw, { checkErp: needsErp });
-    state.subdomainOk = Boolean(res.available);
-    status.innerHTML = res.available
-      ? `<i class="fas fa-circle-check"></i> ${res.message}`
-      : raw
-        ? `<i class="fas fa-circle-xmark"></i> ${res.message}`
-        : res.message;
-    status.className = `hub-rent-subdomain-status ${res.available ? 'is-ok' : raw ? 'is-bad' : ''}`;
-  };
-
-  const readForm = () => ({
-    companyName: $('#companyName')?.value.trim() || '',
-    subdomain: $('#subdomain')?.value.trim() || '',
-    slug: $('#subdomain')?.value.trim() || '',
-    adminName: $('#adminName')?.value.trim() || '',
-    adminPhone: $('#adminPhone')?.value.trim() || '',
-    adminEmail: $('#adminEmail')?.value.trim() || '',
-    adminPassword: $('#adminPassword')?.value || '',
-    plan: state.plan,
-    systems: [...state.systems],
-    payMethod: document.querySelector('input[name="payMethod"]:checked')?.value || 'hub',
-  });
-
-  const goStep2 = () => {
-    const f = readForm();
-    if (!f.companyName || !f.subdomain || !f.adminName || !f.adminPhone || !f.adminPassword) {
-      return toast('يرجى ملء جميع الحقول المطلوبة *');
-    }
-    if (!state.subdomainOk) return toast('تحقق من توفر النطاق الفرعي أولًا');
-    setStep(2);
-    renderSystems();
-  };
-
-  const goStep3 = () => {
-    if (!state.systems.size) return toast('اختر نظامًا واحدًا على الأقل');
-    const plan = store().PLAN_META[state.plan];
-    $('[data-pay-plan]').textContent = plan?.label || state.plan;
-    $('[data-pay-amount]').textContent = plan?.amount || '—';
-    $('[data-pay-host]').textContent = `${store().normalizeSlug($('#subdomain').value)}.${store().BASE_DOMAIN}`;
-    $('[data-pay-systems]').textContent = [...state.systems].join(' · ');
-    setStep(3);
-  };
-
-  const runProvision = async (rental) => {
-    setStep(4);
-    const steps = $$('[data-provision-step]');
-    const mark = (i, cls) => {
-      steps.forEach((s, idx) => {
-        s.classList.remove('is-run', 'is-done');
-        if (idx < i) s.classList.add('is-done');
-        if (idx === i) s.classList.add(cls);
+        })
+        .join('');
+      chips.innerHTML = state.systems.size
+        ? [...state.systems]
+            .map((c) => {
+              const meta = all.find((x) => x.code === c);
+              return `<span class="hub-rent-chip"><i class="fas ${meta?.icon || 'fa-cube'}"></i>${meta?.nameAr || c}</span>`;
+            })
+            .join('')
+        : '<span style="color:#94a3b8;font-size:12px;font-weight:700">لم يتم اختيار أي نظام بعد</span>';
+      grid.querySelectorAll('[data-sys]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const code = btn.getAttribute('data-sys');
+          if (!visible.has(code)) return;
+          if (state.systems.has(code)) state.systems.delete(code);
+          else state.systems.add(code);
+          renderSystems();
+          checkSubdomain().catch(() => {});
+        });
       });
     };
 
-    mark(0, 'is-run');
-    await wait(400);
-    mark(1, 'is-run');
-    await wait(300);
-    mark(2, 'is-run');
+    const checkSubdomain = async () => {
+      const input = $('#subdomain');
+      const statusEl = $('[data-subdomain-status]');
+      if (!input || !statusEl) return;
+      const raw = store().normalizeSlug(input.value);
+      input.value = raw;
+      statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ التحقق من هوب وERP…';
+      statusEl.className = 'hub-rent-subdomain-status';
+      const needsErp = state.systems.has('ERP') || !state.systems.size;
+      const res = await store().validateSubdomainAsync(raw, { checkErp: needsErp });
+      state.subdomainOk = Boolean(res.available);
+      statusEl.innerHTML = res.available
+        ? `<i class="fas fa-circle-check"></i> ${res.message}`
+        : raw
+          ? `<i class="fas fa-circle-xmark"></i> ${res.message}`
+          : res.message;
+      statusEl.className = `hub-rent-subdomain-status ${res.available ? 'is-ok' : raw ? 'is-bad' : ''}`;
+    };
 
-    const act = await store().activateRentalAsync(rental.id);
-    if (!act.ok) {
-      toast(act.error || 'فشل التفعيل / ربط ERP');
+    const readForm = () => ({
+      companyName: $('#companyName')?.value.trim() || '',
+      subdomain: $('#subdomain')?.value.trim() || '',
+      slug: $('#subdomain')?.value.trim() || '',
+      adminName: $('#adminName')?.value.trim() || '',
+      adminPhone: $('#adminPhone')?.value.trim() || '',
+      adminEmail: $('#adminEmail')?.value.trim() || '',
+      adminPassword: $('#adminPassword')?.value || '',
+      plan: state.plan,
+      systems: [...state.systems],
+      payMethod: document.querySelector('input[name="payMethod"]:checked')?.value || 'hub',
+    });
+
+    const goStep2 = () => {
+      const f = readForm();
+      if (!f.companyName || !f.subdomain || !f.adminName || !f.adminPhone || !f.adminPassword) {
+        return toast('يرجى ملء جميع الحقول المطلوبة *');
+      }
+      if (!state.subdomainOk) return toast('تحقق من توفر النطاق الفرعي أولًا');
+      setStep(2);
+      renderSystems();
+    };
+
+    const goStep3 = () => {
+      if (!state.systems.size) return toast('اختر نظامًا واحدًا على الأقل');
+      const plan = store().PLAN_META[state.plan];
+      $('[data-pay-plan]').textContent = plan?.label || state.plan;
+      $('[data-pay-amount]').textContent = plan?.amount || '—';
+      $('[data-pay-host]').textContent = `${store().normalizeSlug($('#subdomain').value)}.${store().BASE_DOMAIN}`;
+      $('[data-pay-systems]').textContent = [...state.systems].join(' · ');
       setStep(3);
-      return;
-    }
+    };
 
-    mark(3, 'is-run');
-    await wait(350);
-    steps.forEach((s) => s.classList.add('is-done'));
-    const systems = act.rental.systems || [];
-    const linkedErp = Boolean(act.rental.erp?.loginUrl);
-    const onlyNonErp = systems.length && !systems.includes('ERP');
-    fillSuccess(
-      act.rental,
-      linkedErp
-        ? 'تم تجهيز المستأجر عبر نايوش هوب وربطه بمحرك ERP.'
-        : onlyNonErp
-          ? 'تم تفعيل الاستئجار في هوب. افتح النظام على محركه المباشر (ليس مسار مستأجر ERP).'
-          : 'تم تفعيل الاستئجار ومنح النطاق من نايوش هوب.'
-    );
-    setStep(5);
-  };
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  const fillSuccess = async (rental, note) => {
-    state.rentalId = rental.id;
-    $('[data-success-company]').textContent = rental.companyName;
-    $('[data-success-host]').textContent = rental.host;
-    $('[data-success-systems]').textContent = (rental.systems || []).join(' · ');
-    if (note) $('[data-success-note]').textContent = note;
-
-    const erpBox = $('[data-success-erp]');
-    const erpLink = $('[data-success-erp-link]');
-    const openBtn = $('[data-success-open]');
-    const erpUrl = rental.erp?.loginUrl || '';
-
-    if (erpBox && erpLink) {
-      if (erpUrl) {
-        erpBox.hidden = false;
-        erpLink.href = erpUrl;
-        erpLink.textContent = erpUrl;
-      } else {
-        erpBox.hidden = true;
-      }
-    }
-
-    if (openBtn) {
-      openBtn.href = 'my-systems.html';
-      openBtn.removeAttribute('target');
-      openBtn.innerHTML = '<i class="fas fa-cubes"></i> أنظمتي وفتح SSO';
-      // حضّر رابط فتح فوري بـ SSO إن أمكن (ERP فقط بعد التجهيز؛ FIT/LAW على محركهم)
-      try {
-        if (rental.status === 'active') {
-          const opened = await store().buildOpenUrl(rental);
-          if (opened.ok && opened.url) {
-            openBtn.href = opened.url;
-            openBtn.target = '_blank';
-            openBtn.rel = 'noopener';
-            const code = String(rental.systems?.[0] || 'ERP').toUpperCase();
-            openBtn.innerHTML =
-              code === 'ERP'
-                ? '<i class="fas fa-right-to-bracket"></i> فتح ERP بـ SSO'
-                : `<i class="fas fa-right-to-bracket"></i> فتح ${code} بـ SSO`;
-          }
-        }
-      } catch {
-        /* keep my-systems fallback */
-      }
-    }
-  };
-
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-
-  const submitPayment = async () => {
-    const f = readForm();
-    const res = store().submitRental(f);
-    if (!res.ok) return toast(res.error || 'تعذّر إرسال الطلب');
-
-    if (res.rental.status === 'pending') {
-      fillSuccess(
-        res.rental,
-        'الطلب بانتظار اعتماد غرفة العمليات في هوب — بعد الموافقة يُجهَّز مستأجر ERP ويُمنح الصب دومين.'
-      );
+    const fillSuccess = async (rental, note) => {
+      state.rentalId = rental.id;
+      $('[data-success-company]').textContent = rental.companyName;
+      $('[data-success-host]').textContent = rental.host;
+      $('[data-success-systems]').textContent = (rental.systems || []).join(' · ');
+      if (note) $('[data-success-note]').textContent = note;
+      const erpBox = $('[data-success-erp]');
+      const erpLink = $('[data-success-erp-link]');
       const openBtn = $('[data-success-open]');
-      if (openBtn) openBtn.href = 'rent-admin.html';
+      const erpUrl = rental.erp?.loginUrl || '';
+      if (erpBox && erpLink) {
+        if (erpUrl) {
+          erpBox.hidden = false;
+          erpLink.href = erpUrl;
+          erpLink.textContent = erpUrl;
+        } else {
+          erpBox.hidden = true;
+        }
+      }
+      if (openBtn) {
+        openBtn.href = 'my-systems.html';
+        openBtn.removeAttribute('target');
+        openBtn.innerHTML = '<i class="fas fa-cubes"></i> أنظمتي وفتح SSO';
+        try {
+          if (rental.status === 'active') {
+            const opened = await store().buildOpenUrl(rental);
+            if (opened.ok && opened.url) {
+              openBtn.href = opened.url;
+              openBtn.target = '_blank';
+              openBtn.rel = 'noopener';
+              const code = String(rental.systems?.[0] || 'ERP').toUpperCase();
+              openBtn.innerHTML =
+                code === 'ERP'
+                  ? '<i class="fas fa-right-to-bracket"></i> فتح ERP بـ SSO'
+                  : `<i class="fas fa-right-to-bracket"></i> فتح ${code} بـ SSO`;
+            }
+          }
+        } catch {
+          /* keep fallback */
+        }
+      }
+    };
+
+    const runProvision = async (rental) => {
+      setStep(4);
+      const steps = $$('[data-provision-step]');
+      const mark = (i, cls) => {
+        steps.forEach((s, idx) => {
+          s.classList.remove('is-run', 'is-done');
+          if (idx < i) s.classList.add('is-done');
+          if (idx === i) s.classList.add(cls);
+        });
+      };
+      mark(0, 'is-run');
+      await wait(400);
+      mark(1, 'is-run');
+      await wait(300);
+      mark(2, 'is-run');
+      const act = await store().activateRentalAsync(rental.id);
+      if (!act.ok) {
+        toast(act.error || 'فشل التفعيل / ربط ERP');
+        setStep(3);
+        return;
+      }
+      mark(3, 'is-run');
+      await wait(350);
+      steps.forEach((s) => s.classList.add('is-done'));
+      const systems = act.rental.systems || [];
+      const linkedErp = Boolean(act.rental.erp?.loginUrl);
+      const onlyNonErp = systems.length && !systems.includes('ERP');
+      fillSuccess(
+        act.rental,
+        linkedErp
+          ? 'تم تجهيز المستأجر عبر نايوش هوب وربطه بمحرك ERP.'
+          : onlyNonErp
+            ? 'تم تفعيل الاستئجار في هوب. افتح النظام على محركه المباشر (ليس مسار مستأجر ERP).'
+            : 'تم تفعيل الاستئجار ومنح النطاق من نايوش هوب.'
+      );
       setStep(5);
-      toast('تم إرسال طلب الاستئجار للمراجعة');
-      return;
-    }
+    };
 
-    await runProvision(res.rental);
-  };
+    const submitPayment = async () => {
+      const f = readForm();
+      const res = store().submitRental(f);
+      if (!res.ok) return toast(res.error || 'تعذّر إرسال الطلب');
+      if (res.rental.status === 'pending') {
+        fillSuccess(
+          res.rental,
+          'الطلب بانتظار اعتماد غرفة العمليات في هوب — بعد الموافقة يُجهَّز مستأجر ERP ويُمنح الصب دومين.'
+        );
+        const openBtn = $('[data-success-open]');
+        if (openBtn) openBtn.href = 'rent-admin.html';
+        setStep(5);
+        toast('تم إرسال طلب الاستئجار للمراجعة');
+        return;
+      }
+      await runProvision(res.rental);
+    };
 
-  const bind = () => {
     let timer = null;
     $('#subdomain')?.addEventListener('input', () => {
       clearTimeout(timer);
-      const status = $('[data-subdomain-status]');
-      if (status) {
-        status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ التحقق…';
-        status.className = 'hub-rent-subdomain-status';
+      const statusEl = $('[data-subdomain-status]');
+      if (statusEl) {
+        statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ التحقق…';
+        statusEl.className = 'hub-rent-subdomain-status';
       }
       state.subdomainOk = false;
       timer = setTimeout(() => {
@@ -301,20 +404,22 @@
       if (state.step === 2) renderSystems();
     });
 
-    // preselect system from query ?system=ERP
     const params = new URLSearchParams(location.search);
     const pre = String(params.get('system') || '').toUpperCase();
     if (pre) state.systems.add(pre);
-
     const suffix = $('[data-subdomain-suffix]');
     if (suffix) suffix.textContent = `.${store().BASE_DOMAIN}`;
-
     setStep(1);
   };
 
   document.addEventListener('DOMContentLoaded', async () => {
-    if (!$('[data-rent-shell]')) return;
-    await store()?.hydrate?.();
-    bind();
+    if (isEasyPlatform) {
+      await bindEasyPlatform();
+      return;
+    }
+    if (isSystemsFlow) {
+      await window.HubRentStore?.hydrate?.();
+      bindSystemsFlow();
+    }
   });
 })();

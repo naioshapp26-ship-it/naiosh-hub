@@ -38,7 +38,7 @@
         : `كل الطلبات المحلية على هذا الجهاز · ${rows.length} عنصر`;
     }
     if (!rows.length) {
-      root.innerHTML = `<div class="hub-mine-empty">لا أنظمة مستأجرة بعد — ابدأ من <a href="rent-system.html">استأجر نظامًا</a>.</div>`;
+      root.innerHTML = `<div class="hub-mine-empty">لا أنظمة مستأجرة بعد — ابدأ من <a href="rent-systems.html">استأجر أنظمة</a> أو اطلب منصة من <a href="rent-system.html">ابدأ رحلتك</a>.</div>`;
       return;
     }
     root.innerHTML = rows
@@ -58,7 +58,7 @@
                 ? `<button type="button" class="is-primary" data-open-rental="${esc(r.id)}"><i class="fas fa-shield-halved"></i> فتح عبر جسر SSO</button>`
                 : ''
             }
-            <a class="is-secondary" href="rent-system.html?system=${encodeURIComponent(r.systems?.[0] || 'ERP')}"><i class="fas fa-plus"></i> استأجر المزيد</a>
+            <a class="is-secondary" href="rent-systems.html?system=${encodeURIComponent(r.systems?.[0] || 'ERP')}"><i class="fas fa-plus"></i> استأجر المزيد</a>
           </div>
         </article>`;
       })
