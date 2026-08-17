@@ -58,7 +58,8 @@
           }
           ${
             r.status === 'active'
-              ? `<a class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px;text-decoration:none" href="roles-permissions.html"><i class="fas fa-user-shield"></i> الأدوار والصلاحيات</a>`
+              ? `<a class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px;text-decoration:none" href="roles-permissions.html"><i class="fas fa-user-shield"></i> الأدوار والصلاحيات</a>
+                 <button type="button" class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px" data-sync-login="${escapeHtml(r.id)}"><i class="fas fa-key"></i> تفعيل دخول العميل</button>`
               : ''
           }
         </div>
@@ -92,6 +93,23 @@
         const res = platforms().rejectGrant(btn.getAttribute('data-reject-platform'));
         if (!res.ok) return alert(res.error || 'فشل الرفض');
         renderPlatformList();
+      });
+    });
+    root.querySelectorAll('[data-sync-login]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const grant = platforms().getGrant(btn.getAttribute('data-sync-login'));
+        if (!grant?.adminEmail) return alert('الطلب غير موجود');
+        const password = window.prompt(
+          `كلمة مرور الدخول للعميل ${grant.adminEmail}\n(نفس كلمة «سجل معنا» أو كلمة جديدة تُعطى للعميل)`
+        );
+        if (!password || password.length < 8) {
+          alert('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+          return;
+        }
+        btn.disabled = true;
+        const res = await platforms().ensureTenantLogin?.({ email: grant.adminEmail, password, grant });
+        btn.disabled = false;
+        alert(res?.ok ? `تم تفعيل الدخول لـ ${grant.adminEmail}` : res?.error || 'فشل التفعيل');
       });
     });
   };

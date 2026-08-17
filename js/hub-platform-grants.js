@@ -208,6 +208,36 @@
     return syncAccountsRemote(readAccounts());
   };
 
+  const ensureTenantLogin = async (payload = {}) => {
+    const email = String(payload.email || '').trim().toLowerCase();
+    const password = String(payload.password || '');
+    const grant = payload.grant || grantForEmail(email);
+    if (!email || !password) return { ok: false, error: 'الإيميل وكلمة المرور مطلوبان' };
+    if (!grant || grant.status !== 'active') return { ok: false, error: 'لا يوجد طلب مفعّل لهذا الإيميل' };
+    const account = {
+      email,
+      password,
+      name: grant.adminName || grant.companyName || email,
+      role: 'platform_owner',
+      systemCode: grant.grantedSystemCode || grant.requestedSystem || '',
+      host: grant.host || '',
+      grantId: grant.id,
+      status: 'active',
+      approvedAt: grant.approvedAt || grant.updatedAt,
+    };
+    upsertAccount(account);
+    try {
+      await fetch('/api/hub/tenant-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(account),
+      });
+    } catch {
+      /* local ok */
+    }
+    return { ok: true, email };
+  };
+
   const grantForEmail = (email = '') => {
     const key = String(email || '').trim().toLowerCase();
     if (!key) return null;
@@ -546,6 +576,7 @@
     activeGrantFor,
     grantForEmail,
     syncAccountsFromGrants,
+    ensureTenantLogin,
     submitRequest,
     approveGrant,
     rejectGrant,

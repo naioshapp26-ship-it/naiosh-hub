@@ -365,6 +365,30 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  if (pathname === '/api/hub/my-grant' && req.method === 'GET') {
+    const email = String(new URL(req.url, 'http://localhost').searchParams.get('email') || '')
+      .trim()
+      .toLowerCase();
+    if (!email) {
+      sendJson(res, 400, { ok: false, error: 'أدخل الإيميل' });
+      return true;
+    }
+    const state = readPlatformGrantsFile();
+    const grant =
+      (state.grants || [])
+        .filter((g) => String(g.adminEmail || '').toLowerCase() === email)
+        .sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)))[0] ||
+      null;
+    if (!grant) {
+      sendJson(res, 404, { ok: false, error: 'لا يوجد طلب «سجل معنا» لهذا الإيميل' });
+      return true;
+    }
+    const safe = { ...grant };
+    delete safe.adminPassword;
+    sendJson(res, 200, { ok: true, grant: safe });
+    return true;
+  }
+
   const tenantAccountsPath = path.join(ROOT, 'data', 'tenant-accounts.json');
   const ensureTenantAccountsFile = () => {
     const dir = path.dirname(tenantAccountsPath);
@@ -395,6 +419,32 @@ async function handleHubApi(req, res, pathname) {
     const accounts = Array.isArray(body?.accounts) ? body.accounts : [];
     writeTenantAccountsFile({ version: 1, accounts });
     sendJson(res, 200, { ok: true, count: accounts.length });
+    return true;
+  }
+
+  if (pathname === '/api/hub/tenant-account' && req.method === 'POST') {
+    const body = await readBody(req);
+    const email = String(body?.email || '').trim().toLowerCase();
+    const password = String(body?.password || '');
+    if (!email || !password) {
+      sendJson(res, 400, { ok: false, error: 'الإيميل وكلمة المرور مطلوبان' });
+      return true;
+    }
+    const state = readTenantAccountsFile();
+    const accounts = (state.accounts || []).filter((a) => String(a.email || '').toLowerCase() !== email);
+    accounts.unshift({
+      email,
+      password,
+      name: String(body?.name || email).trim(),
+      role: body?.role || 'platform_owner',
+      systemCode: String(body?.systemCode || '').toUpperCase(),
+      host: String(body?.host || '').trim(),
+      grantId: body?.grantId || '',
+      status: body?.status || 'active',
+      approvedAt: body?.approvedAt || new Date().toISOString(),
+    });
+    writeTenantAccountsFile({ version: 1, accounts });
+    sendJson(res, 200, { ok: true, email });
     return true;
   }
 
