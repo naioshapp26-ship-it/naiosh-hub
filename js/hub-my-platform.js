@@ -49,6 +49,38 @@
     return grantFromLocal(email) || (await grantFromServer(email));
   };
 
+  const openGrantSystem = (grant) => {
+    const systemCode = String(grant?.grantedSystemCode || grant?.requestedSystem || '').toUpperCase();
+    if (!systemCode) return;
+    const slug = String(grant?.slug || '').toLowerCase();
+    const app = window.HubLauncher?.findApp?.(systemCode);
+    if (!app) {
+      window.location.href = `apps.html#${systemCode.toLowerCase()}`;
+      return;
+    }
+    const base = app.liveUrl || app.launchUrl || app.url || 'apps.html';
+    const href = window.HubLauncher?.withLaunchParams
+      ? window.HubLauncher.withLaunchParams(base, {
+          from: 'hub',
+          systemCode: app.code,
+          subdomain: slug,
+          tenant: slug,
+          returnUrl: `${window.location.pathname}${window.location.search}`,
+        })
+      : base;
+    window.HubStore?.recordLaunch?.(app.code, 'hub');
+    window.open(href, '_blank', 'noopener');
+  };
+
+  const bindOpenActions = (grant) => {
+    mount.querySelectorAll('[data-open-system]').forEach((btn) => {
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        openGrantSystem(grant);
+      });
+    });
+  };
+
   const renderHelp = () => {
     if (!mount) return;
     mount.innerHTML = `<div class="hub-mine-steps">
@@ -83,7 +115,14 @@
       <p>الحاضنة: <strong>${esc(grant.incubatorLabel || grant.incubator || '—')}</strong></p>
       <p>المنصة: <strong>${esc(grant.platformLabel || grant.platform || '—')}</strong></p>
       <p>النظام: <strong>${esc(systemLabel)}</strong>${systemCode ? ` <span dir="ltr">(${esc(systemCode)})</span>` : ''}</p>
-      <div class="hub-mine-host"><i class="fas fa-globe"></i> ${esc(grant.host || '—')}</div>
+      ${
+        grant.status === 'active' && grant.host
+          ? `<button type="button" class="hub-mine-host is-clickable" data-open-system="${esc(systemCode)}" title="فتح النظام ${esc(systemCode)}">
+               <i class="fas fa-globe"></i> ${esc(grant.host)} <i class="fas fa-arrow-up-right-from-square"></i>
+             </button>
+             <p class="hub-mine-host-hint">اضغطي على الدومين لفتح النظام ${esc(systemCode)} في تبويب جديد</p>`
+          : `<div class="hub-mine-host"><i class="fas fa-globe"></i> ${esc(grant.host || '—')}</div>`
+      }
       <p>الخطة: ${esc(grant.planLabel || 'باقة مجانية')}${grant.status === 'active' ? ` · متبقي مجاني: ${esc(String(grant.freeRemaining ?? grant.freeQuota ?? '—'))}` : ''}</p>
       ${
         grant.status === 'pending'
@@ -102,13 +141,13 @@
       }
       <div class="hub-mine-actions">
         ${
-          grant.status === 'active' && systemCode && sameUser
+          grant.status === 'active' && systemCode
             ? `<button type="button" class="is-primary" data-open-system="${esc(systemCode)}"><i class="fas fa-rocket"></i> فتح النظام ${esc(systemCode)}</button>`
             : ''
         }
         ${
           grant.status === 'active' && !sameUser
-            ? `<a class="is-primary" href="login.html?next=my-platform.html"><i class="fas fa-right-to-bracket"></i> تسجيل الدخول لفتح النظام</a>`
+            ? `<a class="is-secondary" href="login.html?next=my-platform.html"><i class="fas fa-right-to-bracket"></i> تسجيل الدخول (اختياري)</a>`
             : ''
         }
         ${
@@ -120,14 +159,7 @@
       </div>
     </article>`;
 
-    mount.querySelector('[data-open-system]')?.addEventListener('click', (event) => {
-      const code = event.currentTarget.getAttribute('data-open-system');
-      if (window.HubLauncher?.launch) {
-        window.HubLauncher.launch(code, { mode: 'hub', force: Boolean(window.HubLiveSystems?.isLive?.(code)) });
-      } else {
-        window.location.href = `apps.html#${String(code).toLowerCase()}`;
-      }
-    });
+    bindOpenActions(grant);
   };
 
   const renderNotFound = (email) => {
