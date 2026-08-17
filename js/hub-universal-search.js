@@ -213,7 +213,7 @@
       typeAr: 'مشاريع',
       icon: 'fa-lightbulb',
       title: 'المشاريع الجانبية',
-      subtitle: 'ابدأ من التحدي الذي أمامك، وليس من الكتاب',
+      subtitle: 'إبدأ التحدي مع نفسك اولا',
       meta: 'Side Projects · Opportunity',
       href: 'side-projects.html#sp-client-intro',
       keywords:
