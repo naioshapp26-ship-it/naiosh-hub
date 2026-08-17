@@ -220,4 +220,10 @@
   });
 
   fillForm();
+
+  const branchEl = form?.querySelector('[name="branch"]');
+  const branchAltEl = form?.querySelector('[name="branchAlt"]');
+  branchEl?.addEventListener('change', () => {
+    if (branchAltEl && !branchAltEl.value) branchAltEl.value = branchEl.value;
+  });
 })();
