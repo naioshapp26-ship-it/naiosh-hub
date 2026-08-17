@@ -89,15 +89,60 @@
         ];
   };
 
-  const branchOptions = () => {
+  const COUNTRY_ALIASES = {
+    'المملكة العربية السعودية': ['السعودية'],
+    'الإمارات العربية المتحدة': ['الإمارات'],
+    إنجلترا: ['إنجلترا', 'بريطانيا'],
+    أمريكا: ['أمريكا', 'الولايات المتحدة'],
+  };
+
+  const countryList = () => {
+    const fromBranches = (window.HubBranchesData?.COUNTRIES || []).map((c) => c.nameAr);
+    const seen = new Set();
+    const out = [];
+    [...fromBranches, ...COUNTRIES].forEach((name) => {
+      const n = String(name || '').trim();
+      if (!n || seen.has(n)) return;
+      seen.add(n);
+      out.push(n);
+    });
+    return out;
+  };
+
+  const branchMatchesCountry = (branch, country) => {
+    if (!country) return false;
+    const aliases = COUNTRY_ALIASES[country] || [country];
+    const names = [branch.nameAr, branch.nameEn, ...(aliases || [])].map((x) => String(x || '').trim());
+    return names.some((n) => n && (n === country || country.includes(n) || n.includes(country)));
+  };
+
+  const branchOptions = (country = '') => {
     const list = window.HubBranchesData?.BRANCHES || [];
-    if (list.length) {
-      return list.map((b) => ({
+    if (!country) return [];
+    const matched = list.filter((b) => b.code !== 'HQ' && branchMatchesCountry(b, country));
+    if (matched.length) {
+      return matched.map((b) => ({
         id: b.id,
         label: `${b.nameAr}${b.type ? ` — ${b.type}` : ''}`,
       }));
     }
-    return COUNTRIES.map((c) => ({ id: c, label: c }));
+    return [{ id: `br-${country}`, label: `فرع ${country}` }];
+  };
+
+  const lockBranch = (placeholder) => {
+    const el = form?.querySelector('[name="branch"]');
+    if (!el) return;
+    fillSelect(el, [], placeholder);
+    el.disabled = true;
+  };
+
+  const unlockBranch = (country, selected) => {
+    const el = form?.querySelector('[name="branch"]');
+    if (!el) return;
+    const options = branchOptions(country);
+    fillSelect(el, options, 'اختر الفرع', selected);
+    el.disabled = !country;
+    if (options.length === 1 && country) el.value = options[0].id;
   };
 
   const incubatorOptions = () => {
@@ -145,9 +190,11 @@
     const preCountry = params.get('country') || '';
 
     fillSelect(form?.querySelector('[name="sectorName"]'), sectorOptions(), 'اختر اسم القطاع', preSector);
-    fillSelect(form?.querySelector('[name="branch"]'), branchOptions(), 'اختر الفرع', preBranch);
-    fillSelect(form?.querySelector('[name="country"]'), COUNTRIES, 'اختر الدولة', preCountry);
+    fillSelect(form?.querySelector('[name="country"]'), countryList(), 'اختر الدولة', preCountry);
     fillSelect(form?.querySelector('[name="incubator"]'), incubatorOptions(), 'اختر الحاضنة', preIncubator);
+
+    if (preCountry) unlockBranch(preCountry, preBranch);
+    else lockBranch('اختر الدولة أولاً');
 
     const platformEl = form?.querySelector('[name="platform"]');
     if (platformEl) {
@@ -158,6 +205,12 @@
       }
     }
   };
+
+  form?.querySelector('[name="country"]')?.addEventListener('change', (event) => {
+    const country = String(event.target.value || '').trim();
+    if (!country) lockBranch('اختر الدولة أولاً');
+    else unlockBranch(country);
+  });
 
   const kindLabel =
     kind === 'incubator' ? 'حاضنة' : kind === 'platform' ? 'منصة' : 'مكتب';

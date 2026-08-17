@@ -63,6 +63,12 @@
   background: #f8fafc;
 }
 
+.hub-book-form select:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
 .hub-book-subdomain-row {
   display: flex;
   align-items: stretch;
