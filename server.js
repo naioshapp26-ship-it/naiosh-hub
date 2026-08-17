@@ -323,6 +323,48 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  const platformGrantsPath = path.join(ROOT, 'data', 'platform-grants.json');
+  const ensurePlatformGrantsFile = () => {
+    const dir = path.dirname(platformGrantsPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(platformGrantsPath)) {
+      fs.writeFileSync(platformGrantsPath, JSON.stringify({ version: 1, grants: [] }, null, 2), 'utf8');
+    }
+  };
+  const readPlatformGrantsFile = () => {
+    ensurePlatformGrantsFile();
+    try {
+      return JSON.parse(fs.readFileSync(platformGrantsPath, 'utf8'));
+    } catch {
+      return { version: 1, grants: [] };
+    }
+  };
+  const writePlatformGrantsFile = (state) => {
+    ensurePlatformGrantsFile();
+    fs.writeFileSync(
+      platformGrantsPath,
+      JSON.stringify({ ...state, updatedAt: new Date().toISOString() }, null, 2),
+      'utf8'
+    );
+  };
+
+  if (pathname === '/api/hub/platform-grants' && req.method === 'GET') {
+    const state = readPlatformGrantsFile();
+    sendJson(res, 200, { ok: true, state });
+    return true;
+  }
+
+  if (pathname === '/api/hub/platform-grants' && req.method === 'POST') {
+    const body = await readBody(req);
+    const state = {
+      version: 1,
+      grants: Array.isArray(body?.grants) ? body.grants : [],
+    };
+    writePlatformGrantsFile(state);
+    sendJson(res, 200, { ok: true, count: state.grants.length });
+    return true;
+  }
+
   // —— محوّل ERP: تحقق نطاق / تجهيز مستأجر ——
   if (pathname === '/api/hub/adapters/erp/config' && req.method === 'GET') {
     try {

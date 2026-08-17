@@ -164,3 +164,51 @@
     grid-template-columns: 1fr;
   }
 }
+
+.hub-book-grid--simple {
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+}
+
+.hub-book-subdomain-status {
+  margin: -4px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.hub-book-subdomain-status.is-ok {
+  color: #047857;
+}
+
+.hub-book-subdomain-status.is-bad {
+  color: #b91c1c;
+}
+
+.hub-book-feedback.is-error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.hub-book-feedback.is-ok {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.hub-platform-recharge-banner {
+  display: none;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-weight: 800;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hub-platform-recharge-banner.is-show {
+  display: flex;
+}

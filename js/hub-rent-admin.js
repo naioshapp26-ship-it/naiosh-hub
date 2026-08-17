@@ -1,10 +1,11 @@
 /**
- * إدارة استئجار الأنظمة — صلاحيات الظهور + اعتماد الطلبات
+ * إدارة استئجار الأنظمة + موافقة طلبات المنصات المجانية
  */
 (() => {
   'use strict';
 
   const store = () => window.HubRentStore;
+  const platforms = () => window.HubPlatformGrants;
   const $ = (sel) => document.querySelector(sel);
 
   const statusClass = (s) => {
@@ -20,12 +21,69 @@
     rejected: 'مرفوض',
   };
 
+  const escapeHtml = (s) =>
+    String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  const renderPlatformList = () => {
+    const root = $('[data-platform-admin-list]');
+    if (!root || !platforms()) return;
+    const rows = platforms().listGrants();
+    if (!rows.length) {
+      root.innerHTML =
+        '<p class="hub-rent-hint">لا طلبات منصات بعد — العملاء يرسلون من صفحة <a href="book-platform.html">إحجز منصة</a>.</p>';
+      return;
+    }
+    root.innerHTML = rows
+      .map(
+        (r) => `<article class="hub-rent-admin-item" data-platform-id="${escapeHtml(r.id)}">
+        <h3>${escapeHtml(r.companyName)} <span class="hub-rent-status ${statusClass(r.status)}">${statusAr[r.status] || r.status}</span></h3>
+        <p>المنصة: <strong>${escapeHtml(r.platformLabel || r.platform)}</strong></p>
+        <p>المسؤول: ${escapeHtml(r.adminName)} · ${escapeHtml(r.adminEmail || '—')} · ${escapeHtml(r.adminPhone || '')}</p>
+        <p>النطاق: <span dir="ltr">${escapeHtml(r.host)}</span></p>
+        <p>الخطة: ${escapeHtml(r.planLabel || 'باقة مجانية')} · متبقي مجاني: ${escapeHtml(String(r.freeRemaining ?? r.freeQuota ?? '—'))}</p>
+        <div class="hub-rent-admin-actions">
+          ${
+            r.status === 'pending'
+              ? `<button type="button" class="hub-rent-btn hub-rent-btn-primary" style="width:auto;margin:0;padding:8px 14px" data-approve-platform="${escapeHtml(r.id)}"><i class="fas fa-check"></i> اعتماد الباقة المجانية</button>
+                 <button type="button" class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px" data-reject-platform="${escapeHtml(r.id)}"><i class="fas fa-xmark"></i> رفض</button>`
+              : ''
+          }
+          ${
+            r.status === 'active'
+              ? `<a class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px;text-decoration:none" href="platforms.html"><i class="fas fa-layer-group"></i> المنصات</a>`
+              : ''
+          }
+        </div>
+      </article>`
+      )
+      .join('');
+
+    root.querySelectorAll('[data-approve-platform]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const res = platforms().approveGrant(btn.getAttribute('data-approve-platform'));
+        if (!res.ok) return alert(res.error || 'فشل الاعتماد');
+        renderPlatformList();
+      });
+    });
+    root.querySelectorAll('[data-reject-platform]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const res = platforms().rejectGrant(btn.getAttribute('data-reject-platform'));
+        if (!res.ok) return alert(res.error || 'فشل الرفض');
+        renderPlatformList();
+      });
+    });
+  };
+
   const renderList = () => {
     const root = $('[data-rent-admin-list]');
     if (!root) return;
     const rows = store().listRentals();
     if (!rows.length) {
-      root.innerHTML = '<p class="hub-rent-hint">لا طلبات بعد — ابدأ من صفحة استأجر نظامًا.</p>';
+      root.innerHTML = '<p class="hub-rent-hint">لا طلبات أنظمة بعد — ابدأ من صفحة استأجر نظامًا.</p>';
       return;
     }
     root.innerHTML = rows
@@ -107,18 +165,13 @@
     }
   };
 
-  const escapeHtml = (s) =>
-    String(s || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-
   document.addEventListener('DOMContentLoaded', async () => {
-    if (!$('[data-rent-admin-list]')) return;
+    if (!$('[data-rent-admin-list]') && !$('[data-platform-admin-list]')) return;
     await store()?.hydrate?.();
+    await platforms()?.hydrate?.();
     renderVisGrid();
     renderList();
+    renderPlatformList();
     $('[data-vis-save]')?.addEventListener('click', saveVisibility);
     $('#vis-email')?.addEventListener('change', loadVisibility);
     $('#vis-email')?.addEventListener('blur', loadVisibility);

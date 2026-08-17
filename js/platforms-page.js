@@ -86,4 +86,21 @@
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
   });
+
+  const paintRechargeBanner = async () => {
+    const banner = document.querySelector('[data-platform-recharge-banner]');
+    const msg = document.querySelector('[data-platform-recharge-msg]');
+    if (!banner || !window.HubPlatformGrants) return;
+    await window.HubPlatformGrants.hydrate?.();
+    const email = window.HubAuth?.getUser?.()?.email || '';
+    const gate = window.HubPlatformGrants.canUsePlatform(email);
+    if (gate.reason === 'exhausted') {
+      banner.classList.add('is-show');
+      if (msg) msg.textContent = gate.message || 'انتهت الباقة المجانية — اشحن رصيدك للمتابعة.';
+    } else {
+      banner.classList.remove('is-show');
+    }
+  };
+
+  paintRechargeBanner().catch(() => {});
 })();

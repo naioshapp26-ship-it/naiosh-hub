@@ -37,14 +37,20 @@
 
   <main class="container hub-feature-page hub-rent-page">
     <section class="hub-feature-hero">
-      <p class="hub-feature-kicker"><i class="fas fa-key"></i> Control Plane · استئجار الأنظمة</p>
-      <h1>إدارة الظهور ومنح الصب دومين</h1>
-      <p>من هنا تحدد أي نظام يظهر للعميل، وتعتمد طلبات الاستئجار، وHUB يمنح النطاق الفرعي ويفعل الصلاحيات.</p>
+      <p class="hub-feature-kicker"><i class="fas fa-key"></i> Control Plane · منصات وأنظمة</p>
+      <h1>موافقة الأدمن ومنح الصب دومين</h1>
+      <p>اعتمد طلبات المنصات المجانية، وطلبات استئجار الأنظمة، وحدد أي نظام يظهر للعميل.</p>
     </section>
 
     <div class="hub-rent-admin-grid">
       <article class="hub-rent-card">
-        <h2>طلبات الاستئجار</h2>
+        <h2>طلبات المنصات (مجاني)</h2>
+        <p class="hub-rent-lead">موافقة الأدمن على طلب المنصة — بدون دفع · بعدها الباقة المجانية</p>
+        <div class="hub-rent-admin-list" data-platform-admin-list></div>
+      </article>
+
+      <article class="hub-rent-card">
+        <h2>طلبات استئجار الأنظمة</h2>
         <p class="hub-rent-lead">اعتماد الخطة المدفوعة أو مراجعة التفعيلات الفورية</p>
         <div class="hub-rent-admin-list" data-rent-admin-list></div>
       </article>
@@ -77,8 +83,10 @@
   <script src="js/hub-system-ops-spec.js"></script>
   <script src="js/hub-system-ops-engine.js"></script>
   <script src="js/hub-rent-store.js?v=5"></script>
-  <script src="js/hub-rent-admin.js?v=2"></script>
+  <script src="js/hub-platform-grants.js?v=1"></script>
+  <script src="js/hub-rent-admin.js?v=3"></script>
   <script src="js/hub-header-actions.js?v=17"></script>
+  <script src="js/hub-hero-balance.js" defer></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>

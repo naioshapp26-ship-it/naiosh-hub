@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="css/hub-header-actions.css?v=11" />
   <link rel="stylesheet" href="css/hub-row-actions.css" />
   <link rel="stylesheet" href="css/platforms.css" />
+  <link rel="stylesheet" href="css/hub-booking.css?v=3" />
 </head>
 <body class="homepage platforms-page-body" data-hub-entity="platforms">
   <header class="top-nav">
@@ -57,6 +58,11 @@
       </div>
     </section>
 
+    <div class="hub-platform-recharge-banner" data-platform-recharge-banner role="status">
+      <span data-platform-recharge-msg>انتهت الباقة المجانية — اشحن رصيدك للمتابعة.</span>
+      <a class="btn btn-primary" href="index.html" data-hub-charge-open><i class="fas fa-wallet"></i> اشحن رصيدك</a>
+    </div>
+
     <nav class="products-tabs" id="platformsTabs" aria-label="مجموعات المنصات"></nav>
       <section class="hub-inline-ads" id="platform-ads" data-hub-ads="platforms" data-hub-ads-title="إعلانات الصفحة الرئيسية للمنصة" data-hub-ads-limit="6" aria-label="إعلانات المنصات"></section>
     <div id="platformsSections"></div>
@@ -82,10 +88,12 @@
   <script src="js/hub-row-actions.js"></script>
   <script src="js/hub-currency.js"></script>
   <script src="js/hub-ads-display.js"></script>
-  <script src="js/platforms-page.js"></script>
+  <script src="js/hub-platform-grants.js?v=1"></script>
+  <script src="js/platforms-page.js?v=2"></script>
   <script src="js/hub-ops-path.js"></script>
   <script src="js/mobile-nav.js"></script>
   <script src="js/hub-header-actions.js"></script>
+  <script src="js/hub-hero-balance.js" defer></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
