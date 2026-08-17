@@ -365,6 +365,69 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  const tenantAccountsPath = path.join(ROOT, 'data', 'tenant-accounts.json');
+  const ensureTenantAccountsFile = () => {
+    const dir = path.dirname(tenantAccountsPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(tenantAccountsPath)) {
+      fs.writeFileSync(tenantAccountsPath, JSON.stringify({ version: 1, accounts: [] }, null, 2), 'utf8');
+    }
+  };
+  const readTenantAccountsFile = () => {
+    ensureTenantAccountsFile();
+    try {
+      return JSON.parse(fs.readFileSync(tenantAccountsPath, 'utf8'));
+    } catch {
+      return { version: 1, accounts: [] };
+    }
+  };
+  const writeTenantAccountsFile = (state) => {
+    ensureTenantAccountsFile();
+    fs.writeFileSync(
+      tenantAccountsPath,
+      JSON.stringify({ ...state, updatedAt: new Date().toISOString() }, null, 2),
+      'utf8'
+    );
+  };
+
+  if (pathname === '/api/hub/tenant-accounts' && req.method === 'POST') {
+    const body = await readBody(req);
+    const accounts = Array.isArray(body?.accounts) ? body.accounts : [];
+    writeTenantAccountsFile({ version: 1, accounts });
+    sendJson(res, 200, { ok: true, count: accounts.length });
+    return true;
+  }
+
+  if (pathname === '/api/hub/tenant-login' && req.method === 'POST') {
+    const body = await readBody(req);
+    const email = String(body?.email || '').trim().toLowerCase();
+    const password = String(body?.password || '');
+    if (!email || !password) {
+      sendJson(res, 400, { ok: false, error: 'البريد وكلمة المرور مطلوبان' });
+      return true;
+    }
+    const state = readTenantAccountsFile();
+    const account = (state.accounts || []).find(
+      (a) => String(a.email || '').toLowerCase() === email && a.status === 'active'
+    );
+    if (!account || account.password !== password) {
+      sendJson(res, 401, { ok: false, error: 'بيانات الدخول غير صحيحة' });
+      return true;
+    }
+    sendJson(res, 200, {
+      ok: true,
+      user: {
+        email: account.email,
+        name: account.name || account.email,
+        role: account.role || 'platform_owner',
+        platform: 'naiosh-hub-360',
+        systemCode: account.systemCode || '',
+        host: account.host || '',
+      },
+    });
+    return true;
+  }
+
   // —— محوّل ERP: تحقق نطاق / تجهيز مستأجر ——
   if (pathname === '/api/hub/adapters/erp/config' && req.method === 'GET') {
     try {

@@ -18,7 +18,7 @@
     return [
       { label: 'فرعي', href: 'branches.html', icon: 'fa-code-branch' },
       { label: 'حاضنتي', href: 'incubators.html', icon: 'fa-seedling' },
-      { label: 'منصتي', href: 'platforms.html', icon: 'fa-layer-group' },
+      { label: 'منصتي', href: 'my-platform.html', icon: 'fa-layer-group' },
       { label: 'مكتبي', href: 'office.html', icon: 'fa-briefcase' },
       { label: 'أنظمتي', href: 'my-systems.html', icon: 'fa-cubes' },
       { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },

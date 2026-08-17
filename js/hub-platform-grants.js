@@ -158,7 +158,63 @@
     const list = readAccounts().filter((a) => String(a.email || '').toLowerCase() !== email);
     list.unshift({ ...account, email });
     saveAccounts(list);
+    syncAccountsRemote(list);
     return list[0];
+  };
+
+  const syncAccountsRemote = async (accounts) => {
+    const payload = (accounts || readAccounts()).map((a) => ({
+      email: a.email,
+      password: a.password,
+      name: a.name,
+      role: a.role,
+      systemCode: a.systemCode,
+      host: a.host,
+      grantId: a.grantId,
+      status: a.status,
+      approvedAt: a.approvedAt,
+    }));
+    try {
+      await fetch('/api/hub/tenant-accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version: 1, accounts: payload }),
+      });
+    } catch {
+      /* offline ok */
+    }
+  };
+
+  /** يعيد بناء حسابات المستأجرين من الطلبات المفعّلة ويرفعها للسيرفر */
+  const syncAccountsFromGrants = () => {
+    listGrants()
+      .filter((g) => g.status === 'active' && g.adminEmail && g.adminPassword)
+      .forEach((g) => {
+        const email = String(g.adminEmail).trim().toLowerCase();
+        const existing = findAccount(email);
+        if (existing?.status === 'active') return;
+        upsertAccount({
+          email,
+          password: g.adminPassword,
+          name: g.adminName || g.companyName || email,
+          role: 'platform_owner',
+          systemCode: g.grantedSystemCode || g.requestedSystem || '',
+          host: g.host || '',
+          grantId: g.id,
+          status: 'active',
+          approvedAt: g.approvedAt || g.updatedAt,
+        });
+      });
+    return syncAccountsRemote(readAccounts());
+  };
+
+  const grantForEmail = (email = '') => {
+    const key = String(email || '').trim().toLowerCase();
+    if (!key) return null;
+    return (
+      listGrants().find((g) => String(g.adminEmail || '').toLowerCase() === key) ||
+      null
+    );
   };
 
   const submitRequest = (payload = {}) => {
@@ -488,6 +544,8 @@
     listGrants,
     getGrant,
     activeGrantFor,
+    grantForEmail,
+    syncAccountsFromGrants,
     submitRequest,
     approveGrant,
     rejectGrant,
