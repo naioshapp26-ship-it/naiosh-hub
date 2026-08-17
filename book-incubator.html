@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=12" />
-  <link rel="stylesheet" href="css/hub-booking.css?v=1" />
+  <link rel="stylesheet" href="css/hub-booking.css?v=2" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -43,42 +43,58 @@
     <section class="hub-feature-section">
       <h2 class="hub-feature-section-title">مسار الحجز</h2>
       <div class="hub-book-steps" aria-label="خطوات حجز الحاضنة">
-        <article><strong>1. اختيار القطاع</strong><small>حدّد الحاضنة من القائمة المعتمدة (تعليم · ضيافة · صحة · صناعة…).</small></article>
-        <article><strong>2. بيانات التواصل</strong><small>الاسم والجوال والبريد لتأكيد الموعد خلال 24 ساعة.</small></article>
-        <article><strong>3. التفعيل داخل هوب</strong><small>بعد القبول تُربط الحاضنة بهويتك NAIOSH ID والمكتب الإلكتروني.</small></article>
+        <article><strong>1. بيانات التشغيل</strong><small>القطاع والدومين الفرعي والفرع والحاضنة.</small></article>
+        <article><strong>2. بيانات المسؤول</strong><small>الاسم والجوال والإيميل والدولة.</small></article>
+        <article><strong>3. المرفقات والشرح</strong><small>ملف تعريفي وصورة وفيديو وشرح مختصر للمشروع.</small></article>
       </div>
     </section>
 
     <div class="hub-book-grid">
       <article class="hub-book-card">
         <h2>نموذج حجز حاضنة</h2>
-        <p>الطلب يصل لغرفة العمليات — بدون تكرار صفحات أو أنظمة منفصلة.</p>
+        <p>أكمل البيانات التالية — الطلب يصل لغرفة العمليات بدون تكرار صفحات أو أنظمة منفصلة.</p>
         <form class="hub-book-form" data-book-form>
-          <label for="book-target">الحاضنة المطلوبة</label>
-          <select id="book-target" name="target" data-book-target required></select>
+          <label for="book-sector">اسم القطاع</label>
+          <select id="book-sector" name="sectorName" required></select>
 
-          <label for="book-name">الاسم بالكامل</label>
+          <label for="book-subdomain">الدومين الفرعي</label>
+          <div class="hub-book-subdomain-row">
+            <input id="book-subdomain" name="subdomain" type="text" required autocomplete="off" dir="ltr" placeholder="my-incubator" pattern="[a-zA-Z0-9\-]+" title="حروف إنجليزية وأرقام وشرطة فقط" />
+            <span class="hub-book-subdomain-suffix">.naiosh.app</span>
+          </div>
+
+          <label for="book-branch">الفرع</label>
+          <select id="book-branch" name="branch" required></select>
+
+          <label for="book-name">الاسم</label>
           <input id="book-name" name="fullName" type="text" required autocomplete="name" />
 
-          <label for="book-phone">الجوال</label>
+          <label for="book-phone">رقم الجوال</label>
           <input id="book-phone" name="phone" type="tel" required autocomplete="tel" />
 
-          <label for="book-email">البريد الإلكتروني</label>
+          <label for="book-email">الإيميل</label>
           <input id="book-email" name="email" type="email" required autocomplete="email" />
 
-          <label for="book-date">تاريخ البدء المفضّل</label>
-          <input id="book-date" name="date" type="date" required />
+          <label for="book-country">الدولة</label>
+          <select id="book-country" name="country" required></select>
 
-          <label for="book-duration">مدة البرنامج</label>
-          <select id="book-duration" name="duration" required>
-            <option value="" selected disabled>اختر المدة</option>
-            <option value="30">30 يوم — تأسيس</option>
-            <option value="60">60 يوم — تشغيل</option>
-            <option value="90">90 يوم — مسار كامل</option>
-          </select>
+          <label for="book-branch-alt">الفرع</label>
+          <select id="book-branch-alt" name="branchAlt" required></select>
 
-          <label for="book-notes">ملاحظات عن مشروعك (اختياري)</label>
-          <textarea id="book-notes" name="notes" rows="3" placeholder="القطاع الفرعي · حجم الفريق · هدف الـ90 يوم"></textarea>
+          <label for="book-incubator">الحاضنة</label>
+          <select id="book-incubator" name="incubator" required></select>
+
+          <label for="book-profile">ارفع ملف تعريفي</label>
+          <input id="book-profile" name="profileFile" type="file" accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.zip" />
+
+          <label for="book-image">ارفع صورة</label>
+          <input id="book-image" name="imageFile" type="file" accept="image/*" />
+
+          <label for="book-video">ارفع فيديو</label>
+          <input id="book-video" name="videoFile" type="file" accept="video/*" />
+
+          <label for="book-summary">اكتب شرح مختصر</label>
+          <textarea id="book-summary" name="summary" rows="4" required placeholder="اشرح باختصار مشروعك وهدف الانضمام للحاضنة"></textarea>
 
           <button class="btn btn-primary" type="submit"><i class="fas fa-calendar-check"></i> إرسال طلب الحجز</button>
           <p class="hub-book-feedback" data-book-feedback role="status" aria-live="polite" hidden></p>
@@ -101,12 +117,14 @@
     </div>
   </main>
 
+  <script src="js/hub-sector-library.js"></script>
+  <script src="js/hub-branches-data.js"></script>
   <script src="js/hub-incubators-data.js"></script>
   <script src="js/hub-marketplace-data.js"></script>
   <script src="js/hub-store.js"></script>
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-header-actions.js?v=17"></script>
-  <script src="js/hub-booking.js?v=1"></script>
+  <script src="js/hub-booking.js?v=2"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>

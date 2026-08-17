@@ -57,6 +57,37 @@
   background: #fff;
 }
 
+.hub-book-form input[type='file'] {
+  padding: 10px;
+  font-weight: 600;
+  background: #f8fafc;
+}
+
+.hub-book-subdomain-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  direction: ltr;
+}
+
+.hub-book-subdomain-row input {
+  border-radius: 12px 0 0 12px;
+  border-right: 0;
+}
+
+.hub-book-subdomain-suffix {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 0 12px 12px 0;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-weight: 800;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 .hub-book-form textarea {
   resize: vertical;
   min-height: 88px;

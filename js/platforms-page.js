@@ -48,7 +48,7 @@
         <h3>${p.nameAr}</h3>
         <div class="platform-role">${p.role}</div>
         <p>${p.desc}</p>
-        <span class="card-btn"><i class="fas fa-satellite"></i> ${p.name}</span>
+        <a class="card-btn" href="book-platform.html?platform=${encodeURIComponent(p.code)}"><i class="fas fa-hand-pointer"></i> اختر منصة</a>
       `;
       grid.appendChild(card);
     });
