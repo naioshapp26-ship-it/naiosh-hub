@@ -21,7 +21,6 @@
       { label: 'منصتي', href: 'platforms.html', icon: 'fa-layer-group' },
       { label: 'مكتبي', href: 'office.html', icon: 'fa-briefcase' },
       { label: 'أنظمتي', href: 'my-systems.html', icon: 'fa-cubes' },
-      { label: 'ابدأ رحلتك', href: 'rent-system.html', icon: 'fa-key' },
       { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },
       { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
       { label: 'شراكاتي', href: 'partnerships.html', icon: 'fa-handshake' },
@@ -111,7 +110,11 @@
     const nav = document.querySelector('.hero-sidebar[data-hero-sidebar]');
     if (!nav) return;
     const pages = ensureChatBeforeOther(
-      ensureLearningVisible(fromCatalog().filter((p) => !window.HubReadySites?.isExcluded?.(p.label)))
+      ensureLearningVisible(
+        fromCatalog()
+          .filter((p) => !window.HubReadySites?.isExcluded?.(p.label))
+          .filter((p) => p.label !== 'ابدأ رحلتك' && !(p.href || '').includes('rent-system.html'))
+      )
     );
 
     nav.innerHTML = pages
