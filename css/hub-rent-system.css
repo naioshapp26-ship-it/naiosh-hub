@@ -770,3 +770,61 @@
     padding: 20px 16px;
   }
 }
+
+.hub-journey-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  max-width: 720px;
+  margin: 48px auto;
+  padding: 0 12px;
+}
+
+.hub-journey-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 180px;
+  padding: 24px 12px;
+  border-radius: 22px;
+  background: #fff;
+  border: 1px solid #ececf1;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  text-decoration: none;
+  color: #111827;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.hub-journey-choice:hover,
+.hub-journey-choice:focus-visible {
+  transform: translateY(-3px);
+  border-color: #2563eb;
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.18);
+}
+
+.hub-journey-choice__icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 30px;
+}
+
+.hub-journey-choice__label {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+@media (max-width: 640px) {
+  .hub-journey-choices {
+    grid-template-columns: 1fr;
+    max-width: 280px;
+    margin: 28px auto;
+  }
+}

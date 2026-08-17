@@ -38,7 +38,7 @@
         : `كل الطلبات المحلية على هذا الجهاز · ${rows.length} عنصر`;
     }
     if (!rows.length) {
-      root.innerHTML = `<div class="hub-mine-empty">لا أنظمة مستأجرة بعد — ابدأ من <a href="rent-systems.html">استأجر أنظمة</a> أو اطلب منصة من <a href="rent-system.html">ابدأ رحلتك</a>.</div>`;
+      root.innerHTML = `<div class="hub-mine-empty">لا أنظمة مستأجرة بعد — ابدأ من <a href="rent-systems.html">استأجر أنظمة</a> أو <a href="rent-system.html">ابدأ رحلتك</a>.</div>`;
       return;
     }
     root.innerHTML = rows
