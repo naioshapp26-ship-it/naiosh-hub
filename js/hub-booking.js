@@ -146,7 +146,6 @@
 
     fillSelect(form?.querySelector('[name="sectorName"]'), sectorOptions(), 'اختر اسم القطاع', preSector);
     fillSelect(form?.querySelector('[name="branch"]'), branchOptions(), 'اختر الفرع', preBranch);
-    fillSelect(form?.querySelector('[name="branchAlt"]'), branchOptions(), 'اختر الفرع', preBranch);
     fillSelect(form?.querySelector('[name="country"]'), COUNTRIES, 'اختر الدولة', preCountry);
     fillSelect(form?.querySelector('[name="incubator"]'), incubatorOptions(), 'اختر الحاضنة', preIncubator);
 
@@ -185,7 +184,6 @@
       phone: String(data.get('phone') || '').trim(),
       email: String(data.get('email') || '').trim(),
       country: String(data.get('country') || '').trim(),
-      branchAlt: String(data.get('branchAlt') || '').trim(),
       platform: String(data.get('platform') || params.get('platform') || params.get('code') || '').trim(),
       incubator: String(data.get('incubator') || '').trim(),
       profileFile: fileMeta(form.querySelector('[name="profileFile"]')),
@@ -220,10 +218,4 @@
   });
 
   fillForm();
-
-  const branchEl = form?.querySelector('[name="branch"]');
-  const branchAltEl = form?.querySelector('[name="branchAlt"]');
-  branchEl?.addEventListener('change', () => {
-    if (branchAltEl && !branchAltEl.value) branchAltEl.value = branchEl.value;
-  });
 })();
