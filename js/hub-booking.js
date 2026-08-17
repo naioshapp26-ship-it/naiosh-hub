@@ -111,9 +111,10 @@
 
   const branchMatchesCountry = (branch, country) => {
     if (!country) return false;
-    const aliases = COUNTRY_ALIASES[country] || [country];
-    const names = [branch.nameAr, branch.nameEn, ...(aliases || [])].map((x) => String(x || '').trim());
-    return names.some((n) => n && (n === country || country.includes(n) || n.includes(country)));
+    const aliases = COUNTRY_ALIASES[country] || [];
+    const hay = [branch.nameAr, branch.nameEn, branch.code].map((x) => String(x || '').trim()).filter(Boolean);
+    const needles = [country, ...aliases];
+    return hay.some((n) => needles.some((c) => c && (n === c || n.includes(c) || c.includes(n))));
   };
 
   const branchOptions = (country = '') => {

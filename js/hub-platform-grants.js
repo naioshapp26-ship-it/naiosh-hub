@@ -321,15 +321,19 @@
     }
 
     try {
-      window.HubStore?.grantSubscription?.({
+      const granted = window.HubStore?.grantSubscription?.({
         email,
         systemCode,
         plan: 'standard',
         permissions: ['read', 'write'],
         source: 'signup-approve',
       });
-    } catch {
-      /* ignore */
+      row.systemGranted = Boolean(granted?.id);
+      row.grantedSystemCode = granted?.systemCode || systemCode;
+      if (!granted) row.systemGrantError = window.HubStore?.grantSubscription ? 'grant returned null' : 'HubStore missing';
+    } catch (err) {
+      row.systemGranted = false;
+      row.systemGrantError = String(err?.message || err);
     }
 
     try {

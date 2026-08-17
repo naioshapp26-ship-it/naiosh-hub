@@ -70,6 +70,20 @@
       btn.addEventListener('click', () => {
         const res = platforms().approveGrant(btn.getAttribute('data-approve-platform'));
         if (!res.ok) return alert(res.error || 'فشل الاعتماد');
+        const g = res.grant;
+        if (g?.adminEmail && (g.requestedSystem || g.platform)) {
+          try {
+            window.HubStore?.grantSubscription?.({
+              email: g.adminEmail,
+              systemCode: g.requestedSystem || g.platform,
+              plan: 'standard',
+              permissions: ['read', 'write'],
+              source: 'signup-approve',
+            });
+          } catch {
+            /* store grant is best-effort */
+          }
+        }
         renderPlatformList();
       });
     });

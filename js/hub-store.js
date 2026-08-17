@@ -888,7 +888,9 @@ const HubStore = (() => {
   };
 
   const ensureOperating = () => {
-    const e = get().empire;
+    const s = get();
+    if (!s.empire) s.empire = seedEmpire();
+    const e = s.empire;
     if (!e.operating) e.operating = seedOperating();
     if (!Array.isArray(e.operating.subscriptions)) e.operating.subscriptions = [];
     if (!Array.isArray(e.operating.offices)) e.operating.offices = [];
