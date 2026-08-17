@@ -187,6 +187,7 @@
     if (!$('[data-rent-admin-list]') && !$('[data-platform-admin-list]')) return;
     await store()?.hydrate?.();
     await platforms()?.hydrate?.();
+    void platforms()?.syncAccountsFromGrants?.();
     renderVisGrid();
     renderList();
     renderPlatformList();

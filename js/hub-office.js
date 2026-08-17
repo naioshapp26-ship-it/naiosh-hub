@@ -14,7 +14,7 @@
     { href: 'system-ops.html', icon: 'fa-gears', label: 'تشغيل النظام', desc: 'دومين · أدوار · ERPI · قانونية' },
     { href: 'branches.html', icon: 'fa-code-branch', label: 'فرعي', desc: 'دخول مباشر لفرع المستأجر' },
     { href: 'incubators.html', icon: 'fa-seedling', label: 'حاضنتي', desc: 'حاضنة المستأجر' },
-    { href: 'platforms.html', icon: 'fa-layer-group', label: 'منصتي', desc: 'منصة المستأجر' },
+    { href: 'my-platform.html', icon: 'fa-layer-group', label: 'منصتي', desc: 'حالة طلب سجل معنا — الدومين والنظام بعد الموافقة' },
     { href: 'ads.html', icon: 'fa-bullhorn', label: 'إعلاناتي', desc: 'إعلانات المستأجر' },
     { href: 'products.html', icon: 'fa-box-open', label: 'منتجاتي', desc: 'منتجات المستأجر' },
     { href: 'partnerships.html', icon: 'fa-handshake', label: 'شراكاتي', desc: 'صفحة الشراكات' },

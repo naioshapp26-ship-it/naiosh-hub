@@ -115,7 +115,11 @@ try {
   );
 
   // 3) Super-admin approve
-  await page.goto(`${BASE}/rent-admin.html`, { waitUntil: 'networkidle0' });
+  await page.goto(`${BASE}/rent-admin.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(
+    () => document.querySelector('[data-approve-platform]') || (window.HubPlatformGrants?.listGrants?.() || []).some((g) => g.status === 'pending'),
+    { timeout: 15000 }
+  );
   const adminTitle = await textOf(page, 'h1');
   note('admin-title', /سوبر أدمن|موافقة/.test(adminTitle), adminTitle);
   await page.waitForSelector('[data-approve-platform]');
@@ -168,8 +172,22 @@ try {
   ]);
   const url = page.url();
   const alertText = await textOf(page, '#alertMessage').catch(() => '');
-  const loggedIn = /dashboard\.html/.test(url) || /نجاح/.test(alertText);
+  const loggedIn =
+    /my-platform\.html|dashboard\.html/.test(url) || /نجاح/.test(alertText);
   note('tenant-login', loggedIn, `url=${url} alert=${alertText || '(none)'}`);
+
+  // 6) My platform page shows active grant
+  if (/my-platform\.html/.test(url)) {
+    await page.waitForSelector('[data-platform-root] .hub-mine-card');
+    const mineText = await textOf(page, '[data-platform-root]');
+    note(
+      'my-platform-active',
+      /مفعّل/.test(mineText) && /\.naiosh\.app/.test(mineText),
+      mineText.replace(/\s+/g, ' ').slice(0, 220)
+    );
+  } else {
+    note('my-platform-active', false, `expected my-platform.html got ${url}`);
+  }
 } catch (error) {
   note('crash', false, error.stack || error.message);
 } finally {

@@ -93,10 +93,11 @@ function fillLogin(email, password, autoSubmit = true) {
     }
 
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    await window.HubPlatformGrants?.hydrate?.().catch?.(() => null);
+    await new Promise((resolve) => setTimeout(resolve, 400));
 
     const demo = DEMO_USERS[email];
-    const tenant = (() => {
+    const localTenant = (() => {
       try {
         const list = JSON.parse(localStorage.getItem('naiosh_hub_tenant_accounts_v1') || '[]');
         return (Array.isArray(list) ? list : []).find((a) => String(a.email || '').toLowerCase() === email) || null;
@@ -104,16 +105,33 @@ function fillLogin(email, password, autoSubmit = true) {
         return null;
       }
     })();
-    const pendingGrant = (() => {
-      try {
-        const grants = JSON.parse(localStorage.getItem('naiosh_hub_platform_grants_v1') || '{}')?.grants || [];
-        return (Array.isArray(grants) ? grants : []).find(
-          (g) => String(g.adminEmail || '').toLowerCase() === email && g.status === 'pending'
-        );
-      } catch {
-        return null;
-      }
-    })();
+    const pendingGrant =
+      window.HubPlatformGrants?.listGrants?.()?.find(
+        (g) => String(g.adminEmail || '').toLowerCase() === email && g.status === 'pending'
+      ) ||
+      (() => {
+        try {
+          const grants = JSON.parse(localStorage.getItem('naiosh_hub_platform_grants_v1') || '{}')?.grants || [];
+          return (Array.isArray(grants) ? grants : []).find(
+            (g) => String(g.adminEmail || '').toLowerCase() === email && g.status === 'pending'
+          );
+        } catch {
+          return null;
+        }
+      })();
+
+    let serverUser = null;
+    try {
+      const res = await fetch('/api/hub/tenant-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data?.ok && data?.user) serverUser = data.user;
+    } catch {
+      /* offline — local fallback below */
+    }
 
     let user = null;
     if (demo && demo.password === password) {
@@ -123,17 +141,21 @@ function fillLogin(email, password, autoSubmit = true) {
         role: demo.role,
         platform: 'naiosh-hub-360',
       };
-    } else if (tenant && tenant.status === 'active' && tenant.password === password) {
+    } else if (serverUser) {
+      user = serverUser;
+    } else if (localTenant && localTenant.status === 'active' && localTenant.password === password) {
       user = {
         email,
-        name: tenant.name || email,
-        role: tenant.role || 'platform_owner',
+        name: localTenant.name || email,
+        role: localTenant.role || 'platform_owner',
         platform: 'naiosh-hub-360',
-        systemCode: tenant.systemCode || '',
-        host: tenant.host || '',
+        systemCode: localTenant.systemCode || '',
+        host: localTenant.host || '',
       };
-    } else if (pendingGrant || (tenant && tenant.status === 'pending')) {
-      showAlert('طلبك بانتظار موافقة السوبر أدمن. بعد الاعتماد تستطيع الدخول بنفس الإيميل.');
+    } else if (pendingGrant || (localTenant && localTenant.status === 'pending')) {
+      showAlert(
+        'طلبك بانتظار موافقة السوبر أدمن. بعد الاعتماد ادخل من login.html ثم افتح صفحة «منصتي» لترى الدومين والنظام.'
+      );
       setLoading(false);
       return;
     } else {
@@ -162,6 +184,8 @@ function fillLogin(email, password, autoSubmit = true) {
       dest = next;
     } else if (system && window.HubLauncher?.getDirectLaunchUrl) {
       dest = window.HubLauncher.getDirectLaunchUrl(system);
+    } else if (user.role === 'platform_owner') {
+      dest = 'my-platform.html';
     }
 
     showAlert('تم تسجيل الدخول بنجاح! جاري التحويل...', 'success');
@@ -172,13 +196,24 @@ function fillLogin(email, password, autoSubmit = true) {
 
   window.addEventListener('load', () => {
     const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
-    if (token) {
-      const params = new URLSearchParams(window.location.search);
-      const next = params.get('next') || 'dashboard.html';
-      showAlert('لديك جلسة نشطة. جاري تحويلك...', 'success');
-      setTimeout(() => {
-        window.location.href = next.startsWith('http') ? 'dashboard.html' : next;
-      }, 800);
+    if (!token) return;
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next') || '';
+    let dest = 'dashboard.html';
+    if (next && !next.startsWith('http') && !next.includes('://')) {
+      dest = next;
+    } else {
+      try {
+        const raw = localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser');
+        const sessionUser = raw ? JSON.parse(raw) : null;
+        if (sessionUser?.role === 'platform_owner') dest = 'my-platform.html';
+      } catch {
+        /* ignore */
+      }
     }
+    showAlert('لديك جلسة نشطة. جاري تحويلك...', 'success');
+    setTimeout(() => {
+      window.location.href = dest.startsWith('http') ? 'dashboard.html' : dest;
+    }, 800);
   });
 })();
