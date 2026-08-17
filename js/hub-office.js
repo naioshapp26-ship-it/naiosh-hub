@@ -26,7 +26,7 @@
     { href: 'diplomas.html', icon: 'fa-graduation-cap', label: 'دبلوماتي', desc: 'دبلومات المتدرب/المدرب' },
     { href: 'chat.html', icon: 'fa-comments', label: 'دردشتي', desc: 'دردشة المستأجر وعملائه' },
     { href: 'my-systems.html', icon: 'fa-cubes', label: 'أنظمتي', desc: 'الأنظمة المستأجرة والدومينات وفتح SSO' },
-    { href: 'rent-system.html', icon: 'fa-key', label: 'استأجر نظام', desc: 'طلب استئجار نظام ومنح صب دومين من هوب' },
+    { href: 'register.html', icon: 'fa-user-plus', label: 'سجل معنا', desc: 'صاحب المنصة يعبّئ النموذج — السوبر أدمن يوافق فقط' },
     { href: 'apps.html', icon: 'fa-grid-2', label: 'سجل الأنظمة', desc: 'كتالوج أنظمة هوب' },
     { href: 'cart.html', icon: 'fa-cart-shopping', label: 'سلتي', desc: 'سلة المشتريات' },
     { href: 'support.html', icon: 'fa-headset', label: 'الدعم', desc: 'طلبات الصيانة والدعم' },

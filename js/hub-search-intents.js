@@ -21,6 +21,8 @@
     sectors: { href: 'operating.html', title: 'محرك القطاعات والفرص', type: 'content', typeAr: 'قطاع', icon: 'fa-industry' },
     ops: { href: 'system-ops.html', title: 'تشغيل الأنظمة والمنح', type: 'content', typeAr: 'تشغيل', icon: 'fa-gears' },
     instructions: { href: 'systems-instructions.html', title: 'تعليمات أنظمة نايوش', type: 'content', typeAr: 'تعليمات', icon: 'fa-book-open' },
+    register: { href: 'register.html', title: 'سجل معنا', type: 'content', typeAr: 'تسجيل', icon: 'fa-user-plus' },
+    approve: { href: 'rent-admin.html', title: 'موافقة السوبر أدمن', type: 'content', typeAr: 'موافقة', icon: 'fa-user-shield' },
   };
 
   /** Intent registry — Intent ID هو العقد البرمجي */
@@ -31,8 +33,21 @@
       group: 'primary',
       icon: 'fa-compass',
       starters: ['أريد...', 'أريد '],
-      routes: { types: ['all'], keywords: ['أريد', 'هدف', 'احتياج'], destinations: ['opportunity', 'systems', 'ops'] },
+      routes: { types: ['all'], keywords: ['أريد', 'هدف', 'احتياج', 'سجل معنا'], destinations: ['register', 'opportunity', 'systems', 'ops'] },
       explain: 'توجيه عام حسب الاحتياج أو الهدف',
+    },
+    {
+      id: 'JOIN_SIGNUP',
+      label: 'أريد التسجيل...',
+      group: 'primary',
+      icon: 'fa-user-plus',
+      starters: ['أريد التسجيل', 'سجل معنا', 'أريد منصة', 'أريد دومين'],
+      routes: {
+        types: ['platform', 'content'],
+        keywords: ['سجل', 'تسجيل', 'منصة', 'دومين', 'فرع', 'حاضنة', 'موافقة'],
+        destinations: ['register', 'approve', 'platforms'],
+      },
+      explain: 'تسجيل صاحب المنصة من سجل معنا ثم موافقة السوبر أدمن',
     },
     {
       id: 'SEEK_INFO',

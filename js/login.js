@@ -96,18 +96,51 @@ function fillLogin(email, password, autoSubmit = true) {
     await new Promise((resolve) => setTimeout(resolve, 700));
 
     const demo = DEMO_USERS[email];
-    if (!demo || demo.password !== password) {
-      showAlert('بيانات الدخول غير صحيحة. جرّب الحسابات التجريبية.');
+    const tenant = (() => {
+      try {
+        const list = JSON.parse(localStorage.getItem('naiosh_hub_tenant_accounts_v1') || '[]');
+        return (Array.isArray(list) ? list : []).find((a) => String(a.email || '').toLowerCase() === email) || null;
+      } catch {
+        return null;
+      }
+    })();
+    const pendingGrant = (() => {
+      try {
+        const grants = JSON.parse(localStorage.getItem('naiosh_hub_platform_grants_v1') || '{}')?.grants || [];
+        return (Array.isArray(grants) ? grants : []).find(
+          (g) => String(g.adminEmail || '').toLowerCase() === email && g.status === 'pending'
+        );
+      } catch {
+        return null;
+      }
+    })();
+
+    let user = null;
+    if (demo && demo.password === password) {
+      user = {
+        email,
+        name: demo.name,
+        role: demo.role,
+        platform: 'naiosh-hub-360',
+      };
+    } else if (tenant && tenant.status === 'active' && tenant.password === password) {
+      user = {
+        email,
+        name: tenant.name || email,
+        role: tenant.role || 'platform_owner',
+        platform: 'naiosh-hub-360',
+        systemCode: tenant.systemCode || '',
+        host: tenant.host || '',
+      };
+    } else if (pendingGrant || (tenant && tenant.status === 'pending')) {
+      showAlert('طلبك بانتظار موافقة السوبر أدمن. بعد الاعتماد تستطيع الدخول بنفس الإيميل.');
+      setLoading(false);
+      return;
+    } else {
+      showAlert('بيانات الدخول غير صحيحة.');
       setLoading(false);
       return;
     }
-
-    const user = {
-      email,
-      name: demo.name,
-      role: demo.role,
-      platform: 'naiosh-hub-360',
-    };
     const token = `hub360.${btoa(email)}.${Date.now()}`;
     if (window.HubAuth?.setSession) {
       window.HubAuth.setSession(user, token, { remember: !!rememberMe });

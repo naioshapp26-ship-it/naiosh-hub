@@ -130,27 +130,74 @@
     return listGrants().find((g) => g.status === 'active' && String(g.adminEmail || '').toLowerCase() === key) || null;
   };
 
+  const ACCOUNTS_KEY = 'naiosh_hub_tenant_accounts_v1';
+
+  const readAccounts = () => {
+    try {
+      const list = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]');
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveAccounts = (list) => {
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
+    return list;
+  };
+
+  const findAccount = (email = '') => {
+    const key = String(email || '').trim().toLowerCase();
+    if (!key) return null;
+    return readAccounts().find((a) => String(a.email || '').toLowerCase() === key) || null;
+  };
+
+  const upsertAccount = (account) => {
+    const email = String(account.email || '').trim().toLowerCase();
+    if (!email) return null;
+    const list = readAccounts().filter((a) => String(a.email || '').toLowerCase() !== email);
+    list.unshift({ ...account, email });
+    saveAccounts(list);
+    return list[0];
+  };
+
   const submitRequest = (payload = {}) => {
-    const companyName = String(payload.companyName || '').trim();
-    const slugCheck = validateSubdomain(payload.slug || payload.subdomain);
-    const adminName = String(payload.adminName || '').trim();
-    const adminPhone = String(payload.adminPhone || '').trim();
-    const adminEmail = String(payload.adminEmail || '').trim().toLowerCase();
-    const adminPassword = String(payload.adminPassword || '');
+    const adminName = String(payload.adminName || payload.fullName || '').trim();
+    const adminPhone = String(payload.adminPhone || payload.phone || '').trim();
+    const adminEmail = String(payload.adminEmail || payload.email || '').trim().toLowerCase();
+    const adminPassword = String(payload.adminPassword || payload.password || '');
     const platform = String(payload.platform || '').trim();
     const platformLabel = String(payload.platformLabel || platform).trim();
+    const companyName = String(payload.companyName || platformLabel || adminName).trim();
+    const slugCheck = validateSubdomain(payload.slug || payload.subdomain);
+    const country = String(payload.country || '').trim();
+    const branch = String(payload.branch || '').trim();
+    const branchLabel = String(payload.branchLabel || branch).trim();
+    const incubator = String(payload.incubator || '').trim();
+    const incubatorLabel = String(payload.incubatorLabel || incubator).trim();
+    const requestedSystem = String(payload.requestedSystem || payload.systemCode || '').trim().toUpperCase();
+    const requestedSystemLabel = String(payload.requestedSystemLabel || requestedSystem).trim();
+    const notes = String(payload.notes || '').trim();
+    const source = String(payload.source || (payload.branch || payload.incubator ? 'register' : 'platform')).trim() || 'platform';
 
-    if (!companyName || !adminName || !adminPhone || !adminEmail || !adminPassword) {
+    if (!adminName || !adminPhone || !adminEmail || !adminPassword) {
       return { ok: false, error: 'يرجى ملء جميع الحقول المطلوبة' };
     }
     if (adminPassword.length < 8) return { ok: false, error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' };
     if (!slugCheck.available) return { ok: false, error: slugCheck.message || 'النطاق الفرعي غير صالح' };
-    if (!platform) return { ok: false, error: 'اختر المنصة المطلوبة' };
+    if (!platform) return { ok: false, error: 'اختر اسم المنصة' };
+    if (source === 'register') {
+      if (!country) return { ok: false, error: 'اختر الدولة' };
+      if (!branch) return { ok: false, error: 'اختر اسم الفرع' };
+      if (!incubator) return { ok: false, error: 'اختر اسم الحاضنة' };
+      if (!requestedSystem) return { ok: false, error: 'اختر النظام الذي تريد تشغيله' };
+    }
 
     const now = new Date().toISOString();
     const grant = {
       id: uid('pgrant'),
-      kind: 'platform',
+      kind: source === 'register' ? 'signup' : 'platform',
+      source,
       companyName,
       slug: slugCheck.slug,
       host: slugCheck.host,
@@ -158,8 +205,16 @@
       adminPhone,
       adminEmail,
       adminPassword,
+      country,
+      branch,
+      branchLabel,
+      incubator,
+      incubatorLabel,
       platform,
       platformLabel,
+      requestedSystem,
+      requestedSystemLabel,
+      notes,
       plan: 'free',
       planLabel: 'باقة مجانية',
       freeQuota: FREE_QUOTA,
@@ -178,8 +233,17 @@
     try {
       window.HubStore?.pushFeed?.(
         'decision',
-        `طلب منصة بانتظار الموافقة: ${platformLabel} · ${companyName} · ${adminName}`
+        `طلب سجل معنا بانتظار السوبر أدمن: ${platformLabel} · ${requestedSystem} · ${adminName}`
       );
+      window.HubStore?.pushNotification?.({
+        source: 'HUB',
+        sourceName: 'نايوش هوب',
+        title: 'طلب تسجيل بانتظار الموافقة',
+        body: `${adminName} · ${platformLabel} · ${requestedSystem} · ${slugCheck.host}`,
+        level: 'info',
+        category: 'signup',
+        link: 'rent-admin.html',
+      });
     } catch {
       /* ignore */
     }
@@ -201,15 +265,85 @@
     row.freeRemaining = Number(row.freeRemaining ?? row.freeQuota) || FREE_QUOTA;
     row.approvedAt = new Date().toISOString();
     row.updatedAt = row.approvedAt;
+    const password = row.adminPassword || '';
     delete row.adminPassword;
+
+    const systemCode = String(row.requestedSystem || row.platform || 'ERP').toUpperCase();
+    const tenantName = row.adminName || row.companyName;
+    const email = String(row.adminEmail || '').toLowerCase();
 
     try {
       if (window.HubSystemOps?.grantSubdomain) {
         window.HubSystemOps.grantSubdomain({
-          tenantName: row.companyName,
-          systemCode: row.platform || 'PLATFORM',
+          tenantName: row.companyName || tenantName,
+          systemCode,
           baseDomain: BASE_DOMAIN,
           slug: row.slug,
+          branchOrHq: row.branchLabel || row.branch || '',
+          incubator: row.incubatorLabel || row.incubator || '',
+          platformName: row.platformLabel || row.platform || '',
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+
+    try {
+      window.HubSystemOps?.grantStructure?.({
+        type: 'platform',
+        nameAr: row.platformLabel || row.platform || row.companyName,
+        tenantName: tenantName,
+        systemCode,
+      });
+    } catch {
+      /* ignore */
+    }
+
+    try {
+      window.HubSystemOps?.assignRole?.({
+        user: email || tenantName,
+        roleId: 'owner',
+        systemCode,
+      });
+    } catch {
+      /* ignore */
+    }
+
+    try {
+      window.HubSystemOps?.registerMembership?.({
+        name: tenantName,
+        email,
+        plan: 'تشغيلي',
+        systemCode,
+      });
+    } catch {
+      /* ignore */
+    }
+
+    try {
+      window.HubStore?.grantSubscription?.({
+        email,
+        systemCode,
+        plan: 'standard',
+        permissions: ['read', 'write'],
+        source: 'signup-approve',
+      });
+    } catch {
+      /* ignore */
+    }
+
+    try {
+      if (email && password) {
+        upsertAccount({
+          email,
+          password,
+          name: tenantName,
+          role: 'platform_owner',
+          systemCode,
+          host: row.host,
+          grantId: row.id,
+          status: 'active',
+          approvedAt: row.approvedAt,
         });
       }
     } catch {
@@ -230,8 +364,17 @@
     try {
       window.HubStore?.pushFeed?.(
         'decision',
-        `اعتماد منصة مجانية: ${row.platformLabel || row.platform} · ${row.companyName}`
+        `اعتماد سجل معنا: ${row.platformLabel || row.platform} · نظام ${systemCode} · ${row.companyName}`
       );
+      window.HubStore?.pushNotification?.({
+        source: 'HUB',
+        sourceName: 'نايوش هوب',
+        title: `تم منح نظام ${systemCode}`,
+        body: `الدومين ${row.host} وصلاحيات التشغيل لصاحب المنصة ${email || tenantName}`,
+        level: 'success',
+        category: 'subscription',
+        link: 'roles-permissions.html',
+      });
     } catch {
       /* ignore */
     }
@@ -334,6 +477,7 @@
   window.HubPlatformGrants = {
     BASE_DOMAIN,
     FREE_QUOTA,
+    ACCOUNTS_KEY,
     hydrate,
     normalizeSlug,
     validateSubdomain,
@@ -345,5 +489,6 @@
     rejectGrant,
     canUsePlatform,
     consumeFreePoint,
+    findAccount,
   };
 })();

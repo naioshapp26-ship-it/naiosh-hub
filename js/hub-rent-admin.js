@@ -1,5 +1,5 @@
 /**
- * إدارة استئجار الأنظمة + موافقة طلبات المنصات المجانية
+ * موافقة السوبر أدمن على طلبات سجل معنا + استئجار الأنظمة
  */
 (() => {
   'use strict';
@@ -34,27 +34,31 @@
     const rows = platforms().listGrants();
     if (!rows.length) {
       root.innerHTML =
-        '<p class="hub-rent-hint">لا طلبات منصات بعد — العملاء يرسلون من صفحة <a href="book-platform.html">إحجز منصة</a>.</p>';
+        '<p class="hub-rent-hint">لا طلبات بعد — صاحب المنصة يرسل من أيقونة <a href="register.html">سجل معنا</a> في الرئيسية.</p>';
       return;
     }
     root.innerHTML = rows
       .map(
         (r) => `<article class="hub-rent-admin-item" data-platform-id="${escapeHtml(r.id)}">
-        <h3>${escapeHtml(r.companyName)} <span class="hub-rent-status ${statusClass(r.status)}">${statusAr[r.status] || r.status}</span></h3>
-        <p>المنصة: <strong>${escapeHtml(r.platformLabel || r.platform)}</strong></p>
+        <h3>${escapeHtml(r.adminName || r.companyName)} <span class="hub-rent-status ${statusClass(r.status)}">${statusAr[r.status] || r.status}</span></h3>
+        <p>الفرع: <strong>${escapeHtml(r.branchLabel || r.branch || '—')}</strong></p>
+        <p>الحاضنة: <strong>${escapeHtml(r.incubatorLabel || r.incubator || '—')}</strong></p>
+        <p>المنصة: <strong>${escapeHtml(r.platformLabel || r.platform || '—')}</strong></p>
+        <p>النظام المطلوب: <strong>${escapeHtml(r.requestedSystemLabel || r.requestedSystem || '—')}</strong></p>
         <p>المسؤول: ${escapeHtml(r.adminName)} · ${escapeHtml(r.adminEmail || '—')} · ${escapeHtml(r.adminPhone || '')}</p>
         <p>النطاق: <span dir="ltr">${escapeHtml(r.host)}</span></p>
+        ${r.notes ? `<p>ملاحظات: ${escapeHtml(r.notes)}</p>` : ''}
         <p>الخطة: ${escapeHtml(r.planLabel || 'باقة مجانية')} · متبقي مجاني: ${escapeHtml(String(r.freeRemaining ?? r.freeQuota ?? '—'))}</p>
         <div class="hub-rent-admin-actions">
           ${
             r.status === 'pending'
-              ? `<button type="button" class="hub-rent-btn hub-rent-btn-primary" style="width:auto;margin:0;padding:8px 14px" data-approve-platform="${escapeHtml(r.id)}"><i class="fas fa-check"></i> اعتماد الباقة المجانية</button>
+              ? `<button type="button" class="hub-rent-btn hub-rent-btn-primary" style="width:auto;margin:0;padding:8px 14px" data-approve-platform="${escapeHtml(r.id)}"><i class="fas fa-check"></i> اعتماد ومنح النظام</button>
                  <button type="button" class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px" data-reject-platform="${escapeHtml(r.id)}"><i class="fas fa-xmark"></i> رفض</button>`
               : ''
           }
           ${
             r.status === 'active'
-              ? `<a class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px;text-decoration:none" href="platforms.html"><i class="fas fa-layer-group"></i> المنصات</a>`
+              ? `<a class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px;text-decoration:none" href="roles-permissions.html"><i class="fas fa-user-shield"></i> الأدوار والصلاحيات</a>`
               : ''
           }
         </div>

@@ -18,9 +18,9 @@
     {
       id: 'join',
       title: 'انضم وأنشئ حسابًا',
-      desc: 'عضوية موحّدة تفتح الرصيد والتجربة والصلاحيات.',
+      desc: 'صاحب المنصة يعبّئ سجل معنا. السوبر أدمن يوافق ثم تُمنح الصلاحيات.',
       links: [
-        { href: 'index.html#register', label: 'إنشاء حساب' },
+        { href: 'register.html', label: 'سجل معنا' },
         { href: 'membership.html', label: 'العضوية' },
         { href: 'trial.html', label: 'تجربة' },
       ],

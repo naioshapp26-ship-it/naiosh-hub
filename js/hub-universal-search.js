@@ -221,6 +221,18 @@
     });
 
     items.push({
+      id: 'hub-register',
+      type: 'content',
+      typeAr: 'تسجيل',
+      icon: 'fa-user-plus',
+      title: 'سجل معنا',
+      subtitle: 'صاحب المنصة يعبّئ الفرع والحاضنة والمنصة — السوبر أدمن يوافق فقط',
+      meta: 'Register',
+      href: 'register.html',
+      keywords: 'سجل معنا تسجيل منصة فرع حاضنة دومين موافقة سوبر أدمن صاحب المنصة',
+    });
+
+    items.push({
       id: 'hub-systems-instructions',
       type: 'content',
       typeAr: 'تعليمات',

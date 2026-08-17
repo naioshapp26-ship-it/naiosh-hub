@@ -33,55 +33,6 @@
     toast._t = setTimeout(() => el.classList.remove('is-on'), 2600);
   };
 
-  const branchOrHqOptions = () => {
-    const branches = window.HubBranchesData?.BRANCHES || [];
-    if (branches.length) {
-      return branches.map((b) => {
-        const isHq = String(b.code || '').toUpperCase() === 'HQ' || /مقر|المكتب الرئيسي/i.test(b.nameAr || '');
-        const label = isHq ? 'المكتب الرئيسي' : b.nameAr;
-        const value = isHq ? 'المكتب الرئيسي' : b.nameAr;
-        return { value, label: `${label}${b.erpCode ? ` · ${b.erpCode}` : ''}` };
-      });
-    }
-    return [
-      { value: 'المكتب الرئيسي', label: 'المكتب الرئيسي' },
-      { value: 'السعودية', label: 'السعودية' },
-      { value: 'مصر', label: 'مصر' },
-      { value: 'الإمارات', label: 'الإمارات' },
-    ];
-  };
-
-  const incubatorOptions = () => {
-    const list = window.HubIncubatorsData?.INCUBATORS || [];
-    if (list.length) {
-      return list.map((i) => ({
-        value: i.name,
-        label: `${i.num ? `INC-${String(i.num).padStart(3, '0')} · ` : ''}${i.name}`,
-      }));
-    }
-    return [
-      { value: 'التعليم والتعلم', label: 'التعليم والتعلم' },
-      { value: 'التسويق الرقمي', label: 'التسويق الرقمي' },
-      { value: 'عالم الأعمال', label: 'عالم الأعمال' },
-    ];
-  };
-
-  const selectOptionsHtml = (items, placeholder) =>
-    `<option value="">${esc(placeholder)}</option>${items
-      .map((o) => `<option value="${esc(o.value)}">${esc(o.label)}</option>`)
-      .join('')}`;
-
-  const grantHierarchyFields = () => `
-    <label>الفرع أو المكتب الرئيسي
-      <select name="branchOrHq" required>${selectOptionsHtml(branchOrHqOptions(), '— اختر فرعًا أو المكتب الرئيسي —')}</select>
-    </label>
-    <label>الحاضنة
-      <select name="incubator" required>${selectOptionsHtml(incubatorOptions(), '— اختر الحاضنة —')}</select>
-    </label>
-    <label>اسم المنصة
-      <input name="platformName" required placeholder="اسم المنصة" />
-    </label>`;
-
   const systems = ['ERP', 'NAIS', 'LAW', 'ACADEMY', 'FIT', 'LMS', 'CRM'];
 
   const paintKpis = () => {
@@ -179,56 +130,25 @@
     if (tab === 'grants') {
       host.innerHTML =
         section(
-          'منح دومين فرعي للمستأجرين',
-          `<form class="sysops-form" data-form="subdomain">
-            <label>اسم المستأجر
-              <input name="tenantName" required placeholder="اسم المستأجر" />
-            </label>
-            ${grantHierarchyFields()}
-            <label>النظام
-              <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
-            </label>
-            <label>النطاق الأساسي
-              <input name="baseDomain" value="naiosh.app" />
-            </label>
-            <button type="submit" class="btn btn-primary">منح صب دومين</button>
-          </form>
-          ${listRows(
+          'منح الدومين ليس من تشغيل الأنظمة',
+          `<p class="sysops-note">صاحب المنصة يعبّئ نموذج <strong>سجل معنا</strong> من الرئيسية. السوبر أدمن يوافق فقط من صفحة الموافقة — بعدها يُمنح الدومين والنظام من الأدوار والصلاحيات.</p>
+          <div class="sysops-actions">
+            <a class="btn btn-primary" href="register.html"><i class="fas fa-user-plus"></i> سجل معنا (للمستأجر)</a>
+            <a class="btn btn-secondary" href="rent-admin.html"><i class="fas fa-user-shield"></i> موافقة السوبر أدمن</a>
+            <a class="btn btn-secondary" href="roles-permissions.html"><i class="fas fa-shield-alt"></i> الأدوار والصلاحيات</a>
+          </div>`
+        ) +
+        section(
+          'الدومينات الممنوحة بعد الموافقة',
+          listRows(
             state.subdomains.slice(0, 20),
             (r) =>
               `<article><strong>${esc(r.grantId || '')} · ${esc(r.host)}</strong><span>${esc(r.tenantName)} · ${esc(r.systemCode)} · ${esc(r.branchOrHq || '—')} · ${esc(r.incubator || '—')} · ${esc(r.platformName || '—')}</span></article>`
-          )}`
+          )
         ) +
         section(
-          'منح فروع · حاضنات · منصات · مكاتب إلكترونية',
-          `<form class="sysops-form" data-form="structure">
-            <select name="type">${window.HubSystemOpsSpec.STRUCTURE_TYPES.map(
-              (t) => `<option value="${esc(t.id)}">${esc(t.nameAr)}</option>`
-            ).join('')}</select>
-            <input name="nameAr" required placeholder="الاسم" />
-            <input name="tenantName" placeholder="المستأجر" value="مستأجر تجريبي" />
-            <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
-            <button class="btn btn-primary">منح</button>
-          </form>
-          ${listRows(state.structures.slice(0, 20), (r) => `<article><strong>${esc(r.grantId || '')} · ${esc(r.nameAr)}</strong><span>${esc(r.type)} · ${esc(r.tenantName)} · ${esc(r.systemCode)}</span></article>`)}`
-        ) +
-        section(
-          'استئجار منصة + دومين فرعي',
-          `<form class="sysops-form" data-form="rent">
-            ${grantHierarchyFields()}
-            <label>المستأجر
-              <input name="tenantName" placeholder="المستأجر" />
-            </label>
-            <label>النظام
-              <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
-            </label>
-            <button type="submit" class="btn btn-primary">استأجر وامنح الدومين</button>
-          </form>
-          ${listRows(
-            state.rentals.slice(0, 20),
-            (r) =>
-              `<article><strong>${esc(r.platformName || r.nameAr)}</strong><span>${esc(r.host)} · ${esc(r.branchOrHq || '—')} · ${esc(r.incubator || '—')} · ${esc(r.status)}</span></article>`
-          )}`
+          'هياكل ممنوحة (فرع · حاضنة · منصة · مكتب)',
+          listRows(state.structures.slice(0, 20), (r) => `<article><strong>${esc(r.grantId || '')} · ${esc(r.nameAr)}</strong><span>${esc(r.type)} · ${esc(r.tenantName)} · ${esc(r.systemCode)}</span></article>`)
         );
       return;
     }
@@ -468,6 +388,10 @@
     }
     const cap = e.target.closest('[data-cap]');
     if (cap) {
+      if (cap.dataset.cap === 'subdomain-center' || cap.dataset.cap === 'subdomain-grant') {
+        window.location.href = 'rent-admin.html';
+        return;
+      }
       const map = {
         'subdomain-center': 'grants',
         'subdomain-grant': 'grants',
@@ -520,16 +444,9 @@
     e.preventDefault();
     const fd = new FormData(form);
     const type = form.dataset.form;
-    if (type === 'subdomain') {
-      const row = window.HubSystemOps.grantSubdomain({
-        tenantName: fd.get('tenantName'),
-        systemCode: fd.get('systemCode'),
-        baseDomain: fd.get('baseDomain'),
-        branchOrHq: fd.get('branchOrHq'),
-        incubator: fd.get('incubator'),
-        platformName: fd.get('platformName'),
-      });
-      toast(`تم منح الدومين: ${row.grantId || ''} · ${row.host} · ${row.platformName || ''}`);
+    if (type === 'subdomain' || type === 'rent') {
+      toast('منح الدومين يتم بعد موافقة السوبر أدمن على طلب سجل معنا — ليس من تشغيل الأنظمة.');
+      return;
     }
     if (type === 'structure') {
       const row = window.HubSystemOps.grantStructure({
@@ -539,17 +456,6 @@
         systemCode: fd.get('systemCode'),
       });
       toast(`تم منح الهيكل: ${row.grantId || ''} · ${row.nameAr || ''}`);
-    }
-    if (type === 'rent') {
-      const r = window.HubSystemOps.rentPlatform({
-        nameAr: fd.get('platformName'),
-        tenantName: fd.get('tenantName'),
-        systemCode: fd.get('systemCode'),
-        branchOrHq: fd.get('branchOrHq'),
-        incubator: fd.get('incubator'),
-        platformName: fd.get('platformName'),
-      });
-      toast(`تم الاستئجار: ${r.rental.host} · ${r.rental.platformName || ''}`);
     }
     if (type === 'role') {
       const row = window.HubSystemOps.assignRole({

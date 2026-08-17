@@ -6,7 +6,7 @@
     { key: 'notifications', icon: 'fa-bell', label: 'إشعارات هوب' },
     { key: 'side-project-regs', icon: 'fa-inbox', label: 'طلبات تسجيل المشاريع' },
     { key: 'search-admin', icon: 'fa-magnifying-glass', label: 'إدارة محرك البحث' },
-    { key: 'rent-admin', icon: 'fa-key', label: 'استئجار الأنظمة' },
+    { key: 'rent-admin', icon: 'fa-key', label: 'موافقة السوبر أدمن' },
     { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
     { key: 'platforms', icon: 'fa-layer-group', label: 'المنصات السيادية' },
     { key: 'apps', icon: 'fa-cubes', label: 'سجل الأنظمة' },
@@ -38,7 +38,7 @@
     notifications: ['مركز إشعارات هوب', 'كل تنبيهات الأنظمة تصل هنا — ERP · LAW · FIT · Academy'],
     'side-project-regs': ['طلبات تسجيل المشاريع', 'استقبال طلبات المشاريع الجانبية · متابعة · تواصل بالجوال أو الإيميل'],
     'search-admin': ['إدارة محرك البحث', 'أضف نصوصًا وصورًا وملفات وفيديو لتغذية محرك البحث الشامل'],
-    'rent-admin': ['استئجار الأنظمة', 'صلاحيات الظهور · اعتماد الطلبات · منح صب دومين من هوب'],
+    'rent-admin': ['موافقة السوبر أدمن', 'اعتماد طلبات سجل معنا · منح النظام من الأدوار والصلاحيات'],
     blueprint: ['دستور المعمارية الإمبراطورية', 'هوب مركزي — طبقات · محاور · أول 6 أشهر'],
     platforms: ['المنصات السيادية لنايوش 360', '18 منصة تشغّل هوب — من الدماغ المركزي إلى السلطة العليا'],
     apps: ['سجل أنظمة هوب', 'أي نظام نايوش يمكنه الظهور هنا والارتباط بالتشغيل الموحّد'],
@@ -1872,12 +1872,12 @@
       </div>`,
     'rent-admin': () => `
       <div class="card">
-        <h3><span class="title-left"><i class="fas fa-key icon"></i> استئجار الأنظمة ومنح الصب دومين</span></h3>
-        <p>HUB هو نقطة التحكم: تحديد الأنظمة الظاهرة للعميل، استقبال طلبات الاستئجار بنفس نماذج ERP، ثم منح النطاق الفرعي وتفعيل الصلاحيات.</p>
+        <h3><span class="title-left"><i class="fas fa-user-shield icon"></i> موافقة السوبر أدمن</span></h3>
+        <p>صاحب المنصة يعبّئ «سجل معنا» من الرئيسية. السوبر أدمن يوافق فقط — بعدها يُمنح الدومين والنظام المطلوب من الأدوار والصلاحيات.</p>
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px">
-          <a class="btn btn-primary" href="rent-admin.html"><i class="fas fa-sliders"></i> إدارة الاستئجار</a>
-          <a class="btn btn-ghost" href="rent-system.html" target="_blank"><i class="fas fa-building"></i> نموذج استئجار نظام</a>
-          <a class="btn btn-ghost" href="apps.html" target="_blank"><i class="fas fa-cubes"></i> سجل الأنظمة</a>
+          <a class="btn btn-primary" href="rent-admin.html"><i class="fas fa-check"></i> صفحة الموافقة</a>
+          <a class="btn btn-ghost" href="register.html" target="_blank"><i class="fas fa-user-plus"></i> سجل معنا</a>
+          <a class="btn btn-ghost" href="roles-permissions.html"><i class="fas fa-shield-alt"></i> الأدوار والصلاحيات</a>
         </div>
       </div>`,
     blueprint: renderBlueprint,

@@ -6,10 +6,10 @@
   'use strict';
 
   const CAPABILITIES = [
-    { id: 'subdomain-center', label: 'مركز منح دومين فرعي للمستأجرين', icon: 'fa-globe', group: 'grant' },
+    { id: 'subdomain-center', label: 'مركز موافقة منح الدومين بعد سجل معنا', icon: 'fa-globe', group: 'grant' },
     { id: 'facility-ops', label: 'مكان تشغيل للمنشآت والشركات والمصانع والمتاجر والمشاريع ومنصات المستأجر', icon: 'fa-industry', group: 'ops' },
     { id: 'exec-ops', label: 'مكان التنفيذ لجميع عمليات المنشأة', icon: 'fa-play', group: 'ops' },
-    { id: 'subdomain-grant', label: 'إمكانية منح صب دومين للمستأجرين', icon: 'fa-link', group: 'grant' },
+    { id: 'subdomain-grant', label: 'منح صب دومين بعد موافقة السوبر أدمن', icon: 'fa-link', group: 'grant' },
     { id: 'grant-structure', label: 'منح فروع · حاضنات · منصات · مكاتب إلكترونية', icon: 'fa-sitemap', group: 'grant' },
     { id: 'roles-perms', label: 'تحديد الأدوار والصلاحيات للأنظمة المختارة من المستأجر', icon: 'fa-user-shield', group: 'access' },
     { id: 'show-products', label: 'عرض منتجات نايوش والأنظمة الإدارية والمالية والتسويق والموارد والتشغيل والفروع والمنصات', icon: 'fa-boxes-stacked', group: 'catalog' },
@@ -21,7 +21,7 @@
     { id: 'packages', label: 'باقات الاشتراكات · الأسعار', icon: 'fa-tags', group: 'catalog' },
     { id: 'info-center', label: 'مركز المعلومات الخاص بالنظام مع الدخول من نايوش هوب', icon: 'fa-circle-info', group: 'knowledge' },
     { id: 'create-page', label: 'أنشئ صفحتك على النظام وعلى هوب', icon: 'fa-file-pen', group: 'tenant' },
-    { id: 'rent-platform', label: 'استئجار منصة ومنح دومين فرعي', icon: 'fa-key', group: 'grant' },
+    { id: 'rent-platform', label: 'طلب المنصة من سجل معنا وليس من تشغيل الأنظمة', icon: 'fa-key', group: 'grant' },
     { id: 'account-login', label: 'إنشاء حساب وتسجيل دخول إلى منصة المستأجر حسب الصلاحيات', icon: 'fa-right-to-bracket', group: 'access' },
     { id: 'sidebar-access', label: 'الوصول للصلاحيات الممنوحة عبر المنيو الجانبي', icon: 'fa-bars', group: 'access' },
     { id: 'control-panel', label: 'الدخول إلى لوحة التحكم حسب الصلاحيات', icon: 'fa-gauge-high', group: 'access' },
