@@ -309,3 +309,83 @@
 .hub-platform-recharge-banner.is-show {
   display: flex;
 }
+
+.hub-book-ops {
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+  font-weight: 700;
+  line-height: 1.85;
+  font-size: 14px;
+}
+
+.hub-book-hint {
+  margin: -4px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.hub-book-systems {
+  margin: 8px 0 4px;
+  padding: 14px 12px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.hub-book-systems legend {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+  padding: 0 6px;
+}
+
+.hub-book-systems-lead {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 650;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.hub-book-systems-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.hub-book-system-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #ececf1;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.hub-book-system-item small {
+  display: inline-block;
+  margin-inline-start: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.hub-book-systems [data-systems-required] {
+  position: absolute;
+  opacity: 0;
+  height: 0;
+  width: 0;
+  pointer-events: none;
+}

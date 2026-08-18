@@ -51,6 +51,20 @@
       if (href.includes('diplomas') || label === 'دبلومات') {
         list[i] = { ...list[i], label: 'دبلوماتي', href: 'diplomas.html', icon: list[i].icon || 'fa-graduation-cap' };
       }
+      if (label === 'المنصات' || label === 'منصتي' || /(?:^|\/)platforms\.html/.test(href)) {
+        list[i] = { ...list[i], label: 'منصتي', href: 'my-platform.html', icon: list[i].icon || 'fa-layer-group' };
+      }
+    }
+    let keptMine = false;
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      const isMine = list[i].label === 'منصتي' || (list[i].href || '').includes('my-platform');
+      if (!isMine) continue;
+      if (keptMine) {
+        list.splice(i, 1);
+        continue;
+      }
+      list[i] = { ...list[i], label: 'منصتي', href: 'my-platform.html', icon: list[i].icon || 'fa-layer-group' };
+      keptMine = true;
     }
     // أزل تكرار قناتي إن وُجد أكثر من مرة
     let keptChannel = false;
@@ -78,6 +92,7 @@
       list.splice(insertAt >= 0 ? insertAt : list.length, 0, { label, href, icon, launchCode });
     };
     ensure('شراكاتي', 'partnerships.html', 'fa-handshake');
+    ensure('منصتي', 'my-platform.html', 'fa-layer-group');
     ensure('قناتي', 'side-projects.html#sp-client-intro', 'fa-lightbulb');
     ensure('دوراتي', 'courses.html', 'fa-chalkboard');
     ensure('دبلوماتي', 'diplomas.html', 'fa-graduation-cap');
@@ -112,7 +127,7 @@
         fromCatalog()
           .filter((p) => !window.HubReadySites?.isExcluded?.(p.label))
           .filter((p) => p.label !== 'ابدأ رحلتك' && !(p.href || '').includes('rent-system.html'))
-          .filter((p) => p.label !== 'منصتي' && p.label !== 'أنظمتي')
+          .filter((p) => p.label !== 'أنظمتي')
       )
     );
     if (!pages.some((p) => p.label === 'سجل معنا' || (p.href || '').includes('register.html'))) {
