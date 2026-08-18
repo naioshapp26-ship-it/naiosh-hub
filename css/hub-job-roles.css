@@ -5,12 +5,12 @@
 }
 
 .jr-hero {
-  background: linear-gradient(128deg, #064e3b 0%, #047857 45%, #059669 100%);
+  background: linear-gradient(128deg, #7f1d1d 0%, #b91c1c 45%, #dc2626 100%);
   color: #fff;
   border-radius: 22px;
   padding: 32px 28px;
   margin-bottom: 18px;
-  box-shadow: 0 24px 60px rgba(4, 120, 87, 0.35);
+  box-shadow: 0 24px 60px rgba(185, 28, 28, 0.35);
 }
 
 .jr-hero h1 {
@@ -38,7 +38,7 @@
 
 .jr-kpi {
   background: #fff;
-  border: 1px solid #d1fae5;
+  border: 1px solid #fecaca;
   border-radius: 14px;
   padding: 14px 12px;
   text-align: center;
@@ -48,7 +48,7 @@
   display: block;
   font-size: 26px;
   font-weight: 900;
-  color: #047857;
+  color: #dc2626;
 }
 
 .jr-kpi span {
@@ -66,7 +66,7 @@
 
 .jr-toolbar input {
   min-height: 42px;
-  border: 1px solid #d1fae5;
+  border: 1px solid #fecaca;
   border-radius: 12px;
   padding: 0 14px;
   font-family: inherit;
@@ -81,7 +81,7 @@
 }
 
 .jr-cats button {
-  border: 1px solid #d1fae5;
+  border: 1px solid #fecaca;
   background: #fff;
   border-radius: 999px;
   padding: 7px 12px;
@@ -92,10 +92,19 @@
   color: #334155;
 }
 
-.jr-cats button.is-active {
-  background: #047857;
-  border-color: #047857;
-  color: #fff;
+.jr-cats button:hover,
+.jr-cats button:focus-visible {
+  border-color: #dc2626;
+  color: #b91c1c;
+}
+
+.jr-cats button.is-active,
+.jr-cats button.is-active:hover,
+.jr-cats button.is-active:focus-visible,
+.jr-cats button:active {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff !important;
 }
 
 .jr-list {
@@ -133,8 +142,8 @@
   font-weight: 900;
   padding: 4px 8px;
   border-radius: 999px;
-  background: #ecfdf5;
-  color: #047857;
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .jr-card p {
