@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>حاضنتي | نايوش هوب 360</title>
+  <meta name="description" content="حاضنتي تفتح فقط الحاضنات الخاصة بالعميل الممنوحة عبر الفرع التابع له عند التسجيل." />
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/hub-theme.css" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=17" />
+  <link rel="stylesheet" href="css/hub-dark-surfaces.css?v=20260815-contrast" />
+  <link rel="stylesheet" href="css/hub-tenant-workspace.css?v=5" />
+</head>
+<body class="homepage">
+  <header class="top-nav">
+    <div class="container inner">
+      <div class="nav-main">
+        <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
+        <nav class="nav-links">
+          <a href="index.html">الرئيسية</a>
+          <a class="active" href="my-incubator.html">حاضنتي</a>
+          <a href="book-incubator.html?from=branch">احجز حاضنة من فرع</a>
+          <a href="my-platform.html">منصتي</a>
+        </nav>
+      </div>
+      <div class="auth-actions">
+        <a href="register.html" class="auth-btn">سجل معنا</a>
+        <a href="login.html" class="auth-btn primary">تسجيل الدخول</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container hub-feature-page hub-mine-page" data-my-incubator>
+    <section class="hub-feature-hero">
+      <p class="hub-feature-kicker"><i class="fas fa-seedling"></i> حاضنات العميل فقط</p>
+      <h1>حاضنتي</h1>
+      <p>تُمنح الحاضنة من خلال الفرع التابعة له عند التسجيل. عند الكبس على <strong>حاضنتي</strong> في المنيو المنسدل من يمين الشاشة تفتح <strong>فقط الحاضنات الخاصة بالعميل</strong> — أيقونة واحدة.</p>
+    </section>
+
+    <div class="hub-mine-toolbar">
+      <label>
+        إيميل الحجز
+        <input type="email" data-incubator-email placeholder="example@gmail.com" dir="ltr" autocomplete="email" />
+      </label>
+      <button type="button" class="btn btn-primary" data-incubator-lookup><i class="fas fa-search"></i> عرض حاضناتي</button>
+      <button type="button" class="btn btn-secondary" data-incubator-refresh><i class="fas fa-rotate"></i> تحديث</button>
+    </div>
+    <p data-incubator-meta class="hub-mine-meta">أدخلي إيميل الحجز ثم اضغطي عرض حاضناتي</p>
+
+    <div data-incubator-root>
+      <div class="hub-mine-steps">
+        <h2><i class="fas fa-circle-info"></i> حاضنتي تفتح حاضناتك فقط</h2>
+        <ol>
+          <li>اكتبي <strong>نفس الإيميل</strong> من نموذج «احجز حاضنة من فرع».</li>
+          <li>اضغطي <strong>عرض حاضناتي</strong>.</li>
+          <li>ستظهر حاضناتك الممنوحة عبر فرعك فقط — بدون كتالوج الحاضنات العامة.</li>
+        </ol>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/hub-auth.js"></script>
+  <script src="js/hub-client-incubators.js?v=1"></script>
+  <script src="js/hub-my-incubator.js?v=1"></script>
+  <script src="js/hub-header-actions.js?v=18"></script>
+  <script src="js/hub-global-back.js" defer></script>
+  <script src="js/hub-ai-assistant.js?v=4" defer></script>
+</body>
+</html>

@@ -54,6 +54,9 @@
       if (label === 'المنصات' || label === 'منصتي' || /(?:^|\/)platforms\.html/.test(href)) {
         list[i] = { ...list[i], label: 'منصتي', href: 'my-platform.html', icon: list[i].icon || 'fa-layer-group' };
       }
+      if (label === 'حاضنتي' || label === 'الحاضنات' || /(?:^|\/)incubators\.html/.test(href)) {
+        list[i] = { ...list[i], label: 'حاضنتي', href: 'my-incubator.html', icon: list[i].icon || 'fa-seedling' };
+      }
     }
     let keptMine = false;
     for (let i = list.length - 1; i >= 0; i -= 1) {
@@ -65,6 +68,17 @@
       }
       list[i] = { ...list[i], label: 'منصتي', href: 'my-platform.html', icon: list[i].icon || 'fa-layer-group' };
       keptMine = true;
+    }
+    let keptIncubator = false;
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      const isInc = list[i].label === 'حاضنتي' || (list[i].href || '').includes('my-incubator');
+      if (!isInc) continue;
+      if (keptIncubator) {
+        list.splice(i, 1);
+        continue;
+      }
+      list[i] = { ...list[i], label: 'حاضنتي', href: 'my-incubator.html', icon: list[i].icon || 'fa-seedling' };
+      keptIncubator = true;
     }
     // أزل تكرار قناتي إن وُجد أكثر من مرة
     let keptChannel = false;
@@ -92,6 +106,7 @@
       list.splice(insertAt >= 0 ? insertAt : list.length, 0, { label, href, icon, launchCode });
     };
     ensure('شراكاتي', 'partnerships.html', 'fa-handshake');
+    ensure('حاضنتي', 'my-incubator.html', 'fa-seedling');
     ensure('منصتي', 'my-platform.html', 'fa-layer-group');
     ensure('قناتي', 'side-projects.html#sp-client-intro', 'fa-lightbulb');
     ensure('دوراتي', 'courses.html', 'fa-chalkboard');
