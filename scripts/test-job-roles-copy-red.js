@@ -20,6 +20,9 @@ assert(!toastBlock.includes('#047857'), 'copied toast still uses green');
 
 assert(js.includes('تم النسخ'), 'copied button label missing');
 assert(js.includes('markCopied'), 'copied state helper missing');
-assert(html.includes('hub-job-roles.css?v=2'), 'css cache bump missing');
+assert(html.includes('hub-job-roles.css?v=3'), 'css cache bump missing');
+assert(!/#047857|#059669|#064e3b|#d1fae5|#ecfdf5/.test(css), 'job-roles CSS still has green');
+assert(css.includes('.jr-hero') && css.includes('#dc2626'), 'hero is not red');
+assert(css.includes('.jr-cats button.is-active') && css.includes('color: #ffffff !important'), 'active category is not red/white');
 
 console.log('PASS job-roles copy control is red with white text');
