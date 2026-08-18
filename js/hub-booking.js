@@ -37,9 +37,10 @@
   ];
 
   const params = new URLSearchParams(window.location.search);
+  const from = String(params.get('from') || '').toLowerCase();
+  const isIncubatorPlatform = kind === 'platform' && from === 'incubator';
 
   const applySourceCopy = () => {
-    const from = String(params.get('from') || '').toLowerCase();
     const h1 = root.querySelector('.hub-feature-hero h1');
     const kicker = root.querySelector('.hub-feature-kicker');
     const lead = root.querySelector('.hub-feature-hero p');
@@ -49,11 +50,14 @@
       if (kicker) kicker.innerHTML = '<i class="fas fa-building"></i> حجز منصة عبر المقر';
       if (lead) lead.textContent = 'مسار المنح من المكتب الرئيسي — أكمل البيانات وسيُوجَّه الطلب لغرفة العمليات.';
     }
-    if (kind === 'platform' && from === 'incubator') {
+    if (isIncubatorPlatform) {
       document.title = 'إحجز منصة من حاضنة | نايوش هوب 360';
       if (h1) h1.textContent = 'إحجز منصة من حاضنة';
       if (kicker) kicker.innerHTML = '<i class="fas fa-seedling"></i> حجز منصة داخل الحاضنة';
-      if (lead) lead.textContent = 'اختر الحاضنة ثم أكمل بيانات المنصة — الطلب يرتبط بمسار الحاضنة داخل هوب.';
+      if (lead) {
+        lead.textContent =
+          'تُمنح المنصة من خلال حاضنة تابعة لفرع. يتم ربط المنصة بمنصتي. عند الكبس على منصتي في المنيو المنسدل من اليمين تفتح فقط منصات العميل. وتُمنح أنظمة تشغيلية حسب حاجة العمل.';
+      }
     }
     if (kind === 'incubator') {
       document.title = 'احجز حاضنة من فرع | نايوش هوب 360';
@@ -61,6 +65,16 @@
       if (kicker) kicker.innerHTML = '<i class="fas fa-code-branch"></i> حجز حاضنة عبر الفرع';
       if (lead) lead.textContent = 'اختر الفرع ثم الحاضنة المناسبة لقطاعك، واترك لفريق هوب ترتيب القبول والمسار التشغيلي.';
     }
+
+    root.querySelectorAll('[data-from-incubator]').forEach((el) => {
+      el.hidden = !isIncubatorPlatform;
+    });
+    root.querySelectorAll('[data-from-generic]').forEach((el) => {
+      el.hidden = isIncubatorPlatform;
+    });
+
+    const nameEl = form?.querySelector('[name="platformName"]');
+    if (nameEl) nameEl.required = isIncubatorPlatform || kind === 'platform';
   };
   applySourceCopy();
 
@@ -172,7 +186,7 @@
     if (options.length === 1 && country) el.value = options[0].id;
   };
 
-  const incubatorOptions = () => {
+  const incubatorOptionsAll = () => {
     const list = window.HubIncubatorsData?.INCUBATORS || [];
     if (list.length) {
       return list.slice(0, 80).map((inc) => ({
@@ -186,6 +200,39 @@
       { id: 'inc-health', label: 'الصحة والجمال' },
       { id: 'inc-food', label: 'الطعام والشراب' },
     ];
+  };
+
+  const incubatorOptionsForBranch = (branchId) => {
+    const list =
+      window.HubClientPlatforms?.incubatorsForBranch?.(branchId) ||
+      incubatorOptionsAll()
+        .map((o) => window.HubIncubatorsData?.INCUBATORS?.find((i) => i.id === o.id))
+        .filter(Boolean);
+    return (list || []).map((inc) => ({
+      id: inc.id,
+      label: `${inc.num ? `${inc.num}. ` : ''}${inc.name}${inc.sector ? ` — ${inc.sector}` : ''}`,
+    }));
+  };
+
+  const lockIncubator = (placeholder) => {
+    const el = form?.querySelector('[name="incubator"]');
+    if (!el) return;
+    fillSelect(el, [], placeholder);
+    el.disabled = true;
+  };
+
+  const unlockIncubator = (branchId, selected) => {
+    const el = form?.querySelector('[name="incubator"]');
+    if (!el) return;
+    if (isIncubatorPlatform) {
+      const options = incubatorOptionsForBranch(branchId);
+      fillSelect(el, options, options.length ? 'اختر حاضنة تابعة للفرع' : 'لا حاضنة تابعة لهذا الفرع', selected);
+      el.disabled = !branchId || !options.length;
+      if (options.length === 1 && branchId) el.value = options[0].id;
+      return;
+    }
+    fillSelect(el, incubatorOptionsAll(), 'اختر الحاضنة', selected);
+    el.disabled = false;
   };
 
   const platformOptions = () => {
@@ -209,6 +256,52 @@
     return { name: f.name, size: f.size, type: f.type || '' };
   };
 
+  const selectedLabel = (name) => {
+    const el = form?.querySelector(`[name="${name}"]`);
+    const opt = el?.selectedOptions?.[0];
+    return String(opt?.textContent || '').trim();
+  };
+
+  const systemsRequiredEl = () => form?.querySelector('[data-systems-required]');
+
+  const selectedSystems = () =>
+    [...(form?.querySelectorAll('[name="systems"]:checked') || [])].map((el) => ({
+      code: el.value,
+      label: String(el.getAttribute('data-label') || el.value),
+    }));
+
+  const syncSystemsRequired = () => {
+    const proxy = systemsRequiredEl();
+    if (!proxy) return;
+    if (!isIncubatorPlatform) {
+      proxy.required = false;
+      proxy.setCustomValidity('');
+      return;
+    }
+    const n = selectedSystems().length;
+    proxy.required = true;
+    proxy.value = n ? String(n) : '';
+    proxy.setCustomValidity(n ? '' : 'اختر نظامًا تشغيليًا واحدًا على الأقل حسب حاجة العمل');
+  };
+
+  const fillSystems = () => {
+    const mount = form?.querySelector('[data-book-systems-list]');
+    if (!mount) return;
+    const options = window.HubClientPlatforms?.systemOptions?.() || [];
+    mount.innerHTML = options
+      .map(
+        (s) => `<label class="hub-book-system-item">
+          <input type="checkbox" name="systems" value="${esc(s.code)}" data-label="${esc(s.label)}" />
+          <span>${esc(s.label)} <small dir="ltr">${esc(s.code)}</small></span>
+        </label>`
+      )
+      .join('');
+    mount.querySelectorAll('[name="systems"]').forEach((el) => {
+      el.addEventListener('change', syncSystemsRequired);
+    });
+    syncSystemsRequired();
+  };
+
   const fillForm = () => {
     const preSector = params.get('sector') || '';
     const preBranch = params.get('branch') || '';
@@ -218,10 +311,17 @@
 
     fillSelect(form?.querySelector('[name="sectorName"]'), sectorOptions(), 'اختر اسم القطاع', preSector);
     fillSelect(form?.querySelector('[name="country"]'), countryList(), 'اختر الدولة', preCountry);
-    fillSelect(form?.querySelector('[name="incubator"]'), incubatorOptions(), 'اختر الحاضنة', preIncubator);
 
     if (preCountry) unlockBranch(preCountry, preBranch);
     else lockBranch('اختر الدولة أولاً');
+
+    const branchNow = String(form?.querySelector('[name="branch"]')?.value || preBranch || '').trim();
+    if (isIncubatorPlatform) {
+      if (branchNow) unlockIncubator(branchNow, preIncubator);
+      else lockIncubator('اختر الفرع أولاً لعرض حاضناته');
+    } else {
+      unlockIncubator('', preIncubator);
+    }
 
     const platformEl = form?.querySelector('[name="platform"]');
     if (platformEl) {
@@ -231,12 +331,27 @@
         platformEl.value = prePlatform;
       }
     }
+
+    if (prePlatform && form?.querySelector('[name="platformName"]') && !form.querySelector('[name="platformName"]').value) {
+      const match = platformOptions().find((p) => p.id === prePlatform);
+      form.querySelector('[name="platformName"]').value = match?.label || prePlatform;
+    }
+
+    fillSystems();
   };
 
   form?.querySelector('[name="country"]')?.addEventListener('change', (event) => {
     const country = String(event.target.value || '').trim();
     if (!country) lockBranch('اختر الدولة أولاً');
     else unlockBranch(country);
+    if (isIncubatorPlatform) lockIncubator('اختر الفرع أولاً لعرض حاضناته');
+  });
+
+  form?.querySelector('[name="branch"]')?.addEventListener('change', (event) => {
+    if (!isIncubatorPlatform) return;
+    const branchId = String(event.target.value || '').trim();
+    if (!branchId) lockIncubator('اختر الفرع أولاً لعرض حاضناته');
+    else unlockIncubator(branchId);
   });
 
   const kindLabel =
@@ -244,6 +359,7 @@
 
   form?.addEventListener('submit', (event) => {
     event.preventDefault();
+    syncSystemsRequired();
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
@@ -255,18 +371,25 @@
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, '');
 
+    const platformName = String(data.get('platformName') || '').trim();
+    const systems = selectedSystems();
+
     const payload = {
       kind,
-      source: String(params.get('from') || '').trim(),
+      source: from,
       sectorName: String(data.get('sectorName') || '').trim(),
       subdomain,
       branch: String(data.get('branch') || '').trim(),
+      branchLabel: selectedLabel('branch'),
       fullName: String(data.get('fullName') || '').trim(),
       phone: String(data.get('phone') || '').trim(),
       email: String(data.get('email') || '').trim(),
       country: String(data.get('country') || '').trim(),
-      platform: String(data.get('platform') || params.get('platform') || params.get('code') || '').trim(),
+      platform: String(data.get('platform') || platformName || params.get('platform') || params.get('code') || '').trim(),
+      platformName: platformName || String(data.get('platform') || '').trim(),
       incubator: String(data.get('incubator') || '').trim(),
+      incubatorLabel: selectedLabel('incubator'),
+      systems,
       profileFile: fileMeta(form.querySelector('[name="profileFile"]')),
       imageFile: fileMeta(form.querySelector('[name="imageFile"]')),
       videoFile: fileMeta(form.querySelector('[name="videoFile"]')),
@@ -283,8 +406,22 @@
       /* ignore storage errors */
     }
 
+    let grant = null;
+    if (isIncubatorPlatform && window.HubClientPlatforms?.grantFromBooking) {
+      grant = window.HubClientPlatforms.grantFromBooking(payload);
+      if (!grant?.ok) {
+        if (feedback) {
+          feedback.hidden = false;
+          feedback.classList.add('is-error');
+          feedback.classList.remove('is-ok');
+          feedback.textContent = grant?.error || 'تعذر منح المنصة. راجع البيانات.';
+        }
+        return;
+      }
+    }
+
     const targetLabel =
-      payload.platform || payload.incubator || payload.branch || payload.sectorName || kind;
+      payload.platformName || payload.platform || payload.incubator || payload.branch || payload.sectorName || kind;
     window.HubStore?.pushFeed?.(
       'decision',
       `طلب حجز ${kindLabel}: ${targetLabel} — ${payload.fullName}`
@@ -292,7 +429,16 @@
 
     if (feedback) {
       feedback.hidden = false;
-      feedback.textContent = `تم استلام طلب حجز ال${kindLabel}. فريق هوب بيتواصل معك خلال 24 ساعة لتأكيد الموعد والمسار.`;
+      feedback.classList.remove('is-error');
+      feedback.classList.add('is-ok');
+      if (isIncubatorPlatform && grant?.ok) {
+        const emailQ = encodeURIComponent(payload.email);
+        feedback.innerHTML = `تم منح المنصة <strong>${esc(payload.platformName)}</strong> عبر حاضنة تابعة للفرع وربطها بمنصتي. الأنظمة الممنوحة: ${esc(
+          systems.map((s) => s.code).join(' · ') || '—'
+        )}. <a href="my-platform.html?email=${emailQ}">افتح منصتي — منصاتك فقط</a>`;
+      } else {
+        feedback.textContent = `تم استلام طلب حجز ال${kindLabel}. فريق هوب بيتواصل معك خلال 24 ساعة لتأكيد الموعد والمسار.`;
+      }
     }
     form.reset();
     fillForm();
