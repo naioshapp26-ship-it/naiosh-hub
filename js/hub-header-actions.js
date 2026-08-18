@@ -40,6 +40,30 @@
     // احذف تكرار «مركز المعرفة» من الروابط النصية إن وُجد — يبقى الزر الأحمر فقط
     navLinks?.querySelectorAll('a[href="info-center.html"]').forEach((a) => a.remove());
 
+    // هيدر الرئيسية: أزل ما هو موجود في القائمة الجانبية (المشاريع الجانبية · سجل معنا · منصتي)
+    const path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    const isHome = path === 'index.html' || path === '' || path === '/';
+    if (isHome) {
+      const isSidebarDupe = (a) => {
+        const href = (a.getAttribute('href') || '').toLowerCase();
+        const label = (a.textContent || '').replace(/\s+/g, ' ').trim();
+        return (
+          label === 'المشاريع الجانبية' ||
+          label === 'سجل معنا' ||
+          label === 'منصتي' ||
+          href.includes('side-projects.html') ||
+          href.includes('my-platform.html') ||
+          /^register\.html(?:$|[?#])/.test(href)
+        );
+      };
+      navLinks?.querySelectorAll('a').forEach((a) => {
+        if (isSidebarDupe(a)) a.remove();
+      });
+      auth.querySelectorAll('a').forEach((a) => {
+        if (isSidebarDupe(a)) a.remove();
+      });
+    }
+
     if (!ACTIONS.length) return;
 
     const wrap = document.createElement('div');
@@ -47,7 +71,6 @@
     wrap.dataset.hubHeaderActions = '1';
     wrap.setAttribute('aria-label', 'اختصارات هوب');
 
-    const path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
     wrap.innerHTML = ACTIONS.map((a) => {
       const active = path === a.href.toLowerCase() ? ' is-active' : '';
       return `<a class="${a.className}${active}" href="${a.href}" data-hub-hbtn="${a.id}">
