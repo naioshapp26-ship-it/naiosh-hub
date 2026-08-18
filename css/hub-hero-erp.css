@@ -165,13 +165,13 @@ body.homepage .hero-ctas .hero-cta-pill {
 }
 
 body.homepage .hero-ctas .hero-cta-register {
-  background: linear-gradient(135deg, #059669, #047857) !important;
-  box-shadow: 0 10px 24px rgba(5, 150, 105, 0.35) !important;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.38) !important;
 }
 
 body.homepage .hero-ctas .hero-cta-register:hover,
 body.homepage .hero-ctas .hero-cta-register:focus-visible {
-  background: linear-gradient(135deg, #10b981, #059669) !important;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
   color: #ffffff !important;
 }
 
@@ -183,6 +183,17 @@ body.homepage .hero-ctas .hero-cta-book {
 body.homepage .hero-ctas .hero-cta-book:hover,
 body.homepage .hero-ctas .hero-cta-book:focus-visible {
   background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  color: #ffffff !important;
+}
+
+body.homepage .hero-ctas .hero-cta-book-hq {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  box-shadow: 0 10px 24px rgba(5, 150, 105, 0.35) !important;
+}
+
+body.homepage .hero-ctas .hero-cta-book-hq:hover,
+body.homepage .hero-ctas .hero-cta-book-hq:focus-visible {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
   color: #ffffff !important;
 }
 

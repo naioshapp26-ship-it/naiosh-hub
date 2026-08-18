@@ -38,6 +38,32 @@
 
   const params = new URLSearchParams(window.location.search);
 
+  const applySourceCopy = () => {
+    const from = String(params.get('from') || '').toLowerCase();
+    const h1 = root.querySelector('.hub-feature-hero h1');
+    const kicker = root.querySelector('.hub-feature-kicker');
+    const lead = root.querySelector('.hub-feature-hero p');
+    if (kind === 'platform' && from === 'hq') {
+      document.title = 'احجز منصة من المكتب الرئيسي | نايوش هوب 360';
+      if (h1) h1.textContent = 'احجز منصة من المكتب الرئيسي';
+      if (kicker) kicker.innerHTML = '<i class="fas fa-building"></i> حجز منصة عبر المقر';
+      if (lead) lead.textContent = 'مسار المنح من المكتب الرئيسي — أكمل البيانات وسيُوجَّه الطلب لغرفة العمليات.';
+    }
+    if (kind === 'platform' && from === 'incubator') {
+      document.title = 'إحجز منصة من حاضنة | نايوش هوب 360';
+      if (h1) h1.textContent = 'إحجز منصة من حاضنة';
+      if (kicker) kicker.innerHTML = '<i class="fas fa-seedling"></i> حجز منصة داخل الحاضنة';
+      if (lead) lead.textContent = 'اختر الحاضنة ثم أكمل بيانات المنصة — الطلب يرتبط بمسار الحاضنة داخل هوب.';
+    }
+    if (kind === 'incubator') {
+      document.title = 'احجز حاضنة من فرع | نايوش هوب 360';
+      if (h1) h1.textContent = 'احجز حاضنة من فرع';
+      if (kicker) kicker.innerHTML = '<i class="fas fa-code-branch"></i> حجز حاضنة عبر الفرع';
+      if (lead) lead.textContent = 'اختر الفرع ثم الحاضنة المناسبة لقطاعك، واترك لفريق هوب ترتيب القبول والمسار التشغيلي.';
+    }
+  };
+  applySourceCopy();
+
   const esc = (v = '') =>
     String(v)
       .replace(/&/g, '&amp;')
@@ -231,6 +257,7 @@
 
     const payload = {
       kind,
+      source: String(params.get('from') || '').trim(),
       sectorName: String(data.get('sectorName') || '').trim(),
       subdomain,
       branch: String(data.get('branch') || '').trim(),
