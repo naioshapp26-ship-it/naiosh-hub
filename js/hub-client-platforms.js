@@ -153,8 +153,11 @@
       .replace(/[^a-z0-9-]/g, '');
     const systemsIn = Array.isArray(payload.systems) ? payload.systems : [];
     if (!email || !platformName) return { ok: false, error: 'الإيميل واسم المنصة مطلوبان' };
-    if (!payload.branch) return { ok: false, error: 'اختر الفرع' };
-    if (!payload.incubator) return { ok: false, error: 'اختر حاضنة تابعة للفرع' };
+    const isHq = String(payload.source || '').toLowerCase() === 'hq';
+    if (!isHq) {
+      if (!payload.branch) return { ok: false, error: 'اختر الفرع' };
+      if (!payload.incubator) return { ok: false, error: 'اختر حاضنة تابعة للفرع' };
+    }
     if (!systemsIn.length) return { ok: false, error: 'اختر الأنظمة التشغيلية حسب حاجة العمل' };
 
     const systems = grantSystems(email, systemsIn);
@@ -169,7 +172,7 @@
         nameAr: platformName,
         tenantName: payload.fullName || email,
         systemCode: primary,
-        refId: payload.incubator || '',
+        refId: isHq ? 'HQ' : payload.incubator || '',
       });
       structureGrantId = structure?.grantId || '';
     } catch {
@@ -181,8 +184,8 @@
         tenantName: payload.fullName || platformName,
         systemCode: primary,
         slug,
-        branchOrHq: payload.branchLabel || payload.branch || '',
-        incubator: payload.incubatorLabel || payload.incubator || '',
+        branchOrHq: isHq ? 'المكتب الرئيسي' : payload.branchLabel || payload.branch || '',
+        incubator: isHq ? '' : payload.incubatorLabel || payload.incubator || '',
         platformName,
       });
       subdomainGrantId = sd?.grantId || '';
@@ -192,7 +195,7 @@
 
     const row = {
       id: uid('cplt'),
-      source: payload.source || 'incubator',
+      source: isHq ? 'hq' : payload.source || 'incubator',
       email,
       fullName: String(payload.fullName || '').trim(),
       phone: String(payload.phone || '').trim(),
@@ -200,10 +203,10 @@
       slug,
       host: host || (slug ? `${slug}.naiosh.app` : ''),
       country: String(payload.country || '').trim(),
-      branch: String(payload.branch || '').trim(),
-      branchLabel: String(payload.branchLabel || payload.branch || '').trim(),
-      incubator: String(payload.incubator || '').trim(),
-      incubatorLabel: String(payload.incubatorLabel || payload.incubator || '').trim(),
+      branch: isHq ? '' : String(payload.branch || '').trim(),
+      branchLabel: isHq ? 'المكتب الرئيسي' : String(payload.branchLabel || payload.branch || '').trim(),
+      incubator: isHq ? '' : String(payload.incubator || '').trim(),
+      incubatorLabel: isHq ? '' : String(payload.incubatorLabel || payload.incubator || '').trim(),
       sectorName: String(payload.sectorName || '').trim(),
       systems,
       status: 'active',
@@ -221,7 +224,7 @@
     try {
       window.HubStore?.pushFeed?.(
         'decision',
-        `منح منصة عبر حاضنة: ${platformName} · ${row.incubatorLabel} · ${email}`
+        isHq ? `منح منصة من المكتب الرئيسي: ${platformName} · ${email}` : `منح منصة عبر حاضنة: ${platformName} · ${row.incubatorLabel} · ${email}`
       );
     } catch {
       /* ignore */
