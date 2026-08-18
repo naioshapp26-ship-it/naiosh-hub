@@ -143,11 +143,9 @@
           .filter((p) => !window.HubReadySites?.isExcluded?.(p.label))
           .filter((p) => p.label !== 'ابدأ رحلتك' && !(p.href || '').includes('rent-system.html'))
           .filter((p) => p.label !== 'أنظمتي')
+          .filter((p) => p.label !== 'سجل معنا' && !(p.href || '').includes('register.html'))
       )
     );
-    if (!pages.some((p) => p.label === 'سجل معنا' || (p.href || '').includes('register.html'))) {
-      pages.unshift({ label: 'سجل معنا', href: 'register.html', icon: 'fa-user-plus' });
-    }
 
     nav.innerHTML = pages
       .map(

@@ -20,7 +20,8 @@ assert(!header[0].includes('سجل معنا'), 'header still has سجل معنا
 
 const sidebar = fs.readFileSync('/workspace/js/hero-sidebar-nav.js', 'utf8');
 assert(sidebar.includes("ensure('منصتي', 'my-platform.html'"), 'sidebar منصتي missing');
-assert(sidebar.includes("label: 'سجل معنا'"), 'sidebar سجل معنا missing');
+assert(!sidebar.includes("label: 'سجل معنا'"), 'sidebar still injects سجل معنا');
+assert(sidebar.includes("p.label !== 'سجل معنا'"), 'sidebar filter for سجل معنا missing');
 assert(sidebar.includes("ensure('قناتي', 'side-projects.html"), 'sidebar قناتي/المشاريع missing');
 
 const actions = fs.readFileSync('/workspace/js/hub-header-actions.js', 'utf8');
