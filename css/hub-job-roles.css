@@ -154,12 +154,21 @@
   padding: 8px 12px;
   border: none;
   border-radius: 10px;
-  background: #047857;
-  color: #fff;
+  background: #dc2626;
+  color: #ffffff !important;
   font-family: inherit;
   font-weight: 800;
   font-size: 12px;
   cursor: pointer;
+}
+
+.jr-copy i {
+  color: #ffffff !important;
+}
+
+.jr-copy.is-copied {
+  background: #b91c1c;
+  color: #ffffff !important;
 }
 
 .jr-empty {
@@ -172,17 +181,24 @@
 
 .jr-toast {
   position: fixed;
-  bottom: 24px;
+  top: 88px;
   left: 50%;
   transform: translateX(-50%);
-  background: #047857;
-  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #dc2626;
+  color: #ffffff !important;
   padding: 12px 20px;
   border-radius: 12px;
   font-weight: 900;
   font-size: 14px;
-  box-shadow: 0 8px 24px rgba(4, 120, 87, 0.4);
-  z-index: 999;
+  box-shadow: 0 8px 24px rgba(185, 28, 28, 0.45);
+  z-index: 120000;
+}
+
+.jr-toast i {
+  color: #ffffff !important;
 }
 
 .jr-toast[hidden] {

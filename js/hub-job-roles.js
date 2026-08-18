@@ -123,12 +123,23 @@ ${role.summary}
     }, 2200);
   };
 
-  const copyTemplate = async (roleId) => {
+  const markCopied = (btn) => {
+    if (!btn) return;
+    qsa('[data-jr-copy]').forEach((b) => {
+      b.classList.remove('is-copied');
+      b.innerHTML = '<i class="fas fa-copy"></i> نسخ نموذج وصف وظيفي';
+    });
+    btn.classList.add('is-copied');
+    btn.innerHTML = '<i class="fas fa-check"></i> تم النسخ';
+  };
+
+  const copyTemplate = async (roleId, btn) => {
     const role = ROLES.find((r) => r.id === roleId);
     if (!role) return;
     const text = buildTemplate(role);
     try {
       await navigator.clipboard.writeText(text);
+      markCopied(btn);
       showToast();
     } catch (_) {
       const ta = document.createElement('textarea');
@@ -137,6 +148,7 @@ ${role.summary}
       ta.select();
       document.execCommand('copy');
       ta.remove();
+      markCopied(btn);
       showToast();
     }
   };
@@ -209,7 +221,7 @@ ${role.summary}
     qs('[data-jr-list]')?.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-jr-copy]');
       if (!btn) return;
-      copyTemplate(btn.getAttribute('data-jr-copy'));
+      copyTemplate(btn.getAttribute('data-jr-copy'), btn);
     });
   };
 
