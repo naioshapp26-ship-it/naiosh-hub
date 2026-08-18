@@ -18,6 +18,7 @@
     marketing: { href: 'ads.html', title: 'استديو التسويق والإعلانات', type: 'content', typeAr: 'تسويق', icon: 'fa-bullhorn' },
     safety: { href: 'quality.html', title: 'السلامة والجودة NAIOSH SAFETY', type: 'content', typeAr: 'سلامة', icon: 'fa-shield-halved' },
     policies: { href: 'policies.html', title: 'السياسات والإجراءات', type: 'content', typeAr: 'سياسة', icon: 'fa-scroll' },
+    services: { href: 'services.html', title: 'خدمات نايوش', type: 'content', typeAr: 'خدمة', icon: 'fa-concierge-bell' },
     sectors: { href: 'operating.html', title: 'محرك القطاعات والفرص', type: 'content', typeAr: 'قطاع', icon: 'fa-industry' },
     ops: { href: 'system-ops.html', title: 'تشغيل الأنظمة والمنح', type: 'content', typeAr: 'تشغيل', icon: 'fa-gears' },
     instructions: { href: 'systems-instructions.html', title: 'تعليمات أنظمة نايوش', type: 'content', typeAr: 'تعليمات', icon: 'fa-book-open' },
@@ -63,8 +64,8 @@
       label: 'أحتاج إلى...',
       group: 'primary',
       icon: 'fa-hand-holding-hand',
-      starters: ['أحتاج إلى', 'أحتاج'],
-      routes: { types: ['system', 'content'], keywords: ['خدمة', 'حل', 'أحتاج'], destinations: ['systems', 'ops', 'rent'] },
+      starters: ['أحتاج إلى', 'أحتاج', 'خدمات', 'أريد خدمة'],
+      routes: { types: ['system', 'content'], keywords: ['خدمة', 'خدمات', 'حل', 'أحتاج', 'استشارة'], destinations: ['services', 'systems', 'ops', 'rent'] },
       explain: 'خدمة أو حل تشغيلي',
     },
     {
