@@ -200,6 +200,97 @@
   color: #065f46;
 }
 
+.fl-projects {
+  margin: 8px 0 4px;
+  padding: 14px 12px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.fl-projects legend {
+  font-size: 13px;
+  font-weight: 900;
+  color: #111827;
+  padding: 0 6px;
+}
+
+.fl-projects-lead {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 650;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.fl-projects-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(140px, 0.8fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.fl-projects-count {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b7280;
+}
+
+.fl-projects-list {
+  display: grid;
+  gap: 6px;
+  max-height: 280px;
+  overflow: auto;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #ececf1;
+  border-radius: 12px;
+}
+
+.fl-project-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: start;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fl-project-item:hover {
+  background: #fff7f7;
+}
+
+.fl-project-item strong {
+  display: block;
+  font-size: 13px;
+  color: #111827;
+}
+
+.fl-project-item small {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.fl-projects-empty {
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+@media (max-width: 700px) {
+  .fl-projects-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
 .hub-platform-recharge-banner {
   display: none;
   margin: 0 0 18px;

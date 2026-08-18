@@ -7,18 +7,9 @@
   const root = document.querySelector('[data-hub-register]');
   if (!root) return;
 
-  const registerType = String(new URLSearchParams(location.search).get('type') || '').toLowerCase();
-  if (registerType === 'freelancer') {
-    document.title = 'سجل معنا فريلانسر | نايوش هوب 360';
-    const kicker = root.querySelector('.hub-feature-kicker');
-    const h1 = root.querySelector('.hub-feature-hero h1');
-    const lead = root.querySelector('.hub-feature-hero p');
-    if (kicker) kicker.innerHTML = '<i class="fas fa-user-plus"></i> تسجيل فريلانسر';
-    if (h1) h1.textContent = 'سجل معنا فريلانسر';
-    if (lead) {
-      lead.textContent =
-        'سجّل كفريلانسر داخل نايوش هوب: أكمل بياناتك ومسارك. الطلب يذهب لموافقة السوبر أدمن ثم يُفتح التشغيل من الأدوار والصلاحيات.';
-    }
+  if (String(new URLSearchParams(location.search).get('type') || '').toLowerCase() === 'freelancer') {
+    location.replace('register-freelancer.html');
+    return;
   }
 
   const form = root.querySelector('[data-register-form]');
@@ -237,7 +228,7 @@
 
     const fd = new FormData(form);
     const res = grants().submitRequest({
-      source: registerType === 'freelancer' ? 'freelancer' : 'register',
+      source: 'register',
       companyName: selectedLabel('platform') || String(fd.get('fullName') || '').trim(),
       subdomain: String(fd.get('subdomain') || '').trim(),
       adminName: String(fd.get('fullName') || '').trim(),
