@@ -41,6 +41,18 @@
       <p>أكمل بيانات الحجز في نموذج واحد: القطاع، الدومين الفرعي، الفرع، التواصل، الحاضنة، والمرفقات.</p>
     </section>
 
+    <section class="hub-feature-section" data-from-hq hidden>
+      <h2 class="hub-feature-section-title">طريقة التشغيل</h2>
+      <div class="hub-book-ops" role="note">
+        منصات تُمنح من قبل المكتب الرئيسي بدون فروع ولا حاضنات. يتم ربط المنصة بمنصتي. عند الكبس على منصتي الموجودة في المنيو المنسدل من اليمين تفتح فقط منصات العميل. وتُمنح أنظمة تشغيلية حسب حاجة العمل.
+      </div>
+      <div class="hub-book-steps" aria-label="خطوات حجز المنصة من المكتب الرئيسي">
+        <article><strong>1. المكتب الرئيسي</strong><small>المنح مباشرة من المقر — بدون فرع وبدون حاضنة.</small></article>
+        <article><strong>2. اسم المنصة</strong><small>تُمنح المنصة وتُربط بمنصتي — ليست كتالوج المنصات العامة.</small></article>
+        <article><strong>3. أنظمة حسب حاجة العمل</strong><small>تُمنح فقط الأنظمة التي تختارها لهذا العمل.</small></article>
+      </div>
+    </section>
+
     <section class="hub-feature-section" data-from-incubator hidden>
       <h2 class="hub-feature-section-title">طريقة التشغيل</h2>
       <div class="hub-book-ops" role="note">
@@ -67,6 +79,7 @@
         <h2>نموذج حجز منصة</h2>
         <p data-from-generic>أكمل البيانات التالية — الطلب يُسجَّل في هوب ويُتابع من غرفة العمليات حتى التفعيل.</p>
         <p data-from-incubator hidden>المنحة تتم عبر حاضنة تابعة للفرع المختار، ثم تُربط بمنصتي وتُشغَّل الأنظمة التي يحتاجها العمل فقط.</p>
+        <p data-from-hq hidden>المنحة من المكتب الرئيسي مباشرة — بدون فروع ولا حاضنات — ثم تُربط بمنصتي مع الأنظمة حسب حاجة العمل.</p>
         <form class="hub-book-form" data-book-form>
           <input type="hidden" name="platform" value="" data-book-platform-hidden />
 
@@ -94,15 +107,15 @@
           <label for="book-country">الدولة</label>
           <select id="book-country" name="country" required></select>
 
-          <label for="book-branch">الفرع</label>
-          <select id="book-branch" name="branch" required disabled></select>
+          <label for="book-branch" data-not-hq>الفرع</label>
+          <select id="book-branch" name="branch" required disabled data-not-hq></select>
 
           <label for="book-incubator" data-from-generic>الحاضنة</label>
           <label for="book-incubator" data-from-incubator hidden>الحاضنة التابعة للفرع</label>
-          <select id="book-incubator" name="incubator" required></select>
+          <select id="book-incubator" name="incubator" required data-not-hq></select>
           <p class="hub-book-hint" data-from-incubator hidden>تظهر هنا فقط الحاضنات التابعة للفرع الذي اخترته.</p>
 
-          <fieldset class="hub-book-systems" data-from-incubator data-book-systems hidden>
+          <fieldset class="hub-book-systems" data-work-systems data-book-systems hidden>
             <legend>الأنظمة التشغيلية حسب حاجة العمل</legend>
             <p class="hub-book-systems-lead">اختر الأنظمة التي يحتاجها عملك — تُمنح المختارة فقط، وليس كل أنظمة هوب.</p>
             <div class="hub-book-systems-list" data-book-systems-list></div>
@@ -129,6 +142,7 @@
       <aside class="hub-book-card hub-book-aside">
         <h3 data-from-generic>ماذا يشمل الحجز؟</h3>
         <h3 data-from-incubator hidden>قواعد هذه الصفحة</h3>
+        <h3 data-from-hq hidden>قواعد هذه الصفحة</h3>
         <ul data-from-generic>
           <li>تفعيل منصة سيادية داخل هوب</li>
           <li>صلاحيات حسب الاشتراك والدور</li>
@@ -141,9 +155,15 @@
           <li>منصتي في المنيو على اليمين تفتح منصات العميل فقط</li>
           <li>الأنظمة التشغيلية تُمنح حسب حاجة العمل</li>
         </ul>
+        <ul data-from-hq hidden>
+          <li>المنصة تُمنح من المكتب الرئيسي بدون فروع ولا حاضنات</li>
+          <li>المنصة تُربط بمنصتي</li>
+          <li>منصتي في المنيو على اليمين تفتح منصات العميل فقط</li>
+          <li>الأنظمة التشغيلية تُمنح حسب حاجة العمل</li>
+        </ul>
         <div class="hub-book-links">
           <a class="btn btn-secondary" href="my-platform.html"><i class="fas fa-layer-group"></i> منصتي</a>
-          <a class="btn btn-secondary" href="incubators.html"><i class="fas fa-seedling"></i> الحاضنات</a>
+          <a class="btn btn-secondary" href="book-platform.html?from=incubator"><i class="fas fa-seedling"></i> من حاضنة</a>
         </div>
       </aside>
     </div>
@@ -159,9 +179,9 @@
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-system-ops-spec.js"></script>
   <script src="js/hub-system-ops-engine.js"></script>
-  <script src="js/hub-client-platforms.js?v=1"></script>
+  <script src="js/hub-client-platforms.js?v=2"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-booking.js?v=10"></script>
+  <script src="js/hub-booking.js?v=11"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>

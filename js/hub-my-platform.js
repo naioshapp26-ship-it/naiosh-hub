@@ -72,13 +72,13 @@
     mount.innerHTML = `<div class="hub-mine-steps">
       <h2><i class="fas fa-circle-info"></i> منصتي تفتح منصاتك فقط</h2>
       <ol>
-        <li>اكتبي <strong>نفس الإيميل</strong> المستخدم في «إحجز منصة من حاضنة».</li>
+        <li>اكتبي <strong>نفس الإيميل</strong> من «إحجز منصة من حاضنة» أو «احجز منصة من المكتب الرئيسي».</li>
         <li>اضغطي <strong>عرض منصاتي</strong>.</li>
         <li>ستظهر <strong>منصات العميل فقط</strong> — ليست كتالوج منصات هوب العامة.</li>
       </ol>
       <div class="hub-mine-actions">
         <a class="is-primary" href="book-platform.html?from=incubator"><i class="fas fa-seedling"></i> إحجز منصة من حاضنة</a>
-        <a class="is-secondary" href="login.html?next=my-platform.html"><i class="fas fa-right-to-bracket"></i> تسجيل الدخول</a>
+        <a class="is-secondary" href="book-platform.html?from=hq"><i class="fas fa-building"></i> من المكتب الرئيسي</a>
       </div>
     </div>`;
     if (meta) meta.textContent = 'أدخلي إيميل الحجز ثم اضغطي عرض منصاتي';
@@ -100,13 +100,20 @@
   const renderClientCard = (row) => {
     const article = document.createElement('article');
     article.className = 'hub-mine-card';
+    const isHq = String(row.source || '').toLowerCase() === 'hq';
+    const sourceLabel = isHq ? 'المكتب الرئيسي — بدون فروع ولا حاضنات' : 'حاضنة تابعة لفرع';
     article.innerHTML = `<h3>${esc(row.platformName)} <span class="hub-mine-status is-active">${esc(
       statusAr[row.status] || 'مفعّل'
     )}</span></h3>
       <p>الإيميل: <strong dir="ltr">${esc(row.email)}</strong></p>
-      <p>الفرع: <strong>${esc(row.branchLabel || row.branch || '—')}</strong></p>
-      <p>الحاضنة التابعة للفرع: <strong>${esc(row.incubatorLabel || row.incubator || '—')}</strong></p>
-      <p>المصدر: <strong>حاضنة تابعة لفرع</strong>${row.grantId ? ` · ${esc(row.grantId)}` : ''}</p>
+      ${
+        isHq
+          ? `<p>الفرع: <strong>بدون فرع</strong></p>
+      <p>الحاضنة: <strong>بدون حاضنة</strong></p>`
+          : `<p>الفرع: <strong>${esc(row.branchLabel || row.branch || '—')}</strong></p>
+      <p>الحاضنة التابعة للفرع: <strong>${esc(row.incubatorLabel || row.incubator || '—')}</strong></p>`
+      }
+      <p>المصدر: <strong>${esc(sourceLabel)}</strong>${row.grantId ? ` · ${esc(row.grantId)}` : ''}</p>
       ${
         row.host
           ? `<div class="hub-mine-host"><i class="fas fa-globe"></i> ${esc(row.host)}</div>`
@@ -148,9 +155,10 @@
     if (!mount) return;
     mount.innerHTML = `<div class="hub-mine-empty">
       <p><strong>لا توجد منصات لهذا العميل</strong> على الإيميل <span dir="ltr">${esc(email)}</span>.</p>
-      <p style="margin-top:10px">منصتي تعرض فقط منصاتك الممنوحة عبر حاضنة تابعة لفرع — ليست منصات هوب العامة.</p>
+      <p style="margin-top:10px">منصتي تعرض فقط منصاتك الممنوحة من حاضنة تابعة لفرع أو من المكتب الرئيسي — ليست منصات هوب العامة.</p>
       <div class="hub-mine-actions" style="margin-top:14px">
         <a class="is-primary" href="book-platform.html?from=incubator"><i class="fas fa-seedling"></i> إحجز منصة من حاضنة</a>
+        <a class="is-secondary" href="book-platform.html?from=hq"><i class="fas fa-building"></i> من المكتب الرئيسي</a>
       </div>
     </div>`;
     if (meta) meta.textContent = `لا منصات مرتبطة بـ ${email}`;
@@ -178,7 +186,7 @@
     }
 
     if (meta) {
-      meta.textContent = `منصات العميل فقط · ${email} · ${client.length} منصة من حاضنة${
+      meta.textContent = `منصات العميل فقط · ${email} · ${client.length} منصة${
         signup.length ? ` · ${signup.length} من سجل معنا` : ''
       }`;
     }
