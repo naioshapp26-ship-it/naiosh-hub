@@ -18,9 +18,7 @@
     return [
       { label: 'فرعي', href: 'branches.html', icon: 'fa-code-branch' },
       { label: 'حاضنتي', href: 'incubators.html', icon: 'fa-seedling' },
-      { label: 'منصتي', href: 'my-platform.html', icon: 'fa-layer-group' },
       { label: 'مكتبي', href: 'office.html', icon: 'fa-briefcase' },
-      { label: 'أنظمتي', href: 'my-systems.html', icon: 'fa-cubes' },
       { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },
       { label: 'منتجاتي', href: 'products.html', icon: 'fa-box-open' },
       { label: 'شراكاتي', href: 'partnerships.html', icon: 'fa-handshake' },
@@ -114,6 +112,7 @@
         fromCatalog()
           .filter((p) => !window.HubReadySites?.isExcluded?.(p.label))
           .filter((p) => p.label !== 'ابدأ رحلتك' && !(p.href || '').includes('rent-system.html'))
+          .filter((p) => p.label !== 'منصتي' && p.label !== 'أنظمتي')
       )
     );
     if (!pages.some((p) => p.label === 'سجل معنا' || (p.href || '').includes('register.html'))) {

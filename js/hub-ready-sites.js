@@ -325,7 +325,7 @@
       tone: 'erp',
       inProducts: true,
       inGallery: true,
-      sidebar: { label: 'منصتي', icon: 'fa-layer-group' },
+      sidebar: { label: 'المنصات', icon: 'fa-layer-group' },
       preview: [
         { icon: 'fa-brain', label: 'النواة' },
         { icon: 'fa-gears', label: 'التشغيل' },

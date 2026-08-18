@@ -4,20 +4,6 @@
   /** اختصارات الهيدر — استأجر نظام موجود في الهيرو فقط (بدون تكرار) */
   const ACTIONS = [
     {
-      id: 'platform',
-      label: 'منصتي',
-      href: 'my-platform.html',
-      className: 'hub-hbtn hub-hbtn--mine',
-      icon: 'fa-layer-group',
-    },
-    {
-      id: 'mine',
-      label: 'أنظمتي',
-      href: 'my-systems.html',
-      className: 'hub-hbtn hub-hbtn--mine',
-      icon: 'fa-cubes',
-    },
-    {
       id: 'info',
       label: 'مركز المعرفة',
       href: 'info-center.html',

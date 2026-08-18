@@ -38,12 +38,12 @@
     {
       id: 'tenant',
       title: 'مساحة المستأجر',
-      desc: 'فرعي · حاضنتي · منصتي · مكتبي · إعلاناتي · منتجاتي · شراكاتي.',
+      desc: 'فرعي · حاضنتي · مكتبي · إعلاناتي · منتجاتي · شراكاتي.',
       links: [
         { href: 'office.html', label: 'مكتبي' },
         { href: 'partnerships.html', label: 'شراكاتي' },
         { href: 'branches.html', label: 'فرعي' },
-        { href: 'platforms.html', label: 'منصتي' },
+        { href: 'platforms.html', label: 'المنصات' },
       ],
     },
     {
