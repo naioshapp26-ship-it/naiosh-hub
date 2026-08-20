@@ -6,7 +6,7 @@ button.hero-float-card {
   -webkit-appearance: none;
 }
 
-/* Universal Search — hero white button + modal */
+/* Universal Search — hero white button + modal (enlarged for readability) */
 
 body.homepage .hero-float-card.is-search-trigger {
   cursor: pointer;
@@ -34,7 +34,7 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 8vh 16px 24px;
+  padding: 3vh 20px 20px;
 }
 
 .hus-modal[hidden] {
@@ -51,35 +51,37 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 .hus-panel {
   position: relative;
   z-index: 1;
-  width: min(760px, 100%);
-  height: min(88vh, 920px);
-  max-height: min(88vh, 920px);
+  width: min(1180px, 96vw);
+  height: min(94vh, 1080px);
+  max-height: min(94vh, 1080px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   background: #fff;
-  border-radius: 20px;
+  border-radius: 22px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 28px 64px rgba(15, 23, 42, 0.28);
   font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-size: 16px;
 }
 
 .hus-head {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  padding: 18px 18px 10px;
+  gap: 14px;
+  padding: 22px 24px 14px;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .hus-head h2 {
-  margin: 0 0 4px;
-  font-size: 1.15rem;
+  margin: 0 0 6px;
+  font-size: 1.55rem;
   font-weight: 900;
   color: #0f172a;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  line-height: 1.35;
 }
 
 .hus-head h2 i {
@@ -88,80 +90,84 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 
 .hus-head p {
   margin: 0;
-  color: #64748b;
-  font-size: 13px;
+  color: #475569;
+  font-size: 15px;
   font-weight: 700;
+  line-height: 1.5;
 }
 
 .hus-close {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   border: 1px solid #e2e8f0;
   background: #fff;
   color: #dc2626;
   cursor: pointer;
+  font-size: 18px;
 }
 
 .hus-stats {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
-  padding: 10px 18px 0;
+  gap: 10px;
+  padding: 14px 24px 0;
   flex: 0 0 auto;
 }
 
 .hus-stats article {
   background: #0f172a;
   color: #fff;
-  border-radius: 10px;
-  padding: 8px 6px;
+  border-radius: 12px;
+  padding: 12px 8px;
   text-align: center;
 }
 
 .hus-stats strong {
   display: block;
-  font-size: 1rem;
+  font-size: 1.35rem;
   font-weight: 900;
+  line-height: 1.2;
 }
 
 .hus-stats span {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   color: #cbd5e1;
+  line-height: 1.35;
 }
 
 .hus-suggest {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   flex: 0 0 auto;
 }
 
 .hus-suggest-label {
   margin: 0;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 850;
-  color: #64748b;
+  color: #475569;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .hus-suggest-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 10px;
 }
 
 .hus-suggest-card {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   text-align: start;
   border: 1px solid #e5e7eb;
   background: #fff;
-  border-radius: 12px;
-  padding: 8px 10px;
+  border-radius: 14px;
+  padding: 12px 14px;
   cursor: pointer;
   font: inherit;
   color: #0f172a;
@@ -176,51 +182,58 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 }
 
 .hus-suggest-ico {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: inline-grid;
   place-items: center;
   background: #fff1f2;
   color: #dc2626;
   flex: 0 0 auto;
-  font-size: 12px;
+  font-size: 15px;
 }
 
 .hus-suggest-copy {
   display: grid;
-  gap: 0;
+  gap: 2px;
   min-width: 0;
   flex: 1;
 }
 
 .hus-suggest-copy strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
-  line-height: 1.25;
+  line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .hus-suggest-copy small {
-  display: none;
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hus-suggest-card em {
   font-style: normal;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
   color: #0f172a;
   background: #f1f5f9;
   border-radius: 999px;
-  padding: 3px 7px;
+  padding: 4px 10px;
   flex: 0 0 auto;
 }
 
 .hus-ask-label {
   margin: 0;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 900;
   color: #0f172a;
   display: inline-flex;
@@ -235,8 +248,8 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 .hus-starters {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  max-height: 92px;
+  gap: 8px;
+  max-height: 120px;
   overflow: auto;
   padding-bottom: 2px;
 }
@@ -244,22 +257,23 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 .hus-starter {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   border: 1px solid #e5e7eb;
   background: #fff;
   color: #0f172a;
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 9px 14px;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
+  line-height: 1.35;
 }
 
 .hus-starter i {
   color: #dc2626;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .hus-starter:hover,
@@ -273,9 +287,9 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 12px;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
   background: #0f172a;
   color: #fff;
 }
@@ -284,21 +298,23 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
+  line-height: 1.4;
 }
 
 .hus-intent-chip strong {
   font-weight: 900;
+  font-size: 15px;
 }
 
 .hus-intent-chip code {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 6px;
-  padding: 2px 6px;
-  font-size: 11px;
+  padding: 3px 8px;
+  font-size: 13px;
 }
 
 .hus-intent-chip span {
@@ -310,9 +326,9 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   background: transparent;
   color: #fff;
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 8px 14px;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
   flex: 0 0 auto;
@@ -320,20 +336,20 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 
 .hus-followups {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .hus-followups-label {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 850;
-  color: #64748b;
+  color: #475569;
 }
 
 .hus-followups-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .hus-followup {
@@ -341,11 +357,12 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   background: #f8fafc;
   color: #0f172a;
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 8px 14px;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
+  line-height: 1.35;
 }
 
 .hus-followup:hover {
@@ -360,83 +377,88 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 }
 
 .hus-match {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 900;
   color: #166534;
   background: #dcfce7;
   border-radius: 999px;
-  padding: 2px 7px;
+  padding: 3px 9px;
 }
 
 .hus-why {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   color: #1d4ed8;
   background: #eff6ff;
   border-radius: 999px;
-  padding: 2px 7px;
+  padding: 3px 9px;
   cursor: help;
 }
 
 .hus-toolbar {
-  padding: 10px 18px;
+  padding: 14px 24px;
   display: grid;
-  gap: 8px;
+  gap: 12px;
   flex: 0 0 auto;
 }
 
 .hus-results {
   flex: 1 1 auto;
-  min-height: 180px;
+  min-height: 220px;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 4px 12px 16px;
+  padding: 6px 16px 18px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
   align-content: start;
 }
 
 .hus-input-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 0 14px;
+  border-radius: 16px;
+  padding: 0 16px;
   background: #f8fafc;
+  min-height: 56px;
 }
 
 .hus-input-wrap i {
   color: #dc2626;
+  font-size: 18px;
 }
 
 .hus-input-wrap input {
   flex: 1;
   border: 0;
   background: transparent;
-  padding: 12px 0;
+  padding: 16px 0;
   font: inherit;
+  font-size: 17px;
   font-weight: 700;
   outline: none;
   text-align: right;
+  line-height: 1.45;
 }
 
 .hus-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .hus-filters button {
   border: 1px solid #e5e7eb;
   background: #fff;
   border-radius: 999px;
-  padding: 7px 12px;
+  padding: 10px 16px;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
   color: #334155;
+  line-height: 1.35;
 }
 
 .hus-filters button.is-active {
@@ -445,22 +467,15 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   color: #fff;
 }
 
-.hus-results {
-  overflow: auto;
-  padding: 0 12px 16px;
-  display: grid;
-  gap: 8px;
-}
-
 .hus-item {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 10px;
+  gap: 14px;
   align-items: center;
   text-decoration: none;
   border: 1px solid #eef2f7;
-  border-radius: 14px;
-  padding: 10px 12px;
+  border-radius: 16px;
+  padding: 14px 16px;
   background: #fff;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
@@ -471,39 +486,42 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 }
 
 .hus-item-ico {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
   background: #0f172a;
   color: #fff;
+  font-size: 18px;
 }
 
 .hus-item-body strong {
   display: block;
   color: #0f172a;
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 900;
+  line-height: 1.4;
 }
 
 .hus-item-body small {
-  color: #64748b;
-  font-size: 12px;
+  color: #475569;
+  font-size: 14px;
   font-weight: 700;
+  line-height: 1.45;
 }
 
 .hus-item-meta {
   display: grid;
-  gap: 4px;
+  gap: 6px;
   justify-items: end;
 }
 
 .hus-badge {
   border-radius: 999px;
-  padding: 3px 8px;
+  padding: 4px 10px;
   font-style: normal;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -533,34 +551,67 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 }
 
 .hus-item-meta code {
-  font-size: 11px;
-  color: #64748b;
+  font-size: 13px;
+  color: #475569;
   font-weight: 700;
 }
 
 .hus-empty {
-  margin: 12px;
+  margin: 16px;
   text-align: center;
-  color: #64748b;
+  color: #475569;
   font-weight: 700;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 body.hus-open {
   overflow: hidden;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .hus-panel {
-    height: min(92vh, 920px);
-    max-height: min(92vh, 920px);
-  }
-
-  .hus-stats {
-    grid-template-columns: repeat(3, 1fr);
+    width: min(100%, 96vw);
+    height: min(94vh, 1080px);
+    max-height: min(94vh, 1080px);
   }
 
   .hus-suggest-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .hus-modal {
+    padding: 2vh 10px 12px;
+  }
+
+  .hus-panel {
+    width: 100%;
+    height: min(96vh, 1080px);
+    max-height: min(96vh, 1080px);
+    border-radius: 16px;
+  }
+
+  .hus-head {
+    padding: 16px 16px 12px;
+  }
+
+  .hus-head h2 {
+    font-size: 1.3rem;
+  }
+
+  .hus-stats {
+    grid-template-columns: repeat(3, 1fr);
+    padding: 12px 16px 0;
+  }
+
+  .hus-toolbar {
+    padding: 12px 16px;
+  }
+
+  .hus-suggest-grid {
+    grid-template-columns: 1fr;
   }
 
   .hus-item {
@@ -580,9 +631,9 @@ body.hus-open {
   flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 18px;
+  gap: 12px 20px;
   align-items: center;
-  padding: 10px 16px 14px;
+  padding: 14px 20px 16px;
   border-top: 1px solid #f1f5f9;
   background: #fafafa;
 }
@@ -591,10 +642,11 @@ body.hus-open {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
   color: #b91c1c;
   text-decoration: none;
+  line-height: 1.4;
 }
 
 .hus-foot a:hover {
@@ -602,9 +654,9 @@ body.hus-open {
 }
 
 .hus-item-thumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
   overflow: hidden;
   flex: 0 0 auto;
   background: #f1f5f9;
@@ -632,8 +684,8 @@ body.hus-open {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: 0 16px 8px;
-  padding: 12px 14px;
+  margin: 0 20px 10px;
+  padding: 14px 16px;
   border-radius: 14px;
   background: linear-gradient(135deg, #fff5f5, #ffffff);
   border: 1px solid #f0d0d0;
@@ -647,27 +699,29 @@ body.hus-open {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 900;
   color: #111827;
+  line-height: 1.35;
 }
 
 .hus-section-head span {
   display: block;
-  margin-top: 2px;
-  font-size: 12px;
+  margin-top: 4px;
+  font-size: 14px;
   font-weight: 700;
-  color: #6b7280;
+  color: #475569;
+  line-height: 1.45;
 }
 
 .hus-section-head a {
   flex: 0 0 auto;
   text-decoration: none;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   color: #fff;
   background: linear-gradient(135deg, #ff2d2d, #b10011);
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   white-space: nowrap;
 }
