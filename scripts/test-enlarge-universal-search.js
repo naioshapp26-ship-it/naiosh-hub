@@ -14,6 +14,10 @@ assert(/\.hus-head h2[\s\S]*?font-size:\s*1\.55rem/.test(css), 'title font shoul
 assert(/\.hus-input-wrap input[\s\S]*?font-size:\s*17px/.test(css), 'search input font should be enlarged');
 assert(/\.hus-item-body strong[\s\S]*?font-size:\s*17px/.test(css), 'result titles should be enlarged');
 assert(/\.hus-starter[\s\S]*?font-size:\s*14px/.test(css), 'starter chips should be readable');
-assert(index.includes('hub-universal-search.css?v=7'), 'index must cache-bust search CSS v=7');
+assert(/hub-universal-search\.css\?v=\d+/.test(index), 'index must cache-bust search CSS');
+assert(
+  Number((index.match(/hub-universal-search\.css\?v=(\d+)/) || [])[1] || 0) >= 7,
+  'search CSS cache bust should be v=7+'
+);
 
 console.log('PASS universal search modal is enlarged and readable');

@@ -111,7 +111,7 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
-  padding: 14px 24px 0;
+  padding: 12px 24px 0;
   flex: 0 0 auto;
 }
 
@@ -156,7 +156,7 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 .hus-suggest-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .hus-suggest-card {
@@ -167,7 +167,7 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   border: 1px solid #e5e7eb;
   background: #fff;
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   cursor: pointer;
   font: inherit;
   color: #0f172a;
@@ -249,7 +249,7 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  max-height: 120px;
+  max-height: 72px;
   overflow: auto;
   padding-bottom: 2px;
 }
@@ -396,18 +396,23 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
 }
 
 .hus-toolbar {
-  padding: 14px 24px;
+  padding: 12px 24px;
   display: grid;
-  gap: 12px;
-  flex: 0 0 auto;
+  gap: 10px;
+  flex: 0 1 auto;
+  max-height: min(34vh, 340px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .hus-results {
   flex: 1 1 auto;
-  min-height: 220px;
+  min-height: min(52vh, 560px);
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 6px 16px 18px;
+  padding: 10px 16px 18px;
   display: grid;
   gap: 10px;
   align-content: start;
@@ -608,6 +613,11 @@ body.hus-open {
 
   .hus-toolbar {
     padding: 12px 16px;
+    max-height: min(30vh, 280px);
+  }
+
+  .hus-results {
+    min-height: min(48vh, 420px);
   }
 
   .hus-suggest-grid {
