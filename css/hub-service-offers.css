@@ -1,0 +1,94 @@
+/* صفحات عروض الخدمات: حلول نايوش · خفض التكاليف */
+
+.so-prose {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.85;
+  color: #334155;
+}
+
+.so-faq {
+  background: #fff;
+  border: 1px solid #ececf1;
+  border-radius: 18px;
+  padding: 22px 20px;
+  border-top: 3px solid var(--brand-red, #d70000);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.so-faq + .so-faq {
+  margin-top: 14px;
+}
+
+.so-faq .hub-feature-section-title {
+  margin-bottom: 12px;
+  font-size: 1.15rem;
+}
+
+.so-solutions-grid .hub-feature-card h3 {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.so-entry-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 8px 0 6px;
+}
+
+.so-entry-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  text-decoration: none;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #ececf1;
+  border-radius: 18px;
+  padding: 18px 16px;
+  border-top: 3px solid var(--brand-red, #d70000);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.so-entry-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 36px rgba(120, 0, 20, 0.12);
+}
+
+.so-entry-btn .hub-feature-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, #fff1f2, #ffe4e6);
+  color: #dc2626;
+  font-size: 18px;
+}
+
+.so-entry-btn strong {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.so-entry-btn span {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+@media (max-width: 720px) {
+  .so-entry-actions {
+    grid-template-columns: 1fr;
+  }
+}
