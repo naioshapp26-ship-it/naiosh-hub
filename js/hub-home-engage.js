@@ -50,7 +50,7 @@ window.HubHomeEngage = (() => {
       blurb: 'الضغط على حاضنة من محرك البحث يمرّرك لبطاقتها ويفتح المعاينة.',
       date: '2026-08-16',
       tag: 'تشغيل',
-      href: 'index.html#open-search',
+      href: 'search.html',
     },
     {
       id: 'news-events',

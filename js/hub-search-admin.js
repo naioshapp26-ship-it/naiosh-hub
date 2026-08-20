@@ -230,7 +230,7 @@
 
   document.querySelector('[data-sca-open-search]')?.addEventListener('click', () => {
     // يفتح الصفحة الرئيسية مع إشارة لفتح البحث — أو يوجّه المستخدم
-    window.open('index.html#open-search', '_blank');
+    window.open('search.html', '_blank');
   });
 
   document.querySelector('[data-sca-sync]')?.addEventListener('click', async () => {

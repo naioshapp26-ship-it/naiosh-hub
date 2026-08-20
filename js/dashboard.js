@@ -1851,7 +1851,7 @@
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px">
           <a class="btn btn-primary" href="search-admin.html"><i class="fas fa-sliders"></i> فتح صفحة إدارة البحث</a>
           <a class="btn btn-ghost" href="search-content.html" target="_blank"><i class="fas fa-images"></i> مكتبة المحتوى المرفوع</a>
-          <a class="btn btn-ghost" href="index.html#open-search" target="_blank"><i class="fas fa-magnifying-glass"></i> تجربة محرك البحث</a>
+          <a class="btn btn-ghost" href="search.html" target="_blank"><i class="fas fa-magnifying-glass"></i> تجربة محرك البحث</a>
         </div>
         <ul style="margin:16px 0 0;padding:0 18px 0 0;line-height:1.9;font-weight:700;color:#4b5563">
           <li>أضف عنوانًا + كلمات مفتاحية</li>
