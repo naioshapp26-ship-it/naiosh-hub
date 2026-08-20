@@ -19,5 +19,9 @@ assert(
   Number((index.match(/hub-universal-search\.css\?v=(\d+)/) || [])[1] || 0) >= 7,
   'search CSS cache bust should be v=7+'
 );
+assert(
+  Number((index.match(/hub-universal-search-ui\.js\?v=(\d+)/) || [])[1] || 0) >= 8,
+  'search UI cache bust should be v=8+'
+);
 
 console.log('PASS universal search modal is enlarged and readable');

@@ -73,7 +73,9 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   border-bottom: 1px solid #f1f5f9;
 }
 
-.hus-head h2 {
+.hus-head h2,
+.hus-head .hus-title,
+.hus-title {
   margin: 0 0 6px;
   font-size: 1.55rem;
   font-weight: 900;
@@ -84,7 +86,9 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   line-height: 1.35;
 }
 
-.hus-head h2 i {
+.hus-head h2 i,
+.hus-head .hus-title i,
+.hus-title i {
   color: #dc2626;
 }
 
@@ -734,4 +738,77 @@ body.hus-open {
   border-radius: 999px;
   padding: 10px 14px;
   white-space: nowrap;
+}
+
+/* Full search page — no modal, natural page scroll, all results visible */
+a.hero-float-card {
+  text-decoration: none;
+}
+
+body.hus-page-body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 480px at 80% -10%, rgba(220, 38, 38, 0.12), transparent 55%),
+    linear-gradient(180deg, #f8fafc 0%, #ffffff 42%, #f1f5f9 100%);
+}
+
+.hus-page {
+  margin: 24px auto 48px;
+  max-width: 1180px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 22px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-size: 16px;
+}
+
+.hus-page .hus-toolbar {
+  max-height: none;
+  overflow: visible;
+  flex: 0 0 auto;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hus-page .hus-starters {
+  max-height: none;
+  overflow: visible;
+}
+
+.hus-page .hus-results {
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  padding: 12px 20px 28px;
+}
+
+.hus-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #ff2d2d, #b10011);
+  border-radius: 999px;
+  padding: 10px 14px;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.hus-back:hover {
+  filter: brightness(1.05);
+}
+
+@media (max-width: 640px) {
+  .hus-page {
+    margin: 12px 0 32px;
+    border-radius: 16px;
+  }
 }

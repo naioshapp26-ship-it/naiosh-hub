@@ -13,6 +13,6 @@ assert(/\.hus-toolbar[\s\S]*?max-height:\s*min\(34vh,\s*340px\)/.test(css), 'too
 assert(/\.hus-toolbar[\s\S]*?overflow-y:\s*auto/.test(css), 'toolbar must scroll when tall');
 assert(/\.hus-results[\s\S]*?min-height:\s*min\(52vh,\s*560px\)/.test(css), 'results need large min-height');
 assert(/\.hus-starters[\s\S]*?max-height:\s*72px/.test(css), 'starters should stay compact');
-assert(index.includes('hub-universal-search.css?v=8'), 'index must cache-bust search CSS v=8');
+assert(index.includes('hub-universal-search.css?v=8') || index.includes('hub-universal-search.css?v=9'), 'index must cache-bust search CSS v=8+');
 
 console.log('PASS search results area keeps visible height');

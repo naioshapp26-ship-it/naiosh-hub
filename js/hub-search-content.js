@@ -243,7 +243,7 @@
           <p>${esc(item.description || 'لا يوجد وصف إضافي.')}</p>
           ${item.href ? `<p><a class="btn btn-secondary" href="${esc(item.href)}"><i class="fas fa-link"></i> رابط مرتبط</a></p>` : ''}
           <div class="sc-actions">
-            <a class="btn btn-primary" href="index.html#open-search"><i class="fas fa-magnifying-glass"></i> رجوع للبحث</a>
+            <a class="btn btn-primary" href="search.html"><i class="fas fa-magnifying-glass"></i> رجوع للبحث</a>
             <a class="btn btn-secondary" href="search-content.html?type=${encodeURIComponent(item.section || item.kind || 'content')}"><i class="fas fa-folder-open"></i> صفحة ${esc(sec.pageTitle)}</a>
             <a class="btn btn-secondary" href="search-admin.html"><i class="fas fa-sliders"></i> إدارة المحتوى</a>
           </div>
