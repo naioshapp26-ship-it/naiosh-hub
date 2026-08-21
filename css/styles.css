@@ -3275,7 +3275,7 @@ body.homepage #main-sections-grid .card:hover .icon-box {
   .top-nav.is-mobile-nav-ready .inner > .nav-links,
   .top-nav.is-mobile-nav-ready .nav-main > .nav-links,
   .top-nav.is-mobile-nav-ready .inner > .auth-actions {
-    display: none;
+    display: none !important;
     width: 100%;
     overflow: visible;
   }
@@ -3283,13 +3283,17 @@ body.homepage #main-sections-grid .card:hover .icon-box {
   .top-nav.is-mobile-nav-ready.is-mobile-nav-open .inner > .nav-links,
   .top-nav.is-mobile-nav-ready.is-mobile-nav-open .nav-main > .nav-links,
   .top-nav.is-mobile-nav-ready.is-mobile-nav-open .inner > .auth-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: none !important;
     gap: 10px;
     padding-top: 6px;
     order: 20;
+    box-sizing: border-box;
   }
 
   .nav-links a {
@@ -3310,11 +3314,19 @@ body.homepage #main-sections-grid .card:hover .icon-box {
   .top-nav.is-mobile-nav-ready.is-mobile-nav-open .nav-links a,
   .top-nav.is-mobile-nav-ready.is-mobile-nav-open .nav-dropdown summary,
   .top-nav.is-mobile-nav-ready.is-mobile-nav-open .auth-btn {
-    width: 100%;
+    display: flex !important;
+    width: 100% !important;
+    max-width: none !important;
     min-height: 48px;
+    box-sizing: border-box;
+    align-items: center;
     justify-content: center;
-    border-radius: 16px;
+    border-radius: 14px;
     padding: 12px 16px;
+    white-space: normal !important;
+    overflow: visible;
+    text-align: center;
+    line-height: 1.35;
   }
 
   .nav-dropdown-menu {

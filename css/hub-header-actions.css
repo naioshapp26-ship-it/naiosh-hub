@@ -788,3 +788,142 @@ body.homepage .hub-feature-hero .hub-feature-purpose p {
     font-size: 10.5px !important;
   }
 }
+
+/* ===== موبايل: منيو هامبرغر بعرض كامل ومتناسق ===== */
+@media (max-width: 740px) {
+  body.homepage .top-nav .container.inner,
+  body.homepage .top-nav .inner {
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    min-height: 56px !important;
+    padding: 8px 14px !important;
+  }
+
+  body.homepage .nav-main {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    max-width: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+  }
+
+  body.homepage .nav-main > .brand {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  /* أخفِ الروابط والاختصارات حتى يُفتح الهامبرغر */
+  body.homepage .top-nav.is-mobile-nav-ready .nav-main > .nav-links,
+  body.homepage .top-nav.is-mobile-nav-ready .inner > .nav-links,
+  body.homepage .top-nav.is-mobile-nav-ready .inner > .auth-actions {
+    display: none !important;
+  }
+
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .inner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .nav-main {
+    flex-wrap: wrap !important;
+  }
+
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .nav-main > .nav-links,
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .inner > .nav-links,
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .inner > .auth-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    gap: 8px !important;
+    overflow: visible !important;
+    padding-top: 8px !important;
+    order: 20 !important;
+    box-sizing: border-box !important;
+  }
+
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .nav-links a,
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .nav-dropdown summary,
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .auth-btn {
+    display: flex !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 48px !important;
+    box-sizing: border-box !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    padding: 12px 16px !important;
+    border-radius: 14px !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-align: center !important;
+    line-height: 1.35 !important;
+  }
+
+  /* اختصارات الهيدر داخل المنيو — صف كامل وليس حبوب ضيقة */
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .hub-header-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 4px 0 0 !important;
+    padding: 8px 0 0 !important;
+    border-inline-start: none !important;
+    gap: 8px !important;
+    overflow: visible !important;
+  }
+
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .hub-header-actions .hub-hbtn {
+    width: 100% !important;
+    min-height: 48px !important;
+    justify-content: center !important;
+    padding: 12px 16px !important;
+    border-radius: 14px !important;
+    font-size: 14px !important;
+  }
+
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .auth-actions {
+    border-inline-start: none !important;
+    padding-inline-start: 0 !important;
+    margin-inline-start: 0 !important;
+  }
+
+  body.homepage .top-nav.is-mobile-nav-ready .mobile-nav-toggle {
+    display: inline-flex !important;
+    margin-inline-start: auto !important;
+  }
+
+  /* منيو مفتوح: قابل للتمرير وفوق الأزرار العائمة */
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open {
+    z-index: 10050 !important;
+    max-height: min(100dvh, 100vh) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16) !important;
+  }
+
+  body:has(.top-nav.is-mobile-nav-open) {
+    overflow: hidden;
+  }
+
+  body:has(.top-nav.is-mobile-nav-open) .floating-actions,
+  body:has(.top-nav.is-mobile-nav-open) .hub-cart-fab,
+  body:has(.top-nav.is-mobile-nav-open) .hub-guide-button,
+  body:has(.top-nav.is-mobile-nav-open) .hub-ai-fab {
+    display: none !important;
+    pointer-events: none !important;
+  }
+}
