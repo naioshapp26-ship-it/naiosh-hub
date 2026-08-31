@@ -8,16 +8,23 @@
 
   const DEST = {
     opportunity: { href: 'side-projects.html#sp-client-intro', title: 'محرك الفرص والمشاريع الجانبية', type: 'content', typeAr: 'فرصة', icon: 'fa-lightbulb' },
-    skills: { href: 'job-roles.html', title: 'قاموس المهارات والأدوار', type: 'content', typeAr: 'مهارات', icon: 'fa-user-gear' },
+    skills: { href: 'job-roles.html', title: 'قاموس المهارات والأدوار', type: 'knowledge', typeAr: 'مركز المعلومات', icon: 'fa-user-gear' },
     incubators: { href: 'incubators.html', title: 'الحاضنات القطاعية', type: 'incubator', typeAr: 'حاضنة', icon: 'fa-seedling' },
     platforms: { href: 'platforms.html', title: 'المنصات السيادية', type: 'platform', typeAr: 'منصة', icon: 'fa-layer-group' },
     systems: { href: 'apps.html', title: 'دليل الأنظمة', type: 'system', typeAr: 'نظام', icon: 'fa-cubes' },
     rent: { href: 'rent-system.html', title: 'ابدأ رحلتك', type: 'system', typeAr: 'خيار', icon: 'fa-key' },
     network: { href: 'partnerships.html', title: 'التشبيك والشركاء', type: 'content', typeAr: 'تشبيك', icon: 'fa-handshake' },
-    learning: { href: 'info-center.html', title: 'مركز المعرفة والتعلم', type: 'content', typeAr: 'تعلم', icon: 'fa-graduation-cap' },
+    learning: { href: 'info-center.html', title: 'مركز المعرفة والتعلم', type: 'knowledge', typeAr: 'مركز المعلومات', icon: 'fa-graduation-cap' },
     marketing: { href: 'ads.html', title: 'استديو التسويق والإعلانات', type: 'content', typeAr: 'تسويق', icon: 'fa-bullhorn' },
     safety: { href: 'quality.html', title: 'السلامة والجودة NAIOSH SAFETY', type: 'content', typeAr: 'سلامة', icon: 'fa-shield-halved' },
-    policies: { href: 'policies.html', title: 'السياسات والإجراءات', type: 'content', typeAr: 'سياسة', icon: 'fa-scroll' },
+    policies: { href: 'policies.html', title: 'السياسات والإجراءات', type: 'knowledge', typeAr: 'مركز المعلومات', icon: 'fa-scroll' },
+    infoCenter: { href: 'info-center.html', title: 'مركز المعرفة والتعلم', type: 'knowledge', typeAr: 'مركز المعلومات', icon: 'fa-circle-info' },
+    engineSpecs: { href: 'engine-specs.html', title: 'المواصفات الوظيفية للمحرك', type: 'knowledge', typeAr: 'مركز المعلومات', icon: 'fa-gears' },
+    manuals: { href: 'ops-manuals.html', title: 'الأدلة التشغيلية', type: 'knowledge', typeAr: 'مركز المعلومات', icon: 'fa-book' },
+    review: { href: 'review-methodology.html', title: 'منهجية المراجعة الهندسية', type: 'knowledge', typeAr: 'مركز المعلومات', icon: 'fa-clipboard-check' },
+    checklist: { href: 'hub-checklist.html', title: 'قائمة قدرات نايوش هوب', type: 'knowledge', typeAr: 'مركز المعلومات', icon: 'fa-list-check' },
+    directives: { href: 'directives.html', title: 'نظام التوجيه المركزي', type: 'knowledge', typeAr: 'مركز المعلومات', icon: 'fa-compass' },
+    jobRoles: { href: 'job-roles.html', title: 'مكتبة الأوصاف الوظيفية', type: 'knowledge', typeAr: 'مركز المعلومات', icon: 'fa-user-tie' },
     services: { href: 'services.html', title: 'خدمات نايوش', type: 'content', typeAr: 'خدمة', icon: 'fa-concierge-bell' },
     sectors: { href: 'operating.html', title: 'محرك القطاعات والفرص', type: 'content', typeAr: 'قطاع', icon: 'fa-industry' },
     ops: { href: 'system-ops.html', title: 'تشغيل الأنظمة والمنح', type: 'content', typeAr: 'تشغيل', icon: 'fa-gears' },
@@ -56,7 +63,7 @@
       group: 'primary',
       icon: 'fa-magnifying-glass',
       starters: ['أبحث عن', 'أبحث عن...'],
-      routes: { types: ['all'], keywords: ['أبحث', 'معلومة', 'فرصة'], destinations: ['opportunity', 'skills', 'systems'] },
+      routes: { types: ['all'], keywords: ['أبحث', 'معلومة', 'فرصة', 'مركز المعلومات', 'مركز المعرفة'], destinations: ['infoCenter', 'policies', 'engineSpecs', 'manuals', 'review', 'checklist', 'directives', 'jobRoles'] },
       explain: 'بحث عن معلومة أو فرصة',
     },
     {
@@ -354,7 +361,7 @@
       if (/دخل|إضافي|بعد\s*الدوام|زيادة/.test(n)) return byId('INCOME_GROWTH');
       return byId('EXPERIENCE_MATCH');
     }
-    if (/حاضن/.test(n) && /أبحث|أريد/.test(n)) return byId('INCUBATOR_SEEK');
+    if (/مركز\s*(المعلومات|المعرفة)|معلومات\s*هوب/.test(n)) return byId('SEEK_INFO');
     if (/شريك|مستثمر|مدرب|خبير|استشاري|مورد/.test(n)) return byId('PARTNER_SEEK');
     if (/مشروع/.test(n) && /أريد|أبحث|أنشئ/.test(n)) return byId('PROJECT_SEEK');
     if (/نظامً?\s*ل|أريد\s*نظام/.test(n)) return byId('SYSTEM_DISCOVERY');
@@ -428,6 +435,10 @@
     ) {
       score += 12;
       why.push('مرتبط بمحرك الفرص/المشاريع الجانبية');
+    }
+    if ((intent.id === 'SEEK_INFO' || intent.id === 'LEARNING_SEEK' || intent.id === 'STANDARD_SEEK') && /info-center|policies|engine-specs|ops-manuals|review-methodology|hub-checklist|directives|job-roles|operating|مركز/.test(hay + (item.href || '') + (item.source || ''))) {
+      score += 14;
+      why.push('صفحة من مركز المعلومات');
     }
     if ((intent.id === 'SAFETY_SEEK' || intent.id === 'STANDARD_SEEK') && /سلام|جودة|سياس|quality|policies/.test(hay + (item.href || ''))) {
       score += 12;

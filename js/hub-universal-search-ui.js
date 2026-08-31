@@ -47,6 +47,7 @@
         <button type="button" data-hus-filter="platform">منصات</button>
         <button type="button" data-hus-filter="subdomain">دومينات فرعية</button>
         <button type="button" data-hus-filter="system">أنظمة</button>
+        <button type="button" data-hus-filter="knowledge">مركز المعلومات</button>
         <button type="button" data-hus-filter="content">محتوى</button>
         <button type="button" data-hus-filter="image">صور</button>
         <button type="button" data-hus-filter="file">ملفات</button>
@@ -56,6 +57,7 @@
     <div class="hus-section-head" data-hus-section-head hidden></div>
     <div class="hus-results" data-hus-results></div>
     <footer class="hus-foot">
+      <a href="info-center.html"><i class="fas fa-circle-info"></i> مركز المعلومات</a>
       <a href="side-projects.html#sp-client-intro"><i class="fas fa-lightbulb"></i> المشاريع الجانبية</a>
       <a href="search-admin.html"><i class="fas fa-sliders"></i> إدارة محتوى البحث (أدمن)</a>
       <a href="search-content.html" data-hus-library-link><i class="fas fa-folder-open"></i> صفحات التصنيفات</a>
@@ -79,6 +81,7 @@
     if (type === 'branch') return 'فرع';
     if (type === 'subdomain') return 'دومين فرعي';
     if (type === 'content') return 'محتوى';
+    if (type === 'knowledge') return 'مركز المعلومات';
     if (type === 'image') return 'صورة';
     if (type === 'file') return 'ملف';
     if (type === 'video') return 'فيديو';
@@ -95,6 +98,7 @@
       <article><strong>${s.incubator}</strong><span>حاضنة</span></article>
       <article><strong>${s.platform}</strong><span>منصة</span></article>
       <article><strong>${s.system}</strong><span>نظام</span></article>
+      <article><strong>${s.knowledge || 0}</strong><span>مركز معلومات</span></article>
       <article><strong>${s.intents || 0}</strong><span>نية بحث</span></article>`;
   };
 
@@ -168,7 +172,9 @@
                     ? s.platform
                     : list.type === 'subdomain'
                       ? s.subdomain
-                      : 0;
+                      : list.type === 'knowledge'
+                        ? s.knowledge
+                        : 0;
             return `<button type="button" class="hus-suggest-card${filter === list.type ? ' is-active' : ''}" data-hus-suggest-type="${esc(list.type)}">
               <span class="hus-suggest-ico" aria-hidden="true"><i class="fas ${esc(list.icon)}"></i></span>
               <span class="hus-suggest-copy">
@@ -199,6 +205,12 @@
     if (type === 'platform') return { pageTitle: 'المنصات', pageLead: 'جميع المنصات مع رقم المنصة', icon: 'fa-layer-group' };
     if (type === 'subdomain')
       return { pageTitle: 'الدومينات الفرعية', pageLead: 'كل دومين فرعي ممنوح مع رقمه', icon: 'fa-globe' };
+    if (type === 'knowledge')
+      return {
+        pageTitle: 'مركز المعلومات',
+        pageLead: 'جميع صفحات مركز المعرفة تظهر في محرك البحث',
+        icon: 'fa-circle-info',
+      };
     return { pageTitle: typeBadge(type), pageLead: '', icon: 'fa-folder' };
   };
 
@@ -214,13 +226,15 @@
       return;
     }
     head.hidden = false;
+    const libraryHref =
+      filter === 'knowledge' ? 'info-center.html' : `search-content.html?type=${encodeURIComponent(filter)}`;
     head.innerHTML = `
       <div>
         <strong><i class="fas ${esc(meta.icon || 'fa-folder')}"></i> ${esc(meta.pageTitle)}</strong>
         <span>${esc(meta.pageLead || `نتائج تصنيف ${meta.pageTitle}`)}</span>
       </div>
-      <a href="search-content.html?type=${encodeURIComponent(filter)}">فتح صفحة ${esc(meta.pageTitle)}</a>`;
-    if (lib) lib.href = `search-content.html?type=${encodeURIComponent(filter)}`;
+      <a href="${esc(libraryHref)}">${filter === 'knowledge' ? 'فتح مركز المعلومات' : `فتح صفحة ${esc(meta.pageTitle)}`}</a>`;
+    if (lib) lib.href = libraryHref;
   };
 
   const runSearch = (root, query) => {
@@ -242,9 +256,11 @@
     const box = root.querySelector('[data-hus-results]');
     if (!box) return;
     if (!list.length) {
-      const emptyMsg =
+        const emptyMsg =
         filter === 'subdomain'
           ? 'لا دومينات فرعية ممنوحة بعد — امنح دومينًا من تشغيل الأنظمة.'
+          : filter === 'knowledge'
+            ? 'لا صفحات لمركز المعلومات في النتائج. افتح مركز المعرفة من الرابط أعلاه.'
           : `لا نتائج في «${esc(sectionLabel(filter).pageTitle)}». جرّب كلمة بداية أو اكتب سؤالك بحرية.`;
       box.innerHTML = `<p class="hus-empty">${emptyMsg}</p>`;
       return;

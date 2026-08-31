@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const ITEMS = [
+  const CORE_ITEMS = [
     { id: 'c01', label: 'الواجهة الرئيسية وصفحة الهبوط', status: 'done', href: 'index.html', hrefLabel: 'الرئيسية' },
     { id: 'c02', label: 'مركز تشغيل جميع أنظمة الإمبراطورية', status: 'partial', href: 'operating.html', hrefLabel: 'آلية التشغيل' },
     { id: 'c03', label: 'مركز الدخول على جميع الأنظمة', status: 'partial', href: 'login.html', hrefLabel: 'تسجيل الدخول' },
@@ -79,6 +79,8 @@
     { id: 'c71', label: 'مسار المستخدم العملي لتسهيل التشغيل', status: 'done', href: 'user-path.html', hrefLabel: 'مسار المستخدم' },
   ];
 
+  const ITEMS = [...(window.HubInfoCenterPages?.toChecklistItems?.() || []), ...CORE_ITEMS];
+
   const qs = (s, r = document) => r.querySelector(s);
   const qsa = (s, r = document) => [...r.querySelectorAll(s)];
 
@@ -109,7 +111,7 @@
     const q = (qs('[data-hcl-q]')?.value || '').trim().toLowerCase();
     const rows = ITEMS.filter((item) => {
       const okS = statusFilter === 'all' || item.status === statusFilter;
-      const hay = item.label.toLowerCase();
+      const hay = `${item.label} ${item.hrefLabel || ''} ${item.keywords || ''} ${item.href || ''} مركز المعلومات`.toLowerCase();
       return okS && (!q || hay.includes(q));
     });
     if (!rows.length) {

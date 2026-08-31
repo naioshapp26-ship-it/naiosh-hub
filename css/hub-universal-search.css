@@ -684,6 +684,11 @@ body.hus-open {
   display: block;
 }
 
+.hus-badge-knowledge {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
 .hus-badge-content,
 .hus-badge-image,
 .hus-badge-file,
