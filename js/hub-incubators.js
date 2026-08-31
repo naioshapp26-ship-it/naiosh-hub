@@ -204,6 +204,12 @@
   window.addEventListener('hashchange', focusFromHash);
 
   render();
+  const params = new URLSearchParams(window.location.search);
+  const q = params.get('q');
+  if (q) {
+    const input = document.getElementById('incubatorsSearchInput');
+    if (input) input.value = q;
+  }
   filterCards();
   // Wait a tick so layout/fonts settle before scrolling to the deep-linked card.
   window.requestAnimationFrame(() => focusFromHash());

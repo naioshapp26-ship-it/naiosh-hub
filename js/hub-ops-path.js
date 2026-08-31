@@ -9,7 +9,13 @@
     },
     products: {
       title: 'طريقة تشغيل المنتجات',
-      steps: ['تصفّح المنتج', 'اضغط «ادخل الموقع» للتجربة', 'أو «اشتري» → المتجر يفعّل الاشتراك ويفتح موقعك'],
+      headline: 'دخول فوري مجاني.. دون الحاجة إلى بطاقة ائتمانية',
+      steps: ['تصفّح المنتج', 'اضغط «ادخل الموقع» للتجربة', 'أو «اشترِ» — المتجر يفعّل الاشتراك ويفتح موقعك'],
+      links: [
+        { href: 'store.html', icon: 'fa-cart-shopping', label: 'اشتر الآن' },
+        { href: 'operating.html', icon: 'fa-bolt', label: 'طريقة التشغيل' },
+        { href: 'apps.html', icon: 'fa-power-off', label: 'ادخل موقعك جاهزاً' },
+      ],
     },
     store: {
       title: 'طريقة تشغيل المتجر',
@@ -78,16 +84,29 @@
     if (document.querySelector('.hub-ops-path')) return;
 
     const el = document.createElement('aside');
-    el.className = 'hub-ops-path';
-    el.setAttribute('aria-label', 'طريقة التشغيل');
+    el.className = cfg.headline ? 'hub-ops-path hub-ops-path--instant' : 'hub-ops-path';
+    el.setAttribute('aria-label', cfg.headline || 'طريقة التشغيل');
+    const links = cfg.links || [
+      { href: 'store.html', icon: 'fa-bag-shopping', label: 'اشترِ الآن' },
+      { href: 'operating.html', icon: 'fa-gears', label: 'آلية التشغيل' },
+      { href: 'apps.html', icon: 'fa-bolt', label: 'ادخل موقعًا جاهزًا' },
+    ];
+    const stepsBlock = cfg.headline
+      ? `<div class="hub-instant-steps">
+          <strong><i class="fas fa-route"></i> ${cfg.title}</strong>
+          <ol>${cfg.steps.map((s) => `<li>${s}</li>`).join('')}</ol>
+        </div>`
+      : `<strong><i class="fas fa-route"></i> ${cfg.title}</strong>
+        <ol>${cfg.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`;
+    const headline = cfg.headline ? `<h2 class="hub-instant-title">${cfg.headline}</h2>` : '';
     el.innerHTML = `
-      <div class="hub-ops-path-inner">
-        <strong><i class="fas fa-route"></i> ${cfg.title}</strong>
-        <ol>${cfg.steps.map((s) => `<li>${s}</li>`).join('')}</ol>
+      <div class="hub-ops-path-inner${cfg.headline ? ' hub-instant-entry' : ''}">
+        ${headline}
+        ${stepsBlock}
         <div class="hub-ops-path-links">
-          <a href="store.html"><i class="fas fa-bag-shopping"></i> اشترِ الآن</a>
-          <a href="operating.html"><i class="fas fa-gears"></i> آلية التشغيل</a>
-          <a href="apps.html"><i class="fas fa-bolt"></i> ادخل موقعًا جاهزًا</a>
+          ${links
+            .map((l) => `<a href="${l.href}"><i class="fas ${l.icon}"></i> ${l.label}</a>`)
+            .join('')}
         </div>
       </div>`;
 
