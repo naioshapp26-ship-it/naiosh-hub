@@ -425,7 +425,16 @@
   };
 
   const renderProducts = () => {
-    const raw = store?.get?.().empire?.productCatalog || data?.PRODUCT_CATALOG || [];
+    const fromStore = store?.get?.().empire?.productCatalog || [];
+    const fromData = data?.PRODUCT_CATALOG || [];
+    const byId = new Map();
+    fromStore.forEach((p) => {
+      if (p?.id) byId.set(String(p.id), p);
+    });
+    fromData.forEach((p) => {
+      if (p?.id && !byId.has(String(p.id))) byId.set(String(p.id), p);
+    });
+    const raw = byId.size ? [...byId.values()] : fromData;
     const products = raw.filter((p) => {
       if (window.HubReadySites?.isExcluded?.(p.name) || window.HubReadySites?.isExcluded?.(p.brand)) return false;
       const site = window.HubReadySites?.siteForProduct?.(p);

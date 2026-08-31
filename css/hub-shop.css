@@ -71,11 +71,17 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  overflow-x: visible;
+  overflow: visible;
+  width: 100%;
   padding: 18px 4px 14px;
   border-bottom: 1px solid #e8ebf1;
-  scrollbar-width: thin;
   margin-bottom: 18px;
+}
+
+.shop-cat-chip span:last-child {
+  max-width: 108px;
+  text-align: center;
+  line-height: 1.35;
 }
 
 .shop-cat-chip {
