@@ -75,7 +75,8 @@ assert(productsPage.includes('href="branches.html"'), 'branches link');
 assert(productsPage.includes('href="incubators.html"'), 'incubators link');
 assert(productsPage.includes('href="platforms.html"'), 'platforms link');
 assert(productsPage.includes('href="office.html"'), 'electronic offices link');
-assert(productsPage.includes('hub-sector-library.js'), 'products page loads sector library');
+assert(productsPage.includes('hub-marketplace-data.js?v=slide4'), 'products page cache-busts marketplace data');
+assert(productsPage.includes('hub-ready-sites.js?v=slide4'), 'products page cache-busts ready sites');
 assert(productsPage.includes('id="shop-sectors-list"'), 'sectors list mount');
 assert(productsPage.includes('id="shop-side-back"'), 'sidebar back button');
 
