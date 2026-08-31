@@ -425,7 +425,16 @@
   };
 
   const renderProducts = () => {
-    const raw = store?.get?.().empire?.productCatalog || data?.PRODUCT_CATALOG || [];
+    const fromStore = store?.get?.().empire?.productCatalog || [];
+    const fromData = data?.PRODUCT_CATALOG || [];
+    const byId = new Map();
+    fromStore.forEach((p) => {
+      if (p?.id) byId.set(String(p.id), p);
+    });
+    fromData.forEach((p) => {
+      if (p?.id && !byId.has(String(p.id))) byId.set(String(p.id), p);
+    });
+    const raw = byId.size ? [...byId.values()] : fromData;
     const products = raw.filter((p) => {
       if (window.HubReadySites?.isExcluded?.(p.name) || window.HubReadySites?.isExcluded?.(p.brand)) return false;
       const site = window.HubReadySites?.siteForProduct?.(p);
@@ -447,13 +456,47 @@
 
     const countOf = (id) => (id === 'الكل' ? products.length : products.filter((p) => p.category === id).length);
 
+    const isLiveLaunch = (code) => Boolean(code && window.HubLiveSystems?.isLive?.(code));
+
     const siteHref = (p) => {
       const site = window.HubReadySites?.siteForProduct?.(p);
       if (!site) return 'store.html';
-      if (site.launchCode && window.HubLauncher?.getDirectLaunchUrl) {
+      if (isLiveLaunch(site.launchCode) && window.HubLauncher?.getDirectLaunchUrl) {
         return window.HubLauncher.getDirectLaunchUrl(site.launchCode);
       }
       return site.href;
+    };
+
+    const fillSectors = () => {
+      const root = document.getElementById('shop-sectors-list');
+      if (!root) return;
+      const sectors = (window.HubSectorLibrary?.list?.() || []).filter((s) => s.sectorId !== 'other');
+      root.innerHTML = sectors
+        .map((s) => {
+          const q = encodeURIComponent(s.sectorNameAr || s.sectorName || '');
+          return `<a href="incubators.html?q=${q}"><i class="fas ${esc(s.icon || 'fa-industry')}"></i> ${esc(
+            s.sectorNameAr || s.sectorName
+          )}</a>`;
+        })
+        .join('');
+    };
+
+    const wireBack = () => {
+      const btn = document.getElementById('shop-side-back');
+      if (!btn || btn.dataset.wired) return;
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        try {
+          if (document.referrer && new URL(document.referrer).origin === window.location.origin && window.history.length > 1) {
+            window.history.back();
+            return;
+          }
+        } catch (_) {
+          /* fall through */
+        }
+        window.location.href = 'index.html';
+      });
     };
 
     const paintChrome = () => {
@@ -525,7 +568,9 @@
                     <button type="button" class="primary" data-cart-product="${esc(p.id || p.sku)}"><i class="fas fa-basket-shopping"></i> أضف للسلة</button>
                     <a class="primary" href="${esc(buyUrl)}"><i class="fas fa-cart-shopping"></i> اشتري</a>
                     <a href="${esc(openUrl)}" ${
-                      site?.launchCode ? `data-launch-code="${esc(site.launchCode)}" data-launch-mode="hub"` : ''
+                      isLiveLaunch(site?.launchCode)
+                        ? `data-launch-code="${esc(site.launchCode)}" data-launch-mode="hub" target="_blank" rel="noopener"`
+                        : ''
                     }><i class="fas fa-arrow-up-left"></i> ادخل الموقع</a>
                   </div>
                   ${actions('products', p.id)}
@@ -596,6 +641,8 @@
       window.HubLauncher.launch(launch.dataset.launchCode, { mode: 'hub' });
     });
 
+    fillSectors();
+    wireBack();
     paintChrome();
     paint();
   };

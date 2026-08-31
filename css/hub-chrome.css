@@ -243,7 +243,45 @@ body.hub-guide-open .hub-guide-panel {
   }
 }
 
-/* شريط طريقة التشغيل للعميل */
+body[data-market-page="products"] #hub-back-button {
+  display: none;
+}
+
+/* دخول فوري على صفحة المنتجات */
+.hub-ops-path--instant {
+  max-width: none;
+  padding: 0 0.75rem;
+}
+.hub-instant-entry {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-inline-start: 0;
+  padding: 18px 20px;
+}
+.hub-instant-title {
+  margin: 0 0 12px;
+  color: #d70000;
+  font-size: clamp(18px, 2.4vw, 26px);
+  font-weight: 900;
+  line-height: 1.45;
+}
+.hub-instant-steps {
+  background: #fff;
+  border: 1px solid #e8ebf1;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 4px;
+}
+.hub-instant-steps strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #111827;
+}
+.hub-instant-steps ol {
+  margin: 10px 0 0;
+}
 .hub-ops-path {
   margin: 12px auto 18px;
   max-width: 1240px;
