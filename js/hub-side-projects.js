@@ -156,10 +156,18 @@
 
   const readRegistrations = () => (regApi?.read ? regApi.read() : []);
 
-  const fileMeta = (input) => {
+  const fileMeta = async (input) => {
     const f = input?.files?.[0];
     if (!f) return null;
-    return { name: f.name, size: f.size, type: f.type || '' };
+    const limits = window.HubUploadLimits;
+    const check = limits?.assertFile ? limits.assertFile(f) : { ok: f.size <= 150 * 1024 * 1024 };
+    if (!check.ok) throw new Error(check.error || 'حجم الملف أكبر من 150MB');
+    let url = '';
+    if (limits?.uploadFile) {
+      const uploaded = await limits.uploadFile(f);
+      url = uploaded.url || '';
+    }
+    return { name: f.name, size: f.size, type: f.type || '', url };
   };
 
   const paintSelectedProject = () => {
@@ -238,7 +246,7 @@
       COUNTRIES.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   };
 
-  const submitRegistration = (e) => {
+  const submitRegistration = async (e) => {
     e.preventDefault();
     if (!regForm) return;
     if (!regApi?.create) return toast('نظام استقبال التسجيلات غير متاح');
@@ -251,6 +259,19 @@
     const email = String(fd.get('email') || '').trim();
     if (!phone && !email) {
       return toast('أضف رقم جوال أو بريداً إلكترونياً حتى يتمكن الفريق من التواصل معك');
+    }
+    toast('جاري رفع الملفات (حتى 150 ميجابايت)...');
+    let fileDoc;
+    let fileImage;
+    let fileVideo;
+    try {
+      [fileDoc, fileImage, fileVideo] = await Promise.all([
+        fileMeta(regForm.querySelector('[name="fileDoc"]')),
+        fileMeta(regForm.querySelector('[name="fileImage"]')),
+        fileMeta(regForm.querySelector('[name="fileVideo"]')),
+      ]);
+    } catch (err) {
+      return toast(err.message || 'فشل رفع الملف');
     }
     const payload = {
       projectId: String(fd.get('projectId') || selectedProject?.id || ''),
@@ -265,9 +286,9 @@
       experience1: String(fd.get('experience1') || '').trim(),
       experience2: String(fd.get('experience2') || '').trim(),
       experience3: String(fd.get('experience3') || '').trim(),
-      fileDoc: fileMeta(regForm.querySelector('[name="fileDoc"]')),
-      fileImage: fileMeta(regForm.querySelector('[name="fileImage"]')),
-      fileVideo: fileMeta(regForm.querySelector('[name="fileVideo"]')),
+      fileDoc,
+      fileImage,
+      fileVideo,
       currentWork: String(fd.get('currentWork') || '').trim(),
       commercialOrNotes: String(fd.get('commercialOrNotes') || '').trim(),
     };

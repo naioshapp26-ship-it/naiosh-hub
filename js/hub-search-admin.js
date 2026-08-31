@@ -15,7 +15,7 @@
   const fileInput = document.querySelector('[data-sca-file]');
   const idInput = form?.querySelector('[name="id"]');
 
-  let pendingMedia = { mediaDataUrl: '', mediaName: '', mediaMime: '' };
+  let pendingMedia = { mediaDataUrl: '', mediaUrl: '', mediaName: '', mediaMime: '' };
 
   const showFeedback = (msg, isError = false) => {
     if (!feedback) return;
@@ -27,7 +27,7 @@
   const resetForm = () => {
     form?.reset();
     if (idInput) idInput.value = '';
-    pendingMedia = { mediaDataUrl: '', mediaName: '', mediaMime: '' };
+    pendingMedia = { mediaDataUrl: '', mediaUrl: '', mediaName: '', mediaMime: '' };
     if (preview) {
       preview.hidden = true;
       preview.innerHTML = '';
@@ -64,10 +64,12 @@
         const section = item.section || item.kind;
         const sectionMeta = api.SECTION_META?.[section] || api.TYPE_META[item.kind] || {};
         const name = item.pageTitle || item.title;
-        const thumb =
-          item.mediaDataUrl && (item.kind === 'image' || String(item.mediaMime || '').startsWith('image/'))
-            ? `<img src="${item.mediaDataUrl}" alt="${escapeHtml(name)}" />`
-            : `<span class="sca-ico"><i class="fas ${sectionMeta.icon || 'fa-file'}"></i></span>`;
+        const imageSrc =
+          (item.kind === 'image' || String(item.mediaMime || '').startsWith('image/')) &&
+          (item.mediaDataUrl || item.mediaUrl);
+        const thumb = imageSrc
+          ? `<img src="${imageSrc}" alt="${escapeHtml(name)}" />`
+          : `<span class="sca-ico"><i class="fas ${sectionMeta.icon || 'fa-file'}"></i></span>`;
         return `<article class="sca-item" data-id="${item.id}">
           ${thumb}
           <div>
@@ -97,11 +99,16 @@
     const file = fileInput.files?.[0];
     if (!file) return;
     try {
-      const dataUrl = await api.fileToDataUrl(file);
+      const maxMb = window.HubUploadLimits?.MAX_FILE_MB || 150;
+      showFeedback(`جاري رفع الملف (حتى ${maxMb}MB)...`);
+      const ingested = await api.ingestFile(file, {
+        onProgress: (pct) => showFeedback(`جاري رفع الملف… ${pct}%`),
+      });
       pendingMedia = {
-        mediaDataUrl: dataUrl,
-        mediaName: file.name,
-        mediaMime: file.type || '',
+        mediaDataUrl: ingested.mediaDataUrl || '',
+        mediaUrl: ingested.mediaUrl || '',
+        mediaName: ingested.mediaName || file.name,
+        mediaMime: ingested.mediaMime || file.type || '',
       };
       const kindSelect = form?.querySelector('[name="kind"]');
       const sectionSelect = form?.querySelector('[name="section"]');
@@ -113,7 +120,7 @@
       if (sectionSelect && (!sectionSelect.value || sectionSelect.value === 'content')) {
         sectionSelect.value = kindSelect?.value || 'file';
       }
-      renderPreview(dataUrl, file.type);
+      renderPreview(ingested.previewUrl || ingested.mediaUrl || ingested.mediaDataUrl, file.type);
       showFeedback(`تم تجهيز الملف: ${file.name}`);
     } catch (err) {
       showFeedback(err.message || 'فشل رفع الملف', true);
@@ -142,7 +149,7 @@
       mediaDataUrl: pendingMedia.mediaDataUrl || data.get('mediaDataUrl') || '',
       mediaName: pendingMedia.mediaName || data.get('mediaName') || '',
       mediaMime: pendingMedia.mediaMime || data.get('mediaMime') || '',
-      mediaUrl: data.get('mediaUrl') || '',
+      mediaUrl: pendingMedia.mediaUrl || data.get('mediaUrl') || '',
     });
     if (!result.ok) {
       showFeedback(result.error || 'تعذّر الحفظ', true);
@@ -191,10 +198,11 @@
     form.querySelector('[name="status"]').value = item.status || 'published';
     pendingMedia = {
       mediaDataUrl: item.mediaDataUrl || '',
+      mediaUrl: item.mediaUrl || '',
       mediaName: item.mediaName || '',
       mediaMime: item.mediaMime || '',
     };
-    renderPreview(pendingMedia.mediaDataUrl, pendingMedia.mediaMime);
+    renderPreview(pendingMedia.mediaDataUrl || pendingMedia.mediaUrl, pendingMedia.mediaMime);
     showFeedback('وضع التعديل — عدّل ثم احفظ');
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });

@@ -200,34 +200,50 @@
         <div class="hub-upload-grid">
           <label class="hub-upload-card">رفع ملف / مستند
             <input id="hub-field-docFile" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,image/*" />
-            <small>${esc(values.docName || 'PDF · Word · Excel')}</small>
+            <small>${esc(values.docName || 'PDF · Word · Excel · حتى 150MB')}</small>
           </label>
           <label class="hub-upload-card">رفع صورة
             <input id="hub-field-imageFile" type="file" accept="image/*" />
-            <small>${esc(values.imageName || 'PNG · JPG · WEBP')}</small>
+            <small>${esc(values.imageName || 'PNG · JPG · WEBP · حتى 150MB')}</small>
           </label>
           <label class="hub-upload-card">رفع فيديو
             <input id="hub-field-videoFile" type="file" accept="video/*" />
-            <small>${esc(values.videoName || 'MP4 · MOV · WEBM')}</small>
+            <small>${esc(values.videoName || 'MP4 · MOV · WEBM · حتى 150MB')}</small>
           </label>
         </div>
       </div>`;
   };
 
-  const readFileMeta = (input) =>
-    new Promise((resolve) => {
+  const readFileMeta = async (input) => {
       const file = input?.files?.[0];
-      if (!file) return resolve(null);
-      const base = { name: file.name, type: file.type, size: file.size, dataUrl: '' };
-      if (file.type.startsWith('image/') && file.size <= 1_500_000) {
-        const reader = new FileReader();
-        reader.onload = () => resolve({ ...base, dataUrl: String(reader.result || '') });
-        reader.onerror = () => resolve(base);
-        reader.readAsDataURL(file);
-        return;
+      if (!file) return null;
+      const limits = window.HubUploadLimits;
+      const maxBytes = limits?.MAX_FILE_BYTES || 150 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        return { error: limits?.sizeError?.(file) || 'حجم الملف أكبر من 150MB' };
       }
-      resolve(base);
-    });
+      const base = { name: file.name, type: file.type, size: file.size, dataUrl: '', url: '' };
+      const inlineMax = limits?.INLINE_DATA_URL_MAX_BYTES || 1_500_000;
+      if (limits?.uploadFile && (file.size > inlineMax || !file.type.startsWith('image/'))) {
+        try {
+          const uploaded = await limits.uploadFile(file);
+          return { ...base, url: uploaded.url, dataUrl: uploaded.url };
+        } catch (err) {
+          if (file.size > inlineMax || String(file.type).startsWith('video/')) {
+            return { error: err.message || 'فشل رفع الملف' };
+          }
+        }
+      }
+      if (file.type.startsWith('image/') && file.size <= inlineMax) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve({ ...base, dataUrl: String(reader.result || '') });
+          reader.onerror = () => resolve(base);
+          reader.readAsDataURL(file);
+        });
+      }
+      return base;
+    };
 
   const collectCommonMeta = async (fallback = {}) => {
     const val = (id) => document.getElementById(`hub-field-${id}`)?.value.trim() || '';
@@ -257,6 +273,9 @@
       readFileMeta(document.getElementById('hub-field-imageFile')),
       readFileMeta(document.getElementById('hub-field-videoFile')),
     ]);
+    if (doc?.error) return { error: doc.error };
+    if (image?.error) return { error: image.error };
+    if (video?.error) return { error: video.error };
 
     return {
       companyName,
@@ -272,7 +291,9 @@
       docName: doc?.name || fallback.docName || '',
       imageName: image?.name || fallback.imageName || '',
       videoName: video?.name || fallback.videoName || '',
-      imageDataUrl: image?.dataUrl || fallback.imageDataUrl || '',
+      imageDataUrl: image?.dataUrl || image?.url || fallback.imageDataUrl || '',
+      docUrl: doc?.url || fallback.docUrl || '',
+      videoUrl: video?.url || fallback.videoUrl || '',
     };
   };
 

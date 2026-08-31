@@ -6,7 +6,9 @@
   'use strict';
 
   const KEY = 'naiosh_hub_search_catalog_v1';
-  const MAX_FILE_BYTES = 2.5 * 1024 * 1024;
+  const limits = () => window.HubUploadLimits || {};
+  const MAX_FILE_BYTES = () => limits().MAX_FILE_BYTES || 150 * 1024 * 1024;
+  const INLINE_DATA_URL_MAX_BYTES = () => limits().INLINE_DATA_URL_MAX_BYTES || 1.5 * 1024 * 1024;
 
   /** نوع الوسائط (طريقة العرض) */
   const MEDIA_META = {
@@ -108,17 +110,49 @@
     return { ok: true };
   };
 
-  const fileToDataUrl = (file) =>
+  const readAsDataUrl = (file) =>
     new Promise((resolve, reject) => {
-      if (!file) return reject(new Error('لا ملف'));
-      if (file.size > MAX_FILE_BYTES) {
-        return reject(new Error(`حجم الملف أكبر من ${(MAX_FILE_BYTES / 1024 / 1024).toFixed(1)}MB — صغّره أو ضع رابطًا خارجيًا`));
-      }
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result || ''));
       reader.onerror = () => reject(new Error('فشل قراءة الملف'));
       reader.readAsDataURL(file);
     });
+
+  const fileToDataUrl = async (file) => {
+    const ingested = await ingestFile(file);
+    return ingested.previewUrl || ingested.mediaDataUrl || ingested.mediaUrl || '';
+  };
+
+  const ingestFile = async (file, { onProgress } = {}) => {
+    if (!file) throw new Error('لا ملف');
+    const check = limits().assertFile ? limits().assertFile(file) : { ok: file.size <= MAX_FILE_BYTES() };
+    if (!check.ok) {
+      throw new Error(check.error || `حجم الملف أكبر من ${(MAX_FILE_BYTES() / 1024 / 1024).toFixed(0)}MB — صغّره أو ضع رابطًا خارجيًا`);
+    }
+
+    const asMedia = (extra = {}) => ({
+      mediaDataUrl: extra.mediaDataUrl || '',
+      mediaUrl: extra.mediaUrl || '',
+      mediaName: file.name,
+      mediaMime: file.type || extra.mediaMime || '',
+      previewUrl: extra.previewUrl || extra.mediaUrl || extra.mediaDataUrl || '',
+    });
+
+    const mustUpload = file.size > INLINE_DATA_URL_MAX_BYTES() || String(file.type || '').startsWith('video/');
+    if (limits().uploadFile) {
+      try {
+        const uploaded = await limits().uploadFile(file, { onProgress });
+        return asMedia({ mediaUrl: uploaded.url, mediaMime: uploaded.mime || file.type, previewUrl: uploaded.url });
+      } catch (err) {
+        if (mustUpload) throw err;
+      }
+    } else if (mustUpload) {
+      throw new Error('رفع الملفات الكبيرة يحتاج اتصالاً بالخادم');
+    }
+
+    const dataUrl = await readAsDataUrl(file);
+    return asMedia({ mediaDataUrl: dataUrl, previewUrl: dataUrl });
+  };
 
   const viewUrl = (id) => `search-content.html?id=${encodeURIComponent(id)}`;
   const sectionPageUrl = (section) => `search-content.html?type=${encodeURIComponent(section || 'content')}`;
@@ -205,7 +239,9 @@
 
   window.HubSearchCatalog = {
     KEY,
-    MAX_FILE_BYTES,
+    get MAX_FILE_BYTES() {
+      return MAX_FILE_BYTES();
+    },
     TYPE_META,
     MEDIA_META,
     SECTION_META,
@@ -215,6 +251,7 @@
     remove,
     clear,
     fileToDataUrl,
+    ingestFile,
     viewUrl,
     sectionPageUrl,
     toSearchItems,

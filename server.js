@@ -10,6 +10,7 @@ const hubRuntime = require('./db/hub-runtime');
 const erpAdapter = require('./lib/erp-saas-adapter');
 const hubSso = require('./lib/hub-sso');
 const { handleAdminApi } = require('./lib/hub-rbac-admin');
+const hubUploads = require('./lib/hub-uploads');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -29,6 +30,11 @@ const MIME = {
   '.webp': 'image/webp',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+  '.m4v': 'video/x-m4v',
+  '.pdf': 'application/pdf',
 };
 
 const GZIP_EXTS = new Set(['.html', '.css', '.js', '.json', '.svg', '.txt', '.xml', '.mjs']);
@@ -45,14 +51,27 @@ function sendJson(res, status, payload) {
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, X-File-Name, X-File-Type',
   });
 }
 
-function readBody(req) {
+const JSON_BODY_MAX_BYTES = 32 * 1024 * 1024;
+
+function readBody(req, { maxBytes = JSON_BODY_MAX_BYTES } = {}) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    req.on('data', (c) => chunks.push(c));
+    let received = 0;
+    req.on('data', (c) => {
+      received += c.length;
+      if (received > maxBytes) {
+        req.destroy();
+        const err = new Error('حجم الطلب أكبر من المسموح');
+        err.status = 413;
+        reject(err);
+        return;
+      }
+      chunks.push(c);
+    });
     req.on('end', () => {
       const raw = Buffer.concat(chunks).toString('utf8');
       if (!raw) return resolve({});
@@ -273,6 +292,28 @@ async function handleHubApi(req, res, pathname) {
     const items = Array.isArray(body?.items) ? body.items : [];
     writeCatalogFile(items);
     sendJson(res, 200, { ok: true, count: items.length });
+    return true;
+  }
+
+  if (pathname === '/api/hub/uploads' && req.method === 'POST') {
+    try {
+      const saved = await hubUploads.saveRequestToFile(req);
+      sendJson(res, 201, { ok: true, ...saved, maxBytes: hubUploads.MAX_UPLOAD_BYTES, maxMb: hubUploads.MAX_UPLOAD_MB });
+    } catch (error) {
+      if (!res.headersSent) {
+        sendJson(res, error.status || 500, { ok: false, error: error.message || 'فشل رفع الملف' });
+      }
+      if (error.status === 413) req.destroy();
+    }
+    return true;
+  }
+
+  if (pathname === '/api/hub/upload-limits' && req.method === 'GET') {
+    sendJson(res, 200, {
+      ok: true,
+      maxMb: hubUploads.MAX_UPLOAD_MB,
+      maxBytes: hubUploads.MAX_UPLOAD_BYTES,
+    });
     return true;
   }
 
@@ -738,6 +779,33 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith(`${hubUploads.PUBLIC_PREFIX}/`) && req.method === 'GET') {
+    const id = path.basename(pathname);
+    const filePath = hubUploads.resolveUploadPath(id);
+    if (!filePath) {
+      send(res, 400, 'Bad request');
+      return;
+    }
+    fs.stat(filePath, (err, stat) => {
+      if (err || !stat.isFile()) {
+        send(res, 404, 'Not Found');
+        return;
+      }
+      const ext = path.extname(filePath).toLowerCase();
+      streamFile(
+        filePath,
+        res,
+        {
+          'Content-Type': hubUploads.mimeForExt(ext) || MIME[ext] || 'application/octet-stream',
+          'Cache-Control': 'public, max-age=86400',
+          'Content-Length': String(stat.size),
+        },
+        false
+      );
+    });
+    return;
+  }
+
   serveStatic(req, res);
 });
 
@@ -762,9 +830,13 @@ async function boot() {
     }
   }
 
+  server.requestTimeout = 30 * 60 * 1000;
+  server.headersTimeout = 31 * 60 * 1000;
+  server.timeout = 30 * 60 * 1000;
   server.listen(PORT, HOST, () => {
     console.log(`Naiosh Hub listening on http://${HOST}:${PORT}`);
     console.log(`ROOT: ${ROOT}`);
+    console.log(`Upload limit: ${hubUploads.MAX_UPLOAD_MB}MB`);
   });
 }
 

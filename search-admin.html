@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19-contrast" />
   <link rel="stylesheet" href="css/hub-dark-surfaces.css?v=20260815-contrast" />
-  <link rel="stylesheet" href="css/hub-search-admin.css?v=20260815-contrast" />
+  <link rel="stylesheet" href="css/hub-search-admin.css?v=20260831-150mb" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -105,11 +105,11 @@
 
           <label>رابط وسائط مباشر (اختياري إن لم ترفع ملف) <input name="mediaUrl" placeholder="https://.../image.png" /></label>
 
-          <label>رفع صورة / ملف / فيديو صغير
-            <input type="file" data-sca-file accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip,application/pdf" />
+          <label>رفع صورة / ملف / فيديو
+            <input type="file" data-sca-file accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip,.mp4,.webm,.mov,application/pdf" />
           </label>
           <div class="sca-preview" data-sca-preview hidden></div>
-          <p class="sca-hint">اختَر التصنيف (حاضنات/منصات/أنظمة/صور…) عشان يظهر تحت الفلتر المناسب. المسمّى يظهر كعنوان صفحة عند فتح العنصر. بعد الحفظ افتح البحث أو صفحة التصنيف.</p>
+          <p class="sca-hint">اختَر التصنيف (حاضنات/منصات/أنظمة/صور…) عشان يظهر تحت الفلتر المناسب. المسمّى يظهر كعنوان صفحة عند فتح العنصر. الحد الأقصى للرفع 150 ميجابايت للفيديو والصور والملفات. بعد الحفظ افتح البحث أو صفحة التصنيف.</p>
 
           <div class="sca-actions">
             <button type="submit" class="btn btn-primary"><i class="fas fa-floppy-disk"></i> حفظ في محرك البحث</button>
@@ -133,9 +133,10 @@
   </main>
 
   <script src="js/hub-auth.js"></script>
+  <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-search-catalog.js?v=3"></script>
-  <script src="js/hub-search-admin.js?v=3"></script>
+  <script src="js/hub-search-catalog.js?v=4"></script>
+  <script src="js/hub-search-admin.js?v=4"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>
