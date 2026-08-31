@@ -12,13 +12,13 @@ assert(fs.existsSync(path.join(root, 'search.html')), 'search.html missing');
 
 const searchPage = read('search.html');
 assert(searchPage.includes('data-hus-page'), 'search page shell missing');
-assert(searchPage.includes('hub-universal-search-ui.js?v=9'), 'search page must load UI v=9');
+assert(searchPage.includes('hub-universal-search-ui.js?v=10'), 'search page must load UI v=10');
 
 const index = read('index.html');
 assert(/href="search\.html"/.test(index.match(/id="hero-float-card"[\s\S]*?<\/a>/)?.[0] || ''), 'hero must link to search.html');
 assert(!/<button[^>]*id="hero-float-card"/.test(index), 'hero must not be a modal button');
-assert(index.includes('hub-universal-search-ui.js?v=9'), 'index UI cache-bust v=9');
-assert(index.includes('hub-universal-search.css?v=9'), 'index CSS cache-bust v=9');
+assert(index.includes('hub-universal-search-ui.js?v=10'), 'index UI cache-bust v=10');
+assert(index.includes('hub-universal-search.css?v=10'), 'index CSS cache-bust v=10');
 
 const ui = read('js/hub-universal-search-ui.js');
 assert(ui.includes("SEARCH_PAGE = 'search.html'"), 'UI must target search.html');

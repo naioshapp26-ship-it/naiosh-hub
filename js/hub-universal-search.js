@@ -52,11 +52,11 @@
       lead: 'قائمة كل المنصات مع رقم المنصة',
     },
     {
-      id: 'subdomains',
-      type: 'subdomain',
-      label: 'كل دومين فرعي ممنوح',
-      icon: 'fa-globe',
-      lead: 'الدومينات الفرعية الممنوحة مع رقم الدومين',
+      id: 'knowledge',
+      type: 'knowledge',
+      label: 'صفحات مركز المعلومات',
+      icon: 'fa-circle-info',
+      lead: 'كل صفحات مركز المعرفة تظهر هنا في محرك البحث',
     },
   ];
 
@@ -207,6 +207,9 @@
     const custom = window.HubSearchCatalog?.toSearchItems?.() || [];
     custom.forEach((c) => items.push(c));
 
+    const infoPages = window.HubInfoCenterPages?.toSearchItems?.() || [];
+    infoPages.forEach((p) => items.push(p));
+
     items.push({
       id: 'hub-side-projects',
       type: 'content',
@@ -336,6 +339,7 @@
       subdomain: count('subdomain'),
       system: count('system'),
       content: count('content'),
+      knowledge: count('knowledge'),
       image: count('image'),
       file: count('file'),
       video: count('video'),
