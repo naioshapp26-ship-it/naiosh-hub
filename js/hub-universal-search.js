@@ -58,6 +58,13 @@
       icon: 'fa-circle-info',
       lead: 'كل صفحات مركز المعرفة تظهر هنا في محرك البحث',
     },
+    {
+      id: 'services',
+      type: 'service',
+      label: 'خدماتنا',
+      icon: 'fa-concierge-bell',
+      lead: 'كل خدمة في صفحة مستقلة داخل هوب',
+    },
   ];
 
   const collectCatalog = () => {
@@ -210,6 +217,9 @@
     const infoPages = window.HubInfoCenterPages?.toSearchItems?.() || [];
     infoPages.forEach((p) => items.push(p));
 
+    const services = window.HubServicesCatalog?.toSearchItems?.() || [];
+    services.forEach((s) => items.push(s));
+
     items.push({
       id: 'hub-side-projects',
       type: 'content',
@@ -340,6 +350,7 @@
       system: count('system'),
       content: count('content'),
       knowledge: count('knowledge'),
+      service: count('service'),
       image: count('image'),
       file: count('file'),
       video: count('video'),

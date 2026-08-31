@@ -14,6 +14,8 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
   <link rel="stylesheet" href="css/hub-service-offers.css?v=1" />
+  <link rel="stylesheet" href="css/hub-services-catalog.css?v=1" />
+  <link rel="stylesheet" href="css/hub-service-requests.css?v=1" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -52,6 +54,51 @@
       </div>
     </section>
 
+    <section class="ns-section" aria-labelledby="ns-title">
+      <div class="ns-head">
+        <div class="ns-head-copy">
+          <h2 id="ns-title">خدماتنا</h2>
+          <p>حلول تشغيلية متكاملة لإدارة الأعمال، المساحات، التدريب، والدعم — كل خدمة في صفحة مستقلة.</p>
+        </div>
+        <div class="ns-head-tools">
+          <span class="ns-badge" data-ns-count>+12 خدمة</span>
+          <span class="ns-badge">24/7 دعم</span>
+          <span class="ns-badge">ERP متكامل</span>
+          <button type="button" class="ns-add-btn" data-ns-open>
+            <i class="fas fa-plus"></i> اضافة خدمة
+          </button>
+        </div>
+      </div>
+      <div class="ns-grid" data-ns-grid></div>
+      <div class="hub-feature-actions" style="margin-top:14px">
+        <a class="btn btn-secondary" href="branches.html">الفروع</a>
+        <a class="btn btn-secondary" href="incubators.html">الحاضنات</a>
+        <a class="btn btn-secondary" href="packages.html">الاشتراكات</a>
+        <a class="btn btn-secondary" href="publish-research.html">انشر بحثك</a>
+      </div>
+    </section>
+
+    <dialog class="ns-dialog" data-ns-dialog aria-labelledby="ns-dialog-title">
+      <div class="ns-dialog-inner">
+        <h3 id="ns-dialog-title">اضافة خدمة</h3>
+        <p>أضف خدمة بنفس شكل المربعات — مع صورة أو فيديو حتى 150 ميجابايت.</p>
+        <form class="hub-service-form" data-ns-form>
+          <label>اسم الخدمة <input name="title" required maxlength="80" placeholder="مثال: إدارة الفروع" /></label>
+          <label>وصف مختصر <textarea name="description" maxlength="600" placeholder="ماذا تقدّم هذه الخدمة؟"></textarea></label>
+          <div class="hub-service-grid-2">
+            <label>صورة الخدمة <input type="file" accept="image/*" data-ns-image /></label>
+            <label>فيديو الخدمة <input type="file" accept="video/*" data-ns-video /></label>
+          </div>
+          <div class="ns-preview" data-ns-preview hidden></div>
+          <p class="hub-service-feedback" data-ns-feedback hidden role="status"></p>
+          <div class="ns-dialog-actions">
+            <button type="submit" class="btn btn-primary">حفظ الخدمة</button>
+            <button type="button" class="btn btn-secondary" data-ns-close>إلغاء</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
     <section class="hub-feature-section" aria-labelledby="svc-offers">
       <h2 id="svc-offers" class="hub-feature-section-title">عروض نايوش</h2>
       <p class="hub-feature-section-lead">ادخل إلى حلول القطاعات أو برنامج خفض التكاليف عبر ساي فاي.</p>
@@ -70,68 +117,6 @@
             <span>منصة ساي فاي لإدارة المصروفات والبطاقات والموازنات والحوكمة المالية.</span>
           </span>
         </a>
-      </div>
-    </section>
-
-    <section class="hub-feature-section" aria-labelledby="svc-catalog">
-      <h2 id="svc-catalog" class="hub-feature-section-title">كتالوج الخدمات</h2>
-      <p class="hub-feature-section-lead">عرض خدمات نايوش: إدارة الفروع والحاضنات والاستشارات والدراسات والاشتراكات.</p>
-      <div class="hub-feature-grid">
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-code-branch"></i></span>
-            <h3>الفروع</h3>
-          </div>
-          <p>شبكة فروع نايوش حول العالم — اختر فرعك ثم احجز حاضنة منه.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="branches.html">استعرض الفروع</a>
-            <a class="btn btn-secondary" href="book-incubator.html?from=branch">احجز حاضنة</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-seedling"></i></span>
-            <h3>الحاضنات</h3>
-          </div>
-          <p>حاضنات قطاعية بنفس قائمة وتصميم التشغيل — ابحث واحجز منصتك.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="incubators.html">استعرض الحاضنات</a>
-            <a class="btn btn-secondary" href="book-platform.html?from=incubator">احجز منصة</a>
-          </div>
-        </article>
-        <article class="hub-feature-card hub-feature-card--featured">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-comments"></i></span>
-            <h3>الاستشارات</h3>
-          </div>
-          <p>استشارة تشغيلية مربوطة بالنظام: عضوية، حاضنة، منصة، مكتب، أو أنظمة حية.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="consultation.html">اطلب استشارة</a>
-            <a class="btn btn-secondary" href="support.html">تذكرة دعم</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-flask"></i></span>
-            <h3>الدراسات</h3>
-          </div>
-          <p>انشر بحثك التشغيلي داخل هوب للمراجعة والظهور في مركز المعرفة.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="publish-research.html">انشر بحثك</a>
-            <a class="btn btn-secondary" href="info-center.html">مركز المعرفة</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-box"></i></span>
-            <h3>الاشتراكات</h3>
-          </div>
-          <p>باقة واحدة = صلاحية تشغيل واضحة. اختر ثم فعّل من المتجر أو غرفة العمليات.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="packages.html">الباقات</a>
-            <a class="btn btn-secondary" href="store.html">المتجر</a>
-          </div>
-        </article>
       </div>
     </section>
 
@@ -175,6 +160,8 @@
 
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
+  <script src="js/hub-services-catalog.js?v=1"></script>
+  <script src="js/hub-services-ui.js?v=1"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
