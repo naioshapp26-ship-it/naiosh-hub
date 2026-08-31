@@ -5,7 +5,7 @@
   'use strict';
 
   const DATA_URL = 'js/hub-side-projects-data.json?v=1';
-  const APP_URL = 'js/hub-side-projects.js?v=9';
+  const APP_URL = 'js/hub-side-projects.js?v=10';
 
   const root = document.querySelector('[data-side-projects-page]');
   if (!root) return;

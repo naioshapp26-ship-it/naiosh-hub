@@ -679,7 +679,7 @@
 
                     <section class="bg-slate-50 border border-slate-200 rounded-xl p-5">
                         <h3 class="font-bold text-slate-800 mb-1 flex items-center gap-2"><i class="fas fa-photo-film text-brand-600"></i> إدارة وسائط Hero</h3>
-                        <p class="text-xs text-slate-500 mb-4">رفع الفيديو يعمل مباشرة. للحفظ الدائم على Railway يُفضّل إضافة Cloudinary أو Volume على <code>/data/uploads</code>. الحد: 100 ميجابايت.</p>
+                        <p class="text-xs text-slate-500 mb-4">رفع الفيديو يعمل مباشرة. للحفظ الدائم على Railway يُفضّل إضافة Cloudinary أو Volume على <code>/data/uploads</code>. الحد الموحّد: 150 ميجابايت.</p>
 
                         <!-- رفع صورة -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-4">
@@ -698,7 +698,7 @@
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-semibold text-slate-700 mb-2"><i class="fas fa-video text-purple-500 ml-1"></i> رفع فيديو Hero (يُحفظ في التخزين المحلي)</label>
                                 <input id="hpHeroVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" class="w-full p-3 rounded-lg border border-slate-200 bg-white" />
-                                <p class="text-xs text-slate-500 mt-1">MP4 أو WEBM — الحد الأقصى 100 ميجابايت. يُفضّل H.264 للتوافق مع كل المتصفحات.</p>
+                                <p class="text-xs text-slate-500 mt-1">MP4 أو WEBM — الحد الأقصى 150 ميجابايت. يُفضّل H.264 للتوافق مع كل المتصفحات.</p>
                                 <input id="hpHeroVideoCaption" type="text" maxlength="200" placeholder="عنوان / وصف الفيديو (اختياري)" class="mt-2 w-full p-2.5 rounded-lg border border-slate-200 bg-white text-sm" />
                             </div>
                             <button onclick="uploadHomepageHeroVideo()" class="bg-slate-700 hover:bg-slate-800 text-white px-5 py-3 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
@@ -1042,6 +1042,7 @@
     </div>
 
     <!-- JavaScript Logic -->
+    <script src="js/hub-upload-limits.js?v=1"></script>
     <script>
         const API_BASE = '/api/admin';
 
@@ -2521,6 +2522,18 @@
             }
         }
 
+        async function hubAdminUploadFile(file) {
+            const limits = window.HubUploadLimits;
+            const maxBytes = limits?.MAX_FILE_BYTES || 150 * 1024 * 1024;
+            if (file.size > maxBytes) {
+                throw new Error(limits?.sizeError?.(file) || 'حجم الملف أكبر من 150MB');
+            }
+            if (!limits?.uploadFile) {
+                throw new Error('مسار الرفع غير متاح');
+            }
+            return limits.uploadFile(file);
+        }
+
         async function uploadHomepageLogo() {
             const input = document.getElementById('hpLogoFile');
             const file = input?.files?.[0];
@@ -2528,25 +2541,25 @@
                 alert('يرجى اختيار صورة شعار أولاً');
                 return;
             }
-            const formData = new FormData();
-            formData.append('logo', file);
             try {
+                showToast('جاري رفع الشعار...', 'info');
+                const uploaded = await hubAdminUploadFile(file);
                 const response = await fetch(`${API_BASE}/homepage-settings/logo`, {
                     method: 'POST',
-                    headers: getAdminHeaders(),
-                    body: formData
+                    headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ url: uploaded.url, name: uploaded.name })
                 });
                 const result = await response.json();
                 if (!result.success) {
                     alert(result.message || 'تعذر رفع الشعار');
                     return;
                 }
-                document.getElementById('hpLogoPreview').src = result.logoUrl;
+                document.getElementById('hpLogoPreview').src = result.logoUrl || uploaded.url;
                 input.value = '';
                 showToast('تم رفع الشعار بنجاح', 'success');
             } catch (error) {
                 console.error(error);
-                alert('خطأ في رفع الشعار');
+                alert(error.message || 'خطأ في رفع الشعار');
             }
         }
 
@@ -2557,16 +2570,18 @@
                 alert('يرجى اختيار صورة Hero أولاً');
                 return;
             }
-            const formData = new FormData();
-            formData.append('heroImage', file);
-            formData.append('heroCaption', document.getElementById('hpHeroImageCaption')?.value || '');
-            formData.append('title', document.getElementById('hpHeroImageCaption')?.value || '');
             try {
                 showToast('جاري رفع الصورة إلى مساحة التخزين...', 'info');
+                const uploaded = await hubAdminUploadFile(file);
                 const response = await fetch(`${API_BASE}/homepage-settings/hero-image`, {
                     method: 'POST',
-                    headers: getAdminHeaders(),
-                    body: formData
+                    headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({
+                        url: uploaded.url,
+                        name: uploaded.name,
+                        heroCaption: document.getElementById('hpHeroImageCaption')?.value || '',
+                        title: document.getElementById('hpHeroImageCaption')?.value || ''
+                    })
                 });
                 const result = await response.json();
                 if (!result.success) {
@@ -2583,7 +2598,7 @@
                 await loadHomepageSettings();
             } catch (error) {
                 console.error(error);
-                alert('خطأ في رفع صورة Hero');
+                alert(error.message || 'خطأ في رفع صورة Hero');
             }
         }
 
@@ -2591,13 +2606,13 @@
             const input = document.getElementById('hpTourImageFile');
             const file = input?.files?.[0];
             if (!file) { alert('يرجى اختيار صورة الجولة أولاً'); return; }
-            const formData = new FormData();
-            formData.append('tourImage', file);
             try {
+                showToast('جاري رفع صورة الجولة...', 'info');
+                const uploaded = await hubAdminUploadFile(file);
                 const response = await fetch(`${API_BASE}/homepage-settings/tour-image`, {
                     method: 'POST',
-                    headers: getAdminHeaders(),
-                    body: formData
+                    headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ url: uploaded.url, name: uploaded.name })
                 });
                 const result = await response.json();
                 if (!result.success) { alert(result.message || 'تعذر رفع صورة الجولة'); return; }
@@ -2606,7 +2621,7 @@
                 await loadHomepageSettings();
             } catch (error) {
                 console.error(error);
-                alert('خطأ في رفع صورة الجولة');
+                alert(error.message || 'خطأ في رفع صورة الجولة');
             }
         }
 
@@ -2614,13 +2629,13 @@
             const input = document.getElementById('hpTourVideoFile');
             const file = input?.files?.[0];
             if (!file) { alert('يرجى اختيار فيديو الجولة أولاً'); return; }
-            const formData = new FormData();
-            formData.append('tourVideo', file);
             try {
+                showToast('جاري رفع فيديو الجولة (حتى 150 ميجابايت)...', 'info');
+                const uploaded = await hubAdminUploadFile(file);
                 const response = await fetch(`${API_BASE}/homepage-settings/tour-video`, {
                     method: 'POST',
-                    headers: getAdminHeaders(),
-                    body: formData
+                    headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ url: uploaded.url, name: uploaded.name })
                 });
                 const result = await response.json();
                 if (!result.success) { alert(result.message || 'تعذر رفع فيديو الجولة'); return; }
@@ -2629,7 +2644,7 @@
                 await loadHomepageSettings();
             } catch (error) {
                 console.error(error);
-                alert('خطأ في رفع فيديو الجولة');
+                alert(error.message || 'خطأ في رفع فيديو الجولة');
             }
         }
 
@@ -2640,28 +2655,25 @@
                 alert('يرجى اختيار فيديو Hero أولاً');
                 return;
             }
-            const maxBytes = 100 * 1024 * 1024;
-            if (file.size > maxBytes) {
-                alert('حجم الفيديو كبير جداً. الحد الأقصى 100 ميجابايت.');
-                return;
-            }
-            const formData = new FormData();
-            formData.append('heroVideo', file);
-            formData.append('heroCaption', document.getElementById('hpHeroVideoCaption')?.value || '');
-            formData.append('title', document.getElementById('hpHeroVideoCaption')?.value || '');
             try {
-                showToast('جاري رفع الفيديو (قد يستغرق دقيقة للملفات الكبيرة)...', 'info');
+                showToast('جاري رفع الفيديو (حتى 150 ميجابايت — قد يستغرق دقيقة للملفات الكبيرة)...', 'info');
+                const uploaded = await hubAdminUploadFile(file);
                 const response = await fetch(`${API_BASE}/homepage-settings/hero-video`, {
                     method: 'POST',
-                    headers: getAdminHeaders(),
-                    body: formData
+                    headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({
+                        url: uploaded.url,
+                        name: uploaded.name,
+                        heroCaption: document.getElementById('hpHeroVideoCaption')?.value || '',
+                        title: document.getElementById('hpHeroVideoCaption')?.value || ''
+                    })
                 });
                 let result = null;
                 try {
                     result = await response.json();
                 } catch (_parseError) {
                     alert(response.status === 413
-                        ? 'حجم الفيديو كبير جداً. الحد الأقصى 100 ميجابايت.'
+                        ? 'حجم الفيديو كبير جداً. الحد الأقصى 150 ميجابايت.'
                         : 'تعذر قراءة رد الخادم أثناء رفع الفيديو');
                     return;
                 }
@@ -2680,7 +2692,7 @@
                 await loadHomepageSettings();
             } catch (error) {
                 console.error(error);
-                alert('خطأ في رفع فيديو Hero');
+                alert(error.message || 'خطأ في رفع فيديو Hero');
             }
         }
 

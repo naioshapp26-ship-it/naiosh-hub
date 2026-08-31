@@ -35,10 +35,18 @@
     feedback.classList.toggle('is-ok', ok);
   };
 
-  const fileMeta = (input) => {
+  const fileMeta = async (input) => {
     const f = input?.files?.[0];
     if (!f) return null;
-    return { name: f.name, size: f.size, type: f.type };
+    const limits = window.HubUploadLimits;
+    const check = limits?.assertFile ? limits.assertFile(f) : { ok: f.size <= 150 * 1024 * 1024 };
+    if (!check.ok) throw new Error(check.error || 'حجم الملف أكبر من 150MB');
+    let url = '';
+    if (limits?.uploadFile) {
+      const uploaded = await limits.uploadFile(f);
+      url = uploaded.url || '';
+    }
+    return { name: f.name, size: f.size, type: f.type, url };
   };
 
   const normalize = (value) =>
@@ -135,7 +143,7 @@
     return { nameAr, type: 'office', granted: true };
   };
 
-  const onSubmit = (event) => {
+  const onSubmit = async (event) => {
     event.preventDefault();
     if (!form) return;
     syncRequired();
@@ -146,6 +154,18 @@
     }
 
     const fd = new FormData(form);
+    toast('جاري رفع الملفات (حتى 150 ميجابايت)...');
+    let files;
+    try {
+      files = {
+        file: await fileMeta(form.querySelector('[name="profileFile"]')),
+        image: await fileMeta(form.querySelector('[name="imageFile"]')),
+        video: await fileMeta(form.querySelector('[name="videoFile"]')),
+      };
+    } catch (err) {
+      toast(err.message || 'فشل رفع الملف');
+      return;
+    }
     const app = {
       id: `fl-${Date.now().toString(36)}`,
       kind: 'freelancer',
@@ -162,11 +182,7 @@
       email: String(fd.get('email') || '').trim(),
       specialty: String(fd.get('specialty') || '').trim(),
       experience: String(fd.get('experience') || '').trim(),
-      files: {
-        file: fileMeta(form.querySelector('[name="profileFile"]')),
-        image: fileMeta(form.querySelector('[name="imageFile"]')),
-        video: fileMeta(form.querySelector('[name="videoFile"]')),
-      },
+      files,
       projects: [...selected.values()],
       at: new Date().toISOString(),
     };

@@ -281,10 +281,18 @@
     ];
   };
 
-  const fileMeta = (input) => {
+  const fileMeta = async (input) => {
     const f = input?.files?.[0];
     if (!f) return null;
-    return { name: f.name, size: f.size, type: f.type || '' };
+    const limits = window.HubUploadLimits;
+    const check = limits?.assertFile ? limits.assertFile(f) : { ok: f.size <= 150 * 1024 * 1024 };
+    if (!check.ok) throw new Error(check.error || 'حجم الملف أكبر من 150MB');
+    let url = '';
+    if (limits?.uploadFile) {
+      const uploaded = await limits.uploadFile(f);
+      url = uploaded.url || '';
+    }
+    return { name: f.name, size: f.size, type: f.type || '', url };
   };
 
   const selectedLabel = (name) => {
@@ -394,7 +402,7 @@
   const kindLabel =
     kind === 'incubator' ? 'حاضنة' : kind === 'platform' ? 'منصة' : 'مكتب';
 
-  form?.addEventListener('submit', (event) => {
+  form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     syncSystemsRequired();
     if (!form.checkValidity()) {
@@ -410,6 +418,29 @@
 
     const platformName = String(data.get('platformName') || '').trim();
     const systems = selectedSystems();
+
+    if (feedback) {
+      feedback.hidden = false;
+      feedback.classList.remove('is-error', 'is-ok');
+      feedback.textContent = 'جاري رفع الملفات (حتى 150 ميجابايت)...';
+    }
+
+    let profileFile;
+    let imageFile;
+    let videoFile;
+    try {
+      [profileFile, imageFile, videoFile] = await Promise.all([
+        fileMeta(form.querySelector('[name="profileFile"]')),
+        fileMeta(form.querySelector('[name="imageFile"]')),
+        fileMeta(form.querySelector('[name="videoFile"]')),
+      ]);
+    } catch (err) {
+      if (feedback) {
+        feedback.classList.add('is-error');
+        feedback.textContent = err.message || 'فشل رفع الملف';
+      }
+      return;
+    }
 
     const payload = {
       kind,
@@ -427,9 +458,9 @@
       incubator: isHqPlatform ? '' : String(data.get('incubator') || '').trim(),
       incubatorLabel: isHqPlatform ? '' : selectedLabel('incubator'),
       systems,
-      profileFile: fileMeta(form.querySelector('[name="profileFile"]')),
-      imageFile: fileMeta(form.querySelector('[name="imageFile"]')),
-      videoFile: fileMeta(form.querySelector('[name="videoFile"]')),
+      profileFile,
+      imageFile,
+      videoFile,
       summary: String(data.get('summary') || '').trim(),
       at: new Date().toISOString(),
     };
