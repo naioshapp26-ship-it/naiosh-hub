@@ -62,6 +62,7 @@
           ${del}
           ${media}
           <strong>${esc(svc.title)}</strong>
+          <p class="ns-card-lead">${esc(svc.description)}</p>
           <span class="ns-card-arrows" aria-hidden="true"><i class="fas fa-chevron-right"></i><i class="fas fa-chevron-left"></i></span>
         </a>`;
       })
@@ -90,6 +91,10 @@
   };
 
   const closeDialog = () => dialog?.close();
+
+  dialog?.addEventListener('click', (event) => {
+    if (event.target === dialog) closeDialog();
+  });
 
   openBtns.forEach((btn) => btn.addEventListener('click', openDialog));
   closeBtns.forEach((btn) => btn.addEventListener('click', closeDialog));
@@ -149,13 +154,29 @@
       const media = [];
       if (svc.imageUrl) media.push(`<img src="${esc(svc.imageUrl)}" alt="${esc(svc.title)}" />`);
       if (svc.videoUrl) media.push(`<video src="${esc(svc.videoUrl)}" controls playsinline></video>`);
+      const points = (svc.points || []).map((p) => `<li>${esc(p)}</li>`).join('');
+      const steps = (svc.steps || []).map((p) => `<li>${esc(p)}</li>`).join('');
       detailRoot.innerHTML = `
         <section class="hub-feature-hero">
           <p class="hub-feature-kicker"><i class="fas ${esc(svc.icon)}"></i> خدماتنا · صفحة مستقلة</p>
           <h1>${esc(svc.title)}</h1>
-          <p>${esc(svc.description || 'خدمة تشغيلية مستقلة داخل نايوش هوب — اطلبها أو انتقل للصفحة المرتبطة.')}</p>
+          <p>${esc(svc.description)}</p>
         </section>
         ${media.length ? `<div class="ns-detail-media">${media.join('')}</div>` : ''}
+        <div class="ns-detail-grid">
+          <article class="ns-detail-panel">
+            <h2>ماذا تشمل الخدمة</h2>
+            <ul>${points}</ul>
+          </article>
+          <article class="ns-detail-panel">
+            <h2>كيف تحصل عليها</h2>
+            <ol>${steps}</ol>
+          </article>
+          <article class="ns-detail-panel">
+            <h2>لمن هذه الخدمة</h2>
+            <p>${esc(svc.audience)}</p>
+          </article>
+        </div>
         <div class="hub-feature-actions">
           ${svc.relatedHref ? `<a class="btn btn-primary" href="${esc(svc.relatedHref)}">فتح الصفحة المرتبطة</a>` : ''}
           <a class="btn btn-primary" href="consultation.html">اطلب هذه الخدمة</a>

@@ -56,6 +56,7 @@ const requiredTitles = [
 
 const catalogSrc = read('js/hub-services-catalog.js');
 const uiSrc = read('js/hub-services-ui.js');
+const cssSrc = read('css/hub-services-catalog.css');
 const servicesPage = read('services.html');
 const detailPage = read('service.html');
 const searchPage = read('search.html');
@@ -66,6 +67,11 @@ assert(servicesPage.includes('خدماتنا'), 'services page must show خدم�
 assert(servicesPage.includes('اضافة خدمة'), 'services page must have add-service button');
 assert(servicesPage.includes('data-ns-image'), 'add form must accept images');
 assert(servicesPage.includes('data-ns-video'), 'add form must accept videos');
+assert(servicesPage.includes('ns-dialog-x'), 'add-service dialog must have X close button');
+assert(servicesPage.includes('aria-label="إغلاق النموذج"'), 'X button must be labeled to close the form');
+assert(cssSrc.includes('minmax(250px, 1fr)'), 'service cards must use original 250px card width');
+assert(uiSrc.includes('ماذا تشمل الخدمة'), 'service pages must render inner content sections');
+assert(uiSrc.includes('ns-dialog-x') || servicesPage.includes('ns-dialog-x'), 'close control is in the add dialog');
 assert(servicesPage.includes('accept="image/*"'), 'image input accept image/*');
 assert(servicesPage.includes('accept="video/*"'), 'video input accept video/*');
 assert(servicesPage.includes('hub-services-catalog.js'), 'services.html loads catalog');
@@ -96,6 +102,12 @@ const titles = windowObj.HubServicesCatalog.DEFAULT_SERVICES.map((s) => s.title)
 assert.strictEqual(titles.length, requiredTitles.length, `expected ${requiredTitles.length} default services`);
 requiredTitles.forEach((title) => {
   assert(titles.includes(title), `catalog missing slide title: ${title}`);
+});
+windowObj.HubServicesCatalog.DEFAULT_SERVICES.forEach((svc) => {
+  const full = windowObj.HubServicesCatalog.get(svc.id);
+  assert(full?.description && full.description.length > 40, `service page content missing for ${svc.id}`);
+  assert(full.points?.length >= 3, `service points missing for ${svc.id}`);
+  assert(full.audience, `service audience missing for ${svc.id}`);
 });
 
 const added = windowObj.HubServicesCatalog.add({
