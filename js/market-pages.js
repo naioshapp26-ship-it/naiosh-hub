@@ -13,6 +13,16 @@
 
   const money = (n) => (window.HubCurrency?.format ? window.HubCurrency.format(n) : `${Number(n) || 0}$`);
 
+  const prefersReducedMotion = () =>
+    typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const scrollToResults = (el) => {
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    });
+  };
+
   const toast = (msg) => {
     let el = document.getElementById('market-toast');
     if (!el) {
@@ -105,6 +115,7 @@
         active = btn.dataset.cat;
         tabs.querySelectorAll('.market-tab').forEach((t) => t.classList.toggle('is-active', t.dataset.cat === active));
         paint();
+        scrollToResults(root);
       };
     }
     setStat('stat-apps', apps.length);
@@ -215,6 +226,7 @@
         active = btn.dataset.cat;
         tabs.querySelectorAll('.market-tab').forEach((t) => t.classList.toggle('is-active', t.dataset.cat === active));
         paint();
+        scrollToResults(root);
       };
     }
 
@@ -378,6 +390,7 @@
         if (!btn) return;
         active = btn.dataset.cat;
         paint();
+        scrollToResults(root);
       };
     }
 
@@ -391,6 +404,7 @@
         active = btn.dataset.cat;
         tabs.querySelectorAll('.market-tab').forEach((t) => t.classList.toggle('is-active', t.dataset.cat === active));
         paint();
+        scrollToResults(root);
       };
     }
 
@@ -581,27 +595,45 @@
         : `<div class="shop-empty">لا توجد منتجات في هذا التصنيف</div>`;
     };
 
-    const setCategory = (id) => {
+    const revealShopResults = () => {
+      const target =
+        document.getElementById('shop-result-label') ||
+        document.getElementById('shop-results') ||
+        document.querySelector('.shop-main-head') ||
+        grid;
+      if (!target) return;
+      const reduced = prefersReducedMotion();
+      requestAnimationFrame(() => {
+        const nav = document.querySelector('.top-nav');
+        const offset = (nav?.getBoundingClientRect().height || 72) + 12;
+        const top = target.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top: Math.max(0, top), behavior: reduced ? 'auto' : 'smooth' });
+      });
+    };
+
+    const setCategory = (id, { scroll = false } = {}) => {
       active = id || 'الكل';
       paintChrome();
       paint();
+      if (scroll) revealShopResults();
     };
 
     strip?.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-cat]');
       if (!btn) return;
-      setCategory(btn.dataset.cat);
+      setCategory(btn.dataset.cat, { scroll: true });
     });
 
     side?.addEventListener('change', (e) => {
       const input = e.target.closest('input[name="shop-cat"]');
       if (!input) return;
-      setCategory(input.value);
+      setCategory(input.value, { scroll: true });
     });
 
     form?.addEventListener('submit', (e) => {
       e.preventDefault();
       paint();
+      revealShopResults();
     });
     searchInput?.addEventListener('input', paint);
 
