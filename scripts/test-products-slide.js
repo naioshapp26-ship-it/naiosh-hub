@@ -90,7 +90,7 @@ assert(ops.includes('ادخل موقعك جاهزاً'), 'enter-ready-site butto
 assert(ops.includes('طريقة التشغيل'), 'how-to-operate button');
 
 const market = read('js/market-pages.js');
-assert(market.includes('scrollToResults'), 'category clicks scroll down to results');
+assert(market.includes('revealShopResults'), 'category clicks scroll down to the result heading');
 assert(market.includes("setCategory(btn.dataset.cat, { scroll: true })"), 'icon strip scrolls after pick');
 assert(market.includes('fillSectors'), 'sectors are rendered');
 assert(market.includes('shop-side-back'), 'sidebar back is wired');

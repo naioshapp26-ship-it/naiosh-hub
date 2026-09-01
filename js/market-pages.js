@@ -595,13 +595,27 @@
         : `<div class="shop-empty">لا توجد منتجات في هذا التصنيف</div>`;
     };
 
+    const revealShopResults = () => {
+      const target =
+        document.getElementById('shop-result-label') ||
+        document.getElementById('shop-results') ||
+        document.querySelector('.shop-main-head') ||
+        grid;
+      if (!target) return;
+      const reduced = prefersReducedMotion();
+      requestAnimationFrame(() => {
+        const nav = document.querySelector('.top-nav');
+        const offset = (nav?.getBoundingClientRect().height || 72) + 12;
+        const top = target.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top: Math.max(0, top), behavior: reduced ? 'auto' : 'smooth' });
+      });
+    };
+
     const setCategory = (id, { scroll = false } = {}) => {
       active = id || 'الكل';
       paintChrome();
       paint();
-      if (scroll) {
-        scrollToResults(document.getElementById('shop-results') || document.querySelector('.shop-content') || grid);
-      }
+      if (scroll) revealShopResults();
     };
 
     strip?.addEventListener('click', (e) => {
@@ -619,7 +633,7 @@
     form?.addEventListener('submit', (e) => {
       e.preventDefault();
       paint();
-      scrollToResults(document.getElementById('shop-results') || grid);
+      revealShopResults();
     });
     searchInput?.addEventListener('input', paint);
 

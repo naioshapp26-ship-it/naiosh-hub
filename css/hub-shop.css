@@ -267,7 +267,9 @@
   font-weight: 700;
 }
 
-.shop-content {
+.shop-content,
+.shop-main-head,
+#shop-result-label {
   scroll-margin-top: 88px;
 }
 
