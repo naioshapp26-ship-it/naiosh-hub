@@ -29,6 +29,7 @@
     { key: 'measurement', icon: 'fa-chart-simple', label: 'القياس' },
     { key: 'reports', icon: 'fa-scroll', label: 'التقارير' },
     { key: 'integration', icon: 'fa-plug', label: 'التكامل' },
+    { key: 'settings', icon: 'fa-gear', label: 'إعدادات داخلية' },
   ];
 
   const TITLES = {
@@ -61,6 +62,7 @@
     measurement: ['القياس الموحد', 'درجات · مستويات · مصفوفة · أثر العملاء'],
     reports: ['التقارير السيادية', 'يومي · أسبوعي · شهري · مخاطر · نمو · امتثال · نشاط موحّد'],
     integration: ['الربط والتكامل', 'بوابة الربط · ناقل الأحداث · موصلات'],
+    settings: ['إعدادات داخلية', 'هوية · مظهر · إشعارات · أمن · تشغيل · رفع · متجر · بحث — لكل النظام'],
   };
 
   const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
@@ -104,7 +106,15 @@
 
   const fmtTime = (iso) => {
     try {
-      return new Date(iso).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short', numberingSystem: 'latn' });
+      const s = HubStore.getSettings?.() || {};
+      return new Date(iso).toLocaleString(s.dateFormat || 'ar-EG', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: 'numeric',
+        month: 'short',
+        numberingSystem: 'latn',
+        timeZone: s.timezone || 'Asia/Riyadh',
+      });
     } catch {
       return iso;
     }
@@ -189,6 +199,70 @@
     render();
   };
 
+  let idleWatch = null;
+  let syncWatch = null;
+  let lastActivityAt = Date.now();
+  const markActivity = () => {
+    lastActivityAt = Date.now();
+  };
+  document.addEventListener('pointerdown', markActivity);
+  document.addEventListener('keydown', markActivity);
+
+  const applyDashboardChrome = () => {
+    const s = HubStore.getSettings?.() || {};
+    const brandStrong = document.querySelector('.sidebar-brand strong');
+    const brandSpan = document.querySelector('.sidebar-brand span');
+    if (brandStrong) brandStrong.textContent = s.orgNameEn || 'NAIOSH HUB';
+    if (brandSpan) brandSpan.textContent = s.orgTagline || '360 · Imperial';
+
+    document.body.classList.toggle('hub-compact-sidebar', !!s.compactSidebar);
+    document.body.classList.toggle('hub-reduce-motion', !!s.reduceMotion);
+    document.body.classList.toggle('hub-ai-off', s.aiAssistantEnabled === false);
+
+    const main = document.querySelector('.main');
+    let banner = document.getElementById('hub-maintenance-banner');
+    if (s.maintenanceMode) {
+      if (!banner && main) {
+        banner = document.createElement('div');
+        banner.id = 'hub-maintenance-banner';
+        banner.className = 'hub-maintenance-banner';
+        banner.setAttribute('role', 'status');
+        main.insertBefore(banner, main.firstChild);
+      }
+      if (banner) {
+        banner.innerHTML = `<i class="fas fa-triangle-exclamation"></i> <strong>وضع الصيانة</strong> — ${esc(
+          s.maintenanceMessage || 'المنصة تحت الصيانة'
+        )}`;
+      }
+    } else if (banner) {
+      banner.remove();
+    }
+
+    if (idleWatch) {
+      clearInterval(idleWatch);
+      idleWatch = null;
+    }
+    const sessionMs = Math.max(5, Number(s.sessionMinutes) || 480) * 60 * 1000;
+    if (s.autoLogoutIdle) {
+      idleWatch = setInterval(() => {
+        if (Date.now() - lastActivityAt > sessionMs) {
+          $('#logout-btn')?.click();
+        }
+      }, 15000);
+    }
+
+    if (syncWatch) {
+      clearInterval(syncWatch);
+      syncWatch = null;
+    }
+    const syncMins = Number(s.autoSyncMinutes) || 0;
+    if (syncMins > 0 && HubStore.syncAllSystems) {
+      syncWatch = setInterval(() => {
+        HubStore.syncAllSystems();
+      }, syncMins * 60 * 1000);
+    }
+  };
+
   $('#mobile-toggle').onclick = () => document.body.classList.toggle('nav-open');
 
   document.addEventListener('click', (e) => {
@@ -232,6 +306,7 @@
     $('#page-title').textContent = TITLES[current][0];
     $('#page-sub').textContent = TITLES[current][1];
     renderNav();
+    applyDashboardChrome();
     render();
   };
 
@@ -291,10 +366,12 @@
             <button class="btn btn-ghost btn-sm" data-action="refresh-feed"><i class="fas fa-rotate"></i></button>
           </h3>
           <ul class="feed">
-            ${s.feed
-              .slice(0, 10)
-              .map((f) => `<li><b>${esc(f.type)}:</b> ${esc(f.text)}<small>${fmtTime(f.at)}</small></li>`)
-              .join('')}
+            ${(HubStore.getSettings?.()?.liveFeedEnabled === false
+              ? '<li>التدفق الحي موقوف من الإعدادات الداخلية.</li>'
+              : s.feed
+                  .slice(0, 10)
+                  .map((f) => `<li><b>${esc(f.type)}:</b> ${esc(f.text)}<small>${fmtTime(f.at)}</small></li>`)
+                  .join(''))}
           </ul>
         </article>
         <article class="card">
@@ -1774,7 +1851,7 @@
             <div class="field"><label>النظام</label>
               <select id="op-sub-system">${systems.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
             </div>
-            <div class="field"><label>الخطة</label><input id="op-sub-plan" value="standard" /></div>
+            <div class="field"><label>الخطة</label><input id="op-sub-plan" value="${esc(HubStore.getSettings?.()?.defaultGrantPlan || 'standard')}" /></div>
             <button class="btn btn-primary" data-action="grant-sub"><i class="fas fa-user-check"></i> منح</button>
           </div>
           <div class="table-wrap" style="margin-top:10px"><table class="data">
@@ -1835,6 +1912,213 @@
             .map((a) => `<li><b>${esc(a.kind)}</b> — ${esc(a.text)} <small>${fmtTime(a.at)}</small></li>`)
             .join('') || '<li>لا نشاط مسجّل بعد</li>'}
         </ul>
+      </article>
+    `;
+  };
+
+  const renderSettings = () => {
+    const s = HubStore.getSettings();
+    const shopCats = window.HubMarketplaceData?.SHOP_CATEGORIES || [{ id: 'الكل', name: 'كل المنتجات' }];
+    const chk = (key, label, hint) => `
+      <label class="settings-check">
+        <input type="checkbox" data-set="${key}" ${s[key] ? 'checked' : ''} />
+        <span>
+          <strong>${label}</strong>
+          ${hint ? `<small>${hint}</small>` : ''}
+        </span>
+      </label>`;
+    const kpisOn = [
+      s.maintenanceMode ? 'صيانة' : 'تشغيل',
+      s.compactSidebar ? 'قائمة مضغوطة' : 'قائمة كاملة',
+      s.requireMfa ? 'MFA مطلوب' : 'MFA اختياري',
+      `${s.maxUploadMb}MB رفع`,
+    ];
+    return `
+      <div class="settings-hero">
+        <div>
+          <div class="empire-banner-kicker"><i class="fas fa-gear"></i> INTERNAL SETTINGS</div>
+          <strong>إعدادات داخلية لكل النظام</strong>
+          <p>هوية المنشأة، المظهر، الإشعارات، الأمن، التشغيل، الرفع، المتجر، والبحث — تُحفظ محليًا وتُطبَّق فورًا على غرفة العمليات وباقي هوب.</p>
+        </div>
+        <div class="settings-actions">
+          <button type="button" class="btn btn-primary" data-action="save-settings"><i class="fas fa-floppy-disk"></i> حفظ الإعدادات</button>
+          <button type="button" class="btn btn-ghost" data-action="export-settings"><i class="fas fa-download"></i> تصدير</button>
+        </div>
+      </div>
+      <div class="kpi-grid">
+        <article class="kpi"><span>المنشأة</span><strong style="font-size:18px">${esc(s.orgNameAr)}</strong><small>${esc(s.orgNameEn)}</small></article>
+        <article class="kpi"><span>الحالة</span><strong style="font-size:18px">${esc(kpisOn[0])}</strong><small>${esc(s.timezone)}</small></article>
+        <article class="kpi"><span>الجلسة</span><strong>${s.sessionMinutes}</strong><small>دقيقة</small></article>
+        <article class="kpi"><span>المزامنة</span><strong>${s.autoSyncMinutes || '—'}</strong><small>دقيقة</small></article>
+      </div>
+      <div class="settings-grid">
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-building icon"></i> هوية المنشأة</span></h3>
+          <p class="settings-lead">الاسم والشعار الزمني يظهران في القائمة الجانبية وتواريخ غرفة العمليات.</p>
+          <div class="toolbar">
+            <div class="field"><label>الاسم بالعربي</label><input data-set="orgNameAr" value="${esc(s.orgNameAr)}" /></div>
+            <div class="field"><label>الاسم بالإنجليزي</label><input data-set="orgNameEn" value="${esc(s.orgNameEn)}" /></div>
+          </div>
+          <div class="toolbar">
+            <div class="field"><label>الشعار تحت الاسم</label><input data-set="orgTagline" value="${esc(s.orgTagline)}" /></div>
+            <div class="field"><label>المنطقة الزمنية</label>
+              <select data-set="timezone">
+                <option value="Asia/Riyadh" ${s.timezone === 'Asia/Riyadh' ? 'selected' : ''}>الرياض (Asia/Riyadh)</option>
+                <option value="Asia/Dubai" ${s.timezone === 'Asia/Dubai' ? 'selected' : ''}>دبي (Asia/Dubai)</option>
+                <option value="Africa/Cairo" ${s.timezone === 'Africa/Cairo' ? 'selected' : ''}>القاهرة (Africa/Cairo)</option>
+                <option value="Asia/Kuwait" ${s.timezone === 'Asia/Kuwait' ? 'selected' : ''}>الكويت (Asia/Kuwait)</option>
+                <option value="UTC" ${s.timezone === 'UTC' ? 'selected' : ''}>UTC</option>
+              </select>
+            </div>
+          </div>
+          <div class="toolbar">
+            <div class="field"><label>لغة الواجهة</label>
+              <select data-set="locale">
+                <option value="ar" ${s.locale === 'ar' ? 'selected' : ''}>العربية</option>
+                <option value="en" ${s.locale === 'en' ? 'selected' : ''}>English</option>
+              </select>
+            </div>
+            <div class="field"><label>صيغة التاريخ</label>
+              <select data-set="dateFormat">
+                <option value="ar-EG" ${s.dateFormat === 'ar-EG' ? 'selected' : ''}>عربي (يوم شهر)</option>
+                <option value="ar-SA" ${s.dateFormat === 'ar-SA' ? 'selected' : ''}>عربي — السعودية</option>
+                <option value="en-GB" ${s.dateFormat === 'en-GB' ? 'selected' : ''}>English (DD/MM)</option>
+                <option value="en-US" ${s.dateFormat === 'en-US' ? 'selected' : ''}>English (US)</option>
+              </select>
+            </div>
+            <div class="field"><label>العملة المعروضة</label>
+              <select data-set="currency">
+                <option value="USD" ${s.currency === 'USD' ? 'selected' : ''}>دولار USD</option>
+                <option value="SAR" ${s.currency === 'SAR' ? 'selected' : ''}>ريال SAR</option>
+                <option value="AED" ${s.currency === 'AED' ? 'selected' : ''}>درهم AED</option>
+              </select>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-palette icon"></i> المظهر والواجهة</span></h3>
+          <p class="settings-lead">ضغط القائمة الجانبية، تقليل الحركة، وإظهار أو إخفاء وكيل الذكاء والتدفق الحي.</p>
+          <div class="settings-checks">
+            ${chk('compactSidebar', 'قائمة جانبية مضغوطة', 'تصغّر عرض الشريط وروابط القائمة لتظهر أكثر في الشاشة.')}
+            ${chk('reduceMotion', 'تقليل الحركة', 'إيقاف التحريكات والانتقالات في غرفة العمليات.')}
+            ${chk('aiAssistantEnabled', 'وكيل الذكاء الاصطناعي', 'الزر العائم للروبوت أسفل الشاشة.')}
+            ${chk('liveFeedEnabled', 'التدفق الحي في مركز التحكم', 'سجل النشاط اللحظي في لوحة النظرة العامة.')}
+          </div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-triangle-exclamation icon"></i> وضع الصيانة</span></h3>
+          <p class="settings-lead">شريط تحذير أعلى غرفة العمليات دون إيقاف الصفحات — لتنبيه المشغّلين أثناء التحديث.</p>
+          <div class="settings-checks">
+            ${chk('maintenanceMode', 'تفعيل وضع الصيانة', 'يظهر شريط أحمر أعلى غرفة العمليات بالرسالة أدناه.')}
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label>رسالة الصيانة</label>
+            <textarea data-set="maintenanceMessage" rows="3">${esc(s.maintenanceMessage)}</textarea>
+          </div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-bell icon"></i> الإشعارات</span></h3>
+          <p class="settings-lead">التحكم في ما يدخل مركز إشعارات هوب. البريد يُحفظ كسياسة للربط لاحقًا.</p>
+          <div class="settings-checks">
+            ${chk('notifyInApp', 'إشعارات داخل هوب', 'إن أُوقف لن تُضاف تنبيهات جديدة إلى مركز الإشعارات.')}
+            ${chk('notifyEmail', 'إشعارات البريد (سياسة)', 'تُحفظ كإعداد للنظام — الإرسال الفعلي عند ربط البريد.')}
+            ${chk('notifySecurity', 'تنبيهات الأمن', 'حوادث حرجة وتصنيف أمني.')}
+            ${chk('notifyOps', 'تنبيهات التشغيل', 'فئة ops في مركز الإشعارات.')}
+          </div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-shield-halved icon"></i> الأمن والجلسات</span></h3>
+          <p class="settings-lead">مدة الجلسة، الخروج التلقائي عند الخمول، وطلب التحقق المتعدد.</p>
+          <div class="toolbar">
+            <div class="field"><label>مدة الجلسة (دقيقة)</label><input data-set="sessionMinutes" type="number" min="5" max="1440" value="${esc(s.sessionMinutes)}" /></div>
+          </div>
+          <div class="settings-checks">
+            ${chk('autoLogoutIdle', 'خروج تلقائي عند الخمول', 'بعد انتهاء مدة الجلسة دون نشاط يُغلق الدخول إلى صفحة تسجيل الدخول.')}
+            ${chk('requireMfa', 'إلزام التحقق المتعدد MFA', 'سياسة داخلية تُعرض للمشغّلين؛ تغطية MFA تُدار من أمن المعلومات.')}
+          </div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-gears icon"></i> التشغيل والمزامنة</span></h3>
+          <p class="settings-lead">مزامنة الأنظمة، خطة المنح الافتراضية، ومدة الاحتفاظ بسجل النشاط.</p>
+          <div class="toolbar">
+            <div class="field"><label>مزامنة تلقائية كل (دقيقة)</label><input data-set="autoSyncMinutes" type="number" min="0" max="1440" value="${esc(s.autoSyncMinutes)}" /></div>
+            <div class="field"><label>خطة المنح الافتراضية</label>
+              <select data-set="defaultGrantPlan">
+                <option value="standard" ${s.defaultGrantPlan === 'standard' ? 'selected' : ''}>standard</option>
+                <option value="professional" ${s.defaultGrantPlan === 'professional' ? 'selected' : ''}>professional</option>
+                <option value="enterprise" ${s.defaultGrantPlan === 'enterprise' ? 'selected' : ''}>enterprise</option>
+              </select>
+            </div>
+            <div class="field"><label>احتفاظ النشاط (يوم)</label><input data-set="activityRetainDays" type="number" min="7" max="3650" value="${esc(s.activityRetainDays)}" /></div>
+          </div>
+          <p class="settings-lead" style="margin-top:8px">صفر في المزامنة = إيقاف الجدولة التلقائية. القيمة الافتراضية 15 دقيقة.</p>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-cloud-arrow-up icon"></i> الرفع والملفات</span></h3>
+          <p class="settings-lead">الحد الأعلى للنظام 150 ميجابايت. يمكنك خفض السياسة هنا دون تجاوز السقف.</p>
+          <div class="field"><label>الحد الأقصى للرفع (ميجابايت)</label><input data-set="maxUploadMb" type="number" min="1" max="150" value="${esc(s.maxUploadMb)}" /></div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-bag-shopping icon"></i> المتجر والمنتجات</span></h3>
+          <p class="settings-lead">التصنيف الافتراضي عند فتح صفحة المنتجات والمتجر. كونزو مستبعد دائمًا من العرض.</p>
+          <div class="field"><label>تصنيف المتجر الافتراضي</label>
+            <select data-set="shopDefaultCategory">
+              ${shopCats
+                .map(
+                  (c) =>
+                    `<option value="${esc(c.id)}" ${s.shopDefaultCategory === c.id ? 'selected' : ''}>${esc(c.name || c.id)}</option>`
+                )
+                .join('')}
+            </select>
+          </div>
+          <div class="settings-checks" style="margin-top:10px">
+            <label class="settings-check">
+              <input type="checkbox" data-set="excludeKonzoo" checked disabled />
+              <span>
+                <strong>استبعاد كونزو من المنتجات</strong>
+                <small>سياسة ثابتة في هوب — لا يُعاد إدراج كونزو من الإعدادات.</small>
+              </span>
+            </label>
+          </div>
+        </article>
+        <article class="card">
+          <h3><span class="title-left"><i class="fas fa-magnifying-glass icon"></i> البحث والتسجيل</span></h3>
+          <p class="settings-lead">فهرس محتوى الأدمن في محرك البحث الشامل، وفتح التسجيل العام.</p>
+          <div class="settings-checks">
+            ${chk('searchIndexEnabled', 'فهرس محتوى البحث', 'إن أُوقف لا يظهر محتوى إدارة البحث في المحرك الشامل.')}
+            ${chk('allowPublicRegister', 'السماح بالتسجيل العام', 'سياسة «سجل معنا» للمستأجرين الجدد.')}
+          </div>
+        </article>
+      </div>
+      <article class="card">
+        <h3><span class="title-left"><i class="fas fa-link icon"></i> صفحات الإدارة المرتبطة</span></h3>
+        <p class="settings-lead">اختصارات لصفحات تضبط النظام خارج هذه الشاشة — الأدوار، البحث، التشغيل، والموافقة.</p>
+        <div class="settings-links">
+          <a class="btn btn-ghost" href="roles-permissions.html"><i class="fas fa-shield-alt"></i> الأدوار والصلاحيات</a>
+          <a class="btn btn-ghost" href="search-admin.html"><i class="fas fa-magnifying-glass"></i> إدارة محرك البحث</a>
+          <a class="btn btn-ghost" href="system-ops.html"><i class="fas fa-server"></i> تشغيل الأنظمة</a>
+          <a class="btn btn-ghost" href="dashboard.html#operating"><i class="fas fa-gears"></i> آلية التشغيل</a>
+          <a class="btn btn-ghost" href="rent-admin.html"><i class="fas fa-key"></i> موافقة السوبر أدمن</a>
+          <a class="btn btn-ghost" href="products.html"><i class="fas fa-boxes-stacked"></i> المنتجات</a>
+          <a class="btn btn-ghost" href="store.html"><i class="fas fa-store"></i> المتجر</a>
+          <a class="btn btn-ghost" href="dashboard.html#info-security"><i class="fas fa-shield-halved"></i> أمن المعلومات</a>
+        </div>
+      </article>
+      <article class="card">
+        <h3><span class="title-left"><i class="fas fa-file-export icon"></i> تصدير واستعادة</span></h3>
+        <p class="settings-lead">نزّل الإعدادات الحالية كملف JSON أو استورد ملفًا محفوظًا سابقًا. التصفير يعيد القيم الافتراضية فقط دون مسح بقية بيانات هوب.</p>
+        <div class="settings-actions">
+          <button type="button" class="btn btn-primary" data-action="save-settings"><i class="fas fa-floppy-disk"></i> حفظ</button>
+          <button type="button" class="btn btn-dark" data-action="export-settings"><i class="fas fa-download"></i> تصدير JSON</button>
+          <label class="btn btn-ghost" style="cursor:pointer">
+            <i class="fas fa-upload"></i> استيراد JSON
+            <input id="settings-import" type="file" accept="application/json,.json" hidden data-hub-skip-limit />
+          </label>
+          <button type="button" class="btn btn-ghost" data-action="reset-settings"><i class="fas fa-rotate-left"></i> إعادة للافتراضي</button>
+        </div>
+        <p class="settings-lead" style="margin-top:10px">${
+          s.updatedAt ? `آخر حفظ: ${esc(fmtTime(s.updatedAt))}` : 'لم يُحفظ تعديل بعد — القيم الحالية هي الافتراضية.'
+        }</p>
       </article>
     `;
   };
@@ -1902,6 +2186,7 @@
     measurement: renderMeasurement,
     reports: renderReports,
     integration: renderIntegration,
+    settings: renderSettings,
   };
 
   const render = () => {
@@ -2022,7 +2307,7 @@
       case 'grant-sub': {
         const email = $('#op-sub-email')?.value.trim();
         const systemCode = $('#op-sub-system')?.value;
-        const plan = $('#op-sub-plan')?.value.trim() || 'standard';
+        const plan = $('#op-sub-plan')?.value.trim() || HubStore.getSettings?.()?.defaultGrantPlan || 'standard';
         if (!email || !systemCode) {
           toast('أدخل البريد والنظام');
           return;
@@ -2191,6 +2476,35 @@
         toast('أُنشئت الفعالية');
         break;
       }
+      case 'save-settings': {
+        const patch = {};
+        root.querySelectorAll('[data-set]').forEach((el) => {
+          const key = el.dataset.set;
+          if (!key || el.disabled) return;
+          patch[key] = el.type === 'checkbox' ? el.checked : el.value;
+        });
+        HubStore.saveSettings(patch);
+        applyDashboardChrome();
+        toast('تم حفظ الإعدادات الداخلية');
+        break;
+      }
+      case 'reset-settings': {
+        if (!confirm('إعادة كل الإعدادات الداخلية إلى القيم الافتراضية؟')) return;
+        HubStore.resetSettings();
+        applyDashboardChrome();
+        toast('أُعيدت الإعدادات للافتراضي');
+        break;
+      }
+      case 'export-settings': {
+        const blob = new Blob([JSON.stringify(HubStore.getSettings(), null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'naiosh-hub-settings.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast('تم تنزيل ملف الإعدادات');
+        return;
+      }
       default:
         break;
     }
@@ -2199,6 +2513,26 @@
   });
 
   root.addEventListener('change', (e) => {
+    const importInput = e.target.closest('#settings-import');
+    if (importInput?.files?.[0]) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(String(reader.result || '{}'));
+          if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('invalid');
+          HubStore.saveSettings(data);
+          applyDashboardChrome();
+          toast('تم استيراد الإعدادات');
+          renderNav();
+          render();
+        } catch {
+          toast('ملف إعدادات غير صالح');
+        }
+      };
+      reader.readAsText(importInput.files[0]);
+      importInput.value = '';
+      return;
+    }
     const sel = e.target.closest('[data-action="sp-reg-status"]');
     if (!sel) return;
     const id = sel.dataset.id;

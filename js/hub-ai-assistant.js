@@ -159,8 +159,9 @@
   const timeLabel = (date) =>
     date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', numberingSystem: 'latn' });
 
-  const init = () => {
+    const init = () => {
     try {
+    if (window.HubStore?.getSettings?.()?.aiAssistantEnabled === false) return;
     if (window.__hubAiAssistantMounted || document.querySelector('[data-ai-assistant-widget]')) return;
     window.__hubAiAssistantMounted = true;
     ensureCss();

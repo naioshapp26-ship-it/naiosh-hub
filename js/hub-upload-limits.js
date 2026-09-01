@@ -9,14 +9,21 @@
   const INLINE_DATA_URL_MAX_BYTES = 1.5 * 1024 * 1024;
   const UPLOAD_URL = '/api/hub/uploads';
 
-  const sizeLabel = (bytes = MAX_FILE_BYTES) => `${(bytes / 1024 / 1024).toFixed(0)}MB`;
+  const policyMaxMb = () => {
+    const mb = Number(window.HubStore?.getSettings?.()?.maxUploadMb);
+    if (Number.isFinite(mb) && mb > 0) return Math.min(MAX_FILE_MB, mb);
+    return MAX_FILE_MB;
+  };
+  const policyMaxBytes = () => policyMaxMb() * 1024 * 1024;
+
+  const sizeLabel = (bytes = policyMaxBytes()) => `${(bytes / 1024 / 1024).toFixed(0)}MB`;
 
   const sizeError = (file) =>
     `حجم الملف أكبر من ${sizeLabel()} — صغّره أو ضع رابطًا خارجيًا${file?.name ? ` (${file.name})` : ''}`;
 
   const assertFile = (file) => {
     if (!file) return { ok: false, error: 'لا ملف' };
-    if (file.size > MAX_FILE_BYTES) return { ok: false, error: sizeError(file) };
+    if (file.size > policyMaxBytes()) return { ok: false, error: sizeError(file) };
     return { ok: true };
   };
 
@@ -67,7 +74,7 @@
     if (input.parentElement?.querySelector('[data-hub-upload-hint]')) return;
     const hint = document.createElement('small');
     hint.setAttribute('data-hub-upload-hint', '');
-    hint.textContent = `الحد الأقصى ${MAX_FILE_MB} ميجابايت للصورة والملف والفيديو`;
+    hint.textContent = `الحد الأقصى ${policyMaxMb()} ميجابايت للصورة والملف والفيديو`;
     input.insertAdjacentElement('afterend', hint);
   };
 

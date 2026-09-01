@@ -137,8 +137,9 @@
     const root = document.getElementById('market-grid');
     const tabs = document.getElementById('market-tabs');
     if (!root) return;
-    let active = 'الكل';
     const shopCats = data.SHOP_CATEGORIES || data.STORE_CATEGORIES.map((c) => ({ id: c, name: c, icon: 'fa-tag' }));
+    const preferredStore = window.HubStore?.getSettings?.()?.shopDefaultCategory;
+    let active = shopCats.some((c) => c.id === preferredStore) ? preferredStore : 'الكل';
     const connectors = data.MARKETPLACE_CONNECTORS || [];
 
     const mpBadges = (item) => {
@@ -465,7 +466,8 @@
     const viewList = document.getElementById('view-list');
     if (!grid) return;
 
-    let active = 'الكل';
+    const preferred = window.HubStore?.getSettings?.()?.shopDefaultCategory;
+    let active = cats.some((c) => c.id === preferred) ? preferred : 'الكل';
     let view = 'grid';
 
     const countOf = (id) => (id === 'الكل' ? products.length : products.filter((p) => p.category === id).length);
