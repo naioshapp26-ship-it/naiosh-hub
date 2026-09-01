@@ -27,11 +27,10 @@ assert(services.includes("hub-service-offers.css"), "services loads hub-service-
 assert(services.includes("so-entry-btn"), "services has entry buttons");
 
 const cost = fs.readFileSync(path.join(root, "cost-reduction.html"), "utf8");
-assert(cost.includes("ما هي منصة ساي فاي؟"), "cost page has ساي فاي intro");
-assert(cost.includes("كيف تعمل بطاقات ساي فاي؟"), "cost page has cards FAQ");
-assert(cost.includes("كيف تساعد منصة ساي فاي في إدارة الميزانية؟"), "cost page has budget FAQ");
-assert(cost.includes("كيف يُساعِد ساي فاي في إعداد الميزانية؟"), "cost page has budget setup FAQ");
+assert(!/ساي\s*فاي/i.test(cost), "cost page must not mention ساي فاي");
+assert(!/scifi/i.test(cost), "cost page must not keep scifi ids or copy");
 assert(cost.includes("برنامج خفض التكاليف"), "cost page title copy");
+assert(cost.includes("لماذا تُعد عملية إدارة المصروفات مهمة؟"), "cost page keeps expense-management FAQ");
 
 const solutions = fs.readFileSync(path.join(root, "naiosh-solutions.html"), "utf8");
 assert(solutions.includes("حلول نايوش"), "solutions page title");
