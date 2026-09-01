@@ -81,7 +81,7 @@ assert(productsPage.includes('hub-sector-library.js'), 'products page loads sect
 assert(productsPage.includes('id="shop-results"'), 'product results have a scroll target');
 assert(productsPage.includes('id="shop-sectors-list"'), 'sectors list mount');
 assert(productsPage.includes('id="shop-side-back"'), 'sidebar back button');
-assert(productsPage.includes('market-pages.js?v=scroll1'), 'products page cache-busts market-pages scroll fix');
+assert(productsPage.includes('market-pages.js?v=scroll2'), 'products page cache-busts market-pages scroll fix');
 
 const ops = read('js/hub-ops-path.js');
 assert(ops.includes('دخول فوري مجاني.. دون الحاجة إلى بطاقة ائتمانية'), 'instant-entry headline');
