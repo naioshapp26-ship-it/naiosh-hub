@@ -258,6 +258,93 @@ const HubStore = (() => {
     ],
   });
 
+  const defaultSettings = () => ({
+    orgNameAr: 'نايوش هوب',
+    orgNameEn: 'NAIOSH HUB',
+    orgTagline: '360 · Imperial',
+    timezone: 'Asia/Riyadh',
+    locale: 'ar',
+    dateFormat: 'ar-EG',
+    compactSidebar: false,
+    reduceMotion: false,
+    maintenanceMode: false,
+    maintenanceMessage: 'المنصة تحت الصيانة — نعود قريبًا.',
+    notifyInApp: true,
+    notifyEmail: false,
+    notifySecurity: true,
+    notifyOps: true,
+    sessionMinutes: 480,
+    requireMfa: false,
+    autoLogoutIdle: true,
+    autoSyncMinutes: 15,
+    defaultGrantPlan: 'standard',
+    activityRetainDays: 90,
+    maxUploadMb: 150,
+    shopDefaultCategory: 'الكل',
+    excludeKonzoo: true,
+    searchIndexEnabled: true,
+    aiAssistantEnabled: true,
+    liveFeedEnabled: true,
+    allowPublicRegister: true,
+    currency: 'USD',
+    updatedAt: null,
+  });
+
+  const SETTINGS_BOOL = new Set([
+    'compactSidebar',
+    'reduceMotion',
+    'maintenanceMode',
+    'notifyInApp',
+    'notifyEmail',
+    'notifySecurity',
+    'notifyOps',
+    'requireMfa',
+    'autoLogoutIdle',
+    'excludeKonzoo',
+    'searchIndexEnabled',
+    'aiAssistantEnabled',
+    'liveFeedEnabled',
+    'allowPublicRegister',
+  ]);
+  const SETTINGS_NUM = new Set(['sessionMinutes', 'autoSyncMinutes', 'activityRetainDays', 'maxUploadMb']);
+
+  const coerceSettings = (raw = {}) => {
+    const d = defaultSettings();
+    const out = { ...d };
+    Object.keys(d).forEach((key) => {
+      if (key === 'updatedAt') return;
+      if (!(key in raw) || raw[key] === undefined || raw[key] === null) return;
+      if (SETTINGS_BOOL.has(key)) {
+        out[key] = raw[key] === true || raw[key] === 'true' || raw[key] === 'on' || raw[key] === 1 || raw[key] === '1';
+      } else if (SETTINGS_NUM.has(key)) {
+        const n = Number(raw[key]);
+        out[key] = Number.isFinite(n) ? n : d[key];
+      } else {
+        out[key] = String(raw[key]);
+      }
+    });
+    out.excludeKonzoo = true;
+    out.maxUploadMb = Math.max(1, Math.min(150, out.maxUploadMb || 150));
+    out.sessionMinutes = Math.max(5, Math.min(24 * 60, out.sessionMinutes || 480));
+    out.autoSyncMinutes = Math.max(0, Math.min(24 * 60, out.autoSyncMinutes || 0));
+    out.activityRetainDays = Math.max(7, Math.min(3650, out.activityRetainDays || 90));
+    if (!out.timezone) out.timezone = d.timezone;
+    if (!out.dateFormat) out.dateFormat = d.dateFormat;
+    if (!out.shopDefaultCategory) out.shopDefaultCategory = 'الكل';
+    out.updatedAt = raw.updatedAt || null;
+    return out;
+  };
+
+  const hydrateSettings = () => {
+    if (!state) return false;
+    const next = coerceSettings(state.settings || {});
+    try {
+      if (JSON.stringify(state.settings || {}) === JSON.stringify(next)) return false;
+    } catch (_) {}
+    state.settings = next;
+    return true;
+  };
+
   const seed = () => ({
       meta: {
       version: 6,
@@ -266,6 +353,7 @@ const HubStore = (() => {
       productType: 'central_digital_hub',
       blueprint: 'empire-v1',
     },
+    settings: defaultSettings(),
     feed: [
       { id: uid('f'), type: 'architecture', text: 'تم تحميل دستور المعمارية الإمبراطورية — Core Platform أولوية قصوى', at: nowIso() },
       { id: uid('f'), type: 'decision', text: 'إعادة توزيع 6 مهام ذات أولوية عالية', at: nowIso() },
@@ -854,6 +942,7 @@ const HubStore = (() => {
         if (hydrateOpsDomains()) save();
         if (hydrateLaunchFields()) save();
         if (hydrateOperating()) save();
+        if (hydrateSettings()) save();
         return state;
       }
     } catch (_) {}
@@ -870,6 +959,28 @@ const HubStore = (() => {
 
   const get = () => state || load();
 
+  const getSettings = () => {
+    get();
+    if (hydrateSettings()) save();
+    return { ...(get().settings || defaultSettings()) };
+  };
+
+  const saveSettings = (patch = {}) => {
+    const s = get();
+    s.settings = coerceSettings({ ...(s.settings || defaultSettings()), ...(patch || {}), updatedAt: nowIso() });
+    save();
+    recordActivity('settings', 'تحديث الإعدادات الداخلية', { keys: Object.keys(patch || {}) });
+    return getSettings();
+  };
+
+  const resetSettings = () => {
+    const s = get();
+    s.settings = { ...defaultSettings(), updatedAt: nowIso() };
+    save();
+    recordActivity('settings', 'إعادة الإعدادات الداخلية للافتراضي');
+    return getSettings();
+  };
+
   const pushFeed = (type, text) => {
     get().feed.unshift({ id: uid('f'), type, text, at: nowIso() });
     if (get().feed.length > 40) get().feed.length = 40;
@@ -881,6 +992,11 @@ const HubStore = (() => {
     if (op) {
       if (!Array.isArray(op.activityLog)) op.activityLog = [];
       op.activityLog.unshift({ id: uid('act'), kind, text, at: nowIso(), meta });
+      const retainDays = Number((get().settings || {}).activityRetainDays) || 0;
+      if (retainDays > 0) {
+        const cutoff = Date.now() - retainDays * 86400000;
+        op.activityLog = op.activityLog.filter((a) => !a.at || Date.parse(a.at) >= cutoff);
+      }
       if (op.activityLog.length > 200) op.activityLog.length = 200;
     }
     pushFeed(kind === 'auth' ? 'decision' : kind === 'report' ? 'report' : 'decision', text);
@@ -939,7 +1055,7 @@ const HubStore = (() => {
       id: uid('sub'),
       email,
       systemCode,
-      plan: payload.plan || 'standard',
+      plan: payload.plan || getSettings().defaultGrantPlan || 'standard',
       status: 'active',
       permissions: payload.permissions || ['read', 'write'],
       grantedAt: nowIso(),
@@ -1007,6 +1123,12 @@ const HubStore = (() => {
 
   const pushNotification = (payload = {}) => {
     const s = get();
+    const cfg = s.settings || {};
+    if (cfg.notifyInApp === false) return null;
+    const level = String(payload.level || 'info');
+    const category = String(payload.category || 'system');
+    if (cfg.notifySecurity === false && (level === 'critical' || category === 'security')) return null;
+    if (cfg.notifyOps === false && category === 'ops') return null;
     if (!Array.isArray(s.notifications)) s.notifications = [];
     const item = {
       id: uid('n'),
@@ -2271,6 +2393,10 @@ const HubStore = (() => {
     get,
     save,
     reset,
+    defaultSettings,
+    getSettings,
+    saveSettings,
+    resetSettings,
     kpis,
     pushFeed,
     pushNotification,

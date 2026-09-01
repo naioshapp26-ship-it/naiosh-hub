@@ -211,7 +211,10 @@
       });
     });
 
-    const custom = window.HubSearchCatalog?.toSearchItems?.() || [];
+    const custom =
+      window.HubStore?.getSettings?.()?.searchIndexEnabled === false
+        ? []
+        : window.HubSearchCatalog?.toSearchItems?.() || [];
     custom.forEach((c) => items.push(c));
 
     const infoPages = window.HubInfoCenterPages?.toSearchItems?.() || [];
