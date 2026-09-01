@@ -78,8 +78,10 @@ assert(productsPage.includes('href="office.html"'), 'electronic offices link');
 assert(productsPage.includes('hub-marketplace-data.js?v=slide4'), 'products page cache-busts marketplace data');
 assert(productsPage.includes('hub-ready-sites.js?v=slide4'), 'products page cache-busts ready sites');
 assert(productsPage.includes('hub-sector-library.js'), 'products page loads sector library');
+assert(productsPage.includes('id="shop-results"'), 'product results have a scroll target');
 assert(productsPage.includes('id="shop-sectors-list"'), 'sectors list mount');
 assert(productsPage.includes('id="shop-side-back"'), 'sidebar back button');
+assert(productsPage.includes('market-pages.js?v=scroll1'), 'products page cache-busts market-pages scroll fix');
 
 const ops = read('js/hub-ops-path.js');
 assert(ops.includes('دخول فوري مجاني.. دون الحاجة إلى بطاقة ائتمانية'), 'instant-entry headline');
@@ -88,6 +90,8 @@ assert(ops.includes('ادخل موقعك جاهزاً'), 'enter-ready-site butto
 assert(ops.includes('طريقة التشغيل'), 'how-to-operate button');
 
 const market = read('js/market-pages.js');
+assert(market.includes('scrollToResults'), 'category clicks scroll down to results');
+assert(market.includes("setCategory(btn.dataset.cat, { scroll: true })"), 'icon strip scrolls after pick');
 assert(market.includes('fillSectors'), 'sectors are rendered');
 assert(market.includes('shop-side-back'), 'sidebar back is wired');
 assert(market.includes('ادخل الموقع'), 'enter-site action remains');

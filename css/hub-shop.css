@@ -267,6 +267,10 @@
   font-weight: 700;
 }
 
+.shop-content {
+  scroll-margin-top: 88px;
+}
+
 .shop-main-head {
   display: flex;
   align-items: center;
