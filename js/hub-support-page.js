@@ -23,7 +23,7 @@
                 <h3>${t.title}</h3>
               </div>
               <p>${t.body || '—'}</p>
-              <p class="hub-feature-section-lead">${t.status} · ${t.system} · ${t.priority} · ${t.requester}</p>
+              <p class="hub-feature-section-lead">${t.status} · ${t.system} · ${t.priority} · ${t.requester}${attachBits(t)}</p>
               <div class="hub-feature-actions">
                 <button type="button" class="btn btn-secondary" data-status="قيد المعالجة">قيد المعالجة</button>
                 <button type="button" class="btn btn-secondary" data-status="مغلق">إغلاق</button>
@@ -34,17 +34,29 @@
       : '<p class="hub-feature-section-lead">لا توجد تذاكر بعد — أرسل أول طلب صيانة أو دعم.</p>';
   };
 
+  const attachBits = (t) => {
+    const bits = [];
+    if (t.attachLink) bits.push('رابط');
+    if (t.attachDocName || t.attachDocUrl) bits.push('ملف');
+    if (t.attachImageUrl) bits.push('صورة');
+    if (t.attachVideoUrl) bits.push('فيديو');
+    return bits.length ? ` · ${bits.join(' · ')}` : '';
+  };
+
   form?.addEventListener('submit', (e) => {
     e.preventDefault();
     const fd = new FormData(form);
+    const stored = window.HubFormAttachments?.toStored?.(window.HubFormAttachments.collect(form)) || {};
     const ticket = window.HubSupport?.create?.({
       title: fd.get('title'),
       body: fd.get('body'),
       system: fd.get('system') || 'HUB',
       priority: fd.get('priority') || 'عادي',
+      ...stored,
     });
     if (!ticket) return alert('أدخل عنوان التذكرة');
     form.reset();
+    window.HubFormAttachments?.reset?.(form);
     paint();
   });
 

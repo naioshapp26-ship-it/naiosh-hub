@@ -1,5 +1,5 @@
 /**
- * واجهة خدماتنا: الشبكة + إضافة خدمة بصور وفيديو.
+ * واجهة خدماتنا: الشبكة + إضافة خدمة برابط وملف وصورة وفيديو.
  */
 (() => {
   'use strict';
@@ -18,14 +18,9 @@
   const dialog = document.querySelector('[data-ns-dialog]');
   const form = document.querySelector('[data-ns-form]');
   const feedback = document.querySelector('[data-ns-feedback]');
-  const preview = document.querySelector('[data-ns-preview]');
-  const imageInput = document.querySelector('[data-ns-image]');
-  const videoInput = document.querySelector('[data-ns-video]');
   const countEl = document.querySelector('[data-ns-count]');
   const openBtns = document.querySelectorAll('[data-ns-open]');
   const closeBtns = document.querySelectorAll('[data-ns-close]');
-
-  let pending = { imageUrl: '', videoUrl: '' };
 
   const showFeedback = (msg, isError = false) => {
     if (!feedback) return;
@@ -35,14 +30,7 @@
     feedback.style.color = isError ? '#991b1b' : '#065f46';
   };
 
-  const renderPreview = () => {
-    if (!preview) return;
-    const bits = [];
-    if (pending.imageUrl) bits.push(`<img src="${esc(pending.imageUrl)}" alt="صورة الخدمة" />`);
-    if (pending.videoUrl) bits.push(`<video src="${esc(pending.videoUrl)}" controls></video>`);
-    preview.innerHTML = bits.join('');
-    preview.hidden = !bits.length;
-  };
+  const storedMedia = () => window.HubFormAttachments?.toStored?.(window.HubFormAttachments.collect(form)) || {};
 
   const renderGrid = () => {
     if (!grid) return;
@@ -69,23 +57,9 @@
       .join('');
   };
 
-  const ingest = async (file, kind) => {
-    if (!file) return;
-    const maxMb = window.HubUploadLimits?.MAX_FILE_MB || 150;
-    showFeedback(`جاري رفع ال${kind === 'image' ? 'صورة' : 'فيديو'} (حتى ${maxMb}MB)…`);
-    const uploaded = await api.ingestFile(file, {
-      onProgress: (pct) => showFeedback(`جاري الرفع… ${pct}%`),
-    });
-    if (kind === 'image') pending.imageUrl = uploaded.url;
-    else pending.videoUrl = uploaded.url;
-    renderPreview();
-    showFeedback('تم رفع الملف');
-  };
-
   const openDialog = () => {
-    pending = { imageUrl: '', videoUrl: '' };
     form?.reset();
-    renderPreview();
+    window.HubFormAttachments?.reset?.(form);
     if (feedback) feedback.hidden = true;
     dialog?.showModal();
   };
@@ -99,31 +73,19 @@
   openBtns.forEach((btn) => btn.addEventListener('click', openDialog));
   closeBtns.forEach((btn) => btn.addEventListener('click', closeDialog));
 
-  imageInput?.addEventListener('change', async () => {
-    try {
-      await ingest(imageInput.files?.[0], 'image');
-    } catch (err) {
-      showFeedback(err.message || 'فشل رفع الصورة', true);
-    }
-  });
-
-  videoInput?.addEventListener('change', async () => {
-    try {
-      await ingest(videoInput.files?.[0], 'video');
-    } catch (err) {
-      showFeedback(err.message || 'فشل رفع الفيديو', true);
-    }
-  });
-
   form?.addEventListener('submit', (event) => {
     event.preventDefault();
     const data = new FormData(form);
+    const media = storedMedia();
     const result = api.add({
       title: data.get('title'),
       description: data.get('description'),
       icon: data.get('icon') || 'fa-concierge-bell',
-      imageUrl: pending.imageUrl,
-      videoUrl: pending.videoUrl,
+      linkUrl: media.attachLink,
+      docUrl: media.attachDocUrl,
+      docName: media.attachDocName,
+      imageUrl: media.attachImageUrl,
+      videoUrl: media.attachVideoUrl,
     });
     if (!result.ok) {
       showFeedback(result.error || 'تعذر إضافة الخدمة', true);
@@ -143,6 +105,69 @@
     renderGrid();
   });
 
+  const bindRequestForm = (root, svc) => {
+    const reqForm = root.querySelector('[data-service-request]');
+    if (!reqForm) return;
+    window.HubFormAttachments?.bind?.(reqForm);
+    reqForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (!reqForm.checkValidity()) {
+        reqForm.reportValidity();
+        return;
+      }
+      const data = new FormData(reqForm);
+      const stored = window.HubFormAttachments?.toStored?.(window.HubFormAttachments.collect(reqForm)) || {};
+      const item = window.HubServiceRequests?.create?.({
+        kind: 'consultation',
+        title: data.get('title'),
+        body: data.get('body'),
+        system: 'HUB',
+        category: 'خدمة',
+        fullName: data.get('fullName'),
+        phone: data.get('phone'),
+        email: data.get('email'),
+        serviceId: svc.id,
+        serviceTitle: svc.title,
+        ...stored,
+      });
+      const box = root.querySelector('[data-service-request-feedback]');
+      if (!item) {
+        if (box) {
+          box.hidden = false;
+          box.textContent = 'أدخل عنوانًا واضحًا للطلب';
+          box.style.background = '#fef2f2';
+          box.style.color = '#991b1b';
+        }
+        return;
+      }
+      if (box) {
+        box.hidden = false;
+        box.textContent = 'تم استلام طلبك وربطه بالنظام. فريق هوب بيتابعه من غرفة العمليات.';
+        box.style.background = '#ecfdf5';
+        box.style.color = '#065f46';
+      }
+      reqForm.reset();
+      window.HubFormAttachments?.reset?.(reqForm);
+    });
+  };
+
+  const extraMedia = (svc) => {
+    const bits = [];
+    if (svc.linkUrl) {
+      bits.push(
+        `<p><a class="hub-attach-chip" href="${esc(svc.linkUrl)}" target="_blank" rel="noopener noreferrer">رابط الخدمة</a></p>`
+      );
+    }
+    if (svc.docUrl) {
+      bits.push(
+        `<p><a class="hub-attach-chip" href="${esc(svc.docUrl)}" target="_blank" rel="noopener noreferrer">ملف: ${esc(
+          svc.docName || 'مستند'
+        )}</a></p>`
+      );
+    }
+    return bits.join('');
+  };
+
   const detailRoot = document.querySelector('[data-ns-detail]');
   if (detailRoot) {
     const id = new URLSearchParams(location.search).get('id');
@@ -156,6 +181,7 @@
       if (svc.videoUrl) media.push(`<video src="${esc(svc.videoUrl)}" controls playsinline></video>`);
       const points = (svc.points || []).map((p) => `<li>${esc(p)}</li>`).join('');
       const steps = (svc.steps || []).map((p) => `<li>${esc(p)}</li>`).join('');
+      const fields = window.HubFormAttachments?.FIELDS_HTML || '';
       detailRoot.innerHTML = `
         <section class="hub-feature-hero">
           <p class="hub-feature-kicker"><i class="fas ${esc(svc.icon)}"></i> خدماتنا · صفحة مستقلة</p>
@@ -163,6 +189,7 @@
           <p>${esc(svc.description)}</p>
         </section>
         ${media.length ? `<div class="ns-detail-media">${media.join('')}</div>` : ''}
+        ${extraMedia(svc)}
         <div class="ns-detail-grid">
           <article class="ns-detail-panel">
             <h2>ماذا تشمل الخدمة</h2>
@@ -177,13 +204,31 @@
             <p>${esc(svc.audience)}</p>
           </article>
         </div>
+        <section class="ns-detail-request">
+          <h2>اطلب هذه الخدمة</h2>
+          <p>أرفق رابطًا أو ملف نص / PDF أو صورة أو فيديو مع طلبك.</p>
+          <form class="hub-service-form" data-service-request>
+            <div class="hub-service-grid-2">
+              <label>الاسم بالكامل <input name="fullName" required autocomplete="name" /></label>
+              <label>الجوال <input name="phone" type="tel" required autocomplete="tel" /></label>
+            </div>
+            <label>البريد الإلكتروني <input name="email" type="email" required autocomplete="email" /></label>
+            <label>عنوان الطلب <input name="title" required value="طلب خدمة: ${esc(svc.title)}" /></label>
+            <label>التفاصيل <textarea name="body" rows="4" required placeholder="اشرح احتياجك من هذه الخدمة"></textarea></label>
+            ${fields}
+            <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> إرسال الطلب</button>
+            <p class="hub-service-feedback" data-service-request-feedback hidden role="status"></p>
+          </form>
+        </section>
         <div class="hub-feature-actions">
           ${svc.relatedHref ? `<a class="btn btn-primary" href="${esc(svc.relatedHref)}">فتح الصفحة المرتبطة</a>` : ''}
-          <a class="btn btn-primary" href="consultation.html">اطلب هذه الخدمة</a>
+          <a class="btn btn-secondary" href="consultation.html">نموذج الاستشارة الكامل</a>
           <a class="btn btn-secondary" href="services.html">رجوع لخدماتنا</a>
         </div>`;
+      bindRequestForm(detailRoot, svc);
     }
   }
 
+  if (form) window.HubFormAttachments?.bind?.(form);
   renderGrid();
 })();

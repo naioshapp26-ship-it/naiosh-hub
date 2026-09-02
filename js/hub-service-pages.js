@@ -34,6 +34,7 @@
             </div>
           </div>
           <p>${escapeHtml(t.body || '—')}</p>
+          ${attachLine(t)}
         </article>`
       )
       .join('');
@@ -46,6 +47,16 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
 
+  const attachLine = (t) => {
+    const bits = [];
+    if (t.attachLink) bits.push(`<a href="${escapeHtml(t.attachLink)}" target="_blank" rel="noopener noreferrer">رابط</a>`);
+    if (t.attachDocName || t.attachDocUrl) bits.push(`ملف: ${escapeHtml(t.attachDocName || 'مستند')}`);
+    if (t.attachImageUrl) bits.push('صورة');
+    if (t.attachVideoUrl) bits.push('فيديو');
+    if (!bits.length) return '';
+    return `<p class="hub-attach-chip" style="margin-top:8px">${bits.join(' · ')}</p>`;
+  };
+
   form?.addEventListener('submit', (event) => {
     event.preventDefault();
     if (!form.checkValidity()) {
@@ -53,6 +64,7 @@
       return;
     }
     const data = new FormData(form);
+    const stored = window.HubFormAttachments?.toStored?.(window.HubFormAttachments.collect(form)) || {};
     const item = window.HubServiceRequests?.create?.({
       kind,
       title: data.get('title'),
@@ -66,6 +78,7 @@
       preferredAt: data.get('preferredAt'),
       contactMethod: data.get('contactMethod'),
       reference: data.get('reference'),
+      ...stored,
     });
     if (!item) {
       alert('أدخل عنوانًا واضحًا للطلب');
@@ -76,6 +89,7 @@
       feedback.textContent = 'تم استلام طلبك وربطه بالنظام. فريق هوب بيتابعه من غرفة العمليات.';
     }
     form.reset();
+    window.HubFormAttachments?.reset?.(form);
     renderList();
   });
 
