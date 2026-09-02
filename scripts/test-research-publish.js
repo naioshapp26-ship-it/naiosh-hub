@@ -16,7 +16,7 @@ const css = read('css/hub-research-publish.css');
 assert(!/ساي فاي|Sci-?Fi/i.test(html + js), 'research form must not add Sci-Fi copy');
 
 assert(html.includes('data-research-workspace'), 'workspace mount');
-assert(html.includes('js/hub-research-publish.js?v=1'), 'page loads research script');
+assert(html.includes('js/hub-research-publish.js?v=2'), 'page loads research script');
 assert(html.includes('css/hub-research-publish.css?v=1'), 'page loads research styles');
 assert(html.includes('js/hub-upload-limits.js'), 'page loads 150MB upload limits');
 assert(html.includes('name="body"'), 'clear writing field');

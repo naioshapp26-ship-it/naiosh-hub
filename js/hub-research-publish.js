@@ -353,8 +353,12 @@ window.HubResearchPublish = (() => {
       if (!check.ok) throw new Error(check.error);
     }
     if (limits?.uploadFile) {
-      const uploaded = await limits.uploadFile(file, { onProgress: showProgress });
-      return { url: uploaded.url, mime: uploaded.mime || file.type, name: file.name, size: file.size };
+      try {
+        const uploaded = await limits.uploadFile(file, { onProgress: showProgress });
+        return { url: uploaded.url, mime: uploaded.mime || file.type, name: file.name, size: file.size };
+      } catch (err) {
+        if (file.size > 1.5 * 1024 * 1024 || String(file.type || '').startsWith('video/')) throw err;
+      }
     }
     const dataUrl = await new Promise((resolve, reject) => {
       const reader = new FileReader();
