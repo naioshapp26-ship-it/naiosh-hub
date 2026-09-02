@@ -167,7 +167,7 @@ window.HubResearchPublish = (() => {
     box.innerHTML = list
       .map((item) => {
         const active = item.id === state.current.id ? ' is-active' : '';
-        const badge = item.status === 'pending' ? 'بانتظار المراجعة' : 'مسودة';
+        const badge = item.status === 'pending' ? 'محفوظ على الجهاز' : 'مسودة';
         const badgeCls = item.status === 'pending' ? ' is-pending' : '';
         return `<article class="rp-draft${active}" data-id="${esc(item.id)}">
           <div class="rp-item-head">
@@ -328,11 +328,30 @@ window.HubResearchPublish = (() => {
     persistDraft();
   };
 
+  const isSvgFile = (file) => {
+    const name = String(file?.name || '').toLowerCase();
+    const mime = String(file?.type || '').toLowerCase();
+    return mime.includes('svg') || name.endsWith('.svg');
+  };
+
+  const correctText = (raw = '') =>
+    String(raw)
+      .replace(/\u0640/g, '')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/[ \t]+([،.;:!?؟])/g, '$1')
+      .trim();
+
+  const inlineMaxBytes = () => window.HubUploadLimits?.INLINE_DATA_URL_MAX_BYTES || 1.5 * 1024 * 1024;
+  const isLoggedIn = () => !!(window.HubAuth && window.HubAuth.isLoggedIn && window.HubAuth.isLoggedIn());
+
   const detectKind = (file, forced) => {
     if (forced) return forced;
     const name = String(file.name || '').toLowerCase();
     const mime = String(file.type || '').toLowerCase();
-    if (mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/.test(name)) return 'image';
+    if (isSvgFile(file)) return '';
+    if (mime.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/.test(name)) return 'image';
     if (mime.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/.test(name)) return 'video';
     if (mime.includes('pdf') || name.endsWith('.pdf')) return 'pdf';
     return 'text';
@@ -347,18 +366,28 @@ window.HubResearchPublish = (() => {
   };
 
   const ingest = async (file, kind) => {
+    if (isSvgFile(file) || kind === 'image' && isSvgFile(file)) {
+      throw new Error('ملفات SVG غير مسموحة');
+    }
     const limits = window.HubUploadLimits;
     if (limits?.assertFile) {
       const check = limits.assertFile(file);
       if (!check.ok) throw new Error(check.error);
     }
-    if (limits?.uploadFile) {
+    const cap = inlineMaxBytes();
+    const video = kind === 'video' || String(file.type || '').startsWith('video/');
+    if (isLoggedIn() && limits?.uploadFile) {
       try {
         const uploaded = await limits.uploadFile(file, { onProgress: showProgress });
         return { url: uploaded.url, mime: uploaded.mime || file.type, name: file.name, size: file.size };
       } catch (err) {
-        if (file.size > 1.5 * 1024 * 1024 || String(file.type || '').startsWith('video/')) throw err;
+        if (file.size > cap || video) throw err;
       }
+    } else if (file.size > cap || video) {
+      throw new Error('سجّل الدخول لرفع فيديو أو ملفات أكبر من الحد المحلي');
+    }
+    if (file.size > cap) {
+      throw new Error('الملف أكبر من الحد المحلي للمعاينة');
     }
     const dataUrl = await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -373,7 +402,15 @@ window.HubResearchPublish = (() => {
     const file = input.files?.[0];
     input.value = '';
     if (!file) return;
+    if (isSvgFile(file)) {
+      toast('ملفات SVG غير مسموحة', true);
+      return;
+    }
     const kind = detectKind(file, forcedKind);
+    if (!kind) {
+      toast('نوع الملف غير مسموح', true);
+      return;
+    }
     try {
       state.uploading = true;
       showProgress(8);
@@ -466,7 +503,17 @@ window.HubResearchPublish = (() => {
         persistDraft();
       }
       if (partEdit) focusPart(partEdit.dataset.rpPartEdit, 'heading');
-      if (partFix) focusPart(partFix.dataset.rpPartFix, 'body');
+      if (partFix) {
+        const part = state.current.parts.find((p) => p.id === partFix.dataset.rpPartFix);
+        if (part) {
+          part.body = correctText(part.body || '');
+          part.heading = correctText(part.heading || '');
+          renderParts();
+          persistDraft();
+          toast('صُحّح تنسيق النص (مسافات وتطويل)');
+        }
+        focusPart(partFix.dataset.rpPartFix, 'body');
+      }
       if (fileDel) {
         state.current.attachments = state.current.attachments.filter((f) => f.id !== fileDel.dataset.rpFileDel);
         renderFiles();
@@ -528,7 +575,7 @@ window.HubResearchPublish = (() => {
       if (saveDraft) {
         const item = persistDraft();
         if (!item.title) return toast('أدخل عنوان البحث قبل الحفظ', true);
-        toast('حُفظت المسودة — يمكنك التعديل أو الإرسال للمراجعة');
+        toast('حُفظت المسودة على هذا الجهاز — يمكنك التعديل أو الإرسال');
         renderDrafts();
       }
     });
@@ -545,7 +592,7 @@ window.HubResearchPublish = (() => {
       item.at = item.at || nowIso();
       saveItem(item);
       renderDrafts();
-      toast('تم استلام بحثك للمراجعة. سيظهر العدّاد في سيكشن الرئيسية.');
+      toast('حُفظ البحث على هذا الجهاز. يظهر في قائمتك ويُعدّ محليًا في سيكشن الرئيسية — ليست مراجعة إدارية بعد.');
     });
 
     const existing = readAll()[0];
@@ -570,5 +617,8 @@ window.HubResearchPublish = (() => {
     readAll,
     saveItem,
     emptyDraft,
+    isSvgFile,
+    correctText,
+    detectKind,
   };
 })();

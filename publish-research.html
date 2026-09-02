@@ -54,7 +54,7 @@
 
     <section class="hub-feature-section" id="publish-form" data-research-workspace>
       <h2 class="hub-feature-section-title">ورشة كتابة البحث</h2>
-      <p class="hub-feature-section-lead">اكتب النص كاملًا هنا — ثم أضف أقسامًا، ارفع الملفات، وتبادل الأسئلة مع نايوش. بعد الإرسال يظهر العدد في سيكشن الرئيسية.</p>
+      <p class="hub-feature-section-lead">اكتب النص كاملًا هنا — ثم أضف أقسامًا، ارفع الملفات، وتبادل الأسئلة مع نايوش. الحفظ والإرسال يبقيان على هذا الجهاز حتى توجد مراجعة إدارية.</p>
       <div class="rp-layout">
         <form id="researchPublishForm" class="rp-card">
           <h3><i class="fas fa-pen-nib"></i> بيانات البحث</h3>
@@ -110,7 +110,7 @@
                 <div class="rp-files" data-rp-files="pdf"></div>
               </label>
               <label class="rp-drop"><strong><i class="fas fa-image"></i> صورة</strong>
-                <input type="file" data-rp-upload="image" accept="image/*" />
+                <input type="file" data-rp-upload="image" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif" />
                 <div class="rp-files" data-rp-files="image"></div>
               </label>
               <label class="rp-drop"><strong><i class="fas fa-video"></i> فيديو</strong>
@@ -144,7 +144,7 @@
           </section>
 
           <div class="hub-feature-actions" style="margin-top:18px">
-            <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> إرسال للمراجعة</button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> إرسال — حفظ على هذا الجهاز</button>
             <button type="button" class="btn btn-secondary" data-rp-save><i class="fas fa-floppy-disk"></i> حفظ مسودة</button>
             <button type="button" class="btn btn-secondary" data-rp-new><i class="fas fa-plus"></i> إضافة بحث</button>
             <a class="btn btn-secondary" href="suggestions.html">اقتراح عام</a>
@@ -154,7 +154,7 @@
 
         <aside class="rp-card">
           <h3><i class="fas fa-folder-open"></i> بحوثك</h3>
-          <p class="rp-lead">تعديل أو حذف أي بحث محفوظ. الإرسال يضع الحالة «بانتظار المراجعة».</p>
+          <p class="rp-lead">تعديل أو حذف أي بحث محفوظ. الإرسال يحفظه على هذا الجهاز ويظهر في العدّاد المحلي — ليست مراجعة إدارية.</p>
           <div class="rp-drafts" data-rp-drafts></div>
         </aside>
       </div>
@@ -164,8 +164,8 @@
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-upload-limits.js?v=2"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-home-engage.js?v=1"></script>
-  <script src="js/hub-research-publish.js?v=2"></script>
+  <script src="js/hub-home-engage.js?v=2"></script>
+  <script src="js/hub-research-publish.js?v=3"></script>
   <script>
     (() => {
       const eng = window.HubHomeEngage;

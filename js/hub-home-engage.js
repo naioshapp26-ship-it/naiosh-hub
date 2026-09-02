@@ -134,6 +134,16 @@ window.HubHomeEngage = (() => {
     },
   ];
 
+  const countPendingResearch = () => {
+    try {
+      const list = JSON.parse(localStorage.getItem('hub-research-submissions') || '[]');
+      if (!Array.isArray(list)) return 0;
+      return list.filter((x) => x && x.status === 'pending').length;
+    } catch {
+      return 0;
+    }
+  };
+
   const PORTALS = [
     {
       id: 'competitions',
@@ -190,15 +200,10 @@ window.HubHomeEngage = (() => {
       tone: 'teal',
       lead: 'من الورقة إلى محتوى تشغيلي',
       feed: () => {
-        let pending = 0;
-        try {
-          pending = JSON.parse(localStorage.getItem('hub-research-submissions') || '[]').length;
-        } catch {
-          pending = 0;
-        }
+        const pending = countPendingResearch();
         const track = RESEARCH_TRACKS[0];
         return {
-          kicker: pending ? `${pending} بحث بانتظار المراجعة` : `${RESEARCH_TRACKS.length} مسارات نشر`,
+          kicker: pending ? `${pending} بحث محفوظ على هذا الجهاز` : `${RESEARCH_TRACKS.length} مسارات نشر`,
           title: track.title,
           text: track.blurb,
           href: 'publish-research.html#publish-form',
@@ -277,6 +282,7 @@ window.HubHomeEngage = (() => {
     ASSESS_PATHS,
     COMMUNITIES,
     PORTALS,
+    countPendingResearch,
     renderHome,
     listBlock,
     esc,
