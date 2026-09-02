@@ -67,21 +67,30 @@ assert(servicesPage.includes('خدماتنا'), 'services page must show خدم�
 assert(servicesPage.includes('اضافة خدمة'), 'services page must have add-service button');
 assert(servicesPage.includes('data-ns-image'), 'add form must accept images');
 assert(servicesPage.includes('data-ns-video'), 'add form must accept videos');
+assert(servicesPage.includes('إضافة رابط'), 'add form must include add-link field');
+assert(servicesPage.includes('رفع ملف نص / PDF'), 'add form must include text/PDF upload');
+assert(servicesPage.includes('رفع صورة'), 'add form must include image upload');
+assert(servicesPage.includes('رفع فيديو'), 'add form must include video upload');
 assert(servicesPage.includes('ns-dialog-x'), 'add-service dialog must have X close button');
 assert(servicesPage.includes('aria-label="إغلاق النموذج"'), 'X button must be labeled to close the form');
 assert(cssSrc.includes('minmax(250px, 1fr)'), 'service cards must use original 250px card width');
 assert(uiSrc.includes('ماذا تشمل الخدمة'), 'service pages must render inner content sections');
 assert(uiSrc.includes('ns-dialog-x') || servicesPage.includes('ns-dialog-x'), 'close control is in the add dialog');
-assert(servicesPage.includes('accept="image/*"'), 'image input accept image/*');
-assert(servicesPage.includes('accept="video/*"'), 'video input accept video/*');
+assert(servicesPage.includes('accept="image/png,image/jpeg,image/webp,image/gif'), 'image input excludes svg');
+assert(!servicesPage.includes('accept="image/*"'), 'must not use image/* (SVG XSS)');
+assert(servicesPage.includes('data-hub-attach="doc"'), 'add form has text/PDF input');
+assert(servicesPage.includes('hub-form-attachments.js'), 'services.html loads shared attachment fields');
 assert(servicesPage.includes('hub-services-catalog.js'), 'services.html loads catalog');
 assert(servicesPage.includes('hub-upload-limits.js'), 'services.html loads upload limits');
 assert(detailPage.includes('data-ns-detail'), 'service.html is independent service page');
+assert(detailPage.includes('hub-form-attachments.js'), 'service page loads attachment helper');
+assert(detailPage.includes('hub-service-requests.js'), 'service page can save requests');
+assert(uiSrc.includes('data-service-request'), 'independent service pages include a request form');
+assert(uiSrc.includes('FIELDS_HTML'), 'service request form uses shared attachment fields');
 assert(searchPage.includes('hub-services-catalog.js'), 'search loads services catalog');
 assert(searchSrc.includes('HubServicesCatalog'), 'universal search includes services');
 assert(/MAX_FILE_MB = 150/.test(limitsSrc), 'upload limit remains 150MB');
-assert(uiSrc.includes('ingestFile'), 'UI uploads via catalog ingestFile');
-assert(uiSrc.includes('HubUploadLimits'), 'UI respects 150MB upload limits');
+assert(uiSrc.includes('HubFormAttachments'), 'UI collects link/doc/image/video via shared helper');
 
 const store = {};
 const windowObj = { HubServicesCatalog: null, HubUniversalSearch: null, HubSearchCatalog: null, HubInfoCenterPages: null };
@@ -115,9 +124,16 @@ const added = windowObj.HubServicesCatalog.add({
   description: 'رفع صورة وفيديو',
   imageUrl: '/uploads/demo.jpg',
   videoUrl: '/uploads/demo.mp4',
+  linkUrl: 'https://example.com/brief',
+  docUrl: '/uploads/demo.pdf',
+  docName: 'demo.pdf',
 });
 assert(added.ok, 'custom service add must succeed');
-assert(windowObj.HubServicesCatalog.list().some((s) => s.title === 'خدمة تجريبية' && s.imageUrl && s.videoUrl));
+assert(
+  windowObj.HubServicesCatalog.list().some(
+    (s) => s.title === 'خدمة تجريبية' && s.imageUrl && s.videoUrl && s.linkUrl && s.docUrl
+  )
+);
 assert(windowObj.HubServicesCatalog.get(added.item.id), 'custom service has independent page id');
 
 const builtinId = windowObj.HubServicesCatalog.DEFAULT_SERVICES[0].id;

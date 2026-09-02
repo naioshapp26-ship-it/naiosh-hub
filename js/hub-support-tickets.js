@@ -19,7 +19,17 @@
     return list;
   };
 
-  const create = ({ title, body, system = 'HUB', priority = 'عادي' } = {}) => {
+  const create = ({
+    title,
+    body,
+    system = 'HUB',
+    priority = 'عادي',
+    attachLink = '',
+    attachDocUrl = '',
+    attachDocName = '',
+    attachImageUrl = '',
+    attachVideoUrl = '',
+  } = {}) => {
     if (!title?.trim()) return null;
     const ticket = {
       id: `tkt-${Date.now().toString(36)}`,
@@ -27,6 +37,11 @@
       body: (body || '').trim(),
       system,
       priority,
+      attachLink: String(attachLink || '').trim(),
+      attachDocUrl: String(attachDocUrl || '').trim(),
+      attachDocName: String(attachDocName || '').trim(),
+      attachImageUrl: String(attachImageUrl || '').trim(),
+      attachVideoUrl: String(attachVideoUrl || '').trim(),
       status: 'جديد',
       requester: window.HubAuth?.getUser?.()?.email || window.HubTenant?.read?.()?.nameAr || 'مستخدم هوب',
       createdAt: new Date().toISOString(),

@@ -14,8 +14,8 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
   <link rel="stylesheet" href="css/hub-service-offers.css?v=1" />
-  <link rel="stylesheet" href="css/hub-services-catalog.css?v=2" />
-  <link rel="stylesheet" href="css/hub-service-requests.css?v=1" />
+  <link rel="stylesheet" href="css/hub-services-catalog.css?v=3" />
+  <link rel="stylesheet" href="css/hub-service-requests.css?v=2" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -84,15 +84,26 @@
       </button>
       <div class="ns-dialog-inner">
         <h3 id="ns-dialog-title">اضافة خدمة</h3>
-        <p>أضف خدمة بنفس شكل المربعات — مع صورة أو فيديو حتى 150 ميجابايت.</p>
+        <p>أضف خدمة بنفس شكل المربعات — مع رابط أو ملف نص / PDF أو صورة أو فيديو حتى 150 ميجابايت.</p>
         <form class="hub-service-form" data-ns-form>
           <label>اسم الخدمة <input name="title" required maxlength="80" placeholder="مثال: إدارة الفروع" /></label>
           <label>وصف مختصر <textarea name="description" maxlength="600" placeholder="ماذا تقدّم هذه الخدمة؟"></textarea></label>
-          <div class="hub-service-grid-2">
-            <label>صورة الخدمة <input type="file" accept="image/*" data-ns-image /></label>
-            <label>فيديو الخدمة <input type="file" accept="video/*" data-ns-video /></label>
+          <div class="hub-attach-grid" data-hub-attach-fields>
+            <label>إضافة رابط
+              <input name="attachLink" type="url" inputmode="url" placeholder="https://" data-hub-attach="link" />
+            </label>
+            <label>رفع ملف نص / PDF
+              <input name="attachDoc" type="file" accept=".txt,.md,.pdf,.doc,.docx,application/pdf,text/plain" data-hub-attach="doc" />
+            </label>
+            <label>رفع صورة
+              <input name="attachImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif" data-hub-attach="image" data-ns-image />
+            </label>
+            <label>رفع فيديو
+              <input name="attachVideo" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" data-hub-attach="video" data-ns-video />
+            </label>
+            <p class="hub-attach-status" data-hub-attach-status hidden role="status"></p>
+            <div class="hub-attach-preview" data-hub-attach-preview hidden></div>
           </div>
-          <div class="ns-preview" data-ns-preview hidden></div>
           <p class="hub-service-feedback" data-ns-feedback hidden role="status"></p>
           <div class="ns-dialog-actions">
             <button type="submit" class="btn btn-primary">حفظ الخدمة</button>
@@ -162,9 +173,11 @@
   </main>
 
   <script src="js/hub-upload-limits.js?v=1"></script>
+  <script src="js/hub-auth.js"></script>
+  <script src="js/hub-form-attachments.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-services-catalog.js?v=2"></script>
-  <script src="js/hub-services-ui.js?v=2"></script>
+  <script src="js/hub-services-catalog.js?v=3"></script>
+  <script src="js/hub-services-ui.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>

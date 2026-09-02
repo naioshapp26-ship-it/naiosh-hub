@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
-  <link rel="stylesheet" href="css/hub-service-requests.css?v=1" />
+  <link rel="stylesheet" href="css/hub-service-requests.css?v=2" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -88,6 +88,22 @@
         </div>
         <label>عنوان الاستشارة <input name="title" required placeholder="مثال: كيف أفعّل منصة داخل الفرع؟" /></label>
         <label>التفاصيل <textarea name="body" rows="4" required placeholder="اشرح وضعك الحالي وما الذي تريد تحقيقه داخل هوب"></textarea></label>
+        <div class="hub-attach-grid" data-hub-attach-fields>
+          <label>إضافة رابط
+            <input name="attachLink" type="url" inputmode="url" placeholder="https://" data-hub-attach="link" />
+          </label>
+          <label>رفع ملف نص / PDF
+            <input name="attachDoc" type="file" accept=".txt,.md,.pdf,.doc,.docx,application/pdf,text/plain" data-hub-attach="doc" />
+          </label>
+          <label>رفع صورة
+            <input name="attachImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif" data-hub-attach="image" />
+          </label>
+          <label>رفع فيديو
+            <input name="attachVideo" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" data-hub-attach="video" />
+          </label>
+          <p class="hub-attach-status" data-hub-attach-status hidden role="status"></p>
+          <div class="hub-attach-preview" data-hub-attach-preview hidden></div>
+        </div>
         <input type="hidden" name="priority" value="عادي" />
         <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> إرسال طلب الاستشارة</button>
         <p class="hub-service-feedback" data-service-feedback hidden role="status" aria-live="polite"></p>
@@ -104,9 +120,10 @@
   <script src="js/hub-store.js"></script>
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>
+  <script src="js/hub-form-attachments.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-service-requests.js?v=1"></script>
-  <script src="js/hub-service-pages.js?v=1"></script>
+  <script src="js/hub-service-requests.js?v=2"></script>
+  <script src="js/hub-service-pages.js?v=2"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>

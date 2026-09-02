@@ -44,6 +44,13 @@
       preferredAt: payload.preferredAt || '',
       contactMethod: payload.contactMethod || '',
       reference: payload.reference || '',
+      serviceId: String(payload.serviceId || '').trim(),
+      serviceTitle: String(payload.serviceTitle || '').trim(),
+      attachLink: String(payload.attachLink || '').trim(),
+      attachDocUrl: String(payload.attachDocUrl || '').trim(),
+      attachDocName: String(payload.attachDocName || '').trim(),
+      attachImageUrl: String(payload.attachImageUrl || '').trim(),
+      attachVideoUrl: String(payload.attachVideoUrl || '').trim(),
       status: 'جديد',
       createdAt: new Date().toISOString(),
     };
