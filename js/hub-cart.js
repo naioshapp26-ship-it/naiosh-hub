@@ -95,6 +95,13 @@
             source: 'cart',
           });
         }
+        if (buyer.includes('@') && window.HubClientLearning?.enrollFromPurchase) {
+          window.HubClientLearning.enrollFromPurchase({
+            email: buyer,
+            storeId: line.id || line.storeId,
+            source: 'cart',
+          });
+        }
         try {
           const key = 'naiosh_hub_cart_orders_v1';
           const prev = JSON.parse(localStorage.getItem(key) || '[]');

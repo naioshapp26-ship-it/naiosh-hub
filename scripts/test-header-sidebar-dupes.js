@@ -22,7 +22,11 @@ const sidebar = fs.readFileSync('/workspace/js/hero-sidebar-nav.js', 'utf8');
 assert(sidebar.includes("ensure('منصتي', 'my-platform.html'"), 'sidebar منصتي missing');
 assert(!sidebar.includes("label: 'سجل معنا'"), 'sidebar still injects سجل معنا');
 assert(sidebar.includes("p.label !== 'سجل معنا'"), 'sidebar filter for سجل معنا missing');
-assert(sidebar.includes("ensure('قناتي', 'side-projects.html"), 'sidebar قناتي/المشاريع missing');
+assert(sidebar.includes("ensure('قناتي', 'my-channel.html'"), 'sidebar قناتي must open my-channel');
+assert(sidebar.includes("ensure('مكتبي', 'my-office.html'"), 'sidebar مكتبي must open my-office');
+assert(sidebar.includes("ensure('دوراتي', 'my-courses.html'"), 'sidebar دوراتي must open my-courses');
+assert(sidebar.includes("ensure('دبلوماتي', 'my-diplomas.html'"), 'sidebar دبلوماتي must open my-diplomas');
+assert(!sidebar.includes("ensure('قناتي', 'side-projects.html"), 'sidebar قناتي must not open side-projects');
 
 const actions = fs.readFileSync('/workspace/js/hub-header-actions.js', 'utf8');
 assert(actions.includes("label === 'منصتي'"), 'header cleanup missing منصتي');
