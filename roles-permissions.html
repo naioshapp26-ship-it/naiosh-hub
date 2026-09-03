@@ -104,6 +104,15 @@
                         <p class="text-xs text-slate-500">نايوش هوب · منح الأنظمة عبر الأدوار والصلاحيات (نفس تشغيل ERP)</p>
                     </div>
                 </div>
+                <div class="flex items-center gap-4" data-hub-control-host>
+                    <div class="hidden md:flex items-center gap-2 text-sm text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                        <i class="fas fa-user-circle"></i>
+                        <span>المسؤول العام</span>
+                    </div>
+                    <button onclick="logout()" class="text-slate-500 hover:text-red-600 transition-colors flex items-center gap-2">
+                        <i class="fas fa-right-from-bracket text-lg"></i>
+                        <span class="hidden sm:inline">تسجيل الخروج</span>
+                    </button>
                     <a href="system-ops.html" class="text-slate-500 hover:text-brand-600 transition-colors">
                         <i class="fas fa-home text-lg"></i>
                     </a>
@@ -3131,6 +3140,6 @@
             }
         }
     </script>
-  <script src="js/hub-control-nav.js?v=1"></script>
+  <script src="js/hub-control-nav.js?v=2"></script>
 </body>
 </html>

@@ -9,11 +9,18 @@
   window.HubControlNav = { mounted: false };
 
   const STYLE_ID = 'hub-control-nav-style';
+  const AUTH_PAGES = new Set([
+    'login.html',
+    'register.html',
+    'register-freelancer.html',
+    'sso-bridge.html',
+  ]);
   const fileName = () => (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
   const inSystems = /\/systems\//i.test(window.location.pathname.replace(/\\/g, '/'));
   const prefix = inSystems ? '../' : '';
   const isDashboard = fileName() === 'dashboard.html';
   const isHome = fileName() === 'index.html' || fileName() === '' || fileName() === '/';
+  const isAuthPage = AUTH_PAGES.has(fileName());
 
   const isDashHref = (href) => {
     const h = String(href || '')
@@ -113,15 +120,16 @@
 
   const stripDuplicateDash = (root) => {
     root?.querySelectorAll?.('a').forEach((a) => {
+      if (a.closest('[data-hub-control-nav]')) return;
       if (!isDashHref(a.getAttribute('href'))) return;
       const label = (a.textContent || '').replace(/\s+/g, ' ').trim();
-      if (label === 'غرفة العمليات' || label === 'لوحة التحكم' || a.classList.contains('auth-btn')) {
-        a.remove();
-      }
+      if (label === 'لوحة التحكم') a.remove();
     });
   };
 
   const host = () => {
+    if (isAuthPage) return { el: null, inline: false, skip: true };
+
     const inner = document.querySelector('header.top-nav .inner') || document.querySelector('header.top-nav .container.inner');
     if (inner) {
       let auth = inner.querySelector('.auth-actions');
@@ -133,7 +141,9 @@
       return { el: auth, inline: true };
     }
 
-    const rolesActions = document.querySelector('nav.sticky .flex.justify-between > .flex.items-center.gap-4');
+    const rolesActions =
+      document.querySelector('[data-hub-control-host]') ||
+      document.querySelector('nav.sticky .flex.justify-between > .flex.items-center.gap-4');
     if (rolesActions) return { el: rolesActions, inline: true };
 
     const topbar = document.querySelector('.topbar-actions');
@@ -149,8 +159,12 @@
       window.HubControlNav.mounted = true;
       return;
     }
+    const { el, inline, skip } = host();
+    if (skip || !el) {
+      window.HubControlNav.mounted = true;
+      return;
+    }
     const wrap = build();
-    const { el, inline } = host();
     if (inline) {
       wrap.classList.add('hub-control-nav--inline');
       stripDuplicateDash(el);
@@ -163,6 +177,7 @@
 
   window.HubControlNav.mount = mount;
   window.HubControlNav.isHome = isHome;
+  window.HubControlNav.isAuthPage = isAuthPage;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', mount, { once: true });

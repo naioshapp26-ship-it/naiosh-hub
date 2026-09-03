@@ -56,7 +56,7 @@
     if (window.HubControlNav || document.querySelector('script[data-hub-control-nav-src]')) return;
     const inSystems = /\/systems\//i.test((window.location.pathname || '').replace(/\\/g, '/'));
     const script = document.createElement('script');
-    script.src = `${inSystems ? '../' : ''}js/hub-control-nav.js?v=1`;
+    script.src = `${inSystems ? '../' : ''}js/hub-control-nav.js?v=2`;
     script.dataset.hubControlNavSrc = '1';
     (document.head || document.documentElement).appendChild(script);
   };
