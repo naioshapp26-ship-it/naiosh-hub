@@ -42,7 +42,7 @@
       links: [
         { href: 'office.html', label: 'مكتبي' },
         { href: 'partnerships.html', label: 'شراكاتي' },
-        { href: 'branches.html', label: 'فرعي' },
+        { href: 'my-branch.html', label: 'فرعي' },
         { href: 'platforms.html', label: 'المنصات' },
       ],
     },
