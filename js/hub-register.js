@@ -252,8 +252,17 @@
       return;
     }
 
+    if (String(fd.get('branch') || '').trim() && window.HubClientBranches?.grantFromBooking) {
+      window.HubClientBranches.grantFromBooking({
+        email: String(fd.get('email') || '').trim(),
+        branch: String(fd.get('branch') || '').trim(),
+        branchLabel: selectedLabel('branch'),
+        source: 'register',
+      });
+    }
+
     toast(
-      'تم إرسال الطلب إلى السوبر أدمن. بعد الموافقة سجّل الدخول بنفس الإيميل ثم افتح «منصتي» لترى الدومين والنظام.',
+      'تم إرسال الطلب إلى السوبر أدمن. فرعك يظهر الآن على هذا الجهاز في «فرعي». بعد الموافقة سجّل الدخول بنفس الإيميل وافتح «منصتي» لترى الدومين والنظام.',
       true
     );
     form.reset();

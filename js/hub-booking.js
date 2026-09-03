@@ -510,6 +510,10 @@
       /* ignore storage errors */
     }
 
+    if (payload.branch && window.HubClientBranches?.grantFromBooking) {
+      window.HubClientBranches.grantFromBooking(payload);
+    }
+
     const targetLabel =
       payload.platformName || payload.platform || payload.incubator || payload.branch || payload.sectorName || kind;
     window.HubStore?.pushFeed?.(

@@ -16,7 +16,7 @@
       }));
     }
     return [
-      { label: 'فرعي', href: 'branches.html', icon: 'fa-code-branch' },
+      { label: 'فرعي', href: 'my-branch.html', icon: 'fa-code-branch' },
       { label: 'حاضنتي', href: 'incubators.html', icon: 'fa-seedling' },
       { label: 'مكتبي', href: 'office.html', icon: 'fa-briefcase' },
       { label: 'اعلاناتي', href: 'ads.html', icon: 'fa-bullhorn' },
@@ -57,6 +57,9 @@
       if (label === 'حاضنتي' || label === 'الحاضنات' || /(?:^|\/)incubators\.html/.test(href)) {
         list[i] = { ...list[i], label: 'حاضنتي', href: 'my-incubator.html', icon: list[i].icon || 'fa-seedling' };
       }
+      if (label === 'فرعي' || label === 'الفروع' || /(?:^|\/)branches\.html/.test(href)) {
+        list[i] = { ...list[i], label: 'فرعي', href: 'my-branch.html', icon: list[i].icon || 'fa-code-branch' };
+      }
     }
     let keptMine = false;
     for (let i = list.length - 1; i >= 0; i -= 1) {
@@ -79,6 +82,17 @@
       }
       list[i] = { ...list[i], label: 'حاضنتي', href: 'my-incubator.html', icon: list[i].icon || 'fa-seedling' };
       keptIncubator = true;
+    }
+    let keptBranch = false;
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      const isBr = list[i].label === 'فرعي' || (list[i].href || '').includes('my-branch');
+      if (!isBr) continue;
+      if (keptBranch) {
+        list.splice(i, 1);
+        continue;
+      }
+      list[i] = { ...list[i], label: 'فرعي', href: 'my-branch.html', icon: list[i].icon || 'fa-code-branch' };
+      keptBranch = true;
     }
     // أزل تكرار قناتي إن وُجد أكثر من مرة
     let keptChannel = false;
@@ -107,6 +121,7 @@
     };
     ensure('شراكاتي', 'partnerships.html', 'fa-handshake');
     ensure('حاضنتي', 'my-incubator.html', 'fa-seedling');
+    ensure('فرعي', 'my-branch.html', 'fa-code-branch');
     ensure('منصتي', 'my-platform.html', 'fa-layer-group');
     ensure('قناتي', 'side-projects.html#sp-client-intro', 'fa-lightbulb');
     ensure('دوراتي', 'courses.html', 'fa-chalkboard');
