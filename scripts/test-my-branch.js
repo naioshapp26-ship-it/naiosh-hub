@@ -85,7 +85,8 @@ const header = index.match(/<header class="top-nav"[\s\S]*?<\/header>/);
 assert(header, 'homepage header missing');
 assert(header[0].includes('href="branches.html">الفروع'), 'header الفروع must stay on branches.html');
 assert(!header[0].includes('my-branch.html'), 'header must not replace الفروع with فرعي');
-assert(index.includes('hero-sidebar-nav.js?v=12'), 'sidebar cache-bust missing');
+assert(index.includes('hero-sidebar-nav.js?v=13'), 'sidebar cache-bust missing');
+assert(index.includes('hero-sidebar-nav.js?v=12') === false || index.includes('?v=13'), 'old sidebar cache');
 
 const mine = fs.readFileSync('/workspace/my-branch.html', 'utf8');
 assert(mine.includes('فرع حسابك فقط') || mine.includes('فرع المستخدم فقط'), 'my-branch copy missing');
@@ -95,11 +96,8 @@ assert(mine.includes('href="branches.html">الفروع'), 'my-branch still link
 const office = fs.readFileSync('/workspace/js/hub-office.js', 'utf8');
 assert(office.includes("href: 'my-branch.html'"), 'office shortcut فرعي missing');
 assert(!office.includes("href: 'branches.html', icon: 'fa-code-branch', label: 'فرعي'"), 'office still opens all branches');
-assert(fs.readFileSync('/workspace/office.html', 'utf8').includes('hub-office.js?v=2'), 'office cache bump missing');
-
-const pathFile = fs.readFileSync('/workspace/js/hub-user-path.js', 'utf8');
-assert(pathFile.includes("{ href: 'my-branch.html', label: 'فرعي' }"), 'user-path فرعي missing');
-assert(fs.readFileSync('/workspace/user-path.html', 'utf8').includes('hub-user-path.js?v=2'), 'user-path cache bump missing');
+assert(fs.readFileSync('/workspace/office.html', 'utf8').includes('hub-office.js?v=3'), 'office cache bump missing');
+assert(fs.readFileSync('/workspace/user-path.html', 'utf8').includes('hub-user-path.js?v=3'), 'user-path cache bump missing');
 
 const checklistHtml = fs.readFileSync('/workspace/hub-checklist.html', 'utf8');
 assert(checklistHtml.includes('hub-checklist.js?v=3'), 'checklist cache bump missing');

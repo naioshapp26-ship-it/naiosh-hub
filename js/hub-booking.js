@@ -513,6 +513,10 @@
     if (payload.branch && window.HubClientBranches?.grantFromBooking) {
       window.HubClientBranches.grantFromBooking(payload);
     }
+    if (kind === 'office' && window.HubClientOffices?.grantFromBooking) {
+      const officeGrant = window.HubClientOffices.grantFromBooking(payload);
+      if (officeGrant?.ok) grant = officeGrant;
+    }
 
     const targetLabel =
       payload.platformName || payload.platform || payload.incubator || payload.branch || payload.sectorName || kind;
@@ -538,6 +542,9 @@
         feedback.innerHTML = `تم منح المنصة <strong>${esc(payload.platformName)}</strong> عبر حاضنة تابعة للفرع وربطها بمنصتي. الأنظمة الممنوحة: ${esc(
           systems.map((s) => s.code).join(' · ') || '—'
         )}. <a href="my-platform.html?email=${emailQ}">افتح منصتي — منصاتك فقط</a>`;
+      } else if (kind === 'office' && grant?.ok) {
+        const emailQ = encodeURIComponent(payload.email);
+        feedback.innerHTML = `تم منح المكتب وربطه بمكتبي. <a href="my-office.html?email=${emailQ}">افتح مكتبي — مكاتبك فقط</a>`;
       } else {
         feedback.textContent = `تم استلام طلب حجز ال${kindLabel}. فريق هوب بيتواصل معك خلال 24 ساعة لتأكيد الموعد والمسار.`;
       }
