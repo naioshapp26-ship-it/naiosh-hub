@@ -32,7 +32,7 @@
     { id: 'c24', label: 'شحن الرصيد الموحد لجميع الأنظمة', status: 'partial', href: 'packages.html', hrefLabel: 'شحن الرصيد' },
     { id: 'c25', label: 'الدخول المباشر لفرع المستأجر', status: 'partial', href: 'my-branch.html', hrefLabel: 'فرعي' },
     { id: 'c26', label: 'الدخول المباشر للحاضنة', status: 'partial', href: 'incubators.html', hrefLabel: 'الحاضنات' },
-    { id: 'c27', label: 'الدخول المباشر لحاضنة المستأجر', status: 'partial', href: 'incubators.html', hrefLabel: 'حاضنة المستأجر' },
+    { id: 'c27', label: 'الدخول المباشر لحاضنة المستأجر', status: 'partial', href: 'my-incubator.html', hrefLabel: 'حاضنتي' },
     { id: 'c28', label: 'الدخول المباشر لمنصة المستأجر', status: 'partial', href: 'platforms.html', hrefLabel: 'منصة المستأجر' },
     { id: 'c29', label: 'الدخول المباشر لمكتب موظفي المنصة', status: 'partial', href: 'office.html', hrefLabel: 'مكتبي' },
     { id: 'c30', label: 'الدخول المباشر لإعلانات المستأجر', status: 'partial', href: 'ads.html', hrefLabel: 'إعلانات المستأجر' },

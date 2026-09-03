@@ -95,9 +95,21 @@ assert(mine.includes('href="branches.html">الفروع'), 'my-branch still link
 const office = fs.readFileSync('/workspace/js/hub-office.js', 'utf8');
 assert(office.includes("href: 'my-branch.html'"), 'office shortcut فرعي missing');
 assert(!office.includes("href: 'branches.html', icon: 'fa-code-branch', label: 'فرعي'"), 'office still opens all branches');
+assert(fs.readFileSync('/workspace/office.html', 'utf8').includes('hub-office.js?v=2'), 'office cache bump missing');
 
 const pathFile = fs.readFileSync('/workspace/js/hub-user-path.js', 'utf8');
 assert(pathFile.includes("{ href: 'my-branch.html', label: 'فرعي' }"), 'user-path فرعي missing');
+assert(fs.readFileSync('/workspace/user-path.html', 'utf8').includes('hub-user-path.js?v=2'), 'user-path cache bump missing');
+
+const checklistHtml = fs.readFileSync('/workspace/hub-checklist.html', 'utf8');
+assert(checklistHtml.includes('hub-checklist.js?v=3'), 'checklist cache bump missing');
+const checklist = fs.readFileSync('/workspace/js/hub-checklist.js', 'utf8');
+assert(checklist.includes("href: 'my-branch.html'"), 'checklist c25 missing my-branch');
+assert(checklist.includes("href: 'my-incubator.html'"), 'checklist c27 missing my-incubator');
+
+const register = fs.readFileSync('/workspace/js/hub-register.js', 'utf8');
+assert(register.includes('فرعي'), 'register toast should mention فرعي');
+assert(fs.readFileSync('/workspace/register.html', 'utf8').includes('hub-register.js?v=6'), 'register cache bump missing');
 
 console.log('PASS my-branch isolation + sidebar فرعي vs header الفروع');
 console.log(`  A=${sa} B=${eg}`);
