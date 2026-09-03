@@ -9,7 +9,11 @@
   window.HubControlNav = { mounted: false };
 
   const STYLE_ID = 'hub-control-nav-style';
-  const AUTH_PAGES = new Set([
+  // الصفحات التي لا تحتاج الشريط (لديها تنقل كافٍ أو هي صفحة الهبوط نفسها)
+  const SKIP_PAGES = new Set([
+    'index.html',
+    '',
+    '/',
     'login.html',
     'register.html',
     'register-freelancer.html',
@@ -20,7 +24,7 @@
   const prefix = inSystems ? '../' : '';
   const isDashboard = fileName() === 'dashboard.html';
   const isHome = fileName() === 'index.html' || fileName() === '' || fileName() === '/';
-  const isAuthPage = AUTH_PAGES.has(fileName());
+  const isAuthPage = SKIP_PAGES.has(fileName());
 
   const isDashHref = (href) => {
     const h = String(href || '')
