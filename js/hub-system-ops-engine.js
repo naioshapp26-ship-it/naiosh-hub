@@ -129,7 +129,8 @@
       type: kind,
       nameAr: nameAr || kind,
       tenantName: tenantName || 'مستأجر',
-      systemCode: String(systemCode || 'ERP').toUpperCase(),
+      // '' صراحةً = بلا نظام (مسار الفريلانسر). undefined/null يبقى ERP.
+      systemCode: systemCode === '' ? '' : String(systemCode || 'ERP').toUpperCase(),
       status: 'granted',
       num,
       grantId,

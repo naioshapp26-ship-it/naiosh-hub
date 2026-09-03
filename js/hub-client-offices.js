@@ -98,8 +98,24 @@
       isFreelancer ||
       String(payload.source || '').toLowerCase() === 'hq' ||
       (!payload.branch && !payload.incubator);
+
+    const state = read();
+    const existing = (state.offices || []).find((o) => {
+      if (normEmail(o.email) !== email) return false;
+      if (isFreelancer) return o.kind === 'freelancer' || o.source === 'freelancer';
+      return Boolean(slug) && String(o.slug || '') === slug;
+    });
+    if (existing) {
+      rememberEmail(email);
+      return { ok: true, office: existing, offices: listForEmail(email), reused: true };
+    }
+
     const officeName = String(
-      payload.officeName || payload.sectorName || (isFreelancer ? `مكتب فريلانسر — ${payload.fullName || email}` : '') || payload.fullName || 'مكتبي'
+      payload.officeName ||
+        payload.sectorName ||
+        (isFreelancer ? `مكتب فريلانسر — ${payload.fullName || email}` : '') ||
+        payload.fullName ||
+        'مكتبي'
     ).trim();
     const host = slug ? `${slug}.naiosh.app` : '';
     let structureGrantId = '';
@@ -109,11 +125,15 @@
         type: 'office',
         nameAr: officeName,
         tenantName: payload.fullName || email,
-        // الفريلانسر: هيكل مكتب فقط — لا يُمنح نظام تشغيل للمستأجر
+        // الفريلانسر: هيكل مكتب فقط — systemCode فارغ صراحةً = بلا نظام
         systemCode: isFreelancer ? '' : 'ERP',
         refId: isHq ? 'HQ' : payload.platform || payload.incubator || payload.branch || '',
       });
       structureGrantId = structure?.grantId || '';
+      if (isFreelancer && structure?.systemCode) {
+        // دفاع إضافي لو المحرك القديم ما زال يفرض ERP
+        structure.systemCode = '';
+      }
     } catch {
       /* ignore */
     }
@@ -161,19 +181,11 @@
       at: new Date().toISOString(),
     };
 
-    const state = read();
-    const exists = (state.offices || []).some((o) => {
-      if (normEmail(o.email) !== email) return false;
-      if (isFreelancer) return o.kind === 'freelancer' || o.source === 'freelancer';
-      return String(o.slug || '') === slug && slug;
-    });
-    if (!exists) {
-      state.offices = state.offices || [];
-      state.offices.unshift(row);
-      save(state);
-    }
+    state.offices = state.offices || [];
+    state.offices.unshift(row);
+    save(state);
     rememberEmail(email);
-    return { ok: true, office: row, offices: listForEmail(email) };
+    return { ok: true, office: row, offices: listForEmail(email), reused: false };
   };
 
   window.HubClientOffices = {

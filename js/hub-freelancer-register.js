@@ -166,9 +166,14 @@
     event.preventDefault();
     if (!form) return;
     syncRequired();
+    if (!selectedCount()) {
+      toast('اختر مشروعًا جانبيًا واحدًا على الأقل من القائمة');
+      requiredProxy?.focus?.();
+      form.reportValidity();
+      return;
+    }
     if (!form.checkValidity()) {
       form.reportValidity();
-      if (!selectedCount()) toast('اختر مشروعًا جانبيًا واحدًا على الأقل من القائمة');
       return;
     }
 
