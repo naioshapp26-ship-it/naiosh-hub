@@ -93,8 +93,30 @@
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, '');
     if (!email) return { ok: false, error: 'الإيميل مطلوب' };
-    const isHq = String(payload.source || '').toLowerCase() === 'hq' || (!payload.branch && !payload.incubator);
-    const officeName = String(payload.officeName || payload.sectorName || payload.fullName || 'مكتبي').trim();
+    const isFreelancer = String(payload.kind || payload.source || '').toLowerCase() === 'freelancer';
+    const isHq =
+      isFreelancer ||
+      String(payload.source || '').toLowerCase() === 'hq' ||
+      (!payload.branch && !payload.incubator);
+
+    const state = read();
+    const existing = (state.offices || []).find((o) => {
+      if (normEmail(o.email) !== email) return false;
+      if (isFreelancer) return o.kind === 'freelancer' || o.source === 'freelancer';
+      return Boolean(slug) && String(o.slug || '') === slug;
+    });
+    if (existing) {
+      rememberEmail(email);
+      return { ok: true, office: existing, offices: listForEmail(email), reused: true };
+    }
+
+    const officeName = String(
+      payload.officeName ||
+        payload.sectorName ||
+        (isFreelancer ? `مكتب فريلانسر — ${payload.fullName || email}` : '') ||
+        payload.fullName ||
+        'مكتبي'
+    ).trim();
     const host = slug ? `${slug}.naiosh.app` : '';
     let structureGrantId = '';
     let subdomainGrantId = '';
@@ -103,25 +125,33 @@
         type: 'office',
         nameAr: officeName,
         tenantName: payload.fullName || email,
-        systemCode: 'ERP',
+        // الفريلانسر: هيكل مكتب فقط — systemCode فارغ صراحةً = بلا نظام
+        systemCode: isFreelancer ? '' : 'ERP',
         refId: isHq ? 'HQ' : payload.platform || payload.incubator || payload.branch || '',
       });
       structureGrantId = structure?.grantId || '';
+      if (isFreelancer && structure?.systemCode) {
+        // دفاع إضافي لو المحرك القديم ما زال يفرض ERP
+        structure.systemCode = '';
+      }
     } catch {
       /* ignore */
     }
-    try {
-      const sd = window.HubSystemOps?.grantSubdomain?.({
-        tenantName: payload.fullName || officeName,
-        systemCode: 'ERP',
-        slug,
-        branchOrHq: isHq ? 'المكتب الرئيسي' : payload.branchLabel || payload.branch || '',
-        incubator: isHq ? '' : payload.incubatorLabel || payload.incubator || '',
-        platformName: payload.platformLabel || payload.platform || officeName,
-      });
-      subdomainGrantId = sd?.grantId || '';
-    } catch {
-      /* ignore */
+    // دومين فرعي اختياري — الفريلانسر بلا منصة فلا يُنشأ دومين منصة
+    if (slug && !isFreelancer) {
+      try {
+        const sd = window.HubSystemOps?.grantSubdomain?.({
+          tenantName: payload.fullName || officeName,
+          systemCode: 'ERP',
+          slug,
+          branchOrHq: isHq ? 'المكتب الرئيسي' : payload.branchLabel || payload.branch || '',
+          incubator: isHq ? '' : payload.incubatorLabel || payload.incubator || '',
+          platformName: payload.platformLabel || payload.platform || officeName,
+        });
+        subdomainGrantId = sd?.grantId || '';
+      } catch {
+        /* ignore */
+      }
     }
 
     const row = {
@@ -130,34 +160,32 @@
       fullName: String(payload.fullName || '').trim(),
       phone: String(payload.phone || '').trim(),
       officeName,
-      slug,
-      host,
+      slug: isFreelancer ? '' : slug,
+      host: isFreelancer ? '' : host,
       country: String(payload.country || '').trim(),
       branch: isHq ? '' : String(payload.branch || '').trim(),
       branchLabel: isHq ? 'المكتب الرئيسي' : String(payload.branchLabel || payload.branch || '').trim(),
       incubator: isHq ? '' : String(payload.incubator || '').trim(),
       incubatorLabel: isHq ? '' : String(payload.incubatorLabel || payload.incubator || '').trim(),
-      platform: isHq ? '' : String(payload.platform || payload.platformName || '').trim(),
-      platformLabel: isHq ? '' : String(payload.platformLabel || payload.platformName || '').trim(),
-      source: isHq ? 'hq' : payload.source || 'platform',
-      systems: Array.isArray(payload.systems) ? payload.systems : [],
+      platform: isHq || isFreelancer ? '' : String(payload.platform || payload.platformName || '').trim(),
+      platformLabel: isHq || isFreelancer ? '' : String(payload.platformLabel || payload.platformName || '').trim(),
+      source: isFreelancer ? 'freelancer' : isHq ? 'hq' : payload.source || 'platform',
+      kind: isFreelancer ? 'freelancer' : 'office',
+      systems: isFreelancer ? [] : Array.isArray(payload.systems) ? payload.systems : [],
+      grants: isFreelancer
+        ? { platform: false, system: false, office: true, operatedBy: 'hq' }
+        : undefined,
       status: 'active',
       grantId: structureGrantId,
       subdomainGrantId,
       at: new Date().toISOString(),
     };
 
-    const state = read();
-    const exists = (state.offices || []).some(
-      (o) => normEmail(o.email) === email && String(o.slug || '') === slug && slug
-    );
-    if (!exists) {
-      state.offices = state.offices || [];
-      state.offices.unshift(row);
-      save(state);
-    }
+    state.offices = state.offices || [];
+    state.offices.unshift(row);
+    save(state);
     rememberEmail(email);
-    return { ok: true, office: row, offices: listForEmail(email) };
+    return { ok: true, office: row, offices: listForEmail(email), reused: false };
   };
 
   window.HubClientOffices = {

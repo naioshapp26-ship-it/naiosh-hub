@@ -123,33 +123,57 @@
 
   const grantOfficeOnly = (app) => {
     const nameAr = `مكتب فريلانسر — ${app.fullName}`;
+    // مسار الفريلانسر: مكتب فقط من المقر — بدون منصة وبدون نظام
+    if (window.HubClientOffices?.grantFromBooking) {
+      const res = window.HubClientOffices.grantFromBooking({
+        kind: 'freelancer',
+        source: 'freelancer',
+        email: app.email,
+        fullName: app.fullName,
+        phone: app.phone,
+        officeName: nameAr,
+        systems: [],
+      });
+      if (res?.ok) {
+        return {
+          nameAr: res.office?.officeName || nameAr,
+          grantId: res.office?.grantId || '',
+          type: 'office',
+          platform: false,
+          system: false,
+          operatedBy: 'hq',
+          office: res.office,
+        };
+      }
+    }
     try {
       if (window.HubSystemOps?.grantStructure) {
         return window.HubSystemOps.grantStructure({
           type: 'office',
           nameAr,
           tenantName: app.fullName,
-          systemCode: 'HQ',
+          systemCode: '',
+          refId: 'HQ',
         });
       }
     } catch {
       /* ignore */
     }
-    try {
-      window.HubStore?.grantOffice?.({ nameAr, platform: 'المكتب الرئيسي' });
-    } catch {
-      /* ignore */
-    }
-    return { nameAr, type: 'office', granted: true };
+    return { nameAr, type: 'office', granted: true, platform: false, system: false, operatedBy: 'hq' };
   };
 
   const onSubmit = async (event) => {
     event.preventDefault();
     if (!form) return;
     syncRequired();
+    if (!selectedCount()) {
+      toast('اختر مشروعًا جانبيًا واحدًا على الأقل من القائمة');
+      requiredProxy?.focus?.();
+      form.reportValidity();
+      return;
+    }
     if (!form.checkValidity()) {
       form.reportValidity();
-      if (!selectedCount()) toast('اختر مشروعًا جانبيًا واحدًا على الأقل من القائمة');
       return;
     }
 
@@ -191,6 +215,9 @@
     app.office = {
       nameAr: office?.nameAr || `مكتب فريلانسر — ${app.fullName}`,
       grantId: office?.grantId || '',
+      operatedBy: 'hq',
+      platformGranted: false,
+      systemGranted: false,
     };
 
     const prev = readSaved();
@@ -199,18 +226,21 @@
     try {
       window.HubStore?.pushFeed?.(
         'decision',
-        `تسجيل فريلانسر: ${app.fullName} — مكتب فقط من المقر · ${app.projects.length} مشروع`
+        `احجز معنا فريلانسر: ${app.fullName} — مكتب فقط من المقر · بدون منصة/نظام · ${app.projects.length} مشروع`
       );
     } catch {
       /* ignore */
     }
 
-    toast(
-      `تم استلام تسجيلك كفريلانسر. لا منصة ولا نظام — يُمنح مكتب فقط ويُشغَّل من المكتب الرئيسي حسب حاجة المنصات.${
-        app.office.grantId ? ` رقم المكتب: ${app.office.grantId}` : ''
-      }`,
-      true
-    );
+    const emailQ = encodeURIComponent(app.email);
+    if (feedback) {
+      feedback.hidden = false;
+      feedback.classList.remove('is-error');
+      feedback.classList.add('is-ok');
+      feedback.innerHTML = `تم استلام حجزك كفريلانسر. <strong>لا منصة ولا نظام</strong> — يُمنح <strong>مكتب فقط</strong> ويُشغَّل من <strong>المكتب الرئيسي</strong> حسب حاجة المنصات.${
+        app.office.grantId ? ` رقم المكتب: <strong>${esc(app.office.grantId)}</strong>.` : ''
+      } <a href="my-office.html?email=${emailQ}">افتح مكتبي</a>`;
+    }
     form.reset();
     selected.clear();
     renderList();

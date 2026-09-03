@@ -44,7 +44,18 @@
     const systems = Array.isArray(row.systems) ? row.systems : [];
     article.innerHTML = `<h3>${esc(row.officeName || 'مكتبي')} <span class="hub-mine-status is-active">مكتب المستخدم</span></h3>
       <p>الإيميل: <strong dir="ltr">${esc(row.email)}</strong></p>
-      <p>المصدر: <strong>${esc(row.source === 'hq' ? 'المكتب الرئيسي' : 'منصة / حاضنة / فرع')}</strong></p>
+      <p>المصدر: <strong>${esc(
+        row.source === 'freelancer'
+          ? 'فريلانسر · المكتب الرئيسي'
+          : row.source === 'hq'
+            ? 'المكتب الرئيسي'
+            : 'منصة / حاضنة / فرع'
+      )}</strong></p>
+      ${
+        row.kind === 'freelancer' || row.source === 'freelancer'
+          ? '<p><span class="hub-mine-status is-active">مكتب فقط · بدون منصة · بدون نظام</span></p><p>التشغيل حسب حاجة المنصات من المقر.</p>'
+          : ''
+      }
       <p>الفرع: <strong>${esc(row.branchLabel || row.branch || '—')}</strong></p>
       <p>الحاضنة: <strong>${esc(row.incubatorLabel || row.incubator || '—')}</strong></p>
       <p>المنصة: <strong>${esc(row.platformLabel || row.platform || '—')}</strong></p>
