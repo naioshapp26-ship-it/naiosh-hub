@@ -330,3 +330,51 @@ body[data-market-page="products"] #hub-back-button {
 }
 .hub-ops-path-links a:nth-child(2) { background: #dc2626; }
 .hub-ops-path-links a:nth-child(3) { background: #fff; color: #111827; border: 1px solid #e5e7eb; }
+
+/* شعار الهبوط + لوحة التحكم — أعلى اليسار */
+.hub-control-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.hub-control-nav__logo {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+.hub-control-nav__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hub-control-nav__dash {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #b10011, #7a000c);
+  color: #fff !important;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none !important;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(177, 0, 17, 0.28);
+}
+.hub-control-nav:not(.hub-control-nav--inline) {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  right: auto;
+  z-index: 10060;
+}

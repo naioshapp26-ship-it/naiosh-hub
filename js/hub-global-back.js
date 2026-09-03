@@ -51,4 +51,14 @@
 
   if (document.body) init();
   else document.addEventListener('DOMContentLoaded', init, { once: true });
+
+  const loadControlNav = () => {
+    if (window.HubControlNav || document.querySelector('script[data-hub-control-nav-src]')) return;
+    const inSystems = /\/systems\//i.test((window.location.pathname || '').replace(/\\/g, '/'));
+    const script = document.createElement('script');
+    script.src = `${inSystems ? '../' : ''}js/hub-control-nav.js?v=1`;
+    script.dataset.hubControlNavSrc = '1';
+    (document.head || document.documentElement).appendChild(script);
+  };
+  loadControlNav();
 })();
