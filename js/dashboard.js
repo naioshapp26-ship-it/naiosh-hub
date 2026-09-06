@@ -2427,4 +2427,9 @@
 
   const hash = (window.location.hash || '#overview').replace('#', '');
   activate(TITLES[hash] ? hash : 'overview');
+
+  window.addEventListener('hashchange', () => {
+    const next = (window.location.hash || '#overview').replace('#', '');
+    if (TITLES[next] && next !== current) activate(next);
+  });
 })();
