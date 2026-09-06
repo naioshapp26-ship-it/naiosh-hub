@@ -287,6 +287,19 @@ const HubStore = (() => {
     liveFeedEnabled: true,
     allowPublicRegister: true,
     currency: 'USD',
+    primaryColor: '#d70000',
+    secondaryColor: '#0a0a0a',
+    accentColor: '#8a000c',
+    bgColor: '#f4f4f5',
+    textColor: '#111111',
+    surfaceColor: '#ffffff',
+    logoMain: '',
+    logoLight: '',
+    logoDark: '',
+    faviconUrl: '',
+    loginImage: '',
+    dashboardImage: '',
+    banners: [],
     updatedAt: null,
   });
 
@@ -307,6 +320,24 @@ const HubStore = (() => {
     'allowPublicRegister',
   ]);
   const SETTINGS_NUM = new Set(['sessionMinutes', 'autoSyncMinutes', 'activityRetainDays', 'maxUploadMb']);
+  const SETTINGS_JSON = new Set(['banners']);
+  const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+  const normalizeBanner = (b = {}) => ({
+    id: String(b.id || `bnr-${Date.now().toString(36)}`),
+    name: String(b.name || 'بنر'),
+    title: String(b.title || ''),
+    description: String(b.description || ''),
+    buttonText: String(b.buttonText || ''),
+    buttonUrl: String(b.buttonUrl || ''),
+    imageDataUrl: String(b.imageDataUrl || ''),
+    videoUrl: String(b.videoUrl || ''),
+    location: String(b.location || 'homepage'),
+    startDate: String(b.startDate || ''),
+    endDate: String(b.endDate || ''),
+    order: Number.isFinite(Number(b.order)) ? Number(b.order) : 1,
+    enabled: b.enabled !== false && b.enabled !== 'false' && b.enabled !== 0,
+  });
 
   const coerceSettings = (raw = {}) => {
     const d = defaultSettings();
@@ -319,6 +350,16 @@ const HubStore = (() => {
       } else if (SETTINGS_NUM.has(key)) {
         const n = Number(raw[key]);
         out[key] = Number.isFinite(n) ? n : d[key];
+      } else if (SETTINGS_JSON.has(key)) {
+        let list = raw[key];
+        if (typeof list === 'string') {
+          try {
+            list = JSON.parse(list || '[]');
+          } catch (_) {
+            list = [];
+          }
+        }
+        out[key] = Array.isArray(list) ? list.map(normalizeBanner) : [];
       } else {
         out[key] = String(raw[key]);
       }
@@ -331,6 +372,10 @@ const HubStore = (() => {
     if (!out.timezone) out.timezone = d.timezone;
     if (!out.dateFormat) out.dateFormat = d.dateFormat;
     if (!out.shopDefaultCategory) out.shopDefaultCategory = 'الكل';
+    ['primaryColor', 'secondaryColor', 'accentColor', 'bgColor', 'textColor', 'surfaceColor'].forEach((k) => {
+      if (!HEX_RE.test(out[k] || '')) out[k] = d[k];
+    });
+    if (!Array.isArray(out.banners)) out.banners = [];
     out.updatedAt = raw.updatedAt || null;
     return out;
   };
