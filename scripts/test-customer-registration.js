@@ -74,21 +74,22 @@ async function main() {
   delete require.cache[require.resolve('../lib/hub-customer-auth')];
   const customerAuth = require('../lib/hub-customer-auth');
 
-  const weak = await customerAuth.register({
+  const tooShort = await customerAuth.register({
     fullName: 'عميل تجريبي',
-    username: 'custweak',
-    email: 'weak@example.com',
+    username: 'custshort',
+    email: 'short@example.com',
     phone: '+966500000001',
-    password: 'weak',
-    confirmPassword: 'weak',
+    password: '123',
+    confirmPassword: '123',
     termsAccepted: true,
   });
-  assert.strictEqual(weak.ok, false, 'weak password must fail');
+  assert.strictEqual(tooShort.ok, false, 'password shorter than 4 chars must fail');
 
   const stamp = Date.now().toString(36);
   const email = `cust_${stamp}@example.com`;
   const username = `cust_${stamp}`;
-  const password = 'Strong1!x';
+  // Easy passwords (letters or numbers) are accepted — no complexity rules.
+  const password = '1234';
   const created = await customerAuth.register({
     fullName: 'سارة العميل',
     username,

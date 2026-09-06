@@ -101,36 +101,35 @@
     ['fullName', 'username', 'email', 'phone', 'password', 'confirmPassword', 'terms'].forEach(clearFieldError);
   }
 
+  const MIN_PASSWORD_LENGTH = 4;
+
   function passwordStrength(password) {
     const p = String(password || '');
-    const rules = {
-      minLength: p.length >= 8,
-      upper: /[A-Z]/.test(p),
-      lower: /[a-z]/.test(p),
-      number: /[0-9]/.test(p),
-      special: /[^A-Za-z0-9]/.test(p),
-    };
-    return { ok: Object.values(rules).every(Boolean), rules };
+    const rules = { minLength: p.length >= MIN_PASSWORD_LENGTH };
+    return { ok: rules.minLength, rules };
   }
 
   function updatePasswordUI() {
     const value = passwordInput?.value || '';
     const { ok, rules } = passwordStrength(value);
-    const score = Object.values(rules).filter(Boolean).length;
     document.querySelectorAll('.pw-rule').forEach((el) => {
       const key = el.getAttribute('data-rule');
-      const met = !!rules[key];
+      const met = key ? !!rules[key] : ok;
       el.classList.toggle('is-met', met);
       const icon = el.querySelector('i');
       if (icon) icon.className = met ? 'fa-solid fa-circle-check ml-1' : 'fa-solid fa-circle-xmark ml-1';
     });
     if (meterFill) {
-      meterFill.style.width = `${(score / 5) * 100}%`;
-      meterFill.style.backgroundColor = score <= 2 ? '#dc2626' : score <= 4 ? '#d97706' : '#16a34a';
+      const pct = Math.min(100, (value.length / MIN_PASSWORD_LENGTH) * 100);
+      meterFill.style.width = `${pct}%`;
+      meterFill.style.backgroundColor = ok ? '#16a34a' : value ? '#d97706' : '#dc2626';
     }
     if (meterLabel) {
-      meterLabel.textContent =
-        score === 0 ? 'قوة كلمة المرور' : score <= 2 ? 'ضعيفة' : score <= 4 ? 'متوسطة' : 'قوية';
+      meterLabel.textContent = !value
+        ? 'اختاري أي كلمة مرور أو رقم (4 أحرف على الأقل)'
+        : ok
+          ? 'كلمة المرور مقبولة ✓'
+          : `أضيفي ${MIN_PASSWORD_LENGTH - value.length} حرفًا أو رقمًا على الأقل`;
     }
     if (passwordInput && value) {
       passwordInput.classList.toggle('field-ok', ok);
@@ -189,7 +188,7 @@
       ok = false;
     }
     if (!passwordStrength(password).ok) {
-      setFieldError('password', 'من فضلك اختر كلمة مرور أقوى.');
+      setFieldError('password', `كلمة المرور قصيرة جدًا — ${MIN_PASSWORD_LENGTH} أحرف أو أرقام على الأقل.`);
       ok = false;
     }
     if (password !== confirmPassword) {
