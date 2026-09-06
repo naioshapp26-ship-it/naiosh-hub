@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>إنشاء حساب جديد — نايوش هوب</title>
+  <meta name="description" content="أنشئ حساب عميل جديد في نايوش هوب 360 وادخل إلى منصتك." />
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#d70000',
+              dark: '#8a000c',
+              light: '#ff1f2f',
+              50: '#fff5f5',
+            },
+            secondary: '#0a0a0a',
+          },
+          fontFamily: {
+            sans: ['Cairo', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .loading-spinner {
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top: 3px solid #fff;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .field-error { border-color: #dc2626 !important; background: #fef2f2 !important; }
+    .field-ok { border-color: #16a34a !important; }
+    .pw-rule.is-met { color: #15803d; }
+    .pw-meter { height: 6px; border-radius: 999px; background: #e5e7eb; overflow: hidden; }
+    .pw-meter-fill { height: 100%; width: 0; border-radius: 999px; transition: width .25s ease, background-color .25s ease; }
+  </style>
+</head>
+<body class="bg-white flex items-center justify-center min-h-screen p-4">
+  <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+    <div class="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-3xl"></div>
+    <div class="absolute top-[40%] -left-[10%] w-[40%] h-[40%] rounded-full bg-black/5 blur-3xl"></div>
+  </div>
+
+  <div class="max-w-lg w-full bg-white rounded-2xl shadow-xl overflow-hidden z-10 relative border border-gray-100">
+    <div class="bg-primary p-8 text-center relative overflow-hidden">
+      <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-30"></div>
+      <div class="relative z-10">
+        <div class="inline-flex items-center justify-center w-28 h-28 rounded-full bg-white mb-4 border border-white/60 shadow-xl overflow-hidden">
+          <img src="assets/logo-hub.jpeg" alt="شعار نايوش هوب" class="w-24 h-24 object-contain" />
+        </div>
+        <div class="text-white text-3xl md:text-4xl font-extrabold tracking-wide">NAIOSH <span>HUB</span></div>
+        <p class="text-white/90 text-sm mt-1 font-bold tracking-widest">360 · IMPERIAL</p>
+        <p class="text-white/80 text-sm mt-2">إنشاء حساب عميل جديد</p>
+      </div>
+    </div>
+
+    <div class="p-6 sm:p-8">
+      <div class="mb-6 text-center">
+        <h1 class="text-xl font-extrabold text-black">أنشئ حسابك</h1>
+        <p class="text-sm text-gray-600 mt-1">انضم إلى نايوش هوب وابدأ مباشرة</p>
+      </div>
+
+      <div id="alertMessage" class="hidden mb-6 p-4 rounded-lg text-sm font-medium transition-all duration-300 border" role="alert" aria-live="polite"></div>
+
+      <div id="successPanel" class="hidden text-center py-6 space-y-3">
+        <div class="mx-auto w-16 h-16 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-2xl">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h2 class="text-xl font-extrabold text-black">تم إنشاء الحساب بنجاح</h2>
+        <p class="text-sm text-gray-600">مرحبًا بك في نايوش هوب — جاري تحويلك إلى لوحة العميل…</p>
+      </div>
+
+      <form id="createAccountForm" class="space-y-4" novalidate>
+        <div>
+          <label for="fullName" class="block text-sm font-semibold text-black mb-2">الاسم الكامل <span class="text-primary">*</span></label>
+          <div class="relative">
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-user"></i></div>
+            <input id="fullName" name="fullName" type="text" required minlength="2" autocomplete="name" aria-describedby="fullNameError"
+              class="block w-full pr-10 pl-3 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition sm:text-sm"
+              placeholder="الاسم الثلاثي" />
+          </div>
+          <p id="fullNameError" class="hidden mt-1 text-xs text-red-600"></p>
+        </div>
+
+        <div>
+          <label for="username" class="block text-sm font-semibold text-black mb-2">اسم المستخدم <span class="text-primary">*</span></label>
+          <div class="relative">
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-at"></i></div>
+            <input id="username" name="username" type="text" required minlength="3" maxlength="32" autocomplete="username" spellcheck="false" aria-describedby="usernameError usernameHint"
+              class="block w-full pr-10 pl-3 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition sm:text-sm"
+              placeholder="username" />
+          </div>
+          <p id="usernameHint" class="mt-1 text-xs text-gray-500">3–32 حرفًا لاتينيًا أو أرقام أو . _ -</p>
+          <p id="usernameError" class="hidden mt-1 text-xs text-red-600"></p>
+        </div>
+
+        <div>
+          <label for="email" class="block text-sm font-semibold text-black mb-2">البريد الإلكتروني <span class="text-primary">*</span></label>
+          <div class="relative">
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-envelope"></i></div>
+            <input id="email" name="email" type="email" required autocomplete="email" aria-describedby="emailError"
+              class="block w-full pr-10 pl-3 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition sm:text-sm"
+              placeholder="name@example.com" />
+          </div>
+          <p id="emailError" class="hidden mt-1 text-xs text-red-600"></p>
+        </div>
+
+        <div>
+          <label for="phone" class="block text-sm font-semibold text-black mb-2">رقم الهاتف <span class="text-primary">*</span></label>
+          <div class="relative">
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-phone"></i></div>
+            <input id="phone" name="phone" type="tel" required autocomplete="tel" inputmode="tel" aria-describedby="phoneError"
+              class="block w-full pr-10 pl-3 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition sm:text-sm"
+              placeholder="+9665xxxxxxxx" />
+          </div>
+          <p id="phoneError" class="hidden mt-1 text-xs text-red-600"></p>
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-semibold text-black mb-2">كلمة المرور <span class="text-primary">*</span></label>
+          <div class="relative">
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-lock"></i></div>
+            <button type="button" id="togglePassword" class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-primary transition-colors" aria-label="إظهار كلمة المرور" aria-pressed="false">
+              <i id="togglePasswordIcon" class="fa-solid fa-eye"></i>
+            </button>
+            <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password" aria-describedby="passwordError passwordRules"
+              class="block w-full pr-10 pl-10 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition sm:text-sm"
+              placeholder="••••••••" />
+          </div>
+          <div class="mt-2 pw-meter" aria-hidden="true"><div id="passwordMeterFill" class="pw-meter-fill"></div></div>
+          <p id="passwordMeterLabel" class="mt-1 text-xs text-gray-500">قوة كلمة المرور</p>
+          <ul id="passwordRules" class="mt-2 space-y-1 text-xs text-gray-500">
+            <li class="pw-rule" data-rule="minLength"><i class="fa-solid fa-circle-xmark ml-1"></i> 8 أحرف على الأقل</li>
+            <li class="pw-rule" data-rule="upper"><i class="fa-solid fa-circle-xmark ml-1"></i> حرف كبير واحد على الأقل</li>
+            <li class="pw-rule" data-rule="lower"><i class="fa-solid fa-circle-xmark ml-1"></i> حرف صغير واحد على الأقل</li>
+            <li class="pw-rule" data-rule="number"><i class="fa-solid fa-circle-xmark ml-1"></i> رقم واحد على الأقل</li>
+            <li class="pw-rule" data-rule="special"><i class="fa-solid fa-circle-xmark ml-1"></i> رمز خاص واحد على الأقل</li>
+          </ul>
+          <p id="passwordError" class="hidden mt-1 text-xs text-red-600"></p>
+        </div>
+
+        <div>
+          <label for="confirmPassword" class="block text-sm font-semibold text-black mb-2">تأكيد كلمة المرور <span class="text-primary">*</span></label>
+          <div class="relative">
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400"><i class="fa-solid fa-lock"></i></div>
+            <button type="button" id="toggleConfirmPassword" class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-primary transition-colors" aria-label="إظهار تأكيد كلمة المرور" aria-pressed="false">
+              <i id="toggleConfirmPasswordIcon" class="fa-solid fa-eye"></i>
+            </button>
+            <input id="confirmPassword" name="confirmPassword" type="password" required minlength="8" autocomplete="new-password" aria-describedby="confirmPasswordError"
+              class="block w-full pr-10 pl-10 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition sm:text-sm"
+              placeholder="••••••••" />
+          </div>
+          <p id="confirmPasswordError" class="hidden mt-1 text-xs text-red-600"></p>
+        </div>
+
+        <details class="rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+          <summary class="cursor-pointer text-sm font-bold text-black select-none">معلومات إضافية (اختياري)</summary>
+          <div class="mt-3 space-y-3">
+            <div>
+              <label for="governorate" class="block text-sm font-semibold text-black mb-2">المحافظة</label>
+              <input id="governorate" name="governorate" type="text" autocomplete="address-level1" class="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm" placeholder="مثال: الرياض" />
+            </div>
+            <div>
+              <label for="city" class="block text-sm font-semibold text-black mb-2">المدينة</label>
+              <input id="city" name="city" type="text" autocomplete="address-level2" class="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm" placeholder="مثال: جدة" />
+            </div>
+            <div>
+              <label for="address" class="block text-sm font-semibold text-black mb-2">العنوان</label>
+              <input id="address" name="address" type="text" autocomplete="street-address" class="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm" placeholder="الحي / الشارع" />
+            </div>
+          </div>
+        </details>
+
+        <div class="flex items-start gap-2 pt-1">
+          <input id="termsAccepted" name="termsAccepted" type="checkbox" required class="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded cursor-pointer" aria-describedby="termsError" />
+          <label for="termsAccepted" class="text-sm text-gray-700 leading-6 cursor-pointer">
+            أوافق على
+            <a href="terms.html" target="_blank" rel="noopener" class="font-bold text-primary hover:text-primary-dark">الشروط والأحكام</a>
+            و
+            <a href="privacy.html" target="_blank" rel="noopener" class="font-bold text-primary hover:text-primary-dark">سياسة الخصوصية</a>
+            <span class="text-primary">*</span>
+          </label>
+        </div>
+        <p id="termsError" class="hidden text-xs text-red-600"></p>
+
+        <button type="submit" id="createAccountBtn" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+          <span class="btn-text flex items-center gap-2">
+            إنشاء الحساب
+            <i class="fa-solid fa-user-plus group-hover:-translate-x-0.5 transition-transform"></i>
+          </span>
+          <span class="loading-spinner hidden" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <div class="mt-6 text-center text-sm text-gray-600">
+        لديك حساب بالفعل؟
+        <a href="login.html" class="font-bold text-primary hover:text-primary-dark transition-colors">تسجيل الدخول</a>
+      </div>
+
+      <div class="mt-4 text-center text-xs text-gray-500">
+        هل تريد تسجيل منصة؟
+        <a href="register.html" class="font-semibold text-gray-700 hover:text-primary">سجل معنا كصاحب منصة</a>
+      </div>
+
+      <div class="mt-6 flex items-center justify-center gap-3 text-base font-extrabold text-black">
+        <img src="assets/logo-hub.jpeg" alt="شعار نايوش هوب" class="w-12 h-12 object-contain drop-shadow-sm rounded" />
+        <span>NAIOSH HUB <span class="text-primary">360</span></span>
+      </div>
+
+      <div class="mt-4 text-center">
+        <a href="index.html" class="text-sm text-gray-500 hover:text-primary transition-colors">
+          <i class="fa-solid fa-home ml-1"></i> العودة للرئيسية
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/hub-auth.js"></script>
+  <script src="js/hub-create-account.js?v=1"></script>
+  <script src="js/hub-global-back.js" defer></script>
+  <script src="js/hub-page-guide.js" defer></script>
+  <script src="js/hub-ai-assistant.js?v=4" defer></script>
+</body>
+</html>

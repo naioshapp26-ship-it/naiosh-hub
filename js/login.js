@@ -121,6 +121,29 @@ function fillLogin(email, password, autoSubmit = true) {
       })();
 
     let serverUser = null;
+    let customerUser = null;
+    try {
+      const customerRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const customerData = await customerRes.json().catch(() => ({}));
+      if (customerData?.ok && customerData?.user) {
+        customerUser = {
+          ...customerData.user,
+          role: 'customer',
+          name: customerData.user.name || customerData.user.fullName || email,
+        };
+        if (customerData.token) {
+          // Prefer server token when present
+          window.__hubCustomerToken = customerData.token;
+        }
+      }
+    } catch {
+      /* offline — fall through */
+    }
+
     try {
       const res = await fetch('/api/hub/tenant-login', {
         method: 'POST',
@@ -140,6 +163,17 @@ function fillLogin(email, password, autoSubmit = true) {
         name: demo.name,
         role: demo.role,
         platform: 'naiosh-hub-360',
+      };
+    } else if (customerUser) {
+      user = {
+        email: customerUser.email,
+        name: customerUser.name,
+        fullName: customerUser.fullName || customerUser.name,
+        username: customerUser.username,
+        phone: customerUser.phone,
+        role: 'customer',
+        platform: customerUser.platform || 'naiosh-hub-360',
+        id: customerUser.id,
       };
     } else if (serverUser) {
       user = serverUser;
@@ -163,7 +197,10 @@ function fillLogin(email, password, autoSubmit = true) {
       setLoading(false);
       return;
     }
-    const token = `hub360.${btoa(email)}.${Date.now()}`;
+    const token =
+      (user.role === 'customer' && window.__hubCustomerToken) ||
+      `hub360.${btoa(email)}.${Date.now()}`;
+    delete window.__hubCustomerToken;
     if (window.HubAuth?.setSession) {
       window.HubAuth.setSession(user, token, { remember: !!rememberMe });
     } else {
@@ -186,6 +223,8 @@ function fillLogin(email, password, autoSubmit = true) {
       dest = window.HubLauncher.getDirectLaunchUrl(system);
     } else if (user.role === 'platform_owner') {
       dest = 'my-platform.html';
+    } else if (user.role === 'customer') {
+      dest = 'dashboard.html';
     }
 
     showAlert('تم تسجيل الدخول بنجاح! جاري التحويل...', 'success');

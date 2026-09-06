@@ -127,6 +127,13 @@
     }
   };
 
+  const requireStaff = ({ next = '' } = {}) => {
+    if (!requireLogin({ next })) return false;
+    if (isStaff()) return true;
+    window.location.href = 'dashboard.html#overview';
+    return false;
+  };
+
   window.HubAuth = {
     TOKEN_KEY,
     USER_KEY,
@@ -138,6 +145,7 @@
     clearSession,
     loginUrl,
     requireLogin,
+    requireStaff,
     canAccessSystem,
     attachSsoParams,
     issueHubTicket,

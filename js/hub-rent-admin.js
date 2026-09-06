@@ -202,6 +202,19 @@
   };
 
   document.addEventListener('DOMContentLoaded', async () => {
+    const user = window.HubAuth?.getUser?.();
+    if (user?.role === 'customer' || (window.HubAuth?.isLoggedIn?.() && !window.HubAuth?.isStaff?.())) {
+      const role = user?.role || '';
+      if (role === 'customer' || role === 'platform_owner') {
+        document.body.innerHTML =
+          '<main style="font-family:Cairo,sans-serif;max-width:36rem;margin:4rem auto;padding:1.5rem;text-align:center;direction:rtl">' +
+          '<h1 style="font-size:1.5rem;font-weight:800">غير مصرح</h1>' +
+          '<p style="color:#4b5563;margin:1rem 0">هذه الصفحة مخصصة للإدارة فقط. حساب العميل لا يملك صلاحية الوصول.</p>' +
+          '<a href="dashboard.html" style="color:#d70000;font-weight:700">العودة للوحة التحكم</a></main>';
+        return;
+      }
+    }
+
     if (!$('[data-rent-admin-list]') && !$('[data-platform-admin-list]')) return;
     await store()?.hydrate?.();
     await platforms()?.hydrate?.();
