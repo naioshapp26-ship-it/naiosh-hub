@@ -20,12 +20,22 @@ CREATE TABLE IF NOT EXISTS hub_users (
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   name_ar TEXT NOT NULL,
+  username TEXT,
+  phone TEXT,
   role TEXT NOT NULL DEFAULT 'user',
   platform TEXT NOT NULL DEFAULT 'naiosh-hub-360',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS hub_users_username_uidx
+  ON hub_users (username)
+  WHERE username IS NOT NULL AND length(trim(username)) > 0;
+
+CREATE UNIQUE INDEX IF NOT EXISTS hub_users_phone_uidx
+  ON hub_users (phone)
+  WHERE phone IS NOT NULL AND length(trim(phone)) > 0;
 
 CREATE TABLE IF NOT EXISTS hub_countries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

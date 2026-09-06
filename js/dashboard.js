@@ -174,7 +174,15 @@
   // —— Auth UI
   $('#user-name').textContent = user.name || user.email || 'مستخدم';
   $('#user-role').textContent =
-    user.role === 'supreme_leader' ? 'القائد الأعلى' : user.role === 'chief_engineer' ? 'المهندسة مليكة' : user.role || 'عضو';
+    user.role === 'supreme_leader'
+      ? 'القائد الأعلى'
+      : user.role === 'chief_engineer'
+        ? 'المهندسة مليكة'
+        : user.role === 'customer'
+          ? 'عميل'
+          : user.role === 'platform_owner'
+            ? 'صاحب منصة'
+            : user.role || 'عضو';
 
   $('#logout-btn').onclick = () => {
     localStorage.removeItem('hubAuthToken');
@@ -272,8 +280,18 @@
   });
 
   // —— Nav
+  const STAFF_ONLY_NAV = new Set([
+    'roles-permissions',
+    'rent-admin',
+    'search-admin',
+    'side-project-regs',
+    'settings',
+  ]);
+  const visibleNav =
+    user.role === 'customer' ? NAV.filter((n) => !STAFF_ONLY_NAV.has(n.key) && !n.href) : NAV;
+
   const renderNav = () => {
-    $('#sidebar-nav').innerHTML = NAV.map((n) => {
+    $('#sidebar-nav').innerHTML = visibleNav.map((n) => {
       const href = n.href || `#${n.key}`;
       const active = n.key === current ? 'active' : '';
       return `<a href="${href}" data-panel="${n.key}" ${n.href ? 'data-external="1"' : ''} class="${active}"><i class="fas ${n.icon}"></i> ${n.label}</a>`;

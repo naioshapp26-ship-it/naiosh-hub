@@ -11,6 +11,7 @@ const erpAdapter = require('./lib/erp-saas-adapter');
 const hubSso = require('./lib/hub-sso');
 const { handleAdminApi } = require('./lib/hub-rbac-admin');
 const hubUploads = require('./lib/hub-uploads');
+const customerAuth = require('./lib/hub-customer-auth');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -762,6 +763,69 @@ const server = http.createServer((req, res) => {
 
   if (pathname === '/api/ai-agent/chat' && req.method === 'OPTIONS') {
     sendJson(res, 204, {});
+    return;
+  }
+
+  if (pathname === '/api/auth/register' && req.method === 'OPTIONS') {
+    sendJson(res, 204, {});
+    return;
+  }
+
+  if (pathname === '/api/auth/register' && req.method === 'POST') {
+    readBody(req)
+      .then(async (body) => {
+        const result = await customerAuth.register(body || {});
+        sendJson(res, result.status || (result.ok ? 201 : 400), {
+          success: !!result.ok,
+          ok: !!result.ok,
+          message: result.message || result.error || '',
+          error: result.ok ? undefined : result.error,
+          field: result.field,
+          strength: result.strength,
+          token: result.token,
+          user: result.user,
+        });
+      })
+      .catch((error) => {
+        const status = error.status || 400;
+        sendJson(res, status, {
+          success: false,
+          ok: false,
+          error: status === 413 ? 'حجم الطلب أكبر من المسموح' : 'حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.',
+        });
+      });
+    return;
+  }
+
+  if (pathname === '/api/auth/login' && req.method === 'OPTIONS') {
+    sendJson(res, 204, {});
+    return;
+  }
+
+  if (pathname === '/api/auth/login' && req.method === 'POST') {
+    readBody(req)
+      .then(async (body) => {
+        const result = await customerAuth.login({
+          email: body?.email,
+          password: body?.password,
+        });
+        sendJson(res, result.status || (result.ok ? 200 : 401), {
+          success: !!result.ok,
+          ok: !!result.ok,
+          message: result.message || result.error || '',
+          error: result.ok ? undefined : result.error,
+          token: result.token,
+          user: result.user,
+        });
+      })
+      .catch((error) => {
+        const status = error.status || 400;
+        sendJson(res, status, {
+          success: false,
+          ok: false,
+          error: status === 413 ? 'حجم الطلب أكبر من المسموح' : 'بيانات الدخول غير صحيحة.',
+        });
+      });
     return;
   }
 
