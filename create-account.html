@@ -140,18 +140,14 @@
             <button type="button" id="togglePassword" class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-primary transition-colors" aria-label="إظهار كلمة المرور" aria-pressed="false">
               <i id="togglePasswordIcon" class="fa-solid fa-eye"></i>
             </button>
-            <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password" aria-describedby="passwordError passwordRules"
+            <input id="password" name="password" type="password" required minlength="4" autocomplete="new-password" aria-describedby="passwordError passwordRules"
               class="block w-full pr-10 pl-10 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition sm:text-sm"
-              placeholder="••••••••" />
+              placeholder="أي كلمة أو رقم — 4 أحرف فأكثر" />
           </div>
           <div class="mt-2 pw-meter" aria-hidden="true"><div id="passwordMeterFill" class="pw-meter-fill"></div></div>
-          <p id="passwordMeterLabel" class="mt-1 text-xs text-gray-500">قوة كلمة المرور</p>
+          <p id="passwordMeterLabel" class="mt-1 text-xs text-gray-500">اختاري أي كلمة مرور أو رقم (4 أحرف على الأقل)</p>
           <ul id="passwordRules" class="mt-2 space-y-1 text-xs text-gray-500">
-            <li class="pw-rule" data-rule="minLength"><i class="fa-solid fa-circle-xmark ml-1"></i> 8 أحرف على الأقل</li>
-            <li class="pw-rule" data-rule="upper"><i class="fa-solid fa-circle-xmark ml-1"></i> حرف كبير واحد على الأقل</li>
-            <li class="pw-rule" data-rule="lower"><i class="fa-solid fa-circle-xmark ml-1"></i> حرف صغير واحد على الأقل</li>
-            <li class="pw-rule" data-rule="number"><i class="fa-solid fa-circle-xmark ml-1"></i> رقم واحد على الأقل</li>
-            <li class="pw-rule" data-rule="special"><i class="fa-solid fa-circle-xmark ml-1"></i> رمز خاص واحد على الأقل</li>
+            <li class="pw-rule" data-rule="minLength"><i class="fa-solid fa-circle-xmark ml-1"></i> 4 أحرف أو أرقام على الأقل — بدون شروط معقدة</li>
           </ul>
           <p id="passwordError" class="hidden mt-1 text-xs text-red-600"></p>
         </div>
@@ -163,9 +159,9 @@
             <button type="button" id="toggleConfirmPassword" class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-primary transition-colors" aria-label="إظهار تأكيد كلمة المرور" aria-pressed="false">
               <i id="toggleConfirmPasswordIcon" class="fa-solid fa-eye"></i>
             </button>
-            <input id="confirmPassword" name="confirmPassword" type="password" required minlength="8" autocomplete="new-password" aria-describedby="confirmPasswordError"
+            <input id="confirmPassword" name="confirmPassword" type="password" required minlength="4" autocomplete="new-password" aria-describedby="confirmPasswordError"
               class="block w-full pr-10 pl-10 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white transition sm:text-sm"
-              placeholder="••••••••" />
+              placeholder="أعيدي كتابة كلمة المرور" />
           </div>
           <p id="confirmPasswordError" class="hidden mt-1 text-xs text-red-600"></p>
         </div>
