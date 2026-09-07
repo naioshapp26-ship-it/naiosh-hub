@@ -74,7 +74,7 @@
     if (input.parentElement?.querySelector('[data-hub-upload-hint]')) return;
     const hint = document.createElement('small');
     hint.setAttribute('data-hub-upload-hint', '');
-    hint.textContent = `الحد الأقصى ${policyMaxMb()} ميجابايت للصورة والملف والفيديو`;
+    hint.textContent = `الحد الأقصى ${policyMaxMb()} ميجابايت — معظم أنواع الملفات مسموحة`;
     input.insertAdjacentElement('afterend', hint);
   };
 

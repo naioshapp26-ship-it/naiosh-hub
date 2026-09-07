@@ -215,21 +215,36 @@
     return { member, cert };
   };
 
-  /** مدونة النظام */
-  const publishPost = ({ title, body, systemCode = 'ERP' } = {}) => {
+  /** مدونة النظام — مقالات تظهر على blog.html مع مرفقات اختيارية */
+  const publishPost = ({ title, body, systemCode = 'ERP', attachments = [] } = {}) => {
     const state = read();
     if (!title?.trim()) return null;
+    const files = (Array.isArray(attachments) ? attachments : [])
+      .filter((a) => a && (a.url || a.name))
+      .map((a) => ({
+        name: String(a.name || 'ملف').slice(0, 160),
+        url: String(a.url || ''),
+        mime: String(a.mime || a.type || ''),
+        size: Number(a.size) || 0,
+      }));
     const post = {
       id: uid('post'),
       title: title.trim(),
       body: (body || '').trim(),
       systemCode: String(systemCode || 'ERP').toUpperCase(),
+      attachments: files,
+      published: true,
       at: new Date().toISOString(),
     };
     state.blogPosts.unshift(post);
     log(state, 'منشور مدونة', post.title);
     save(state);
     return post;
+  };
+
+  const listPublishedPosts = (limit = 50) => {
+    const posts = read().blogPosts || [];
+    return posts.filter((p) => p && p.published !== false).slice(0, Math.max(1, Number(limit) || 50));
   };
 
   /** أنشئ صفحتك على النظام وهوب */
@@ -420,6 +435,7 @@
     can,
     registerMembership,
     publishPost,
+    listPublishedPosts,
     createPage,
     rentPlatform,
     toggleErpi,
