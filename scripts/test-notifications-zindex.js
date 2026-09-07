@@ -1,0 +1,11 @@
+const fs = require('fs');
+const assert = require('assert');
+const js = fs.readFileSync('js/hub-notifications-ui.js', 'utf8');
+assert(/position:\s*fixed/.test(js), 'panel must be position fixed');
+assert(/z-index:\s*10080/.test(js), 'panel z-index must be above dashboard content');
+assert(/appendChild\(panel\)/.test(js) || /document\.body\.appendChild/.test(js), 'panel must escape topbar stacking');
+assert(/placePanel/.test(js), 'panel placement helper required');
+const css = fs.readFileSync('css/dashboard.css', 'utf8');
+assert(/\.topbar\s*\{[\s\S]*?z-index:\s*10050/.test(css), 'topbar needs elevated z-index');
+assert(fs.readFileSync('dashboard.html', 'utf8').includes('hub-notifications-ui.js?v=2'), 'dashboard cache bump');
+console.log('PASS notifications panel stacks above control banner');
