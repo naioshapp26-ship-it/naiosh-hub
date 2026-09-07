@@ -1,0 +1,748 @@
+/**
+ * Roles & Permissions — enterprise UX layer (human-readable, progressive disclosure)
+ * Preserves existing /api/admin contracts; overrides list/permission displays.
+ */
+:root {
+  --rux-brand: #990e1e;
+  --rux-brand-soft: #fff5f5;
+  --rux-ink: #171a20;
+  --rux-muted: #5e636d;
+  --rux-line: #e8ecf2;
+  --rux-card: #ffffff;
+  --rux-bg: #f4f6f9;
+  --rux-ok: #059669;
+  --rux-warn: #d97706;
+  --rux-danger: #dc2626;
+  --rux-info: #2563eb;
+  --rux-radius: 16px;
+  --rux-shadow: 0 10px 30px rgba(23, 26, 32, 0.06);
+}
+
+.rux-intro {
+  background: linear-gradient(135deg, #1a0208 0%, #3a0a14 48%, #990e1e 100%);
+  color: #fff;
+  border-radius: var(--rux-radius);
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  box-shadow: var(--rux-shadow);
+}
+.rux-intro h2 {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+.rux-intro p {
+  margin: 0;
+  opacity: 0.92;
+  line-height: 1.7;
+  max-width: 52rem;
+}
+.rux-intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.rux-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.rux-stat {
+  cursor: pointer;
+  text-align: right;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.rux-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--rux-shadow);
+}
+.rux-stat.is-active {
+  outline: 2px solid var(--rux-brand);
+  outline-offset: 2px;
+}
+
+.rux-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.rux-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.rux-filters select,
+.rux-search {
+  border: 1px solid var(--rux-line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: #fff;
+  min-height: 42px;
+  font: inherit;
+}
+.rux-search {
+  min-width: min(100%, 280px);
+  flex: 1;
+}
+
+.rux-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.rux-role-card {
+  background: var(--rux-card);
+  border: 1px solid var(--rux-line);
+  border-radius: var(--rux-radius);
+  padding: 18px;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.rux-role-card:hover {
+  border-color: #f1b4bb;
+  box-shadow: var(--rux-shadow);
+}
+.rux-role-card.is-sensitive {
+  border-color: #fecaca;
+  background: linear-gradient(180deg, #fff 0%, #fff8f8 100%);
+}
+.rux-role-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+.rux-role-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--rux-ink);
+  line-height: 1.4;
+}
+.rux-role-desc {
+  margin: 0;
+  color: var(--rux-muted);
+  font-size: 0.92rem;
+  line-height: 1.65;
+  min-height: 2.8em;
+}
+.rux-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rux-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #f1f5f9;
+  color: #334155;
+}
+.rux-badge--ok {
+  background: #ecfdf5;
+  color: #047857;
+}
+.rux-badge--off {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.rux-badge--sys {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.rux-badge--hot {
+  background: #fff7ed;
+  color: #c2410c;
+}
+.rux-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.rux-metric {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+}
+.rux-metric strong {
+  display: block;
+  font-size: 1.15rem;
+  color: var(--rux-ink);
+}
+.rux-metric span {
+  font-size: 11px;
+  color: var(--rux-muted);
+  font-weight: 700;
+}
+.rux-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+.rux-btn {
+  appearance: none;
+  border: 1px solid var(--rux-line);
+  background: #fff;
+  color: var(--rux-ink);
+  border-radius: 12px;
+  padding: 9px 12px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.15s ease;
+}
+.rux-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+.rux-btn:focus-visible {
+  outline: 3px solid rgba(153, 14, 30, 0.25);
+  outline-offset: 2px;
+}
+.rux-btn--primary {
+  background: var(--rux-brand);
+  border-color: var(--rux-brand);
+  color: #fff;
+}
+.rux-btn--primary:hover {
+  background: #7a0b16;
+  border-color: #7a0b16;
+}
+.rux-btn--ghost {
+  background: transparent;
+}
+.rux-btn--danger {
+  color: var(--rux-danger);
+  border-color: #fecaca;
+  background: #fff5f5;
+}
+.rux-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rux-empty {
+  text-align: center;
+  padding: 48px 20px;
+  background: #fff;
+  border: 1px dashed var(--rux-line);
+  border-radius: var(--rux-radius);
+}
+.rux-empty h3 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+}
+.rux-empty p {
+  margin: 0 0 16px;
+  color: var(--rux-muted);
+}
+
+/* Permissions studio */
+.rux-perm-shell {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .rux-perm-shell {
+    grid-template-columns: 1fr;
+  }
+}
+.rux-side {
+  background: #fff;
+  border: 1px solid var(--rux-line);
+  border-radius: var(--rux-radius);
+  padding: 14px;
+  position: sticky;
+  top: 80px;
+}
+.rux-side h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+.rux-role-pick {
+  width: 100%;
+  border: 1px solid var(--rux-line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  margin-bottom: 12px;
+}
+.rux-help {
+  font-size: 12px;
+  color: var(--rux-muted);
+  line-height: 1.6;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.rux-main {
+  background: #fff;
+  border: 1px solid var(--rux-line);
+  border-radius: var(--rux-radius);
+  overflow: hidden;
+}
+.rux-main-head {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--rux-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+}
+.rux-main-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.rux-main-body {
+  padding: 16px 18px 88px;
+}
+.rux-level-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.rux-level-pill {
+  border: 1px solid var(--rux-line);
+  border-radius: 12px;
+  padding: 10px;
+  background: #fafbfc;
+}
+.rux-level-pill strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.rux-level-pill span {
+  font-size: 12px;
+  color: var(--rux-muted);
+  line-height: 1.5;
+}
+.rux-sys-card {
+  border: 1px solid var(--rux-line);
+  border-radius: 14px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.rux-sys-card.is-critical {
+  border-color: #fecaca;
+}
+.rux-sys-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #f8fafc;
+  cursor: pointer;
+}
+.rux-sys-head:focus-visible {
+  outline: 3px solid rgba(153, 14, 30, 0.2);
+}
+.rux-sys-body {
+  padding: 0 16px 16px;
+  display: none;
+}
+.rux-sys-card.is-open .rux-sys-body {
+  display: block;
+}
+.rux-level-options {
+  display: grid;
+  gap: 8px;
+}
+.rux-level-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--rux-line);
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  background: #fff;
+}
+.rux-level-option.is-on {
+  border-color: #f1b4bb;
+  background: var(--rux-brand-soft);
+}
+.rux-level-option.is-risk {
+  border-color: #fdba74;
+}
+.rux-level-option.is-critical {
+  border-color: #fca5a5;
+}
+.rux-level-option input {
+  margin-top: 3px;
+}
+.rux-level-option strong {
+  display: block;
+  font-size: 14px;
+}
+.rux-level-option small {
+  color: var(--rux-muted);
+  line-height: 1.5;
+}
+.rux-warn {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #9a3412;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.rux-sticky-bar {
+  position: sticky;
+  bottom: 12px;
+  margin: 0 18px 18px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--rux-line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--rux-shadow);
+  z-index: 5;
+}
+.rux-diff {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rux-muted);
+}
+.rux-diff strong {
+  color: var(--rux-ink);
+}
+
+/* Drawer / wizard */
+.rux-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  z-index: 80;
+  display: none;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+.rux-overlay.is-open {
+  display: flex;
+}
+.rux-drawer {
+  width: min(560px, 100%);
+  background: #fff;
+  height: 100%;
+  overflow: auto;
+  box-shadow: -20px 0 50px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+.rux-drawer-head {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--rux-line);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+.rux-drawer-body {
+  padding: 18px 20px;
+  flex: 1;
+}
+.rux-drawer-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.rux-drawer-tab {
+  border: 1px solid var(--rux-line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+.rux-drawer-tab.is-on {
+  background: var(--rux-brand);
+  border-color: var(--rux-brand);
+  color: #fff;
+}
+.rux-panel {
+  display: none;
+}
+.rux-panel.is-on {
+  display: block;
+}
+.rux-kv {
+  display: grid;
+  gap: 10px;
+}
+.rux-kv article {
+  border: 1px solid var(--rux-line);
+  border-radius: 12px;
+  padding: 12px;
+}
+.rux-kv h4 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--rux-muted);
+}
+.rux-kv p {
+  margin: 0;
+  font-weight: 700;
+}
+.rux-user-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid var(--rux-line);
+  padding: 10px 0;
+}
+.rux-user-row:last-child {
+  border-bottom: 0;
+}
+.rux-advanced {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  overflow: auto;
+  direction: ltr;
+  text-align: left;
+}
+
+.rux-wizard {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.55);
+}
+.rux-wizard.is-open {
+  display: flex;
+}
+.rux-wizard-card {
+  width: min(720px, 100%);
+  max-height: min(90vh, 860px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: var(--rux-shadow);
+}
+.rux-wizard-head {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--rux-line);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background: #fff;
+}
+.rux-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 20px 0;
+}
+.rux-step {
+  flex: 1;
+  min-width: 120px;
+  text-align: center;
+  border-radius: 999px;
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  background: #f1f5f9;
+  color: #64748b;
+}
+.rux-step.is-on {
+  background: var(--rux-brand-soft);
+  color: var(--rux-brand);
+}
+.rux-wizard-body {
+  padding: 18px 20px 20px;
+}
+.rux-field {
+  margin-bottom: 12px;
+}
+.rux-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.rux-field input,
+.rux-field textarea,
+.rux-field select {
+  width: 100%;
+  border: 1px solid var(--rux-line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+}
+.rux-template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.rux-template {
+  border: 1px solid var(--rux-line);
+  border-radius: 14px;
+  padding: 12px;
+  cursor: pointer;
+  background: #fff;
+  text-align: right;
+}
+.rux-template.is-on {
+  border-color: var(--rux-brand);
+  background: var(--rux-brand-soft);
+}
+.rux-template strong {
+  display: block;
+  margin-bottom: 4px;
+}
+.rux-template span {
+  font-size: 12px;
+  color: var(--rux-muted);
+  line-height: 1.5;
+}
+.rux-sys-toggles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+.rux-sys-toggle {
+  border: 1px solid var(--rux-line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #fff;
+}
+.rux-wizard-foot {
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--rux-line);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+}
+
+.rux-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: help;
+  border: 0;
+}
+.rux-tip:focus-visible {
+  outline: 2px solid var(--rux-brand);
+}
+
+.rux-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.55);
+}
+.rux-confirm.is-open {
+  display: flex;
+}
+.rux-confirm-card {
+  width: min(440px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--rux-shadow);
+}
+.rux-confirm-card h3 {
+  margin: 0 0 8px;
+}
+.rux-confirm-card p {
+  margin: 0 0 16px;
+  color: var(--rux-muted);
+  line-height: 1.7;
+}
+.rux-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Hide legacy table when UX cards are active */
+#rolesTab .rux-legacy-table-wrap,
+#permissionsTab .rux-legacy-table-wrap {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .rux-metrics {
+    grid-template-columns: 1fr;
+  }
+  .rux-actions .rux-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
