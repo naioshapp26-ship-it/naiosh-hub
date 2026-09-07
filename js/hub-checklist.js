@@ -19,7 +19,7 @@
     { id: 'c11', label: 'عرض الفروع · الحاضنات · المنصات · المكاتب', status: 'partial', href: 'platforms.html', hrefLabel: 'المنصات' },
     { id: 'c12', label: 'انضم لإمبراطورية نايوش / انضم لنظام المستأجر', status: 'partial', href: 'trial.html', hrefLabel: 'التجربة' },
     { id: 'c13', label: 'مركز المعلومات والسياسات والتشغيل', status: 'done', href: 'info-center.html', hrefLabel: 'مركز المعرفة' },
-    { id: 'c14', label: 'المدونة العامة للإمبراطورية', status: 'partial', href: 'blog.html', hrefLabel: 'المدونة' },
+    { id: 'c14', label: 'المدونة العامة للإمبراطورية', status: 'done', href: 'blog.html', hrefLabel: 'المدونة' },
     { id: 'c15', label: 'عرض باقات الاشتراك في جميع الأنظمة', status: 'partial', href: 'packages.html', hrefLabel: 'الباقات' },
     { id: 'c16', label: 'العضوية الموحدة لجميع الأنظمة والدومينات', status: 'partial', href: 'membership.html', hrefLabel: 'العضوية الموحدة' },
     { id: 'c17', label: 'عرض الدبلومات وإعادة التوجيه للأكاديمية', status: 'partial', href: 'systems/academy.html', hrefLabel: 'الأكاديمية' },

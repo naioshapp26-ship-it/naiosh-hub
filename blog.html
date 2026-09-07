@@ -33,72 +33,28 @@
 
   <main class="container hub-feature-page">
     <section class="hub-feature-hero">
-      <p class="hub-feature-kicker"><i class="fas fa-newspaper"></i> مدونة التشغيل</p>
+      <p class="hub-feature-kicker"><i class="fas fa-newspaper"></i> مدونة التشغيل · مفعّلة</p>
       <h1>مقالات تُشغّل — مش كلام عام</h1>
       <p>كل مقالة تنتهي بخطوة عملية داخل هوب: فرع · رصيد · دردشة · منصات. وضوح · قياس · سيطرة.</p>
       <div class="hub-feature-actions">
         <a class="btn btn-primary" href="#posts"><i class="fas fa-book-open"></i> اقرأ أحدث المقالات</a>
-        <a class="btn btn-secondary" href="events.html"><i class="fas fa-calendar"></i> الفعاليات</a>
-        <a class="btn btn-secondary" href="ads.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+        <a class="btn btn-secondary" href="system-ops.html?tab=blog" data-blog-publish-cta><i class="fas fa-upload"></i> ارفع مقالًا</a>
+        <a class="btn btn-secondary" href="operating.html"><i class="fas fa-gears"></i> آلية التشغيل</a>
       </div>
     </section>
 
     <aside class="hub-feature-purpose">
       <span class="hub-feature-purpose-mark"><i class="fas fa-pen-nib"></i></span>
       <div>
-        <strong>وظيفة هذه الصفحة</strong>
-        <p>تتعلّم فكرة تشغيلية ثم تنتقل فورًا للصفحة التي تنفّذها داخل هوب.</p>
+        <strong>من أين ترفع المقال؟</strong>
+        <p>من <a href="system-ops.html?tab=blog"><strong>تشغيل الأنظمة ← المدونة</strong></a> (أو من آلية التشغيل). أضف العنوان والنص والمرفقات بأي نوع ملف شائع حتى 150 ميجابايت، ثم اضغط نشر — يظهر المقال هنا فورًا.</p>
       </div>
     </aside>
 
     <section class="hub-feature-section" id="posts">
       <h2 class="hub-feature-section-title">أحدث المقالات التشغيلية</h2>
-      <p class="hub-feature-section-lead">اختر موضوعًا — الزر يأخذك لمسار التنفيذ لا لمقال آخر.</p>
-      <div class="hub-feature-grid">
-        <article class="hub-feature-card hub-feature-card--featured">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-code-branch"></i></span>
-            <h3>شغّل فرعك خلال 24 ساعة</h3>
-          </div>
-          <p>NAIOSH ID · باقة التشغيل · ربط الإعلانات والمنتجات · مراقبة من غرفة العمليات.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="branches.html">الفروع</a>
-            <a class="btn btn-secondary" href="packages.html">الباقات</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-coins"></i></span>
-            <h3>اقتصاد النقاط</h3>
-          </div>
-          <p>لماذا يبدأ كل حساب بـ 300 نقطة مجانية، وكيف تربط الشحن بالمحفظة داخل هوب.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="index.html#charge">إشحن من الرئيسية</a>
-            <a class="btn btn-secondary" href="membership.html">العضوية</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-comments"></i></span>
-            <h3>الدردشة الداخلية للفرق</h3>
-          </div>
-          <p>تنسيق لحظي بين الفروع والدعم وغرفة العمليات — داخل قناة تشغيل واحدةة.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="chat.html">افتح الدردشة</a>
-          </div>
-        </article>
-        <article class="hub-feature-card">
-          <div class="hub-feature-card-top">
-            <span class="hub-feature-icon"><i class="fas fa-layer-group"></i></span>
-            <h3>خريطة المنصات الـ 18</h3>
-          </div>
-          <p>من الدماغ المركزي إلى السلطة العليا — ماذا تعني كل منصة لتشغيل الإمبراطورية.</p>
-          <div class="hub-feature-actions">
-            <a class="btn btn-primary" href="platforms.html">المنصات</a>
-            <a class="btn btn-secondary" href="info-center.html">مركز المعلومات</a>
-          </div>
-        </article>
-      </div>
+      <p class="hub-feature-section-lead">المنشورات الحية من تشغيل الأنظمة تظهر أولًا — الزر يأخذك لمسار التنفيذ.</p>
+      <div class="hub-feature-grid" data-blog-posts></div>
     </section>
 
     <section class="hub-feature-hero hub-feature-closing">
@@ -111,7 +67,9 @@
     </section>
   </main>
 
-  <script src="js/hub-upload-limits.js?v=1"></script>
+  <script src="js/hub-system-ops-engine.js?v=5"></script>
+  <script src="js/hub-blog.js?v=1"></script>
+  <script src="js/hub-upload-limits.js?v=2"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>

@@ -219,17 +219,43 @@
     }
 
     if (tab === 'blog') {
-      host.innerHTML = section(
-        'مدونة النظام · المقالات والمنشورات',
-        `<form class="sysops-form" data-form="blog">
+      const attachHtml = (p) => {
+        const files = Array.isArray(p.attachments) ? p.attachments : [];
+        if (!files.length) return '';
+        return `<div class="sysops-inline">${files
+          .map((f) =>
+            f.url
+              ? `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name || 'مرفق')}</a>`
+              : `<span>${esc(f.name || 'مرفق')}</span>`
+          )
+          .join(' · ')}</div>`;
+      };
+      host.innerHTML =
+        section(
+          'مدونة نايوش هوب · تفعيل ونشر المقالات',
+          `<p class="sysops-note">من هنا ترفع المقالات على المدونة العامة. المرفقات تدعم معظم أنواع الملفات (صور · مستندات · فيديو · أرشيف · CAD) حتى 150 ميجابايت — باستثناء الملفات التنفيذية الخطرة.</p>
+        <form class="sysops-form" data-form="blog">
           <input name="title" required placeholder="عنوان المقال" />
-          <textarea name="body" rows="3" placeholder="المحتوى / الثقافة المجتمعية"></textarea>
+          <textarea name="body" rows="5" placeholder="نص المقال / الثقافة المجتمعية"></textarea>
           <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
-          <button class="btn btn-primary">نشر</button>
-          <a class="btn btn-secondary" href="blog.html">مدونة هوب العامة</a>
-        </form>
-        ${listRows(state.blogPosts.slice(0, 20), (p) => `<article><strong>${esc(p.title)}</strong><span>${esc(p.body)}</span><small>${esc(p.systemCode)}</small></article>`)}`
-      );
+          <label>مرفقات المقال (اختياري — جميع الأنواع المسموحة)
+            <input type="file" name="attachments" multiple />
+          </label>
+          <button class="btn btn-primary" type="submit">نشر على المدونة</button>
+          <a class="btn btn-secondary" href="blog.html" target="_blank" rel="noopener">فتح المدونة العامة</a>
+          <a class="btn btn-secondary" href="operating.html">آلية التشغيل</a>
+        </form>`
+        ) +
+        section(
+          'المنشورات المنشورة',
+          listRows(
+            state.blogPosts.slice(0, 20),
+            (p) =>
+              `<article><strong>${esc(p.title)}</strong><span>${esc(p.body)}</span><small>${esc(p.systemCode)} · ${esc(
+                (p.at || '').slice(0, 10)
+              )}</small>${attachHtml(p)}</article>`
+          )
+        );
       return;
     }
 
@@ -438,7 +464,7 @@
     }
   });
 
-  root.addEventListener('submit', (e) => {
+  root.addEventListener('submit', async (e) => {
     const form = e.target.closest('form[data-form]');
     if (!form) return;
     e.preventDefault();
@@ -477,12 +503,47 @@
       toast(`عضوية + شهادة: ${r.cert.title}`);
     }
     if (type === 'blog') {
-      window.HubSystemOps.publishPost({
-        title: fd.get('title'),
-        body: fd.get('body'),
-        systemCode: fd.get('systemCode'),
-      });
-      toast('تم النشر');
+      const btn = form.querySelector('button[type="submit"], button.btn-primary');
+      const files = Array.from(form.querySelector('input[name="attachments"]')?.files || []);
+      const attachments = [];
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = files.length ? 'جاري الرفع…' : 'جاري النشر…';
+        }
+        for (const file of files) {
+          if (window.HubUploadLimits?.uploadFile) {
+            const uploaded = await window.HubUploadLimits.uploadFile(file);
+            attachments.push({
+              name: uploaded.name || file.name,
+              url: uploaded.url,
+              mime: uploaded.mime || file.type,
+              size: uploaded.size || file.size,
+            });
+          } else {
+            attachments.push({ name: file.name, url: '', mime: file.type, size: file.size });
+          }
+        }
+        const post = window.HubSystemOps.publishPost({
+          title: fd.get('title'),
+          body: fd.get('body'),
+          systemCode: fd.get('systemCode'),
+          attachments,
+        });
+        if (!post) {
+          toast('أدخل عنوان المقال');
+          return;
+        }
+        toast(attachments.length ? `تم النشر مع ${attachments.length} مرفق` : 'تم النشر على المدونة');
+      } catch (err) {
+        toast(err?.message || 'فشل رفع المرفقات');
+        return;
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'نشر على المدونة';
+        }
+      }
     }
     if (type === 'page') {
       const p = window.HubSystemOps.createPage({
