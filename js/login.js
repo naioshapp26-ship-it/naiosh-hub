@@ -216,15 +216,25 @@ function fillLogin(email, password, autoSubmit = true) {
     const params = new URLSearchParams(window.location.search);
     const next = params.get('next') || '';
     const system = (params.get('system') || '').toUpperCase();
-    let dest = 'dashboard.html';
+    const role = String(user.role || '').toLowerCase();
+    const isStaff =
+      role === 'supreme_leader' || role === 'chief_engineer' || role === 'admin' || role === 'super_admin';
+    const isClientRole =
+      role === 'customer' || role === 'client' || role === 'client_user' || role === 'platform_owner';
+    let dest = isStaff ? 'dashboard.html' : isClientRole ? 'client.html' : 'dashboard.html';
+    // Clients must never be sent into the ops room via next=
     if (next && !next.startsWith('http') && !next.includes('://')) {
-      dest = next;
-    } else if (system && window.HubLauncher?.getDirectLaunchUrl) {
+      if (isClientRole && /dashboard\.html|roles-permissions|rent-admin|system-ops|search-admin/i.test(next)) {
+        dest = 'client.html';
+      } else if (isStaff && /^client\.html/i.test(next)) {
+        dest = 'dashboard.html';
+      } else {
+        dest = next;
+      }
+    } else if (system && isStaff && window.HubLauncher?.getDirectLaunchUrl) {
       dest = window.HubLauncher.getDirectLaunchUrl(system);
-    } else if (user.role === 'platform_owner') {
+    } else if (role === 'platform_owner' && !next) {
       dest = 'my-platform.html';
-    } else if (user.role === 'customer') {
-      dest = 'dashboard.html';
     }
 
     showAlert('تم تسجيل الدخول بنجاح! جاري التحويل...', 'success');
@@ -239,16 +249,29 @@ function fillLogin(email, password, autoSubmit = true) {
     const params = new URLSearchParams(window.location.search);
     const next = params.get('next') || '';
     let dest = 'dashboard.html';
-    if (next && !next.startsWith('http') && !next.includes('://')) {
-      dest = next;
-    } else {
-      try {
-        const raw = localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser');
-        const sessionUser = raw ? JSON.parse(raw) : null;
-        if (sessionUser?.role === 'platform_owner') dest = 'my-platform.html';
-      } catch {
-        /* ignore */
+    try {
+      const raw = localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser');
+      const sessionUser = raw ? JSON.parse(raw) : null;
+      if (window.HubAuth?.postLoginDestination) {
+        dest = window.HubAuth.postLoginDestination(sessionUser);
+      } else if (sessionUser?.role === 'customer' || sessionUser?.role === 'client') {
+        dest = 'client.html';
+      } else if (sessionUser?.role === 'platform_owner') {
+        dest = 'my-platform.html';
       }
+    } catch {
+      /* ignore */
+    }
+    if (next && !next.startsWith('http') && !next.includes('://')) {
+      const role = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser') || '{}').role;
+        } catch {
+          return '';
+        }
+      })();
+      const isClientRole = role === 'customer' || role === 'client' || role === 'platform_owner';
+      if (!(isClientRole && /dashboard\.html/i.test(next))) dest = next;
     }
     showAlert('لديك جلسة نشطة. جاري تحويلك...', 'success');
     setTimeout(() => {

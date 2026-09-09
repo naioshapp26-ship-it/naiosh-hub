@@ -2,6 +2,7 @@
   const NAV = [
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
     { key: 'operating', icon: 'fa-gears', label: 'آلية التشغيل' },
+    { key: 'clients-mgmt', icon: 'fa-user-tie', label: 'إدارة العملاء' },
     { key: 'roles-permissions', icon: 'fa-shield-alt', label: 'إدارة الأدوار والصلاحيات', href: 'roles-permissions.html' },
     { key: 'notifications', icon: 'fa-bell', label: 'إشعارات هوب' },
     { key: 'side-project-regs', icon: 'fa-inbox', label: 'طلبات تسجيل المشاريع' },
@@ -35,6 +36,7 @@
   const TITLES = {
     overview: ['مركز التحكم العالمي', 'الفروع · الحاضنات · المنصات · المنتجات · المتجر · الإعلانات · الفعاليات'],
     operating: ['آلية تشغيل نايوش هوب', 'بدون تكرار · اشتراك=صلاحية · SSO · تقارير نشاط · خدمات موحّدة'],
+    'clients-mgmt': ['إدارة العملاء', 'Clients 360 · أنظمة · طلبات · محفظة · تذاكر · ملاحظات داخلية'],
     'roles-permissions': ['إدارة الأدوار والصلاحيات', 'منح أنظمة هوب عبر الأدوار ومستويات الصلاحيات — نفس تشغيل ERP'],
     notifications: ['مركز إشعارات هوب', 'كل تنبيهات الأنظمة تصل هنا — ERP · LAW · FIT · Academy'],
     'side-project-regs': ['طلبات تسجيل المشاريع', 'استقبال طلبات المشاريع الجانبية · متابعة · تواصل بالجوال أو الإيميل'],
@@ -77,6 +79,12 @@
     user = JSON.parse(rawUser);
   } catch {
     window.location.href = 'login.html';
+    return;
+  }
+
+  // CLIENT experience is a separate product — never enter the ops room
+  if (user.role === 'customer' || user.role === 'client' || user.role === 'client_user') {
+    window.location.href = 'client.html' + (location.hash || '');
     return;
   }
 
@@ -306,6 +314,7 @@
 
   // —— Nav
   const STAFF_ONLY_NAV = new Set([
+    'clients-mgmt',
     'roles-permissions',
     'rent-admin',
     'search-admin',
@@ -1959,6 +1968,231 @@
     `;
   };
 
+  const renderClientsMgmt = () => {
+    return `
+      <div class="card" id="clients-mgmt-root">
+        <h3><span class="title-left"><i class="fas fa-user-tie icon"></i> إدارة العملاء · Clients Management</span>
+          <button class="btn btn-ghost btn-sm" type="button" id="clients-refresh"><i class="fas fa-rotate"></i> تحديث</button>
+        </h3>
+        <p>عرض 360 للعملاء · الأنظمة المعينة · الطلبات · المحفظة · التذاكر · ملاحظات داخلية (لا يراها العميل).</p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0">
+          <input id="clients-search" type="search" placeholder="بحث بالاسم أو البريد أو رقم العميل…" style="flex:1;min-width:220px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;font:inherit" />
+          <select id="clients-status-filter" style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;font:inherit">
+            <option value="">كل الحالات</option>
+            <option value="active">نشط</option>
+            <option value="pending">معلّق</option>
+            <option value="suspended">موقوف</option>
+          </select>
+        </div>
+        <div id="clients-table-wrap"><div class="skeleton" style="height:80px;border-radius:12px;background:#eee"></div></div>
+        <div id="clients-detail" hidden style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px"></div>
+      </div>
+    `;
+  };
+
+  const clientsAuthHeaders = () => {
+    const h = { Accept: 'application/json', 'Content-Type': 'application/json' };
+    const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken') || '';
+    if (token) h.Authorization = `Bearer ${token}`;
+    if (user?.role) h['X-Hub-User-Role'] = String(user.role);
+    if (user?.email) h['X-Hub-User-Email'] = String(user.email);
+    if (user?.name) {
+      try { h['X-Hub-User-Name'] = encodeURIComponent(String(user.name)); } catch (_) {}
+    }
+    return h;
+  };
+
+  const loadClientsMgmt = async () => {
+    const wrap = document.getElementById('clients-table-wrap');
+    if (!wrap) return;
+    wrap.innerHTML = '<p style="font-weight:700;color:#6b7280">جاري التحميل…</p>';
+    try {
+      const res = await fetch('/api/admin/clients', { headers: clientsAuthHeaders() });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error(data.error || `HTTP ${res.status}`);
+      window.__hubClientsList = data.clients || [];
+      paintClientsTable();
+    } catch (err) {
+      wrap.innerHTML = `<p style="color:#b91c1c;font-weight:800">${esc(err.message || 'تعذر التحميل')}</p>`;
+    }
+  };
+
+  const paintClientsTable = () => {
+    const wrap = document.getElementById('clients-table-wrap');
+    if (!wrap) return;
+    const q = String(document.getElementById('clients-search')?.value || '').trim().toLowerCase();
+    const st = String(document.getElementById('clients-status-filter')?.value || '');
+    let list = window.__hubClientsList || [];
+    if (q) {
+      list = list.filter((c) =>
+        [c.name, c.email, c.clientId].some((x) => String(x || '').toLowerCase().includes(q))
+      );
+    }
+    if (st) list = list.filter((c) => c.status === st);
+    if (!list.length) {
+      wrap.innerHTML = '<p style="font-weight:700;color:#6b7280">لا عملاء مطابقون.</p>';
+      return;
+    }
+    wrap.innerHTML = `
+      <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>العميل</th><th>الحالة</th><th>الأنظمة</th><th>طلبات مفتوحة</th><th>المحفظة</th><th>آخر دخول</th><th></th></tr></thead>
+        <tbody>
+          ${list
+            .map(
+              (c) => `<tr>
+              <td><strong>${esc(c.name)}</strong><br><small>${esc(c.email)} · ${esc(c.clientId || '')}</small></td>
+              <td>${badgeStatus(c.status)}</td>
+              <td>${c.systemsCount || 0}</td>
+              <td>${c.openOrders || 0}</td>
+              <td>${Number(c.walletTotal || 0).toLocaleString('en-US')}</td>
+              <td>${c.lastLoginAt ? fmtTime(c.lastLoginAt) : '—'}</td>
+              <td><button type="button" class="btn btn-primary btn-sm" data-open-client="${esc(c.email)}">فتح 360</button></td>
+            </tr>`
+            )
+            .join('')}
+        </tbody>
+      </table></div>`;
+  };
+
+  const openClient360 = async (email) => {
+    const detail = document.getElementById('clients-detail');
+    if (!detail) return;
+    detail.hidden = false;
+    detail.innerHTML = '<p style="font-weight:700">جاري تحميل ملف العميل…</p>';
+    try {
+      const res = await fetch(`/api/admin/clients/${encodeURIComponent(email)}`, { headers: clientsAuthHeaders() });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error(data.error || `HTTP ${res.status}`);
+      const c = data.client;
+      const tab = (id, label) =>
+        `<button type="button" class="btn btn-ghost btn-sm client-tab" data-ctab="${id}">${label}</button>`;
+      detail.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center">
+          <div>
+            <h3 style="margin:0">${esc(c.name)} · ${esc(c.clientId)}</h3>
+            <p style="margin:4px 0 0;font-weight:700;color:#6b7280">${esc(c.email)} · ${esc(c.accountLevel || '')} · ${esc(c.status)}</p>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <button type="button" class="btn btn-ghost btn-sm" data-client-status="${esc(c.email)}" data-status="active">تفعيل</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-client-status="${esc(c.email)}" data-status="suspended">تعطيل</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin:12px 0">
+          ${tab('overview', 'Overview')}
+          ${tab('systems', 'Systems')}
+          ${tab('orders', 'Orders')}
+          ${tab('subscriptions', 'Subscriptions')}
+          ${tab('invoices', 'Invoices')}
+          ${tab('wallet', 'Wallet')}
+          ${tab('tickets', 'Tickets')}
+          ${tab('notes', 'Internal Notes')}
+          ${tab('security', 'Security')}
+        </div>
+        <div id="client-360-body"></div>
+        <script type="application/json" id="client-360-data">${JSON.stringify(c).replace(/</g, '\\u003c')}</script>
+      `;
+      const paintTab = (key) => {
+        const body = document.getElementById('client-360-body');
+        if (!body) return;
+        document.querySelectorAll('.client-tab').forEach((b) => b.classList.toggle('btn-primary', b.dataset.ctab === key));
+        if (key === 'overview') {
+          body.innerHTML = `<div class="kpi-grid">
+            <article class="kpi"><span>أنظمة</span><strong>${(c.systems || []).length}</strong></article>
+            <article class="kpi"><span>طلبات</span><strong>${(c.orders || []).length}</strong></article>
+            <article class="kpi"><span>المحفظة</span><strong>${c.wallet?.total || 0}</strong></article>
+            <article class="kpi"><span>تذاكر</span><strong>${(c.tickets || []).length}</strong></article>
+          </div>
+          <p style="font-weight:700;color:#6b7280">الشركة: ${esc(c.company || '—')} · الدولة: ${esc(c.country || '—')} · آخر دخول: ${c.lastLoginAt ? fmtTime(c.lastLoginAt) : '—'}</p>`;
+        } else if (key === 'systems') {
+          body.innerHTML = `<div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
+              <input id="assign-sys-code" placeholder="كود النظام (ERP)" style="border:1px solid var(--border);border-radius:10px;padding:8px 10px;font:inherit" />
+              <input id="assign-sys-name" placeholder="الاسم" style="border:1px solid var(--border);border-radius:10px;padding:8px 10px;font:inherit" />
+              <button type="button" class="btn btn-primary btn-sm" id="assign-sys-btn">تعيين نظام</button>
+            </div>
+            <ul class="feed">${(c.systems || []).map((s) => `<li><b>${esc(s.name)}</b> · ${esc(s.plan)} · ${esc(s.status)}</li>`).join('') || '<li>لا أنظمة</li>'}</ul>`;
+          document.getElementById('assign-sys-btn')?.addEventListener('click', async () => {
+            const code = document.getElementById('assign-sys-code')?.value?.trim();
+            const name = document.getElementById('assign-sys-name')?.value?.trim();
+            if (!code) return toast('أدخل كود النظام');
+            const r = await fetch(`/api/admin/clients/${encodeURIComponent(email)}/assign-system`, {
+              method: 'POST',
+              headers: clientsAuthHeaders(),
+              body: JSON.stringify({ code, name: name || code }),
+            });
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok || d.ok === false) return toast(d.error || 'فشل التعيين');
+            toast('تم تعيين النظام');
+            openClient360(email);
+            loadClientsMgmt();
+          });
+        } else if (key === 'orders') {
+          body.innerHTML = `<ul class="feed">${(c.orders || []).map((o) => `<li><b>${esc(o.number)}</b> ${esc(o.service)} · ${esc(o.status)}</li>`).join('') || '<li>لا طلبات</li>'}</ul>`;
+        } else if (key === 'subscriptions') {
+          body.innerHTML = `<ul class="feed">${(c.subscriptions || []).map((s) => `<li><b>${esc(s.systemName)}</b> · ${esc(s.plan)} · ${esc(s.status)}</li>`).join('') || '<li>لا اشتراكات</li>'}</ul>`;
+        } else if (key === 'invoices') {
+          body.innerHTML = `<ul class="feed">${(c.invoices || []).map((i) => `<li><b>${esc(i.number)}</b> · ${i.amount} · ${esc(i.status)}</li>`).join('') || '<li>لا فواتير</li>'}</ul>`;
+        } else if (key === 'wallet') {
+          body.innerHTML = `<p style="font-weight:800">مدفوع: ${c.wallet?.paid || 0} · مجاني: ${c.wallet?.free || 0} · إجمالي: ${c.wallet?.total || 0}</p>
+            <ul class="feed">${(c.wallet?.ledger || []).map((l) => `<li>${esc(l.note)} · ${l.type} ${l.amount}</li>`).join('') || '<li>لا عمليات</li>'}</ul>`;
+        } else if (key === 'tickets') {
+          body.innerHTML = `<ul class="feed">${(c.tickets || []).map((t) => `<li><b>${esc(t.subject)}</b> · ${esc(t.status)}</li>`).join('') || '<li>لا تذاكر</li>'}</ul>`;
+        } else if (key === 'notes') {
+          body.innerHTML = `<form id="client-note-form" style="display:flex;gap:8px;margin-bottom:10px">
+              <input name="note" required placeholder="ملاحظة داخلية (لا يراها العميل)" style="flex:1;border:1px solid var(--border);border-radius:10px;padding:8px 10px;font:inherit" />
+              <button class="btn btn-primary btn-sm" type="submit">إضافة</button>
+            </form>
+            <ul class="feed">${(c.internalNotes || []).map((n) => `<li><b>${esc(n.by)}</b>: ${esc(n.note)} <small>${fmtTime(n.at)}</small></li>`).join('') || '<li>لا ملاحظات</li>'}</ul>`;
+          document.getElementById('client-note-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const note = new FormData(e.target).get('note');
+            const r = await fetch(`/api/admin/clients/${encodeURIComponent(email)}/notes`, {
+              method: 'POST',
+              headers: clientsAuthHeaders(),
+              body: JSON.stringify({ note }),
+            });
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok || d.ok === false) return toast(d.error || 'فشل الحفظ');
+            toast('تمت إضافة الملاحظة');
+            openClient360(email);
+          });
+        } else if (key === 'security') {
+          body.innerHTML = `<p style="font-weight:700">آخر دخول: ${c.lastLoginAt ? fmtTime(c.lastLoginAt) : '—'}<br>الحالة: ${esc(c.status)}<br>تاريخ الإنشاء: ${c.createdAt ? fmtTime(c.createdAt) : '—'}</p>`;
+        }
+      };
+      detail.querySelectorAll('.client-tab').forEach((btn) =>
+        btn.addEventListener('click', () => paintTab(btn.dataset.ctab))
+      );
+      detail.querySelectorAll('[data-client-status]').forEach((btn) =>
+        btn.addEventListener('click', async () => {
+          const r = await fetch(`/api/admin/clients/${encodeURIComponent(btn.dataset.clientStatus)}/status`, {
+            method: 'POST',
+            headers: clientsAuthHeaders(),
+            body: JSON.stringify({ status: btn.dataset.status }),
+          });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok || d.ok === false) return toast(d.error || 'فشل التحديث');
+          toast('تم تحديث الحالة');
+          openClient360(email);
+          loadClientsMgmt();
+        })
+      );
+      paintTab('overview');
+    } catch (err) {
+      detail.innerHTML = `<p style="color:#b91c1c;font-weight:800">${esc(err.message || '')}</p>`;
+    }
+  };
+
+  const bindClientsMgmt = () => {
+    document.getElementById('clients-refresh')?.addEventListener('click', loadClientsMgmt);
+    document.getElementById('clients-search')?.addEventListener('input', paintClientsTable);
+    document.getElementById('clients-status-filter')?.addEventListener('change', paintClientsTable);
+    document.getElementById('clients-table-wrap')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-open-client]');
+      if (btn) openClient360(btn.getAttribute('data-open-client'));
+    });
+    loadClientsMgmt();
+  };
+
   const renderSettings = () => {
     const s = HubStore.getSettings();
     const shopCats = window.HubMarketplaceData?.SHOP_CATEGORIES || [{ id: 'الكل', name: 'كل المنتجات' }];
@@ -1987,6 +2221,7 @@
   const renderers = {
     overview: renderOverview,
     operating: renderOperating,
+    'clients-mgmt': renderClientsMgmt,
     notifications: renderNotifications,
     'side-project-regs': renderSideProjectRegs,
     'search-admin': () => `
@@ -2052,6 +2287,9 @@
 
   const render = () => {
     root.innerHTML = `<section class="panel active">${renderers[current]()}</section>`;
+    if (current === 'clients-mgmt') {
+      bindClientsMgmt();
+    }
     if (current === 'settings' && window.HubSettingsCenter?.bind) {
       window.HubSettingsCenter.bind(root, {
         toast,

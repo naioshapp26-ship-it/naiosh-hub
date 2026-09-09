@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مركز العميل | نايوش هوب</title>
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/hub-client-portal.css?v=1" />
+</head>
+<body class="cp-body">
+  <aside class="cp-sidebar" id="cp-sidebar" aria-label="قائمة العميل">
+    <a class="cp-brand" href="client.html">
+      <img src="assets/logo-hub.jpeg" alt="نايوش هوب" />
+      <div>
+        <strong>مركز العميل</strong>
+        <span>Naiosh Hub</span>
+      </div>
+    </a>
+    <nav class="cp-nav" id="cp-nav"></nav>
+    <button type="button" class="cp-logout" id="cp-logout"><i class="fas fa-right-from-bracket"></i> تسجيل الخروج</button>
+  </aside>
+
+  <div class="cp-main">
+    <header class="cp-topbar">
+      <button type="button" class="cp-menu" id="cp-menu" aria-label="القائمة"><i class="fas fa-bars"></i></button>
+      <div>
+        <h1 id="cp-title">الرئيسية</h1>
+        <p id="cp-sub">حسابك وخدماتك في مكان واحد</p>
+      </div>
+      <div class="cp-top-actions">
+        <button type="button" class="cp-bell" id="cp-bell" aria-label="الإشعارات">
+          <i class="fas fa-bell"></i>
+          <span class="cp-badge" id="cp-badge" hidden>0</span>
+        </button>
+        <div class="cp-userchip">
+          <strong id="cp-user-name">—</strong>
+          <span id="cp-user-id">—</span>
+        </div>
+      </div>
+    </header>
+    <div id="cp-root" class="cp-root" aria-live="polite"></div>
+  </div>
+
+  <div class="cp-toast" id="cp-toast" role="status"></div>
+
+  <script src="js/hub-auth.js"></script>
+  <script src="js/hub-client-portal.js?v=1"></script>
+</body>
+</html>

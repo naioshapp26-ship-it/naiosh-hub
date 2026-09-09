@@ -268,7 +268,7 @@
       successPanel?.classList.remove('hidden');
       showAlert('تم إنشاء الحساب بنجاح', 'success');
       setTimeout(() => {
-        window.location.href = 'dashboard.html';
+        window.location.href = data.destination || 'client.html';
       }, 900);
     } catch {
       showAlert('حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.');
@@ -284,10 +284,10 @@
 
   if (window.HubAuth?.isLoggedIn?.()) {
     const user = window.HubAuth.getUser();
-    if (user?.role === 'customer') {
+    if (user?.role === 'customer' || user?.role === 'client') {
       showAlert('لديك جلسة نشطة. جاري تحويلك...', 'info');
       setTimeout(() => {
-        window.location.href = 'dashboard.html';
+        window.location.href = 'client.html';
       }, 700);
     }
   }

@@ -63,7 +63,7 @@
           NAIOSH <span class="text-white">HUB</span>
         </div>
         <p class="text-white/90 text-sm mt-1 font-bold tracking-widest">360 · IMPERIAL</p>
-        <p class="text-white/80 text-sm mt-2">تسجيل الدخول إلى غرفة العمليات</p>
+        <p class="text-white/80 text-sm mt-2">تسجيل الدخول إلى نايوش هوب 360</p>
       </div>
     </div>
 
@@ -132,7 +132,7 @@
           class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
         >
           <span class="btn-text flex items-center gap-2">
-            دخول غرفة العمليات
+            دخول الحساب
             <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
           </span>
           <span class="loading-spinner hidden"></span>
@@ -154,7 +154,7 @@
         </p>
       </div>
 
-      <div class="relative mt-8 mb-6">
+      <div class="relative mt-8 mb-6 hub-demo-accounts">
         <div class="absolute inset-0 flex items-center">
           <div class="w-full border-t border-gray-200"></div>
         </div>
@@ -163,8 +163,8 @@
         </div>
       </div>
 
-      <div class="space-y-3">
-        <h3 class="text-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">للعرض المحلي</h3>
+      <div class="space-y-3 hub-demo-accounts">
+        <h3 class="text-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">للعرض المحلي / Demo Mode</h3>
         <button
           type="button"
           onclick="fillLogin('leader@naiosh.com', 'Hub@360')"
@@ -191,6 +191,19 @@
             <p class="text-xs text-gray-500">malika@naiosh.com</p>
           </div>
         </button>
+        <button
+          type="button"
+          onclick="fillLogin('client@naiosh.com', 'Hub@360')"
+          class="flex items-center p-3 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary-50 transition-all duration-200 group text-right w-full"
+        >
+          <div class="flex-shrink-0 bg-primary/10 text-primary w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+            <i class="fa-solid fa-building-user"></i>
+          </div>
+          <div class="mr-3">
+            <p class="text-sm font-bold text-black">عميل تجريبي · مركز العميل</p>
+            <p class="text-xs text-gray-500">client@naiosh.com</p>
+          </div>
+        </button>
       </div>
 
       <div class="mt-6 flex items-center justify-center gap-3 text-base font-extrabold text-black">
@@ -212,6 +225,16 @@
   <script src="js/hub-launcher.js"></script>
   <script src="js/hub-platform-grants.js?v=4"></script>
   <script src="js/login.js"></script>
+  <script>
+    (function () {
+      var host = location.hostname || '';
+      var demo = new URLSearchParams(location.search).has('demo');
+      var local = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
+      if (!demo && !local && /naiosh/i.test(host)) {
+        document.querySelectorAll('.hub-demo-accounts').forEach(function (el) { el.hidden = true; });
+      }
+    })();
+  </script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js?v=3" defer></script>

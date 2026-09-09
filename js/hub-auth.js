@@ -27,7 +27,18 @@
 
   const isStaff = (user = getUser()) => {
     const role = user?.role || '';
-    return role === 'supreme_leader' || role === 'chief_engineer' || role === 'admin';
+    return role === 'supreme_leader' || role === 'chief_engineer' || role === 'admin' || role === 'super_admin';
+  };
+
+  const isClient = (user = getUser()) => {
+    const role = user?.role || '';
+    return role === 'customer' || role === 'client' || role === 'client_user' || role === 'platform_owner';
+  };
+
+  const postLoginDestination = (user = getUser()) => {
+    if (isStaff(user)) return 'dashboard.html';
+    if (isClient(user)) return 'client.html';
+    return 'dashboard.html';
   };
 
   const setSession = (user, token, { remember = true } = {}) => {
@@ -130,7 +141,22 @@
   const requireStaff = ({ next = '' } = {}) => {
     if (!requireLogin({ next })) return false;
     if (isStaff()) return true;
-    window.location.href = 'dashboard.html#overview';
+    if (isClient()) {
+      window.location.href = 'client.html';
+      return false;
+    }
+    window.location.href = 'login.html';
+    return false;
+  };
+
+  const requireClient = ({ next = '' } = {}) => {
+    if (!requireLogin({ next: next || 'client.html' })) return false;
+    if (isClient()) return true;
+    if (isStaff()) {
+      window.location.href = 'dashboard.html';
+      return false;
+    }
+    window.location.href = 'login.html';
     return false;
   };
 
@@ -141,11 +167,14 @@
     getUser,
     isLoggedIn,
     isStaff,
+    isClient,
+    postLoginDestination,
     setSession,
     clearSession,
     loginUrl,
     requireLogin,
     requireStaff,
+    requireClient,
     canAccessSystem,
     attachSsoParams,
     issueHubTicket,
