@@ -14,6 +14,7 @@ const hubUploads = require('./lib/hub-uploads');
 const customerAuth = require('./lib/hub-customer-auth');
 const hubSession = require('./lib/hub-session');
 const hubClientPortal = require('./lib/hub-client-portal');
+const hubPoshaOps = require('./lib/hub-posha-ops');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -781,6 +782,15 @@ const server = http.createServer((req, res) => {
           try {
             const store = hubClientPortal.readStore();
             hubClientPortal.ensureClient(store, result.user.email, result.user.name || result.user.fullName);
+            hubPoshaOps.emitEvent(store, {
+              type: 'CLIENT_REGISTERED',
+              clientEmail: result.user.email,
+              actorId: result.user.email,
+              actorRole: 'client',
+              title: 'عميل جديد قام بالتسجيل',
+              message: `${result.user.name || result.user.fullName || result.user.email} انضم إلى نايوش هوب`,
+              metadata: {},
+            });
             hubClientPortal.writeStore(store);
           } catch {
             /* ignore */
@@ -853,6 +863,13 @@ const server = http.createServer((req, res) => {
     hubClientPortal
       .handleClientApi(req, res, pathname)
       .catch((error) => sendJson(res, error.status || 500, { ok: false, error: error.message || 'Client API error' }));
+    return;
+  }
+
+  if (pathname.startsWith('/api/admin/posha')) {
+    hubPoshaOps
+      .handlePoshaAdminApi(req, res, pathname)
+      .catch((error) => sendJson(res, error.status || 500, { ok: false, error: error.message || 'Posha API error' }));
     return;
   }
 

@@ -2,6 +2,7 @@
   const NAV = [
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
     { key: 'operating', icon: 'fa-gears', label: 'آلية التشغيل' },
+    { key: 'posha-clients', icon: 'fa-building-user', label: 'عملاء بوشا' },
     { key: 'clients-mgmt', icon: 'fa-user-tie', label: 'إدارة العملاء' },
     { key: 'roles-permissions', icon: 'fa-shield-alt', label: 'إدارة الأدوار والصلاحيات', href: 'roles-permissions.html' },
     { key: 'notifications', icon: 'fa-bell', label: 'إشعارات هوب' },
@@ -36,6 +37,7 @@
   const TITLES = {
     overview: ['مركز التحكم العالمي', 'الفروع · الحاضنات · المنصات · المنتجات · المتجر · الإعلانات · الفعاليات'],
     operating: ['آلية تشغيل نايوش هوب', 'بدون تكرار · اشتراك=صلاحية · SSO · تقارير نشاط · خدمات موحّدة'],
+    'posha-clients': ['عملاء بوشا', 'مركز عمليات العملاء · دعم · طلبات · مشاكل · أحداث · إشعارات'],
     'clients-mgmt': ['إدارة العملاء', 'Clients 360 · أنظمة · طلبات · محفظة · تذاكر · ملاحظات داخلية'],
     'roles-permissions': ['إدارة الأدوار والصلاحيات', 'منح أنظمة هوب عبر الأدوار ومستويات الصلاحيات — نفس تشغيل ERP'],
     notifications: ['مركز إشعارات هوب', 'كل تنبيهات الأنظمة تصل هنا — ERP · LAW · FIT · Academy'],
@@ -314,6 +316,7 @@
 
   // —— Nav
   const STAFF_ONLY_NAV = new Set([
+    'posha-clients',
     'clients-mgmt',
     'roles-permissions',
     'rent-admin',
@@ -2221,6 +2224,7 @@
   const renderers = {
     overview: renderOverview,
     operating: renderOperating,
+    'posha-clients': () => `<div id="posha-mount" class="card" style="padding:0;border:0;background:transparent;box-shadow:none"></div>`,
     'clients-mgmt': renderClientsMgmt,
     notifications: renderNotifications,
     'side-project-regs': renderSideProjectRegs,
@@ -2287,6 +2291,9 @@
 
   const render = () => {
     root.innerHTML = `<section class="panel active">${renderers[current]()}</section>`;
+    if (current === 'posha-clients' && window.HubPoshaClients?.mount) {
+      window.HubPoshaClients.mount(document.getElementById('posha-mount'));
+    }
     if (current === 'clients-mgmt') {
       bindClientsMgmt();
     }
