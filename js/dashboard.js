@@ -84,7 +84,7 @@
 
   // CLIENT experience is a separate product — never enter the ops room
   if (user.role === 'customer' || user.role === 'client' || user.role === 'client_user') {
-    window.location.href = 'client.html' + (location.hash || '');
+    window.location.replace('client.html');
     return;
   }
 
