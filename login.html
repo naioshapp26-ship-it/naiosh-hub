@@ -159,12 +159,12 @@
           <div class="w-full border-t border-gray-200"></div>
         </div>
         <div class="relative flex justify-center text-sm">
-          <span class="px-4 bg-white text-gray-500 font-medium">حسابات تجريبية</span>
+          <span class="px-4 bg-white text-gray-500 font-medium">دخول سريع</span>
         </div>
       </div>
 
       <div class="space-y-3 hub-demo-accounts">
-        <h3 class="text-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">للعرض المحلي / Demo Mode</h3>
+        <h3 class="text-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">اضغط للدخول مباشرة · كلمة المرور Hub@360</h3>
         <button
           type="button"
           onclick="fillLogin('leader@naiosh.com', 'Hub@360')"
@@ -173,10 +173,11 @@
           <div class="flex-shrink-0 bg-primary/10 text-primary w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
             <i class="fa-solid fa-crown"></i>
           </div>
-          <div class="mr-3">
+          <div class="mr-3 flex-1">
             <p class="text-sm font-bold text-black">القائد الأعلى</p>
             <p class="text-xs text-gray-500">leader@naiosh.com</p>
           </div>
+          <span class="text-xs font-extrabold text-primary">دخول سريع</span>
         </button>
         <button
           type="button"
@@ -186,10 +187,11 @@
           <div class="flex-shrink-0 bg-black/10 text-black w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
             <i class="fa-solid fa-user-gear"></i>
           </div>
-          <div class="mr-3">
+          <div class="mr-3 flex-1">
             <p class="text-sm font-bold text-black">المهندسة مليكة</p>
             <p class="text-xs text-gray-500">malika@naiosh.com</p>
           </div>
+          <span class="text-xs font-extrabold text-black">دخول سريع</span>
         </button>
         <button
           type="button"
@@ -199,10 +201,11 @@
           <div class="flex-shrink-0 bg-primary/10 text-primary w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
             <i class="fa-solid fa-building-user"></i>
           </div>
-          <div class="mr-3">
-            <p class="text-sm font-bold text-black">عميل تجريبي · مركز العميل</p>
+          <div class="mr-3 flex-1">
+            <p class="text-sm font-bold text-black">أحمد العميل · مركز العميل</p>
             <p class="text-xs text-gray-500">client@naiosh.com</p>
           </div>
+          <span class="text-xs font-extrabold text-primary">دخول سريع</span>
         </button>
       </div>
 
@@ -225,16 +228,6 @@
   <script src="js/hub-launcher.js"></script>
   <script src="js/hub-platform-grants.js?v=4"></script>
   <script src="js/login.js"></script>
-  <script>
-    (function () {
-      var host = location.hostname || '';
-      var demo = new URLSearchParams(location.search).has('demo');
-      var local = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
-      if (!demo && !local && /naiosh/i.test(host)) {
-        document.querySelectorAll('.hub-demo-accounts').forEach(function (el) { el.hidden = true; });
-      }
-    })();
-  </script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js?v=3" defer></script>
