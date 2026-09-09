@@ -46,6 +46,11 @@
     rejected: 'مرفوض',
     cancelled: 'ملغى',
     open: 'مفتوحة',
+    OPEN: 'مفتوحة',
+    IN_PROGRESS: 'قيد المعالجة',
+    WAITING_FOR_CLIENT: 'بانتظار ردك',
+    RESOLVED: 'تم الحل',
+    CLOSED: 'مغلقة',
     waiting_customer: 'بانتظار ردك',
     resolved: 'تم الحل',
     closed: 'مغلقة',
@@ -54,6 +59,10 @@
     overdue: 'متأخرة',
     refunded: 'مسترجعة',
     medium: 'متوسطة',
+    NORMAL: 'عادية',
+    HIGH: 'عالية',
+    LOW: 'منخفضة',
+    URGENT: 'عاجلة',
     high: 'عالية',
     low: 'منخفضة',
     normal: 'عادية'
@@ -398,7 +407,7 @@
         '<div class="cp-card" style="box-shadow:none"><span>الرصيد المجاني</span><strong style="color:var(--cp-red);font-size:1.4rem;display:block;margin-top:6px">' + (w.free || 0) + '</strong></div>' +
         '<div class="cp-card" style="box-shadow:none"><span>إجمالي النقاط</span><strong style="color:var(--cp-red);font-size:1.4rem;display:block;margin-top:6px">' + (w.total || 0) + '</strong></div>' +
       '</div>' +
-      '<div class="cp-actions" style="margin-bottom:14px"><button type="button" class="cp-btn cp-btn-primary" id="cp-topup">شحن الرصيد</button><a class="cp-btn" href="#wallet">سجل العمليات</a></div>' +
+      '<div class="cp-actions" style="margin-bottom:14px"><button type="button" class="cp-btn cp-btn-primary" id="cp-topup">طلب شحن الرصيد</button></div>' +
       '<h4 style="margin:0 0 10px">آخر العمليات</h4>' +
       (ledger.length
         ? '<div class="cp-list">' + ledger.map(function (t) {
@@ -414,8 +423,8 @@
       return '<div class="cp-row"><div><strong>' + esc(inv.number) + '</strong><small>' + esc(fmtDate(inv.date)) + ' · ' + money(inv.amount, inv.currency) + '</small></div>' +
         '<div class="cp-actions"><span class="cp-badge-status ' + statusMod(inv.status) + '">' + esc(statusLabel(inv.status)) + '</span>' +
         ((inv.status === 'unpaid' || inv.status === 'overdue')
-          ? '<button type="button" class="cp-btn cp-btn-primary" disabled>ادفع الآن</button>'
-          : '<button type="button" class="cp-btn" disabled>تحميل</button>') +
+          ? '<button type="button" class="cp-btn cp-btn-primary" data-pay-inv="' + esc(inv.id) + '">ادفع الآن</button>'
+          : '<span class="cp-muted">مدفوعة</span>') +
         '</div></div>';
     }).join('') + '</div></section>';
   }
@@ -429,7 +438,7 @@
         '<h4 style="margin:0">فتح تذكرة دعم</h4>' +
         '<div class="cp-field"><label>الموضوع</label><input name="subject" required maxlength="120"></div>' +
         '<div class="cp-field"><label>القسم</label><select name="department"><option>دعم فني</option><option>فوترة</option><option>مبيعات</option><option>عام</option></select></div>' +
-        '<div class="cp-field"><label>الأولوية</label><select name="priority"><option value="medium">متوسطة</option><option value="high">عالية</option><option value="low">منخفضة</option></select></div>' +
+        '<div class="cp-field"><label>الأولوية</label><select name="priority"><option value="NORMAL">عادية</option><option value="HIGH">عالية</option><option value="LOW">منخفضة</option><option value="URGENT">عاجلة</option></select></div>' +
         '<div class="cp-field"><label>النظام المتعلق</label><select name="systemCode"><option value="">— عام —</option>' + opts + '</select></div>' +
         '<div class="cp-field"><label>الرسالة</label><textarea name="message" required rows="4" maxlength="4000"></textarea></div>' +
         '<button type="submit" class="cp-btn cp-btn-primary">إرسال التذكرة</button>' +
@@ -438,13 +447,15 @@
       ? '<p style="color:var(--cp-muted);font-weight:700">لا تذاكر دعم بعد.</p>'
       : list.map(function (t) {
           var msgs = (t.messages || []).map(function (m) {
-            return '<div style="border:1px solid var(--cp-line);border-radius:10px;padding:10px;margin-top:8px"><strong>' + (m.from === 'client' ? 'أنت' : 'الدعم') + '</strong><p style="margin:4px 0">' + esc(m.body) + '</p><small>' + esc(fmtDate(m.at)) + '</small></div>';
+            return '<div style="border:1px solid var(--cp-line);border-radius:10px;padding:10px;margin-top:8px"><strong>' + ((m.from === 'client' || m.sender_role === 'client') ? 'أنت' : 'الدعم') + '</strong><p style="margin:4px 0">' + esc(m.message || m.body) + '</p><small>' + esc(fmtDate(m.at || m.created_at)) + '</small></div>';
           }).join('');
+          var st = String(t.status || '').toLowerCase();
+          var canReply = st !== 'closed' && st !== 'resolved';
           return '<article class="cp-card" style="box-shadow:none;margin-top:10px">' +
-            '<div style="display:flex;justify-content:space-between;gap:8px"><strong>' + esc(t.subject) + '</strong><span class="cp-badge-status ' + statusMod(t.status) + '">' + esc(statusLabel(t.status)) + '</span></div>' +
-            '<small style="font-weight:800;color:var(--cp-muted)">' + esc(t.department) + ' · ' + esc(fmtDate(t.createdAt)) + '</small>' +
+            '<div style="display:flex;justify-content:space-between;gap:8px"><strong>' + esc((t.number ? t.number + ' · ' : '') + t.subject) + '</strong><span class="cp-badge-status ' + statusMod(t.status) + '">' + esc(statusLabel(t.status)) + '</span></div>' +
+            '<small style="font-weight:800;color:var(--cp-muted)">' + esc(t.department || t.category || '') + ' · ' + esc(fmtDate(t.createdAt || t.created_at)) + '</small>' +
             msgs +
-            (t.status !== 'closed' && t.status !== 'resolved'
+            (canReply
               ? '<form class="cp-reply-form" data-id="' + esc(t.id) + '" style="display:flex;gap:8px;margin-top:10px"><input name="message" required placeholder="اكتب ردك…" style="flex:1;border:1px solid var(--cp-line);border-radius:12px;padding:10px;font:inherit"><button class="cp-btn" type="submit">رد</button></form>'
               : '') +
             '</article>';
@@ -470,7 +481,7 @@
         '<div class="cp-sys-top"><img src="' + esc(p.logo || 'assets/logo-hub.jpeg') + '" alt="" /><div><strong>' + esc(p.name) + '</strong><small>' + esc(p.priceLabel || 'حسب الطلب') + '</small></div></div>' +
         '<p style="margin:0;color:var(--cp-muted);font-size:13px;font-weight:700">' + esc(p.description || '') + '</p>' +
         '<div class="cp-actions">' +
-          '<a class="cp-btn cp-btn-primary" href="' + esc(p.ctaUrl || 'products.html') + '">اطلب الآن</a>' +
+          '<button type="button" class="cp-btn cp-btn-primary" data-order-svc="' + esc(p.name) + '" data-order-amt="' + esc(String(p.priceFrom || 0)) + '">اطلب الآن</button>' +
           '<a class="cp-btn" href="' + esc(p.moreUrl || p.ctaUrl || 'products.html') + '">اعرف المزيد</a>' +
         '</div></article>';
     }).join('') + '</div></section>';
@@ -490,8 +501,10 @@
       '</form></section>';
   }
 
-  function renderSecurity(p) {
-    p = p || {};
+  function renderSecurity(sec) {
+    sec = sec || {};
+    var sessions = sec.sessions || [];
+    var failed = sec.failedLogins || [];
     return '<section class="cp-card"><div class="cp-card-head"><h3>الأمان</h3></div>' +
       '<form class="cp-form" id="cp-password-form">' +
         '<h4 style="margin:0">تغيير كلمة المرور</h4>' +
@@ -501,8 +514,21 @@
       '</form>' +
       '<div style="margin-top:18px;border-top:1px solid var(--cp-line);padding-top:14px">' +
         '<h4 style="margin:0 0 8px">آخر تسجيل دخول</h4>' +
-        '<p style="margin:0;font-weight:700;color:var(--cp-muted)">' + esc(fmtDate(p.lastLoginAt)) + '</p>' +
-        '<p style="margin:12px 0 0;font-size:12px;font-weight:700;color:var(--cp-muted)">المصادقة الثنائية (2FA) — قريبًا</p>' +
+        '<p style="margin:0;font-weight:700;color:var(--cp-muted)">' + esc(fmtDate(sec.lastLoginAt)) + '</p>' +
+        '<h4 style="margin:16px 0 8px">الجلسات النشطة</h4>' +
+        (sessions.length
+          ? '<div class="cp-list">' + sessions.map(function (s) {
+              return '<div class="cp-row"><div><strong>' + esc(s.device || 'جهاز') + '</strong><small>' + esc(s.browser || '') + (s.ip ? ' · ' + esc(s.ip) : '') + (s.current ? ' · الحالية' : '') + '</small></div><small>' + esc(fmtDate(s.at)) + '</small></div>';
+            }).join('') + '</div>'
+          : '<p style="color:var(--cp-muted);font-weight:700">لا جلسات مسجّلة بعد.</p>') +
+        '<div class="cp-actions" style="margin-top:12px"><button type="button" class="cp-btn" id="cp-logout-others">تسجيل الخروج من الأجهزة الأخرى</button></div>' +
+        '<h4 style="margin:16px 0 8px">تنبيهات أمنية</h4>' +
+        (failed.length
+          ? '<div class="cp-list">' + failed.slice(0, 5).map(function (f) {
+              return '<div class="cp-row"><div><strong>محاولة فاشلة</strong><small>' + esc(f.reason || '') + '</small></div><small>' + esc(fmtDate(f.at)) + '</small></div>';
+            }).join('') + '</div>'
+          : '<p style="color:var(--cp-muted);font-weight:700">لا تنبيهات.</p>') +
+        '<p style="margin:12px 0 0;font-size:12px;font-weight:700;color:var(--cp-muted)">المصادقة الثنائية (2FA) — البنية جاهزة للتفعيل لاحقًا</p>' +
       '</div></section>';
   }
 
@@ -522,7 +548,7 @@
       notifications: '/api/client/notifications',
       marketplace: '/api/client/marketplace',
       profile: '/api/client/me',
-      security: '/api/client/me'
+      security: '/api/client/security'
     };
     var data = await api(map[page]);
     state.cache[page] = data;
@@ -543,8 +569,56 @@
 
     if (page === 'wallet') {
       var top = $('cp-topup');
-      if (top) top.addEventListener('click', function () {
-        toast('شحن الرصيد عبر بوابة الدفع قريبًا — تواصل مع الدعم للشحن العاجل.');
+      if (top) top.addEventListener('click', async function () {
+        var amt = prompt('أدخل عدد النقاط المطلوب شحنها:', '100');
+        if (!amt) return;
+        try {
+          await api('/api/client/wallet/topup-request', { method: 'POST', body: { amount: Number(amt) } });
+          toast('تم إرسال طلب الشحن للإدارة');
+          state.cache.orders = null;
+          state.home = null;
+        } catch (err) {
+          toast(err.message || 'تعذر الطلب');
+        }
+      });
+    }
+
+    if (page === 'invoices') {
+      document.querySelectorAll('[data-pay-inv]').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          try {
+            await api('/api/client/invoices/pay', { method: 'POST', body: { id: btn.getAttribute('data-pay-inv') } });
+            toast('تم دفع الفاتورة من المحفظة');
+            state.cache.invoices = null;
+            state.cache.wallet = null;
+            state.home = null;
+            await render();
+          } catch (err) {
+            toast(err.message || 'تعذر الدفع');
+          }
+        });
+      });
+    }
+
+    if (page === 'marketplace') {
+      document.querySelectorAll('[data-order-svc]').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          try {
+            await api('/api/client/orders', {
+              method: 'POST',
+              body: {
+                service: btn.getAttribute('data-order-svc'),
+                amount: Number(btn.getAttribute('data-order-amt') || 0)
+              }
+            });
+            toast('تم إنشاء الطلب بنجاح');
+            state.cache.orders = null;
+            state.home = null;
+            go('orders');
+          } catch (err) {
+            toast(err.message || 'تعذر إنشاء الطلب');
+          }
+        });
       });
     }
 
@@ -673,6 +747,19 @@
           }
         });
       }
+      var lo = $('cp-logout-others');
+      if (lo) {
+        lo.addEventListener('click', async function () {
+          try {
+            await api('/api/client/security/logout-others', { method: 'POST', body: {} });
+            toast('تم إنهاء الجلسات الأخرى');
+            state.cache.security = null;
+            await render();
+          } catch (err) {
+            toast(err.message || 'تعذر التنفيذ');
+          }
+        });
+      }
     }
   }
 
@@ -700,7 +787,7 @@
         case 'notifications': html = renderNotifications(data.notifications || []); break;
         case 'marketplace': html = renderMarketplace(data.items || []); break;
         case 'profile': html = renderProfile(data.client || data); break;
-        case 'security': html = renderSecurity(data.client || data); break;
+        case 'security': html = renderSecurity(data.security || data); break;
         default: html = renderHome(state.home);
       }
       root.innerHTML = html;
@@ -729,6 +816,13 @@
     });
     window.addEventListener('hashchange', render);
     render();
+    setInterval(function () {
+      api('/api/client/notifications').then(function (d) {
+        var unread = d.unread || (d.notifications || []).filter(function (n) { return !n.read; }).length;
+        if (state.home && state.home.summary) state.home.summary.unreadNotifications = unread;
+        updateChrome();
+      }).catch(function () {});
+    }, 20000);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

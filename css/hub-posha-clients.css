@@ -1,0 +1,56 @@
+.posha-ops { display: grid; gap: 14px; }
+.posha-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.posha-head h2 { margin: 0; font-size: 1.25rem; }
+.posha-head p { margin: 4px 0 0; color: var(--muted, #6b7280); font-weight: 700; font-size: 13px; }
+.posha-subnav { display: flex; flex-wrap: wrap; gap: 6px; }
+.posha-subnav button {
+  border: 1px solid var(--border, #e5e7eb); background: #fff; border-radius: 999px;
+  padding: 8px 12px; font: inherit; font-weight: 800; font-size: 12px; cursor: pointer;
+}
+.posha-subnav button.is-active { background: var(--primary, #d70000); color: #fff; border-color: var(--primary, #d70000); }
+.posha-badge {
+  display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 999px; background: #d70000; color: #fff; font-size: 11px; margin-inline-start: 4px;
+}
+.posha-kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+.posha-kpis.mini { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.posha-kpis article {
+  background: #fff; border: 1px solid var(--border,#e5e7eb); border-radius: 14px; padding: 12px;
+}
+.posha-kpis span { display: block; color: #6b7280; font-size: 12px; font-weight: 800; }
+.posha-kpis strong { display: block; margin-top: 6px; font-size: 1.35rem; color: #d70000; }
+.posha-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.posha-filters input, .posha-filters select, .posha-actions input, .posha-reply input, .posha-ticket select {
+  border: 1px solid var(--border,#e5e7eb); border-radius: 10px; padding: 8px 10px; font: inherit;
+}
+.posha-filters input { flex: 1; min-width: 220px; }
+.posha-alert { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #fee2e2; color: #b91c1c; font-weight: 900; }
+.posha-drawer {
+  position: fixed; inset: 0 auto 0 0; width: min(560px, 94vw); background: #fff;
+  border-left: 1px solid #e5e7eb; box-shadow: -12px 0 40px rgba(0,0,0,.12); z-index: 80; overflow: auto;
+  padding: 16px;
+}
+.posha-drawer-head { display: flex; justify-content: space-between; gap: 10px; }
+.posha-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0; }
+.posha-tabs button {
+  border: 1px solid #e5e7eb; background: #fff; border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
+}
+.posha-tabs button.is-active { background: #111; color: #fff; }
+.posha-timeline { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.posha-timeline li { border: 1px solid #eee; border-radius: 10px; padding: 10px; }
+.posha-timeline small { display: block; color: #6b7280; margin-top: 4px; }
+.posha-ticket { border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.posha-thread { display: grid; gap: 6px; margin: 8px 0; }
+.posha-msg { background: #f9fafb; border-radius: 8px; padding: 8px; }
+.posha-msg small { display: block; color: #6b7280; }
+.posha-reply { display: flex; gap: 8px; }
+.posha-reply input { flex: 1; }
+.posha-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.posha-muted { color: #6b7280; font-weight: 700; }
+.posha-err { color: #b91c1c; font-weight: 800; }
+.posha-loading { font-weight: 800; color: #6b7280; }
+.feed li.unread { background: #fff7f7; border-radius: 8px; padding: 6px; }
+@media (max-width: 960px) {
+  .posha-kpis, .posha-kpis.mini { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .posha-drawer { width: 100%; }
+}
