@@ -9,6 +9,11 @@ const DEMO_USERS = {
     name: 'المهندسة مليكة',
     role: 'chief_engineer',
   },
+  'client@naiosh.com': {
+    password: 'Hub@360',
+    name: 'أحمد العميل',
+    role: 'customer',
+  },
 };
 
 function fillLogin(email, password, autoSubmit = true) {
@@ -222,25 +227,28 @@ function fillLogin(email, password, autoSubmit = true) {
     const isClientRole =
       role === 'customer' || role === 'client' || role === 'client_user' || role === 'platform_owner';
     let dest = isStaff ? 'dashboard.html' : isClientRole ? 'client.html' : 'dashboard.html';
-    // Clients must never be sent into the ops room via next=
-    if (next && !next.startsWith('http') && !next.includes('://')) {
-      if (isClientRole && /dashboard\.html|roles-permissions|rent-admin|system-ops|search-admin/i.test(next)) {
+
+    // CLIENT always lands in Client Portal — never ops room / admin URLs
+    if (isClientRole) {
+      if (role === 'platform_owner' && (!next || next === 'my-platform.html')) {
+        dest = next || 'my-platform.html';
+      } else {
         dest = 'client.html';
-      } else if (isStaff && /^client\.html/i.test(next)) {
+      }
+    } else if (next && !next.startsWith('http') && !next.includes('://')) {
+      if (isStaff && /^client\.html/i.test(next)) {
         dest = 'dashboard.html';
       } else {
         dest = next;
       }
     } else if (system && isStaff && window.HubLauncher?.getDirectLaunchUrl) {
       dest = window.HubLauncher.getDirectLaunchUrl(system);
-    } else if (role === 'platform_owner' && !next) {
-      dest = 'my-platform.html';
     }
 
     showAlert('تم تسجيل الدخول بنجاح! جاري التحويل...', 'success');
     setTimeout(() => {
-      window.location.href = dest;
-    }, 900);
+      window.location.replace(dest);
+    }, 600);
   });
 
   window.addEventListener('load', () => {
@@ -252,10 +260,11 @@ function fillLogin(email, password, autoSubmit = true) {
     try {
       const raw = localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser');
       const sessionUser = raw ? JSON.parse(raw) : null;
-      if (window.HubAuth?.postLoginDestination) {
-        dest = window.HubAuth.postLoginDestination(sessionUser);
-      } else if (sessionUser?.role === 'customer' || sessionUser?.role === 'client') {
+      const role = String(sessionUser?.role || '').toLowerCase();
+      if (role === 'customer' || role === 'client' || role === 'client_user') {
         dest = 'client.html';
+      } else if (window.HubAuth?.postLoginDestination) {
+        dest = window.HubAuth.postLoginDestination(sessionUser);
       } else if (sessionUser?.role === 'platform_owner') {
         dest = 'my-platform.html';
       }
@@ -265,17 +274,18 @@ function fillLogin(email, password, autoSubmit = true) {
     if (next && !next.startsWith('http') && !next.includes('://')) {
       const role = (() => {
         try {
-          return JSON.parse(localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser') || '{}').role;
+          return String(JSON.parse(localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser') || '{}').role || '').toLowerCase();
         } catch {
           return '';
         }
       })();
-      const isClientRole = role === 'customer' || role === 'client' || role === 'platform_owner';
-      if (!(isClientRole && /dashboard\.html/i.test(next))) dest = next;
+      const isClientRole = role === 'customer' || role === 'client' || role === 'client_user';
+      if (isClientRole) dest = 'client.html';
+      else dest = next;
     }
     showAlert('لديك جلسة نشطة. جاري تحويلك...', 'success');
     setTimeout(() => {
-      window.location.href = dest.startsWith('http') ? 'dashboard.html' : dest;
-    }, 800);
+      window.location.replace(dest.startsWith('http') ? 'dashboard.html' : dest);
+    }, 500);
   });
 })();
