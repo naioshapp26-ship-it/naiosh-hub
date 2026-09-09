@@ -3,6 +3,7 @@
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
     { key: 'operating', icon: 'fa-gears', label: 'آلية التشغيل' },
     { key: 'posha-clients', icon: 'fa-building-user', label: 'عملاء بوشا' },
+    { key: 'posha-os', icon: 'fa-cubes', label: 'نظام بوشا OS', href: 'posha.html' },
     { key: 'clients-mgmt', icon: 'fa-user-tie', label: 'إدارة العملاء' },
     { key: 'roles-permissions', icon: 'fa-shield-alt', label: 'إدارة الأدوار والصلاحيات', href: 'roles-permissions.html' },
     { key: 'notifications', icon: 'fa-bell', label: 'إشعارات هوب' },
@@ -317,6 +318,7 @@
   // —— Nav
   const STAFF_ONLY_NAV = new Set([
     'posha-clients',
+    'posha-os',
     'clients-mgmt',
     'roles-permissions',
     'rent-admin',

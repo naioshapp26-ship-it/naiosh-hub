@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>بوشا | نظام تشغيل الشركة</title>
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/hub-posha-os.css?v=1" />
+  <script src="js/hub-staff-gate.js?v=1"></script>
+</head>
+<body class="pos-body">
+  <aside class="pos-sidebar" id="pos-sidebar">
+    <a class="pos-brand" href="posha.html">
+      <img src="assets/logo-hub.jpeg" alt="نايوش" />
+      <div>
+        <strong>بوشا</strong>
+        <span>Company OS</span>
+      </div>
+    </a>
+    <p class="pos-hub-link"><a href="dashboard.html"><i class="fas fa-arrow-right"></i> غرفة عمليات هوب</a></p>
+    <nav class="pos-nav" id="pos-nav"></nav>
+    <button type="button" class="pos-logout" id="pos-logout"><i class="fas fa-right-from-bracket"></i> خروج</button>
+  </aside>
+
+  <div class="pos-main">
+    <header class="pos-top">
+      <button type="button" class="pos-menu" id="pos-menu" aria-label="القائمة"><i class="fas fa-bars"></i></button>
+      <div>
+        <h1 id="pos-title">مركز القيادة</h1>
+        <p id="pos-sub">ماذا يحدث الآن؟ وما الذي يحتاج تدخلًا؟</p>
+      </div>
+      <div class="pos-top-actions">
+        <a class="pos-pill" href="dashboard.html#posha-clients">عملاء بوشا 360</a>
+        <div class="pos-user">
+          <strong id="pos-user-name">—</strong>
+          <span id="pos-user-role">موظف</span>
+        </div>
+      </div>
+    </header>
+    <div id="pos-root" class="pos-root" aria-live="polite"></div>
+  </div>
+
+  <div class="pos-toast" id="pos-toast" role="status"></div>
+
+  <script src="js/hub-auth.js?v=client2"></script>
+  <script src="js/hub-posha-os.js?v=1"></script>
+</body>
+</html>

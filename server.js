@@ -15,6 +15,7 @@ const customerAuth = require('./lib/hub-customer-auth');
 const hubSession = require('./lib/hub-session');
 const hubClientPortal = require('./lib/hub-client-portal');
 const hubPoshaOps = require('./lib/hub-posha-ops');
+const hubPoshaOs = require('./lib/hub-posha-os');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -863,6 +864,13 @@ const server = http.createServer((req, res) => {
     hubClientPortal
       .handleClientApi(req, res, pathname)
       .catch((error) => sendJson(res, error.status || 500, { ok: false, error: error.message || 'Client API error' }));
+    return;
+  }
+
+  if (pathname.startsWith('/api/admin/posha/os') || pathname.startsWith('/api/posha')) {
+    hubPoshaOs
+      .handlePoshaOsApi(req, res, pathname)
+      .catch((error) => sendJson(res, error.status || 500, { ok: false, error: error.message || 'POSHA OS API error' }));
     return;
   }
 

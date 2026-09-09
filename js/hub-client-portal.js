@@ -12,6 +12,7 @@
     { id: 'subscriptions', label: 'اشتراكاتي', icon: 'fa-rotate' },
     { id: 'wallet', label: 'المحفظة', icon: 'fa-wallet' },
     { id: 'invoices', label: 'الفواتير', icon: 'fa-file-invoice' },
+    { id: 'requests', label: 'طلبات الخدمة', icon: 'fa-clipboard-list' },
     { id: 'support', label: 'الدعم', icon: 'fa-headset' },
     { id: 'notifications', label: 'الإشعارات', icon: 'fa-bell' },
     { id: 'marketplace', label: 'استكشف الخدمات', icon: 'fa-store' },
@@ -26,6 +27,7 @@
     subscriptions: ['اشتراكاتي', 'الباقات والتجديد'],
     wallet: ['المحفظة', 'رصيدك ونقاطك'],
     invoices: ['الفواتير والمدفوعات', 'الفواتير والمدفوعات الخاصة بك'],
+    requests: ['طلبات الخدمة', 'ترقية · تدريب · إلغاء · إعداد فني'],
     support: ['مركز الدعم', 'تذاكر ومساعدة'],
     notifications: ['الإشعارات', 'تنبيهات حسابك'],
     marketplace: ['استكشف الخدمات', 'منتجات وأنظمة نايوش'],
@@ -51,6 +53,15 @@
     WAITING_FOR_CLIENT: 'بانتظار ردك',
     RESOLVED: 'تم الحل',
     CLOSED: 'مغلقة',
+    NEW: 'جديد',
+    UNDER_REVIEW: 'قيد المراجعة',
+    APPROVED: 'موافق عليه',
+    COMPLETED: 'مكتمل',
+    REJECTED: 'مرفوض',
+    CANCELLED: 'ملغى',
+    PENDING: 'معلّق',
+    AWAITING_PAYMENT: 'بانتظار الدفع',
+    PAID: 'مدفوع',
     waiting_customer: 'بانتظار ردك',
     resolved: 'تم الحل',
     closed: 'مغلقة',
@@ -478,13 +489,42 @@
     if (!list.length) return empty('fa-store', 'لا خدمات متاحة حاليًا', 'عد لاحقًا لاستكشاف أنظمة نايوش.', null, null);
     return '<section class="cp-card"><div class="cp-card-head"><h3>استكشف خدمات نايوش</h3></div><div class="cp-sys-grid">' + list.map(function (p) {
       return '<article class="cp-sys">' +
-        '<div class="cp-sys-top"><img src="' + esc(p.logo || 'assets/logo-hub.jpeg') + '" alt="" /><div><strong>' + esc(p.name) + '</strong><small>' + esc(p.priceLabel || 'حسب الطلب') + '</small></div></div>' +
+        '<div class="cp-sys-top"><img src="' + esc(p.logo || 'assets/logo-hub.jpeg') + '" alt="" /><div><strong>' + esc(p.name) + '</strong><small>' + esc(p.type || '') + ' · ' + esc(p.priceLabel || 'حسب الطلب') + '</small></div></div>' +
         '<p style="margin:0;color:var(--cp-muted);font-size:13px;font-weight:700">' + esc(p.description || '') + '</p>' +
         '<div class="cp-actions">' +
-          '<button type="button" class="cp-btn cp-btn-primary" data-order-svc="' + esc(p.name) + '" data-order-amt="' + esc(String(p.priceFrom || 0)) + '">اطلب الآن</button>' +
-          '<a class="cp-btn" href="' + esc(p.moreUrl || p.ctaUrl || 'products.html') + '">اعرف المزيد</a>' +
+          '<button type="button" class="cp-btn cp-btn-primary" data-checkout-id="' + esc(p.id) + '" data-checkout-sku="' + esc(p.sku || p.code || '') + '">اشترِ الآن (محفظة)</button>' +
+          '<button type="button" class="cp-btn" data-checkout-id="' + esc(p.id) + '" data-checkout-sku="' + esc(p.sku || p.code || '') + '" data-pay-later="1">اطلب بدون دفع</button>' +
         '</div></article>';
     }).join('') + '</div></section>';
+  }
+
+  function renderRequests(list) {
+    var form =
+      '<section class="cp-card"><div class="cp-card-head"><h3>طلب خدمة جديد</h3></div>' +
+      '<form class="cp-form" id="cp-request-form">' +
+        '<div class="cp-field"><label>نوع الطلب</label><select name="type">' +
+          '<option value="ADD_SYSTEM">إضافة نظام</option>' +
+          '<option value="UPGRADE_PLAN">ترقية باقة</option>' +
+          '<option value="DOWNGRADE">تخفيض باقة</option>' +
+          '<option value="ADD_USER">إضافة مستخدم</option>' +
+          '<option value="TRAINING">تدريب</option>' +
+          '<option value="CONSULTATION">استشارة</option>' +
+          '<option value="CANCELLATION">إلغاء</option>' +
+          '<option value="REFUND">استرجاع</option>' +
+          '<option value="TECHNICAL_SETUP">إعداد فني</option>' +
+          '<option value="OTHER">أخرى</option>' +
+        '</select></div>' +
+        '<div class="cp-field"><label>العنوان</label><input name="subject" required placeholder="مثال: ترقية باقة ERP"></div>' +
+        '<div class="cp-field"><label>التفاصيل</label><textarea name="message" required rows="4" placeholder="اشرح المطلوب…"></textarea></div>' +
+        '<div class="cp-field"><label>الأولوية</label><select name="priority"><option value="NORMAL">عادية</option><option value="HIGH">عالية</option><option value="URGENT">عاجلة</option></select></div>' +
+        '<button type="submit" class="cp-btn cp-btn-primary">إرسال الطلب</button>' +
+      '</form></section>';
+    var rows = !(list || []).length
+      ? '<p style="color:var(--cp-muted);font-weight:700;margin:0">لا توجد طلبات خدمة بعد.</p>'
+      : '<div class="cp-list">' + list.map(function (r) {
+          return '<div class="cp-row"><div><strong>' + esc(r.number || r.id) + ' — ' + esc(r.subject) + '</strong><small>' + esc(r.type) + ' · ' + esc(statusLabel(r.status)) + '</small></div><small>' + esc(fmtDate(r.created_at || r.createdAt)) + '</small></div>';
+        }).join('') + '</div>';
+    return form + '<section class="cp-card" style="margin-top:12px"><div class="cp-card-head"><h3>طلباتي</h3></div>' + rows + '</section>';
   }
 
   function renderProfile(p) {
@@ -544,6 +584,7 @@
       subscriptions: '/api/client/subscriptions',
       wallet: '/api/client/wallet',
       invoices: '/api/client/invoices',
+      requests: '/api/client/requests',
       support: '/api/client/tickets',
       notifications: '/api/client/notifications',
       marketplace: '/api/client/marketplace',
@@ -601,24 +642,53 @@
     }
 
     if (page === 'marketplace') {
-      document.querySelectorAll('[data-order-svc]').forEach(function (btn) {
+      document.querySelectorAll('[data-checkout-id]').forEach(function (btn) {
         btn.addEventListener('click', async function () {
           try {
-            await api('/api/client/orders', {
+            var payLater = btn.getAttribute('data-pay-later') === '1';
+            var result = await api('/api/client/checkout', {
               method: 'POST',
               body: {
-                service: btn.getAttribute('data-order-svc'),
-                amount: Number(btn.getAttribute('data-order-amt') || 0)
+                items: [{ id: btn.getAttribute('data-checkout-id'), sku: btn.getAttribute('data-checkout-sku'), qty: 1 }],
+                payWithWallet: !payLater
               }
             });
-            toast('تم إنشاء الطلب بنجاح');
+            toast(payLater ? 'تم إنشاء الطلب والفاتورة' : ((result.payment && result.payment.ok) ? 'تم الشراء والتفعيل' : 'تم الطلب — تحقق من الدفع'));
             state.cache.orders = null;
+            state.cache.systems = null;
+            state.cache.subscriptions = null;
+            state.cache.invoices = null;
+            state.cache.wallet = null;
             state.home = null;
-            go('orders');
+            go(payLater ? 'invoices' : 'systems');
           } catch (err) {
-            toast(err.message || 'تعذر إنشاء الطلب');
+            toast(err.message || 'تعذر إتمام الشراء');
           }
         });
+      });
+    }
+
+    if (page === 'requests') {
+      var rf = $('cp-request-form');
+      if (rf) rf.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var fd = new FormData(rf);
+        try {
+          await api('/api/client/requests', {
+            method: 'POST',
+            body: {
+              type: fd.get('type'),
+              subject: fd.get('subject'),
+              message: fd.get('message'),
+              priority: fd.get('priority')
+            }
+          });
+          toast('تم إرسال طلب الخدمة');
+          state.cache.requests = null;
+          await render();
+        } catch (err) {
+          toast(err.message || 'تعذر الإرسال');
+        }
       });
     }
 
@@ -781,6 +851,7 @@
         case 'subscriptions': html = renderSubs(data.subscriptions || []); break;
         case 'wallet': html = renderWallet(data.wallet || data); break;
         case 'invoices': html = renderInvoices(data.invoices || []); break;
+        case 'requests': html = renderRequests(data.requests || []); break;
         case 'support':
           html = renderSupport(data.tickets || [], (state.home && state.home.systems) || []);
           break;
