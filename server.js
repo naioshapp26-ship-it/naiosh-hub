@@ -12,6 +12,8 @@ const hubSso = require('./lib/hub-sso');
 const { handleAdminApi } = require('./lib/hub-rbac-admin');
 const hubUploads = require('./lib/hub-uploads');
 const customerAuth = require('./lib/hub-customer-auth');
+const hubSession = require('./lib/hub-session');
+const hubClientPortal = require('./lib/hub-client-portal');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -775,6 +777,15 @@ const server = http.createServer((req, res) => {
     readBody(req)
       .then(async (body) => {
         const result = await customerAuth.register(body || {});
+        if (result.ok && result.user?.email) {
+          try {
+            const store = hubClientPortal.readStore();
+            hubClientPortal.ensureClient(store, result.user.email, result.user.name || result.user.fullName);
+            hubClientPortal.writeStore(store);
+          } catch {
+            /* ignore */
+          }
+        }
         sendJson(res, result.status || (result.ok ? 201 : 400), {
           success: !!result.ok,
           ok: !!result.ok,
@@ -784,6 +795,7 @@ const server = http.createServer((req, res) => {
           strength: result.strength,
           token: result.token,
           user: result.user,
+          destination: result.ok ? 'client.html' : undefined,
         });
       })
       .catch((error) => {
@@ -809,6 +821,13 @@ const server = http.createServer((req, res) => {
           email: body?.email,
           password: body?.password,
         });
+        if (result.ok && result.user?.email) {
+          try {
+            hubClientPortal.touchLogin(result.user.email, result.user.name || result.user.fullName);
+          } catch {
+            /* ignore */
+          }
+        }
         sendJson(res, result.status || (result.ok ? 200 : 401), {
           success: !!result.ok,
           ok: !!result.ok,
@@ -816,6 +835,7 @@ const server = http.createServer((req, res) => {
           error: result.ok ? undefined : result.error,
           token: result.token,
           user: result.user,
+          destination: result.ok ? hubSession.postLoginDestination(result.user?.role || 'customer') : undefined,
         });
       })
       .catch((error) => {
@@ -829,7 +849,37 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith('/api/client')) {
+    hubClientPortal
+      .handleClientApi(req, res, pathname)
+      .catch((error) => sendJson(res, error.status || 500, { ok: false, error: error.message || 'Client API error' }));
+    return;
+  }
+
+  if (pathname.startsWith('/api/admin/clients')) {
+    hubClientPortal
+      .handleAdminClientsApi(req, res, pathname)
+      .catch((error) => sendJson(res, error.status || 500, { ok: false, error: error.message || 'Admin clients API error' }));
+    return;
+  }
+
   if (pathname.startsWith('/api/admin') || pathname === '/api/auth/logout') {
+    // Soft auth: require staff for mutating admin routes (except logout/OPTIONS)
+    if (pathname !== '/api/auth/logout' && req.method !== 'OPTIONS' && req.method !== 'GET') {
+      try {
+        hubSession.requireStaff(req);
+      } catch (err) {
+        sendJson(res, err.status || 403, { ok: false, success: false, error: err.message || 'Forbidden' });
+        return;
+      }
+    } else if (pathname !== '/api/auth/logout' && req.method === 'GET' && pathname !== '/api/admin/metadata') {
+      try {
+        hubSession.requireStaff(req);
+      } catch (err) {
+        sendJson(res, err.status || 403, { ok: false, success: false, error: err.message || 'Forbidden' });
+        return;
+      }
+    }
     handleAdminApi(req, res, pathname).catch((error) =>
       sendJson(res, error.status || 500, { ok: false, success: false, error: error.message || 'Admin API error' })
     );
@@ -892,6 +942,13 @@ async function boot() {
     } catch (error) {
       console.error('DB migrate failed:', error.message);
     }
+  }
+
+  try {
+    await hubClientPortal.ensureDemoClientAccount();
+    console.log('Demo client ready: client@naiosh.com');
+  } catch (error) {
+    console.error('Demo client seed skipped:', error.message);
   }
 
   server.requestTimeout = 30 * 60 * 1000;
