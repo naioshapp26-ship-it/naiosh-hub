@@ -983,6 +983,12 @@ async function boot() {
     console.log(`Naiosh Hub listening on http://${HOST}:${PORT}`);
     console.log(`ROOT: ${ROOT}`);
     console.log(`Upload limit: ${hubUploads.MAX_UPLOAD_MB}MB`);
+    try {
+      hubPoshaOs.startPoshaSchedulers();
+      console.log('POSHA schedulers started (subscription expiry + SLA)');
+    } catch (e) {
+      console.error('POSHA schedulers failed:', e.message);
+    }
   });
 }
 

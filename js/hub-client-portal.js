@@ -13,6 +13,7 @@
     { id: 'wallet', label: 'المحفظة', icon: 'fa-wallet' },
     { id: 'invoices', label: 'الفواتير', icon: 'fa-file-invoice' },
     { id: 'requests', label: 'طلبات الخدمة', icon: 'fa-clipboard-list' },
+    { id: 'complaints', label: 'الشكاوى', icon: 'fa-triangle-exclamation' },
     { id: 'support', label: 'الدعم', icon: 'fa-headset' },
     { id: 'notifications', label: 'الإشعارات', icon: 'fa-bell' },
     { id: 'marketplace', label: 'استكشف الخدمات', icon: 'fa-store' },
@@ -28,6 +29,7 @@
     wallet: ['المحفظة', 'رصيدك ونقاطك'],
     invoices: ['الفواتير والمدفوعات', 'الفواتير والمدفوعات الخاصة بك'],
     requests: ['طلبات الخدمة', 'ترقية · تدريب · إلغاء · إعداد فني'],
+    complaints: ['الشكاوى', 'قدّم شكوى وتابع حالتها'],
     support: ['مركز الدعم', 'تذاكر ومساعدة'],
     notifications: ['الإشعارات', 'تنبيهات حسابك'],
     marketplace: ['استكشف الخدمات', 'منتجات وأنظمة نايوش'],
@@ -300,13 +302,27 @@
 
     var welcome =
       '<section class="cp-welcome">' +
-        '<h2>مرحبًا، ' + esc(w.name || 'عميلنا') + ' 👋</h2>' +
+        '<h2>مرحبًا، ' + esc(w.name || 'عميلنا') + '</h2>' +
         '<p>كل خدماتك وأنظمتك في مكان واحد</p>' +
         '<div class="cp-welcome-meta">' +
           '<span class="cp-chip">رقم العميل: ' + esc(w.clientId || '—') + '</span>' +
           '<span class="cp-chip">المستوى: ' + esc(w.accountLevel || 'أساسي') + '</span>' +
           '<span class="cp-chip">' + esc(statusLabel(w.status || 'active')) + '</span>' +
+          (w.lifecycle ? '<span class="cp-chip">' + esc(w.lifecycle) + '</span>' : '') +
         '</div></section>';
+
+    var pendingBanner = (w.status === 'pending')
+      ? '<section class="cp-card" style="border-color:#c45c26"><div class="cp-card-head"><h3>بانتظار موافقة الإدارة</h3></div><p style="margin:0;font-weight:700;color:var(--cp-muted)">تم استلام تسجيلك. يمكنك تصفح الحساب، والمتجر والمدفوعات تتاح بعد الاعتماد.</p></section>'
+      : '';
+
+    var onb = home.onboarding;
+    var onboardingHtml = '';
+    if (onb && onb.steps && onb.steps.length) {
+      onboardingHtml = '<section class="cp-card"><div class="cp-card-head"><h3>تهيئة الحساب · ' + esc(onb.percent || 0) + '%</h3></div><div class="cp-list">' +
+        onb.steps.map(function (st) {
+          return '<div class="cp-row"><div><strong>' + esc(st.label) + '</strong></div><small>' + (st.done ? 'مكتمل' : 'متبقي') + '</small></div>';
+        }).join('') + '</div></section>';
+    }
 
     var summary =
       '<div class="cp-summary">' +
@@ -321,7 +337,7 @@
       actionHtml += '<div class="cp-ok-box"><i class="fas fa-circle-check"></i> كل شيء تمام، لا توجد إجراءات مطلوبة منك حاليًا.</div>';
     } else {
       actionHtml += '<div class="cp-action-box">' + actions.map(function (a) {
-        var link = a.type === 'invoice' ? 'invoices' : a.type === 'ticket' ? 'support' : a.type === 'renewal' ? 'subscriptions' : 'home';
+        var link = a.type === 'invoice' ? 'invoices' : a.type === 'ticket' ? 'support' : a.type === 'renewal' ? 'subscriptions' : a.type === 'approval' ? 'home' : 'home';
         return '<article><div><strong>' + esc(a.title) + '</strong></div><a class="cp-link" href="#' + link + '" data-nav="' + link + '">متابعة</a></article>';
       }).join('') + '</div>';
     }
@@ -374,7 +390,7 @@
         '<a class="cp-btn cp-btn-primary" href="#support" data-nav="support">فتح تذكرة دعم</a>' +
       '</section>';
 
-    return welcome + summary + actionHtml + sysHtml + ordHtml + billHtml + nHtml + support;
+    return pendingBanner + welcome + summary + actionHtml + onboardingHtml + sysHtml + ordHtml + billHtml + nHtml + support;
   }
 
   function renderSystems(list) {
@@ -400,13 +416,37 @@
   function renderSubs(list) {
     if (!list.length) return empty('fa-rotate', 'لا توجد اشتراكات', 'ستظهر اشتراكات أنظمتك هنا.', null, null);
     return '<section class="cp-card"><div class="cp-card-head"><h3>اشتراكاتي</h3></div><div class="cp-sys-grid">' + list.map(function (s) {
+      var canRenew = ['EXPIRING', 'EXPIRED', 'expiring', 'expired', 'active', 'ACTIVE'].indexOf(String(s.status || '')) >= 0;
       return '<article class="cp-sys"><strong>' + esc(s.systemName) + '</strong>' +
         '<div>الباقة: <strong>' + esc(s.plan) + '</strong></div>' +
         '<div class="cp-actions"><span class="cp-badge-status ' + statusMod(s.status) + '">' + esc(statusLabel(s.status)) + '</span><span style="font-weight:800">' + money(s.price) + '</span></div>' +
         '<small style="font-weight:800;color:var(--cp-muted)">البداية: ' + esc(fmtDate(s.startedAt)) + ' · التجديد: ' + esc(fmtDate(s.renewsAt)) + '</small>' +
         '<small style="font-weight:800;color:var(--cp-muted)">التجديد التلقائي: ' + (s.autoRenew ? 'مفعّل' : 'غير مفعّل') + '</small>' +
-        '<div class="cp-actions"><button type="button" class="cp-btn" disabled>تجديد</button><button type="button" class="cp-btn" disabled>ترقية الباقة</button></div></article>';
+        '<div class="cp-actions">' +
+          (canRenew ? '<button type="button" class="cp-btn cp-btn-primary" data-renew-sub="' + esc(s.id) + '">تجديد عبر المحفظة</button>' : '') +
+          '<button type="button" class="cp-btn" data-nav="requests" disabled title="قريبًا عبر طلبات الخدمة">ترقية الباقة</button>' +
+        '</div></article>';
     }).join('') + '</div></section>';
+  }
+
+  function renderComplaints(list) {
+    var form =
+      '<section class="cp-card"><div class="cp-card-head"><h3>تقديم شكوى</h3></div>' +
+      '<form class="cp-form" id="cp-complaint-form">' +
+        '<div class="cp-field"><label>التصنيف</label><select name="category">' +
+          '<option value="خدمة">خدمة</option><option value="فوترة">فوترة</option><option value="تقني">تقني</option><option value="عام">عام</option>' +
+        '</select></div>' +
+        '<div class="cp-field"><label>العنوان</label><input name="subject" required placeholder="ملخص الشكوى"></div>' +
+        '<div class="cp-field"><label>التفاصيل</label><textarea name="message" required rows="4"></textarea></div>' +
+        '<div class="cp-field"><label>الأولوية</label><select name="priority"><option value="NORMAL">عادية</option><option value="HIGH">عالية</option><option value="URGENT">عاجلة</option></select></div>' +
+        '<button type="submit" class="cp-btn cp-btn-primary">إرسال الشكوى</button>' +
+      '</form></section>';
+    var rows = !(list || []).length
+      ? '<p style="color:var(--cp-muted);font-weight:700;margin:0">لا توجد شكاوى.</p>'
+      : '<div class="cp-list">' + list.map(function (c) {
+          return '<div class="cp-row"><div><strong>' + esc(c.number || c.id) + ' — ' + esc(c.subject) + '</strong><small>' + esc(c.category) + ' · ' + esc(statusLabel(c.status)) + '</small></div><small>' + esc(fmtDate(c.created_at || c.createdAt)) + '</small></div>';
+        }).join('') + '</div>';
+    return form + '<section class="cp-card" style="margin-top:12px"><div class="cp-card-head"><h3>شكاواي</h3></div>' + rows + '</section>';
   }
 
   function renderWallet(w) {
@@ -585,6 +625,7 @@
       wallet: '/api/client/wallet',
       invoices: '/api/client/invoices',
       requests: '/api/client/requests',
+      complaints: '/api/client/complaints',
       support: '/api/client/tickets',
       notifications: '/api/client/notifications',
       marketplace: '/api/client/marketplace',
@@ -689,6 +730,51 @@
         } catch (err) {
           toast(err.message || 'تعذر الإرسال');
         }
+      });
+    }
+
+    if (page === 'complaints') {
+      var cf = $('cp-complaint-form');
+      if (cf) cf.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var fd = new FormData(cf);
+        try {
+          await api('/api/client/complaints', {
+            method: 'POST',
+            body: {
+              category: fd.get('category'),
+              subject: fd.get('subject'),
+              message: fd.get('message'),
+              priority: fd.get('priority')
+            }
+          });
+          toast('تم إرسال الشكوى');
+          state.cache.complaints = null;
+          await render();
+        } catch (err) {
+          toast(err.message || 'تعذر الإرسال');
+        }
+      });
+    }
+
+    if (page === 'subscriptions') {
+      document.querySelectorAll('[data-renew-sub]').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          try {
+            var result = await api('/api/client/subscriptions/renew', {
+              method: 'POST',
+              body: { id: btn.getAttribute('data-renew-sub') }
+            });
+            toast(result.ok ? 'تم تجديد الاشتراك' : (result.error || 'تعذر التجديد'));
+            state.cache.subscriptions = null;
+            state.cache.wallet = null;
+            state.cache.invoices = null;
+            state.home = null;
+            await render();
+          } catch (err) {
+            toast(err.message || 'تعذر التجديد');
+          }
+        });
       });
     }
 
@@ -852,6 +938,7 @@
         case 'wallet': html = renderWallet(data.wallet || data); break;
         case 'invoices': html = renderInvoices(data.invoices || []); break;
         case 'requests': html = renderRequests(data.requests || []); break;
+        case 'complaints': html = renderComplaints(data.complaints || []); break;
         case 'support':
           html = renderSupport(data.tickets || [], (state.home && state.home.systems) || []);
           break;
