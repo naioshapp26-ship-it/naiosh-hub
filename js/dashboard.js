@@ -62,7 +62,7 @@
     'data-governance': ['حوكمة البيانات', 'كتالوج · مصادر · جودة · رحلة البيانات · سياسات · اعتمادات'],
     'systems-automation': ['أتمتة الأنظمة', 'إنشاء · تشغيل · قوالب · سجل عمليات · اتصالات'],
     workforce: ['القوى العاملة', 'موظفين أولاً · بحث وفلاتر · Pagination · ملف موظف · مكافآت واعتماد · مزامنة HR'],
-    systems: ['سوق الأنظمة التشغيلية', 'تفعيل · إيقاف · ربط'],
+    systems: ['سوق الأنظمة التشغيلية', 'إضافة · تعديل فعلي · مستخدمون · اشتراك · تكاملات · سجل تغييرات'],
     tasks: ['المهام والمشاريع', 'توزيع · أولويات · اختناقات · جودة تنفيذ'],
     measurement: ['القياس الموحد', 'درجات · مستويات · مصفوفة · أثر العملاء'],
     reports: ['التقارير السيادية', 'يومي · أسبوعي · شهري · مخاطر · نمو · امتثال · نشاط موحّد'],
@@ -1347,64 +1347,10 @@
   };
 
   const renderSystems = () => {
-    const s = HubStore.get().systems;
-    const market = HubStore.get().empire.marketplace;
-    return `
-      <div class="toolbar">
-        ${pageActs('systems', 'إضافة')}
-        <button class="btn btn-primary" data-action="sync-all"><i class="fas fa-sync"></i> مزامنة كل الأنظمة</button>
-      </div>
-      <article class="card" style="margin-bottom:12px">
-        <h3><span class="title-left"><i class="fas fa-store icon"></i> System Marketplace</span></h3>
-        <div class="table-wrap"><table class="data">
-          <thead><tr><th>النظام</th><th>التصنيف</th><th>المستأجرون</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
-          <tbody>
-            ${market.catalog
-              .map(
-                (sys) => `<tr>
-                  <td><strong>${esc(sys.name)}</strong></td>
-                  <td>${esc(sys.category)}</td>
-                  <td>${sys.tenants}</td>
-                  <td>${badgeStatus(sys.status)}</td>
-                  ${metaCells(sys)}
-                  <td><button class="btn btn-sm btn-dark" data-action="toggle-market" data-id="${sys.id}">تفعيل/إيقاف</button>${rowActs('systems', sys.id)}</td>
-                </tr>`
-              )
-              .join('')}
-          </tbody>
-        </table></div>
-      </article>
-      <div class="grid-2">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-server icon"></i> صحة التشغيل اللحظية</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>النظام</th><th>الصحة</th><th>الحالة</th><th>آخر مزامنة</th><th></th></tr></thead>
-            <tbody>
-              ${s.registry
-                .map(
-                  (sys) => `<tr>
-                    <td>${esc(sys.name)}</td><td>${sys.health}% ${bar(sys.health)}</td><td>${badgeStatus(sys.status)}</td>
-                    <td>${fmtTime(sys.lastSync)}</td>
-                    <td><button class="btn btn-sm btn-dark" data-action="sync-one" data-id="${sys.id}">مزامنة</button></td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-building icon"></i> العملاء / المؤسسات</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>العميل</th><th>أنظمة</th><th>الحالة</th></tr></thead>
-            <tbody>
-              ${s.clients
-                .map((c) => `<tr><td>${esc(c.name)}</td><td>${c.systems}</td><td>${badgeStatus(c.status)}</td></tr>`)
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-      </div>
-    `;
+    if (window.HubSystemsMarket?.render) {
+      return HubSystemsMarket.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return '<div class="empty">تعذر تحميل وحدة سوق الأنظمة</div>';
   };
 
   const renderTasks = () => {
@@ -2180,6 +2126,15 @@
       }
     }
 
+    if (String(action || '').startsWith('sm-') && window.HubSystemsMarket?.handle) {
+      const handled = HubSystemsMarket.handle(action, btn, { user, toast, esc, $ });
+      if (handled) {
+        renderNav();
+        render();
+        return;
+      }
+    }
+
     switch (action) {
       case 'issue-decision': {
         const title = $('#decision-title')?.value.trim();
@@ -2548,6 +2503,13 @@
     const wfEl = e.target.closest('[data-wf-change]');
     if (wfEl && window.HubWorkforce?.handleChange) {
       if (HubWorkforce.handleChange(wfEl)) {
+        render();
+      }
+      return;
+    }
+    const smEl = e.target.closest('[data-sm-change]');
+    if (smEl && window.HubSystemsMarket?.handleChange) {
+      if (HubSystemsMarket.handleChange(smEl)) {
         render();
       }
       return;
