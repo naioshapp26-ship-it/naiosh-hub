@@ -204,23 +204,432 @@ const HubStore = (() => {
     };
   };
 
-  const seedInfoSecurity = () => ({
-    score: 91,
-    mfaCoverage: 67,
-    openIncidents: 2,
-    controls: [
-      { id: uid('sec'), name: 'OAuth2 / SSO', category: 'هوية', status: 'active', coverage: 98 },
-      { id: uid('sec'), name: 'MFA متعدد العوامل', category: 'هوية', status: 'active', coverage: 67 },
-      { id: uid('sec'), name: 'SIEM مراقبة الأحداث', category: 'رصد', status: 'active', coverage: 88 },
-      { id: uid('sec'), name: 'تشفير البيانات أثناء النقل', category: 'حماية', status: 'active', coverage: 100 },
-      { id: uid('sec'), name: 'إدارة الصلاحيات RBAC', category: 'صلاحيات', status: 'active', coverage: 94 },
-      { id: uid('sec'), name: 'اختبار اختراق دوري', category: 'اختبار', status: 'scheduled', coverage: 72 },
-    ],
-    incidents: [
-      { id: uid('inc'), title: 'محاولات دخول فاشلة مرتفعة', severity: 'متوسط', status: 'open', owner: 'أمن المعلومات' },
-      { id: uid('inc'), title: 'تنبيه صلاحيات متجاوزة', severity: 'عالي', status: 'investigating', owner: 'الحوكمة' },
-    ],
-  });
+  const nextSecSeq = (list, prefix, pad = 5) => {
+    const year = new Date().getFullYear();
+    const re = new RegExp(`^${prefix}-${year}-(\\d+)$`);
+    let max = 0;
+    (list || []).forEach((row) => {
+      const m = String(row.id || '').match(re);
+      if (m) max = Math.max(max, Number(m[1]));
+    });
+    return `${prefix}-${year}-${String(max + 1).padStart(pad, '0')}`;
+  };
+
+  const seedInfoSecurity = () => {
+    const ctrl1 = 'CTRL-2026-00001';
+    const ctrl2 = 'CTRL-2026-00002';
+    const ctrl3 = 'CTRL-2026-00003';
+    const ctrl4 = 'CTRL-2026-00004';
+    const ctrl5 = 'CTRL-2026-00005';
+    const ctrl6 = 'CTRL-2026-00006';
+    const risk1 = 'RISK-2026-00001';
+    const risk2 = 'RISK-2026-00002';
+    const risk3 = 'RISK-2026-00003';
+    const risk4 = 'RISK-2026-00004';
+    const now = Date.now();
+    const isoDaysAgo = (d, h = 10, m = 0) => new Date(now - d * 86400000 - (10 - h) * 3600000 - m * 60000).toISOString();
+    return {
+      schemaVersion: 2,
+      score: 91,
+      prevScore: 88,
+      mfaCoverage: 67,
+      prevMfaCoverage: 61,
+      compliancePct: 84,
+      prevCompliancePct: 79,
+      closedThisMonth: 8,
+      prevClosedThisMonth: 5,
+      controls: [
+        {
+          id: ctrl1,
+          name: 'OAuth2 / SSO',
+          category: 'قوية',
+          framework: 'ISO 27001',
+          compliance: 98,
+          status: 'implemented',
+          owner: 'أحمد الراشد',
+          lastReview: '2026-08-01',
+          nextReview: '2026-11-01',
+          description: 'تسجيل دخول موحّد عبر OAuth2/SSO لكل أنظمة هوب.',
+          evidence: ['sso-config.pdf'],
+          relatedRisks: [risk2],
+          relatedIncidents: [],
+          reviewHistory: [{ at: '2026-08-01', by: 'أحمد الراشد', note: 'مراجعة ناجحة' }],
+          attachments: [],
+          archived: false,
+        },
+        {
+          id: ctrl2,
+          name: 'MFA متعدد العوامل',
+          category: 'متوسطة',
+          framework: 'NIST',
+          compliance: 67,
+          status: 'partial',
+          owner: 'سارة العتيبي',
+          lastReview: '2026-07-15',
+          nextReview: '2026-09-20',
+          description: 'إلزام المصادقة متعددة العوامل للحسابات الحساسة.',
+          evidence: ['mfa-rollout.xlsx'],
+          relatedRisks: [risk1],
+          relatedIncidents: ['INC-2026-00124'],
+          reviewHistory: [{ at: '2026-07-15', by: 'سارة العتيبي', note: 'تغطية جزئية للأقسام' }],
+          attachments: [],
+          archived: false,
+        },
+        {
+          id: ctrl3,
+          name: 'SIEM مراقبة الأحداث',
+          category: 'قوية',
+          framework: 'ISO 27001',
+          compliance: 88,
+          status: 'implemented',
+          owner: 'مركز SOC',
+          lastReview: '2026-08-10',
+          nextReview: '2026-10-10',
+          description: 'تجميع وتنبيه أحداث الأمن عبر SIEM.',
+          evidence: ['siem-dashboard.png'],
+          relatedRisks: [risk3],
+          relatedIncidents: ['INC-2026-00125'],
+          reviewHistory: [],
+          attachments: [],
+          archived: false,
+        },
+        {
+          id: ctrl4,
+          name: 'تشفير البيانات أثناء النقل',
+          category: 'قوية',
+          framework: 'Internal Control',
+          compliance: 100,
+          status: 'implemented',
+          owner: 'فريق البنية',
+          lastReview: '2026-06-20',
+          nextReview: '2026-12-20',
+          description: 'TLS 1.2+ لجميع القنوات الخارجية والداخلية الحساسة.',
+          evidence: ['tls-audit.pdf'],
+          relatedRisks: [],
+          relatedIncidents: [],
+          reviewHistory: [],
+          attachments: [],
+          archived: false,
+        },
+        {
+          id: ctrl5,
+          name: 'إدارة الصلاحيات RBAC',
+          category: 'قوية',
+          framework: 'NIST',
+          compliance: 94,
+          status: 'implemented',
+          owner: 'الحوكمة',
+          lastReview: '2026-08-05',
+          nextReview: '2026-09-18',
+          description: 'أدوار وصلاحيات مبنية على الوظيفة مع مراجعة دورية.',
+          evidence: ['rbac-matrix.xlsx'],
+          relatedRisks: [risk4],
+          relatedIncidents: ['INC-2026-00126'],
+          reviewHistory: [],
+          attachments: [],
+          archived: false,
+        },
+        {
+          id: ctrl6,
+          name: 'اختبار اختراق دوري',
+          category: 'متوسطة',
+          framework: 'ISO 27001',
+          compliance: 72,
+          status: 'needs_review',
+          owner: 'فريق الاختبار',
+          lastReview: '2026-05-01',
+          nextReview: '2026-09-15',
+          description: 'اختبارات اختراق ربع سنوية للأنظمة الحرجة.',
+          evidence: [],
+          relatedRisks: [risk1, risk3],
+          relatedIncidents: [],
+          reviewHistory: [{ at: '2026-05-01', by: 'فريق الاختبار', note: 'يحتاج جدولة الجولة القادمة' }],
+          attachments: [],
+          archived: false,
+        },
+      ],
+      incidents: [
+        {
+          id: 'INC-2026-00125',
+          title: 'محاولة وصول غير مصرح من عنوان خارجي',
+          type: 'وصول غير مصرح',
+          severity: 'حرج',
+          status: 'جديد',
+          department: 'ERP',
+          owner: 'أحمد الراشد',
+          discoveredAt: isoDaysAgo(0, 9, 15),
+          createdAt: isoDaysAgo(0, 9, 40),
+          source: 'SIEM',
+          description: 'رصد محاولات متكررة للوصول إلى لوحة إدارة ERP من IP غير موثوق.',
+          initialActions: 'حظر العنوان مؤقتاً وتنبيه SOC.',
+          sensitiveData: false,
+          tags: ['brute-force', 'erp'],
+          slaHours: 4,
+          slaDueAt: isoDaysAgo(-0.1, 13, 15),
+          timeline: [
+            { at: isoDaysAgo(0, 9, 15), by: 'SIEM', text: 'تنبيه تلقائي: محاولات فاشلة مرتفعة' },
+            { at: isoDaysAgo(0, 9, 40), by: 'أحمد الراشد', text: 'تسجيل الحادث وبدء الاحتواء' },
+          ],
+          actionsTaken: [{ at: isoDaysAgo(0, 9, 45), by: 'أحمد الراشد', text: 'حظر IP في الجدار الناري' }],
+          attachments: [{ name: 'siem-alert.pdf', at: isoDaysAgo(0, 9, 50) }],
+          rootCause: '',
+          resolution: '',
+          correctiveActions: [],
+          preventiveActions: [],
+          notes: [],
+          relatedRisks: [risk3],
+          relatedControls: [ctrl3],
+          archived: false,
+          draft: false,
+        },
+        {
+          id: 'INC-2026-00124',
+          title: 'حملة تصيد إلكتروني على موظفي المالية',
+          type: 'تصيد إلكتروني',
+          severity: 'مرتفع',
+          status: 'قيد التحقيق',
+          department: 'المالية',
+          owner: 'سارة العتيبي',
+          discoveredAt: isoDaysAgo(1, 11, 0),
+          createdAt: isoDaysAgo(1, 11, 20),
+          source: 'Email Security',
+          description: 'رسائل تصيد تستهدف بيانات الدخول لحسابات المالية.',
+          initialActions: 'عزل الرسائل وإشعار الموظفين.',
+          sensitiveData: true,
+          tags: ['phishing', 'email'],
+          slaHours: 8,
+          slaDueAt: isoDaysAgo(0.7, 19, 0),
+          timeline: [
+            { at: isoDaysAgo(1, 11, 0), by: 'Email Security', text: 'اكتشاف حملة تصيد' },
+            { at: isoDaysAgo(1, 11, 20), by: 'سارة العتيبي', text: 'فتح تحقيق أمني' },
+          ],
+          actionsTaken: [{ at: isoDaysAgo(1, 12, 0), by: 'سارة العتيبي', text: 'حجر الرسائل المشبوهة' }],
+          attachments: [],
+          rootCause: '',
+          resolution: '',
+          correctiveActions: [],
+          preventiveActions: [],
+          notes: [{ at: isoDaysAgo(1, 14, 0), by: 'سارة العتيبي', text: 'لا توجد مؤشرات اختراق ناجح حتى الآن' }],
+          relatedRisks: [risk1],
+          relatedControls: [ctrl2],
+          archived: false,
+          draft: false,
+        },
+        {
+          id: 'INC-2026-00126',
+          title: 'تنبيه صلاحيات متجاوزة على حساب خدمة',
+          type: 'إساءة استخدام صلاحيات',
+          severity: 'متوسط',
+          status: 'قيد المعالجة',
+          department: 'الحوكمة',
+          owner: 'نور فهد',
+          discoveredAt: isoDaysAgo(2, 8, 30),
+          createdAt: isoDaysAgo(2, 9, 0),
+          source: 'موظف / بلاغ داخلي',
+          description: 'حساب خدمة يمتلك صلاحيات أوسع من المطلوب بعد تحديث النظام.',
+          initialActions: 'تعليق الصلاحيات الزائدة.',
+          sensitiveData: false,
+          tags: ['rbac', 'privilege'],
+          slaHours: 24,
+          slaDueAt: isoDaysAgo(1, 8, 30),
+          timeline: [
+            { at: isoDaysAgo(2, 8, 30), by: 'موظف / بلاغ داخلي', text: 'بلاغ داخلي من فريق الحوكمة' },
+          ],
+          actionsTaken: [{ at: isoDaysAgo(2, 9, 10), by: 'نور فهد', text: 'تقليص صلاحيات الحساب' }],
+          attachments: [],
+          rootCause: '',
+          resolution: '',
+          correctiveActions: [],
+          preventiveActions: [],
+          notes: [],
+          relatedRisks: [risk4],
+          relatedControls: [ctrl5],
+          archived: false,
+          draft: false,
+        },
+        {
+          id: 'INC-2026-00120',
+          title: 'تنبيه Malware على محطة عمل',
+          type: 'Malware',
+          severity: 'منخفض',
+          status: 'مغلق',
+          department: 'الدعم الفني',
+          owner: 'مركز SOC',
+          discoveredAt: isoDaysAgo(12, 15, 0),
+          createdAt: isoDaysAgo(12, 15, 20),
+          closedAt: isoDaysAgo(11, 10, 0),
+          source: 'EDR',
+          description: 'ملف مشبوه حُجر تلقائياً بواسطة EDR.',
+          initialActions: 'عزل المحطة ومسح كامل.',
+          sensitiveData: false,
+          tags: ['edr', 'endpoint'],
+          slaHours: 12,
+          slaDueAt: isoDaysAgo(11.5, 3, 0),
+          timeline: [
+            { at: isoDaysAgo(12, 15, 0), by: 'EDR', text: 'اكتشاف وحجر تلقائي' },
+            { at: isoDaysAgo(11, 10, 0), by: 'مركز SOC', text: 'إغلاق بعد التنظيف' },
+          ],
+          actionsTaken: [{ at: isoDaysAgo(12, 16, 0), by: 'مركز SOC', text: 'إعادة تثبيت الوكيل الأمني' }],
+          attachments: [{ name: 'edr-report.pdf', at: isoDaysAgo(12, 16, 30) }],
+          rootCause: 'تحميل ملف من مصدر غير موثوق',
+          resolution: 'تم التنظيف وإعادة المحطة للخدمة',
+          correctiveActions: ['تحديث سياسات الويب'],
+          preventiveActions: ['توعية المستخدم'],
+          notes: [],
+          relatedRisks: [],
+          relatedControls: [ctrl3],
+          archived: false,
+          draft: false,
+        },
+      ],
+      risks: [
+        {
+          id: risk1,
+          name: 'ضعف تغطية MFA على الحسابات الحساسة',
+          category: 'هوية ووصول',
+          likelihood: 4,
+          impact: 5,
+          score: 20,
+          level: 'حرج',
+          department: 'هوية',
+          owner: 'سارة العتيبي',
+          treatmentPlan: 'إلزام MFA لكل الحسابات ذات الصلاحيات العالية خلال 30 يوماً.',
+          targetDate: '2026-09-30',
+          status: 'قيد المعالجة',
+          relatedControls: [ctrl2],
+          relatedIncidents: ['INC-2026-00124'],
+          description: 'نسبة MFA الحالية 67% وتترك حسابات حساسة معرضة.',
+          archived: false,
+        },
+        {
+          id: risk2,
+          name: 'اعتماد مزود هوية واحد دون بديل',
+          category: 'توفر',
+          likelihood: 2,
+          impact: 4,
+          score: 8,
+          level: 'متوسط',
+          department: 'البنية',
+          owner: 'أحمد الراشد',
+          treatmentPlan: 'إعداد مزود احتياطي واختبار التحول.',
+          targetDate: '2026-10-15',
+          status: 'مفتوح',
+          relatedControls: [ctrl1],
+          relatedIncidents: [],
+          description: 'انقطاع مزود SSO قد يوقف الدخول لكل الأنظمة.',
+          archived: false,
+        },
+        {
+          id: risk3,
+          name: 'تأخر الاستجابة لتنبيهات SIEM الحرجة',
+          category: 'رصد واستجابة',
+          likelihood: 3,
+          impact: 4,
+          score: 12,
+          level: 'مرتفع',
+          department: 'SOC',
+          owner: 'مركز SOC',
+          treatmentPlan: 'مناوبة 24/7 وتحسين قواعد التصعيد.',
+          targetDate: '2026-09-25',
+          status: 'قيد المعالجة',
+          relatedControls: [ctrl3, ctrl6],
+          relatedIncidents: ['INC-2026-00125'],
+          description: 'SLA غير مكتمل لبعض التنبيهات الحرجة خارج ساعات العمل.',
+          archived: false,
+        },
+        {
+          id: risk4,
+          name: 'تراكم صلاحيات زائدة على حسابات الخدمة',
+          category: 'صلاحيات',
+          likelihood: 3,
+          impact: 3,
+          score: 9,
+          level: 'متوسط',
+          department: 'الحوكمة',
+          owner: 'نور فهد',
+          treatmentPlan: 'مراجعة ربع سنوية وصلاحيات أقل امتيازاً.',
+          targetDate: '2026-10-01',
+          status: 'مفتوح',
+          relatedControls: [ctrl5],
+          relatedIncidents: ['INC-2026-00126'],
+          description: 'حسابات خدمة قد تحتفظ بصلاحيات قديمة بعد الترقيات.',
+          archived: false,
+        },
+      ],
+      auditLog: [
+        {
+          id: uid('secaud'),
+          user: 'النظام',
+          action: 'تهيئة الوحدة',
+          entityType: 'module',
+          entityId: 'info-security',
+          entityLabel: 'أمن المعلومات',
+          at: isoDaysAgo(20, 9, 0),
+          oldValue: '',
+          newValue: 'schema v2',
+        },
+      ],
+      notifications: [
+        {
+          id: uid('secn'),
+          type: 'critical_incident',
+          title: 'حادث حرج جديد',
+          body: 'INC-2026-00125 — محاولة وصول غير مصرح',
+          at: isoDaysAgo(0, 9, 40),
+          read: false,
+          linkId: 'INC-2026-00125',
+        },
+        {
+          id: uid('secn'),
+          type: 'control_review',
+          title: 'ضابط يحتاج مراجعة',
+          body: 'اختبار اختراق دوري — المراجعة القادمة 2026-09-15',
+          at: isoDaysAgo(1, 8, 0),
+          read: false,
+          linkId: 'CTRL-2026-00006',
+        },
+        {
+          id: uid('secn'),
+          type: 'critical_risk',
+          title: 'خطر حرج قائم',
+          body: 'ضعف تغطية MFA على الحسابات الحساسة',
+          at: isoDaysAgo(2, 10, 0),
+          read: false,
+          linkId: 'RISK-2026-00001',
+        },
+      ],
+      people: ['أحمد الراشد', 'سارة العتيبي', 'نور فهد', 'مركز SOC', 'فريق البنية', 'فريق الاختبار', 'الحوكمة'],
+      departments: ['ERP', 'المالية', 'الحوكمة', 'الدعم الفني', 'هوية', 'SOC', 'البنية', 'HR', 'LMS'],
+    };
+  };
+
+  const recomputeInfoSecurityKpis = (sec = get().infoSecurity) => {
+    if (!sec) return sec;
+    const incidents = (sec.incidents || []).filter((x) => !x.archived && !x.draft);
+    const controls = (sec.controls || []).filter((x) => !x.archived);
+    const risks = (sec.risks || []).filter((x) => !x.archived);
+    const openStatuses = new Set(['جديد', 'قيد التحقيق', 'قيد المعالجة', 'تم الاحتواء', 'open', 'investigating']);
+    sec.openIncidents = incidents.filter((i) => openStatuses.has(i.status)).length;
+    const month = new Date().getMonth();
+    const year = new Date().getFullYear();
+    sec.closedThisMonth = incidents.filter((i) => {
+      if (i.status !== 'مغلق' && i.status !== 'closed') return false;
+      const d = new Date(i.closedAt || i.createdAt || 0);
+      return d.getMonth() === month && d.getFullYear() === year;
+    }).length;
+    const activeControls = controls.filter((c) => c.status === 'implemented' || c.status === 'active').length;
+    sec.activeControls = activeControls;
+    sec.criticalRisks = risks.filter((r) => r.level === 'حرج' && r.status !== 'مغلق').length;
+    if (controls.length) {
+      sec.compliancePct = Math.round(controls.reduce((a, c) => a + Number(c.compliance || c.coverage || 0), 0) / controls.length);
+    }
+    const mfa = controls.find((c) => /MFA/i.test(c.name));
+    if (mfa) sec.mfaCoverage = Number(mfa.compliance || mfa.coverage || sec.mfaCoverage || 0);
+    const openCritical = incidents.filter((i) => openStatuses.has(i.status) && (i.severity === 'حرج' || i.severity === 'مرتفع')).length;
+    const base = 100 - openCritical * 4 - (sec.criticalRisks || 0) * 3 - Math.max(0, 90 - (sec.compliancePct || 0)) * 0.3;
+    sec.score = Math.max(40, Math.min(99, Math.round(base)));
+    return sec;
+  };
 
   const seedDataGovernance = () => ({
     qualityScore: 87,
@@ -662,9 +1071,12 @@ const HubStore = (() => {
   const hydrateOpsDomains = () => {
     if (!state) return false;
     let changed = false;
-    if (!state.infoSecurity) {
+    if (!state.infoSecurity || state.infoSecurity.schemaVersion !== 2) {
       state.infoSecurity = seedInfoSecurity();
+      recomputeInfoSecurityKpis(state.infoSecurity);
       changed = true;
+    } else {
+      recomputeInfoSecurityKpis(state.infoSecurity);
     }
     if (!state.dataGovernance) {
       state.dataGovernance = seedDataGovernance();
@@ -2267,23 +2679,501 @@ const HubStore = (() => {
     return item;
   };
 
+  const secBag = () => {
+    const s = get();
+    if (!s.infoSecurity || s.infoSecurity.schemaVersion !== 2) {
+      s.infoSecurity = seedInfoSecurity();
+    }
+    return s.infoSecurity;
+  };
+
+  const pushSecurityAudit = (entry = {}) => {
+    const sec = secBag();
+    if (!Array.isArray(sec.auditLog)) sec.auditLog = [];
+    const row = {
+      id: uid('secaud'),
+      user: entry.user || 'مشغّل هوب',
+      action: entry.action || 'تعديل',
+      entityType: entry.entityType || '',
+      entityId: entry.entityId || '',
+      entityLabel: entry.entityLabel || entry.entityId || '',
+      at: nowIso(),
+      oldValue: entry.oldValue ?? '',
+      newValue: entry.newValue ?? '',
+    };
+    sec.auditLog.unshift(row);
+    if (sec.auditLog.length > 500) sec.auditLog.length = 500;
+    return row;
+  };
+
+  const pushSecurityNotice = (entry = {}) => {
+    const sec = secBag();
+    if (!Array.isArray(sec.notifications)) sec.notifications = [];
+    const row = {
+      id: uid('secn'),
+      type: entry.type || 'info',
+      title: entry.title || 'تنبيه أمني',
+      body: entry.body || '',
+      at: nowIso(),
+      read: false,
+      linkId: entry.linkId || '',
+    };
+    sec.notifications.unshift(row);
+    if (sec.notifications.length > 100) sec.notifications.length = 100;
+    pushNotification({
+      source: 'SEC',
+      sourceName: 'أمن المعلومات',
+      title: row.title,
+      body: row.body,
+      level: entry.level || (entry.type === 'critical_incident' || entry.type === 'critical_risk' ? 'critical' : 'warning'),
+      category: 'security',
+      link: 'dashboard.html#info-security',
+      meta: { linkId: row.linkId, type: row.type },
+    });
+    return row;
+  };
+
+  const riskLevelFromScore = (score) => {
+    if (score >= 20) return 'حرج';
+    if (score >= 12) return 'مرتفع';
+    if (score >= 6) return 'متوسط';
+    return 'منخفض';
+  };
+
   const toggleSecurityControl = (id) => {
-    const c = get().infoSecurity?.controls?.find((x) => x.id === id);
+    const c = secBag().controls?.find((x) => x.id === id);
     if (!c) return null;
-    c.status = c.status === 'active' ? 'paused' : 'active';
+    const old = c.status;
+    if (c.status === 'implemented' || c.status === 'active') c.status = 'needs_review';
+    else if (c.status === 'partial') c.status = 'implemented';
+    else if (c.status === 'not_implemented' || c.status === 'paused') c.status = 'partial';
+    else c.status = 'implemented';
+    pushSecurityAudit({
+      user: 'مشغّل هوب',
+      action: 'تعديل حالة ضابط',
+      entityType: 'control',
+      entityId: c.id,
+      entityLabel: c.name,
+      oldValue: old,
+      newValue: c.status,
+    });
+    recomputeInfoSecurityKpis();
     pushFeed('alert', `أمن المعلومات · ${c.name}: ${c.status}`);
     save();
     return c;
   };
 
-  const closeSecurityIncident = (id) => {
-    const inc = get().infoSecurity?.incidents?.find((x) => x.id === id);
+  const addSecurityIncident = (payload = {}, actor = 'مشغّل هوب') => {
+    const sec = secBag();
+    if (!Array.isArray(sec.incidents)) sec.incidents = [];
+    const discoveredAt = payload.discoveredAt || nowIso();
+    const slaHours = Number(payload.slaHours || ({ حرج: 4, مرتفع: 8, متوسط: 24, منخفض: 72 }[payload.severity] || 24));
+    const item = {
+      id: nextSecSeq(sec.incidents, 'INC'),
+      title: payload.title || 'حادث أمني',
+      type: payload.type || 'أخرى',
+      severity: payload.severity || 'متوسط',
+      status: payload.draft ? 'مسودة' : payload.status || 'جديد',
+      department: payload.department || '',
+      owner: payload.owner || '',
+      discoveredAt,
+      createdAt: nowIso(),
+      source: payload.source || 'إدخال يدوي',
+      description: payload.description || '',
+      initialActions: payload.initialActions || '',
+      sensitiveData: !!payload.sensitiveData,
+      tags: Array.isArray(payload.tags)
+        ? payload.tags
+        : String(payload.tags || '')
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean),
+      slaHours,
+      slaDueAt: new Date(new Date(discoveredAt).getTime() + slaHours * 3600000).toISOString(),
+      timeline: [{ at: nowIso(), by: actor, text: payload.draft ? 'حفظ كمسودة' : 'تسجيل الحادث' }],
+      actionsTaken: payload.initialActions ? [{ at: nowIso(), by: actor, text: payload.initialActions }] : [],
+      attachments: Array.isArray(payload.attachments) ? payload.attachments : [],
+      rootCause: '',
+      resolution: '',
+      correctiveActions: [],
+      preventiveActions: [],
+      notes: [],
+      relatedRisks: payload.relatedRisks || [],
+      relatedControls: payload.relatedControls || [],
+      archived: false,
+      draft: !!payload.draft,
+    };
+    sec.incidents.unshift(item);
+    pushSecurityAudit({
+      user: actor,
+      action: item.draft ? 'حفظ مسودة حادث' : 'إنشاء حادث',
+      entityType: 'incident',
+      entityId: item.id,
+      entityLabel: item.title,
+      newValue: item.status,
+    });
+    if (!item.draft && (item.severity === 'حرج' || item.severity === 'مرتفع')) {
+      pushSecurityNotice({
+        type: item.severity === 'حرج' ? 'critical_incident' : 'incident',
+        title: item.severity === 'حرج' ? 'تسجيل Incident حرج' : 'حادث أمني جديد',
+        body: `${item.id} — ${item.title}`,
+        linkId: item.id,
+        level: item.severity === 'حرج' ? 'critical' : 'warning',
+      });
+    }
+    if (item.owner) {
+      pushSecurityNotice({
+        type: 'assignment',
+        title: 'تعيين حادث أمني',
+        body: `تم تعيين ${item.id} إلى ${item.owner}`,
+        linkId: item.id,
+      });
+    }
+    recomputeInfoSecurityKpis();
+    pushFeed('alert', `حادث أمني: ${item.id} · ${item.title}`);
+    save();
+    return item;
+  };
+
+  const updateSecurityIncident = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const sec = secBag();
+    const inc = sec.incidents?.find((x) => x.id === id);
     if (!inc) return null;
-    inc.status = 'closed';
-    get().infoSecurity.openIncidents = get().infoSecurity.incidents.filter((x) => x.status !== 'closed').length;
+    const tracked = ['status', 'severity', 'owner', 'title', 'type', 'department', 'source', 'description', 'rootCause', 'resolution'];
+    tracked.forEach((key) => {
+      if (patch[key] === undefined || patch[key] === inc[key]) return;
+      pushSecurityAudit({
+        user: actor,
+        action: `تعديل ${key}`,
+        entityType: 'incident',
+        entityId: inc.id,
+        entityLabel: inc.title,
+        oldValue: String(inc[key] ?? ''),
+        newValue: String(patch[key] ?? ''),
+      });
+      if (!Array.isArray(inc.timeline)) inc.timeline = [];
+      inc.timeline.push({ at: nowIso(), by: actor, text: `تحديث ${key}: ${patch[key]}` });
+    });
+    Object.assign(inc, patch);
+    if (patch.status === 'مغلق' || patch.status === 'closed') {
+      inc.closedAt = nowIso();
+      inc.status = 'مغلق';
+    }
+    if (Array.isArray(patch.correctiveActions)) inc.correctiveActions = patch.correctiveActions;
+    if (Array.isArray(patch.preventiveActions)) inc.preventiveActions = patch.preventiveActions;
+    if (Array.isArray(patch.relatedRisks)) inc.relatedRisks = patch.relatedRisks;
+    if (Array.isArray(patch.relatedControls)) inc.relatedControls = patch.relatedControls;
+    recomputeInfoSecurityKpis();
+    save();
+    return inc;
+  };
+
+  const closeSecurityIncident = (id, resolution = {}, actor = 'مشغّل هوب') => {
+    const inc = secBag().incidents?.find((x) => x.id === id);
+    if (!inc) return null;
+    if (!resolution.rootCause || !resolution.resolution || !resolution.correctiveAction) {
+      return { error: 'قبل الإغلاق يجب تسجيل السبب الجذري والحل والإجراء التصحيحي' };
+    }
+    const old = inc.status;
+    inc.rootCause = resolution.rootCause;
+    inc.resolution = resolution.resolution;
+    if (!Array.isArray(inc.correctiveActions)) inc.correctiveActions = [];
+    inc.correctiveActions.push(resolution.correctiveAction);
+    if (resolution.preventiveAction) {
+      if (!Array.isArray(inc.preventiveActions)) inc.preventiveActions = [];
+      inc.preventiveActions.push(resolution.preventiveAction);
+    }
+    inc.status = 'مغلق';
+    inc.closedAt = nowIso();
+    if (!Array.isArray(inc.timeline)) inc.timeline = [];
+    inc.timeline.push({ at: nowIso(), by: actor, text: 'إغلاق الحادث' });
+    pushSecurityAudit({
+      user: actor,
+      action: 'إغلاق حادث',
+      entityType: 'incident',
+      entityId: inc.id,
+      entityLabel: inc.title,
+      oldValue: old,
+      newValue: 'مغلق',
+    });
+    recomputeInfoSecurityKpis();
     pushFeed('alert', `إغلاق حادثة أمنية: ${inc.title}`);
     save();
     return inc;
+  };
+
+  const reopenSecurityIncident = (id, actor = 'مشغّل هوب') => {
+    const inc = secBag().incidents?.find((x) => x.id === id);
+    if (!inc) return null;
+    const old = inc.status;
+    inc.status = 'قيد التحقيق';
+    inc.closedAt = '';
+    if (!Array.isArray(inc.timeline)) inc.timeline = [];
+    inc.timeline.push({ at: nowIso(), by: actor, text: 'إعادة فتح الحادث' });
+    pushSecurityAudit({
+      user: actor,
+      action: 'إعادة فتح حادث',
+      entityType: 'incident',
+      entityId: inc.id,
+      entityLabel: inc.title,
+      oldValue: old,
+      newValue: 'قيد التحقيق',
+    });
+    recomputeInfoSecurityKpis();
+    save();
+    return inc;
+  };
+
+  const addSecurityIncidentNote = (id, text, actor = 'مشغّل هوب') => {
+    const inc = secBag().incidents?.find((x) => x.id === id);
+    if (!inc || !text) return null;
+    if (!Array.isArray(inc.notes)) inc.notes = [];
+    inc.notes.push({ at: nowIso(), by: actor, text });
+    if (!Array.isArray(inc.timeline)) inc.timeline = [];
+    inc.timeline.push({ at: nowIso(), by: actor, text: `تعليق: ${text}` });
+    pushSecurityAudit({
+      user: actor,
+      action: 'إضافة تعليق',
+      entityType: 'incident',
+      entityId: inc.id,
+      entityLabel: inc.title,
+      newValue: text,
+    });
+    save();
+    return inc;
+  };
+
+  const addSecurityIncidentAction = (id, text, actor = 'مشغّل هوب') => {
+    const inc = secBag().incidents?.find((x) => x.id === id);
+    if (!inc || !text) return null;
+    if (!Array.isArray(inc.actionsTaken)) inc.actionsTaken = [];
+    inc.actionsTaken.push({ at: nowIso(), by: actor, text });
+    if (!Array.isArray(inc.timeline)) inc.timeline = [];
+    inc.timeline.push({ at: nowIso(), by: actor, text: `إجراء: ${text}` });
+    pushSecurityAudit({
+      user: actor,
+      action: 'تسجيل إجراء',
+      entityType: 'incident',
+      entityId: inc.id,
+      entityLabel: inc.title,
+      newValue: text,
+    });
+    save();
+    return inc;
+  };
+
+  const addSecurityAttachment = (entityType, id, fileName, actor = 'مشغّل هوب') => {
+    const sec = secBag();
+    const listKey = entityType === 'control' ? 'controls' : entityType === 'risk' ? 'risks' : 'incidents';
+    const row = sec[listKey]?.find((x) => x.id === id);
+    if (!row || !fileName) return null;
+    if (!Array.isArray(row.attachments)) row.attachments = [];
+    row.attachments.push({ name: fileName, at: nowIso(), by: actor });
+    if (entityType === 'incident') {
+      if (!Array.isArray(row.timeline)) row.timeline = [];
+      row.timeline.push({ at: nowIso(), by: actor, text: `مرفق: ${fileName}` });
+    }
+    pushSecurityAudit({
+      user: actor,
+      action: 'إضافة مرفق',
+      entityType,
+      entityId: row.id,
+      entityLabel: row.title || row.name,
+      newValue: fileName,
+    });
+    save();
+    return row;
+  };
+
+  const archiveSecurityIncident = (id, actor = 'مشغّل هوب') => {
+    const inc = secBag().incidents?.find((x) => x.id === id);
+    if (!inc) return null;
+    inc.archived = true;
+    pushSecurityAudit({
+      user: actor,
+      action: 'أرشفة حادث',
+      entityType: 'incident',
+      entityId: inc.id,
+      entityLabel: inc.title,
+      newValue: 'archived',
+    });
+    recomputeInfoSecurityKpis();
+    save();
+    return inc;
+  };
+
+  const addSecurityControl = (payload = {}, actor = 'مشغّل هوب') => {
+    const sec = secBag();
+    if (!Array.isArray(sec.controls)) sec.controls = [];
+    const item = {
+      id: nextSecSeq(sec.controls, 'CTRL'),
+      name: payload.name || 'ضابط أمني',
+      category: payload.category || 'متوسطة',
+      framework: payload.framework || 'Internal Control',
+      compliance: Number(payload.compliance || 0),
+      status: payload.status || 'partial',
+      owner: payload.owner || '',
+      lastReview: payload.lastReview || today(),
+      nextReview: payload.nextReview || '',
+      description: payload.description || '',
+      evidence: Array.isArray(payload.evidence) ? payload.evidence : [],
+      relatedRisks: payload.relatedRisks || [],
+      relatedIncidents: payload.relatedIncidents || [],
+      reviewHistory: [{ at: nowIso().slice(0, 10), by: actor, note: 'إنشاء الضابط' }],
+      attachments: [],
+      archived: false,
+    };
+    sec.controls.unshift(item);
+    pushSecurityAudit({
+      user: actor,
+      action: 'إنشاء ضابط أمني',
+      entityType: 'control',
+      entityId: item.id,
+      entityLabel: item.name,
+      newValue: item.status,
+    });
+    recomputeInfoSecurityKpis();
+    save();
+    return item;
+  };
+
+  const updateSecurityControl = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const c = secBag().controls?.find((x) => x.id === id);
+    if (!c) return null;
+    ['name', 'category', 'framework', 'compliance', 'status', 'owner', 'nextReview', 'description'].forEach((key) => {
+      if (patch[key] === undefined || patch[key] === c[key]) return;
+      pushSecurityAudit({
+        user: actor,
+        action: `تعديل ضابط (${key})`,
+        entityType: 'control',
+        entityId: c.id,
+        entityLabel: c.name,
+        oldValue: String(c[key] ?? ''),
+        newValue: String(patch[key] ?? ''),
+      });
+    });
+    Object.assign(c, patch);
+    if (patch.compliance !== undefined) c.compliance = Number(patch.compliance);
+    recomputeInfoSecurityKpis();
+    save();
+    return c;
+  };
+
+  const archiveSecurityControl = (id, actor = 'مشغّل هوب') => {
+    const c = secBag().controls?.find((x) => x.id === id);
+    if (!c) return null;
+    c.archived = true;
+    pushSecurityAudit({
+      user: actor,
+      action: 'أرشفة ضابط',
+      entityType: 'control',
+      entityId: c.id,
+      entityLabel: c.name,
+      newValue: 'archived',
+    });
+    recomputeInfoSecurityKpis();
+    save();
+    return c;
+  };
+
+  const addSecurityRisk = (payload = {}, actor = 'مشغّل هوب') => {
+    const sec = secBag();
+    if (!Array.isArray(sec.risks)) sec.risks = [];
+    const likelihood = Number(payload.likelihood || 1);
+    const impact = Number(payload.impact || 1);
+    const score = likelihood * impact;
+    const item = {
+      id: nextSecSeq(sec.risks, 'RISK'),
+      name: payload.name || 'خطر أمني',
+      category: payload.category || 'عام',
+      likelihood,
+      impact,
+      score,
+      level: riskLevelFromScore(score),
+      department: payload.department || '',
+      owner: payload.owner || '',
+      treatmentPlan: payload.treatmentPlan || '',
+      targetDate: payload.targetDate || '',
+      status: payload.status || 'مفتوح',
+      relatedControls: payload.relatedControls || [],
+      relatedIncidents: payload.relatedIncidents || [],
+      description: payload.description || '',
+      attachments: [],
+      archived: false,
+    };
+    sec.risks.unshift(item);
+    pushSecurityAudit({
+      user: actor,
+      action: 'إنشاء خطر',
+      entityType: 'risk',
+      entityId: item.id,
+      entityLabel: item.name,
+      newValue: item.level,
+    });
+    if (item.level === 'حرج') {
+      pushSecurityNotice({
+        type: 'critical_risk',
+        title: 'خطر حرج',
+        body: `${item.id} — ${item.name}`,
+        linkId: item.id,
+        level: 'critical',
+      });
+    }
+    recomputeInfoSecurityKpis();
+    save();
+    return item;
+  };
+
+  const updateSecurityRisk = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const r = secBag().risks?.find((x) => x.id === id);
+    if (!r) return null;
+    Object.keys(patch).forEach((key) => {
+      if (patch[key] === undefined || patch[key] === r[key]) return;
+      pushSecurityAudit({
+        user: actor,
+        action: `تعديل خطر (${key})`,
+        entityType: 'risk',
+        entityId: r.id,
+        entityLabel: r.name,
+        oldValue: String(r[key] ?? ''),
+        newValue: String(patch[key] ?? ''),
+      });
+    });
+    Object.assign(r, patch);
+    if (patch.likelihood !== undefined || patch.impact !== undefined) {
+      r.likelihood = Number(patch.likelihood ?? r.likelihood);
+      r.impact = Number(patch.impact ?? r.impact);
+      r.score = r.likelihood * r.impact;
+      r.level = riskLevelFromScore(r.score);
+    }
+    recomputeInfoSecurityKpis();
+    save();
+    return r;
+  };
+
+  const archiveSecurityRisk = (id, actor = 'مشغّل هوب') => {
+    const r = secBag().risks?.find((x) => x.id === id);
+    if (!r) return null;
+    r.archived = true;
+    pushSecurityAudit({
+      user: actor,
+      action: 'أرشفة خطر',
+      entityType: 'risk',
+      entityId: r.id,
+      entityLabel: r.name,
+      newValue: 'archived',
+    });
+    recomputeInfoSecurityKpis();
+    save();
+    return r;
+  };
+
+  const markSecurityNoticeRead = (id) => {
+    const n = secBag().notifications?.find((x) => x.id === id);
+    if (!n) return null;
+    n.read = true;
+    save();
+    return n;
   };
 
   const toggleDataCatalog = (id) => {
@@ -2503,6 +3393,22 @@ const HubStore = (() => {
     addPlatform,
     toggleSecurityControl,
     closeSecurityIncident,
+    reopenSecurityIncident,
+    addSecurityIncident,
+    updateSecurityIncident,
+    addSecurityIncidentNote,
+    addSecurityIncidentAction,
+    addSecurityAttachment,
+    archiveSecurityIncident,
+    addSecurityControl,
+    updateSecurityControl,
+    archiveSecurityControl,
+    addSecurityRisk,
+    updateSecurityRisk,
+    archiveSecurityRisk,
+    markSecurityNoticeRead,
+    recomputeInfoSecurityKpis,
+    pushSecurityAudit,
     toggleDataCatalog,
     activateDataPolicy,
     toggleAutomationFlow,

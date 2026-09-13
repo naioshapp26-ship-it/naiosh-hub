@@ -58,7 +58,7 @@
     wallet: ['اقتصاد النقاط', 'شحن · استهلاك · تسعير · فواتير'],
     core: ['العقل المركزي', 'قرار · تنبؤ · تحسين · شذوذ · خريطة معرفة'],
     governance: ['الحوكمة الدستورية', 'سياسات · امتثال · جودة · عقوبات/مكافآت · دستور'],
-    'info-security': ['أمن المعلومات', 'ضوابط · MFA · SIEM · حوادث · صلاحيات'],
+    'info-security': ['أمن المعلومات', 'حماية · إدارة · حوادث · مخاطر · ضوابط · تقارير'],
     'data-governance': ['حوكمة البيانات', 'كتالوج · تصنيف · جودة · سياسات الاحتفاظ'],
     'systems-automation': ['أتمتة الأنظمة', 'تدفقات · جدولة · تشغيل · طابور الأتمتة'],
     workforce: ['القوى العاملة عن بُعد', 'إضافة · تعديل · تعيين · حذف · إنذار · مكافآت'],
@@ -1726,55 +1726,10 @@
   };
 
   const renderInfoSecurity = () => {
-    const s = HubStore.get().infoSecurity || { controls: [], incidents: [] };
-    return `
-      <div class="kpi-grid">
-        <article class="kpi"><span>درجة الأمن</span><strong>${s.score}%</strong><small>Security score</small></article>
-        <article class="kpi"><span>تغطية MFA</span><strong>${s.mfaCoverage}%</strong><small>Multi-factor</small></article>
-        <article class="kpi"><span>حوادث مفتوحة</span><strong>${s.openIncidents}</strong><small>Incidents</small></article>
-        <article class="kpi"><span>ضوابط نشطة</span><strong>${(s.controls || []).filter((c) => c.status === 'active').length}</strong><small>Controls</small></article>
-      </div>
-      <div class="grid-2" style="margin-top:12px">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-shield-halved icon"></i> الضوابط الأمنية</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>الضابط</th><th>التصنيف</th><th>التغطية</th><th>الحالة</th><th></th></tr></thead>
-            <tbody>
-              ${(s.controls || [])
-                .map(
-                  (c) => `<tr>
-                    <td><strong>${esc(c.name)}</strong></td>
-                    <td>${esc(c.category)}</td>
-                    <td>${c.coverage}% ${bar(c.coverage)}</td>
-                    <td>${badgeStatus(c.status)}</td>
-                    <td><button class="btn btn-sm btn-dark" data-action="toggle-sec-control" data-id="${c.id}">تفعيل/إيقاف</button></td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-triangle-exclamation icon"></i> الحوادث الأمنية</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>الحادثة</th><th>الحدة</th><th>المسؤول</th><th>الحالة</th><th></th></tr></thead>
-            <tbody>
-              ${(s.incidents || [])
-                .map(
-                  (inc) => `<tr>
-                    <td>${esc(inc.title)}</td>
-                    <td>${badgeStatus(inc.severity)}</td>
-                    <td>${esc(inc.owner)}</td>
-                    <td>${badgeStatus(inc.status)}</td>
-                    <td>${inc.status !== 'closed' ? `<button class="btn btn-sm btn-primary" data-action="close-sec-incident" data-id="${inc.id}">إغلاق</button>` : '—'}</td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-      </div>
-    `;
+    if (window.HubInfoSecurity?.render) {
+      return HubInfoSecurity.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return `<div class="empty">تعذّر تحميل وحدة أمن المعلومات. تأكد من تحميل js/hub-info-security.js</div>`;
   };
 
   const renderDataGovernance = () => {
@@ -2319,6 +2274,15 @@
     const id = btn.dataset.id;
     if (SETTINGS_UI_ACTIONS.has(action)) return;
 
+    if (String(action || '').startsWith('sec-') && window.HubInfoSecurity?.handle) {
+      const handled = HubInfoSecurity.handle(action, btn, { user, toast, esc, $ });
+      if (handled) {
+        renderNav();
+        render();
+        return;
+      }
+    }
+
     switch (action) {
       case 'issue-decision': {
         const title = $('#decision-title')?.value.trim();
@@ -2661,6 +2625,13 @@
       };
       reader.readAsText(importInput.files[0]);
       importInput.value = '';
+      return;
+    }
+    const secEl = e.target.closest('[data-sec-change]');
+    if (secEl && window.HubInfoSecurity?.handleChange) {
+      if (HubInfoSecurity.handleChange(secEl)) {
+        render();
+      }
       return;
     }
     const sel = e.target.closest('[data-action="sp-reg-status"]');
