@@ -45,6 +45,15 @@ assert((solutions.match(/hub-feature-card/g) || []).length >= 20, "solutions has
 assert(solutions.includes('id="so-app"'), "solutions mounts so-app");
 assert(solutions.includes("hub-solutions-ui.js"), "solutions loads UI module");
 assert(solutions.includes("طلباتي"), "solutions has my-requests entry");
+assert(solutions.includes("hub-customer-requests.js"), "solutions loads central customer requests");
+
+const dash = fs.readFileSync(path.join(root, "dashboard.html"), "utf8");
+assert(dash.includes("hub-customer-requests.js"), "dashboard loads central customer requests");
+assert(fs.existsSync(path.join(root, "js/hub-customer-requests.js")), "central requests module file exists");
+
+const posha = fs.readFileSync(path.join(root, "js/hub-posha-clients.js"), "utf8");
+assert(posha.includes("طلبات العملاء"), "posha tab renamed to طلبات العملاء");
+assert(posha.includes("renderRequestsInbox"), "posha has central requests inbox");
 
 const css = fs.readFileSync(path.join(root, "css/hub-service-offers.css"), "utf8");
 assert(css.includes("repeat(6, minmax(0, 1fr))"), "desktop grid is 6 columns");
@@ -72,10 +81,27 @@ const localStorage = {
     delete mem[k];
   },
 };
-const ctx = { console, Date, Math, JSON, String, Number, Array, Object, localStorage, window: {} };
+const ctx = {
+  console,
+  Date,
+  Math,
+  JSON,
+  String,
+  Number,
+  Array,
+  Object,
+  localStorage,
+  window: {},
+  CustomEvent: function (n, o) {
+    this.type = n;
+    this.detail = o && o.detail;
+  },
+};
 ctx.window = ctx;
 vm.createContext(ctx);
+vm.runInContext(fs.readFileSync(path.join(root, "js/hub-customer-requests.js"), "utf8"), ctx);
 vm.runInContext(fs.readFileSync(path.join(root, "js/hub-solutions-data.js"), "utf8"), ctx);
+assert(!!ctx.HubCustomerRequests, "HubCustomerRequests API present");
 const sols = ctx.HubSolutions.listSolutions();
 assert(sols.length >= 20, "runtime seed has 20+ solutions");
 const req = ctx.HubSolutions.createRequest(
@@ -91,6 +117,11 @@ const req = ctx.HubSolutions.createRequest(
 assert(String(req.id).startsWith("SOL-REQ-"), "creates SOL-REQ id");
 assert(req.status === "New", "new request status");
 assert(ctx.HubSolutions.listAudit().length >= 1, "audit log written");
+const central = ctx.HubCustomerRequests.get(req.id);
+assert(!!central, "same request lands in central inbox");
+assert(central.sourceModule === "حلول نايوش" || !!central.sourceModule, "central request has source module");
+ctx.HubCustomerRequests.updateStatus(req.id, "Under Review", "Admin");
+assert(ctx.HubSolutions.getRequest(req.id).status === "Under Review", "admin status change mirrors to customer view");
 
 if (failed) {
   console.error(`\n${failed} assertion(s) failed`);

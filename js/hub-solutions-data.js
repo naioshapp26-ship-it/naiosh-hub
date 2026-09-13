@@ -714,12 +714,78 @@
 
   const createRequest = (payload = {}, actor = 'عميل') => {
     const sol = getSolution(payload.solutionId);
+    const type = payload.requestType || 'Solution Request';
+    const enriched = {
+      ...payload,
+      requestType: type,
+      solutionId: sol?.id || payload.solutionId || '',
+      solutionName: sol?.name || payload.solutionName || 'حل',
+      title: sol?.name || payload.solutionName || payload.need || 'طلب حل',
+      relatedSolution: sol?.name || payload.solutionName || '',
+      sourceModule: payload.sourceModule || (type.includes('Cost') ? 'برنامج خفض التكاليف' : 'حلول نايوش'),
+      sourcePage: payload.sourcePage || sol?.name || (type.includes('Cost') ? 'برنامج خفض التكاليف' : 'كتالوج الحلول'),
+      sourceUrl: payload.sourceUrl || (type.includes('Cost') ? 'cost-reduction.html' : 'naiosh-solutions.html'),
+      sourceAction: payload.sourceAction || (type.includes('Quote') ? 'طلب عرض سعر' : type.includes('Consultation') ? 'طلب استشارة' : type.includes('Cost') ? 'بدء طلب خفض التكاليف' : 'اختيار الحل'),
+      channel: payload.channel || 'Web',
+    };
+
+    // ONE RECORD: central inbox is source of truth
+    if (window.HubCustomerRequests?.create) {
+      const central = window.HubCustomerRequests.create(enriched, actor);
+      // keep local mirror array in sync (same object id)
+      if (!Array.isArray(state.requests)) state.requests = [];
+      const idx = state.requests.findIndex((x) => x.id === central.id);
+      const mirrored = {
+        id: central.id,
+        requestId: central.requestId,
+        requestType: central.requestType,
+        solutionId: central.solutionId,
+        solutionName: central.relatedSolution || central.solutionName || central.title,
+        customer: central.customer,
+        need: central.need || central.description,
+        priority: central.priority,
+        scopeType: central.scopeType,
+        scopeDetail: central.scopeDetail,
+        attachments: central.attachments,
+        costMeta: central.costMeta,
+        status: central.status,
+        requestedBy: central.requestedBy || actor,
+        assignedTo: central.assignedTo,
+        salesOwner: central.salesOwner,
+        consultant: central.consultant,
+        approver: central.approver,
+        createdAt: central.createdAt,
+        updatedAt: central.updatedAt,
+        timeline: central.timeline,
+        messages: central.messages,
+        tasks: central.tasks,
+        sourceModule: central.sourceModule,
+        sourcePage: central.sourcePage,
+        sourceUrl: central.sourceUrl,
+        sourceAction: central.sourceAction,
+      };
+      if (idx >= 0) state.requests[idx] = mirrored;
+      else state.requests.unshift(mirrored);
+      pushAudit({
+        action: 'Request Created',
+        requestId: mirrored.id,
+        customer: mirrored.customer.company || mirrored.customer.name,
+        solution: mirrored.solutionName,
+        performedBy: actor,
+        oldStatus: '',
+        newStatus: mirrored.status,
+        solutionId: mirrored.solutionId,
+      });
+      save();
+      return { ...mirrored, _similar: central._similar };
+    }
+
     const stamp = nowIso();
-    const requestId = payload.requestType === 'Cost Reduction Assessment' ? nextSeq(state.requests, 'COST') : nextSeq(state.requests, 'SOL-REQ');
+    const requestId = type === 'Cost Reduction Assessment' ? nextSeq(state.requests, 'COST') : nextSeq(state.requests, 'SOL-REQ');
     const item = {
       id: requestId,
       requestId,
-      requestType: payload.requestType || 'Solution Request',
+      requestType: type,
       solutionId: sol?.id || payload.solutionId || '',
       solutionName: sol?.name || payload.solutionName || 'حل',
       customer: {
@@ -749,6 +815,10 @@
       ],
       messages: [],
       tasks: [],
+      sourceModule: enriched.sourceModule,
+      sourcePage: enriched.sourcePage,
+      sourceUrl: enriched.sourceUrl,
+      sourceAction: enriched.sourceAction,
     };
     state.requests.unshift(item);
     pushAudit({
@@ -766,6 +836,19 @@
   };
 
   const updateRequestStatus = (id, status, actor = 'مشغّل', note = '') => {
+    if (window.HubCustomerRequests?.updateStatus) {
+      const row = window.HubCustomerRequests.updateStatus(id, status, actor, note);
+      if (row) {
+        const local = state.requests.find((r) => r.id === id);
+        if (local) {
+          local.status = row.status;
+          local.updatedAt = row.updatedAt;
+          local.timeline = row.timeline;
+        }
+        save();
+      }
+      return row;
+    }
     const row = state.requests.find((r) => r.id === id);
     if (!row) return null;
     const old = row.status;
@@ -788,6 +871,15 @@
   };
 
   const assignRequest = (id, fields = {}, actor = 'مشغّل') => {
+    if (window.HubCustomerRequests?.assign) {
+      const row = window.HubCustomerRequests.assign(id, fields, actor);
+      if (row) {
+        const local = state.requests.find((r) => r.id === id);
+        if (local) Object.assign(local, { assignedTo: row.assignedTo, salesOwner: row.salesOwner, status: row.status, updatedAt: row.updatedAt, timeline: row.timeline });
+        save();
+      }
+      return row;
+    }
     const row = state.requests.find((r) => r.id === id);
     if (!row) return null;
     Object.assign(row, fields, { updatedAt: nowIso() });
@@ -799,6 +891,19 @@
   };
 
   const addAttachment = (id, fileName, actor = 'عميل') => {
+    if (window.HubCustomerRequests?.addAttachment) {
+      const row = window.HubCustomerRequests.addAttachment(id, fileName, actor);
+      if (row) {
+        const local = state.requests.find((r) => r.id === id);
+        if (local) {
+          local.attachments = row.attachments;
+          local.timeline = row.timeline;
+          local.updatedAt = row.updatedAt;
+        }
+        save();
+      }
+      return row;
+    }
     const row = state.requests.find((r) => r.id === id);
     if (!row) return null;
     if (!Array.isArray(row.attachments)) row.attachments = [];
@@ -811,6 +916,18 @@
   };
 
   const addMessage = (id, text, actor = 'عميل') => {
+    if (window.HubCustomerRequests?.addMessage) {
+      const row = window.HubCustomerRequests.addMessage(id, text, actor, { internal: false });
+      if (row) {
+        const local = state.requests.find((r) => r.id === id);
+        if (local) {
+          local.messages = row.messages;
+          local.updatedAt = row.updatedAt;
+        }
+        save();
+      }
+      return row;
+    }
     const row = state.requests.find((r) => r.id === id);
     if (!row) return null;
     if (!Array.isArray(row.messages)) row.messages = [];
@@ -884,8 +1001,40 @@
     addMessage,
     createQuotation,
     decideQuotation,
-    listRequests: () => state.requests || [],
-    getRequest: (id) => (state.requests || []).find((r) => r.id === id),
+    listRequests: () => {
+      if (window.HubCustomerRequests?.list) {
+        const central = window.HubCustomerRequests.list({}).filter(
+          (r) =>
+            String(r.sourceModule || '').includes('حلول') ||
+            String(r.sourceModule || '').includes('خفض') ||
+            String(r.id || '').startsWith('SOL-REQ') ||
+            String(r.id || '').startsWith('COST') ||
+            String(r.requestType || '').includes('Solution') ||
+            String(r.requestType || '').includes('Consultation') ||
+            String(r.requestType || '').includes('Quote') ||
+            String(r.requestType || '').includes('Cost')
+        );
+        // keep customer view fields compatible
+        return central.map((r) => ({
+          ...r,
+          solutionName: r.relatedSolution || r.solutionName || r.title,
+          customer: r.customer || { name: r.customerName, company: r.company, phone: r.phone, email: r.email, branch: r.branch },
+        }));
+      }
+      return state.requests || [];
+    },
+    getRequest: (id) => {
+      if (window.HubCustomerRequests?.get) {
+        const r = window.HubCustomerRequests.get(id);
+        if (r)
+          return {
+            ...r,
+            solutionName: r.relatedSolution || r.solutionName || r.title,
+            customer: r.customer || { name: r.customerName, company: r.company, phone: r.phone, email: r.email, branch: r.branch },
+          };
+      }
+      return (state.requests || []).find((r) => r.id === id);
+    },
     listQuotations: (requestId) => (state.quotations || []).filter((q) => !requestId || q.requestId === requestId),
     listAudit: () => state.auditLog || [],
     pushAudit,

@@ -58,6 +58,11 @@
     filter: '',
     statusFilter: '',
     q: '',
+    reqView: 'all',
+    reqFilters: { q: '', status: '', type: '', source: '', assignee: '' },
+    reqId: null,
+    reqTab: 'overview',
+    moreId: null,
   };
 
   function shell() {
@@ -74,11 +79,12 @@
           <button type="button" data-ptab="overview" class="is-active">نظرة عامة</button>
           <button type="button" data-ptab="clients">جميع العملاء</button>
           <button type="button" data-ptab="new">العملاء الجدد <span class="posha-badge" id="badge-new" hidden>0</span></button>
+          <button type="button" data-ptab="orders">طلبات العملاء <span class="posha-badge" id="badge-orders" hidden>0</span></button>
           <button type="button" data-ptab="support">الدعم <span class="posha-badge" id="badge-support" hidden>0</span></button>
-          <button type="button" data-ptab="orders">الطلبات <span class="posha-badge" id="badge-orders" hidden>0</span></button>
           <button type="button" data-ptab="issues">المشاكل والتنبيهات <span class="posha-badge" id="badge-issues" hidden>0</span></button>
           <button type="button" data-ptab="events">مركز الأحداث</button>
           <button type="button" data-ptab="notifications">الإشعارات <span class="posha-badge" id="badge-notif" hidden>0</span></button>
+          <button type="button" data-ptab="req-settings">إعدادات الطلبات</button>
         </nav>
         <div id="posha-body" class="posha-body"><div class="posha-loading">جاري التحميل…</div></div>
         <div id="posha-drawer" class="posha-drawer" hidden></div>
@@ -314,18 +320,574 @@
     paint('overview');
   }
 
+  function cr() {
+    return window.HubCustomerRequests;
+  }
+
+  function statusAr(st) {
+    return (cr()?.STATUS_AR && cr().STATUS_AR[st]) || st || '—';
+  }
+
+  function actor() {
+    try {
+      const u = window.HubAuth?.getUser?.() || JSON.parse(localStorage.getItem('hubUser') || '{}');
+      return u?.name || u?.email || 'مشغّل بوشا';
+    } catch {
+      return 'مشغّل بوشا';
+    }
+  }
+
+  function requestsKpisHtml() {
+    const k = cr()?.kpis?.() || { total: 0, neu: 0, open: 0, overdue: 0, completed: 0, waiting: 0, unassigned: 0 };
+    const cards = [
+      ['إجمالي الطلبات', k.total, 'all'],
+      ['طلبات جديدة', k.neu, 'new'],
+      ['مفتوحة', k.open, 'open'],
+      ['متأخرة SLA', k.overdue, 'overdue'],
+      ['بانتظار العميل', k.waiting, 'waiting'],
+      ['مكتملة', k.completed, 'done'],
+      ['غير معينة', k.unassigned, 'new'],
+    ];
+    return `<div class="posha-kpis posha-req-kpis">${cards
+      .map(
+        ([l, v, view]) =>
+          `<button type="button" class="posha-kpi-btn" data-req-view="${esc(view)}"><span>${esc(l)}</span><strong>${v}</strong></button>`
+      )
+      .join('')}</div>`;
+  }
+
+  function needsActionHtml() {
+    const k = cr()?.kpis?.() || {};
+    const items = [];
+    if (k.neu) items.push({ text: `${k.neu} طلبات جديدة`, view: 'new' });
+    if (k.overdue) items.push({ text: `${k.overdue} طلب تجاوز SLA`, view: 'overdue' });
+    if (k.waiting) items.push({ text: `${k.waiting} بانتظار العميل`, view: 'waiting' });
+    if (k.unassigned) items.push({ text: `${k.unassigned} غير معينة`, view: 'new' });
+    if (!items.length) return '';
+    return `<div class="posha-needs">
+      <h3><i class="fas fa-bolt"></i> يحتاج إلى إجراء</h3>
+      <ul>${items.map((i) => `<li><button type="button" data-req-view="${esc(i.view)}">${esc(i.text)}</button></li>`).join('')}</ul>
+    </div>`;
+  }
+
+  function filteredCentralRequests() {
+    if (!cr()) return [];
+    const f = state.reqFilters;
+    const view = state.reqView === 'all' ? '' : state.reqView;
+    return cr().list({
+      q: f.q,
+      status: f.status,
+      requestType: f.type,
+      sourceModule: f.source,
+      assignedTo: f.assignee,
+      view: view || undefined,
+    });
+  }
+
+  function renderRequestsInbox() {
+    if (!cr()) {
+      return `<div class="posha-err">وحدة الطلبات المركزية غير محمّلة. حدّث الصفحة.</div>`;
+    }
+    cr().syncFromModules?.();
+    const rows = filteredCentralRequests();
+    const all = cr().list({});
+    const types = [...new Set(all.map((r) => r.requestType).filter(Boolean))];
+    const sources = [...new Set(all.map((r) => r.sourceModule).filter(Boolean))];
+    const assignees = [...new Set(all.map((r) => r.assignedTo).filter(Boolean))];
+    const views = [
+      ['all', 'كل الطلبات'],
+      ['new', 'جديدة'],
+      ['open', 'مفتوحة'],
+      ['waiting', 'بانتظار العميل'],
+      ['overdue', 'متأخرة'],
+      ['done', 'مكتملة'],
+      ['today', 'اليوم'],
+    ];
+
+    if (state.reqId) return renderRequestDetail(state.reqId);
+
+    return `
+      ${requestsKpisHtml()}
+      ${needsActionHtml()}
+      <div class="posha-req-head">
+        <h3>طلبات العملاء — Central Inbox</h3>
+        <button type="button" class="btn btn-primary btn-sm" data-req-create><i class="fas fa-plus"></i> إنشاء طلب</button>
+      </div>
+      <div class="posha-saved-views">${views
+        .map(([id, label]) => `<button type="button" class="chip ${state.reqView === id ? 'is-on' : ''}" data-req-view="${id}">${label}</button>`)
+        .join('')}</div>
+      <div class="posha-filters posha-req-filters">
+        <input data-req-filter="q" type="search" placeholder="بحث: Request ID · عميل · موضوع · مصدر" value="${esc(state.reqFilters.q)}" />
+        <select data-req-filter="status"><option value="">كل الحالات</option>${Object.entries(cr().STATUS_AR || {})
+          .map(([k, v]) => `<option value="${esc(k)}" ${state.reqFilters.status === k ? 'selected' : ''}>${esc(v)}</option>`)
+          .join('')}</select>
+        <select data-req-filter="type"><option value="">نوع الطلب</option>${types.map((t) => `<option value="${esc(t)}" ${state.reqFilters.type === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+        <select data-req-filter="source"><option value="">المصدر</option>${sources.map((t) => `<option value="${esc(t)}" ${state.reqFilters.source === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+        <select data-req-filter="assignee"><option value="">المسؤول</option>${assignees.map((t) => `<option value="${esc(t)}" ${state.reqFilters.assignee === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+      </div>
+      <div class="table-wrap posha-req-table-wrap"><table class="data-table posha-table posha-req-table">
+        <thead><tr>
+          <th>Request ID</th><th>العميل</th><th>الشركة</th><th>نوع الطلب</th><th>الموضوع</th>
+          <th>المصدر</th><th>الصفحة / الخدمة</th><th>الأولوية</th><th>المسؤول</th>
+          <th>تاريخ الطلب</th><th>آخر تحديث</th><th>الحالة</th><th>SLA</th><th>الإجراءات</th>
+        </tr></thead>
+        <tbody>
+          ${
+            rows.length
+              ? rows
+                  .map((r) => {
+                    const sla = cr().slaStatus(r);
+                    return `<tr>
+                      <td><code>${esc(r.requestId || r.id)}</code></td>
+                      <td><button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.email || '')}">${esc(r.customerName || r.customer?.name || '—')}</button></td>
+                      <td>${esc(r.company || r.customer?.company || '—')}</td>
+                      <td>${esc(r.requestType)}</td>
+                      <td>${esc(r.title || r.relatedSolution || '—')}</td>
+                      <td><span class="chip">${esc(r.sourceModule || '—')}</span></td>
+                      <td>${esc(r.sourcePage || r.relatedSolution || '—')}<br><small>${esc(r.sourceAction || '')}</small></td>
+                      <td>${esc(r.priority)}</td>
+                      <td>${esc(r.assignedTo || '—')}<br><small>${esc(r.department || '')}</small></td>
+                      <td>${fmt(r.createdAt)}</td>
+                      <td>${fmt(r.updatedAt)}</td>
+                      <td><span class="chip">${esc(statusAr(r.status))}</span></td>
+                      <td><span class="chip sla-${esc(sla.replace(/\s/g, ''))}">${esc(sla)}</span></td>
+                      <td class="posha-req-actions">
+                        <button type="button" class="btn btn-primary btn-sm" data-req-open="${esc(r.id)}">عرض</button>
+                        <button type="button" class="btn btn-dark btn-sm" data-req-assign="${esc(r.id)}">تعيين</button>
+                        <button type="button" class="btn btn-ghost btn-sm" data-req-status="${esc(r.id)}">الحالة</button>
+                        <button type="button" class="btn btn-ghost btn-sm" data-req-more="${esc(r.id)}">⋮</button>
+                        ${
+                          state.moreId === r.id
+                            ? `<div class="posha-more-menu">
+                                <button type="button" data-req-note="${esc(r.id)}">ملاحظة داخلية</button>
+                                <button type="button" data-req-msg="${esc(r.id)}">رسالة للعميل</button>
+                                <button type="button" data-req-info="${esc(r.id)}">طلب معلومات</button>
+                                <button type="button" data-req-att="${esc(r.id)}">إضافة مرفق</button>
+                                <button type="button" data-req-dept="${esc(r.id)}">تحويل لقسم</button>
+                                <button type="button" data-req-task="${esc(r.id)}">إنشاء مهمة</button>
+                                <button type="button" data-req-quote="${esc(r.id)}">إنشاء عرض سعر</button>
+                                <button type="button" data-req-close="${esc(r.id)}">إغلاق</button>
+                                <button type="button" data-req-cancel="${esc(r.id)}">إلغاء</button>
+                              </div>`
+                            : ''
+                        }
+                      </td>
+                    </tr>`;
+                  })
+                  .join('')
+              : '<tr><td colspan="14" class="posha-muted">لا طلبات مطابقة — أي طلب من حلول نايوش أو غيرها يظهر هنا تلقائياً.</td></tr>'
+          }
+        </tbody>
+      </table></div>`;
+  }
+
+  function renderRequestDetail(id) {
+    const r = cr()?.get(id);
+    if (!r) return `<p class="posha-err">الطلب غير موجود</p><button type="button" class="btn btn-ghost" data-req-back>رجوع</button>`;
+    cr().markViewed?.(id, actor());
+    const tab = state.reqTab;
+    const tabs = [
+      ['overview', 'نظرة عامة'],
+      ['source', 'مصدر الطلب'],
+      ['comms', 'التواصل'],
+      ['notes', 'ملاحظات داخلية'],
+      ['files', 'المرفقات'],
+      ['timeline', 'Timeline'],
+      ['audit', 'سجل العمليات'],
+    ];
+    let body = '';
+    if (tab === 'overview') {
+      body = `<div class="posha-req-grid">
+        <article>
+          <h4>بيانات العميل</h4>
+          <ul class="feed">
+            <li><b>الاسم:</b> <button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.email || '')}">${esc(r.customerName || r.customer?.name || '—')}</button></li>
+            <li><b>الشركة:</b> ${esc(r.company || '—')}</li>
+            <li><b>الهاتف:</b> ${esc(r.phone || '—')}</li>
+            <li><b>البريد:</b> ${esc(r.email || '—')}</li>
+            <li><b>الفرع:</b> ${esc(r.branch || '—')}</li>
+          </ul>
+        </article>
+        <article>
+          <h4>محتوى الطلب</h4>
+          <ul class="feed">
+            <li><b>النوع:</b> ${esc(r.requestType)}</li>
+            <li><b>الموضوع:</b> ${esc(r.title)}</li>
+            <li><b>الوصف / الاحتياج:</b> ${esc(r.description || r.need || '—')}</li>
+            <li><b>النطاق:</b> ${esc(r.scopeType || '—')} ${esc(r.scopeDetail || '')}</li>
+            <li><b>الأولوية:</b> ${esc(r.priority)}</li>
+            <li><b>الحل/الخدمة المرتبطة:</b> ${esc(r.relatedSolution || r.relatedService || r.relatedProduct || '—')}</li>
+            <li><b>Channel:</b> ${esc(r.channel || 'Web')}</li>
+            <li><b>SLA:</b> ${esc(cr().slaStatus(r))} (${r.slaHours || 4}س)</li>
+          </ul>
+        </article>
+        <article>
+          <h4>المسؤولون</h4>
+          <ul class="feed">
+            <li><b>Assigned To:</b> ${esc(r.assignedTo || '—')}</li>
+            <li><b>Department:</b> ${esc(r.department || '—')}</li>
+            <li><b>Sales Owner:</b> ${esc(r.salesOwner || '—')}</li>
+            <li><b>Consultant:</b> ${esc(r.consultant || '—')}</li>
+            <li><b>Created By:</b> ${esc(r.createdBy || '—')}</li>
+          </ul>
+        </article>
+      </div>`;
+    } else if (tab === 'source') {
+      body = `<ul class="feed">
+        <li><b>Source Module:</b> ${esc(r.sourceModule)}</li>
+        <li><b>Source Page:</b> ${esc(r.sourcePage)}</li>
+        <li><b>Source Item:</b> ${esc(r.relatedSolution || r.title)}</li>
+        <li><b>Action:</b> ${esc(r.sourceAction)}</li>
+        <li><b>Channel:</b> ${esc(r.channel)}</li>
+        <li><b>Created At:</b> ${fmt(r.createdAt)}</li>
+      </ul>
+      ${r.sourceUrl ? `<a class="btn btn-dark btn-sm" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">فتح الصفحة الأصلية</a>` : ''}`;
+    } else if (tab === 'comms') {
+      body = `<ul class="feed">${(r.messages || [])
+        .map((m) => `<li><b>${esc(m.by)}</b>: ${esc(m.text)} <small>${fmt(m.at)}</small></li>`)
+        .join('') || '<li>لا رسائل</li>'}</ul>
+        <div class="posha-reply"><input id="posha-req-msg" placeholder="رسالة للعميل" /><button type="button" class="btn btn-primary btn-sm" data-req-send-msg="${esc(r.id)}">إرسال</button></div>`;
+    } else if (tab === 'notes') {
+      body = `<ul class="feed">${(r.internalNotes || [])
+        .map((m) => `<li><b>${esc(m.by)}</b>: ${esc(m.text)} <small>${fmt(m.at)}</small></li>`)
+        .join('') || '<li>لا ملاحظات داخلية</li>'}</ul>
+        <div class="posha-reply"><input id="posha-req-note" placeholder="ملاحظة داخلية (لا يراها العميل)" /><button type="button" class="btn btn-dark btn-sm" data-req-send-note="${esc(r.id)}">حفظ</button></div>`;
+    } else if (tab === 'files') {
+      body = `<ul class="feed">${(r.attachments || [])
+        .map((a) => `<li>${esc(a.name)} · ${esc(a.by)} <small>${fmt(a.at)}</small></li>`)
+        .join('') || '<li>لا مرفقات</li>'}</ul>
+        <button type="button" class="btn btn-dark btn-sm" data-req-att="${esc(r.id)}">إضافة مرفق</button>`;
+    } else if (tab === 'timeline') {
+      body = `<ol class="posha-timeline">${(r.timeline || [])
+        .map((t) => `<li><b>${esc(t.text)}</b><small>${esc(t.by)} · ${fmt(t.at)}</small></li>`)
+        .join('')}</ol>`;
+    } else {
+      const logs = (cr().listAudit() || []).filter((a) => a.requestId === r.id);
+      body = `<div class="table-wrap"><table class="data-table posha-table"><thead><tr><th>TX</th><th>Action</th><th>By</th><th>Old→New</th><th>At</th></tr></thead>
+        <tbody>${logs.map((a) => `<tr><td><code>${esc(a.id)}</code></td><td>${esc(a.action)}</td><td>${esc(a.performedBy)}</td><td>${esc(a.oldStatus || a.oldValue || '—')} → ${esc(a.newStatus || a.newValue || '—')}</td><td>${fmt(a.at)}</td></tr>`).join('') || '<tr><td colspan="5">لا سجل</td></tr>'}</tbody></table></div>`;
+    }
+
+    return `
+      <div class="posha-req-detail-head">
+        <div>
+          <button type="button" class="btn btn-ghost btn-sm" data-req-back>← رجوع لصندوق الطلبات</button>
+          <h3>${esc(r.requestId || r.id)} · ${esc(r.title)}</h3>
+          <span class="chip">${esc(statusAr(r.status))}</span>
+          <span class="chip">${esc(r.priority)}</span>
+          <span class="chip">${esc(cr().slaStatus(r))}</span>
+        </div>
+        <div class="posha-req-actions">
+          <button type="button" class="btn btn-dark btn-sm" data-req-assign="${esc(r.id)}">تعيين</button>
+          <button type="button" class="btn btn-primary btn-sm" data-req-status="${esc(r.id)}">تغيير الحالة</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-req-msg="${esc(r.id)}">التواصل مع العميل</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-req-task="${esc(r.id)}">إنشاء مهمة</button>
+        </div>
+      </div>
+      <div class="posha-subnav posha-req-tabs">${tabs
+        .map(([id, label]) => `<button type="button" data-req-tab="${id}" class="${tab === id ? 'is-active' : ''}">${label}</button>`)
+        .join('')}</div>
+      <div class="posha-req-detail-body">${body}</div>`;
+  }
+
+  function renderReqSettings() {
+    const s = cr()?.getSettings?.() || {};
+    const routing = s.routing || {};
+    return `<div class="posha-req-settings">
+      <h3>إعدادات طلبات العملاء</h3>
+      <p class="posha-muted">Routing Rules · SLA · Departments · Default Owners</p>
+      <div class="table-wrap"><table class="data-table posha-table">
+        <thead><tr><th>Request Type</th><th>Department</th><th>Default Owner</th></tr></thead>
+        <tbody>${Object.entries(routing)
+          .map(
+            ([type, rule]) => `<tr>
+              <td>${esc(type)}</td>
+              <td><input data-route-dept="${esc(type)}" value="${esc(rule.department || '')}" /></td>
+              <td><input data-route-owner="${esc(type)}" value="${esc(rule.assignedTo || '')}" /></td>
+            </tr>`
+          )
+          .join('')}</tbody>
+      </table></div>
+      <div class="posha-filters" style="margin-top:12px">
+        <label>SLA افتراضي (ساعات)<input id="posha-sla-default" type="number" value="${s.slaHours?.default ?? 4}" /></label>
+        <label>SLA أولوية مرتفعة<input id="posha-sla-high" type="number" value="${s.slaHours?.high ?? 1}" /></label>
+      </div>
+      <button type="button" class="btn btn-primary" data-req-save-settings>حفظ الإعدادات</button>
+    </div>`;
+  }
+
+  function wireRequestsUi(body) {
+    body.querySelectorAll('[data-req-view]').forEach((btn) => {
+      btn.onclick = () => {
+        state.reqView = btn.getAttribute('data-req-view') || 'all';
+        state.reqId = null;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-filter]').forEach((el) => {
+      el.onchange = el.oninput = () => {
+        state.reqFilters[el.getAttribute('data-req-filter')] = el.value;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-open]').forEach((btn) => {
+      btn.onclick = () => {
+        state.reqId = btn.getAttribute('data-req-open');
+        state.reqTab = 'overview';
+        state.moreId = null;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-back]').forEach((btn) => {
+      btn.onclick = () => {
+        state.reqId = null;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-tab]').forEach((btn) => {
+      btn.onclick = () => {
+        state.reqTab = btn.getAttribute('data-req-tab');
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-more]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-more');
+        state.moreId = state.moreId === id ? null : id;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-assign]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-assign');
+        const name = window.prompt('Assigned To؟', cr()?.get(id)?.assignedTo || 'Sales Desk');
+        if (!name) return;
+        const dept = window.prompt('Department؟', cr()?.get(id)?.department || 'Sales') || 'Sales';
+        cr()?.assign(id, { assignedTo: name, department: dept, salesOwner: name }, actor());
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-status]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-status');
+        const statuses = Object.keys(cr()?.STATUS_AR || {});
+        const next = window.prompt(`الحالة الجديدة:\n${statuses.join(' · ')}`, cr()?.get(id)?.status || 'Under Review');
+        if (!next || !statuses.includes(next)) return alert('حالة غير معروفة');
+        cr()?.updateStatus(id, next, actor());
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-note]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-note');
+        const text = window.prompt('ملاحظة داخلية؟');
+        if (!text) return;
+        cr()?.addMessage(id, text, actor(), { internal: true });
+        state.moreId = null;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-msg]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-msg');
+        const text = window.prompt('رسالة للعميل؟');
+        if (!text) return;
+        cr()?.addMessage(id, text, actor(), { internal: false });
+        cr()?.updateStatus(id, 'Waiting For Customer', actor(), 'تم التواصل مع العميل');
+        state.moreId = null;
+        if (state.reqId) state.reqTab = 'comms';
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-info]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-info');
+        cr()?.updateStatus(id, 'Waiting For Customer', actor(), 'طلب معلومات إضافية من العميل');
+        state.moreId = null;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-att]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-att');
+        const name = window.prompt('اسم المرفق؟');
+        if (!name) return;
+        cr()?.addAttachment(id, name, actor());
+        state.moreId = null;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-dept]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-dept');
+        const dept = window.prompt('القسم؟', 'Sales');
+        if (!dept) return;
+        cr()?.assign(id, { department: dept }, actor());
+        state.moreId = null;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-task]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-task');
+        const r = cr()?.get(id);
+        window.HubStore?.addTask?.({
+          title: `متابعة طلب ${r?.id}`,
+          details: r?.title || '',
+          assignee: r?.assignedTo || actor(),
+          priority: r?.priority || 'متوسط',
+          status: 'todo',
+          source: 'Customer Requests',
+        });
+        cr()?.pushAudit?.({ action: 'Task Created', requestId: id, performedBy: actor(), detail: r?.title, customer: r?.company, sourceModule: r?.sourceModule });
+        alert('أُنشئت مهمة في مركز المهام');
+        state.moreId = null;
+      };
+    });
+    body.querySelectorAll('[data-req-quote]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-quote');
+        if (window.HubSolutions?.createQuotation) {
+          const price = Number(window.prompt('السعر؟', '5000')) || 5000;
+          window.HubSolutions.createQuotation(id, { price }, actor());
+        }
+        cr()?.updateStatus(id, 'Proposal Sent', actor(), 'إرسال عرض سعر');
+        state.moreId = null;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-close]').forEach((btn) => {
+      btn.onclick = () => {
+        cr()?.updateStatus(btn.getAttribute('data-req-close'), 'Completed', actor(), 'إغلاق الطلب');
+        state.moreId = null;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-cancel]').forEach((btn) => {
+      btn.onclick = () => {
+        if (!window.confirm('إلغاء الطلب؟')) return;
+        cr()?.updateStatus(btn.getAttribute('data-req-cancel'), 'Cancelled', actor(), 'إلغاء');
+        state.moreId = null;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-send-msg]').forEach((btn) => {
+      btn.onclick = () => {
+        const text = document.getElementById('posha-req-msg')?.value?.trim();
+        if (!text) return;
+        cr()?.addMessage(btn.getAttribute('data-req-send-msg'), text, actor());
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-send-note]').forEach((btn) => {
+      btn.onclick = () => {
+        const text = document.getElementById('posha-req-note')?.value?.trim();
+        if (!text) return;
+        cr()?.addMessage(btn.getAttribute('data-req-send-note'), text, actor(), { internal: true });
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-create]')?.forEach?.((btn) => {
+      btn.onclick = () => {
+        const email = window.prompt('بريد العميل؟') || '';
+        const name = window.prompt('اسم العميل؟') || '';
+        const company = window.prompt('الشركة؟') || '';
+        const title = window.prompt('موضوع الطلب؟') || 'طلب داخلي';
+        const type = window.prompt('نوع الطلب؟', 'General Request') || 'General Request';
+        const channel = window.prompt('القناة؟ (Web/Phone/Email/WhatsApp)', 'Phone') || 'Phone';
+        cr()?.create(
+          {
+            requestType: type,
+            title,
+            description: title,
+            need: title,
+            sourceModule: 'عملاء بوشا',
+            sourcePage: 'إنشاء يدوي',
+            sourceAction: 'Admin Create',
+            sourceUrl: 'dashboard.html#posha-clients',
+            channel,
+            customer: { name, company, email, phone: '', branch: '' },
+            customerName: name,
+            company,
+            email,
+          },
+          actor()
+        );
+        paintBody();
+      };
+    });
+    // fix create button - forEach on NodeList from querySelectorAll works; data-req-create is single
+    const createBtn = body.querySelector('[data-req-create]');
+    if (createBtn) {
+      createBtn.onclick = () => {
+        const email = window.prompt('بريد العميل؟') || '';
+        const name = window.prompt('اسم العميل؟') || '';
+        const company = window.prompt('الشركة؟') || '';
+        const title = window.prompt('موضوع الطلب؟') || 'طلب داخلي';
+        const type = window.prompt('نوع الطلب؟', 'General Request') || 'General Request';
+        const channel = window.prompt('القناة؟ (Web/Phone/Email/WhatsApp)', 'Phone') || 'Phone';
+        cr()?.create(
+          {
+            requestType: type,
+            title,
+            description: title,
+            need: title,
+            sourceModule: 'عملاء بوشا',
+            sourcePage: 'إنشاء يدوي',
+            sourceAction: 'Admin Create',
+            sourceUrl: 'dashboard.html#posha-clients',
+            channel,
+            customer: { name, company, email, phone: '', branch: '' },
+            customerName: name,
+            company,
+            email,
+          },
+          actor()
+        );
+        paintBody();
+      };
+    }
+    body.querySelector('[data-req-save-settings]')?.addEventListener('click', () => {
+      const routing = { ...(cr()?.getSettings()?.routing || {}) };
+      body.querySelectorAll('[data-route-dept]').forEach((inp) => {
+        const type = inp.getAttribute('data-route-dept');
+        routing[type] = routing[type] || {};
+        routing[type].department = inp.value;
+      });
+      body.querySelectorAll('[data-route-owner]').forEach((inp) => {
+        const type = inp.getAttribute('data-route-owner');
+        routing[type] = routing[type] || {};
+        routing[type].assignedTo = inp.value;
+      });
+      cr()?.updateSettings({
+        routing,
+        slaHours: {
+          default: Number(document.getElementById('posha-sla-default')?.value) || 4,
+          high: Number(document.getElementById('posha-sla-high')?.value) || 1,
+          urgent: Number(document.getElementById('posha-sla-high')?.value) || 1,
+        },
+      });
+      alert('حُفظت الإعدادات');
+    });
+  }
+
   async function paintBody() {
     const body = document.getElementById('posha-body');
     if (!body) return;
     const s = state.summary || {};
+    const reqK = cr()?.kpis?.() || {};
     setBadge('badge-new', s.newClients || 0);
     setBadge('badge-support', s.openTickets || 0);
-    setBadge('badge-orders', s.pendingOrders || 0);
+    setBadge('badge-orders', reqK.neu || s.pendingOrders || 0);
     setBadge('badge-issues', s.openIssues || 0);
     setBadge('badge-notif', s.unreadAdminNotifications || 0);
 
     if (state.tab === 'overview') {
-      body.innerHTML = summaryCards(s) + `<h3>أحدث العملاء</h3>` + clientsTable(state.clients.slice(0, 8));
+      body.innerHTML =
+        summaryCards(s) +
+        needsActionHtml() +
+        `<h3>أحدث العملاء</h3>` +
+        clientsTable(state.clients.slice(0, 8));
+      wireRequestsUi(body);
     } else if (state.tab === 'clients' || state.tab === 'new') {
       if (state.tab === 'new') state.statusFilter = state.statusFilter || 'new';
       body.innerHTML = summaryCards(s) + filterBar() + clientsTable(filteredClients());
@@ -337,16 +899,11 @@
         <button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(t.clientEmail)}">فتح العميل</button>
       </li>`).join('') || '<li>لا تذاكر</li>'}</ul>`;
     } else if (state.tab === 'orders') {
-      const orders = state.clients.flatMap((c) =>
-        // need orders from detail — fetch lightweight from clients list only counts; load tickets already. Re-fetch clients full via tickets path or use events.
-        []
-      );
-      // Load from tickets-like: get each? Better: use events filter ORDER
-      const orderEvents = state.events.filter((e) => String(e.type||e.action||'').startsWith('ORDER'));
-      body.innerHTML = `<h3>الطلبات (من الأحداث)</h3><ul class="feed">${orderEvents.slice(0,40).map((e)=>`<li>
-        <b>${esc(e.clientEmail||'')}</b> — ${esc(e.title||e.type)} <small>${fmt(e.at)}</small>
-        ${e.clientEmail?`<button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(e.clientEmail)}">فتح</button>`:''}
-      </li>`).join('')||'<li>لا أحداث طلبات</li>'}</ul>`;
+      body.innerHTML = renderRequestsInbox();
+      wireRequestsUi(body);
+    } else if (state.tab === 'req-settings') {
+      body.innerHTML = renderReqSettings();
+      wireRequestsUi(body);
     } else if (state.tab === 'issues') {
       body.innerHTML = `<h3>المشاكل والتنبيهات</h3><ul class="feed">${state.issues.map((i)=>`<li>
         <span class="chip">${esc(i.severity)}</span> <b>${esc(i.title)}</b> — ${esc(i.message)}
@@ -436,8 +993,31 @@
       await paintBody();
       updateTopBell(state.summary.unreadAdminNotifications || notifs.unread || 0);
     } catch (e) {
-      const body = document.getElementById('posha-body');
-      if (body) body.innerHTML = `<p class="posha-err">${esc(e.message)}</p>`;
+      /* Central inbox must still work offline / without Posha API */
+      state.clients = state.clients || [];
+      state.summary = state.summary || {};
+      state.tickets = state.tickets || [];
+      state.events = state.events || [];
+      state.issues = state.issues || [];
+      state.notifications = state.notifications || [];
+      if (state.tab === 'orders' || state.tab === 'req-settings' || state.tab === 'overview') {
+        await paintBody();
+        const body = document.getElementById('posha-body');
+        if (body && state.tab !== 'orders' && state.tab !== 'req-settings') {
+          body.insertAdjacentHTML('afterbegin', `<p class="posha-err">${esc(e.message)} — صندوق الطلبات المركزية متاح محلياً.</p>`);
+        }
+      } else {
+        const body = document.getElementById('posha-body');
+        if (body) {
+          body.innerHTML = `<p class="posha-err">${esc(e.message)}</p>
+            <p><button type="button" class="btn btn-primary btn-sm" data-ptab-fallback="orders">فتح طلبات العملاء</button></p>`;
+          body.querySelector('[data-ptab-fallback]')?.addEventListener('click', () => {
+            state.tab = 'orders';
+            document.querySelectorAll('#posha-subnav button').forEach((b) => b.classList.toggle('is-active', b.dataset.ptab === 'orders'));
+            paintBody();
+          });
+        }
+      }
     }
   }
 
@@ -471,10 +1051,23 @@
       const btn = e.target.closest('[data-ptab]');
       if (!btn) return;
       state.tab = btn.dataset.ptab;
+      state.reqId = '';
+      state.moreId = '';
       if (state.tab !== 'new') state.statusFilter = '';
       document.querySelectorAll('#posha-subnav button').forEach((b) => b.classList.toggle('is-active', b === btn));
       paintBody();
     };
+    if (!mount._crListen) {
+      mount._crListen = true;
+      window.addEventListener('hub-customer-requests-changed', () => {
+        if (!document.getElementById('posha-ops')) return;
+        if (state.tab === 'orders' || state.tab === 'overview' || state.tab === 'req-settings') paintBody();
+        else {
+          const reqK = cr()?.kpis?.() || {};
+          setBadge('badge-orders', reqK.neu || 0);
+        }
+      });
+    }
     refresh();
     if (!mount._poll) {
       mount._poll = setInterval(() => {

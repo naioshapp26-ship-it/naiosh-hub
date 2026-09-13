@@ -1091,14 +1091,19 @@
     const meta = store().get()?.poshaClientsWs || { auditLog: [], settings: {} };
     const clients = store().clientsBag?.()?.clients || [];
     const poshaish = clients.filter((c) => (c.systems || []).some((s) => String(s.code || '').toUpperCase() === 'POSHA') || c.source === 'POSHA');
+    const reqK = window.HubCustomerRequests?.kpis?.() || { neu: 0, open: 0 };
     const needs = [
       ...poshaish.filter((c) => c.status !== 'active').map((c) => ({ text: `عميل بوشا يحتاج متابعة: ${c.name}`, tab: 'ops' })),
+      ...(reqK.neu
+        ? [{ text: `${reqK.neu} طلبات عملاء جديدة في الصندوق الموحد`, tab: 'ops' }]
+        : []),
     ];
     if (!window.HubPoshaClients) needs.push({ text: 'وحدة عملاء بوشا غير محمّلة', tab: 'ops' });
 
     const kpis = [
       { key: 'local', label: 'عملاء مرتبطون ببوشا', value: poshaish.length, tab: 'ops' },
       { key: 'pending', label: 'غير نشط', value: poshaish.filter((c) => c.status !== 'active').length, tab: 'ops' },
+      { key: 'reqs', label: 'طلبات عملاء جديدة', value: reqK.neu || 0, tab: 'ops' },
       { key: 'needs', label: 'Needs Action', value: needs.length, tab: 'ops' },
     ];
 
