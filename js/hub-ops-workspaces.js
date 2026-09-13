@@ -66,28 +66,65 @@
 
     let body = '';
     if (ovUi.tab === 'board') {
+      const blocked = (s.tasks?.items || []).filter((t) => t.status === 'blocked').slice(0, 5);
+      const openAnom = (s.core?.anomalies || []).filter((a) => a.status !== 'closed').slice(0, 5);
       body = `
         ${K.renderNeeds('ov', needs)}
-        <div class="grid-2" style="margin-top:12px">
-          <article class="card">
+        <div class="hub-op-rail">
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-satellite-dish icon"></i> غرفة القرار الآن</span></h3>
+            <div class="hub-op-pulse">
+              <div><span>صحة الأنظمة</span><strong>${k.systemsHealth || 0}%</strong>${K.bar(k.systemsHealth)}</div>
+              <div><span>جاهزية Core</span><strong>${k.coreReadyPct || 0}%</strong>${K.bar(k.coreReadyPct)}</div>
+              <div><span>استخدام الأنظمة</span><strong>${cmd.systemsUsagePct || 0}%</strong>${K.bar(cmd.systemsUsagePct)}</div>
+            </div>
+            <div class="toolbar" style="margin-top:10px;flex-wrap:wrap">
+              <button type="button" class="btn btn-primary" data-action="ov-refresh"><i class="fas fa-rotate"></i> تحديث المؤشرات</button>
+              <button type="button" class="btn btn-dark" data-action="ov-tab" data-tab="pulse">التدفق الحي</button>
+              <button type="button" class="btn btn-ghost" data-action="ov-tab" data-tab="layers">صحة المحاور</button>
+            </div>
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-bolt icon"></i> اختناقات فورية</span></h3>
+            <ul class="hub-op-mini-list">
+              ${blocked.map((t) => `<li><b>${K.esc(t.title)}</b><small>مهمة مختنقة · ${K.esc(t.assignee || '—')}</small>${K.badge('blocked', 'badge-red')}</li>`).join('') || '<li class="empty">لا مهام مختنقة</li>'}
+              ${openAnom.map((a) => `<li><b>${K.esc(a.signal)}</b><small>${K.esc(a.source)}</small>${K.badge(String(a.score), 'badge-red')}</li>`).join('')}
+            </ul>
+            <div class="toolbar" style="margin-top:8px;flex-wrap:wrap">
+              <button type="button" class="btn btn-dark btn-sm" data-nav="tasks">المهام</button>
+              <button type="button" class="btn btn-dark btn-sm" data-nav="core">العقل المركزي</button>
+              <button type="button" class="btn btn-dark btn-sm" data-nav="integration">التكامل</button>
+              <button type="button" class="btn btn-dark btn-sm" data-nav="clients-mgmt">العملاء</button>
+            </div>
+          </article>
+        </div>
+        <div class="hub-op-grid3">
+          <article class="card hub-op-panel">
             <h3><span class="title-left"><i class="fas fa-crosshairs icon"></i> مصادر المؤشرات</span></h3>
             <ul class="feed">
-              <li><b>الفروع/الحاضنات/المنصات</b> — empire.organization · Source: Organization</li>
-              <li><b>الخزينة</b> — empire.wallet.treasury · Source: Wallet</li>
-              <li><b>صحة الأنظمة</b> — systems.registry.health · Source: Systems</li>
-              <li><b>جاهزية Core</b> — empire.coreModules · Source: Blueprint</li>
+              <li><b>الفروع/الحاضنات/المنصات</b> · Organization</li>
+              <li><b>الخزينة</b> · Wallet</li>
+              <li><b>صحة الأنظمة</b> · Systems Registry</li>
+              <li><b>جاهزية Core</b> · Blueprint</li>
             </ul>
           </article>
-          <article class="card">
-            <h3><span class="title-left"><i class="fas fa-link icon"></i> اختصارات غرفة العمليات</span></h3>
-            <div class="toolbar" style="flex-wrap:wrap">
-              <button type="button" class="btn btn-dark btn-sm" data-nav="tasks">المهام</button>
-              <button type="button" class="btn btn-dark btn-sm" data-nav="measurement">القياس</button>
-              <button type="button" class="btn btn-dark btn-sm" data-nav="reports">التقارير</button>
-              <button type="button" class="btn btn-dark btn-sm" data-nav="integration">التكامل</button>
-              <button type="button" class="btn btn-dark btn-sm" data-nav="core">العقل المركزي</button>
-              <button type="button" class="btn btn-dark btn-sm" data-nav="operating">آلية التشغيل</button>
-            </div>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-flag icon"></i> مراحل السيادة</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="ov-tab" data-tab="phases">الكل</button></h3>
+            ${['phase1', 'phase2', 'phase3']
+              .map((key) => {
+                const p = s.timeline[key];
+                return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800"><span>${K.esc(p.name)}</span><span>${p.progress}%</span></div>${K.bar(p.progress)}</div>`;
+              })
+              .join('')}
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-stream icon"></i> آخر التدفق</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="ov-tab" data-tab="pulse">المزيد</button></h3>
+            <ul class="feed hub-op-feed">${(s.feed || [])
+              .slice(0, 6)
+              .map((f) => `<li><b>${K.esc(f.type)}</b> — ${K.esc(f.text)} <small>${K.fmtTime(f.at)}</small></li>`)
+              .join('') || '<li>لا أحداث</li>'}</ul>
           </article>
         </div>`;
     } else if (ovUi.tab === 'pulse') {
@@ -808,18 +845,73 @@
 
     let body = '';
     if (msUi.tab === 'scores') {
+      const avg = Math.round((m.scores || []).reduce((a, b) => a + (b.score || 0), 0) / Math.max(1, (m.scores || []).length));
+      const low = (m.scores || []).filter((r) => (r.score || 0) < 70);
       body = `${K.renderNeeds('ms', needs)}
-        <div class="toolbar"><button type="button" class="btn btn-primary" data-action="ms-recalc"><i class="fas fa-calculator"></i> إعادة حساب</button></div>
-        <article class="card">${(m.scores || [])
-          .map(
-            (row) => `<div style="margin-bottom:12px">
-              <div style="display:flex;justify-content:space-between;font-weight:800;font-size:13px">
-                <span>${K.esc(row.entity)}</span><span>${row.score} · ${K.badge(row.level, 'badge-black')}</span>
-              </div>${K.bar(row.score)}
-              <small class="muted">Source: Measurement Engine · Formula: domain aggregate</small>
-            </div>`
-          )
-          .join('')}</article>`;
+        <div class="hub-op-rail">
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-calculator icon"></i> غرفة القياس</span></h3>
+            <p class="muted">كل درجة مصدرها محرك القياس · إعادة الحساب تُحدّث القيم وتُسجَّل في Audit</p>
+            <div class="hub-op-pulse">
+              <div><span>متوسط الدرجات</span><strong>${avg}</strong>${K.bar(avg)}</div>
+              <div><span>درجات منخفضة</span><strong>${low.length}</strong>${K.bar(Math.min(100, low.length * 25))}</div>
+              <div><span>المؤشرات</span><strong>${(m.indicators || []).length}</strong>${K.bar(Math.min(100, (m.indicators || []).length * 20))}</div>
+            </div>
+            <div class="toolbar" style="margin-top:10px;flex-wrap:wrap">
+              <button type="button" class="btn btn-primary" data-action="ms-recalc"><i class="fas fa-calculator"></i> إعادة حساب</button>
+              <button type="button" class="btn btn-dark" data-action="ms-tab" data-tab="indicators">المؤشرات</button>
+              <button type="button" class="btn btn-ghost" data-action="ms-tab" data-tab="matrix">المصفوفة</button>
+            </div>
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-triangle-exclamation icon"></i> تحت العتبة (&lt;70)</span></h3>
+            <ul class="hub-op-mini-list">${
+              low
+                .slice(0, 6)
+                .map((r) => `<li><b>${K.esc(r.entity)}</b><small>${r.score} · ${K.esc(r.level || '')}</small>${K.badge('منخفض', 'badge-red')}</li>`)
+                .join('') || '<li class="empty">لا درجات منخفضة — القياس مستقر</li>'
+            }</ul>
+          </article>
+        </div>
+        <div class="hub-op-grid3">
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-star icon"></i> درجات المجالات</span></h3>
+            ${(m.scores || [])
+              .map(
+                (row) => `<div style="margin-bottom:12px">
+                  <div style="display:flex;justify-content:space-between;font-weight:800;font-size:13px">
+                    <span>${K.esc(row.entity)}</span><span>${row.score} · ${K.badge(row.level, 'badge-black')}</span>
+                  </div>${K.bar(row.score)}
+                  <small class="muted">Source: Measurement Engine · Formula: domain aggregate</small>
+                </div>`
+              )
+              .join('') || '<p class="empty">لا درجات بعد — اضغط إعادة حساب</p>'}
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-sliders icon"></i> مؤشرات سريعة</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="ms-tab" data-tab="indicators">الكل</button></h3>
+            <ul class="hub-op-mini-list">${
+              (m.indicators || [])
+                .slice(0, 5)
+                .map((i) => `<li><b>${K.esc(i.name)}</b><small><code>${K.esc(i.formula)}</code> · ${i.value}</small>${K.sourceBadge(i.source)}</li>`)
+                .join('') || '<li class="empty">لا مؤشرات</li>'
+            }</ul>
+            <div class="toolbar" style="margin-top:8px"><button type="button" class="btn btn-sm btn-primary" data-action="ms-ind-create"><i class="fas fa-plus"></i> مؤشر</button></div>
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-handshake icon"></i> أثر العملاء</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="ms-tab" data-tab="clients">الكل</button></h3>
+            <ul class="hub-op-mini-list">${
+              (m.clientImpact || [])
+                .slice(0, 5)
+                .map(
+                  (c) =>
+                    `<li><b>${K.esc(c.client)}</b><small>${c.impact}%</small>${c.trend === 'up' ? K.badge('صاعد', 'badge-black') : K.badge('هابط', 'badge-red')}</li>`
+                )
+                .join('') || '<li class="empty">لا بيانات أثر</li>'
+            }</ul>
+          </article>
+        </div>`;
     } else if (msUi.tab === 'indicators') {
       body = `<article class="card">
         <div class="toolbar"><button type="button" class="btn btn-primary" data-action="ms-ind-create"><i class="fas fa-plus"></i> مؤشر</button>
@@ -985,33 +1077,68 @@
 
     let body = '';
     if (rpUi.tab === 'generated') {
+      const latest = (r.generated || []).slice(0, 8);
+      const byType = types.reduce((acc, t) => {
+        acc[t] = (r.generated || []).filter((g) => g.type === t).length;
+        return acc;
+      }, {});
       body = `${K.renderNeeds('rp', needs)}
-        <div class="tabs" style="margin-top:10px">${types
-          .map((t) => `<button type="button" class="tab ${rpUi.type === t ? 'active' : ''}" data-action="rp-type" data-type="${t}">${K.esc(titles[t])}</button>`)
-          .join('')}</div>
-        <div class="toolbar">
-          <button type="button" class="btn btn-primary" data-action="rp-gen" data-type="${rpUi.type}"><i class="fas fa-file-lines"></i> توليد ${K.esc(titles[rpUi.type] || '')}</button>
+        <div class="hub-op-rail">
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-file-lines icon"></i> توليد تقرير</span></h3>
+            <p class="muted">اختر النوع ثم ولّد — كل تقرير يُحفظ مع المصدر ويُصدَّر JSON</p>
+            <div class="tabs" style="margin:8px 0;flex-wrap:wrap">${types
+              .map(
+                (t) =>
+                  `<button type="button" class="tab ${rpUi.type === t ? 'active' : ''}" data-action="rp-type" data-type="${t}">${K.esc(titles[t])} <small>(${byType[t] || 0})</small></button>`
+              )
+              .join('')}</div>
+            <div class="toolbar" style="flex-wrap:wrap">
+              <button type="button" class="btn btn-primary" data-action="rp-gen" data-type="${rpUi.type}"><i class="fas fa-file-lines"></i> توليد ${K.esc(titles[rpUi.type] || '')}</button>
+              <button type="button" class="btn btn-dark" data-action="rp-tab" data-tab="schedule">الجدول الزمني</button>
+              <button type="button" class="btn btn-ghost" data-action="rp-tab" data-tab="audit">سجل العمليات</button>
+            </div>
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-gauge-high icon"></i> نبض التقارير</span></h3>
+            <div class="hub-op-pulse">
+              <div><span>تقارير جاهزة</span><strong>${(r.generated || []).length}</strong>${K.bar(Math.min(100, (r.generated || []).length * 12))}</div>
+              <div><span>جداول مجدولة</span><strong>${(r.schedule || []).length}</strong>${K.bar(Math.min(100, (r.schedule || []).length * 15))}</div>
+              <div><span>النوع الحالي</span><strong>${K.esc(titles[rpUi.type] || rpUi.type)}</strong>${K.bar(Math.min(100, (byType[rpUi.type] || 0) * 20))}</div>
+            </div>
+            <ul class="hub-op-mini-list" style="margin-top:10px">${
+              (r.schedule || [])
+                .slice(0, 4)
+                .map((s) => `<li><b>${K.esc(s.label)}</b><small>التالي: ${K.esc(s.next)}</small>${K.badge('جدول', 'badge-black')}</li>`)
+                .join('') || '<li class="empty">لا جداول بعد</li>'
+            }</ul>
+          </article>
         </div>
-        <article class="card">${
-          (r.generated || []).length
-            ? (r.generated || [])
-                .slice(0, 20)
-                .map(
-                  (rep) => `<div style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
-                    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
-                      <b>${K.esc(rep.title)}</b>${K.badge(rep.status, 'badge-black')} ${K.sourceBadge(rep.source)}
-                    </div>
-                    <small style="color:var(--muted)">${K.fmtTime(rep.at)} · ${K.esc(rep.createdBy || '')}</small>
-                    ${rep.body ? `<div class="report-body"><b>${K.esc(rep.body.date)}</b><br/>${K.esc(rep.body.summary)}</div>` : ''}
-                    <div class="toolbar" style="margin-top:6px">
-                      <button type="button" class="btn btn-sm btn-ghost" data-action="rp-view" data-id="${rep.id}">عرض</button>
-                      <button type="button" class="btn btn-sm btn-dark" data-action="rp-export" data-id="${rep.id}">تصدير JSON</button>
-                    </div>
-                  </div>`
-                )
-                .join('')
-            : '<div class="empty">لا تقارير بعد — اضغط توليد</div>'
-        }</article>`;
+        <div class="hub-op-grid3">
+          <article class="card hub-op-panel" style="grid-column:1 / -1">
+            <h3><span class="title-left"><i class="fas fa-scroll icon"></i> التقارير المُولَّدة</span>
+              <span class="muted">${latest.length} / ${(r.generated || []).length}</span></h3>
+            ${
+              latest.length
+                ? latest
+                    .map(
+                      (rep) => `<div style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
+                        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">
+                          <b>${K.esc(rep.title)}</b>${K.badge(rep.status, 'badge-black')} ${K.sourceBadge(rep.source)}
+                        </div>
+                        <small style="color:var(--muted)">${K.fmtTime(rep.at)} · ${K.esc(rep.createdBy || '')}</small>
+                        ${rep.body ? `<div class="report-body"><b>${K.esc(rep.body.date)}</b><br/>${K.esc(rep.body.summary)}</div>` : ''}
+                        <div class="toolbar" style="margin-top:6px">
+                          <button type="button" class="btn btn-sm btn-ghost" data-action="rp-view" data-id="${rep.id}">عرض</button>
+                          <button type="button" class="btn btn-sm btn-dark" data-action="rp-export" data-id="${rep.id}">تصدير JSON</button>
+                        </div>
+                      </div>`
+                    )
+                    .join('')
+                : '<div class="empty">لا تقارير بعد — اختر نوعًا واضغط توليد أعلاه</div>'
+            }
+          </article>
+        </div>`;
     } else if (rpUi.tab === 'schedule') {
       body = `<article class="card"><div class="table-wrap"><table class="data">
         <thead><tr><th>النوع</th><th>التالي</th></tr></thead>
@@ -1144,9 +1271,76 @@
 
     let body = '';
     if (igUi.tab === 'gateway') {
+      const connected = (i.connectors || []).filter((c) => c.status === 'connected');
+      const recentSync = (i.syncLog || []).slice(0, 6);
       body = `${K.renderNeeds('ig', needs)}
-        <div class="toolbar"><button type="button" class="btn btn-primary" data-action="ig-ping"><i class="fas fa-satellite-dish"></i> فحص البوابة</button></div>
-        <article class="card"><p>آخر فحص: ${K.fmtTime(i.gateway?.lastPingAt)} · Source: API Gateway</p></article>`;
+        <div class="hub-op-rail">
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-satellite-dish icon"></i> غرفة البوابة</span></h3>
+            <p class="muted">Source: API Gateway · فحص حي يحدّث الحالة والكمون</p>
+            <div class="hub-op-pulse">
+              <div><span>الحالة</span><strong>${K.esc(i.gateway?.status || '—')}</strong>${K.bar(i.gateway?.status === 'online' || i.gateway?.status === 'ok' ? 100 : 55)}</div>
+              <div><span>الطلبات/ث</span><strong>${i.gateway?.rps ?? 0}</strong>${K.bar(Math.min(100, (i.gateway?.rps || 0) * 2))}</div>
+              <div><span>الكمون</span><strong>${i.gateway?.latencyMs ?? 0}ms</strong>${K.bar(Math.max(5, 100 - Math.min(95, (i.gateway?.latencyMs || 0) / 2)))}</div>
+              <div><span>الأخطاء</span><strong>${i.gateway?.errors ?? 0}%</strong>${K.bar(Math.min(100, (i.gateway?.errors || 0) * 10))}</div>
+            </div>
+            <div class="toolbar" style="margin-top:10px;flex-wrap:wrap">
+              <button type="button" class="btn btn-primary" data-action="ig-ping"><i class="fas fa-satellite-dish"></i> فحص البوابة</button>
+              <button type="button" class="btn btn-dark" data-action="ig-tab" data-tab="connectors">الموصلات</button>
+              <button type="button" class="btn btn-ghost" data-action="ig-tab" data-tab="sync">سجل المزامنة</button>
+            </div>
+            <p style="margin-top:8px"><small class="muted">آخر فحص: ${K.fmtTime(i.gateway?.lastPingAt)}</small></p>
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-plug icon"></i> حالة الموصلات</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="ig-tab" data-tab="connectors">الكل</button></h3>
+            <ul class="hub-op-mini-list">${
+              (i.connectors || [])
+                .slice(0, 6)
+                .map(
+                  (c) =>
+                    `<li><b>${K.esc(c.name)}</b><small>${K.esc(c.type)} · ${K.fmtTime(c.lastSyncAt)}</small>${K.badge(c.status, c.status === 'connected' ? 'badge-black' : 'badge-red')}</li>`
+                )
+                .join('') || '<li class="empty">لا موصلات</li>'
+            }</ul>
+            <p class="muted" style="margin-top:8px">${connected.length} متصل / ${(i.connectors || []).length} إجمالي</p>
+          </article>
+        </div>
+        <div class="hub-op-grid3">
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-arrows-rotate icon"></i> آخر المزامنات</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="ig-tab" data-tab="sync">الكل</button></h3>
+            <ul class="feed hub-op-feed">${
+              recentSync
+                .map(
+                  (l) =>
+                    `<li><b>${K.esc(l.connector)}</b> — ${K.esc(l.detail)} ${K.badge(l.status, l.status === 'success' ? 'badge-black' : 'badge-red')} <small>${K.fmtTime(l.at)}</small></li>`
+                )
+                .join('') || '<li>لا مزامنات بعد — نفّذ مزامنة من تبويب الموصلات</li>'
+            }</ul>
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-code icon"></i> مسارات API</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="ig-tab" data-tab="apis">الكل</button></h3>
+            <div class="table-wrap"><table class="data">
+              <thead><tr><th>Method</th><th>Path</th><th>Calls</th></tr></thead>
+              <tbody>${
+                (i.apis || [])
+                  .slice(0, 6)
+                  .map((a) => `<tr><td>${K.badge(a.method, 'badge-red')}</td><td>${K.esc(a.path)}</td><td>${a.calls}</td></tr>`)
+                  .join('') || '<tr><td colspan="3" class="empty">لا مسارات</td></tr>'
+              }</tbody>
+            </table></div>
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-bolt icon"></i> إجراءات سريعة</span></h3>
+            <div class="toolbar" style="flex-direction:column;align-items:stretch;gap:8px">
+              <button type="button" class="btn btn-primary" data-action="ig-conn-create"><i class="fas fa-plus"></i> موصل جديد</button>
+              <button type="button" class="btn btn-dark" data-action="ig-tab" data-tab="connectors">إدارة الموصلات</button>
+              <button type="button" class="btn btn-ghost" data-action="ig-tab" data-tab="audit">سجل العمليات</button>
+            </div>
+          </article>
+        </div>`;
     } else if (igUi.tab === 'connectors') {
       body = `<article class="card">
         <div class="toolbar"><button type="button" class="btn btn-primary" data-action="ig-conn-create"><i class="fas fa-plus"></i> موصل</button></div>
@@ -1343,28 +1537,74 @@
 
     let body = '';
     if (crUi.tab === 'engines') {
+      const pendingDec = (s.decisions || []).filter((d) => d.status === 'pending');
       body = `${K.renderNeeds('cr', needs)}
-        <div class="engine-grid" style="margin-top:12px">${[
-          ['Decision', health.decision],
-          ['Predictive', health.predictive],
-          ['Optimization', health.optimization],
-          ['Anomaly', health.anomaly],
-          ['Knowledge', health.knowledge],
-        ]
-          .map(([n, v]) => `<div class="engine-pill"><span>${n}</span><strong>${v || 0}%</strong></div>`)
-          .join('')}</div>
-        <article class="card" style="margin-top:12px">
-          <h3>تحسينات مقترحة</h3>
-          ${(s.optimizations || [])
-            .map(
-              (o) => `<div style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
-                <b>${K.esc(o.target)}</b> · ${K.badge(o.gain, 'badge-red')}
-                <div style="margin-top:6px;font-size:13px;color:var(--muted)">${K.esc(o.suggestion)}</div>
-                <small>Source: Optimization Engine · Explainable suggestion (not opaque AI)</small>
-              </div>`
-            )
-            .join('') || '<p class="empty">لا اقتراحات</p>'}
-        </article>`;
+        <div class="hub-op-rail">
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-brain icon"></i> صحة المحركات</span></h3>
+            <div class="hub-op-pulse">
+              ${[
+                ['Decision', health.decision],
+                ['Predictive', health.predictive],
+                ['Optimization', health.optimization],
+                ['Anomaly', health.anomaly],
+                ['Knowledge', health.knowledge],
+              ]
+                .map(([n, v]) => `<div><span>${n}</span><strong>${v || 0}%</strong>${K.bar(v || 0)}</div>`)
+                .join('')}
+            </div>
+            <div class="toolbar" style="margin-top:10px;flex-wrap:wrap">
+              <button type="button" class="btn btn-primary" data-action="cr-tab" data-tab="decisions">القرارات</button>
+              <button type="button" class="btn btn-dark" data-action="cr-tab" data-tab="anomalies">الشذوذ (${openAnom.length})</button>
+              <button type="button" class="btn btn-ghost" data-action="cr-tab" data-tab="insights">الرؤى</button>
+            </div>
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-gavel icon"></i> قرارات معلّقة</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="cr-tab" data-tab="decisions">الكل</button></h3>
+            <ul class="hub-op-mini-list">${
+              pendingDec
+                .slice(0, 5)
+                .map((d) => `<li><b>${K.esc(d.title)}</b><small>${K.esc(d.engine)} · ${K.esc(d.impact || '')}</small>${K.badge('معلّق', 'badge-red')}</li>`)
+                .join('') || '<li class="empty">لا قرارات معلّقة</li>'
+            }</ul>
+          </article>
+        </div>
+        <div class="hub-op-grid3">
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-wand-magic-sparkles icon"></i> تحسينات مقترحة</span></h3>
+            ${(s.optimizations || [])
+              .slice(0, 5)
+              .map(
+                (o) => `<div style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
+                  <b>${K.esc(o.target)}</b> · ${K.badge(o.gain, 'badge-red')}
+                  <div style="margin-top:6px;font-size:13px;color:var(--muted)">${K.esc(o.suggestion)}</div>
+                  <small>Source: Optimization Engine</small>
+                </div>`
+              )
+              .join('') || '<p class="empty">لا اقتراحات</p>'}
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-triangle-exclamation icon"></i> شذوذ مفتوح</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="cr-tab" data-tab="anomalies">الكل</button></h3>
+            <ul class="hub-op-mini-list">${
+              openAnom
+                .slice(0, 5)
+                .map((a) => `<li><b>${K.esc(a.signal)}</b><small>${K.esc(a.source || '')}</small>${K.badge(String(a.score ?? ''), 'badge-red')}</li>`)
+                .join('') || '<li class="empty">لا شذوذ مفتوح</li>'
+            }</ul>
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-lightbulb icon"></i> رؤى مفتوحة</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="cr-tab" data-tab="insights">الكل</button></h3>
+            <ul class="hub-op-mini-list">${
+              openIns
+                .slice(0, 5)
+                .map((i) => `<li><b>${K.esc(i.title)}</b><small>${K.esc(i.source || '')}</small></li>`)
+                .join('') || '<li class="empty">لا رؤى مفتوحة</li>'
+            }</ul>
+          </article>
+        </div>`;
     } else if (crUi.tab === 'decisions') {
       body = `<article class="card">
         <div class="toolbar" style="flex-wrap:wrap">
