@@ -57,7 +57,7 @@
     incubators: ['إدارة الحاضنات', '100 حاضنة قطاعية · منصات · مكاتب · أعضاء'],
     wallet: ['اقتصاد النقاط', 'شحن · استهلاك · تسعير · فواتير'],
     core: ['العقل المركزي', 'قرار · تنبؤ · تحسين · شذوذ · خريطة معرفة'],
-    governance: ['الحوكمة الدستورية', 'سياسات · امتثال · جودة · عقوبات/مكافآت · دستور'],
+    governance: ['الحوكمة المؤسسية 360', 'أشخاص · سياسات · امتثال · جودة · عقود · مكافآت · موافقات · تدقيق'],
     'info-security': ['أمن المعلومات', 'حماية · إدارة · حوادث · مخاطر · ضوابط · تقارير'],
     'data-governance': ['حوكمة البيانات', 'كتالوج · مصادر · جودة · رحلة البيانات · سياسات · اعتمادات'],
     'systems-automation': ['أتمتة الأنظمة', 'إنشاء · تشغيل · قوالب · سجل عمليات · اتصالات'],
@@ -1250,93 +1250,10 @@
   };
 
   const renderGovernance = () => {
-    const g = HubStore.get().governance;
-    const tabs = [
-      ['policies', 'السياسات'],
-      ['compliance', 'الامتثال'],
-      ['standards', 'معايير الجودة'],
-      ['pr', 'عقوبات ومكافآت'],
-      ['constitution', 'مستودع الدستور'],
-    ];
-    let body = '';
-    if (govTab === 'policies') {
-      body = `
-        <div class="toolbar">
-          ${pageActs('policies', 'إضافة سياسة')}
-          <div class="field"><label>عنوان السياسة</label><input id="pol-title" placeholder="سياسة جديدة" /></div>
-          <div class="field"><label>النطاق</label>
-            <select id="pol-scope"><option>القوى العاملة</option><option>المهام</option><option>الأنظمة</option><option>التكامل</option></select>
-          </div>
-          <button class="btn btn-primary" data-action="add-policy">إضافة مسودة سريعة</button>
-        </div>
-        <div class="table-wrap"><table class="data">
-          <thead><tr><th>الكود</th><th>العنوان</th><th>النطاق</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
-          <tbody>${g.policies
-            .map(
-              (p) => `<tr>
-                <td>${esc(p.code)}</td><td>${esc(p.title)}</td><td>${esc(p.scope)}</td><td>${badgeStatus(p.status)}</td>
-                ${metaCells(p)}
-                <td>${p.status !== 'active' ? `<button class="btn btn-sm btn-primary" data-action="activate-policy" data-id="${p.id}">تفعيل</button>` : '—'}${rowActs('policies', p.id)}</td>
-              </tr>`
-            )
-            .join('')}</tbody>
-        </table></div>`;
-    } else if (govTab === 'compliance') {
-      body = `<div class="table-wrap"><table class="data">
-        <thead><tr><th>الكيان</th><th>نسبة الالتزام</th><th>المخالفات</th></tr></thead>
-        <tbody>${g.compliance
-          .map((c) => `<tr><td>${esc(c.entity)}</td><td>${c.rate}% ${bar(c.rate)}</td><td>${c.violations}</td></tr>`)
-          .join('')}</tbody>
-      </table></div>`;
-    } else if (govTab === 'standards') {
-      body = `<div class="grid-3">${g.standards
-        .map(
-          (s) => `<article class="card" style="padding:12px;border-top:3px solid var(--red)">
-            <b>${esc(s.name)}</b> ${badgeStatus(s.level)}
-            <p style="margin:8px 0 0;color:var(--muted);font-size:13px">${esc(s.description)}</p>
-          </article>`
-        )
-        .join('')}</div>`;
-    } else if (govTab === 'pr') {
-      body = `
-        <div class="toolbar">
-          <div class="field"><label>النوع</label><select id="pr-type"><option value="reward">مكافأة</option><option value="penalty">عقوبة</option></select></div>
-          <div class="field"><label>المستهدف</label><input id="pr-target" placeholder="اسم / مكتب" /></div>
-          <div class="field"><label>السبب</label><input id="pr-reason" placeholder="السبب" /></div>
-          <div class="field"><label>النقاط</label><input id="pr-points" type="number" value="20" /></div>
-          <button class="btn btn-primary" data-action="issue-pr">إصدار</button>
-        </div>
-        <div class="table-wrap"><table class="data">
-          <thead><tr><th>النوع</th><th>المستهدف</th><th>السبب</th><th>النقاط</th><th>الوقت</th></tr></thead>
-          <tbody>${g.penaltiesRewards
-            .map(
-              (x) => `<tr><td>${badgeStatus(x.type === 'reward' ? 'active' : 'critical')}</td><td>${esc(x.target)}</td><td>${esc(x.reason)}</td><td>${x.points}</td><td>${fmtTime(x.at)}</td></tr>`
-            )
-            .join('')}</tbody>
-        </table></div>`;
-    } else {
-      body = `
-        <div class="toolbar">
-          <div class="field"><label>المادة</label><input id="con-article" placeholder="المادة 3" /></div>
-          <div class="field" style="flex:2"><label>النص</label><input id="con-text" placeholder="نص المادة..." /></div>
-          <button class="btn btn-primary" data-action="add-constitution">إضافة</button>
-        </div>
-        ${g.constitution
-          .map(
-            (c) => `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px">
-              <b>${esc(c.article)}</b>
-              <p style="margin:6px 0 0;color:var(--muted)">${esc(c.text)}</p>
-            </div>`
-          )
-          .join('')}`;
+    if (window.HubGovernance?.render) {
+      return HubGovernance.render({ user, toast, esc, bar, badgeStatus, fmtTime });
     }
-
-    return `
-      <div class="tabs">
-        ${tabs.map(([k, l]) => `<button class="tab ${govTab === k ? 'active' : ''}" data-action="gov-tab" data-tab="${k}">${l}</button>`).join('')}
-      </div>
-      <article class="card">${body}</article>
-    `;
+    return '<div class="empty">تعذر تحميل وحدة الحوكمة المؤسسية 360</div>';
   };
 
   const renderWorkforce = () => {
@@ -2135,6 +2052,15 @@
       }
     }
 
+    if (String(action || '').startsWith('gov-') && window.HubGovernance?.handle) {
+      const handled = HubGovernance.handle(action, btn, { user, toast, esc, $ });
+      if (handled) {
+        renderNav();
+        render();
+        return;
+      }
+    }
+
     switch (action) {
       case 'issue-decision': {
         const title = $('#decision-title')?.value.trim();
@@ -2510,6 +2436,13 @@
     const smEl = e.target.closest('[data-sm-change]');
     if (smEl && window.HubSystemsMarket?.handleChange) {
       if (HubSystemsMarket.handleChange(smEl)) {
+        render();
+      }
+      return;
+    }
+    const govEl = e.target.closest('[data-gov-change]');
+    if (govEl && window.HubGovernance?.handleChange) {
+      if (HubGovernance.handleChange(govEl)) {
         render();
       }
       return;

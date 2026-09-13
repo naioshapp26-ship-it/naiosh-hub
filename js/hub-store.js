@@ -2086,7 +2086,8 @@ const HubStore = (() => {
       ],
       engineHealth: { decision: 92, predictive: 88, optimization: 85, anomaly: 90, knowledge: 94 },
     },
-    governance: {
+    governance: typeof window !== 'undefined' && window.HubGovernanceData?.seed ? window.HubGovernanceData.seed() : {
+      schemaVersion: 1,
       policies: [
         { id: uid('pol'), code: 'POL-01', title: 'دستور ساعات العمل', status: 'active', scope: 'القوى العاملة' },
         { id: uid('pol'), code: 'POL-02', title: 'معيار جودة التنفيذ', status: 'active', scope: 'المهام' },
@@ -2316,6 +2317,14 @@ const HubStore = (() => {
       recomputeWorkforceKpis(state.workforce);
     }
     if (hydrateSystemsMarketplace()) changed = true;
+    if (!state.governance || state.governance.schemaVersion !== 2) {
+      if (window.HubGovernanceData?.seed) {
+        state.governance = window.HubGovernanceData.seed();
+        changed = true;
+      }
+    } else if (window.HubGovernanceData?.recompute) {
+      window.HubGovernanceData.recompute(state.governance);
+    }
     if (!Array.isArray(state.notifications)) {
       state.notifications = [];
       changed = true;
@@ -3041,41 +3050,662 @@ const HubStore = (() => {
   });
 
   // —— Governance
-  const addPolicy = (title, scope, extra = {}) => {
+  const govBag = () => {
+    const s = get();
+    if (!s.governance || s.governance.schemaVersion !== 2) {
+      if (window.HubGovernanceData?.seed) s.governance = window.HubGovernanceData.seed();
+      else if (!s.governance) s.governance = { policies: [], schemaVersion: 1 };
+    }
+    return s.governance;
+  };
+
+  const recomputeGovKpis = (g = govBag()) => {
+    if (window.HubGovernanceData?.recompute) return window.HubGovernanceData.recompute(g);
+    return g;
+  };
+
+  const pushGovAudit = (entry = {}) => {
+    const g = govBag();
+    if (!Array.isArray(g.auditLog)) g.auditLog = [];
+    const row = {
+      id: entry.id || nextSecSeq(g.auditLog, 'GOV-TX'),
+      user: entry.user || 'مشغّل هوب',
+      action: entry.action || 'تعديل',
+      entityType: entry.entityType || '',
+      entityId: entry.entityId || '',
+      entityLabel: entry.entityLabel || '',
+      field: entry.field || '',
+      oldValue: entry.oldValue ?? '',
+      newValue: entry.newValue ?? '',
+      at: nowIso(),
+      source: entry.source || 'Manual',
+    };
+    g.auditLog.unshift(row);
+    if (g.auditLog.length > 800) g.auditLog.length = 800;
+    return row;
+  };
+
+  const addPolicy = (title, scope, extra = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.policies)) g.policies = [];
     const item = {
       id: uid('pol'),
-      code: `POL-${String(get().governance.policies.length + 1).padStart(2, '0')}`,
-      title,
-      status: 'draft',
-      scope,
+      code: extra.code || `POL-${String(g.policies.length + 1).padStart(2, '0')}`,
+      title: title || extra.title,
+      description: extra.description || '',
+      category: extra.category || 'Internal Governance',
+      version: extra.version || '1.0',
+      owner: extra.owner || actor,
+      status: extra.status || 'Draft',
+      scope: scope || extra.scope || '',
+      effectiveDate: extra.effectiveDate || '',
+      reviewDate: extra.reviewDate || '',
+      requiresAck: !!extra.requiresAck,
+      ackDeadline: extra.ackDeadline || '',
+      appliesTo: extra.appliesTo || { type: 'company', ids: [], label: scope || 'كل الشركة' },
+      assignments: extra.assignments || [],
+      source: extra.source || 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+      lastModifiedBy: actor,
+      lastModifiedAt: nowIso(),
       ...pickCommonMeta(extra),
     };
-    get().governance.policies.unshift(item);
-    pushFeed('compliance', `مسودة سياسة: ${title}`);
+    g.policies.unshift(item);
+    pushGovAudit({
+      user: actor,
+      action: 'Policy Created',
+      entityType: 'policy',
+      entityId: item.id,
+      entityLabel: item.title,
+      newValue: item.status,
+      source: item.source,
+    });
+    recomputeGovKpis(g);
+    pushFeed('compliance', `مسودة سياسة: ${item.title}`);
     save();
     return item;
   };
 
-  const activatePolicy = (id) => {
-    const p = get().governance.policies.find((x) => x.id === id);
+  const updateGovPolicy = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    const p = (g.policies || []).find((x) => x.id === id);
     if (!p) return null;
-    p.status = 'active';
-    pushFeed('compliance', `تفعيل ${p.code}: ${p.title}`);
+    Object.keys(patch).forEach((k) => {
+      if (patch[k] === undefined || String(patch[k]) === String(p[k])) return;
+      pushGovAudit({
+        user: actor,
+        action: 'Policy Updated',
+        entityType: 'policy',
+        entityId: p.id,
+        entityLabel: p.title,
+        field: k,
+        oldValue: p[k],
+        newValue: patch[k],
+      });
+    });
+    Object.assign(p, patch, { lastModifiedBy: actor, lastModifiedAt: nowIso() });
+    recomputeGovKpis(g);
     save();
     return p;
   };
 
-  const issuePenaltyOrReward = (type, target, reason, points) => {
-    const item = { id: uid('pr'), type, target, reason, points: Number(points), at: nowIso() };
-    get().governance.penaltiesRewards.unshift(item);
+  const activatePolicy = (id, actor = 'مشغّل هوب') => {
+    const p = updateGovPolicy(id, { status: 'Active' }, actor);
+    if (p) pushFeed('compliance', `تفعيل ${p.code}: ${p.title}`);
+    return p;
+  };
+
+  const assignPolicyToPeople = (policyId, personIds = [], actor = 'مشغّل هوب') => {
+    const g = govBag();
+    const p = (g.policies || []).find((x) => x.id === policyId);
+    if (!p) return null;
+    if (!Array.isArray(p.assignments)) p.assignments = [];
+    personIds.forEach((pid) => {
+      const person = (g.people || []).find((x) => x.id === pid);
+      if (!person) return;
+      if (p.assignments.some((a) => a.personId === pid)) return;
+      p.assignments.push({
+        id: uid('ack'),
+        personId: pid,
+        person: person.name,
+        status: 'Sent',
+        sentAt: nowIso(),
+        viewedAt: '',
+        acknowledgedAt: '',
+      });
+      if (!Array.isArray(person.policyIds)) person.policyIds = [];
+      if (!person.policyIds.includes(p.id)) person.policyIds.push(p.id);
+      pushGovAudit({
+        user: actor,
+        action: 'Assigned Policy',
+        entityType: 'person',
+        entityId: person.id,
+        entityLabel: person.name,
+        field: 'policy',
+        newValue: p.code || p.title,
+      });
+    });
+    save();
+    return p;
+  };
+
+  const acknowledgePolicy = (policyId, personId, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    const p = (g.policies || []).find((x) => x.id === policyId);
+    const a = p?.assignments?.find((x) => x.personId === personId);
+    if (!a) return null;
+    a.status = 'Acknowledged';
+    a.acknowledgedAt = nowIso();
+    a.viewedAt = a.viewedAt || nowIso();
+    pushGovAudit({
+      user: actor,
+      action: 'Policy Acknowledged',
+      entityType: 'policy',
+      entityId: policyId,
+      entityLabel: p.title,
+      field: 'assignment',
+      newValue: a.person,
+    });
+    save();
+    return a;
+  };
+
+  const addGovPerson = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.people)) g.people = [];
+    const name = String(payload.name || '').trim();
+    if (!name) return null;
+    const item = {
+      id: payload.id || nextSecSeq(g.people, 'GOV'),
+      employeeId: payload.employeeId || '',
+      name,
+      officeNumber: payload.officeNumber || '',
+      phone: payload.phone || '',
+      extension: payload.extension || '',
+      email: payload.email || '',
+      title: payload.title || 'موظف',
+      company: payload.company || 'نايوش هوب',
+      branchId: payload.branchId || '',
+      branch: payload.branch || '',
+      departmentId: payload.departmentId || '',
+      department: payload.department || '',
+      section: payload.section || '',
+      team: payload.team || '',
+      platformId: payload.platformId || '',
+      platform: payload.platform || '',
+      manager: payload.manager || '',
+      governanceManager: payload.governanceManager || '',
+      governanceRole: payload.governanceRole || 'Employee',
+      committeeIds: payload.committeeIds || [],
+      authorityLevel: payload.authorityLevel || 'L1',
+      approvalLimit: Number(payload.approvalLimit) || 0,
+      complianceScore: Number(payload.complianceScore) || 0,
+      riskLevel: payload.riskLevel || 'Low',
+      status: payload.status || 'Active',
+      source: payload.source || 'Manual',
+      creationMethod: payload.creationMethod || 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+      lastSynced: '',
+      lastModifiedBy: actor,
+      lastModifiedAt: nowIso(),
+      externalId: payload.externalId || '',
+      policyIds: [],
+      avatar: payload.avatar || '',
+    };
+    g.people.unshift(item);
+    pushGovAudit({
+      user: actor,
+      action: 'Person Added',
+      entityType: 'person',
+      entityId: item.id,
+      entityLabel: item.name,
+      source: item.source,
+    });
+    recomputeGovKpis(g);
+    save();
+    return item;
+  };
+
+  const updateGovPerson = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    const p = (g.people || []).find((x) => x.id === id);
+    if (!p) return null;
+    Object.keys(patch).forEach((k) => {
+      if (patch[k] === undefined || String(patch[k]) === String(p[k])) return;
+      pushGovAudit({
+        user: actor,
+        action: 'Person Updated',
+        entityType: 'person',
+        entityId: p.id,
+        entityLabel: p.name,
+        field: k,
+        oldValue: p[k],
+        newValue: patch[k],
+      });
+    });
+    Object.assign(p, patch, { lastModifiedBy: actor, lastModifiedAt: nowIso() });
+    recomputeGovKpis(g);
+    save();
+    return p;
+  };
+
+  const addGovBranch = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.branches)) g.branches = [];
+    const item = {
+      id: payload.id || nextSecSeq(g.branches, 'BR'),
+      name: payload.name,
+      address: payload.address || '',
+      phone: payload.phone || '',
+      manager: payload.manager || '',
+      status: payload.status || 'Active',
+      source: 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+    };
+    g.branches.unshift(item);
+    pushGovAudit({ user: actor, action: 'Branch Added', entityType: 'branch', entityId: item.id, entityLabel: item.name });
+    save();
+    return item;
+  };
+
+  const addGovDepartment = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.departments)) g.departments = [];
+    const item = {
+      id: payload.id || nextSecSeq(g.departments, 'DEP'),
+      name: payload.name,
+      branchId: payload.branchId || '',
+      branch: payload.branch || '',
+      manager: payload.manager || '',
+      status: 'Active',
+      source: 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+    };
+    g.departments.unshift(item);
+    pushGovAudit({ user: actor, action: 'Department Added', entityType: 'department', entityId: item.id, entityLabel: item.name });
+    save();
+    return item;
+  };
+
+  const addGovPlatform = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.platforms)) g.platforms = [];
+    const item = {
+      id: payload.id || nextSecSeq(g.platforms, 'PLT'),
+      name: payload.name,
+      owner: payload.owner || actor,
+      departmentId: payload.departmentId || '',
+      department: payload.department || '',
+      branchId: payload.branchId || '',
+      branch: payload.branch || '',
+      status: 'Active',
+      source: 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+    };
+    g.platforms.unshift(item);
+    pushGovAudit({ user: actor, action: 'Platform Added', entityType: 'platform', entityId: item.id, entityLabel: item.name });
+    save();
+    return item;
+  };
+
+  const addComplianceRequirement = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.complianceRequirements)) g.complianceRequirements = [];
+    const item = {
+      id: payload.id || nextSecSeq(g.complianceRequirements, 'CMP'),
+      name: payload.name,
+      framework: payload.framework || 'Internal Governance',
+      description: payload.description || '',
+      appliesTo: payload.appliesTo || { type: 'company', label: 'كل الشركة' },
+      owner: payload.owner || actor,
+      reviewer: payload.reviewer || '',
+      approver: payload.approver || '',
+      evidenceRequired: payload.evidenceRequired || 'Document',
+      frequency: payload.frequency || 'Yearly',
+      measurement: payload.measurement || '',
+      target: Number(payload.target) || 100,
+      currentScore: Number(payload.currentScore) || 0,
+      status: payload.status || 'New',
+      evidence: [],
+      source: 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+    };
+    g.complianceRequirements.unshift(item);
+    pushGovAudit({ user: actor, action: 'Compliance Added', entityType: 'compliance', entityId: item.id, entityLabel: item.name });
+    recomputeGovKpis(g);
+    save();
+    return item;
+  };
+
+  const addQualityStandard = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.standards)) g.standards = [];
+    const item = {
+      id: payload.id || nextSecSeq(g.standards, 'QS'),
+      name: payload.name,
+      description: payload.description || '',
+      category: payload.category || 'Quality',
+      appliesTo: payload.appliesTo || { type: 'company', label: 'الشركة' },
+      measurementType: payload.measurementType || 'Percentage',
+      target: Number(payload.target) || 100,
+      warningThreshold: Number(payload.warningThreshold) || 90,
+      criticalThreshold: Number(payload.criticalThreshold) || 80,
+      currentValue: Number(payload.currentValue) || 0,
+      frequency: payload.frequency || 'Monthly',
+      dataSource: payload.dataSource || 'Manual Entry',
+      calculation: payload.calculation || '',
+      owner: payload.owner || actor,
+      reviewer: payload.reviewer || '',
+      status: payload.status || 'New',
+      history: [],
+      source: 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+      level: payload.level || 'A',
+    };
+    g.standards.unshift(item);
+    pushGovAudit({ user: actor, action: 'Quality Standard Added', entityType: 'quality', entityId: item.id, entityLabel: item.name });
+    recomputeGovKpis(g);
+    save();
+    return item;
+  };
+
+  const addGovContract = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.contracts)) g.contracts = [];
+    const item = {
+      id: payload.id || nextSecSeq(g.contracts, 'CTR'),
+      name: payload.name,
+      party1: payload.party1 || 'نايوش هوب',
+      party2: payload.party2 || '',
+      relatedType: payload.relatedType || 'person',
+      relatedId: payload.relatedId || '',
+      relatedLabel: payload.relatedLabel || payload.party2 || '',
+      type: payload.type || 'Employment',
+      value: Number(payload.value) || 0,
+      startDate: payload.startDate || nowIso().slice(0, 10),
+      endDate: payload.endDate || '',
+      owner: payload.owner || actor,
+      status: payload.status || (payload.draft ? 'Draft' : 'Pending Approval'),
+      renewal: payload.renewal || 'Manual',
+      documents: payload.documents || [],
+      source: 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+      lastModifiedBy: actor,
+      lastModifiedAt: nowIso(),
+    };
+    g.contracts.unshift(item);
+    if (!Array.isArray(g.approvals)) g.approvals = [];
+    if (item.status === 'Pending Approval') {
+      g.approvals.unshift({
+        id: nextSecSeq(g.approvals, 'APR'),
+        type: 'Contract',
+        relatedEntity: item.name,
+        relatedId: item.id,
+        requestedBy: actor,
+        assignedTo: 'ليلى كريم',
+        date: nowIso(),
+        deadline: new Date(Date.now() + 3 * 86400000).toISOString(),
+        status: 'Pending',
+        source: 'Manual',
+      });
+    }
+    pushGovAudit({ user: actor, action: 'Contract Created', entityType: 'contract', entityId: item.id, entityLabel: item.name });
+    recomputeGovKpis(g);
+    save();
+    return item;
+  };
+
+  const issuePenaltyOrReward = (type, target, reason, points, extras = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.rewards)) g.rewards = [];
+    if (!Array.isArray(g.penaltiesRewards)) g.penaltiesRewards = [];
+    const item = {
+      id: uid('pr'),
+      beneficiaryId: extras.beneficiaryId || '',
+      beneficiary: target,
+      target,
+      type: type === 'penalty' ? 'عقوبة' : extras.rewardType || 'نقاط',
+      value: Math.abs(Number(points) || 0),
+      points: Number(points),
+      reason,
+      source: extras.source || 'Manual',
+      requestedBy: extras.requestedBy || actor,
+      approvedBy: extras.approvedBy || '',
+      grantedBy: extras.grantedBy || '',
+      status: extras.status || (g.settings?.requireRewardApproval && type === 'reward' ? 'Pending' : 'Approved'),
+      at: nowIso(),
+      createdBy: actor,
+      createdAt: nowIso(),
+    };
+    if (item.status === 'Approved' && type === 'reward') {
+      item.approvedBy = item.approvedBy || actor;
+      item.grantedBy = item.grantedBy || actor;
+    }
+    g.rewards.unshift(item);
+    g.penaltiesRewards.unshift({
+      id: item.id,
+      type,
+      target,
+      reason,
+      points: Number(points),
+      at: item.at,
+    });
+    if (item.status === 'Pending') {
+      if (!Array.isArray(g.approvals)) g.approvals = [];
+      g.approvals.unshift({
+        id: nextSecSeq(g.approvals, 'APR'),
+        type: 'Reward',
+        relatedEntity: `مكافأة ${target}`,
+        relatedId: item.id,
+        requestedBy: actor,
+        assignedTo: 'ليلى كريم',
+        date: nowIso(),
+        deadline: new Date(Date.now() + 2 * 86400000).toISOString(),
+        status: 'Pending',
+        source: item.source,
+      });
+    }
+    pushGovAudit({
+      user: actor,
+      action: type === 'reward' ? 'Reward Requested' : 'Violation/Penalty',
+      entityType: 'reward',
+      entityId: item.id,
+      entityLabel: target,
+      newValue: String(item.value),
+      source: item.source,
+    });
+    recomputeGovKpis(g);
     pushFeed('compliance', `${type === 'reward' ? 'مكافأة' : 'عقوبة'}: ${target}`);
     save();
     return item;
   };
 
-  const addConstitutionArticle = (article, text) => {
+  const decideGovApproval = (id, decision, comment = '', actor = 'مشغّل هوب') => {
+    const g = govBag();
+    const a = (g.approvals || []).find((x) => x.id === id);
+    if (!a) return null;
+    a.status = decision === 'approve' ? 'Approved' : 'Rejected';
+    a.decidedBy = actor;
+    a.decidedAt = nowIso();
+    a.comment = comment;
+    if (a.type === 'Reward' && decision === 'approve') {
+      const r = (g.rewards || []).find((x) => x.id === a.relatedId);
+      if (r) {
+        r.status = 'Approved';
+        r.approvedBy = actor;
+        r.grantedBy = actor;
+      }
+    }
+    if (a.type === 'Contract' && decision === 'approve') {
+      const c = (g.contracts || []).find((x) => x.id === a.relatedId);
+      if (c) c.status = 'Active';
+    }
+    if (a.type === 'Policy' && decision === 'approve') {
+      updateGovPolicy(a.relatedId, { status: 'Active' }, actor);
+    }
+    pushGovAudit({
+      user: actor,
+      action: decision === 'approve' ? 'Approval Accepted' : 'Approval Rejected',
+      entityType: 'approval',
+      entityId: a.id,
+      entityLabel: a.relatedEntity,
+      newValue: a.status,
+    });
+    recomputeGovKpis(g);
+    save();
+    return a;
+  };
+
+  const addGovViolation = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.violations)) g.violations = [];
+    const item = {
+      id: payload.id || nextSecSeq(g.violations, 'VIO'),
+      type: payload.type || 'Compliance',
+      personId: payload.personId || '',
+      person: payload.person || '',
+      relatedPolicy: payload.relatedPolicy || '',
+      severity: payload.severity || 'Medium',
+      description: payload.description || '',
+      detectedBy: payload.detectedBy || actor,
+      detectedAt: nowIso(),
+      owner: payload.owner || actor,
+      correctiveAction: payload.correctiveAction || '',
+      deadline: payload.deadline || '',
+      status: 'Open',
+      source: payload.source || 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+    };
+    g.violations.unshift(item);
+    pushGovAudit({ user: actor, action: 'Violation Created', entityType: 'violation', entityId: item.id, entityLabel: item.person || item.type });
+    recomputeGovKpis(g);
+    save();
+    return item;
+  };
+
+  const addGovRisk = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.risks)) g.risks = [];
+    const likelihood = Number(payload.likelihood) || 1;
+    const impact = Number(payload.impact) || 1;
+    const item = {
+      id: payload.id || nextSecSeq(g.risks, 'RSK'),
+      title: payload.title,
+      category: payload.category || 'Governance',
+      relatedEntity: payload.relatedEntity || '',
+      likelihood,
+      impact,
+      riskScore: likelihood * impact,
+      owner: payload.owner || actor,
+      mitigation: payload.mitigation || '',
+      status: 'Open',
+      source: 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+    };
+    g.risks.unshift(item);
+    pushGovAudit({ user: actor, action: 'Risk Created', entityType: 'risk', entityId: item.id, entityLabel: item.title });
+    recomputeGovKpis(g);
+    save();
+    return item;
+  };
+
+  const addGovDecision = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.decisions)) g.decisions = [];
+    const item = {
+      id: payload.id || nextSecSeq(g.decisions, 'DEC'),
+      title: payload.title,
+      committeeId: payload.committeeId || '',
+      committee: payload.committee || '',
+      owner: payload.owner || actor,
+      createdBy: actor,
+      decisionDate: payload.decisionDate || nowIso().slice(0, 10),
+      effectiveDate: payload.effectiveDate || '',
+      appliesTo: payload.appliesTo || '',
+      status: payload.status || 'Draft',
+      source: 'Manual',
+      createdAt: nowIso(),
+    };
+    g.decisions.unshift(item);
+    pushGovAudit({ user: actor, action: 'Decision Created', entityType: 'decision', entityId: item.id, entityLabel: item.title });
+    save();
+    return item;
+  };
+
+  const addGovCommittee = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.committees)) g.committees = [];
+    const item = {
+      id: payload.id || nextSecSeq(g.committees, 'COM'),
+      name: payload.name,
+      chairperson: payload.chairperson || '',
+      secretary: payload.secretary || '',
+      members: payload.members || [],
+      purpose: payload.purpose || '',
+      authority: payload.authority || '',
+      meetingFrequency: payload.meetingFrequency || 'شهري',
+      status: 'Active',
+      source: 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+    };
+    g.committees.unshift(item);
+    pushGovAudit({ user: actor, action: 'Committee Created', entityType: 'committee', entityId: item.id, entityLabel: item.name });
+    save();
+    return item;
+  };
+
+  const addGovDocument = (payload = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.documents)) g.documents = [];
+    const item = {
+      id: payload.id || nextSecSeq(g.documents, 'DOC'),
+      name: payload.name,
+      type: payload.type || 'Other',
+      owner: payload.owner || actor,
+      version: payload.version || '1.0',
+      relatedEntity: payload.relatedEntity || '',
+      uploadedBy: actor,
+      uploadedAt: nowIso(),
+      status: 'Active',
+      source: 'Manual',
+    };
+    g.documents.unshift(item);
+    pushGovAudit({ user: actor, action: 'Document Uploaded', entityType: 'document', entityId: item.id, entityLabel: item.name });
+    save();
+    return item;
+  };
+
+  const updateGovSettings = (patch = {}, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!g.settings) g.settings = {};
+    Object.assign(g.settings, patch);
+    pushGovAudit({ user: actor, action: 'Settings Changed', entityType: 'settings', newValue: JSON.stringify(patch) });
+    save();
+    return g.settings;
+  };
+
+  const dismissGovHelp = () => {
+    govBag().helpDismissed = true;
+    save();
+  };
+
+  const addConstitutionArticle = (article, text, actor = 'مشغّل هوب') => {
+    const g = govBag();
+    if (!Array.isArray(g.constitution)) g.constitution = [];
     const item = { id: uid('con'), article, text };
-    get().governance.constitution.push(item);
+    g.constitution.push(item);
+    pushGovAudit({ user: actor, action: 'Constitution Updated', entityType: 'constitution', entityLabel: article, newValue: text });
     save();
     return item;
   };
@@ -6106,8 +6736,29 @@ const HubStore = (() => {
     resolveAnomaly,
     runPredictiveScan,
     addPolicy,
+    updateGovPolicy,
     activatePolicy,
+    assignPolicyToPeople,
+    acknowledgePolicy,
+    addGovPerson,
+    updateGovPerson,
+    addGovBranch,
+    addGovDepartment,
+    addGovPlatform,
+    addComplianceRequirement,
+    addQualityStandard,
+    addGovContract,
     issuePenaltyOrReward,
+    decideGovApproval,
+    addGovViolation,
+    addGovRisk,
+    addGovDecision,
+    addGovCommittee,
+    addGovDocument,
+    updateGovSettings,
+    dismissGovHelp,
+    recomputeGovKpis,
+    pushGovAudit,
     addConstitutionArticle,
     addBranch,
     addEmployee,
