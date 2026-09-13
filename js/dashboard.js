@@ -59,7 +59,7 @@
     core: ['العقل المركزي', 'قرار · تنبؤ · تحسين · شذوذ · خريطة معرفة'],
     governance: ['الحوكمة الدستورية', 'سياسات · امتثال · جودة · عقوبات/مكافآت · دستور'],
     'info-security': ['أمن المعلومات', 'حماية · إدارة · حوادث · مخاطر · ضوابط · تقارير'],
-    'data-governance': ['حوكمة البيانات', 'كتالوج · تصنيف · جودة · سياسات الاحتفاظ'],
+    'data-governance': ['حوكمة البيانات', 'كتالوج · مصادر · جودة · رحلة البيانات · سياسات · اعتمادات'],
     'systems-automation': ['أتمتة الأنظمة', 'تدفقات · جدولة · تشغيل · طابور الأتمتة'],
     workforce: ['القوى العاملة عن بُعد', 'إضافة · تعديل · تعيين · حذف · إنذار · مكافآت'],
     systems: ['سوق الأنظمة التشغيلية', 'تفعيل · إيقاف · ربط'],
@@ -1733,55 +1733,10 @@
   };
 
   const renderDataGovernance = () => {
-    const d = HubStore.get().dataGovernance || { catalogs: [], policies: [] };
-    return `
-      <div class="kpi-grid">
-        <article class="kpi"><span>جودة البيانات</span><strong>${d.qualityScore}%</strong><small>Quality</small></article>
-        <article class="kpi"><span>مصنّفة</span><strong>${d.classifiedPct}%</strong><small>Classified</small></article>
-        <article class="kpi"><span>امتثال الاحتفاظ</span><strong>${d.retentionOk}%</strong><small>Retention</small></article>
-        <article class="kpi"><span>كتالوجات</span><strong>${(d.catalogs || []).length}</strong><small>Datasets</small></article>
-      </div>
-      <div class="grid-2" style="margin-top:12px">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-database icon"></i> كتالوج البيانات</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>البيانات</th><th>المالك</th><th>التصنيف</th><th>الجودة</th><th>الحالة</th><th></th></tr></thead>
-            <tbody>
-              ${(d.catalogs || [])
-                .map(
-                  (c) => `<tr>
-                    <td><strong>${esc(c.name)}</strong></td>
-                    <td>${esc(c.owner)}</td>
-                    <td>${esc(c.classification)}</td>
-                    <td>${c.quality}% ${bar(c.quality)}</td>
-                    <td>${badgeStatus(c.status)}</td>
-                    <td><button class="btn btn-sm btn-dark" data-action="toggle-data-catalog" data-id="${c.id}">مراجعة/تفعيل</button></td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-file-shield icon"></i> سياسات البيانات</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>السياسة</th><th>النطاق</th><th>الحالة</th><th></th></tr></thead>
-            <tbody>
-              ${(d.policies || [])
-                .map(
-                  (p) => `<tr>
-                    <td>${esc(p.title)}</td>
-                    <td>${esc(p.scope)}</td>
-                    <td>${badgeStatus(p.status)}</td>
-                    <td>${p.status !== 'active' ? `<button class="btn btn-sm btn-primary" data-action="activate-data-policy" data-id="${p.id}">تفعيل</button>` : '—'}</td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-      </div>
-    `;
+    if (window.HubDataGovernance?.render) {
+      return HubDataGovernance.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return `<div class="empty">تعذّر تحميل وحدة حوكمة البيانات. تأكد من تحميل js/hub-data-governance.js</div>`;
   };
 
   const renderSystemsAutomation = () => {
@@ -2283,6 +2238,15 @@
       }
     }
 
+    if (String(action || '').startsWith('dg-') && window.HubDataGovernance?.handle) {
+      const handled = HubDataGovernance.handle(action, btn, { user, toast, esc, $ });
+      if (handled) {
+        renderNav();
+        render();
+        return;
+      }
+    }
+
     switch (action) {
       case 'issue-decision': {
         const title = $('#decision-title')?.value.trim();
@@ -2630,6 +2594,13 @@
     const secEl = e.target.closest('[data-sec-change]');
     if (secEl && window.HubInfoSecurity?.handleChange) {
       if (HubInfoSecurity.handleChange(secEl)) {
+        render();
+      }
+      return;
+    }
+    const dgEl = e.target.closest('[data-dg-change]');
+    if (dgEl && window.HubDataGovernance?.handleChange) {
+      if (HubDataGovernance.handleChange(dgEl)) {
         render();
       }
       return;

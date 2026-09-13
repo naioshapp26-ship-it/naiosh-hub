@@ -631,23 +631,660 @@ const HubStore = (() => {
     return sec;
   };
 
-  const seedDataGovernance = () => ({
-    qualityScore: 87,
-    classifiedPct: 74,
-    retentionOk: 91,
-    catalogs: [
-      { id: uid('dg'), name: 'بيانات العملاء', owner: 'CRM', classification: 'سري', quality: 92, status: 'active' },
-      { id: uid('dg'), name: 'سجلات التشغيل', owner: 'Hub Core', classification: 'داخلي', quality: 88, status: 'active' },
-      { id: uid('dg'), name: 'معاملات المحفظة', owner: 'Wallet', classification: 'حساس', quality: 95, status: 'active' },
-      { id: uid('dg'), name: 'أرشيف الإعلانات', owner: 'Ads Studio', classification: 'عام', quality: 81, status: 'review' },
-      { id: uid('dg'), name: 'مستندات الحاضنات', owner: 'Incubators', classification: 'داخلي', quality: 79, status: 'active' },
-    ],
-    policies: [
-      { id: uid('dgp'), title: 'تصنيف البيانات الإلزامي', status: 'active', scope: 'كل المنصات' },
-      { id: uid('dgp'), title: 'احتفاظ السجلات 24 شهرًا', status: 'active', scope: 'التشغيل' },
-      { id: uid('dgp'), title: 'حذف البيانات عند الطلب', status: 'draft', scope: 'العملاء' },
-    ],
-  });
+  const seedDataGovernance = () => {
+    const now = Date.now();
+    const isoDaysAgo = (d, h = 10) => new Date(now - d * 86400000 - (12 - h) * 3600000).toISOString();
+    const src1 = 'SRC-2026-00001';
+    const src2 = 'SRC-2026-00002';
+    const src3 = 'SRC-2026-00003';
+    const src4 = 'SRC-2026-00004';
+    const ast1 = 'AST-2026-00001';
+    const ast2 = 'AST-2026-00002';
+    const ast3 = 'AST-2026-00003';
+    const ast4 = 'AST-2026-00004';
+    const ast5 = 'AST-2026-00005';
+    const ast6 = 'AST-2026-00006';
+    const pol1 = 'POL-DG-2026-00001';
+    const pol2 = 'POL-DG-2026-00002';
+    const pol3 = 'POL-DG-2026-00003';
+    const rule1 = 'QR-2026-00001';
+    const rule2 = 'QR-2026-00002';
+    const rule3 = 'QR-2026-00003';
+    return {
+      schemaVersion: 2,
+      qualityScore: 87,
+      prevQualityScore: 84,
+      classifiedPct: 74,
+      prevClassifiedPct: 68,
+      retentionOk: 91,
+      metadataCompletion: 78,
+      prevMetadataCompletion: 72,
+      people: ['سارة العتيبي', 'أحمد الراشد', 'نور فهد', 'فريق البيانات', 'مركز التكامل', 'الحوكمة'],
+      departments: ['CRM', 'المالية', 'HR', 'التشغيل', 'المحفظة', 'الحاضنات', 'الإعلانات', 'Hub Core'],
+      sources: [
+        {
+          id: src1,
+          name: 'CRM Production DB',
+          type: 'PostgreSQL',
+          system: 'CRM',
+          environment: 'Production',
+          status: 'connected',
+          lastSync: isoDaysAgo(0, 8),
+          assetsCount: 2,
+          owner: 'سارة العتيبي',
+          syncMethod: 'CDC / Hourly',
+          host: 'crm-db.naiosh.local',
+          port: 5432,
+          database: 'crm_prod',
+          authType: 'Service Account',
+          schedule: 'كل ساعة',
+          archived: false,
+        },
+        {
+          id: src2,
+          name: 'ERP Finance API',
+          type: 'API',
+          system: 'ERP',
+          environment: 'Production',
+          status: 'connected',
+          lastSync: isoDaysAgo(0, 7),
+          assetsCount: 1,
+          owner: 'أحمد الراشد',
+          syncMethod: 'REST Sync',
+          host: 'https://erp.naiosh.local/api',
+          port: 443,
+          database: '',
+          authType: 'OAuth2',
+          schedule: 'كل 30 دقيقة',
+          archived: false,
+        },
+        {
+          id: src3,
+          name: 'Wallet Transactions Warehouse',
+          type: 'Data Warehouse',
+          system: 'Wallet',
+          environment: 'Production',
+          status: 'degraded',
+          lastSync: isoDaysAgo(1, 22),
+          assetsCount: 1,
+          owner: 'نور فهد',
+          syncMethod: 'ETL Nightly',
+          host: 'dwh.naiosh.local',
+          port: 5432,
+          database: 'wallet_dwh',
+          authType: 'Service Account',
+          schedule: 'يومياً 02:00',
+          archived: false,
+        },
+        {
+          id: src4,
+          name: 'Ads Studio CSV Drop',
+          type: 'Excel / CSV',
+          system: 'Ads Studio',
+          environment: 'Staging',
+          status: 'failed',
+          lastSync: isoDaysAgo(3, 11),
+          assetsCount: 1,
+          owner: 'فريق البيانات',
+          syncMethod: 'Manual / File',
+          host: 's3://naiosh-ads-drop',
+          port: 0,
+          database: '',
+          authType: 'Access Key',
+          schedule: 'عند الطلب',
+          archived: false,
+        },
+      ],
+      assets: [
+        {
+          id: ast1,
+          name: 'بيانات العملاء',
+          businessName: 'Customer Master',
+          type: 'Table',
+          description: 'السجل الرئيسي لبيانات عملاء نايوش عبر CRM.',
+          technicalDescription: 'جدول customers في crm_prod.public',
+          sourceId: src1,
+          sourceName: 'CRM Production DB',
+          system: 'CRM',
+          database: 'crm_prod',
+          schema: 'public',
+          tableName: 'customers',
+          location: 'crm_prod.public.customers',
+          department: 'CRM',
+          owner: 'سارة العتيبي',
+          steward: 'نور فهد',
+          technicalOwner: 'مركز التكامل',
+          classification: 'سري',
+          sensitivity: 'Customer',
+          quality: 92,
+          status: 'approved',
+          metadataCompletion: 95,
+          retentionPolicy: pol2,
+          tags: ['customers', 'pii'],
+          fields: [
+            { name: 'customer_id', businessName: 'معرّف العميل', dataType: 'uuid', nullable: false, pk: true, classification: 'داخلي', sensitive: false, quality: 99 },
+            { name: 'full_name', businessName: 'الاسم الكامل', dataType: 'text', nullable: false, pk: false, classification: 'سري', sensitive: true, quality: 94 },
+            { name: 'national_id', businessName: 'رقم الهوية', dataType: 'varchar', nullable: true, pk: false, classification: 'سري للغاية', sensitive: true, quality: 88 },
+            { name: 'email', businessName: 'البريد', dataType: 'varchar', nullable: true, pk: false, classification: 'سري', sensitive: true, quality: 90 },
+            { name: 'mobile', businessName: 'الجوال', dataType: 'varchar', nullable: true, pk: false, classification: 'سري', sensitive: true, quality: 91 },
+            { name: 'created_at', businessName: 'تاريخ الإنشاء', dataType: 'timestamptz', nullable: false, pk: false, classification: 'داخلي', sensitive: false, quality: 100 },
+          ],
+          lineage: {
+            upstream: [{ id: 'n1', name: 'CRM', type: 'System' }, { id: 'n2', name: 'crm_prod', type: 'Database' }, { id: 'n3', name: 'ETL Customer Sync', type: 'Transformation' }],
+            node: { id: 'n4', name: 'Customer Master', type: 'Dataset' },
+            downstream: [{ id: 'n5', name: 'BI Customer Dashboard', type: 'Report' }, { id: 'n6', name: 'Support Portal', type: 'System' }],
+          },
+          classifiedBy: 'نور فهد',
+          classificationDate: '2026-07-01',
+          nextReview: '2026-10-01',
+          createdBy: 'سارة العتيبي',
+          createdAt: isoDaysAgo(40, 9),
+          updatedBy: 'نور فهد',
+          updatedAt: isoDaysAgo(1, 14),
+          comments: [{ at: isoDaysAgo(2, 10), by: 'نور فهد', text: 'تمت مراجعة الحقول الحساسة' }],
+          attachments: [{ name: 'customer-dict.pdf', at: isoDaysAgo(10, 11) }],
+          archived: false,
+          draft: false,
+        },
+        {
+          id: ast2,
+          name: 'سجلات التشغيل',
+          businessName: 'Ops Event Logs',
+          type: 'Table',
+          description: 'سجلات أحداث التشغيل المركزية في Hub Core.',
+          technicalDescription: 'hub_core.ops.event_logs',
+          sourceId: src1,
+          sourceName: 'CRM Production DB',
+          system: 'Hub Core',
+          database: 'hub_core',
+          schema: 'ops',
+          tableName: 'event_logs',
+          location: 'hub_core.ops.event_logs',
+          department: 'التشغيل',
+          owner: 'أحمد الراشد',
+          steward: 'فريق البيانات',
+          technicalOwner: 'مركز التكامل',
+          classification: 'داخلي',
+          sensitivity: 'Operational',
+          quality: 88,
+          status: 'approved',
+          metadataCompletion: 82,
+          retentionPolicy: pol2,
+          tags: ['ops', 'logs'],
+          fields: [
+            { name: 'event_id', businessName: 'معرّف الحدث', dataType: 'uuid', nullable: false, pk: true, classification: 'داخلي', sensitive: false, quality: 100 },
+            { name: 'payload', businessName: 'المحتوى', dataType: 'jsonb', nullable: true, pk: false, classification: 'داخلي', sensitive: false, quality: 85 },
+          ],
+          lineage: {
+            upstream: [{ id: 'o1', name: 'Hub Services', type: 'System' }, { id: 'o2', name: 'Event Bus', type: 'Transformation' }],
+            node: { id: 'o3', name: 'Ops Event Logs', type: 'Dataset' },
+            downstream: [{ id: 'o4', name: 'Ops Monitoring', type: 'Report' }],
+          },
+          classifiedBy: 'أحمد الراشد',
+          classificationDate: '2026-06-15',
+          nextReview: '2026-09-15',
+          createdBy: 'أحمد الراشد',
+          createdAt: isoDaysAgo(55, 10),
+          updatedBy: 'فريق البيانات',
+          updatedAt: isoDaysAgo(4, 9),
+          comments: [],
+          attachments: [],
+          archived: false,
+          draft: false,
+        },
+        {
+          id: ast3,
+          name: 'معاملات المحفظة',
+          businessName: 'Wallet Transactions',
+          type: 'Dataset',
+          description: 'معاملات نقاط المحفظة والتحويلات.',
+          technicalDescription: 'wallet_dwh.fact_transactions',
+          sourceId: src3,
+          sourceName: 'Wallet Transactions Warehouse',
+          system: 'Wallet',
+          database: 'wallet_dwh',
+          schema: 'public',
+          tableName: 'fact_transactions',
+          location: 'wallet_dwh.public.fact_transactions',
+          department: 'المحفظة',
+          owner: 'نور فهد',
+          steward: 'سارة العتيبي',
+          technicalOwner: 'مركز التكامل',
+          classification: 'سري',
+          sensitivity: 'Financial',
+          quality: 95,
+          status: 'approved',
+          metadataCompletion: 90,
+          retentionPolicy: pol1,
+          tags: ['wallet', 'finance'],
+          fields: [
+            { name: 'txn_id', businessName: 'رقم المعاملة', dataType: 'varchar', nullable: false, pk: true, classification: 'سري', sensitive: false, quality: 100 },
+            { name: 'amount', businessName: 'المبلغ', dataType: 'numeric', nullable: false, pk: false, classification: 'سري', sensitive: true, quality: 98 },
+          ],
+          lineage: {
+            upstream: [{ id: 'w1', name: 'Wallet App', type: 'System' }, { id: 'w2', name: 'ETL Wallet', type: 'Transformation' }],
+            node: { id: 'w3', name: 'Wallet Transactions', type: 'Dataset' },
+            downstream: [{ id: 'w4', name: 'Finance Dashboard', type: 'Report' }],
+          },
+          classifiedBy: 'نور فهد',
+          classificationDate: '2026-05-20',
+          nextReview: '2026-11-20',
+          createdBy: 'نور فهد',
+          createdAt: isoDaysAgo(70, 8),
+          updatedBy: 'نور فهد',
+          updatedAt: isoDaysAgo(0, 18),
+          comments: [],
+          attachments: [],
+          archived: false,
+          draft: false,
+        },
+        {
+          id: ast4,
+          name: 'أرشيف الإعلانات',
+          businessName: 'Ads Archive',
+          type: 'File',
+          description: 'ملفات حملات الإعلانات المؤرشفة.',
+          technicalDescription: 'CSV drop zone',
+          sourceId: src4,
+          sourceName: 'Ads Studio CSV Drop',
+          system: 'Ads Studio',
+          database: '',
+          schema: '',
+          tableName: 'ads_archive.csv',
+          location: 's3://naiosh-ads-drop/ads_archive.csv',
+          department: 'الإعلانات',
+          owner: '',
+          steward: 'فريق البيانات',
+          technicalOwner: 'مركز التكامل',
+          classification: '',
+          sensitivity: 'Operational',
+          quality: 81,
+          status: 'review',
+          metadataCompletion: 55,
+          retentionPolicy: '',
+          tags: ['ads'],
+          fields: [],
+          lineage: {
+            upstream: [{ id: 'a1', name: 'Ads Studio', type: 'System' }],
+            node: { id: 'a2', name: 'Ads Archive', type: 'File' },
+            downstream: [],
+          },
+          classifiedBy: '',
+          classificationDate: '',
+          nextReview: '2026-09-20',
+          createdBy: 'فريق البيانات',
+          createdAt: isoDaysAgo(20, 12),
+          updatedBy: 'فريق البيانات',
+          updatedAt: isoDaysAgo(2, 16),
+          comments: [{ at: isoDaysAgo(2, 16), by: 'فريق البيانات', text: 'بحاجة لتعيين Data Owner وتصنيف' }],
+          attachments: [],
+          archived: false,
+          draft: false,
+        },
+        {
+          id: ast5,
+          name: 'مستندات الحاضنات',
+          businessName: 'Incubator Documents',
+          type: 'Dataset',
+          description: 'مستندات وملفات الحاضنات القطاعية.',
+          technicalDescription: 'incubators.docs',
+          sourceId: src2,
+          sourceName: 'ERP Finance API',
+          system: 'Incubators',
+          database: 'incubators',
+          schema: 'docs',
+          tableName: 'documents',
+          location: 'incubators.docs.documents',
+          department: 'الحاضنات',
+          owner: 'أحمد الراشد',
+          steward: 'سارة العتيبي',
+          technicalOwner: 'مركز التكامل',
+          classification: 'داخلي',
+          sensitivity: 'Operational',
+          quality: 79,
+          status: 'approved',
+          metadataCompletion: 70,
+          retentionPolicy: pol2,
+          tags: ['incubators'],
+          fields: [{ name: 'doc_id', businessName: 'معرّف المستند', dataType: 'uuid', nullable: false, pk: true, classification: 'داخلي', sensitive: false, quality: 100 }],
+          lineage: {
+            upstream: [{ id: 'i1', name: 'Incubators Portal', type: 'System' }],
+            node: { id: 'i2', name: 'Incubator Documents', type: 'Dataset' },
+            downstream: [{ id: 'i3', name: 'Knowledge Center', type: 'System' }],
+          },
+          classifiedBy: 'سارة العتيبي',
+          classificationDate: '2026-08-01',
+          nextReview: '2026-12-01',
+          createdBy: 'أحمد الراشد',
+          createdAt: isoDaysAgo(30, 9),
+          updatedBy: 'سارة العتيبي',
+          updatedAt: isoDaysAgo(5, 11),
+          comments: [],
+          attachments: [],
+          archived: false,
+          draft: false,
+        },
+        {
+          id: ast6,
+          name: 'موظفو HR الأساسي',
+          businessName: 'HR Employee Master',
+          type: 'Table',
+          description: 'بيانات الموظفين الأساسية — مسودة بانتظار الاعتماد.',
+          technicalDescription: 'hr.employees',
+          sourceId: src2,
+          sourceName: 'ERP Finance API',
+          system: 'HR',
+          database: 'hr',
+          schema: 'public',
+          tableName: 'employees',
+          location: 'hr.public.employees',
+          department: 'HR',
+          owner: 'سارة العتيبي',
+          steward: 'نور فهد',
+          technicalOwner: 'مركز التكامل',
+          classification: 'سري',
+          sensitivity: 'HR',
+          quality: 76,
+          status: 'pending_approval',
+          metadataCompletion: 68,
+          retentionPolicy: pol1,
+          tags: ['hr', 'pii'],
+          fields: [
+            { name: 'emp_id', businessName: 'رقم الموظف', dataType: 'varchar', nullable: false, pk: true, classification: 'سري', sensitive: true, quality: 95 },
+            { name: 'salary', businessName: 'الراتب', dataType: 'numeric', nullable: true, pk: false, classification: 'سري للغاية', sensitive: true, quality: 80 },
+          ],
+          lineage: {
+            upstream: [{ id: 'h1', name: 'HR System', type: 'System' }],
+            node: { id: 'h2', name: 'HR Employee Master', type: 'Dataset' },
+            downstream: [],
+          },
+          classifiedBy: 'نور فهد',
+          classificationDate: '2026-09-01',
+          nextReview: '2026-12-01',
+          createdBy: 'نور فهد',
+          createdAt: isoDaysAgo(3, 10),
+          updatedBy: 'نور فهد',
+          updatedAt: isoDaysAgo(1, 9),
+          comments: [],
+          attachments: [],
+          archived: false,
+          draft: false,
+        },
+      ],
+      qualityRules: [
+        {
+          id: rule1,
+          name: 'البريد لا يكون فارغاً',
+          assetId: ast1,
+          field: 'email',
+          ruleType: 'Completeness',
+          condition: 'email IS NOT NULL',
+          threshold: 95,
+          severity: 'مرتفع',
+          owner: 'نور فهد',
+          schedule: 'يومياً',
+          passed: 1240,
+          failed: 38,
+          lastRun: isoDaysAgo(0, 6),
+          nextRun: isoDaysAgo(-1, 6),
+          status: 'active',
+        },
+        {
+          id: rule2,
+          name: 'هوية فريدة',
+          assetId: ast1,
+          field: 'national_id',
+          ruleType: 'Uniqueness',
+          condition: 'COUNT(DISTINCT national_id) = COUNT(*)',
+          threshold: 100,
+          severity: 'حرج',
+          owner: 'سارة العتيبي',
+          schedule: 'يومياً',
+          passed: 1270,
+          failed: 8,
+          lastRun: isoDaysAgo(0, 6),
+          nextRun: isoDaysAgo(-1, 6),
+          status: 'active',
+        },
+        {
+          id: rule3,
+          name: 'مبلغ المعاملة موجب',
+          assetId: ast3,
+          field: 'amount',
+          ruleType: 'Validity',
+          condition: 'amount > 0',
+          threshold: 99,
+          severity: 'متوسط',
+          owner: 'نور فهد',
+          schedule: 'كل ساعة',
+          passed: 9800,
+          failed: 12,
+          lastRun: isoDaysAgo(0, 7),
+          nextRun: isoDaysAgo(-0.04, 7),
+          status: 'active',
+        },
+      ],
+      qualityIssues: [
+        {
+          id: 'QI-2026-00001',
+          assetId: ast1,
+          dataset: 'بيانات العملاء',
+          field: 'email',
+          ruleId: rule1,
+          rule: 'البريد لا يكون فارغاً',
+          severity: 'مرتفع',
+          failedRecords: 38,
+          owner: 'نور فهد',
+          detectedAt: isoDaysAgo(0, 6),
+          status: 'New',
+        },
+        {
+          id: 'QI-2026-00002',
+          assetId: ast1,
+          dataset: 'بيانات العملاء',
+          field: 'national_id',
+          ruleId: rule2,
+          rule: 'هوية فريدة',
+          severity: 'حرج',
+          failedRecords: 8,
+          owner: 'سارة العتيبي',
+          detectedAt: isoDaysAgo(0, 6),
+          status: 'Assigned',
+        },
+        {
+          id: 'QI-2026-00003',
+          assetId: ast3,
+          dataset: 'معاملات المحفظة',
+          field: 'amount',
+          ruleId: rule3,
+          rule: 'مبلغ المعاملة موجب',
+          severity: 'متوسط',
+          failedRecords: 12,
+          owner: 'نور فهد',
+          detectedAt: isoDaysAgo(0, 7),
+          status: 'In Progress',
+        },
+        {
+          id: 'QI-2026-00004',
+          assetId: ast4,
+          dataset: 'أرشيف الإعلانات',
+          field: '—',
+          ruleId: '',
+          rule: 'اكتمال Metadata',
+          severity: 'مرتفع',
+          failedRecords: 1,
+          owner: 'فريق البيانات',
+          detectedAt: isoDaysAgo(2, 12),
+          status: 'New',
+        },
+        {
+          id: 'QI-2026-00005',
+          assetId: ast5,
+          dataset: 'مستندات الحاضنات',
+          field: 'doc_id',
+          ruleId: '',
+          rule: 'Timeliness — تأخر تحديث',
+          severity: 'منخفض',
+          failedRecords: 3,
+          owner: 'أحمد الراشد',
+          detectedAt: isoDaysAgo(5, 9),
+          status: 'New',
+        },
+      ],
+      policies: [
+        {
+          id: pol1,
+          name: 'سياسة بيانات العملاء الحساسة',
+          title: 'سياسة بيانات العملاء الحساسة',
+          category: 'حساسية / وصول',
+          appliesTo: 'Customer / PII',
+          owner: 'الحوكمة',
+          effectiveDate: '2026-01-01',
+          reviewDate: '2026-10-01',
+          status: 'active',
+          version: '1.2',
+          scope: 'كل المنصات',
+        },
+        {
+          id: pol2,
+          name: 'احتفاظ السجلات 24 شهراً',
+          title: 'احتفاظ السجلات 24 شهراً',
+          category: 'Retention',
+          appliesTo: 'تشغيل / سجلات',
+          owner: 'الحوكمة',
+          effectiveDate: '2026-02-01',
+          reviewDate: '2026-09-30',
+          status: 'active',
+          version: '1.0',
+          scope: 'التشغيل',
+        },
+        {
+          id: pol3,
+          name: 'تصنيف البيانات الإلزامي',
+          title: 'تصنيف البيانات الإلزامي',
+          category: 'Classification',
+          appliesTo: 'كل الأصول',
+          owner: 'فريق البيانات',
+          effectiveDate: '2026-03-01',
+          reviewDate: '2026-09-15',
+          status: 'review',
+          version: '0.9',
+          scope: 'كل المنصات',
+        },
+      ],
+      approvals: [
+        {
+          id: 'APR-2026-00001',
+          type: 'اعتماد أصل بيانات',
+          assetId: ast6,
+          entityLabel: 'موظفو HR الأساسي',
+          requestedBy: 'نور فهد',
+          assignedTo: 'سارة العتيبي',
+          date: isoDaysAgo(1, 9),
+          status: 'pending',
+          comment: '',
+        },
+        {
+          id: 'APR-2026-00002',
+          type: 'تغيير تصنيف',
+          assetId: ast4,
+          entityLabel: 'أرشيف الإعلانات',
+          requestedBy: 'فريق البيانات',
+          assignedTo: 'الحوكمة',
+          date: isoDaysAgo(2, 15),
+          status: 'pending',
+          comment: '',
+        },
+      ],
+      integrations: [
+        {
+          id: 'INT-2026-00001',
+          name: 'CRM → Hub Catalog',
+          type: 'Database Sync',
+          direction: 'Inbound',
+          status: 'active',
+          lastSync: isoDaysAgo(0, 8),
+          nextSync: isoDaysAgo(-0.04, 8),
+          records: 12840,
+          lastError: '',
+        },
+        {
+          id: 'INT-2026-00002',
+          name: 'Hub → BI Warehouse',
+          type: 'ETL',
+          direction: 'Outbound',
+          status: 'active',
+          lastSync: isoDaysAgo(0, 2),
+          nextSync: isoDaysAgo(-1, 2),
+          records: 4200,
+          lastError: '',
+        },
+        {
+          id: 'INT-2026-00003',
+          name: 'Ads Drop Zone',
+          type: 'File',
+          direction: 'Inbound',
+          status: 'error',
+          lastSync: isoDaysAgo(3, 11),
+          nextSync: '',
+          records: 0,
+          lastError: 'Authentication Error — Access Key expired',
+        },
+      ],
+      settings: {
+        requireApproval: true,
+        qualityThreshold: 80,
+        scanSchedule: 'يومياً 03:00',
+        notifyOnIssue: true,
+        defaultRetentionMonths: 24,
+        allowEmployeeCatalogView: true,
+      },
+      auditLog: [
+        {
+          id: uid('dgaud'),
+          user: 'النظام',
+          action: 'تهيئة وحدة حوكمة البيانات',
+          module: 'data-governance',
+          entityType: 'module',
+          entityId: 'data-governance',
+          entityLabel: 'حوكمة البيانات',
+          at: isoDaysAgo(25, 9),
+          oldValue: '',
+          newValue: 'schema v2',
+          status: 'ok',
+        },
+      ],
+      // backward-compat aliases used by older UI snippets
+      catalogs: [],
+    };
+  };
+
+  const recomputeDataGovernanceKpis = (dg = get().dataGovernance) => {
+    if (!dg) return dg;
+    const assets = (dg.assets || dg.catalogs || []).filter((a) => !a.archived);
+    const sources = (dg.sources || []).filter((s) => !s.archived);
+    const issues = (dg.qualityIssues || []).filter((i) => !['Resolved', 'Closed'].includes(i.status));
+    dg.totalAssets = assets.length;
+    dg.connectedSources = sources.filter((s) => s.status === 'connected').length;
+    dg.openQualityIssues = issues.length;
+    dg.assetsNeedingReview = assets.filter((a) => a.status === 'review' || !a.classification || !a.owner).length;
+    dg.sensitiveCount = assets.filter((a) => ['سري', 'سري للغاية', 'حساس', 'Restricted'].includes(a.classification) || ['Personal Data', 'Financial', 'HR', 'Customer', 'Credentials'].includes(a.sensitivity)).length;
+    if (assets.length) {
+      dg.qualityScore = Math.round(assets.reduce((sum, a) => sum + Number(a.quality || 0), 0) / assets.length);
+      dg.classifiedPct = Math.round((assets.filter((a) => a.classification).length / assets.length) * 100);
+      dg.metadataCompletion = Math.round(assets.reduce((sum, a) => sum + Number(a.metadataCompletion || 0), 0) / assets.length);
+    }
+    // keep legacy catalogs mirror for any leftover readers
+    dg.catalogs = assets.map((a) => ({
+      id: a.id,
+      name: a.name,
+      owner: a.owner || a.system,
+      classification: a.classification || '—',
+      quality: a.quality,
+      status: a.status === 'approved' ? 'active' : a.status === 'review' ? 'review' : a.status,
+    }));
+    return dg;
+  };
 
   const seedSystemsAutomation = () => ({
     activeFlows: 12,
@@ -1078,9 +1715,12 @@ const HubStore = (() => {
     } else {
       recomputeInfoSecurityKpis(state.infoSecurity);
     }
-    if (!state.dataGovernance) {
+    if (!state.dataGovernance || state.dataGovernance.schemaVersion !== 2) {
       state.dataGovernance = seedDataGovernance();
+      recomputeDataGovernanceKpis(state.dataGovernance);
       changed = true;
+    } else {
+      recomputeDataGovernanceKpis(state.dataGovernance);
     }
     if (!state.systemsAutomation) {
       state.systemsAutomation = seedSystemsAutomation();
@@ -3176,22 +3816,461 @@ const HubStore = (() => {
     return n;
   };
 
+  const dgBag = () => {
+    const s = get();
+    if (!s.dataGovernance || s.dataGovernance.schemaVersion !== 2) {
+      s.dataGovernance = seedDataGovernance();
+    }
+    return s.dataGovernance;
+  };
+
+  const pushDgAudit = (entry = {}) => {
+    const dg = dgBag();
+    if (!Array.isArray(dg.auditLog)) dg.auditLog = [];
+    const row = {
+      id: entry.id || nextSecSeq(dg.auditLog, 'TXN-DG'),
+      user: entry.user || 'مشغّل هوب',
+      action: entry.action || 'تعديل',
+      module: entry.module || 'data-governance',
+      entityType: entry.entityType || '',
+      entityId: entry.entityId || '',
+      entityLabel: entry.entityLabel || entry.entityId || '',
+      at: nowIso(),
+      oldValue: entry.oldValue ?? '',
+      newValue: entry.newValue ?? '',
+      status: entry.status || 'ok',
+      session: entry.session || '',
+    };
+    dg.auditLog.unshift(row);
+    if (dg.auditLog.length > 500) dg.auditLog.length = 500;
+    return row;
+  };
+
   const toggleDataCatalog = (id) => {
-    const row = get().dataGovernance?.catalogs?.find((x) => x.id === id);
+    const row = (dgBag().assets || dgBag().catalogs || []).find((x) => x.id === id);
     if (!row) return null;
-    row.status = row.status === 'active' ? 'review' : 'active';
+    const old = row.status;
+    if (row.status === 'approved' || row.status === 'active') row.status = 'review';
+    else row.status = 'approved';
+    pushDgAudit({ action: 'تغيير حالة أصل', entityType: 'asset', entityId: row.id, entityLabel: row.name, oldValue: old, newValue: row.status });
+    recomputeDataGovernanceKpis();
     pushFeed('compliance', `حوكمة البيانات · ${row.name}: ${row.status}`);
     save();
     return row;
   };
 
   const activateDataPolicy = (id) => {
-    const p = get().dataGovernance?.policies?.find((x) => x.id === id);
+    const p = dgBag().policies?.find((x) => x.id === id);
     if (!p) return null;
+    const old = p.status;
     p.status = 'active';
-    pushFeed('compliance', `تفعيل سياسة بيانات: ${p.title}`);
+    pushDgAudit({ action: 'تفعيل سياسة', entityType: 'policy', entityId: p.id, entityLabel: p.name || p.title, oldValue: old, newValue: 'active' });
+    pushFeed('compliance', `تفعيل سياسة بيانات: ${p.name || p.title}`);
     save();
     return p;
+  };
+
+  const addDataSource = (payload = {}, actor = 'مشغّل هوب') => {
+    const dg = dgBag();
+    if (!Array.isArray(dg.sources)) dg.sources = [];
+    const item = {
+      id: nextSecSeq(dg.sources, 'SRC'),
+      name: payload.name || 'مصدر بيانات',
+      type: payload.type || 'Other',
+      system: payload.system || '',
+      environment: payload.environment || 'Production',
+      status: payload.status || 'connected',
+      lastSync: nowIso(),
+      assetsCount: 0,
+      owner: payload.owner || '',
+      syncMethod: payload.syncMethod || 'Manual',
+      host: payload.host || '',
+      port: Number(payload.port || 0),
+      database: payload.database || '',
+      authType: payload.authType || 'Service Account',
+      schedule: payload.schedule || 'عند الطلب',
+      archived: false,
+    };
+    dg.sources.unshift(item);
+    pushDgAudit({ user: actor, action: 'إضافة مصدر بيانات', entityType: 'source', entityId: item.id, entityLabel: item.name, newValue: item.status });
+    recomputeDataGovernanceKpis();
+    save();
+    return item;
+  };
+
+  const updateDataSource = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const s = dgBag().sources?.find((x) => x.id === id);
+    if (!s) return null;
+    Object.keys(patch).forEach((k) => {
+      if (patch[k] === undefined || patch[k] === s[k]) return;
+      pushDgAudit({ user: actor, action: `تعديل مصدر (${k})`, entityType: 'source', entityId: s.id, entityLabel: s.name, oldValue: String(s[k] ?? ''), newValue: String(patch[k] ?? '') });
+    });
+    Object.assign(s, patch);
+    recomputeDataGovernanceKpis();
+    save();
+    return s;
+  };
+
+  const testDataSourceConnection = (id, actor = 'مشغّل هوب') => {
+    const s = dgBag().sources?.find((x) => x.id === id);
+    if (!s) return null;
+    const old = s.status;
+    // Demo: fail if type mentions expired/failed host patterns, else connect
+    if (/fail|expired|bad/i.test(`${s.host} ${s.name}`)) s.status = 'failed';
+    else if (s.status === 'failed') s.status = 'connected';
+    else s.status = Math.random() > 0.15 ? 'connected' : 'failed';
+    s.lastSync = nowIso();
+    pushDgAudit({ user: actor, action: 'Test Connection', entityType: 'source', entityId: s.id, entityLabel: s.name, oldValue: old, newValue: s.status });
+    recomputeDataGovernanceKpis();
+    save();
+    return s;
+  };
+
+  const scanDataSource = (id, actor = 'مشغّل هوب') => {
+    const dg = dgBag();
+    const s = dg.sources?.find((x) => x.id === id);
+    if (!s) return null;
+    if (s.status !== 'connected') return { error: 'الاتصال غير ناجح — اختبر الاتصال أولاً' };
+    if (!Array.isArray(dg.assets)) dg.assets = [];
+    const discovered = {
+      id: nextSecSeq(dg.assets, 'AST'),
+      name: `اكتشاف من ${s.name}`,
+      businessName: `Scanned · ${s.name}`,
+      type: 'Table',
+      description: `أصل مكتشف تلقائياً عبر Scan للمصدر ${s.name}`,
+      technicalDescription: `${s.database || s.host || s.name}.scanned_table`,
+      sourceId: s.id,
+      sourceName: s.name,
+      system: s.system,
+      database: s.database || '',
+      schema: 'public',
+      tableName: 'scanned_table',
+      location: `${s.database || s.host}/scanned_table`,
+      department: s.system || '',
+      owner: s.owner || '',
+      steward: '',
+      technicalOwner: actor,
+      classification: '',
+      sensitivity: 'Operational',
+      quality: 70,
+      status: 'review',
+      metadataCompletion: 40,
+      retentionPolicy: '',
+      tags: ['scanned'],
+      fields: [
+        { name: 'id', businessName: 'المعرّف', dataType: 'varchar', nullable: false, pk: true, classification: 'داخلي', sensitive: false, quality: 100 },
+      ],
+      lineage: {
+        upstream: [{ id: uid('ln'), name: s.name, type: 'Source' }],
+        node: { id: uid('ln'), name: `اكتشاف من ${s.name}`, type: 'Dataset' },
+        downstream: [],
+      },
+      classifiedBy: '',
+      classificationDate: '',
+      nextReview: '',
+      createdBy: actor,
+      createdAt: nowIso(),
+      updatedBy: actor,
+      updatedAt: nowIso(),
+      comments: [],
+      attachments: [],
+      archived: false,
+      draft: false,
+    };
+    dg.assets.unshift(discovered);
+    s.assetsCount = (s.assetsCount || 0) + 1;
+    s.lastSync = nowIso();
+    pushDgAudit({ user: actor, action: 'تشغيل Scan', entityType: 'source', entityId: s.id, entityLabel: s.name, newValue: discovered.id });
+    recomputeDataGovernanceKpis();
+    save();
+    return { source: s, asset: discovered };
+  };
+
+  const addDataAsset = (payload = {}, actor = 'مشغّل هوب') => {
+    const dg = dgBag();
+    if (!Array.isArray(dg.assets)) dg.assets = [];
+    const draft = !!payload.draft;
+    const submit = !!payload.submitApproval;
+    const item = {
+      id: nextSecSeq(dg.assets, 'AST'),
+      name: payload.name || 'أصل بيانات',
+      businessName: payload.businessName || payload.name || '',
+      type: payload.type || 'Table',
+      description: payload.description || '',
+      technicalDescription: payload.technicalDescription || '',
+      sourceId: payload.sourceId || '',
+      sourceName: payload.sourceName || '',
+      system: payload.system || '',
+      database: payload.database || '',
+      schema: payload.schema || '',
+      tableName: payload.tableName || '',
+      location: payload.location || '',
+      department: payload.department || '',
+      owner: payload.owner || '',
+      steward: payload.steward || '',
+      technicalOwner: payload.technicalOwner || '',
+      classification: payload.classification || '',
+      sensitivity: payload.sensitivity || '',
+      quality: Number(payload.quality || 70),
+      status: draft ? 'draft' : submit ? 'pending_approval' : 'review',
+      metadataCompletion: Number(payload.metadataCompletion || 50),
+      retentionPolicy: payload.retentionPolicy || '',
+      tags: Array.isArray(payload.tags)
+        ? payload.tags
+        : String(payload.tags || '')
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean),
+      fields: Array.isArray(payload.fields) ? payload.fields : [],
+      lineage: payload.lineage || {
+        upstream: payload.sourceName ? [{ id: uid('ln'), name: payload.sourceName, type: 'Source' }] : [],
+        node: { id: uid('ln'), name: payload.name || 'أصل', type: 'Dataset' },
+        downstream: [],
+      },
+      classifiedBy: payload.classification ? actor : '',
+      classificationDate: payload.classification ? nowIso().slice(0, 10) : '',
+      nextReview: payload.nextReview || '',
+      createdBy: actor,
+      createdAt: nowIso(),
+      updatedBy: actor,
+      updatedAt: nowIso(),
+      comments: [],
+      attachments: [],
+      archived: false,
+      draft,
+    };
+    dg.assets.unshift(item);
+    if (submit) {
+      if (!Array.isArray(dg.approvals)) dg.approvals = [];
+      dg.approvals.unshift({
+        id: nextSecSeq(dg.approvals, 'APR'),
+        type: 'اعتماد أصل بيانات',
+        assetId: item.id,
+        entityLabel: item.name,
+        requestedBy: actor,
+        assignedTo: item.owner || 'الحوكمة',
+        date: nowIso(),
+        status: 'pending',
+        comment: '',
+      });
+    }
+    pushDgAudit({
+      user: actor,
+      action: draft ? 'حفظ مسودة أصل' : submit ? 'إرسال أصل للاعتماد' : 'إضافة أصل بيانات',
+      entityType: 'asset',
+      entityId: item.id,
+      entityLabel: item.name,
+      newValue: item.status,
+    });
+    recomputeDataGovernanceKpis();
+    save();
+    return item;
+  };
+
+  const updateDataAsset = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const a = dgBag().assets?.find((x) => x.id === id);
+    if (!a) return null;
+    Object.keys(patch).forEach((k) => {
+      if (patch[k] === undefined || patch[k] === a[k]) return;
+      pushDgAudit({
+        user: actor,
+        action: `تعديل أصل (${k})`,
+        entityType: 'asset',
+        entityId: a.id,
+        entityLabel: a.name,
+        oldValue: typeof a[k] === 'object' ? JSON.stringify(a[k]) : String(a[k] ?? ''),
+        newValue: typeof patch[k] === 'object' ? JSON.stringify(patch[k]) : String(patch[k] ?? ''),
+      });
+    });
+    Object.assign(a, patch, { updatedBy: actor, updatedAt: nowIso() });
+    recomputeDataGovernanceKpis();
+    save();
+    return a;
+  };
+
+  const archiveDataAsset = (id, actor = 'مشغّل هوب') => {
+    const a = dgBag().assets?.find((x) => x.id === id);
+    if (!a) return null;
+    a.archived = true;
+    pushDgAudit({ user: actor, action: 'أرشفة أصل بيانات', entityType: 'asset', entityId: a.id, entityLabel: a.name, newValue: 'archived' });
+    recomputeDataGovernanceKpis();
+    save();
+    return a;
+  };
+
+  const addDgPolicy = (payload = {}, actor = 'مشغّل هوب') => {
+    const dg = dgBag();
+    if (!Array.isArray(dg.policies)) dg.policies = [];
+    const item = {
+      id: nextSecSeq(dg.policies, 'POL-DG'),
+      name: payload.name || payload.title || 'سياسة بيانات',
+      title: payload.title || payload.name || 'سياسة بيانات',
+      category: payload.category || 'عام',
+      appliesTo: payload.appliesTo || payload.scope || '',
+      owner: payload.owner || actor,
+      effectiveDate: payload.effectiveDate || nowIso().slice(0, 10),
+      reviewDate: payload.reviewDate || '',
+      status: payload.status || 'draft',
+      version: payload.version || '1.0',
+      scope: payload.scope || '',
+    };
+    dg.policies.unshift(item);
+    pushDgAudit({ user: actor, action: 'إنشاء سياسة', entityType: 'policy', entityId: item.id, entityLabel: item.name, newValue: item.status });
+    save();
+    return item;
+  };
+
+  const updateDgPolicy = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const p = dgBag().policies?.find((x) => x.id === id);
+    if (!p) return null;
+    Object.assign(p, patch);
+    pushDgAudit({ user: actor, action: 'تعديل سياسة', entityType: 'policy', entityId: p.id, entityLabel: p.name || p.title, newValue: p.status });
+    save();
+    return p;
+  };
+
+  const addQualityRule = (payload = {}, actor = 'مشغّل هوب') => {
+    const dg = dgBag();
+    if (!Array.isArray(dg.qualityRules)) dg.qualityRules = [];
+    const item = {
+      id: nextSecSeq(dg.qualityRules, 'QR'),
+      name: payload.name || 'قاعدة جودة',
+      assetId: payload.assetId || '',
+      field: payload.field || '',
+      ruleType: payload.ruleType || 'Completeness',
+      condition: payload.condition || '',
+      threshold: Number(payload.threshold || 95),
+      severity: payload.severity || 'متوسط',
+      owner: payload.owner || actor,
+      schedule: payload.schedule || 'يومياً',
+      passed: 0,
+      failed: 0,
+      lastRun: '',
+      nextRun: '',
+      status: 'active',
+    };
+    dg.qualityRules.unshift(item);
+    pushDgAudit({ user: actor, action: 'إضافة قاعدة جودة', entityType: 'quality_rule', entityId: item.id, entityLabel: item.name, newValue: item.condition });
+    save();
+    return item;
+  };
+
+  const runQualityCheck = (ruleId, actor = 'مشغّل هوب') => {
+    const dg = dgBag();
+    const rule = dg.qualityRules?.find((x) => x.id === ruleId);
+    if (!rule) return null;
+    rule.passed = Math.floor(800 + Math.random() * 400);
+    rule.failed = Math.floor(Math.random() * 40);
+    rule.lastRun = nowIso();
+    rule.nextRun = new Date(Date.now() + 86400000).toISOString();
+    if (rule.failed > 0) {
+      if (!Array.isArray(dg.qualityIssues)) dg.qualityIssues = [];
+      const asset = dg.assets?.find((a) => a.id === rule.assetId);
+      dg.qualityIssues.unshift({
+        id: nextSecSeq(dg.qualityIssues, 'QI'),
+        assetId: rule.assetId,
+        dataset: asset?.name || rule.assetId,
+        field: rule.field,
+        ruleId: rule.id,
+        rule: rule.name,
+        severity: rule.severity,
+        failedRecords: rule.failed,
+        owner: rule.owner,
+        detectedAt: nowIso(),
+        status: 'New',
+      });
+    }
+    pushDgAudit({ user: actor, action: 'تشغيل فحص جودة', entityType: 'quality_rule', entityId: rule.id, entityLabel: rule.name, newValue: `failed=${rule.failed}` });
+    recomputeDataGovernanceKpis();
+    save();
+    return rule;
+  };
+
+  const updateQualityIssue = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const issue = dgBag().qualityIssues?.find((x) => x.id === id);
+    if (!issue) return null;
+    const old = issue.status;
+    Object.assign(issue, patch);
+    pushDgAudit({
+      user: actor,
+      action: patch.status ? `تحديث مشكلة جودة → ${patch.status}` : 'تحديث مشكلة جودة',
+      entityType: 'quality_issue',
+      entityId: issue.id,
+      entityLabel: issue.rule || issue.id,
+      oldValue: old,
+      newValue: issue.status,
+    });
+    recomputeDataGovernanceKpis();
+    save();
+    return issue;
+  };
+
+  const decideDgApproval = (id, decision, comment = '', actor = 'مشغّل هوب') => {
+    const dg = dgBag();
+    const apr = dg.approvals?.find((x) => x.id === id);
+    if (!apr) return null;
+    if (decision === 'reject' && !String(comment || '').trim()) return { error: 'التعليق إجباري عند الرفض' };
+    const old = apr.status;
+    apr.status = decision === 'approve' ? 'approved' : decision === 'changes' ? 'changes_requested' : 'rejected';
+    apr.comment = comment || '';
+    apr.decidedBy = actor;
+    apr.decidedAt = nowIso();
+    if (apr.assetId && decision === 'approve') {
+      const asset = dg.assets?.find((a) => a.id === apr.assetId);
+      if (asset) {
+        asset.status = 'approved';
+        asset.updatedBy = actor;
+        asset.updatedAt = nowIso();
+      }
+    }
+    pushDgAudit({
+      user: actor,
+      action: decision === 'approve' ? 'اعتماد' : decision === 'changes' ? 'طلب تعديل' : 'رفض',
+      entityType: 'approval',
+      entityId: apr.id,
+      entityLabel: apr.entityLabel,
+      oldValue: old,
+      newValue: apr.status,
+    });
+    recomputeDataGovernanceKpis();
+    save();
+    return apr;
+  };
+
+  const updateDgSettings = (patch = {}, actor = 'مشغّل هوب') => {
+    const dg = dgBag();
+    if (!dg.settings) dg.settings = {};
+    Object.assign(dg.settings, patch);
+    pushDgAudit({ user: actor, action: 'تعديل إعدادات حوكمة البيانات', entityType: 'settings', entityId: 'settings', entityLabel: 'Settings', newValue: JSON.stringify(patch) });
+    save();
+    return dg.settings;
+  };
+
+  const importDataAssets = (rows = [], actor = 'مشغّل هوب') => {
+    const created = [];
+    rows.forEach((row) => {
+      created.push(
+        addDataAsset(
+          {
+            name: row.name || row.assetName,
+            type: row.type || 'Table',
+            description: row.description || 'مستورد',
+            system: row.system || '',
+            department: row.department || '',
+            owner: row.owner || '',
+            steward: row.steward || '',
+            classification: row.classification || '',
+            sourceName: row.source || 'Import',
+            draft: false,
+          },
+          actor
+        )
+      );
+    });
+    pushDgAudit({ user: actor, action: 'استيراد بيانات', entityType: 'import', entityId: `IMP-${Date.now()}`, entityLabel: `${created.length} أصل`, newValue: String(created.length) });
+    recomputeDataGovernanceKpis();
+    save();
+    return created;
   };
 
   const toggleAutomationFlow = (id) => {
@@ -3411,6 +4490,23 @@ const HubStore = (() => {
     pushSecurityAudit,
     toggleDataCatalog,
     activateDataPolicy,
+    recomputeDataGovernanceKpis,
+    pushDgAudit,
+    addDataSource,
+    updateDataSource,
+    testDataSourceConnection,
+    scanDataSource,
+    addDataAsset,
+    updateDataAsset,
+    archiveDataAsset,
+    addDgPolicy,
+    updateDgPolicy,
+    addQualityRule,
+    runQualityCheck,
+    updateQualityIssue,
+    decideDgApproval,
+    updateDgSettings,
+    importDataAssets,
     toggleAutomationFlow,
     runAutomationFlow,
     entityAction,
