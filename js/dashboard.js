@@ -36,8 +36,13 @@
   ];
 
   const TITLES = {
-    overview: ['مركز التحكم العالمي', 'الفروع · الحاضنات · المنصات · المنتجات · المتجر · الإعلانات · الفعاليات'],
-    operating: ['آلية تشغيل نايوش هوب', 'بدون تكرار · اشتراك=صلاحية · SSO · تقارير نشاط · خدمات موحّدة'],
+    overview: ['مركز التحكم العالمي', 'KPIs قابلة للنقر · Needs Action · مصدر · سجل عمليات'],
+    operating: ['آلية تشغيل نايوش هوب', 'اشتراكات · مكاتب · خدمات موحّدة · نشاط · تدقيق'],
+    core: ['العقل المركزي', 'قرارات قابلة للتفسير · رؤى بمصدر · تنبؤات · شذوذ'],
+    tasks: ['إدارة المهام', 'CRUD · مصدر · تدقيق · لوحة حالات · Needs Action'],
+    measurement: ['القياس الموحّد', 'درجات · مؤشرات بصيغة · إعادة حساب موثّقة'],
+    reports: ['مركز التقارير', 'توليد · عرض · تصدير JSON · جدول · تدقيق'],
+    integration: ['التكامل والبوابة', 'موصلات · مزامنة · API · فحص بوابة · تدقيق'],
     'posha-clients': ['عملاء بوشا', 'مركز عمليات العملاء · دعم · طلبات · مشاكل · أحداث · إشعارات'],
     'clients-mgmt': ['إدارة العملاء', 'Clients 360 · أنظمة · طلبات · محفظة · تذاكر · ملاحظات داخلية'],
     'roles-permissions': ['إدارة الأدوار والصلاحيات', 'منح أنظمة هوب عبر الأدوار ومستويات الصلاحيات — نفس تشغيل ERP'],
@@ -56,17 +61,12 @@
     organization: ['محرك الهيكل المؤسسي', 'دولة ← فرع ← حاضنة ← منصة ← مكتب إلكتروني'],
     incubators: ['إدارة الحاضنات', '100 حاضنة قطاعية · منصات · مكاتب · أعضاء'],
     wallet: ['اقتصاد النقاط', 'شحن · استهلاك · تسعير · فواتير'],
-    core: ['العقل المركزي', 'قرار · تنبؤ · تحسين · شذوذ · خريطة معرفة'],
     governance: ['الحوكمة المؤسسية 360', 'أشخاص · سياسات · امتثال · جودة · عقود · مكافآت · موافقات · تدقيق'],
     'info-security': ['أمن المعلومات', 'حماية · إدارة · حوادث · مخاطر · ضوابط · تقارير'],
     'data-governance': ['حوكمة البيانات', 'كتالوج · مصادر · جودة · رحلة البيانات · سياسات · اعتمادات'],
     'systems-automation': ['أتمتة الأنظمة', 'إنشاء · تشغيل · قوالب · سجل عمليات · اتصالات'],
     workforce: ['القوى العاملة', 'موظفين أولاً · بحث وفلاتر · Pagination · ملف موظف · مكافآت واعتماد · مزامنة HR'],
     systems: ['سوق الأنظمة التشغيلية', 'إضافة · تعديل فعلي · مستخدمون · اشتراك · تكاملات · سجل تغييرات'],
-    tasks: ['المهام والمشاريع', 'توزيع · أولويات · اختناقات · جودة تنفيذ'],
-    measurement: ['القياس الموحد', 'درجات · مستويات · مصفوفة · أثر العملاء'],
-    reports: ['التقارير السيادية', 'يومي · أسبوعي · شهري · مخاطر · نمو · امتثال · نشاط موحّد'],
-    integration: ['الربط والتكامل', 'بوابة الربط · ناقل الأحداث · موصلات'],
     settings: ['إعدادات داخلية', 'هوية · مظهر · بنرات · لغة · واجهة · إشعارات · ذكاء · أمان — مركز تحكم للإدارة'],
   };
 
@@ -369,87 +369,10 @@
 
   // —— Panels
   const renderOverview = () => {
-    const s = HubStore.get();
-    const k = HubStore.kpis();
-    const lh = k.layerHealth;
-    const cmd = s.empire?.command || {};
-    return `
-      <div class="empire-banner">
-        <div>
-          <div class="empire-banner-kicker"><i class="fas fa-satellite-dish"></i> NAIOSH HUB · COMMAND</div>
-          <strong>مركز التحكم العالمي</strong>
-          <p>ليس موقعًا — بل نظام التشغيل العالمي لإمبراطورية نايوش. دخول موحّد · صلاحية بالاشتراك · مؤشرات لحظية لغرفة العمليات.</p>
-        </div>
-        <button class="btn btn-primary btn-sm" data-action="refresh-command"><i class="fas fa-rotate"></i> تحديث المؤشرات</button>
-      </div>
-      <div class="dash-section-head">
-        <h2>مؤشرات السيادة</h2>
-        <p>قراءة سريعة لحجم الشبكة وجاهزية التشغيل — اضغط التحديث بعد أي تغيير.</p>
-      </div>
-      <div class="kpi-grid">
-        <article class="kpi"><span>الفروع</span><strong>${k.branches}</strong><small>Branches</small></article>
-        <article class="kpi"><span>الحاضنات</span><strong>${k.incubators}</strong><small>Incubators</small></article>
-        <article class="kpi"><span>المنصات / الأنظمة</span><strong>${k.platforms}</strong><small>Platforms</small></article>
-        <article class="kpi"><span>المتدربون</span><strong>${Number(k.trainees).toLocaleString('en-US')}</strong><small>Trainees</small></article>
-        <article class="kpi"><span>خزينة النقاط</span><strong>${Number(k.treasury).toLocaleString('en-US')}</strong><small>Wallet</small></article>
-        <article class="kpi"><span>جاهزية Core</span><strong>${k.coreReadyPct}%</strong><small>Core Platform</small></article>
-        <article class="kpi"><span>استخدام الأنظمة</span><strong>${cmd.systemsUsagePct || 0}%</strong><small>Usage</small></article>
-        <article class="kpi"><span>صحة الأنظمة</span><strong>${k.systemsHealth}%</strong><small>Health</small></article>
-      </div>
-      <div class="dash-section-head">
-        <h2>مراحل بناء السيادة</h2>
-        <p>تأسيس · تشغيل · سيادة — تقدّم كل مرحلة يحدد أولوية غرفة العمليات.</p>
-      </div>
-      <div class="phase-cards">
-        ${['phase1', 'phase2', 'phase3']
-          .map((key) => {
-            const p = s.timeline[key];
-            return `<article class="phase-card">
-              <h4>${esc(p.name)} · ${p.days} يوم</h4>
-              <div>${bar(p.progress)}</div>
-              <small>${p.progress}%</small>
-              <ul>${p.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>
-            </article>`;
-          })
-          .join('')}
-      </div>
-      <div class="dash-section-head">
-        <h2>النبض الحي للمحاور</h2>
-        <p>التدفق اللحظي يسارًا · صحة المحاور يمينًا — نفس غرفة القرار.</p>
-      </div>
-      <div class="grid-2">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-bolt icon"></i> تدفق حي</span>
-            <button class="btn btn-ghost btn-sm" data-action="refresh-feed"><i class="fas fa-rotate"></i></button>
-          </h3>
-          <ul class="feed">
-            ${(HubStore.getSettings?.()?.liveFeedEnabled === false
-              ? '<li>التدفق الحي موقوف من الإعدادات الداخلية.</li>'
-              : s.feed
-                  .slice(0, 10)
-                  .map((f) => `<li><b>${esc(f.type)}:</b> ${esc(f.text)}<small>${fmtTime(f.at)}</small></li>`)
-                  .join(''))}
-          </ul>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-diagram-project icon"></i> صحة المحاور</span></h3>
-          ${Object.entries({
-            'الهوية NAIOSH ID': lh.identity,
-            'الهيكل العالمي': lh.organization,
-            'العقل المركزي': lh.core,
-            الحوكمة: lh.governance,
-            'محفظة النقاط': lh.wallet,
-            الأنظمة: lh.systems,
-            التكامل: lh.integration,
-            القياس: lh.measurement,
-          })
-            .map(
-              ([name, val]) => `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:4px"><span>${name}</span><span>${val}%</span></div>${bar(val)}</div>`
-            )
-            .join('')}
-        </article>
-      </div>
-    `;
+    if (window.HubOverview?.render) {
+      return HubOverview.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return '<div class="empty">تعذر تحميل مركز التحكم</div>';
   };
 
   const renderBlueprint = () => {
@@ -1156,97 +1079,10 @@
   };
 
   const renderCore = () => {
-    const s = HubStore.get().core;
-    const health = s.engineHealth;
-    return `
-      <div class="engine-grid" style="margin-bottom:12px">
-        ${[
-          ['Decision', health.decision],
-          ['Predictive', health.predictive],
-          ['Optimization', health.optimization],
-          ['Anomaly', health.anomaly],
-          ['Knowledge', health.knowledge],
-        ]
-          .map(([n, v]) => `<div class="engine-pill"><span>${n}</span><strong>${v}%</strong></div>`)
-          .join('')}
-      </div>
-      <div class="toolbar">
-        <div class="field"><label>قرار تشغيلي جديد</label><input id="decision-title" placeholder="مثال: إعادة توزيع فريق التكامل" /></div>
-        <div class="field"><label>المحرك</label>
-          <select id="decision-engine">
-            <option>AI Decision</option><option>Predictive</option><option>Optimization</option><option>Anomaly</option>
-          </select>
-        </div>
-        <button class="btn btn-primary" data-action="issue-decision"><i class="fas fa-microchip"></i> إصدار قرار</button>
-        <button class="btn btn-dark" data-action="run-predict"><i class="fas fa-binoculars"></i> مسح تنبؤي</button>
-      </div>
-      <div class="grid-2">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-gavel icon"></i> القرارات</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>القرار</th><th>المحرك</th><th>الأثر</th><th>الحالة</th><th></th></tr></thead>
-            <tbody>
-              ${s.decisions
-                .map(
-                  (d) => `<tr>
-                    <td>${esc(d.title)}</td><td>${esc(d.engine)}</td><td>${badgeStatus(d.impact)}</td><td>${badgeStatus(d.status)}</td>
-                    <td>${d.status !== 'executed' ? `<button class="btn btn-sm btn-primary" data-action="exec-decision" data-id="${d.id}">تنفيذ</button>` : '—'}</td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-chart-line icon"></i> التنبؤات</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>المخاطر</th><th>الاحتمال</th><th>الموعد</th><th>الحدة</th></tr></thead>
-            <tbody>
-              ${s.predictions
-                .map(
-                  (p) => `<tr><td>${esc(p.risk)}</td><td>${p.probability}% ${bar(p.probability)}</td><td>${esc(p.eta)}</td><td>${badgeStatus(p.severity)}</td></tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-wand-magic-sparkles icon"></i> التحسينات</span></h3>
-          ${s.optimizations
-            .map(
-              (o) => `<div style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
-                <b>${esc(o.target)}</b> · <span class="badge badge-red">${esc(o.gain)}</span>
-                <div style="margin-top:6px;font-size:13px;color:var(--muted)">${esc(o.suggestion)}</div>
-              </div>`
-            )
-            .join('')}
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-triangle-exclamation icon"></i> الشذوذ</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>المصدر</th><th>الإشارة</th><th>الدرجة</th><th></th></tr></thead>
-            <tbody>
-              ${s.anomalies
-                .map(
-                  (a) => `<tr>
-                    <td>${esc(a.source)}</td><td>${esc(a.signal)}</td><td>${a.score} ${badgeStatus(a.status)}</td>
-                    <td>${a.status !== 'closed' ? `<button class="btn btn-sm btn-dark" data-action="resolve-anomaly" data-id="${a.id}">إغلاق</button>` : '—'}</td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-      </div>
-      <article class="card" style="margin-top:12px">
-        <h3><span class="title-left"><i class="fas fa-project-diagram icon"></i> Knowledge Graph</span></h3>
-        <div class="kg">
-          ${s.knowledgeGraph
-            .map((k) => `<div class="kg-row"><span>${esc(k.from)}</span><span class="rel">${esc(k.rel)}</span><span>${esc(k.to)}</span></div>`)
-            .join('')}
-        </div>
-      </article>
-    `;
+    if (window.HubCoreWS?.render) {
+      return HubCoreWS.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return '<div class="empty">تعذر تحميل العقل المركزي</div>';
   };
 
   const renderGovernance = () => {
@@ -1271,279 +1107,31 @@
   };
 
   const renderTasks = () => {
-    const t = HubStore.get().tasks;
-    const people = HubStore.get().workforce.employees.map((e) => e.name);
-    const statusLabel = (s) =>
-      ({ todo: 'معلّقة', in_progress: 'قيد التنفيذ', blocked: 'مختنق', done: 'مكتملة' }[s] || s);
-    const statusBadge = (s) => {
-      const map = { todo: 'badge-gray', in_progress: 'badge-red', blocked: 'badge-red', done: 'badge-black' };
-      return `<span class="badge ${map[s] || 'badge-outline'}">${esc(statusLabel(s))}</span>`;
-    };
-    const short = (text, n = 90) => {
-      const s = String(text || '').trim();
-      if (!s) return '—';
-      return s.length > n ? `${s.slice(0, n)}…` : s;
-    };
-    const filesCell = (item) => {
-      const parts = [];
-      if (item.docName) parts.push(`<i class="fas fa-file-lines" title="${esc(item.docName)}"></i>`);
-      if (item.imageName) parts.push(`<i class="fas fa-image" title="${esc(item.imageName)}"></i>`);
-      if (item.videoName) parts.push(`<i class="fas fa-video" title="${esc(item.videoName)}"></i>`);
-      return parts.length ? parts.join(' ') : '—';
-    };
-    return `
-      <div class="toolbar">
-        ${pageActs('tasks', 'إضافة مهمة')}
-        <div class="field"><label>عنوان المهمة</label><input id="task-title" placeholder="عنوان المهمة" /></div>
-        <div class="field"><label>التفاصيل</label><input id="task-details" placeholder="تفاصيل مختصرة" /></div>
-        <div class="field"><label>المسؤول</label>
-          <select id="task-assignee">${people.map((p) => `<option>${esc(p)}</option>`).join('')}</select>
-        </div>
-        <div class="field"><label>الأولوية</label>
-          <select id="task-priority"><option>عاجل</option><option>عالي</option><option selected>متوسط</option></select>
-        </div>
-        <div class="field"><label>المشروع</label><input id="task-project" value="تشغيل يومي" /></div>
-        <div class="field"><label>موعد الانتهاء</label><input id="task-due" type="date" /></div>
-        <button class="btn btn-primary" data-action="add-task">إضافة سريعة</button>
-      </div>
-      <article class="card" style="margin-bottom:12px">
-        <h3><span class="title-left"><i class="fas fa-list-check icon"></i> المهام</span></h3>
-        <div class="table-wrap"><table class="data tasks-data">
-          <thead>
-            <tr>
-              <th>المهمة والتفاصيل</th>
-              <th>المسؤول</th>
-              <th>الأولوية</th>
-              <th>الحالة</th>
-              <th>المشروع</th>
-              <th>الموعد</th>
-              <th>جودة</th>
-              <th>الشركة</th>
-              <th>طرف أول</th>
-              <th>جوال ١</th>
-              <th>طرف ثاني</th>
-              <th>جوال ٢</th>
-              <th>الفرع</th>
-              <th>الحاضنة</th>
-              <th>المنصة</th>
-              <th>المكتب</th>
-              <th>مرفقات</th>
-              <th>إجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${
-              t.items.length
-                ? t.items
-                    .map((item) => {
-                      const quality = Number(item.quality) > 0 ? `${item.quality}%` : '—';
-                      return `<tr>
-                        <td class="tasks-main-cell">
-                          <strong>${esc(item.title)}</strong>
-                          <small title="${esc(item.details || '')}">${esc(short(item.details))}</small>
-                        </td>
-                        <td>${esc(item.assignee || '—')}</td>
-                        <td>${badgeStatus(item.priority)}</td>
-                        <td>${statusBadge(item.status)}</td>
-                        <td>${esc(item.project || '—')}</td>
-                        <td>${esc(item.dueDate || '—')}</td>
-                        <td>${esc(quality)}</td>
-                        <td>${esc(item.companyName || '—')}</td>
-                        <td>${esc(item.party1Name || '—')}</td>
-                        <td>${esc(item.party1Phone || '—')}</td>
-                        <td>${esc(item.party2Name || '—')}</td>
-                        <td>${esc(item.party2Phone || '—')}</td>
-                        <td>${esc(item.branch || '—')}</td>
-                        <td>${esc(item.incubator || '—')}</td>
-                        <td>${esc(item.platform || '—')}</td>
-                        <td>${esc(item.office || '—')}</td>
-                        <td>${filesCell(item)}</td>
-                        <td class="tasks-acts-cell">
-                          <div class="tasks-row-acts">
-                            ${item.status !== 'in_progress' && item.status !== 'done' ? `<button class="btn btn-sm btn-ghost" data-action="task-status" data-id="${item.id}" data-status="in_progress">بدء</button>` : ''}
-                            ${item.status !== 'done' ? `<button class="btn btn-sm btn-primary" data-action="task-status" data-id="${item.id}" data-status="done">إتمام</button>` : ''}
-                            ${item.status !== 'blocked' && item.status !== 'done' ? `<button class="btn btn-sm btn-dark" data-action="task-status" data-id="${item.id}" data-status="blocked">اختناق</button>` : ''}
-                            ${rowActs('tasks', item.id)}
-                          </div>
-                        </td>
-                      </tr>`;
-                    })
-                    .join('')
-                : `<tr><td colspan="18" class="empty">لا توجد مهام بعد</td></tr>`
-            }
-          </tbody>
-        </table></div>
-      </article>
-      <div class="grid-2">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-diagram-project icon"></i> المشاريع</span></h3>
-          ${t.projects
-            .map(
-              (p) => `<div style="margin-bottom:12px">
-                <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800"><span>${esc(p.name)}</span><span>${p.progress}%</span></div>
-                <small style="color:var(--muted)">${esc(p.phase)} · ${esc(p.owner)}</small>
-                <div style="margin-top:6px">${bar(p.progress)}</div>
-              </div>`
-            )
-            .join('')}
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-road-barrier icon"></i> الاختناقات</span></h3>
-          ${t.bottlenecks
-            .map(
-              (b) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-                <span><b>${esc(b.area)}</b><br/><small style="color:var(--muted)">${b.waitHours} ساعة انتظار</small></span>
-                ${badgeStatus(b.severity)}
-              </div>`
-            )
-            .join('')}
-        </article>
-      </div>
-    `;
+    if (window.HubTasksWS?.render) {
+      return HubTasksWS.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return '<div class="empty">تعذر تحميل وحدة المهام</div>';
   };
 
   const renderMeasurement = () => {
-    const m = HubStore.get().measurement;
-    return `
-      <div class="toolbar">
-        <button class="btn btn-primary" data-action="recalc-measure"><i class="fas fa-calculator"></i> إعادة حساب الدرجات</button>
-      </div>
-      <div class="grid-3">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-star icon"></i> الدرجات الموحدة</span></h3>
-          ${m.scores
-            .map(
-              (row) => `<div style="margin-bottom:12px">
-                <div style="display:flex;justify-content:space-between;font-weight:800;font-size:13px">
-                  <span>${esc(row.entity)}</span><span>${row.score} · ${badgeStatus(row.level)}</span>
-                </div>
-                ${bar(row.score)}
-              </div>`
-            )
-            .join('')}
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-border-all icon"></i> مصفوفة الأداء</span></h3>
-          ${m.matrix
-            .map(
-              (x) => `<div style="margin-bottom:12px">
-                <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span>${esc(x.axis)}</span><span>${x.value}</span></div>
-                ${bar(x.value)}
-              </div>`
-            )
-            .join('')}
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-handshake icon"></i> أثر العملاء</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>العميل</th><th>الأثر</th><th>الاتجاه</th></tr></thead>
-            <tbody>
-              ${m.clientImpact
-                .map(
-                  (c) => `<tr>
-                    <td>${esc(c.client)}</td><td>${c.impact}% ${bar(c.impact)}</td>
-                    <td>${c.trend === 'up' ? '<span class="badge badge-black">صاعد</span>' : '<span class="badge badge-red">هابط</span>'}</td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-      </div>
-    `;
+    if (window.HubMeasurementWS?.render) {
+      return HubMeasurementWS.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return '<div class="empty">تعذر تحميل وحدة القياس</div>';
   };
 
   const renderReports = () => {
-    const r = HubStore.get().reports;
-    const types = Object.keys(HubStore.REPORT_TITLES);
-    const selected = r.generated.find((x) => x.type === reportTab) || r.generated[0];
-    return `
-      <div class="tabs">
-        ${types
-          .map(
-            (t) =>
-              `<button class="tab ${reportTab === t ? 'active' : ''}" data-action="report-tab" data-tab="${t}">${HubStore.REPORT_TITLES[t]}</button>`
-          )
-          .join('')}
-      </div>
-      <div class="toolbar">
-        <button class="btn btn-primary" data-action="gen-report" data-type="${reportTab}"><i class="fas fa-file-lines"></i> توليد ${HubStore.REPORT_TITLES[reportTab]}</button>
-      </div>
-      <div class="grid-2">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-clock icon"></i> جدول التقارير</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>النوع</th><th>التالي</th></tr></thead>
-            <tbody>${r.schedule.map((s) => `<tr><td>${esc(s.label)}</td><td>${esc(s.next)}</td></tr>`).join('')}</tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-scroll icon"></i> التقارير المُولَّدة</span></h3>
-          ${r.generated.length
-            ? r.generated
-                .slice(0, 8)
-                .map(
-                  (rep) => `<div style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
-                    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
-                      <b>${esc(rep.title)}</b>${badgeStatus(rep.status)}
-                    </div>
-                    <small style="color:var(--muted)">${fmtTime(rep.at)}</small>
-                    ${
-                      rep.body
-                        ? `<div class="report-body"><b>${esc(rep.body.date)}</b><br/>${esc(rep.body.summary)}<br/>
-                      قرارات: ${rep.body.kpis?.decisionsToday ?? '—'} · امتثال: ${rep.body.kpis?.compliance ?? '—'}% · إنتاجية: ${rep.body.kpis?.productivity ?? '—'}%</div>`
-                        : ''
-                    }
-                  </div>`
-                )
-                .join('')
-            : '<div class="empty">لا تقارير بعد — اضغط توليد</div>'}
-          ${selected ? '' : ''}
-        </article>
-      </div>
-    `;
+    if (window.HubReportsWS?.render) {
+      return HubReportsWS.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return '<div class="empty">تعذر تحميل وحدة التقارير</div>';
   };
 
   const renderIntegration = () => {
-    const i = HubStore.get().integration;
-    return `
-      <div class="kpi-grid">
-        <article class="kpi"><span>حالة البوابة</span><strong style="font-size:20px">${esc(i.gateway.status)}</strong><small>API Gateway</small></article>
-        <article class="kpi"><span>الطلبات/ث</span><strong>${i.gateway.rps}</strong><small>RPS</small></article>
-        <article class="kpi"><span>الكمون</span><strong>${i.gateway.latencyMs}ms</strong><small>Latency</small></article>
-        <article class="kpi"><span>الأخطاء</span><strong>${i.gateway.errors}%</strong><small>Error rate</small></article>
-      </div>
-      <div class="toolbar">
-        <button class="btn btn-primary" data-action="ping-gateway"><i class="fas fa-satellite-dish"></i> فحص البوابة</button>
-      </div>
-      <div class="grid-2">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-plug icon"></i> الموصلات</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>الموصل</th><th>النوع</th><th>الحالة</th><th></th></tr></thead>
-            <tbody>
-              ${i.connectors
-                .map(
-                  (c) => `<tr>
-                    <td>${esc(c.name)}</td><td>${esc(c.type)}</td><td>${badgeStatus(c.status)}</td>
-                    <td><button class="btn btn-sm btn-dark" data-action="toggle-connector" data-id="${c.id}">تبديل</button>${rowActs('connectors', c.id)}</td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-code icon"></i> مسارات API النشطة</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>Method</th><th>Path</th><th>Calls</th></tr></thead>
-            <tbody>
-              ${i.apis.map((a) => `<tr><td><span class="badge badge-red">${esc(a.method)}</span></td><td>${esc(a.path)}</td><td>${a.calls}</td></tr>`).join('')}
-            </tbody>
-          </table></div>
-        </article>
-      </div>
-    `;
+    if (window.HubIntegrationWS?.render) {
+      return HubIntegrationWS.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return '<div class="empty">تعذر تحميل وحدة التكامل</div>';
   };
 
   const renderInfoSecurity = () => {
@@ -1568,97 +1156,10 @@
   };
 
   const renderOperating = () => {
-    const op = HubStore.ensureOperating?.() || HubStore.get().empire.operating || { subscriptions: [], offices: [], activityLog: [] };
-    const systems = Object.keys(window.HubLauncher?.SYSTEM_META || {});
-    const services = HubStore.listUnifiedServices?.() || [];
-    const bySystem = services.reduce((acc, s) => {
-      (acc[s.systemCode] = acc[s.systemCode] || []).push(s);
-      return acc;
-    }, {});
-    const activeSubs = (op.subscriptions || []).filter((s) => s.status === 'active');
-    return `
-      <div class="kpi-grid">
-        <article class="kpi"><span>اشتراكات نشطة</span><strong>${activeSubs.length}</strong><small>صلاحيات ممنوحة</small></article>
-        <article class="kpi"><span>مكاتب إلكترونية</span><strong>${(op.offices || []).length}</strong><small>ممنوحة من هوب</small></article>
-        <article class="kpi"><span>خدمات موحّدة</span><strong>${services.length}</strong><small>عبر كل الأنظمة</small></article>
-        <article class="kpi"><span>سجل النشاط</span><strong>${(op.activityLog || []).length}</strong><small>أحداث مسجّلة</small></article>
-      </div>
-      <div class="toolbar" style="margin-top:12px;flex-wrap:wrap;gap:8px">
-        <a class="btn btn-ghost" href="operating.html" target="_blank"><i class="fas fa-book"></i> صفحة آلية التشغيل</a>
-        <button class="btn btn-primary" data-action="gen-report" data-type="activity"><i class="fas fa-scroll"></i> تقرير النشاط الموحّد</button>
-        ${pageActs('offices', 'منح مكتب إلكتروني')}
-      </div>
-      <div class="grid-2" style="margin-top:14px">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-key icon"></i> منح اشتراك / صلاحية</span></h3>
-          <div class="toolbar" style="flex-wrap:wrap">
-            <div class="field"><label>بريد العميل</label><input id="op-sub-email" type="email" placeholder="client@example.com" value="${esc(user.email || '')}" /></div>
-            <div class="field"><label>النظام</label>
-              <select id="op-sub-system">${systems.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
-            </div>
-            <div class="field"><label>الخطة</label><input id="op-sub-plan" value="${esc(HubStore.getSettings?.()?.defaultGrantPlan || 'standard')}" /></div>
-            <button class="btn btn-primary" data-action="grant-sub"><i class="fas fa-user-check"></i> منح</button>
-          </div>
-          <div class="table-wrap" style="margin-top:10px"><table class="data">
-            <thead><tr><th>البريد</th><th>النظام</th><th>الخطة</th><th>الصلاحيات</th><th></th></tr></thead>
-            <tbody>
-              ${activeSubs
-                .slice(0, 20)
-                .map(
-                  (s) => `<tr>
-                  <td>${esc(s.email)}</td><td>${esc(s.systemCode)}</td><td>${esc(s.plan)}</td>
-                  <td>${esc((s.permissions || []).join(' · '))}</td>
-                  <td><button class="btn btn-sm btn-dark" data-action="revoke-sub" data-id="${esc(s.id)}">إلغاء</button></td>
-                </tr>`
-                )
-                .join('') || '<tr><td colspan="5">لا اشتراكات بعد</td></tr>'}
-            </tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-briefcase icon"></i> المكاتب الإلكترونية</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>المكتب</th><th>الفرع</th><th>الحاضنة</th><th>المنصة</th><th>الحالة</th></tr></thead>
-            <tbody>
-              ${(op.offices || [])
-                .map(
-                  (o) => `<tr>
-                  <td>${esc(o.nameAr)}</td><td>${esc(o.branch || '—')}</td>
-                  <td>${esc(o.incubator || '—')}</td><td>${esc(o.platform || '—')}</td>
-                  <td>${badgeStatus(o.status)}</td>
-                </tr>`
-                )
-                .join('') || '<tr><td colspan="5">لا مكاتب بعد — استخدم منح مكتب إلكتروني</td></tr>'}
-            </tbody>
-          </table></div>
-        </article>
-      </div>
-      <article class="card" style="margin-top:14px">
-        <h3><span class="title-left"><i class="fas fa-layer-group icon"></i> خريطة خدمات الأنظمة (هوب يعكس الكل)</span></h3>
-        <div class="grid-2">
-          ${Object.entries(bySystem)
-            .map(
-              ([code, list]) => `<div style="border:1px solid var(--border);border-radius:12px;padding:10px">
-              <b>${esc(window.HubLauncher?.SYSTEM_META?.[code]?.nameAr || code)}</b>
-              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
-                ${list.map((s) => `<span class="chip">${esc(s.nameAr)}</span>`).join('')}
-              </div>
-              <div style="margin-top:8px">${window.HubLauncher?.openButtonsHtml?.(code, { compact: true }) || ''}</div>
-            </div>`
-            )
-            .join('')}
-        </div>
-      </article>
-      <article class="card" style="margin-top:14px">
-        <h3><span class="title-left"><i class="fas fa-timeline icon"></i> النشاط الجاري والماضي</span></h3>
-        <ul class="feed-list">
-          ${(op.activityLog || [])
-            .slice(0, 25)
-            .map((a) => `<li><b>${esc(a.kind)}</b> — ${esc(a.text)} <small>${fmtTime(a.at)}</small></li>`)
-            .join('') || '<li>لا نشاط مسجّل بعد</li>'}
-        </ul>
-      </article>
-    `;
+    if (window.HubOperatingWS?.render) {
+      return HubOperatingWS.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return '<div class="empty">تعذر تحميل آلية التشغيل</div>';
   };
 
   const renderClientsMgmt = () => {
@@ -2001,6 +1502,11 @@
 
   // —— Event delegation
   root.addEventListener('click', (e) => {
+    const navBtn = e.target.closest('[data-nav]');
+    if (navBtn?.dataset?.nav) {
+      activate(navBtn.dataset.nav);
+      return;
+    }
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     const action = btn.dataset.action;
@@ -2058,6 +1564,26 @@
         renderNav();
         render();
         return;
+      }
+    }
+
+    const opsHandlers = [
+      ['ov-', 'HubOverview'],
+      ['op-', 'HubOperatingWS'],
+      ['tk-', 'HubTasksWS'],
+      ['ms-', 'HubMeasurementWS'],
+      ['rp-', 'HubReportsWS'],
+      ['ig-', 'HubIntegrationWS'],
+      ['cr-', 'HubCoreWS'],
+    ];
+    for (const [prefix, name] of opsHandlers) {
+      if (String(action || '').startsWith(prefix) && window[name]?.handle) {
+        const handled = window[name].handle(action, btn, { user, toast, esc, $ });
+        if (handled) {
+          renderNav();
+          render();
+          return;
+        }
       }
     }
 
@@ -2443,6 +1969,13 @@
     const govEl = e.target.closest('[data-gov-change]');
     if (govEl && window.HubGovernance?.handleChange) {
       if (HubGovernance.handleChange(govEl)) {
+        render();
+      }
+      return;
+    }
+    const tkEl = e.target.closest('[data-tk-change]');
+    if (tkEl && window.HubTasksWS?.handleChange) {
+      if (HubTasksWS.handleChange(tkEl)) {
         render();
       }
       return;

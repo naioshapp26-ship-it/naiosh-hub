@@ -2330,7 +2330,187 @@ const HubStore = (() => {
       changed = true;
     }
     if (hydrateTasksDetails()) changed = true;
+    if (hydrateOpsCommandDomains()) changed = true;
     return changed;
+  };
+
+  /** Batch A — leadership & ops workspace enrichment (schema v2) */
+  const hydrateOpsCommandDomains = () => {
+    if (!state) return false;
+    let changed = false;
+    const stamp = nowIso();
+
+    if (!state.tasks) state.tasks = { items: [], bottlenecks: [] };
+    if (state.tasks.schemaVersion !== 2) {
+      state.tasks.schemaVersion = 2;
+      if (!Array.isArray(state.tasks.auditLog)) state.tasks.auditLog = [];
+      state.tasks.settings = state.tasks.settings || {
+        defaultPriority: 'متوسط',
+        helpDismissed: false,
+        pageSize: 10,
+      };
+      (state.tasks.items || []).forEach((t) => {
+        if (!t.source) t.source = 'إدخال يدوي';
+        if (!t.createdAt) t.createdAt = stamp;
+        if (!t.updatedAt) t.updatedAt = t.createdAt;
+        if (!t.createdBy) t.createdBy = 'نظام';
+      });
+      if (!Array.isArray(state.tasks.bottlenecks)) state.tasks.bottlenecks = [];
+      changed = true;
+    }
+
+    if (!state.measurement) state.measurement = { scores: [], matrix: [], clientImpact: [] };
+    if (state.measurement.schemaVersion !== 2) {
+      state.measurement.schemaVersion = 2;
+      if (!Array.isArray(state.measurement.auditLog)) state.measurement.auditLog = [];
+      state.measurement.settings = state.measurement.settings || { helpDismissed: false };
+      if (!Array.isArray(state.measurement.indicators) || !state.measurement.indicators.length) {
+        state.measurement.indicators = [
+          {
+            id: uid('mi'),
+            name: 'إنجاز المهام',
+            formula: 'done_tasks / total_tasks * 100',
+            source: 'Tasks Module',
+            value: 0,
+            owner: 'غرفة العمليات',
+            status: 'active',
+            updatedAt: stamp,
+          },
+          {
+            id: uid('mi'),
+            name: 'صحة الأنظمة',
+            formula: 'avg(systems.health)',
+            source: 'Systems Registry',
+            value: 0,
+            owner: 'التكامل',
+            status: 'active',
+            updatedAt: stamp,
+          },
+          {
+            id: uid('mi'),
+            name: 'امتثال الحوكمة',
+            formula: 'avg(governance.compliance.rate)',
+            source: 'Governance 360',
+            value: 0,
+            owner: 'الحوكمة',
+            status: 'active',
+            updatedAt: stamp,
+          },
+        ];
+      }
+      changed = true;
+    }
+
+    if (!state.reports) state.reports = { generated: [], schedule: [] };
+    if (state.reports.schemaVersion !== 2) {
+      state.reports.schemaVersion = 2;
+      if (!Array.isArray(state.reports.auditLog)) state.reports.auditLog = [];
+      state.reports.settings = state.reports.settings || { helpDismissed: false, retainDays: 90 };
+      (state.reports.generated || []).forEach((r) => {
+        if (!r.source) r.source = 'System Generated';
+        if (!r.createdBy) r.createdBy = 'نظام التقارير';
+      });
+      changed = true;
+    }
+
+    if (!state.integration) {
+      state.integration = { gateway: { status: 'online', rps: 0, latencyMs: 0, errors: 0 }, connectors: [], apis: [] };
+    }
+    if (state.integration.schemaVersion !== 2) {
+      state.integration.schemaVersion = 2;
+      if (!Array.isArray(state.integration.auditLog)) state.integration.auditLog = [];
+      if (!Array.isArray(state.integration.syncLog)) {
+        state.integration.syncLog = [
+          {
+            id: uid('sl'),
+            connector: 'Internal Systems',
+            status: 'success',
+            detail: 'مزامنة دورية ناجحة',
+            at: stamp,
+            source: 'Scheduler',
+          },
+        ];
+      }
+      state.integration.settings = state.integration.settings || { helpDismissed: false, autoPing: true };
+      (state.integration.connectors || []).forEach((c) => {
+        if (!c.source) c.source = 'System';
+        if (!c.lastSyncAt) c.lastSyncAt = stamp;
+        if (c.direction == null) c.direction = 'ثنائي';
+      });
+      changed = true;
+    }
+
+    if (!state.core) state.core = { decisions: [], predictions: [], optimizations: [], anomalies: [], knowledgeGraph: [], engineHealth: {} };
+    if (state.core.schemaVersion !== 2) {
+      state.core.schemaVersion = 2;
+      if (!Array.isArray(state.core.auditLog)) state.core.auditLog = [];
+      state.core.settings = state.core.settings || { helpDismissed: false };
+      if (!Array.isArray(state.core.insights) || !state.core.insights.length) {
+        state.core.insights = [
+          {
+            id: uid('ins'),
+            title: 'ضغط على طبقة المهام',
+            rationale: 'نسبة المهام المختنقة أعلى من المتوسط الأسبوعي مع تنبؤ احتمال 72%.',
+            source: 'Predictive + Tasks',
+            confidence: 78,
+            status: 'open',
+            at: stamp,
+          },
+          {
+            id: uid('ins'),
+            title: 'فرصة تحسين Academy',
+            rationale: 'اقتراح التحسين النشط يقدّر خفض زمن المسار بنسبة ملموسة.',
+            source: 'Optimization Engine',
+            confidence: 71,
+            status: 'open',
+            at: stamp,
+          },
+        ];
+      }
+      (state.core.decisions || []).forEach((d) => {
+        if (!d.source) d.source = 'محرك القرار';
+        if (!d.rationale) d.rationale = 'مبني على مؤشرات القياس والمهام والتنبؤات النشطة';
+      });
+      changed = true;
+    }
+
+    if (!state.empire) state.empire = {};
+    if (!state.empire.command) state.empire.command = {};
+    if (!state.empire.command.ws || state.empire.command.ws.schemaVersion !== 2) {
+      state.empire.command.ws = {
+        schemaVersion: 2,
+        auditLog: Array.isArray(state.empire.command.ws?.auditLog) ? state.empire.command.ws.auditLog : [],
+        settings: state.empire.command.ws?.settings || { helpDismissed: false },
+      };
+      changed = true;
+    }
+
+    const op = state.empire?.operating;
+    if (op && op.schemaVersion !== 2) {
+      op.schemaVersion = 2;
+      if (!Array.isArray(op.auditLog)) op.auditLog = [];
+      op.settings = op.settings || { helpDismissed: false };
+      changed = true;
+    }
+
+    return changed;
+  };
+
+  const pushDomainAudit = (bag, entry = {}) => {
+    if (!bag) return null;
+    if (!Array.isArray(bag.auditLog)) bag.auditLog = [];
+    const row = {
+      id: uid('aud'),
+      at: nowIso(),
+      action: entry.action || 'update',
+      detail: entry.detail || '',
+      by: entry.by || 'مشغّل هوب',
+      source: entry.source || 'Manual',
+      entityId: entry.entityId || '',
+    };
+    bag.auditLog.unshift(row);
+    bag.auditLog = bag.auditLog.slice(0, 200);
+    return row;
   };
 
   /** إثراء المهام القديمة بحقول التفاصيل/الموعد إن كانت ناقصة */
@@ -2707,6 +2887,9 @@ const HubStore = (() => {
     if (!Array.isArray(e.operating.subscriptions)) e.operating.subscriptions = [];
     if (!Array.isArray(e.operating.offices)) e.operating.offices = [];
     if (!Array.isArray(e.operating.activityLog)) e.operating.activityLog = [];
+    if (!Array.isArray(e.operating.auditLog)) e.operating.auditLog = [];
+    if (!e.operating.settings) e.operating.settings = { helpDismissed: false };
+    if (e.operating.schemaVersion !== 2) e.operating.schemaVersion = 2;
     return e.operating;
   };
 
@@ -2981,9 +3164,26 @@ const HubStore = (() => {
   };
 
   // —— Core actions
-  const issueDecision = (title, engine = 'AI Decision', impact = 'متوسط') => {
-    const item = { id: uid('d'), title, engine, status: 'pending', impact, at: nowIso() };
+  const issueDecision = (title, engine = 'AI Decision', impact = 'متوسط', extra = {}) => {
+    const item = {
+      id: uid('d'),
+      title,
+      engine,
+      status: 'pending',
+      impact,
+      at: nowIso(),
+      source: extra.source || 'محرك القرار',
+      rationale: extra.rationale || 'مبني على مؤشرات القياس والمهام والتنبؤات النشطة',
+      by: extra.by || 'مشغّل هوب',
+    };
     get().core.decisions.unshift(item);
+    pushDomainAudit(get().core, {
+      action: 'issue_decision',
+      detail: title,
+      by: item.by,
+      source: item.source,
+      entityId: item.id,
+    });
     pushFeed('decision', title);
     save();
     return item;
@@ -4129,34 +4329,282 @@ const HubStore = (() => {
 
   // —— Tasks
   const addTask = (title, assignee, priority, project, extra = {}) => {
+    const stamp = nowIso();
     const item = {
       id: uid('t'),
       title,
       details: String(extra.details || '').trim(),
       assignee,
       priority,
-      status: 'todo',
+      status: extra.status || 'todo',
       quality: 0,
       project,
       dueDate: String(extra.dueDate || '').trim(),
+      source: extra.source || 'إدخال يدوي',
+      createdAt: stamp,
+      updatedAt: stamp,
+      createdBy: extra.createdBy || 'مشغّل هوب',
       ...pickCommonMeta(extra),
     };
     get().tasks.items.unshift(item);
+    pushDomainAudit(get().tasks, {
+      action: 'create',
+      detail: `مهمة جديدة: ${title}`,
+      by: item.createdBy,
+      source: item.source,
+      entityId: item.id,
+    });
     pushFeed('decision', `مهمة جديدة: ${title}`);
     save();
     return item;
+  };
+
+  const updateTask = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const t = get().tasks.items.find((x) => x.id === id);
+    if (!t) return null;
+    const keys = [
+      'title',
+      'details',
+      'assignee',
+      'priority',
+      'status',
+      'project',
+      'dueDate',
+      'quality',
+      'source',
+      'companyName',
+      'companyAddress',
+      'party1Name',
+      'party1Phone',
+      'party2Name',
+      'party2Phone',
+      'branch',
+      'incubator',
+      'platform',
+      'office',
+      'docName',
+      'imageName',
+      'videoName',
+    ];
+    keys.forEach((k) => {
+      if (patch[k] !== undefined) t[k] = patch[k];
+    });
+    t.updatedAt = nowIso();
+    t.updatedBy = actor;
+    pushDomainAudit(get().tasks, {
+      action: 'update',
+      detail: `تحديث مهمة: ${t.title}`,
+      by: actor,
+      source: t.source || 'Manual',
+      entityId: t.id,
+    });
+    pushFeed('decision', `تحديث مهمة: ${t.title}`);
+    recalculateMeasurement();
+    save();
+    return t;
+  };
+
+  const removeTask = (id, actor = 'مشغّل هوب') => {
+    const list = get().tasks.items;
+    const idx = list.findIndex((x) => x.id === id);
+    if (idx < 0) return null;
+    const [t] = list.splice(idx, 1);
+    pushDomainAudit(get().tasks, {
+      action: 'delete',
+      detail: `حذف مهمة: ${t.title}`,
+      by: actor,
+      source: t.source || 'Manual',
+      entityId: t.id,
+    });
+    pushFeed('decision', `حذف مهمة: ${t.title}`);
+    recalculateMeasurement();
+    save();
+    return t;
   };
 
   const updateTaskStatus = (id, status) => {
     const t = get().tasks.items.find((x) => x.id === id);
     if (!t) return null;
     t.status = status;
+    t.updatedAt = nowIso();
     if (status === 'done') t.quality = 75 + Math.floor(Math.random() * 20);
+    pushDomainAudit(get().tasks, {
+      action: 'status',
+      detail: `حالة مهمة → ${status}: ${t.title}`,
+      by: 'مشغّل هوب',
+      source: t.source || 'Manual',
+      entityId: t.id,
+    });
     pushFeed('decision', `تحديث مهمة (${status}): ${t.title}`);
     // measurement ripple
     recalculateMeasurement();
     save();
     return t;
+  };
+
+  const dismissTasksHelp = () => {
+    const t = get().tasks;
+    t.settings = t.settings || {};
+    t.settings.helpDismissed = true;
+    save();
+    return t.settings;
+  };
+
+  const addMeasurementIndicator = (payload = {}, actor = 'مشغّل هوب') => {
+    const m = get().measurement;
+    if (!Array.isArray(m.indicators)) m.indicators = [];
+    const item = {
+      id: uid('mi'),
+      name: String(payload.name || '').trim(),
+      formula: String(payload.formula || '').trim() || 'manual',
+      source: payload.source || 'إدخال يدوي',
+      value: Number(payload.value) || 0,
+      owner: payload.owner || actor,
+      status: payload.status || 'active',
+      updatedAt: nowIso(),
+    };
+    if (!item.name) return null;
+    m.indicators.unshift(item);
+    pushDomainAudit(m, {
+      action: 'create',
+      detail: `مؤشر قياس: ${item.name}`,
+      by: actor,
+      source: item.source,
+      entityId: item.id,
+    });
+    save();
+    return item;
+  };
+
+  const updateMeasurementIndicator = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const m = get().measurement;
+    const row = (m.indicators || []).find((x) => x.id === id);
+    if (!row) return null;
+    ['name', 'formula', 'source', 'value', 'owner', 'status'].forEach((k) => {
+      if (patch[k] !== undefined) row[k] = patch[k];
+    });
+    row.updatedAt = nowIso();
+    pushDomainAudit(m, {
+      action: 'update',
+      detail: `تحديث مؤشر: ${row.name}`,
+      by: actor,
+      source: row.source,
+      entityId: row.id,
+    });
+    save();
+    return row;
+  };
+
+  const upsertIntegrationConnector = (payload = {}, actor = 'مشغّل هوب') => {
+    const integ = get().integration;
+    if (!Array.isArray(integ.connectors)) integ.connectors = [];
+    let row = payload.id ? integ.connectors.find((x) => x.id === payload.id) : null;
+    if (row) {
+      ['name', 'type', 'status', 'direction', 'source'].forEach((k) => {
+        if (payload[k] !== undefined) row[k] = payload[k];
+      });
+      row.updatedAt = nowIso();
+      pushDomainAudit(integ, {
+        action: 'update',
+        detail: `تحديث موصل: ${row.name}`,
+        by: actor,
+        source: row.source || 'Manual',
+        entityId: row.id,
+      });
+    } else {
+      row = {
+        id: uid('ic'),
+        name: String(payload.name || '').trim() || 'موصل جديد',
+        type: payload.type || 'internal',
+        status: payload.status || 'disconnected',
+        direction: payload.direction || 'ثنائي',
+        source: payload.source || 'إدخال يدوي',
+        lastSyncAt: null,
+        createdAt: nowIso(),
+      };
+      integ.connectors.unshift(row);
+      pushDomainAudit(integ, {
+        action: 'create',
+        detail: `موصل جديد: ${row.name}`,
+        by: actor,
+        source: row.source,
+        entityId: row.id,
+      });
+    }
+    save();
+    return row;
+  };
+
+  const syncIntegrationConnector = (id, actor = 'مشغّل هوب') => {
+    const integ = get().integration;
+    const c = (integ.connectors || []).find((x) => x.id === id);
+    if (!c) return null;
+    c.lastSyncAt = nowIso();
+    c.status = c.status === 'disconnected' ? 'connected' : c.status;
+    if (!Array.isArray(integ.syncLog)) integ.syncLog = [];
+    const log = {
+      id: uid('sl'),
+      connector: c.name,
+      connectorId: c.id,
+      status: 'success',
+      detail: `مزامنة يدوية لـ ${c.name}`,
+      at: c.lastSyncAt,
+      source: 'Manual Sync',
+      by: actor,
+    };
+    integ.syncLog.unshift(log);
+    integ.syncLog = integ.syncLog.slice(0, 100);
+    pushDomainAudit(integ, {
+      action: 'sync',
+      detail: log.detail,
+      by: actor,
+      source: 'Manual Sync',
+      entityId: c.id,
+    });
+    save();
+    return { connector: c, log };
+  };
+
+  const addCoreInsight = (payload = {}, actor = 'مشغّل هوب') => {
+    const core = get().core;
+    if (!Array.isArray(core.insights)) core.insights = [];
+    const item = {
+      id: uid('ins'),
+      title: String(payload.title || '').trim(),
+      rationale: String(payload.rationale || '').trim(),
+      source: payload.source || 'إدخال يدوي',
+      confidence: Math.max(0, Math.min(100, Number(payload.confidence) || 60)),
+      status: payload.status || 'open',
+      at: nowIso(),
+      by: actor,
+    };
+    if (!item.title) return null;
+    core.insights.unshift(item);
+    pushDomainAudit(core, {
+      action: 'insight',
+      detail: item.title,
+      by: actor,
+      source: item.source,
+      entityId: item.id,
+    });
+    save();
+    return item;
+  };
+
+  const closeCoreInsight = (id, actor = 'مشغّل هوب') => {
+    const core = get().core;
+    const row = (core.insights || []).find((x) => x.id === id);
+    if (!row) return null;
+    row.status = 'closed';
+    pushDomainAudit(core, {
+      action: 'close_insight',
+      detail: row.title,
+      by: actor,
+      source: row.source,
+      entityId: row.id,
+    });
+    save();
+    return row;
   };
 
   // —— Measurement
@@ -4173,10 +4621,27 @@ const HubStore = (() => {
         ),
         level: 'L1',
       },
-      { entity: 'الحوكمة', score: avg(s.governance.compliance, 'rate'), level: 'L1' },
+      { entity: 'الحوكمة', score: avg(Array.isArray(s.governance?.compliance) ? s.governance.compliance : [], 'rate'), level: 'L1' },
     ];
     s.measurement.scores.forEach((row) => {
       row.level = levelOf(row.score);
+    });
+    if (Array.isArray(s.measurement.indicators)) {
+      const taskScore = s.measurement.scores.find((x) => x.entity === 'المهام')?.score || 0;
+      const sysScore = s.measurement.scores.find((x) => x.entity === 'الأنظمة')?.score || 0;
+      const govScore = s.measurement.scores.find((x) => x.entity === 'الحوكمة')?.score || 0;
+      s.measurement.indicators.forEach((ind) => {
+        if (/task/i.test(ind.formula) || /مهام/.test(ind.name)) ind.value = taskScore;
+        else if (/system|health/i.test(ind.formula) || /أنظمة/.test(ind.name)) ind.value = sysScore;
+        else if (/govern|compliance/i.test(ind.formula) || /حوكمة|امتثال/.test(ind.name)) ind.value = govScore;
+        ind.updatedAt = nowIso();
+      });
+    }
+    pushDomainAudit(s.measurement, {
+      action: 'recalculate',
+      detail: 'إعادة حساب الدرجات والمؤشرات',
+      by: 'نظام القياس',
+      source: 'Measurement Engine',
     });
     save();
   };
@@ -4237,9 +4702,18 @@ const HubStore = (() => {
       title: REPORT_TITLES[type] || type,
       status: 'ready',
       at: nowIso(),
+      source: 'System Generated',
+      createdBy: 'نظام التقارير',
       body,
     };
     get().reports.generated.unshift(item);
+    pushDomainAudit(get().reports, {
+      action: 'generate',
+      detail: item.title,
+      by: item.createdBy,
+      source: item.source,
+      entityId: item.id,
+    });
     recordActivity('report', `${item.title} جاهز للقائد الأعلى`, { type });
     save();
     return item;
@@ -4250,6 +4724,13 @@ const HubStore = (() => {
     const c = get().integration.connectors.find((x) => x.id === id);
     if (!c) return null;
     c.status = c.status === 'connected' ? 'disconnected' : 'connected';
+    pushDomainAudit(get().integration, {
+      action: 'toggle',
+      detail: `${c.name}: ${c.status}`,
+      by: 'مشغّل هوب',
+      source: c.source || 'Manual',
+      entityId: c.id,
+    });
     pushFeed('decision', `${c.name}: ${c.status}`);
     save();
     return c;
@@ -4261,6 +4742,13 @@ const HubStore = (() => {
     g.latencyMs = 30 + Math.floor(Math.random() * 40);
     g.errors = +(Math.random() * 0.8).toFixed(2);
     g.status = 'online';
+    g.lastPingAt = nowIso();
+    pushDomainAudit(get().integration, {
+      action: 'ping',
+      detail: `فحص بوابة · ${g.rps} RPS · ${g.latencyMs}ms`,
+      by: 'مشغّل هوب',
+      source: 'API Gateway',
+    });
     save();
     return g;
   };
@@ -6692,6 +7180,13 @@ const HubStore = (() => {
     cmd.platforms = Math.max(cmd.platforms, org.platforms.length);
     cmd.systemsUsagePct = Math.min(99, cmd.systemsUsagePct + Math.floor(Math.random() * 3) - 1);
     cmd.revenuePoints = get().empire.wallet.treasury;
+    cmd.ws = cmd.ws || { schemaVersion: 2, auditLog: [], settings: {} };
+    pushDomainAudit(cmd.ws, {
+      action: 'refresh',
+      detail: 'تحديث مؤشرات مركز التحكم',
+      by: 'غرفة العمليات',
+      source: 'Command Center',
+    });
     pushFeed('report', 'تحديث مركز التحكم العالمي');
     save();
     return cmd;
@@ -6779,7 +7274,18 @@ const HubStore = (() => {
     syncSystem,
     syncAllSystems,
     addTask,
+    updateTask,
+    removeTask,
     updateTaskStatus,
+    dismissTasksHelp,
+    addMeasurementIndicator,
+    updateMeasurementIndicator,
+    upsertIntegrationConnector,
+    syncIntegrationConnector,
+    addCoreInsight,
+    closeCoreInsight,
+    pushDomainAudit,
+    hydrateOpsCommandDomains,
     recalculateMeasurement,
     generateReport,
     toggleConnector,
