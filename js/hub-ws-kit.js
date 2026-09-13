@@ -56,14 +56,14 @@
     return el.type === 'checkbox' ? !!el.checked : String(el.value || '').trim();
   };
 
-  const renderHeader = ({ prefix, title, subtitle, icon, actionsHtml = '' }) => `
-    <div class="hub-ws-header toolbar" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px">
-      <div>
-        <div class="empire-banner-kicker"><i class="fas ${esc(icon || 'fa-layer-group')}"></i> NAIOSH HUB · WORKSPACE</div>
-        <h2 style="margin:4px 0 2px;font-size:1.35rem">${esc(title)}</h2>
-        <p class="muted" style="margin:0;max-width:52ch">${esc(subtitle || '')}</p>
+  const renderHeader = ({ prefix, title, subtitle, icon, actionsHtml = '', badgeText = 'ENTERPRISE WORKSPACE' }) => `
+    <div class="hub-ws-hero">
+      <div class="hub-ws-hero-main">
+        <div class="hub-ws-kicker"><i class="fas ${esc(icon || 'fa-layer-group')}"></i> NAIOSH HUB · ${esc(badgeText)}</div>
+        <h2 class="hub-ws-title">${esc(title)}</h2>
+        <p class="hub-ws-sub">${esc(subtitle || '')}</p>
       </div>
-      <div class="toolbar" style="margin:0;gap:6px;flex-wrap:wrap">${actionsHtml}</div>
+      <div class="hub-ws-hero-actions">${actionsHtml}</div>
     </div>`;
 
   const renderTabs = (prefix, tabs, active) => `
@@ -71,7 +71,7 @@
       ${tabs
         .map(
           (t) =>
-            `<button type="button" class="tab ${active === t.id ? 'active' : ''}" data-action="${esc(prefix)}-tab" data-tab="${esc(t.id)}" role="tab">
+            `<button type="button" class="tab hub-ws-tab ${active === t.id ? 'active' : ''}" data-action="${esc(prefix)}-tab" data-tab="${esc(t.id)}" role="tab">
               ${t.icon ? `<i class="fas ${esc(t.icon)}"></i> ` : ''}${esc(t.label)}
             </button>`
         )
@@ -82,14 +82,14 @@
     <div class="kpi-grid hub-ws-kpis">
       ${items
         .map(
-          (k) => `<article class="kpi ${focusKey === k.key ? 'is-focus' : ''}" ${
+          (k) => `<article class="kpi hub-ws-kpi ${focusKey === k.key ? 'is-focus' : ''}" ${
             k.action !== false
               ? `data-action="${esc(prefix)}-kpi" data-key="${esc(k.key)}" ${k.tab ? `data-tab="${esc(k.tab)}"` : ''}`
               : ''
           }>
-            <span>${esc(k.label)}</span>
-            <strong>${esc(String(k.value))}</strong>
-            <small>${esc(k.hint || '')}</small>
+            <span class="hub-ws-kpi-label">${k.icon ? `<i class="fas ${esc(k.icon)}"></i> ` : ''}${esc(k.label)}</span>
+            <strong class="hub-ws-kpi-value">${esc(String(k.value))}</strong>
+            <small class="hub-ws-kpi-hint">${esc(k.hint || 'اضغط للانتقال')}</small>
           </article>`
         )
         .join('')}
@@ -97,20 +97,24 @@
 
   const renderNeeds = (prefix, items) => {
     if (!items?.length) {
-      return `<article class="card" style="margin-top:12px"><h3><span class="title-left"><i class="fas fa-circle-check icon"></i> Needs Action</span></h3>
-        <p class="empty" style="text-align:right">لا عناصر تحتاج إجراء الآن.</p></article>`;
+      return `<article class="card hub-ws-needs is-clear">
+        <h3><span class="title-left"><i class="fas fa-circle-check icon"></i> Needs Action</span>
+          <span class="badge badge-black">واضح</span></h3>
+        <p class="empty" style="text-align:right;margin:0">لا عناصر تحتاج إجراء الآن — غرفة العمليات مستقرة.</p>
+      </article>`;
     }
-    return `<article class="card" style="margin-top:12px;border-right:4px solid var(--red)">
-      <h3><span class="title-left"><i class="fas fa-bolt icon"></i> Needs Action · ${items.length}</span></h3>
-      <ul class="feed" style="margin:0">
+    return `<article class="card hub-ws-needs is-alert">
+      <h3><span class="title-left"><i class="fas fa-bolt icon"></i> Needs Action · ${items.length}</span>
+        <span class="badge badge-red">يتطلب تدخل</span></h3>
+      <ul class="hub-ws-needs-list">
         ${items
           .slice(0, 10)
           .map(
             (it) => `<li>
-              <b>${esc(it.text)}</b>
+              <div><b>${esc(it.text)}</b>${it.hint ? `<small>${esc(it.hint)}</small>` : ''}</div>
               ${
                 it.tab
-                  ? `<button type="button" class="btn btn-sm btn-ghost" data-action="${esc(prefix)}-tab" data-tab="${esc(it.tab)}" ${it.id ? `data-id="${esc(it.id)}"` : ''}>فتح</button>`
+                  ? `<button type="button" class="btn btn-sm btn-primary" data-action="${esc(prefix)}-tab" data-tab="${esc(it.tab)}" ${it.id ? `data-id="${esc(it.id)}"` : ''}>معالجة</button>`
                   : ''
               }
             </li>`

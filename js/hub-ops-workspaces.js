@@ -212,24 +212,106 @@
       return acc;
     }, {});
     const activeSubs = (op.subscriptions || []).filter((s) => s.status === 'active');
+    const offices = op.offices || [];
+    const activity = op.activityLog || [];
+    const systemCount = Object.keys(bySystem).length || systems.length;
     const needs = [];
-    if (!activeSubs.length) needs.push({ text: 'لا اشتراكات نشطة — امنح صلاحية لنظام', tab: 'subs' });
-    if (!(op.offices || []).length) needs.push({ text: 'لا مكاتب إلكترونية ممنوحة', tab: 'offices' });
+    if (!activeSubs.length) needs.push({ text: 'لا اشتراكات نشطة — امنح صلاحية لنظام', tab: 'subs', hint: 'تبويب الاشتراكات' });
+    if (!offices.length) needs.push({ text: 'لا مكاتب إلكترونية ممنوحة', tab: 'offices', hint: 'تبويب المكاتب' });
+    if (activity.length < 3) needs.push({ text: 'سجل النشاط خفيف — ولّد تقرير نشاط موحّد', tab: 'activity', hint: 'للقائد الأعلى' });
 
     const kpis = [
-      { key: 'subs', label: 'اشتراكات نشطة', value: activeSubs.length, hint: 'صلاحيات', tab: 'subs' },
-      { key: 'offices', label: 'مكاتب إلكترونية', value: (op.offices || []).length, hint: 'ممنوحة', tab: 'offices' },
-      { key: 'services', label: 'خدمات موحّدة', value: services.length, hint: 'كل الأنظمة', tab: 'services' },
-      { key: 'activity', label: 'سجل النشاط', value: (op.activityLog || []).length, hint: 'أحداث', tab: 'activity' },
+      { key: 'subs', label: 'اشتراكات نشطة', value: activeSubs.length, hint: 'صلاحيات ممنوحة', tab: 'subs', icon: 'fa-key' },
+      { key: 'offices', label: 'مكاتب إلكترونية', value: offices.length, hint: 'ممنوحة من هوب', tab: 'offices', icon: 'fa-briefcase' },
+      { key: 'services', label: 'خدمات موحّدة', value: services.length, hint: `${systemCount} نظام`, tab: 'services', icon: 'fa-layer-group' },
+      { key: 'activity', label: 'سجل النشاط', value: activity.length, hint: 'أحداث تشغيل', tab: 'activity', icon: 'fa-timeline' },
+      { key: 'systems', label: 'أنظمة مربوطة', value: systemCount, hint: 'خريطة الخدمات', tab: 'services', icon: 'fa-cubes' },
+      { key: 'needs', label: 'Needs Action', value: needs.length, hint: needs.length ? 'يتطلب تدخل' : 'مستقر', tab: 'overview', icon: 'fa-bolt' },
     ];
 
     let body = '';
     if (opUi.tab === 'overview') {
-      body = `${K.renderNeeds('op', needs)}
-        <div class="toolbar" style="margin-top:12px;flex-wrap:wrap;gap:8px">
-          <a class="btn btn-ghost" href="operating.html" target="_blank"><i class="fas fa-book"></i> صفحة آلية التشغيل</a>
-          <button type="button" class="btn btn-primary" data-action="op-gen-activity"><i class="fas fa-scroll"></i> تقرير النشاط الموحّد</button>
-        </div>`;
+      const recentSubs = activeSubs.slice(0, 6);
+      const recentAct = activity.slice(0, 8);
+      const topSystems = Object.entries(bySystem).slice(0, 6);
+      body = `
+        ${K.renderNeeds('op', needs)}
+        <div class="hub-op-rail">
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-bolt icon"></i> منح سريع</span></h3>
+            <p class="muted">اشتراك = صلاحية · بدون تكرار أنظمة</p>
+            <div class="toolbar" style="flex-wrap:wrap">
+              <div class="field"><label>بريد العميل</label><input id="op-sub-email" type="email" value="${K.esc(user?.email || '')}" placeholder="client@example.com" /></div>
+              <div class="field"><label>النظام</label>
+                <select id="op-sub-system">${systems.map((c) => `<option value="${K.esc(c)}">${K.esc(c)}</option>`).join('')}</select>
+              </div>
+              <div class="field"><label>الخطة</label><input id="op-sub-plan" value="${K.esc(store().getSettings?.()?.defaultGrantPlan || 'standard')}" /></div>
+              <button type="button" class="btn btn-primary" data-action="op-grant"><i class="fas fa-user-check"></i> منح الآن</button>
+            </div>
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-gauge-high icon"></i> نبض التشغيل</span></h3>
+            <div class="hub-op-pulse">
+              <div><span>نسبة تغطية الخدمات</span><strong>${services.length ? Math.min(100, Math.round((systemCount / Math.max(1, systems.length || 1)) * 100)) : 0}%</strong>${K.bar(services.length ? Math.min(100, Math.round((systemCount / Math.max(1, systems.length || 1)) * 100)) : 0)}</div>
+              <div><span>مكاتب / اشتراكات</span><strong>${offices.length} / ${activeSubs.length}</strong>${K.bar(Math.min(100, activeSubs.length ? Math.round((offices.length / activeSubs.length) * 100) : 0))}</div>
+              <div><span>أحداث آخر دورة</span><strong>${recentAct.length}</strong>${K.bar(Math.min(100, recentAct.length * 12))}</div>
+            </div>
+            <div class="toolbar" style="margin-top:10px;flex-wrap:wrap">
+              <button type="button" class="btn btn-primary" data-action="op-gen-activity"><i class="fas fa-scroll"></i> تقرير النشاط الموحّد</button>
+              <button type="button" class="btn btn-dark" data-action="op-tab" data-tab="subs">إدارة الاشتراكات</button>
+              <button type="button" class="btn btn-ghost" data-action="op-tab" data-tab="services">خريطة الخدمات</button>
+              <a class="btn btn-ghost" href="operating.html" target="_blank"><i class="fas fa-book"></i> الدليل الكامل</a>
+            </div>
+          </article>
+        </div>
+        <div class="hub-op-grid3">
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-key icon"></i> آخر الاشتراكات</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="op-tab" data-tab="subs">الكل</button></h3>
+            <div class="table-wrap"><table class="data">
+              <thead><tr><th>البريد</th><th>النظام</th><th>الخطة</th></tr></thead>
+              <tbody>${
+                recentSubs
+                  .map((s) => `<tr><td>${K.esc(s.email)}</td><td><code>${K.esc(s.systemCode)}</code></td><td>${K.esc(s.plan)}</td></tr>`)
+                  .join('') || '<tr><td colspan="3" class="empty">لا اشتراكات — استخدم المنح السريع أعلاه</td></tr>'
+              }</tbody>
+            </table></div>
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-briefcase icon"></i> المكاتب</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="op-tab" data-tab="offices">الكل</button></h3>
+            <ul class="hub-op-mini-list">${
+              offices
+                .slice(0, 6)
+                .map((o) => `<li><b>${K.esc(o.nameAr)}</b><small>${K.esc(o.branch || '—')} · ${K.esc(o.platform || '—')}</small>${K.badge(o.status || 'active', 'badge-black')}</li>`)
+                .join('') || '<li class="empty">لا مكاتب ممنوحة بعد</li>'
+            }</ul>
+            ${window.HubActions ? `<div style="margin-top:8px">${window.HubActions.toolbarHtml('offices', 'منح مكتب')}</div>` : ''}
+          </article>
+          <article class="card hub-op-panel">
+            <h3><span class="title-left"><i class="fas fa-timeline icon"></i> آخر النشاط</span>
+              <button type="button" class="btn btn-sm btn-ghost" data-action="op-tab" data-tab="activity">الكل</button></h3>
+            <ul class="feed hub-op-feed">${
+              recentAct
+                .map((a) => `<li><b>${K.esc(a.kind)}</b> — ${K.esc(a.text)} <small>${K.fmtTime(a.at)}</small></li>`)
+                .join('') || '<li>لا نشاط مسجّل بعد</li>'
+            }</ul>
+          </article>
+        </div>
+        <article class="card hub-op-panel" style="margin-top:12px">
+          <h3><span class="title-left"><i class="fas fa-layer-group icon"></i> معاينة خريطة الخدمات</span>
+            <button type="button" class="btn btn-sm btn-primary" data-action="op-tab" data-tab="services">فتح الخريطة كاملة</button></h3>
+          <div class="hub-op-service-strip">${
+            topSystems
+              .map(
+                ([code, list]) => `<div class="hub-op-service-chip">
+                  <strong>${K.esc(window.HubLauncher?.SYSTEM_META?.[code]?.nameAr || code)}</strong>
+                  <span>${list.length} خدمة</span>
+                </div>`
+              )
+              .join('') || '<p class="empty">لا خدمات موحّدة محمّلة</p>'
+          }</div>
+        </article>`;
     } else if (opUi.tab === 'subs') {
       body = `<article class="card">
         <h3><span class="title-left"><i class="fas fa-key icon"></i> منح اشتراك / صلاحية</span></h3>
@@ -300,22 +382,26 @@
         <button type="button" class="btn btn-ghost" data-action="op-help-open">فتح الدليل</button></article>`;
     }
 
-    return `<div class="hub-ops-ws hub-operating-ws">
+    return `<div class="hub-ops-ws hub-operating-ws" data-ws="operating">
       ${K.renderHeader({
         prefix: 'op',
         title: 'آلية تشغيل نايوش هوب',
-        subtitle: 'بدون تكرار · اشتراك=صلاحية · SSO · تقارير نشاط · خدمات موحّدة',
+        subtitle: 'غرفة تشغيل حيّة: منح صلاحيات · مكاتب · خدمات موحّدة · نشاط · تدقيق — ليست صفحة ثابتة',
         icon: 'fa-gears',
-        actionsHtml: `<button type="button" class="btn btn-ghost btn-sm" data-action="op-help-open"><i class="fas fa-circle-question"></i></button>`,
+        badgeText: 'OPERATING CONTROL',
+        actionsHtml: `
+          <button type="button" class="btn btn-primary btn-sm" data-action="op-grant"><i class="fas fa-user-check"></i> منح سريع</button>
+          <button type="button" class="btn btn-dark btn-sm" data-action="op-gen-activity"><i class="fas fa-scroll"></i> تقرير</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="op-help-open"><i class="fas fa-circle-question"></i></button>`,
       })}
       ${K.renderKpis('op', kpis, '')}
       ${K.renderTabs('op', OP_TABS, opUi.tab)}
-      ${body}
+      <div class="hub-ws-body">${body}</div>
       ${K.renderHelp('op', {
         title: 'دليل آلية التشغيل',
         dismissed: !!op.settings?.helpDismissed,
         open: opUi.helpOpen,
-        bodyHtml: `<p>امنح الاشتراك من تبويب الاشتراكات، راقب المكاتب والخدمات، وصَدّر تقرير النشاط الموحّد للقائد.</p>`,
+        bodyHtml: `<p>من النظرة العامة تمنح اشتراكًا فورًا، ترى المكاتب والنشاط وخريطة الخدمات. التبويبات الأخرى للتفاصيل العميقة والتدقيق.</p>`,
       })}
     </div>`;
   };
