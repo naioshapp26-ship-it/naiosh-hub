@@ -1214,3 +1214,64 @@ body.hub-ai-off [data-ai-assistant-root] { display: none !important; }
     width: 100% !important;
   }
 }
+
+/* —— أتمتة الأنظمة —— */
+.hub-systems-automation .kpi.is-focus {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+.hub-systems-automation .kpi[data-action] {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.hub-systems-automation .kpi[data-action]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(20, 0, 4, 0.08);
+}
+.hub-systems-automation .auto-help {
+  border: 1px solid var(--border);
+  border-right: 4px solid var(--red);
+  background: linear-gradient(180deg, #fff 0%, #fff8f8 100%);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.hub-systems-automation .auto-flow-block {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fff;
+  text-align: center;
+  font-weight: 800;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.hub-systems-automation .auto-flow-arrow {
+  text-align: center;
+  color: var(--muted);
+  font-size: 18px;
+  margin: 4px 0;
+}
+.hub-systems-automation .auto-step-ok { color: #0a0a0a; }
+.hub-systems-automation .auto-step-fail { color: var(--red); font-weight: 800; }
+.hub-systems-automation .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.hub-systems-automation .field input,
+.hub-systems-automation .field select,
+.hub-systems-automation .field textarea {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  background: #fff;
+}
+@media (max-width: 900px) {
+  .hub-systems-automation [data-auto-drawer] {
+    width: 100% !important;
+  }
+}

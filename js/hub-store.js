@@ -1286,23 +1286,405 @@ const HubStore = (() => {
     return dg;
   };
 
-  const seedSystemsAutomation = () => ({
-    activeFlows: 12,
-    successRate: 96,
-    savedHours: 148,
-    flows: [
-      { id: uid('auto'), name: 'مزامنة الأنظمة الليلية', trigger: 'جدولة 02:00', system: 'ERP · LMS', status: 'active', runs: 128 },
-      { id: uid('auto'), name: 'تنبيه انخفاض الإنتاجية', trigger: 'حدث قياس', system: 'Workforce', status: 'active', runs: 64 },
-      { id: uid('auto'), name: 'تفعيل سياسة عند الاعتماد', trigger: 'اعتماد حوكمة', system: 'Governance', status: 'active', runs: 41 },
-      { id: uid('auto'), name: 'إصدار تقرير يومي للقائد', trigger: 'جدولة 08:00', system: 'Reports', status: 'active', runs: 90 },
-      { id: uid('auto'), name: 'أرشفة إعلانات منتهية', trigger: 'انتهاء حملة', system: 'Ads', status: 'paused', runs: 22 },
-      { id: uid('auto'), name: 'إنشاء مهمة من تنبيه أمني', trigger: 'حادثة أمن', system: 'Security · Tasks', status: 'active', runs: 17 },
-    ],
-    queue: [
-      { id: uid('aq'), name: 'أتمتة ترحيب العملاء الجدد', priority: 'عالي', status: 'queued' },
-      { id: uid('aq'), name: 'أتمتة نسخ احتياطي للمنصات', priority: 'متوسط', status: 'queued' },
-    ],
-  });
+  const seedSystemsAutomation = () => {
+    const now = Date.now();
+    const isoAgo = (h, m = 0) => new Date(now - h * 3600000 - m * 60000).toISOString();
+    const a1 = 'AUTO-2026-00001';
+    const a2 = 'AUTO-2026-00002';
+    const a3 = 'AUTO-2026-00003';
+    const a4 = 'AUTO-2026-00004';
+    const a5 = 'AUTO-2026-00005';
+    const a6 = 'AUTO-2026-00006';
+    const mk = (id, name, opts) => ({
+      id,
+      name,
+      description: opts.description,
+      module: opts.module,
+      triggerType: opts.triggerType,
+      triggerLabel: opts.triggerLabel,
+      trigger: opts.triggerLabel,
+      conditions: opts.conditions || [],
+      actions: opts.actions || [],
+      systems: opts.systems || [],
+      system: (opts.systems || []).join(' · '),
+      status: opts.status || 'active',
+      runs: opts.runs || 0,
+      successRuns: opts.successRuns || 0,
+      failedRuns: opts.failedRuns || 0,
+      successRate: opts.successRate || 100,
+      lastRun: opts.lastRun || '',
+      nextRun: opts.nextRun || '',
+      createdBy: opts.createdBy || 'النظام',
+      createdAt: opts.createdAt || isoAgo(240),
+      creationMethod: opts.creationMethod || 'System Generated',
+      templateUsed: opts.templateUsed || '',
+      sourceModule: opts.sourceModule || opts.module,
+      updatedBy: opts.updatedBy || opts.createdBy || 'النظام',
+      updatedAt: opts.updatedAt || opts.lastRun || isoAgo(24),
+      owner: opts.owner || opts.createdBy || 'مشغّل هوب',
+      schedule: opts.schedule || null,
+      retryPolicy: opts.retryPolicy || { retries: 3, waitMinutes: 5, onFail: 'notify' },
+      errorHandling: opts.errorHandling || 'stop',
+      timeoutSec: 120,
+      logging: true,
+      sensitive: !!opts.sensitive,
+      archived: false,
+      draft: false,
+    });
+    return {
+      schemaVersion: 2,
+      helpDismissed: false,
+      activeFlows: 5,
+      successRate: 96,
+      savedHours: 148,
+      settings: {
+        timezone: 'Asia/Riyadh',
+        defaultRetries: 3,
+        queueMax: 50,
+        notifyOnFail: true,
+        retainExecDays: 90,
+        requireConfirmSensitive: true,
+      },
+      automations: [
+        mk(a1, 'مزامنة الأنظمة الليلية', {
+          description: 'مزامنة ERP وLMS ليلاً وتسجيل نتيجة المزامنة.',
+          module: 'العمليات',
+          triggerType: 'schedule',
+          triggerLabel: 'جدولة 02:00',
+          conditions: [],
+          actions: [
+            { type: 'sync_data', label: 'مزامنة ERP' },
+            { type: 'sync_data', label: 'مزامنة LMS' },
+            { type: 'create_log', label: 'تسجيل نتيجة المزامنة' },
+          ],
+          systems: ['ERP', 'LMS'],
+          status: 'active',
+          runs: 128,
+          successRuns: 124,
+          failedRuns: 4,
+          successRate: 97,
+          lastRun: isoAgo(8),
+          nextRun: isoAgo(-16),
+          createdBy: 'مركز التكامل',
+          owner: 'مركز التكامل',
+          schedule: { every: 'يوم', time: '02:00' },
+          sourceModule: 'التكامل',
+        }),
+        mk(a2, 'تنبيه انخفاض الإنتاجية', {
+          description: 'عند انخفاض الإنتاجية عن الحد ترسل تنبيهاً لمدير القوى العاملة.',
+          module: 'القوى العاملة',
+          triggerType: 'event',
+          triggerLabel: 'حدث قياس',
+          conditions: [{ field: 'الإنتاجية', op: 'أقل من', value: '70' }],
+          actions: [
+            { type: 'send_notification', label: 'إرسال تنبيه انخفاض الإنتاجية' },
+            { type: 'create_task', label: 'إنشاء مهمة متابعة' },
+          ],
+          systems: ['Workforce'],
+          status: 'active',
+          runs: 64,
+          successRuns: 61,
+          failedRuns: 3,
+          successRate: 95,
+          lastRun: isoAgo(5),
+          nextRun: '',
+          createdBy: 'سارة العتيبي',
+          owner: 'سارة العتيبي',
+          sourceModule: 'القوى العاملة',
+          templateUsed: 'تنبيه الإنتاجية',
+          creationMethod: 'Template',
+        }),
+        mk(a3, 'تفعيل سياسة عند الاعتماد', {
+          description: 'عند اعتماد قرار حوكمة يتم تفعيل السياسة المرتبطة.',
+          module: 'الحوكمة',
+          triggerType: 'approval',
+          triggerLabel: 'اعتماد حوكمة',
+          conditions: [{ field: 'الحالة', op: 'يساوي', value: 'معتمد' }],
+          actions: [
+            { type: 'update_status', label: 'تفعيل السياسة' },
+            { type: 'send_notification', label: 'إشعار المعنيين' },
+          ],
+          systems: ['Governance'],
+          status: 'active',
+          runs: 41,
+          successRuns: 41,
+          failedRuns: 0,
+          successRate: 100,
+          lastRun: isoAgo(30),
+          createdBy: 'الحوكمة',
+          owner: 'الحوكمة',
+          sourceModule: 'الحوكمة',
+        }),
+        mk(a4, 'إصدار تقرير يومي للقائد', {
+          description: 'إنشاء التقرير اليومي للقائد الأعلى الساعة 08:00.',
+          module: 'التقارير',
+          triggerType: 'schedule',
+          triggerLabel: 'جدولة 08:00',
+          conditions: [],
+          actions: [
+            { type: 'create_report', label: 'إنشاء التقرير اليومي' },
+            { type: 'send_notification', label: 'إرسال للقائد' },
+          ],
+          systems: ['Reports'],
+          status: 'active',
+          runs: 90,
+          successRuns: 88,
+          failedRuns: 2,
+          successRate: 98,
+          lastRun: isoAgo(3),
+          nextRun: isoAgo(-21),
+          createdBy: 'نور فهد',
+          owner: 'نور فهد',
+          schedule: { every: 'يوم', time: '08:00' },
+          sourceModule: 'التقارير',
+        }),
+        mk(a5, 'أرشفة إعلانات منتهية', {
+          description: 'عند انتهاء الحملة أرشفة الإعلان تلقائياً.',
+          module: 'الإعلانات',
+          triggerType: 'status_change',
+          triggerLabel: 'انتهاء حملة',
+          conditions: [{ field: 'حالة الحملة', op: 'يساوي', value: 'منتهية' }],
+          actions: [{ type: 'update_status', label: 'أرشفة الإعلان' }],
+          systems: ['Ads'],
+          status: 'paused',
+          runs: 22,
+          successRuns: 20,
+          failedRuns: 2,
+          successRate: 91,
+          lastRun: isoAgo(72),
+          createdBy: 'فريق الإعلانات',
+          owner: 'فريق الإعلانات',
+          sourceModule: 'الإعلانات',
+        }),
+        mk(a6, 'إنشاء مهمة من تنبيه أمني', {
+          description: 'عند تسجيل حادث أمني حرج: إنشاء مهمة وتعيينها وإرسال إشعار.',
+          module: 'أمن المعلومات',
+          triggerType: 'create_record',
+          triggerLabel: 'حادثة أمن',
+          conditions: [
+            { field: 'مستوى الخطورة', op: 'يساوي', value: 'حرج', logic: 'AND' },
+            { field: 'الحالة', op: 'يساوي', value: 'جديد' },
+          ],
+          actions: [
+            { type: 'create_task', label: 'إنشاء مهمة عاجلة' },
+            { type: 'assign_user', label: 'تعيين لمسؤول الأمن' },
+            { type: 'send_notification', label: 'إرسال إشعار' },
+            { type: 'create_log', label: 'تسجيل العملية' },
+          ],
+          systems: ['Security', 'Tasks'],
+          status: 'active',
+          runs: 17,
+          successRuns: 16,
+          failedRuns: 1,
+          successRate: 94,
+          lastRun: isoAgo(2),
+          createdBy: 'أحمد الراشد',
+          owner: 'أحمد الراشد',
+          creationMethod: 'إنشاء يدوي',
+          sourceModule: 'أمن المعلومات',
+          templateUsed: 'حادث أمني حرج',
+        }),
+      ],
+      queue: [
+        {
+          id: 'Q-2026-00001',
+          automationId: a2,
+          name: 'أتمتة ترحيب العملاء الجدد',
+          priority: 'عالي',
+          status: 'queued',
+          addedAt: isoAgo(1),
+          expectedRun: isoAgo(-0.5),
+          reason: 'انتظار نافذة التشغيل',
+        },
+        {
+          id: 'Q-2026-00002',
+          automationId: a1,
+          name: 'أتمتة نسخ احتياطي للمنصات',
+          priority: 'متوسط',
+          status: 'queued',
+          addedAt: isoAgo(2),
+          expectedRun: isoAgo(-2),
+          reason: 'جدولة ليلية',
+        },
+      ],
+      executions: [
+        {
+          id: 'RUN-2026-001280',
+          automationId: a6,
+          automationName: 'إنشاء مهمة من تنبيه أمني',
+          trigger: 'حادثة أمن',
+          triggeredBy: 'Security Incident INC-2026-00125',
+          startTime: isoAgo(2, 10),
+          endTime: isoAgo(2, 8),
+          durationSec: 2.1,
+          steps: [
+            { name: 'استلام المحفز', ok: true, at: isoAgo(2, 10), detail: 'INC-2026-00125' },
+            { name: 'فحص الشروط', ok: true, at: isoAgo(2, 10), detail: 'الخطورة = حرج' },
+            { name: 'إنشاء مهمة', ok: true, at: isoAgo(2, 9), detail: 'TASK-00921' },
+            { name: 'تعيين مسؤول', ok: true, at: isoAgo(2, 9), detail: 'أحمد الراشد' },
+            { name: 'إرسال إشعار', ok: true, at: isoAgo(2, 8), detail: 'تم' },
+          ],
+          status: 'Success',
+          error: '',
+        },
+        {
+          id: 'RUN-2026-001281',
+          automationId: a1,
+          automationName: 'مزامنة الأنظمة الليلية',
+          trigger: 'جدولة 02:00',
+          triggeredBy: 'Scheduler',
+          startTime: isoAgo(8, 5),
+          endTime: isoAgo(8, 0),
+          durationSec: 48,
+          steps: [
+            { name: 'استلام المحفز', ok: true, at: isoAgo(8, 5), detail: 'Schedule' },
+            { name: 'مزامنة ERP', ok: true, at: isoAgo(8, 3), detail: 'OK' },
+            { name: 'مزامنة LMS', ok: false, at: isoAgo(8, 1), detail: 'Connection authentication expired' },
+          ],
+          status: 'Failed',
+          error: 'فشل مزامنة LMS — انتهت صلاحية المصادقة',
+        },
+        {
+          id: 'RUN-2026-001282',
+          automationId: a4,
+          automationName: 'إصدار تقرير يومي للقائد',
+          trigger: 'جدولة 08:00',
+          triggeredBy: 'Scheduler',
+          startTime: isoAgo(3),
+          endTime: isoAgo(2, 58),
+          durationSec: 12,
+          steps: [
+            { name: 'استلام المحفز', ok: true, at: isoAgo(3), detail: 'Schedule' },
+            { name: 'إنشاء التقرير', ok: true, at: isoAgo(2, 59), detail: 'Daily Report' },
+            { name: 'إرسال للقائد', ok: true, at: isoAgo(2, 58), detail: 'OK' },
+          ],
+          status: 'Success',
+          error: '',
+        },
+      ],
+      connections: [
+        { id: 'ACON-2026-00001', system: 'ERP', type: 'Database Sync', status: 'Connected', lastChecked: isoAgo(1), usedBy: [a1], owner: 'مركز التكامل' },
+        { id: 'ACON-2026-00002', system: 'LMS', type: 'API', status: 'Error', lastChecked: isoAgo(8), usedBy: [a1], owner: 'مركز التكامل', lastError: 'Authentication expired' },
+        { id: 'ACON-2026-00003', system: 'Security', type: 'Event Bus', status: 'Connected', lastChecked: isoAgo(0.5), usedBy: [a6], owner: 'أحمد الراشد' },
+        { id: 'ACON-2026-00004', system: 'Tasks', type: 'Internal', status: 'Connected', lastChecked: isoAgo(0.5), usedBy: [a6, a2], owner: 'مشغّل هوب' },
+        { id: 'ACON-2026-00005', system: 'Ads', type: 'Internal', status: 'Connected', lastChecked: isoAgo(4), usedBy: [a5], owner: 'فريق الإعلانات' },
+      ],
+      templates: [
+        {
+          id: 'TPL-SEC-01',
+          category: 'SECURITY',
+          name: 'عند تسجيل حادث حرج → مهمة + إشعار',
+          module: 'أمن المعلومات',
+          triggerType: 'create_record',
+          triggerLabel: 'تسجيل حادث أمني',
+          conditions: [{ field: 'مستوى الخطورة', op: 'يساوي', value: 'حرج' }],
+          actions: [
+            { type: 'create_task', label: 'إنشاء مهمة عاجلة' },
+            { type: 'assign_user', label: 'تعيين لمسؤول الأمن' },
+            { type: 'send_notification', label: 'إرسال إشعار' },
+          ],
+          systems: ['Security', 'Tasks'],
+        },
+        {
+          id: 'TPL-DG-01',
+          category: 'DATA GOVERNANCE',
+          name: 'بيانات غير مصنفة → مهمة للـSteward',
+          module: 'حوكمة البيانات',
+          triggerType: 'event',
+          triggerLabel: 'اكتشاف بيانات غير مصنفة',
+          conditions: [{ field: 'التصنيف', op: 'يساوي', value: '' }],
+          actions: [{ type: 'create_task', label: 'إنشاء مهمة تصنيف' }, { type: 'assign_user', label: 'تعيين Data Steward' }],
+          systems: ['Data Governance'],
+        },
+        {
+          id: 'TPL-WF-01',
+          category: 'WORKFORCE',
+          name: 'انخفاض الإنتاجية → تنبيه',
+          module: 'القوى العاملة',
+          triggerType: 'event',
+          triggerLabel: 'حدث قياس',
+          conditions: [{ field: 'الإنتاجية', op: 'أقل من', value: '70' }],
+          actions: [{ type: 'send_notification', label: 'إرسال تنبيه' }],
+          systems: ['Workforce'],
+        },
+        {
+          id: 'TPL-GOV-01',
+          category: 'GOVERNANCE',
+          name: 'اعتماد قرار → تفعيل الإجراء',
+          module: 'الحوكمة',
+          triggerType: 'approval',
+          triggerLabel: 'اعتماد قرار',
+          conditions: [],
+          actions: [{ type: 'update_status', label: 'تفعيل الإجراء المرتبط' }],
+          systems: ['Governance'],
+        },
+        {
+          id: 'TPL-REP-01',
+          category: 'REPORTS',
+          name: 'التقرير الشهري تلقائياً',
+          module: 'التقارير',
+          triggerType: 'schedule',
+          triggerLabel: 'جدولة شهرية',
+          conditions: [],
+          actions: [{ type: 'create_report', label: 'إنشاء التقرير الشهري' }],
+          systems: ['Reports'],
+          schedule: { every: 'شهر', time: '09:00' },
+        },
+        {
+          id: 'TPL-ADS-01',
+          category: 'ADS',
+          name: 'انتهاء حملة → أرشفة',
+          module: 'الإعلانات',
+          triggerType: 'status_change',
+          triggerLabel: 'انتهاء حملة',
+          conditions: [],
+          actions: [{ type: 'update_status', label: 'أرشفة الحملة' }],
+          systems: ['Ads'],
+        },
+      ],
+      auditLog: [
+        {
+          id: uid('autaud'),
+          user: 'النظام',
+          action: 'تهيئة وحدة الأتمتة',
+          automationId: '',
+          automationName: 'systems-automation',
+          at: isoAgo(200),
+          oldValue: '',
+          newValue: 'schema v2',
+        },
+      ],
+      people: ['أحمد الراشد', 'سارة العتيبي', 'نور فهد', 'مركز التكامل', 'الحوكمة', 'فريق الإعلانات', 'مشغّل هوب'],
+      flows: [],
+    };
+  };
+
+  const recomputeAutomationKpis = (sa = get().systemsAutomation) => {
+    if (!sa) return sa;
+    const autos = (sa.automations || sa.flows || []).filter((a) => !a.archived);
+    const execs = sa.executions || [];
+    sa.activeFlows = autos.filter((a) => a.status === 'active').length;
+    sa.pausedFlows = autos.filter((a) => a.status === 'paused').length;
+    sa.draftFlows = autos.filter((a) => a.status === 'draft').length;
+    sa.errorFlows = autos.filter((a) => a.status === 'error').length;
+    sa.runningNow = execs.filter((e) => e.status === 'Running').length;
+    sa.queuedCount = (sa.queue || []).filter((q) => q.status === 'queued').length;
+    const done = execs.filter((e) => e.status === 'Success' || e.status === 'Failed');
+    const ok = done.filter((e) => e.status === 'Success').length;
+    sa.successRate = done.length ? Math.round((ok / done.length) * 100) : autos.length ? Math.round(autos.reduce((s, a) => s + Number(a.successRate || 0), 0) / autos.length) : 0;
+    sa.failedExecutions = execs.filter((e) => e.status === 'Failed').length;
+    sa.totalAutomations = autos.length;
+    // legacy mirror
+    sa.flows = autos.map((a) => ({
+      id: a.id,
+      name: a.name,
+      trigger: a.triggerLabel || a.trigger,
+      system: (a.systems || []).join(' · ') || a.system,
+      status: a.status === 'active' ? 'active' : a.status === 'paused' ? 'paused' : a.status,
+      runs: a.runs || 0,
+    }));
+    return sa;
+  };
 
   const defaultSettings = () => ({
     orgNameAr: 'نايوش هوب',
@@ -1722,9 +2104,12 @@ const HubStore = (() => {
     } else {
       recomputeDataGovernanceKpis(state.dataGovernance);
     }
-    if (!state.systemsAutomation) {
+    if (!state.systemsAutomation || state.systemsAutomation.schemaVersion !== 2) {
       state.systemsAutomation = seedSystemsAutomation();
+      recomputeAutomationKpis(state.systemsAutomation);
       changed = true;
+    } else {
+      recomputeAutomationKpis(state.systemsAutomation);
     }
     if (!Array.isArray(state.notifications)) {
       state.notifications = [];
@@ -4273,25 +4658,335 @@ const HubStore = (() => {
     return created;
   };
 
-  const toggleAutomationFlow = (id) => {
-    const f = get().systemsAutomation?.flows?.find((x) => x.id === id);
+  const autoBag = () => {
+    const s = get();
+    if (!s.systemsAutomation || s.systemsAutomation.schemaVersion !== 2) {
+      s.systemsAutomation = seedSystemsAutomation();
+    }
+    return s.systemsAutomation;
+  };
+
+  const pushAutoAudit = (entry = {}) => {
+    const sa = autoBag();
+    if (!Array.isArray(sa.auditLog)) sa.auditLog = [];
+    const row = {
+      id: entry.id || nextSecSeq(sa.auditLog, 'TXN-AUTO'),
+      user: entry.user || 'مشغّل هوب',
+      action: entry.action || 'تعديل',
+      automationId: entry.automationId || '',
+      automationName: entry.automationName || '',
+      at: nowIso(),
+      oldValue: entry.oldValue ?? '',
+      newValue: entry.newValue ?? '',
+    };
+    sa.auditLog.unshift(row);
+    if (sa.auditLog.length > 500) sa.auditLog.length = 500;
+    return row;
+  };
+
+  const findAutomation = (id) => {
+    const sa = autoBag();
+    return (sa.automations || sa.flows || []).find((x) => x.id === id) || null;
+  };
+
+  const toggleAutomationFlow = (id, actor = 'مشغّل هوب') => {
+    const f = findAutomation(id);
     if (!f) return null;
+    const old = f.status;
     f.status = f.status === 'active' ? 'paused' : 'active';
-    get().systemsAutomation.activeFlows = get().systemsAutomation.flows.filter((x) => x.status === 'active').length;
+    f.updatedBy = actor;
+    f.updatedAt = nowIso();
+    pushAutoAudit({
+      user: actor,
+      action: f.status === 'active' ? 'تفعيل أتمتة' : 'إيقاف أتمتة',
+      automationId: f.id,
+      automationName: f.name,
+      oldValue: old,
+      newValue: f.status,
+    });
+    recomputeAutomationKpis();
     pushFeed('decision', `أتمتة · ${f.name}: ${f.status}`);
     save();
     return f;
   };
 
-  const runAutomationFlow = (id) => {
-    const f = get().systemsAutomation?.flows?.find((x) => x.id === id);
+  const runAutomationFlow = (id, opts = {}, actor = 'مشغّل هوب') => {
+    const sa = autoBag();
+    const f = findAutomation(id);
     if (!f) return null;
+    if (f.status === 'draft') return { error: 'لا يمكن تشغيل مسودة — فعّل الأتمتة أولاً' };
+    if (!Array.isArray(sa.executions)) sa.executions = [];
+    const start = nowIso();
+    const steps = [];
+    const actions = f.actions?.length
+      ? f.actions
+      : [{ type: 'run', label: 'تنفيذ الأتمتة' }];
+    steps.push({ name: 'استلام المحفز', ok: true, at: start, detail: opts.triggeredBy || actor || 'تشغيل يدوي' });
+    if (f.conditions?.length) {
+      steps.push({
+        name: 'فحص الشروط',
+        ok: true,
+        at: nowIso(),
+        detail: f.conditions.map((c) => `${c.field} ${c.op} ${c.value}`).join(' AND '),
+      });
+    }
+    let failed = false;
+    let error = '';
+    // Demo fail if LMS connection error and automation uses LMS
+    const badConn = (sa.connections || []).find((c) => c.status === 'Error' && (f.systems || []).includes(c.system));
+    actions.forEach((act, idx) => {
+      const useFail = badConn && /مزامنة LMS|LMS/i.test(act.label || '') && !opts.forceSuccess;
+      const forceFail = opts.forceFailStep === idx;
+      const ok = !(useFail || forceFail);
+      if (!ok && !failed) {
+        failed = true;
+        error = useFail ? badConn.lastError || 'فشل الاتصال' : `فشل في الخطوة: ${act.label}`;
+      }
+      steps.push({
+        name: act.label || act.type,
+        ok: !failed || (ok && !failed),
+        at: nowIso(),
+        detail: ok && !failed ? 'OK' : error || 'Failed',
+      });
+      if (failed && (f.errorHandling || 'stop') === 'stop') {
+        // mark remaining as skipped conceptually by stopping
+      }
+    });
+    if (!failed) {
+      steps.push({ name: 'اكتمال التشغيل', ok: true, at: nowIso(), detail: 'Success' });
+    }
+    const end = nowIso();
+    const durationSec = Math.max(0.5, Math.round((new Date(end) - new Date(start)) / 100) / 10);
+    const exec = {
+      id: nextSecSeq(sa.executions, 'RUN'),
+      automationId: f.id,
+      automationName: f.name,
+      trigger: f.triggerLabel || f.trigger,
+      triggeredBy: opts.triggeredBy || `تشغيل يدوي · ${actor}`,
+      startTime: start,
+      endTime: end,
+      durationSec,
+      steps,
+      status: failed ? 'Failed' : 'Success',
+      error,
+    };
+    sa.executions.unshift(exec);
     f.runs = (f.runs || 0) + 1;
-    f.status = 'active';
-    get().systemsAutomation.savedHours = (get().systemsAutomation.savedHours || 0) + 1;
-    pushFeed('decision', `تشغيل أتمتة: ${f.name}`);
+    if (failed) f.failedRuns = (f.failedRuns || 0) + 1;
+    else f.successRuns = (f.successRuns || 0) + 1;
+    const total = (f.successRuns || 0) + (f.failedRuns || 0);
+    f.successRate = total ? Math.round(((f.successRuns || 0) / total) * 100) : 100;
+    f.lastRun = end;
+    if (!failed) sa.savedHours = (sa.savedHours || 0) + 1;
+    if (failed && f.status === 'active' && (f.systems || []).some((sys) => (sa.connections || []).find((c) => c.system === sys && c.status === 'Error'))) {
+      f.status = 'error';
+    }
+    pushAutoAudit({
+      user: actor,
+      action: failed ? 'تشغيل فاشل' : 'تشغيل ناجح',
+      automationId: f.id,
+      automationName: f.name,
+      newValue: exec.id,
+    });
+    recomputeAutomationKpis();
+    pushFeed('decision', `تشغيل أتمتة: ${f.name} · ${exec.status}`);
+    save();
+    return exec;
+  };
+
+  const addAutomation = (payload = {}, actor = 'مشغّل هوب') => {
+    const sa = autoBag();
+    if (!Array.isArray(sa.automations)) sa.automations = [];
+    const item = {
+      id: nextSecSeq(sa.automations, 'AUTO'),
+      name: payload.name || 'أتمتة جديدة',
+      description: payload.description || '',
+      module: payload.module || 'العمليات',
+      triggerType: payload.triggerType || 'manual',
+      triggerLabel: payload.triggerLabel || 'تشغيل يدوي',
+      trigger: payload.triggerLabel || 'تشغيل يدوي',
+      conditions: Array.isArray(payload.conditions) ? payload.conditions : [],
+      actions: Array.isArray(payload.actions) ? payload.actions : [],
+      systems: Array.isArray(payload.systems) ? payload.systems : [],
+      system: (payload.systems || []).join(' · '),
+      status: payload.draft ? 'draft' : payload.activate ? 'active' : 'draft',
+      runs: 0,
+      successRuns: 0,
+      failedRuns: 0,
+      successRate: 100,
+      lastRun: '',
+      nextRun: payload.schedule?.time ? '' : '',
+      createdBy: actor,
+      createdAt: nowIso(),
+      creationMethod: payload.creationMethod || (payload.templateUsed ? 'Template' : 'إنشاء يدوي'),
+      templateUsed: payload.templateUsed || '',
+      sourceModule: payload.sourceModule || payload.module || '',
+      updatedBy: actor,
+      updatedAt: nowIso(),
+      owner: payload.owner || actor,
+      schedule: payload.schedule || null,
+      retryPolicy: payload.retryPolicy || { retries: sa.settings?.defaultRetries || 3, waitMinutes: 5, onFail: 'notify' },
+      errorHandling: payload.errorHandling || 'stop',
+      timeoutSec: Number(payload.timeoutSec || 120),
+      logging: true,
+      sensitive: !!payload.sensitive,
+      archived: false,
+      draft: !!payload.draft && !payload.activate,
+    };
+    sa.automations.unshift(item);
+    pushAutoAudit({
+      user: actor,
+      action: item.status === 'active' ? 'إنشاء وتفعيل أتمتة' : 'إنشاء أتمتة',
+      automationId: item.id,
+      automationName: item.name,
+      newValue: item.status,
+    });
+    recomputeAutomationKpis();
+    save();
+    return item;
+  };
+
+  const updateAutomation = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const f = findAutomation(id);
+    if (!f) return null;
+    Object.keys(patch).forEach((k) => {
+      if (patch[k] === undefined || patch[k] === f[k]) return;
+      pushAutoAudit({
+        user: actor,
+        action: `تعديل أتمتة (${k})`,
+        automationId: f.id,
+        automationName: f.name,
+        oldValue: typeof f[k] === 'object' ? JSON.stringify(f[k]) : String(f[k] ?? ''),
+        newValue: typeof patch[k] === 'object' ? JSON.stringify(patch[k]) : String(patch[k] ?? ''),
+      });
+    });
+    Object.assign(f, patch, { updatedBy: actor, updatedAt: nowIso() });
+    if (Array.isArray(f.systems)) f.system = f.systems.join(' · ');
+    if (f.triggerLabel) f.trigger = f.triggerLabel;
+    recomputeAutomationKpis();
     save();
     return f;
+  };
+
+  const duplicateAutomation = (id, actor = 'مشغّل هوب') => {
+    const f = findAutomation(id);
+    if (!f) return null;
+    return addAutomation(
+      {
+        ...f,
+        name: `${f.name} (نسخة)`,
+        draft: true,
+        activate: false,
+        creationMethod: 'إنشاء يدوي',
+        templateUsed: f.id,
+      },
+      actor
+    );
+  };
+
+  const archiveAutomation = (id, actor = 'مشغّل هوب') => {
+    const f = findAutomation(id);
+    if (!f) return null;
+    f.archived = true;
+    f.status = 'paused';
+    pushAutoAudit({ user: actor, action: 'أرشفة أتمتة', automationId: f.id, automationName: f.name, newValue: 'archived' });
+    recomputeAutomationKpis();
+    save();
+    return f;
+  };
+
+  const testAutomation = (id, actor = 'مشغّل هوب') => {
+    const f = findAutomation(id) || id;
+    const auto = typeof f === 'object' ? f : findAutomation(id);
+    if (!auto) return { ok: false, error: 'الأتمتة غير موجودة', steps: [] };
+    const steps = [];
+    steps.push({ name: 'المحفز', ok: !!auto.triggerType || !!auto.triggerLabel, detail: auto.triggerLabel || auto.trigger });
+    steps.push({
+      name: 'الشروط',
+      ok: true,
+      detail: auto.conditions?.length ? auto.conditions.map((c) => `${c.field} ${c.op} ${c.value}`).join(' AND ') : 'بدون شروط',
+    });
+    (auto.actions || []).forEach((a) => {
+      const missing = !a.type && !a.label;
+      steps.push({ name: a.label || a.type || 'إجراء', ok: !missing, detail: missing ? 'إجراء غير مكتمل' : 'جاهز' });
+    });
+    if (!(auto.actions || []).length) steps.push({ name: 'الإجراءات', ok: false, detail: 'لا توجد إجراءات' });
+    const ok = steps.every((s) => s.ok);
+    pushAutoAudit({
+      user: actor,
+      action: 'اختبار أتمتة',
+      automationId: auto.id || '',
+      automationName: auto.name || '',
+      newValue: ok ? 'نجح الاختبار' : 'فشل الاختبار',
+    });
+    save();
+    return { ok, steps, message: ok ? 'تم الاختبار بنجاح' : 'فشل الاختبار — راجع الخطوات' };
+  };
+
+  const retryExecution = (execId, actor = 'مشغّل هوب') => {
+    const sa = autoBag();
+    const ex = sa.executions?.find((x) => x.id === execId);
+    if (!ex) return null;
+    return runAutomationFlow(ex.automationId, { triggeredBy: `إعادة تشغيل ${execId}`, forceSuccess: true }, actor);
+  };
+
+  const updateAutomationQueue = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const q = autoBag().queue?.find((x) => x.id === id);
+    if (!q) return null;
+    Object.assign(q, patch);
+    pushAutoAudit({ user: actor, action: 'تحديث طابور', automationId: q.automationId || '', automationName: q.name, newValue: q.status });
+    recomputeAutomationKpis();
+    save();
+    return q;
+  };
+
+  const runQueueItem = (id, actor = 'مشغّل هوب') => {
+    const q = autoBag().queue?.find((x) => x.id === id);
+    if (!q) return null;
+    const exec = q.automationId ? runAutomationFlow(q.automationId, { triggeredBy: `طابور ${q.id}` }, actor) : null;
+    q.status = 'done';
+    recomputeAutomationKpis();
+    save();
+    return exec;
+  };
+
+  const testAutomationConnection = (id, actor = 'مشغّل هوب') => {
+    const c = autoBag().connections?.find((x) => x.id === id);
+    if (!c) return null;
+    const old = c.status;
+    c.status = /error|expired|fail/i.test(`${c.lastError || ''} ${c.status}`) && c.status === 'Error' ? 'Connected' : c.status === 'Connected' ? 'Connected' : 'Connected';
+    if (/LMS/i.test(c.system) && Math.random() < 0.3) {
+      c.status = 'Error';
+      c.lastError = 'Authentication expired';
+    } else {
+      c.status = 'Connected';
+      c.lastError = '';
+    }
+    c.lastChecked = nowIso();
+    pushAutoAudit({ user: actor, action: 'Test Connection', automationId: '', automationName: c.system, oldValue: old, newValue: c.status });
+    // clear error status on automations if connection recovered
+    if (c.status === 'Connected') {
+      (autoBag().automations || []).forEach((a) => {
+        if (a.status === 'error' && (a.systems || []).includes(c.system)) a.status = 'active';
+      });
+    }
+    recomputeAutomationKpis();
+    save();
+    return c;
+  };
+
+  const updateAutomationSettings = (patch = {}, actor = 'مشغّل هوب') => {
+    const sa = autoBag();
+    if (!sa.settings) sa.settings = {};
+    Object.assign(sa.settings, patch);
+    pushAutoAudit({ user: actor, action: 'تعديل إعدادات الأتمتة', automationId: '', automationName: 'Settings', newValue: JSON.stringify(patch) });
+    save();
+    return sa.settings;
+  };
+
+  const dismissAutomationHelp = () => {
+    autoBag().helpDismissed = true;
+    save();
   };
 
   const resolveCollection = (entity) => {
@@ -4509,6 +5204,19 @@ const HubStore = (() => {
     importDataAssets,
     toggleAutomationFlow,
     runAutomationFlow,
+    recomputeAutomationKpis,
+    pushAutoAudit,
+    addAutomation,
+    updateAutomation,
+    duplicateAutomation,
+    archiveAutomation,
+    testAutomation,
+    retryExecution,
+    updateAutomationQueue,
+    runQueueItem,
+    testAutomationConnection,
+    updateAutomationSettings,
+    dismissAutomationHelp,
     entityAction,
     getEntity,
     refreshCommandStats,

@@ -60,7 +60,7 @@
     governance: ['الحوكمة الدستورية', 'سياسات · امتثال · جودة · عقوبات/مكافآت · دستور'],
     'info-security': ['أمن المعلومات', 'حماية · إدارة · حوادث · مخاطر · ضوابط · تقارير'],
     'data-governance': ['حوكمة البيانات', 'كتالوج · مصادر · جودة · رحلة البيانات · سياسات · اعتمادات'],
-    'systems-automation': ['أتمتة الأنظمة', 'تدفقات · جدولة · تشغيل · طابور الأتمتة'],
+    'systems-automation': ['أتمتة الأنظمة', 'إنشاء · تشغيل · قوالب · سجل عمليات · اتصالات'],
     workforce: ['القوى العاملة عن بُعد', 'إضافة · تعديل · تعيين · حذف · إنذار · مكافآت'],
     systems: ['سوق الأنظمة التشغيلية', 'تفعيل · إيقاف · ربط'],
     tasks: ['المهام والمشاريع', 'توزيع · أولويات · اختناقات · جودة تنفيذ'],
@@ -1740,53 +1740,10 @@
   };
 
   const renderSystemsAutomation = () => {
-    const a = HubStore.get().systemsAutomation || { flows: [], queue: [] };
-    return `
-      <div class="kpi-grid">
-        <article class="kpi"><span>تدفقات نشطة</span><strong>${a.activeFlows}</strong><small>Active flows</small></article>
-        <article class="kpi"><span>نسبة النجاح</span><strong>${a.successRate}%</strong><small>Success</small></article>
-        <article class="kpi"><span>ساعات موفّرة</span><strong>${a.savedHours}</strong><small>Hours saved</small></article>
-        <article class="kpi"><span>طابور</span><strong>${(a.queue || []).length}</strong><small>Queued</small></article>
-      </div>
-      <div class="grid-2" style="margin-top:12px">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-robot icon"></i> تدفقات الأتمتة</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>التدفق</th><th>المحفّز</th><th>النظام</th><th>تشغيلات</th><th>الحالة</th><th></th></tr></thead>
-            <tbody>
-              ${(a.flows || [])
-                .map(
-                  (f) => `<tr>
-                    <td><strong>${esc(f.name)}</strong></td>
-                    <td>${esc(f.trigger)}</td>
-                    <td>${esc(f.system)}</td>
-                    <td>${f.runs}</td>
-                    <td>${badgeStatus(f.status)}</td>
-                    <td style="display:flex;gap:4px;flex-wrap:wrap">
-                      <button class="btn btn-sm btn-primary" data-action="run-auto-flow" data-id="${f.id}">تشغيل</button>
-                      <button class="btn btn-sm btn-dark" data-action="toggle-auto-flow" data-id="${f.id}">تفعيل/إيقاف</button>
-                    </td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-list-ol icon"></i> طابور الأتمتة القادمة</span></h3>
-          ${(a.queue || []).length
-            ? (a.queue || [])
-                .map(
-                  (q) => `<div style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center">
-                    <div><b>${esc(q.name)}</b><br><small style="color:var(--muted)">${esc(q.status)}</small></div>
-                    ${badgeStatus(q.priority)}
-                  </div>`
-                )
-                .join('')
-            : '<div class="empty">لا عناصر في الطابور</div>'}
-        </article>
-      </div>
-    `;
+    if (window.HubSystemsAutomation?.render) {
+      return HubSystemsAutomation.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return `<div class="empty">تعذّر تحميل وحدة أتمتة الأنظمة. تأكد من تحميل js/hub-systems-automation.js</div>`;
   };
 
   const renderOperating = () => {
@@ -2247,6 +2204,15 @@
       }
     }
 
+    if (String(action || '').startsWith('auto-') && window.HubSystemsAutomation?.handle) {
+      const handled = HubSystemsAutomation.handle(action, btn, { user, toast, esc, $ });
+      if (handled) {
+        renderNav();
+        render();
+        return;
+      }
+    }
+
     switch (action) {
       case 'issue-decision': {
         const title = $('#decision-title')?.value.trim();
@@ -2601,6 +2567,13 @@
     const dgEl = e.target.closest('[data-dg-change]');
     if (dgEl && window.HubDataGovernance?.handleChange) {
       if (HubDataGovernance.handleChange(dgEl)) {
+        render();
+      }
+      return;
+    }
+    const autoEl = e.target.closest('[data-auto-change]');
+    if (autoEl && window.HubSystemsAutomation?.handleChange) {
+      if (HubSystemsAutomation.handleChange(autoEl)) {
         render();
       }
       return;
