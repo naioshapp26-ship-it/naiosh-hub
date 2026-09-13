@@ -38,7 +38,7 @@
   const TITLES = {
     overview: ['مركز التحكم العالمي', 'KPIs قابلة للنقر · Needs Action · مصدر · سجل عمليات'],
     operating: ['آلية تشغيل نايوش هوب', 'اشتراكات · مكاتب · خدمات موحّدة · نشاط · تدقيق'],
-    core: ['العقل المركزي', 'قرارات قابلة للتفسير · رؤى بمصدر · تنبؤات · شذوذ'],
+    core: ['العقل المركزي — Central Intelligence', 'قرارات · توصيات · رؤى · تنبؤات · شذوذ · قواعد · تنفيذ · موافقات'],
     tasks: ['إدارة المهام', 'CRUD · مصدر · تدقيق · لوحة حالات · Needs Action'],
     measurement: ['القياس الموحّد', 'درجات · مؤشرات بصيغة · إعادة حساب موثّقة'],
     reports: ['مركز التقارير', 'توليد · عرض · تصدير JSON · جدول · تدقيق'],
@@ -1645,6 +1645,13 @@
     const tkEl = e.target.closest('[data-tk-change]');
     if (tkEl && window.HubTasksWS?.handleChange) {
       if (HubTasksWS.handleChange(tkEl)) {
+        render();
+      }
+      return;
+    }
+    const crEl = e.target.closest('[data-cr-change]');
+    if (crEl && window.HubCoreWS?.handleChange) {
+      if (HubCoreWS.handleChange(crEl)) {
         render();
       }
       return;

@@ -2331,6 +2331,7 @@ const HubStore = (() => {
     }
     if (hydrateTasksDetails()) changed = true;
     if (hydrateOpsCommandDomains()) changed = true;
+    if (hydrateCoreIntelligence()) changed = true;
     if (hydrateClientsBatchDomains()) changed = true;
     return changed;
   };
@@ -2694,6 +2695,406 @@ const HubStore = (() => {
 
     return changed;
   };
+
+  const hydrateCoreIntelligence = () => {
+    const core = get().core || (get().core = {});
+    let changed = false;
+    const stamp = nowIso();
+    const mapStatus = (st) => {
+      const x = String(st || '').toLowerCase();
+      if (x === 'draft') return 'Draft';
+      if (x === 'pending review' || x === 'pending_review') return 'Pending Review';
+      if (x === 'pending' || x === 'pending approval' || x === 'pending_approval') return 'Pending Approval';
+      if (x === 'approved') return 'Approved';
+      if (x === 'executed' || x === 'done') return 'Executed';
+      if (x === 'rejected') return 'Rejected';
+      if (x === 'archived') return 'Archived';
+      return st || 'Draft';
+    };
+    const enrichDecision = (d) => {
+      const title = d.title || 'قرار';
+      const presets = {
+        'إعادة توزيع مهام الاختناق': {
+          decisionId: 'DEC-2026-00001',
+          type: 'Operational',
+          sourceType: 'AI Analysis',
+          engine: 'AI Decision',
+          createdBy: 'Central Intelligence Engine',
+          approvedBy: 'القائد الأعلى',
+          owner: 'غرفة العمليات',
+          reviewer: 'مدير العمليات',
+          confidence: 91,
+          status: 'Executed',
+          category: 'Workforce',
+          priority: 'عالي',
+          description: 'إعادة توزيع المهام المختنقة لتقليل التأخير ورفع إنتاجية الفريق.',
+          reason: 'انخفاض إنتاجية الفريق مع ارتفاع المهام المتأخرة وعبء غير متوازن.',
+          reasoning: [
+            'انخفاض إنتاجية الفريق 18%.',
+            'زيادة المهام المتأخرة 27%.',
+            '4 موظفين لديهم عبء أعلى من المتوسط.',
+            'النظام يتوقع استمرار الانخفاض خلال 7 أيام.',
+          ],
+          recommendation: 'إعادة توزيع المهام بين أعضاء الفريق.',
+          sourceModules: ['القوى العاملة', 'المهام', 'القياس'],
+          dataUsed: 'آخر 30 يوم',
+          model: 'Decision Model v2',
+          evidence: [
+            { source: 'Tasks', metric: 'Overdue Tasks', value: '42', period: 'Last 30 Days', updatedAt: stamp },
+            { source: 'Workforce', metric: 'Utilization', value: '88%', period: 'Current', updatedAt: stamp },
+            { source: 'Measurement', metric: 'Team Productivity', value: '-18%', period: 'Last 14 Days', updatedAt: stamp },
+          ],
+          preview: { tasks: 18, users: 5, impactText: 'خفض التأخير 20%', affectedUsers: 5 },
+          expectedOutcome: 'خفض التأخير 20%',
+          actualOutcome: 'خفض التأخير 17%',
+          impactResult: 'Effective',
+          history: [
+            { at: stamp, action: 'created', by: 'Central Intelligence Engine', detail: 'توليد من تحليل المهام' },
+            { at: stamp, action: 'approved', by: 'القائد الأعلى', detail: 'اعتماد' },
+            { at: stamp, action: 'executed', by: 'غرفة العمليات', detail: 'تنفيذ EXEC-2026-00001' },
+          ],
+        },
+        'تعليق تكامل POSHA مؤقتًا': {
+          decisionId: 'DEC-2026-00002',
+          type: 'Risk',
+          sourceType: 'Anomaly',
+          engine: 'Anomaly',
+          createdBy: 'Anomaly Engine',
+          approvedBy: '',
+          owner: 'التكامل',
+          reviewer: 'أمن المعلومات',
+          confidence: 84,
+          status: 'Pending Approval',
+          category: 'Integration',
+          priority: 'متوسط',
+          description: 'تعليق مؤقت لتكامل POSHA بسبب شذوذ في الطلبات حتى اكتمال التحقيق.',
+          reason: 'قفزات غير طبيعية في طلبات POSHA مع مؤشر شذوذ مرتفع.',
+          reasoning: [
+            'ارتفاع معدل الطلبات الشاذة في POSHA.',
+            'صحة الموصل متدهورة.',
+            'مخاطر على بيانات العملاء إذا استمر التكامل بدون فلترة.',
+          ],
+          recommendation: 'تعليق المزامنة مؤقتًا وفتح تحقيق أمني.',
+          sourceModules: ['التكامل', 'أمن المعلومات', 'عملاء بوشا'],
+          dataUsed: 'آخر 7 أيام',
+          model: 'Anomaly Detector v1',
+          evidence: [
+            { source: 'POSHA', metric: 'Spike Rate', value: '3.4x', period: 'Last 7 Days', updatedAt: stamp },
+            { source: 'Integration', metric: 'Connector Health', value: '88%', period: 'Current', updatedAt: stamp },
+          ],
+          preview: { tasks: 0, users: 2, impactText: 'إيقاف مزامنة POSHA مؤقتًا', affectedUsers: 2 },
+          expectedOutcome: 'احتواء المخاطر خلال 24 ساعة',
+          actualOutcome: '',
+          impactResult: '',
+          history: [
+            { at: stamp, action: 'created', by: 'Anomaly Engine', detail: 'من شذوذ POSHA' },
+            { at: stamp, action: 'submitted', by: 'التكامل', detail: 'إرسال للاعتماد' },
+          ],
+        },
+        'رفع أولوية مشروع Academy': {
+          decisionId: 'DEC-2026-00003',
+          type: 'Growth',
+          sourceType: 'Recommendation',
+          engine: 'Optimization',
+          createdBy: 'Optimization Engine',
+          approvedBy: 'مدير المنصات',
+          owner: 'Academy',
+          reviewer: 'مدير المنصات',
+          confidence: 87,
+          status: 'Executed',
+          category: 'Projects',
+          priority: 'عالي',
+          description: 'رفع أولوية مشروع Academy لتسريع مسار الإطلاق وتقليل زمن الدورة.',
+          reason: 'فرصة تحسين واضحة في مسار Academy مع عائد إنتاجية متوقع.',
+          reasoning: [
+            'اقتراح التحسين يقدّر خفض زمن المسار.',
+            'مؤشرات Academy أعلى من المتوسط في الجاهزية.',
+            'تأخير الإطلاق يؤثر على الإيرادات المتوقعة.',
+          ],
+          recommendation: 'رفع أولوية المشروع وتخصيص موارد إضافية لأسبوعين.',
+          sourceModules: ['الأنظمة', 'القياس', 'المهام'],
+          dataUsed: 'آخر 14 يوم',
+          model: 'Optimization Engine v1',
+          evidence: [
+            { source: 'Academy', metric: 'Cycle Time', value: '12 يوم', period: 'Last 14 Days', updatedAt: stamp },
+            { source: 'Measurement', metric: 'Readiness', value: '81%', period: 'Current', updatedAt: stamp },
+          ],
+          preview: { tasks: 6, users: 3, impactText: 'تسريع الإطلاق أسبوعًا', affectedUsers: 3 },
+          expectedOutcome: 'خفض زمن المسار 15%',
+          actualOutcome: 'خفض زمن المسار 14%',
+          impactResult: 'Effective',
+          history: [
+            { at: stamp, action: 'created', by: 'Optimization Engine', detail: 'من توصية تحسين' },
+            { at: stamp, action: 'approved', by: 'مدير المنصات', detail: 'اعتماد' },
+            { at: stamp, action: 'executed', by: 'Academy', detail: 'تنفيذ EXEC-2026-00002' },
+          ],
+        },
+      };
+      const p = presets[title] || {};
+      const status = p.status || mapStatus(d.status);
+      return Object.assign({}, d, {
+        decisionId: d.decisionId || p.decisionId || nextSecSeq(core.decisions || [], 'DEC'),
+        title,
+        description: d.description || p.description || '',
+        type: d.type || p.type || 'Operational',
+        category: d.category || p.category || 'General',
+        priority: d.priority || p.priority || d.impact || 'متوسط',
+        sourceType: d.sourceType || p.sourceType || (String(d.engine || '').includes('AI') ? 'AI Analysis' : 'يدوي'),
+        source: d.source || p.engine || d.engine || 'محرك القرار',
+        engine: d.engine || p.engine || 'AI Decision',
+        impact: d.impact || p.priority || 'متوسط',
+        confidence: d.confidence != null ? d.confidence : p.confidence != null ? p.confidence : 75,
+        createdBy: d.createdBy || p.createdBy || d.by || 'مشغّل هوب',
+        approvedBy: d.approvedBy != null ? d.approvedBy : p.approvedBy || '',
+        owner: d.owner || p.owner || 'غرفة العمليات',
+        reviewer: d.reviewer || p.reviewer || '',
+        approver: d.approver || p.approvedBy || '',
+        status,
+        createdAt: d.createdAt || d.at || stamp,
+        updatedAt: d.updatedAt || stamp,
+        reason: d.reason || d.rationale || p.reason || '',
+        rationale: d.rationale || p.reason || '',
+        reasoning: Array.isArray(d.reasoning) ? d.reasoning : p.reasoning || [],
+        recommendation: d.recommendation || p.recommendation || '',
+        sourceModules: d.sourceModules || p.sourceModules || ['المهام', 'القياس'],
+        dataUsed: d.dataUsed || p.dataUsed || 'آخر 30 يوم',
+        model: d.model || p.model || 'Decision Model v2',
+        evidence: Array.isArray(d.evidence) ? d.evidence : p.evidence || [],
+        preview: d.preview || p.preview || { tasks: 0, users: 0, impactText: '—', affectedUsers: 0 },
+        expectedOutcome: d.expectedOutcome || p.expectedOutcome || '',
+        actualOutcome: d.actualOutcome || p.actualOutcome || '',
+        impactResult: d.impactResult || p.impactResult || '',
+        feedback: d.feedback || null,
+        history: Array.isArray(d.history) && d.history.length ? d.history : p.history || [{ at: stamp, action: 'created', by: d.by || 'نظام', detail: 'استيراد' }],
+        sensitive: d.sensitive != null ? d.sensitive : status === 'Pending Approval',
+      });
+    };
+
+    if (core.schemaVersion !== 3) {
+      core.schemaVersion = 3;
+      if (!Array.isArray(core.auditLog)) core.auditLog = [];
+      core.settings = Object.assign(
+        {
+          helpDismissed: false,
+          pageSize: 25,
+          confidenceThreshold: 70,
+          requireApprovalForSensitive: true,
+          retentionDays: 365,
+          role: 'admin',
+        },
+        core.settings || {}
+      );
+
+      core.decisions = (core.decisions || []).map(enrichDecision);
+
+      if (!Array.isArray(core.recommendations) || !core.recommendations.length) {
+        core.recommendations = [
+          {
+            id: nextSecSeq([], 'REC'),
+            title: 'إعادة توزيع عبء فريق العمليات',
+            source: 'Insight · ضغط المهام',
+            reason: 'ارتفاع التأخير وعبء غير متوازن',
+            impact: 'عالي',
+            confidence: 89,
+            suggestedAction: 'تحويل إلى قرار إعادة توزيع المهام',
+            owner: 'غرفة العمليات',
+            status: 'Converted',
+            linkedDecisionId: (core.decisions.find((x) => x.title.includes('إعادة توزيع')) || {}).id || '',
+            at: stamp,
+          },
+          {
+            id: uid('rec'),
+            title: 'مراجعة موصل POSHA',
+            source: 'Anomaly Engine',
+            reason: 'قفزات طلبات غير طبيعية',
+            impact: 'متوسط',
+            confidence: 82,
+            suggestedAction: 'تعليق التكامل مؤقتًا',
+            owner: 'التكامل',
+            status: 'New',
+            at: stamp,
+          },
+          {
+            id: uid('rec'),
+            title: 'تسريع مسار Academy',
+            source: 'Optimization',
+            reason: 'فرصة خفض زمن الدورة',
+            impact: 'عالي',
+            confidence: 80,
+            suggestedAction: 'رفع أولوية المشروع',
+            owner: 'Academy',
+            status: 'Reviewed',
+            at: stamp,
+          },
+        ];
+      }
+
+      if (!Array.isArray(core.insights)) core.insights = [];
+      core.insights = (core.insights || []).map((ins) =>
+        Object.assign(
+          {
+            insightId: ins.insightId || nextSecSeq(core.insights, 'INS'),
+            category: ins.category || 'Operations',
+            summary: ins.summary || ins.rationale || '',
+            severity: ins.severity || (ins.confidence > 75 ? 'عالي' : 'متوسط'),
+            generatedAt: ins.generatedAt || ins.at || stamp,
+            status: ins.status === 'closed' ? 'Closed' : ins.status === 'open' ? 'New' : ins.status || 'New',
+          },
+          ins
+        )
+      );
+      if (!core.insights.some((x) => String(x.title || '').includes('التأخير'))) {
+        core.insights.unshift({
+          id: uid('ins'),
+          insightId: nextSecSeq(core.insights, 'INS'),
+          title: 'ارتفاع معدل التأخير في فريق العمليات بنسبة 22%',
+          category: 'Operations',
+          source: 'Tasks + Measurement',
+          summary: 'التأخير تجاوز العتبة الأسبوعية مع تركيز في وردية المساء.',
+          rationale: 'التأخير تجاوز العتبة الأسبوعية مع تركيز في وردية المساء.',
+          severity: 'عالي',
+          confidence: 86,
+          generatedAt: stamp,
+          at: stamp,
+          status: 'New',
+        });
+      }
+
+      core.predictions = (core.predictions || []).map((p) =>
+        Object.assign(
+          {
+            predictionId: p.predictionId || nextSecSeq(core.predictions, 'PRD'),
+            title: p.title || p.risk || 'تنبؤ',
+            target: p.target || 'الإنتاجية',
+            predictedValue: p.predictedValue != null ? p.predictedValue : p.probability,
+            confidence: p.confidence != null ? p.confidence : Math.min(95, (p.probability || 70) + 10),
+            period: p.period || p.eta || '7 أيام',
+            source: p.source || 'Predictive Engine',
+            model: p.model || 'Forecast v1',
+            generatedAt: p.generatedAt || stamp,
+            status: p.status || 'Active',
+          },
+          p
+        )
+      );
+
+      core.anomalies = (core.anomalies || []).map((a) =>
+        Object.assign(
+          {
+            anomalyId: a.anomalyId || nextSecSeq(core.anomalies, 'ANM'),
+            type: a.type || 'Behavioral',
+            metric: a.metric || a.signal || 'Signal',
+            expected: a.expected || 'Baseline',
+            actual: a.actual || String(a.score || ''),
+            deviation: a.deviation || (a.score ? `${a.score}%` : '—'),
+            severity: a.severity || (a.score >= 80 ? 'حرج' : 'متوسط'),
+            detectedAt: a.detectedAt || stamp,
+            owner: a.owner || 'أمن المعلومات',
+            status: a.status === 'closed' ? 'Closed' : a.status === 'investigating' ? 'Investigating' : 'Open',
+          },
+          a
+        )
+      );
+
+      if (!Array.isArray(core.rules) || !core.rules.length) {
+        core.rules = [
+          {
+            id: nextSecSeq([], 'RULE'),
+            name: 'تأخير مهام + استغلال مرتفع',
+            sourceModule: 'المهام',
+            metric: 'Overdue Tasks',
+            operator: '>',
+            value: 30,
+            extraConditions: [{ metric: 'Team Utilization', operator: '>', value: 90 }],
+            action: 'Generate Recommendation',
+            severity: 'High',
+            priority: 'عالي',
+            owner: 'العقل المركزي',
+            status: 'Active',
+            at: stamp,
+          },
+        ];
+      }
+
+      if (!Array.isArray(core.dataSources) || !core.dataSources.length) {
+        core.dataSources = [
+          { id: nextSecSeq([], 'SRC'), name: 'Workforce', module: 'القوى العاملة', type: 'Internal Module', status: 'Connected', lastSync: stamp, records: 128, owner: 'HR Ops' },
+          { id: uid('src'), name: 'Tasks', module: 'المهام', type: 'Internal Module', status: 'Connected', lastSync: stamp, records: 412, owner: 'Ops' },
+          { id: uid('src'), name: 'Measurement', module: 'القياس', type: 'Internal Module', status: 'Connected', lastSync: stamp, records: 96, owner: 'Analytics' },
+          { id: uid('src'), name: 'Security', module: 'أمن المعلومات', type: 'Internal Module', status: 'Connected', lastSync: stamp, records: 54, owner: 'SecOps' },
+          { id: uid('src'), name: 'External ERP', module: 'ERP', type: 'API', status: 'Connected', lastSync: stamp, records: 2200, owner: 'Integration' },
+          { id: uid('src'), name: 'POSHA Feed', module: 'عملاء بوشا', type: 'API', status: 'Degraded', lastSync: stamp, records: 880, owner: 'POSHA' },
+        ];
+      }
+
+      if (!Array.isArray(core.executions) || !core.executions.length) {
+        const d1 = core.decisions.find((x) => x.title.includes('إعادة توزيع')) || core.decisions[0];
+        const d3 = core.decisions.find((x) => x.title.includes('Academy')) || core.decisions[2];
+        core.executions = [
+          {
+            id: nextSecSeq([], 'EXEC'),
+            decisionId: d1?.decisionId || d1?.id,
+            decisionRef: d1?.id,
+            decision: d1?.title || '',
+            executedBy: 'غرفة العمليات',
+            startedAt: stamp,
+            completedAt: stamp,
+            affectedRecords: 18,
+            status: 'Success',
+            result: 'أُعيد توزيع 18 مهمة على 5 موظفين',
+            timeline: [
+              { ok: true, text: 'القرار تم اعتماده' },
+              { ok: true, text: 'تم تحميل البيانات' },
+              { ok: true, text: 'تم التحقق من الشروط' },
+              { ok: true, text: 'تم تحديث المهام' },
+              { ok: true, text: 'تم إرسال الإشعارات' },
+              { ok: true, text: 'اكتمل التنفيذ' },
+            ],
+          },
+          {
+            id: uid('exec'),
+            decisionId: d3?.decisionId || d3?.id,
+            decisionRef: d3?.id,
+            decision: d3?.title || '',
+            executedBy: 'Academy',
+            startedAt: stamp,
+            completedAt: stamp,
+            affectedRecords: 6,
+            status: 'Success',
+            result: 'رُفعت أولوية 6 مهام مشروع',
+            timeline: [
+              { ok: true, text: 'القرار تم اعتماده' },
+              { ok: true, text: 'تم تحديث أولويات المشروع' },
+              { ok: true, text: 'اكتمل التنفيذ' },
+            ],
+          },
+        ];
+      }
+
+      if (!Array.isArray(core.approvals)) {
+        core.approvals = (core.decisions || [])
+          .filter((d) => d.status === 'Pending Approval' || d.status === 'Pending Review')
+          .map((d) => ({
+            id: nextSecSeq(core.approvals || [], 'APR'),
+            decisionRef: d.id,
+            decisionId: d.decisionId,
+            title: d.title,
+            stage: d.status === 'Pending Review' ? 'Review' : 'Approval',
+            assignee: d.approver || d.reviewer || 'القائد الأعلى',
+            status: 'Waiting',
+            direction: 'inbox',
+            at: stamp,
+          }));
+      }
+
+      if (!Array.isArray(core.optimizations)) core.optimizations = [];
+      if (!Array.isArray(core.knowledgeGraph)) core.knowledgeGraph = [];
+      if (!core.engineHealth) core.engineHealth = { decision: 92, predictive: 88, optimization: 85, anomaly: 90, knowledge: 94 };
+      changed = true;
+    }
+    return changed;
+  };
+
 
   const pushDomainAudit = (bag, entry = {}) => {
     if (!bag) return null;
@@ -3364,11 +3765,26 @@ const HubStore = (() => {
 
   // —— Core actions
   const issueDecision = (title, engine = 'AI Decision', impact = 'متوسط', extra = {}) => {
+    if (typeof upsertCoreDecision === 'function') {
+      return upsertCoreDecision(
+        {
+          title,
+          engine,
+          impact,
+          sourceType: engine === 'AI Decision' ? 'AI Analysis' : engine === 'Anomaly' ? 'Anomaly' : 'يدوي',
+          source: extra.source || 'محرك القرار',
+          reason: extra.rationale || '',
+          status: 'Pending Approval',
+          owner: extra.by || 'مشغّل هوب',
+        },
+        extra.by || 'مشغّل هوب'
+      );
+    }
     const item = {
       id: uid('d'),
       title,
       engine,
-      status: 'pending',
+      status: 'Pending Approval',
       impact,
       at: nowIso(),
       source: extra.source || 'محرك القرار',
@@ -3388,10 +3804,11 @@ const HubStore = (() => {
     return item;
   };
 
-  const executeDecision = (id) => {
+  const executeDecision = (id, actor = 'مشغّل هوب') => {
+    if (typeof executeCoreDecision === 'function') return executeCoreDecision(id, actor, true);
     const d = get().core.decisions.find((x) => x.id === id);
     if (!d) return null;
-    d.status = 'executed';
+    d.status = 'Executed';
     pushFeed('decision', `تنفيذ: ${d.title}`);
     save();
     return d;
@@ -4763,6 +5180,547 @@ const HubStore = (() => {
     save();
     return { connector: c, log };
   };
+
+  const coreBag = () => {
+    hydrateCoreIntelligence();
+    return get().core;
+  };
+
+  const pushCoreHistory = (decision, entry) => {
+    if (!decision) return;
+    if (!Array.isArray(decision.history)) decision.history = [];
+    decision.history.unshift({ at: nowIso(), ...entry });
+    decision.history = decision.history.slice(0, 80);
+  };
+
+  const upsertCoreDecision = (payload = {}, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    if (!Array.isArray(core.decisions)) core.decisions = [];
+    let row = payload.id ? core.decisions.find((x) => x.id === payload.id) : null;
+    const stamp = nowIso();
+    const locked = row && (row.status === 'Approved' || row.status === 'Executed');
+    if (locked && payload.forceEdit) {
+      // create revision copy
+      const copy = Object.assign({}, row, {
+        id: uid('d'),
+        decisionId: nextSecSeq(core.decisions, 'DEC'),
+        title: `${row.title} (مراجعة)`,
+        status: 'Draft',
+        approvedBy: '',
+        createdAt: stamp,
+        updatedAt: stamp,
+        createdBy: actor,
+        history: [{ at: stamp, action: 'revision', by: actor, detail: `نسخة معدّلة من ${row.decisionId}` }],
+      });
+      Object.assign(copy, {
+        description: payload.description != null ? payload.description : copy.description,
+        priority: payload.priority || copy.priority,
+        owner: payload.owner || copy.owner,
+        reason: payload.reason || copy.reason,
+        rationale: payload.reason || copy.rationale,
+        impact: payload.impact || copy.impact,
+        reviewer: payload.reviewer || copy.reviewer,
+        approver: payload.approver || copy.approver,
+      });
+      core.decisions.unshift(copy);
+      pushDomainAudit(core, { action: 'decision_revision', detail: copy.title, by: actor, source: copy.sourceType, entityId: copy.id });
+      save();
+      return copy;
+    }
+    if (locked) return { error: 'لا يمكن تعديل قرار معتمد/منفّذ مباشرة — أنشئ نسخة معدّلة' };
+
+    if (row) {
+      Object.assign(row, {
+        title: payload.title != null ? payload.title : row.title,
+        description: payload.description != null ? payload.description : row.description,
+        type: payload.type || row.type,
+        category: payload.category || row.category,
+        priority: payload.priority || row.priority,
+        sourceType: payload.sourceType || row.sourceType,
+        engine: payload.engine || row.engine,
+        source: payload.source || row.source,
+        impact: payload.impact || row.impact,
+        confidence: payload.confidence != null ? Number(payload.confidence) : row.confidence,
+        owner: payload.owner || row.owner,
+        reviewer: payload.reviewer || row.reviewer,
+        approver: payload.approver || row.approver,
+        reason: payload.reason != null ? payload.reason : row.reason,
+        rationale: payload.reason != null ? payload.reason : row.rationale,
+        recommendation: payload.recommendation != null ? payload.recommendation : row.recommendation,
+        sourceModules: payload.sourceModules || row.sourceModules,
+        dataUsed: payload.dataUsed || row.dataUsed,
+        model: payload.model || row.model,
+        evidence: payload.evidence || row.evidence,
+        preview: payload.preview || row.preview,
+        expectedOutcome: payload.expectedOutcome != null ? payload.expectedOutcome : row.expectedOutcome,
+        status: payload.status || row.status,
+        updatedAt: stamp,
+        sensitive: !!payload.sensitive || row.sensitive,
+      });
+      pushCoreHistory(row, { action: 'edited', by: actor, detail: 'تعديل القرار' });
+      pushDomainAudit(core, { action: 'decision_edited', detail: row.title, by: actor, source: row.sourceType, entityId: row.id });
+      save();
+      return row;
+    }
+
+    const item = {
+      id: uid('d'),
+      decisionId: nextSecSeq(core.decisions, 'DEC'),
+      title: String(payload.title || '').trim(),
+      description: String(payload.description || '').trim(),
+      type: payload.type || 'Operational',
+      category: payload.category || 'General',
+      priority: payload.priority || 'متوسط',
+      sourceType: payload.sourceType || 'يدوي',
+      engine: payload.engine || (payload.sourceType === 'AI Analysis' ? 'AI Decision' : payload.sourceType === 'Rule Engine' ? 'Rule Engine' : 'Manual'),
+      source: payload.source || 'إدخال يدوي',
+      impact: payload.impact || payload.priority || 'متوسط',
+      confidence: Number(payload.confidence) || 70,
+      createdBy: actor,
+      approvedBy: '',
+      owner: payload.owner || actor,
+      reviewer: payload.reviewer || '',
+      approver: payload.approver || '',
+      status: payload.status || 'Draft',
+      createdAt: stamp,
+      updatedAt: stamp,
+      at: stamp,
+      reason: payload.reason || '',
+      rationale: payload.reason || '',
+      reasoning: payload.reasoning || [],
+      recommendation: payload.recommendation || '',
+      sourceModules: payload.sourceModules || [],
+      dataUsed: payload.dataUsed || 'آخر 30 يوم',
+      model: payload.model || 'Decision Model v2',
+      evidence: payload.evidence || [],
+      preview: payload.preview || { tasks: 0, users: 0, impactText: '—', affectedUsers: 0 },
+      expectedOutcome: payload.expectedOutcome || '',
+      actualOutcome: '',
+      impactResult: '',
+      feedback: null,
+      history: [{ at: stamp, action: 'created', by: actor, detail: 'إنشاء قرار' }],
+      sensitive: !!payload.sensitive,
+    };
+    if (!item.title) return { error: 'عنوان القرار مطلوب' };
+    core.decisions.unshift(item);
+    pushDomainAudit(core, { action: 'decision_created', detail: item.title, by: actor, source: item.sourceType, entityId: item.id });
+    pushFeed('decision', item.title);
+    save();
+    return item;
+  };
+
+  const updateCoreDecisionStatus = (id, status, actor = 'مشغّل هوب', detail = '') => {
+    const core = coreBag();
+    const row = (core.decisions || []).find((x) => x.id === id);
+    if (!row) return null;
+    const prev = row.status;
+    row.status = status;
+    row.updatedAt = nowIso();
+    if (status === 'Approved') row.approvedBy = actor;
+    if (status === 'Rejected') row.approvedBy = '';
+    pushCoreHistory(row, { action: status.toLowerCase().replace(/\s+/g, '_'), by: actor, detail: detail || `${prev} → ${status}` });
+    pushDomainAudit(core, { action: 'decision_status', detail: `${row.title}: ${status}`, by: actor, source: row.sourceType, entityId: row.id });
+
+    if (!Array.isArray(core.approvals)) core.approvals = [];
+    if (status === 'Pending Review' || status === 'Pending Approval') {
+      core.approvals.unshift({
+        id: nextSecSeq(core.approvals, 'APR'),
+        decisionRef: row.id,
+        decisionId: row.decisionId,
+        title: row.title,
+        stage: status === 'Pending Review' ? 'Review' : 'Approval',
+        assignee: status === 'Pending Review' ? row.reviewer || actor : row.approver || 'القائد الأعلى',
+        status: 'Waiting',
+        direction: 'inbox',
+        at: nowIso(),
+      });
+    }
+    save();
+    return row;
+  };
+
+  const archiveCoreDecision = (id, actor = 'مشغّل هوب') => updateCoreDecisionStatus(id, 'Archived', actor, 'أرشفة');
+
+  const deleteCoreDecision = (id, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    const row = (core.decisions || []).find((x) => x.id === id);
+    if (!row) return null;
+    if (row.status === 'Executed' || row.status === 'Approved') {
+      return { error: 'القرارات المنفّذة/المعتمدة تُؤرشف فقط' };
+    }
+    core.decisions = core.decisions.filter((x) => x.id !== id);
+    pushDomainAudit(core, { action: 'decision_deleted', detail: row.title, by: actor, source: row.sourceType, entityId: id });
+    save();
+    return { ok: true };
+  };
+
+  const upsertCoreRecommendation = (payload = {}, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    if (!Array.isArray(core.recommendations)) core.recommendations = [];
+    let row = payload.id ? core.recommendations.find((x) => x.id === payload.id) : null;
+    if (row) {
+      Object.assign(row, payload, { updatedAt: nowIso() });
+      pushDomainAudit(core, { action: 'recommendation_updated', detail: row.title, by: actor, source: row.source, entityId: row.id });
+      save();
+      return row;
+    }
+    const item = {
+      id: nextSecSeq(core.recommendations, 'REC'),
+      title: String(payload.title || '').trim(),
+      source: payload.source || 'يدوي',
+      reason: payload.reason || '',
+      impact: payload.impact || 'متوسط',
+      confidence: Number(payload.confidence) || 70,
+      suggestedAction: payload.suggestedAction || '',
+      owner: payload.owner || actor,
+      status: payload.status || 'New',
+      at: nowIso(),
+    };
+    if (!item.title) return { error: 'عنوان التوصية مطلوب' };
+    core.recommendations.unshift(item);
+    pushDomainAudit(core, { action: 'recommendation_created', detail: item.title, by: actor, source: item.source, entityId: item.id });
+    save();
+    return item;
+  };
+
+  const convertRecommendationToDecision = (id, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    const rec = (core.recommendations || []).find((x) => x.id === id);
+    if (!rec) return null;
+    const decision = upsertCoreDecision(
+      {
+        title: rec.title,
+        description: rec.suggestedAction || rec.reason,
+        reason: rec.reason,
+        impact: rec.impact,
+        confidence: rec.confidence,
+        sourceType: 'Recommendation',
+        engine: 'Recommendation',
+        source: rec.source,
+        owner: rec.owner,
+        status: 'Draft',
+        recommendation: rec.suggestedAction,
+      },
+      actor
+    );
+    if (decision?.error) return decision;
+    rec.status = 'Converted';
+    rec.linkedDecisionId = decision.id;
+    pushDomainAudit(core, { action: 'recommendation_converted', detail: rec.title, by: actor, source: rec.source, entityId: rec.id });
+    save();
+    return decision;
+  };
+
+  const upsertCoreInsight = (payload = {}, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    if (!Array.isArray(core.insights)) core.insights = [];
+    let row = payload.id ? core.insights.find((x) => x.id === payload.id) : null;
+    if (row) {
+      Object.assign(row, payload, { updatedAt: nowIso() });
+      save();
+      return row;
+    }
+    const item = {
+      id: uid('ins'),
+      insightId: nextSecSeq(core.insights, 'INS'),
+      title: String(payload.title || '').trim(),
+      category: payload.category || 'Operations',
+      source: payload.source || 'إدخال يدوي',
+      summary: payload.summary || payload.rationale || '',
+      rationale: payload.rationale || payload.summary || '',
+      severity: payload.severity || 'متوسط',
+      confidence: Number(payload.confidence) || 70,
+      generatedAt: nowIso(),
+      at: nowIso(),
+      status: payload.status || 'New',
+      by: actor,
+    };
+    if (!item.title) return { error: 'عنوان الرؤية مطلوب' };
+    core.insights.unshift(item);
+    pushDomainAudit(core, { action: 'insight_created', detail: item.title, by: actor, source: item.source, entityId: item.id });
+    save();
+    return item;
+  };
+
+  const upsertCorePrediction = (payload = {}, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    if (!Array.isArray(core.predictions)) core.predictions = [];
+    let row = payload.id ? core.predictions.find((x) => x.id === payload.id) : null;
+    if (row) {
+      Object.assign(row, payload);
+      save();
+      return row;
+    }
+    const item = {
+      id: uid('p'),
+      predictionId: nextSecSeq(core.predictions, 'PRD'),
+      title: String(payload.title || payload.risk || '').trim(),
+      risk: payload.title || payload.risk || '',
+      target: payload.target || 'الإنتاجية',
+      predictedValue: Number(payload.predictedValue) || Number(payload.probability) || 50,
+      probability: Number(payload.predictedValue) || Number(payload.probability) || 50,
+      confidence: Number(payload.confidence) || 80,
+      period: payload.period || payload.eta || '7 أيام',
+      eta: payload.period || payload.eta || '7 أيام',
+      source: payload.source || 'Predictive Engine',
+      model: payload.model || 'Forecast v1',
+      severity: payload.severity || 'متوسط',
+      generatedAt: nowIso(),
+      status: payload.status || 'Active',
+    };
+    if (!item.title) return { error: 'عنوان التنبؤ مطلوب' };
+    core.predictions.unshift(item);
+    pushDomainAudit(core, { action: 'prediction_created', detail: item.title, by: actor, source: item.source, entityId: item.id });
+    save();
+    return item;
+  };
+
+  const upsertCoreAnomaly = (payload = {}, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    if (!Array.isArray(core.anomalies)) core.anomalies = [];
+    let row = payload.id ? core.anomalies.find((x) => x.id === payload.id) : null;
+    if (row) {
+      Object.assign(row, payload);
+      save();
+      return row;
+    }
+    const item = {
+      id: uid('a'),
+      anomalyId: nextSecSeq(core.anomalies, 'ANM'),
+      type: payload.type || 'Behavioral',
+      source: payload.source || 'يدوي',
+      signal: payload.signal || payload.metric || '',
+      metric: payload.metric || payload.signal || 'Metric',
+      expected: payload.expected || 'Baseline',
+      actual: payload.actual || '',
+      deviation: payload.deviation || '',
+      score: Number(payload.score) || 70,
+      severity: payload.severity || 'متوسط',
+      detectedAt: nowIso(),
+      owner: payload.owner || actor,
+      status: payload.status || 'Open',
+    };
+    core.anomalies.unshift(item);
+    pushDomainAudit(core, { action: 'anomaly_created', detail: item.metric, by: actor, source: item.source, entityId: item.id });
+    save();
+    return item;
+  };
+
+  const upsertCoreRule = (payload = {}, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    if (!Array.isArray(core.rules)) core.rules = [];
+    let row = payload.id ? core.rules.find((x) => x.id === payload.id) : null;
+    if (row) {
+      Object.assign(row, payload, { updatedAt: nowIso() });
+      pushDomainAudit(core, { action: 'rule_updated', detail: row.name, by: actor, source: 'Rule Engine', entityId: row.id });
+      save();
+      return row;
+    }
+    const item = {
+      id: nextSecSeq(core.rules, 'RULE'),
+      name: String(payload.name || '').trim(),
+      sourceModule: payload.sourceModule || 'المهام',
+      metric: payload.metric || '',
+      operator: payload.operator || '>',
+      value: Number(payload.value) || 0,
+      extraConditions: payload.extraConditions || [],
+      action: payload.action || 'Generate Recommendation',
+      severity: payload.severity || 'High',
+      priority: payload.priority || 'متوسط',
+      owner: payload.owner || actor,
+      status: payload.status || 'Active',
+      at: nowIso(),
+    };
+    if (!item.name) return { error: 'اسم القاعدة مطلوب' };
+    core.rules.unshift(item);
+    pushDomainAudit(core, { action: 'rule_created', detail: item.name, by: actor, source: 'Rule Engine', entityId: item.id });
+    save();
+    return item;
+  };
+
+  const upsertCoreDataSource = (payload = {}, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    if (!Array.isArray(core.dataSources)) core.dataSources = [];
+    let row = payload.id ? core.dataSources.find((x) => x.id === payload.id) : null;
+    if (row) {
+      Object.assign(row, payload);
+      pushDomainAudit(core, { action: 'data_source_changed', detail: row.name, by: actor, source: row.type, entityId: row.id });
+      save();
+      return row;
+    }
+    const item = {
+      id: nextSecSeq(core.dataSources, 'SRC'),
+      name: String(payload.name || '').trim(),
+      module: payload.module || '',
+      type: payload.type || 'Internal Module',
+      status: payload.status || 'Connected',
+      lastSync: nowIso(),
+      records: Number(payload.records) || 0,
+      owner: payload.owner || actor,
+    };
+    if (!item.name) return { error: 'اسم المصدر مطلوب' };
+    core.dataSources.unshift(item);
+    pushDomainAudit(core, { action: 'data_source_created', detail: item.name, by: actor, source: item.type, entityId: item.id });
+    save();
+    return item;
+  };
+
+  const syncCoreDataSource = (id, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    const row = (core.dataSources || []).find((x) => x.id === id);
+    if (!row) return null;
+    row.lastSync = nowIso();
+    row.records = (row.records || 0) + Math.floor(Math.random() * 5);
+    row.status = row.status === 'Degraded' ? 'Connected' : row.status;
+    pushDomainAudit(core, { action: 'data_source_sync', detail: row.name, by: actor, source: row.type, entityId: row.id });
+    save();
+    return row;
+  };
+
+  const testCoreDataSource = (id, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    const row = (core.dataSources || []).find((x) => x.id === id);
+    if (!row) return null;
+    row.status = 'Connected';
+    row.lastSync = nowIso();
+    pushDomainAudit(core, { action: 'data_source_test', detail: row.name, by: actor, source: row.type, entityId: row.id });
+    save();
+    return row;
+  };
+
+  const executeCoreDecision = (id, actor = 'مشغّل هوب', confirmed = true) => {
+    const core = coreBag();
+    const d = (core.decisions || []).find((x) => x.id === id);
+    if (!d) return null;
+    if (d.status !== 'Approved' && d.status !== 'Pending Approval' && d.status !== 'pending') {
+      if (d.status === 'Executed') return { error: 'القرار منفّذ مسبقًا' };
+      if (d.status === 'Draft' || d.status === 'Pending Review') return { error: 'يجب اعتماد القرار قبل التنفيذ' };
+    }
+    if (core.settings?.requireApprovalForSensitive && d.sensitive && d.status !== 'Approved') {
+      return { error: 'قرار حسّاس — يلزم الاعتماد أولاً', needsApproval: true };
+    }
+    if (!confirmed) {
+      return { preview: true, decision: d, message: `سيتم تنفيذ القرار على ${d.preview?.tasks || 0} مهمة و${d.preview?.users || d.preview?.affectedUsers || 0} مستخدم.` };
+    }
+    if (!Array.isArray(core.executions)) core.executions = [];
+    const exec = {
+      id: nextSecSeq(core.executions, 'EXEC'),
+      decisionId: d.decisionId,
+      decisionRef: d.id,
+      decision: d.title,
+      executedBy: actor,
+      startedAt: nowIso(),
+      completedAt: nowIso(),
+      affectedRecords: d.preview?.tasks || 0,
+      status: 'Success',
+      result: d.preview?.impactText || 'تم التنفيذ',
+      timeline: [
+        { ok: true, text: 'القرار تم اعتماده' },
+        { ok: true, text: 'تم تحميل البيانات' },
+        { ok: true, text: 'تم التحقق من الشروط' },
+        { ok: true, text: 'تم تطبيق التغييرات' },
+        { ok: true, text: 'تم إرسال الإشعارات' },
+        { ok: true, text: 'اكتمل التنفيذ' },
+      ],
+    };
+    core.executions.unshift(exec);
+    d.status = 'Executed';
+    d.updatedAt = nowIso();
+    d.actualOutcome = d.actualOutcome || d.expectedOutcome || exec.result;
+    d.impactResult = d.impactResult || 'Pending Review';
+    pushCoreHistory(d, { action: 'executed', by: actor, detail: exec.id });
+    pushDomainAudit(core, { action: 'decision_executed', detail: `${d.title} · ${exec.id}`, by: actor, source: d.sourceType, entityId: d.id });
+    pushFeed('decision', `تنفيذ: ${d.title}`);
+    save();
+    return { decision: d, execution: exec };
+  };
+
+  const retryCoreExecution = (id, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    const ex = (core.executions || []).find((x) => x.id === id);
+    if (!ex) return null;
+    ex.status = 'Success';
+    ex.completedAt = nowIso();
+    ex.result = (ex.result || '') + ' · أُعيدت المحاولة بنجاح';
+    (ex.timeline || []).push({ ok: true, text: 'إعادة المحاولة نجحت' });
+    pushDomainAudit(core, { action: 'execution_retry', detail: ex.id, by: actor, source: 'Execution', entityId: ex.id });
+    save();
+    return ex;
+  };
+
+  const decideCoreApproval = (id, decision, actor = 'مشغّل هوب', comment = '') => {
+    const core = coreBag();
+    const apr = (core.approvals || []).find((x) => x.id === id);
+    if (!apr) return null;
+    if (decision === 'reject' && !String(comment || '').trim()) return { error: 'التعليق إجباري عند الرفض' };
+    apr.status = decision === 'approve' ? 'Approved' : decision === 'changes' ? 'Changes Requested' : 'Rejected';
+    apr.decidedBy = actor;
+    apr.comment = comment || '';
+    apr.at = nowIso();
+    apr.direction = 'done';
+    if (apr.decisionRef) {
+      updateCoreDecisionStatus(
+        apr.decisionRef,
+        decision === 'approve' ? 'Approved' : decision === 'changes' ? 'Draft' : 'Rejected',
+        actor,
+        comment || apr.status
+      );
+    }
+    pushDomainAudit(core, { action: 'approval_' + decision, detail: apr.title, by: actor, source: 'Approvals', entityId: apr.id });
+    save();
+    return apr;
+  };
+
+  const setCoreDecisionFeedback = (id, rating, comment, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    const d = (core.decisions || []).find((x) => x.id === id);
+    if (!d) return null;
+    d.feedback = { rating, comment: comment || '', by: actor, at: nowIso() };
+    pushCoreHistory(d, { action: 'feedback', by: actor, detail: rating });
+    pushDomainAudit(core, { action: 'decision_feedback', detail: `${d.title}: ${rating}`, by: actor, source: 'Impact', entityId: d.id });
+    save();
+    return d;
+  };
+
+  const runCoreAnalysis = (actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    const pred = upsertCorePrediction(
+      {
+        title: 'احتمالية انخفاض الإنتاجية خلال 7 أيام',
+        target: 'الإنتاجية',
+        predictedValue: 78,
+        confidence: 88,
+        period: '7 أيام',
+        source: 'Predictive Engine',
+        model: 'Forecast v1',
+        severity: 'عالي',
+      },
+      actor
+    );
+    const insight = upsertCoreInsight(
+      {
+        title: 'إشارة تحليل جديدة من غرفة العمليات',
+        summary: 'تشغيل التحليل كشف تركيز اختناقات في المهام والقوى العاملة.',
+        source: 'Central Analysis',
+        severity: 'متوسط',
+        confidence: 81,
+        category: 'Analysis',
+      },
+      actor
+    );
+    pushDomainAudit(core, { action: 'analysis_run', detail: 'تشغيل التحليل', by: actor, source: 'Analysis', entityId: pred?.id || '' });
+    save();
+    return { prediction: pred, insight };
+  };
+
+  const updateCoreSettings = (patch = {}, actor = 'مشغّل هوب') => {
+    const core = coreBag();
+    core.settings = Object.assign({}, core.settings || {}, patch);
+    pushDomainAudit(core, { action: 'settings_updated', detail: Object.keys(patch).join(', '), by: actor, source: 'Settings' });
+    save();
+    return core.settings;
+  };
+
 
   const addCoreInsight = (payload = {}, actor = 'مشغّل هوب') => {
     const core = get().core;
@@ -7725,6 +8683,27 @@ const HubStore = (() => {
     updateMeasurementIndicator,
     upsertIntegrationConnector,
     syncIntegrationConnector,
+    hydrateCoreIntelligence,
+    coreBag,
+    upsertCoreDecision,
+    updateCoreDecisionStatus,
+    archiveCoreDecision,
+    deleteCoreDecision,
+    convertRecommendationToDecision,
+    upsertCoreRecommendation,
+    upsertCoreInsight,
+    upsertCorePrediction,
+    upsertCoreAnomaly,
+    upsertCoreRule,
+    upsertCoreDataSource,
+    syncCoreDataSource,
+    testCoreDataSource,
+    executeCoreDecision,
+    retryCoreExecution,
+    decideCoreApproval,
+    setCoreDecisionFeedback,
+    runCoreAnalysis,
+    updateCoreSettings,
     addCoreInsight,
     closeCoreInsight,
     upsertClient,
