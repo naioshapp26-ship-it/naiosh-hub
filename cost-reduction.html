@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>برنامج خفض التكاليف | نايوش هوب 360</title>
-  <meta name="description" content="برنامج خفض التكاليف — إدارة مصروفات مؤتمتة وبطاقات شركات وتتبع لحظي." />
+  <meta name="description" content="برنامج خفض التكاليف — تقييم مصروفات، فرص توفير، وطلب COST-ID قابل للمتابعة." />
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
-  <link rel="stylesheet" href="css/hub-service-offers.css?v=1" />
+  <link rel="stylesheet" href="css/hub-service-offers.css?v=2" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -40,13 +40,15 @@
     </div>
   </header>
 
-  <main class="container hub-feature-page">
+  <main class="so-page-wide hub-feature-page">
     <section class="hub-feature-hero">
       <p class="hub-feature-kicker"><i class="fas fa-chart-line"></i> خدمات نايوش · خفض التكاليف</p>
       <h1>برنامج خفض التكاليف</h1>
-      <div class="hub-feature-actions">
-        <a class="btn btn-primary" href="consultation.html"><i class="fas fa-comments"></i> اطلب استشارة</a>
-        <a class="btn btn-secondary" href="naiosh-solutions.html"><i class="fas fa-lightbulb"></i> حلول نايوش</a>
+      <p>مسار تقييم كامل — ليس مجرد «اطلب استشارة». أنشئ طلب Cost Reduction Assessment برقم COST-… وتابعه من طلباتك.</p>
+      <div class="hub-feature-actions so-cost-actions">
+        <button type="button" class="btn btn-primary" id="cost-start-btn"><i class="fas fa-play"></i> ابدأ طلب خفض التكاليف</button>
+        <button type="button" class="btn btn-secondary" id="cost-consult-btn"><i class="fas fa-comments"></i> طلب استشارة</button>
+        <a class="btn btn-secondary" href="naiosh-solutions.html"><i class="fas fa-lightbulb"></i> عرض حلول ذات صلة</a>
         <a class="btn btn-secondary" href="services.html"><i class="fas fa-arrow-right"></i> رجوع للخدمات</a>
       </div>
     </section>
@@ -58,18 +60,40 @@
       </p>
     </section>
 
+    <section class="hub-feature-section so-faq" aria-labelledby="cost-flow">
+      <h2 id="cost-flow" class="hub-feature-section-title">مسار الطلب</h2>
+      <p class="so-prose">الشركة والفرع → أنواع المصروفات → المبلغ التقريبي → المشكلة → الهدف (خفض 10%/20% أو تحليل) → المستندات → إرسال → Request ID (COST-…)</p>
+    </section>
+
+    <div id="so-app" class="so-app" aria-live="polite"></div>
+
     <section class="hub-feature-hero hub-feature-closing">
       <h2>جاهز لتقنين المصروفات؟</h2>
-      <p>اطلب استشارة تشغيلية أو استعرض حلول نايوش القطاعية لربط خفض التكاليف بمسار منشأتك.</p>
+      <p>ابدأ طلب خفض التكاليف أو استعرض حلول نايوش القطاعية لربط التوفير بمسار منشأتك.</p>
       <div class="hub-feature-actions">
-        <a class="btn btn-primary" href="consultation.html"><i class="fas fa-paper-plane"></i> اطلب استشارة</a>
+        <button type="button" class="btn btn-primary" id="cost-start-btn-2"><i class="fas fa-play"></i> ابدأ طلب خفض التكاليف</button>
         <a class="btn btn-secondary" href="naiosh-solutions.html"><i class="fas fa-layer-group"></i> حلول نايوش</a>
       </div>
     </section>
   </main>
 
+  <script src="js/hub-auth.js"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
+  <script src="js/hub-solutions-data.js?v=1"></script>
+  <script src="js/hub-solutions-ui.js?v=1"></script>
+  <script>
+    (() => {
+      const start = () => window.HubSolutionsUI?.openWizard?.('SOL-2026-00022', 'cost');
+      const consult = () => {
+        const sol = window.HubSolutions?.listSolutions?.()?.find((s) => s.ctaType === 'Request Consultation') || window.HubSolutions?.getSolution?.('SOL-2026-00022');
+        if (sol) window.HubSolutionsUI?.openWizard?.(sol.id, 'consult');
+      };
+      document.getElementById('cost-start-btn')?.addEventListener('click', start);
+      document.getElementById('cost-start-btn-2')?.addEventListener('click', start);
+      document.getElementById('cost-consult-btn')?.addEventListener('click', consult);
+    })();
+  </script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js?v=3" defer></script>
