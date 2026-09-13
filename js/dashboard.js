@@ -61,7 +61,7 @@
     'info-security': ['أمن المعلومات', 'حماية · إدارة · حوادث · مخاطر · ضوابط · تقارير'],
     'data-governance': ['حوكمة البيانات', 'كتالوج · مصادر · جودة · رحلة البيانات · سياسات · اعتمادات'],
     'systems-automation': ['أتمتة الأنظمة', 'إنشاء · تشغيل · قوالب · سجل عمليات · اتصالات'],
-    workforce: ['القوى العاملة عن بُعد', 'إضافة · تعديل · تعيين · حذف · إنذار · مكافآت'],
+    workforce: ['القوى العاملة', 'موظفين أولاً · بحث وفلاتر · Pagination · ملف موظف · مكافآت واعتماد · مزامنة HR'],
     systems: ['سوق الأنظمة التشغيلية', 'تفعيل · إيقاف · ربط'],
     tasks: ['المهام والمشاريع', 'توزيع · أولويات · اختناقات · جودة تنفيذ'],
     measurement: ['القياس الموحد', 'درجات · مستويات · مصفوفة · أثر العملاء'],
@@ -1340,52 +1340,10 @@
   };
 
   const renderWorkforce = () => {
-    const w = HubStore.get().workforce;
-    return `
-      <div class="toolbar">
-        ${pageActs('employees', 'إضافة موظف')}
-        <button class="btn btn-dark" data-action="tick-productivity"><i class="fas fa-heartbeat"></i> تحديث الإنتاجية اللحظية</button>
-      </div>
-      <div class="grid-2">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-users icon"></i> الموظفون</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>الاسم</th><th>الدور</th><th>ساعات</th><th>إنتاجية</th><th>درجة</th><th>حالة</th>${metaHead()}<th>إجراءات</th></tr></thead>
-            <tbody>
-              ${w.employees
-                .map(
-                  (e) => `<tr>
-                    <td>${esc(e.name)}</td><td>${esc(e.role)}</td><td>${e.hours}</td>
-                    <td>${e.productivity}% ${bar(e.productivity)}</td><td>${e.score}</td><td>${badgeStatus(e.status)}</td>
-                    ${metaCells(e)}
-                    <td>
-                      <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
-                        <button class="btn btn-sm btn-ghost" data-action="warn-emp" data-id="${e.id}">إنذار</button>
-                        <button class="btn btn-sm btn-primary" data-action="reward-emp" data-id="${e.id}">مكافأة</button>
-                        ${rowActs('employees', e.id)}
-                      </div>
-                    </td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-gift icon"></i> المكافآت التلقائية</span></h3>
-          ${w.rewards.length
-            ? w.rewards
-                .map(
-                  (r) => `<div style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
-                    <b>${esc(r.employee)}</b> · <span class="badge badge-red">${r.amount}</span>
-                    <div style="font-size:12px;color:var(--muted);margin-top:4px">${esc(r.reason)} · ${fmtTime(r.at)}</div>
-                  </div>`
-                )
-                .join('')
-            : '<div class="empty">لا مكافآت بعد</div>'}
-        </article>
-      </div>
-    `;
+    if (window.HubWorkforce?.render) {
+      return HubWorkforce.render({ user, toast, esc, bar, badgeStatus, fmtTime });
+    }
+    return '<div class="empty">تعذر تحميل وحدة القوى العاملة</div>';
   };
 
   const renderSystems = () => {
@@ -2213,6 +2171,15 @@
       }
     }
 
+    if (String(action || '').startsWith('wf-') && window.HubWorkforce?.handle) {
+      const handled = HubWorkforce.handle(action, btn, { user, toast, esc, $ });
+      if (handled) {
+        renderNav();
+        render();
+        return;
+      }
+    }
+
     switch (action) {
       case 'issue-decision': {
         const title = $('#decision-title')?.value.trim();
@@ -2574,6 +2541,13 @@
     const autoEl = e.target.closest('[data-auto-change]');
     if (autoEl && window.HubSystemsAutomation?.handleChange) {
       if (HubSystemsAutomation.handleChange(autoEl)) {
+        render();
+      }
+      return;
+    }
+    const wfEl = e.target.closest('[data-wf-change]');
+    if (wfEl && window.HubWorkforce?.handleChange) {
+      if (HubWorkforce.handleChange(wfEl)) {
         render();
       }
       return;

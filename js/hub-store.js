@@ -1686,6 +1686,214 @@ const HubStore = (() => {
     return sa;
   };
 
+  const seedWorkforce = () => {
+    const now = Date.now();
+    const isoAgo = (h) => new Date(now - h * 3600000).toISOString();
+    const first = ['أحمد', 'محمد', 'سارة', 'نور', 'ليلى', 'يوسف', 'فاطمة', 'خالد', 'هند', 'عمر', 'ريم', 'سلمان', 'منى', 'فهد', 'دانة', 'طارق', 'لينا', 'ماجد', 'هدى', 'باسل'];
+    const last = ['الراشد', 'العتيبي', 'الشمري', 'القحطاني', 'الحربي', 'الدوسري', 'الغامدي', 'الزهراني', 'السبيعي', 'المطيري', 'حسن', 'كريم', 'نادر', 'فهد', 'أحمد'];
+    const titles = ['أخصائي تشغيل', 'محلل بيانات', 'مدير مبيعات', 'مهندس تكامل', 'أخصائي حوكمة', 'منسق مهام', 'أخصائي موارد بشرية', 'مطور أنظمة', 'مشرف خدمة', 'محاسب'];
+    const depts = ['المبيعات', 'التشغيل', 'التقنية', 'الحوكمة', 'الموارد البشرية', 'المالية', 'التسويق', 'دعم العملاء'];
+    const sections = ['العمليات', 'التكامل', 'الجودة', 'التطوير', 'خدمة العملاء', 'التخطيط'];
+    const managers = ['سارة العتيبي', 'أحمد الراشد', 'نور فهد', 'ليلى كريم', 'محمد حسن'];
+    const workTypes = ['عن بعد', 'بالمكتب', 'هجين'];
+    const locations = ['الرياض', 'جدة', 'الدمام', 'عن بعد'];
+    const sources = ['HR System', 'Manual', 'Excel Import', 'API', 'Integration'];
+    const employees = [];
+    for (let i = 1; i <= 237; i++) {
+      const name = `${first[i % first.length]} ${last[(i * 3) % last.length]}`;
+      const productivity = 55 + ((i * 17) % 45);
+      const hours = +(5 + (i % 40) / 10).toFixed(1);
+      const score = Math.min(100, Math.round(productivity * 0.7 + hours * 3));
+      let status = 'active';
+      if (productivity < 65) status = 'critical';
+      else if (productivity < 75) status = 'warning';
+      if (i % 17 === 0) status = 'leave';
+      if (i % 23 === 0) status = 'inactive';
+      const workType = workTypes[i % workTypes.length];
+      const source = i <= 5 ? 'Manual' : sources[i % sources.length];
+      employees.push({
+        id: `EMP-2026-${String(i).padStart(5, '0')}`,
+        externalId: source === 'HR System' ? `HR-${1000 + i}` : '',
+        name,
+        email: `emp${i}@naiosh.local`,
+        phone: `05${String(10000000 + i).slice(0, 8)}`,
+        avatar: '',
+        title: titles[i % titles.length],
+        role: titles[i % titles.length],
+        department: depts[i % depts.length],
+        section: sections[i % sections.length],
+        manager: managers[i % managers.length],
+        joinDate: `2024-${String((i % 12) + 1).padStart(2, '0')}-15`,
+        employmentType: i % 9 === 0 ? 'عقد' : 'دوام كامل',
+        workType,
+        location: workType === 'عن بعد' ? 'عن بعد' : locations[i % locations.length],
+        attendance: status === 'leave' ? 'إجازة' : status === 'inactive' ? 'غير نشط' : i % 5 === 0 ? 'Offline' : 'Online',
+        hours,
+        productivity,
+        score,
+        points: Math.floor(score * 4 + (i % 50)),
+        status,
+        warned: status === 'warning' || status === 'critical',
+        source,
+        createdBy: source === 'Manual' ? 'سارة العتيبي' : 'مزامنة HR',
+        createdAt: isoAgo(800 - i),
+        lastSynced: source === 'HR System' || source === 'Integration' ? isoAgo(i % 48) : '',
+        lastActivity: isoAgo(i % 72),
+        linkedUser: `emp${i}@naiosh.local`,
+        systemRole: i % 11 === 0 ? 'manager' : 'employee',
+        notes: [],
+        documents: [],
+        archived: false,
+      });
+    }
+    // keep classic demo names recognizable at top
+    employees[0].name = 'سارة أحمد';
+    employees[0].title = 'تشغيل';
+    employees[0].role = 'تشغيل';
+    employees[1].name = 'محمد حسن';
+    employees[1].title = 'تكامل';
+    employees[1].status = 'warning';
+    employees[2].name = 'ليلى كريم';
+    employees[2].title = 'حوكمة';
+    employees[2].productivity = 95;
+    employees[2].score = 93;
+    employees[3].name = 'يوسف نادر';
+    employees[3].status = 'critical';
+    employees[4].name = 'نور فهد';
+
+    const wf = {
+      schemaVersion: 3,
+      helpDismissed: false,
+      employees,
+      rewards: [
+        {
+          id: 'RWD-2026-00001',
+          employeeId: employees[2].id,
+          employee: 'ليلى كريم',
+          type: 'نقاط',
+          value: 500,
+          points: 500,
+          reason: 'أداء متميز أسبوعي',
+          source: 'Performance',
+          nominatedBy: 'أحمد الراشد',
+          grantedBy: 'سارة العتيبي',
+          approvedBy: 'الحوكمة',
+          approvalDate: isoAgo(20),
+          status: 'Approved',
+          at: isoAgo(20),
+          createdBy: 'أحمد الراشد',
+        },
+        {
+          id: 'RWD-2026-00002',
+          employeeId: employees[0].id,
+          employee: 'سارة أحمد',
+          type: 'شهادة تقدير',
+          value: 1,
+          points: 0,
+          reason: 'إنجاز مشروع التشغيل',
+          source: 'Manager',
+          nominatedBy: 'أحمد الراشد',
+          grantedBy: 'أحمد الراشد',
+          approvedBy: '',
+          approvalDate: '',
+          status: 'Pending Approval',
+          at: isoAgo(5),
+          createdBy: 'أحمد الراشد',
+        },
+      ],
+      pointsTx: [
+        {
+          id: 'PTX-2026-00001',
+          employeeId: employees[2].id,
+          employee: 'ليلى كريم',
+          type: 'earn',
+          points: 500,
+          reason: 'مكافأة أداء',
+          source: 'Reward',
+          createdBy: 'سارة العتيبي',
+          at: isoAgo(20),
+        },
+      ],
+      connections: [
+        {
+          id: 'WCON-2026-00001',
+          system: 'HR System',
+          status: 'Connected',
+          lastSync: isoAgo(2),
+          nextSync: isoAgo(-22),
+          syncedCount: 86,
+          errors: 0,
+          owner: 'الموارد البشرية',
+        },
+      ],
+      settings: {
+        pageSize: 25,
+        requireRewardApproval: true,
+        performanceWeights: { goals: 40, tasks: 30, attendance: 20, manager: 10 },
+        rewardTypes: [
+          { id: 'points', name: 'نقاط', enabled: true, requiresApproval: false, maxValue: 5000, canGive: 'Manager', approver: 'HR' },
+          { id: 'money', name: 'مالية', enabled: true, requiresApproval: true, maxValue: 10000, canGive: 'Manager', approver: 'HR Manager' },
+          { id: 'certificate', name: 'شهادة تقدير', enabled: true, requiresApproval: false, maxValue: 1, canGive: 'Manager', approver: '' },
+          { id: 'badge', name: 'Badge', enabled: true, requiresApproval: false, maxValue: 1, canGive: 'Manager', approver: '' },
+          { id: 'leave', name: 'يوم إجازة', enabled: true, requiresApproval: true, maxValue: 3, canGive: 'Manager', approver: 'HR' },
+          { id: 'gift', name: 'هدية', enabled: true, requiresApproval: true, maxValue: 1, canGive: 'Manager', approver: 'HR' },
+        ],
+      },
+      departments: depts,
+      sections,
+      titles,
+      savedViews: [
+        { id: 'all', name: 'كل الموظفين' },
+        { id: 'remote', name: 'عن بعد' },
+        { id: 'office', name: 'في المكتب' },
+        { id: 'leave', name: 'في إجازة' },
+        { id: 'high', name: 'أداء مرتفع' },
+        { id: 'follow', name: 'يحتاج متابعة' },
+        { id: 'new', name: 'موظفون جدد' },
+      ],
+      auditLog: [
+        {
+          id: uid('wfaud'),
+          user: 'النظام',
+          action: 'تهيئة وحدة القوى العاملة',
+          employeeId: '',
+          employee: '',
+          at: isoAgo(900),
+          oldValue: '',
+          newValue: 'schema v3 · 237 employees',
+          source: 'System',
+        },
+      ],
+    };
+    const empsAlive = employees.filter((e) => !e.archived);
+    wf.totalEmployees = empsAlive.length;
+    wf.activeEmployees = empsAlive.filter((e) => e.status === 'active').length;
+    wf.remoteEmployees = empsAlive.filter((e) => e.workType === 'عن بعد').length;
+    wf.officeEmployees = empsAlive.filter((e) => e.workType === 'بالمكتب').length;
+    wf.onLeave = empsAlive.filter((e) => e.status === 'leave').length;
+    wf.needsFollowUp = empsAlive.filter((e) => e.status === 'warning' || e.status === 'critical').length;
+    wf.rewardsThisMonth = (wf.rewards || []).length;
+    return wf;
+  };
+
+  const recomputeWorkforceKpis = (wf = get().workforce) => {
+    if (!wf) return wf;
+    const emps = (wf.employees || []).filter((e) => !e.archived);
+    wf.totalEmployees = emps.length;
+    wf.activeEmployees = emps.filter((e) => e.status === 'active').length;
+    wf.remoteEmployees = emps.filter((e) => e.workType === 'عن بعد').length;
+    wf.officeEmployees = emps.filter((e) => e.workType === 'بالمكتب').length;
+    wf.onLeave = emps.filter((e) => e.status === 'leave').length;
+    wf.needsFollowUp = emps.filter((e) => e.status === 'warning' || e.status === 'critical').length;
+    const month = new Date().getMonth();
+    const year = new Date().getFullYear();
+    wf.rewardsThisMonth = (wf.rewards || []).filter((r) => {
+      const d = new Date(r.at || 0);
+      return d.getMonth() === month && d.getFullYear() === year && r.status !== 'Rejected';
+    }).length;
+    return wf;
+  };
+
   const defaultSettings = () => ({
     orgNameAr: 'نايوش هوب',
     orgNameEn: 'NAIOSH HUB',
@@ -1903,18 +2111,7 @@ const HubStore = (() => {
         { id: uid('con'), article: 'المادة 2', text: 'تلتزم المنصة بثلاثة مبادئ: الوضوح – القياس – السيطرة التشغيلية.' },
       ],
     },
-    workforce: {
-      employees: [
-        { id: uid('e'), name: 'سارة أحمد', role: 'تشغيل', hours: 7.5, productivity: 92, score: 88, status: 'active', warned: false },
-        { id: uid('e'), name: 'محمد حسن', role: 'تكامل', hours: 6.2, productivity: 71, score: 68, status: 'warning', warned: true },
-        { id: uid('e'), name: 'ليلى كريم', role: 'حوكمة', hours: 8.0, productivity: 95, score: 93, status: 'active', warned: false },
-        { id: uid('e'), name: 'يوسف نادر', role: 'مهام', hours: 5.4, productivity: 62, score: 58, status: 'critical', warned: true },
-        { id: uid('e'), name: 'نور فهد', role: 'تحليل', hours: 7.8, productivity: 89, score: 86, status: 'active', warned: false },
-      ],
-      rewards: [
-        { id: uid('rw'), employee: 'ليلى كريم', amount: 500, reason: 'أداء متميز أسبوعي', at: nowIso() },
-      ],
-    },
+    workforce: seedWorkforce(),
     systems: {
       registry: [
         { id: uid('sys'), name: 'LMS', health: 99, status: 'online', lastSync: nowIso() },
@@ -2110,6 +2307,13 @@ const HubStore = (() => {
       changed = true;
     } else {
       recomputeAutomationKpis(state.systemsAutomation);
+    }
+    if (!state.workforce || state.workforce.schemaVersion !== 3) {
+      state.workforce = seedWorkforce();
+      recomputeWorkforceKpis(state.workforce);
+      changed = true;
+    } else {
+      recomputeWorkforceKpis(state.workforce);
     }
     if (!Array.isArray(state.notifications)) {
       state.notifications = [];
@@ -2900,58 +3104,360 @@ const HubStore = (() => {
     return item;
   };
 
-  const addEmployee = (payload = {}) => {
+  const wfBag = () => {
+    const s = get();
+    if (!s.workforce || s.workforce.schemaVersion !== 3) {
+      s.workforce = seedWorkforce();
+      recomputeWorkforceKpis(s.workforce);
+    }
+    return s.workforce;
+  };
+
+  const addWorkforceSavedView = (name, filters = {}, actor = 'مشغّل هوب') => {
+    const wf = wfBag();
+    if (!Array.isArray(wf.savedViews)) wf.savedViews = [];
+    const view = {
+      id: uid('wfv'),
+      name: String(name || '').trim() || 'عرض محفوظ',
+      filters: { ...filters },
+    };
+    wf.savedViews.push(view);
+    pushWfAudit({ user: actor, action: 'حفظ عرض موظفين', newValue: view.name });
+    save();
+    return view;
+  };
+
+  const bulkTagEmployees = (ids = [], tag = '', actor = 'مشغّل هوب') => {
+    const wf = wfBag();
+    const set = new Set(ids);
+    let n = 0;
+    (wf.employees || []).forEach((e) => {
+      if (!set.has(e.id)) return;
+      if (!Array.isArray(e.tags)) e.tags = [];
+      if (tag && !e.tags.includes(tag)) e.tags.push(tag);
+      n += 1;
+    });
+    pushWfAudit({ user: actor, action: 'وسم جماعي', newValue: `${n} · ${tag}` });
+    save();
+    return n;
+  };
+
+  const pushWfAudit = (entry = {}) => {
+    const wf = wfBag();
+    if (!Array.isArray(wf.auditLog)) wf.auditLog = [];
+    const row = {
+      id: entry.id || nextSecSeq(wf.auditLog, 'TXN-WF'),
+      user: entry.user || 'مشغّل هوب',
+      action: entry.action || 'تعديل',
+      employeeId: entry.employeeId || '',
+      employee: entry.employee || '',
+      at: nowIso(),
+      oldValue: entry.oldValue ?? '',
+      newValue: entry.newValue ?? '',
+      source: entry.source || 'Manual',
+    };
+    wf.auditLog.unshift(row);
+    if (wf.auditLog.length > 500) wf.auditLog.length = 500;
+    return row;
+  };
+
+  const addEmployee = (payload = {}, actor = 'مشغّل هوب') => {
+    const wf = wfBag();
+    if (!Array.isArray(wf.employees)) wf.employees = [];
     const name = String(payload.name || '').trim();
     if (!name) return null;
     const item = {
-      id: uid('e'),
+      id: payload.id || nextSecSeq(wf.employees, 'EMP'),
+      externalId: payload.externalId || '',
       name,
-      role: String(payload.role || 'تشغيل').trim() || 'تشغيل',
-      hours: Number(payload.hours) || 0,
+      email: payload.email || '',
+      phone: payload.phone || '',
+      avatar: payload.avatar || '',
+      title: payload.title || payload.role || 'موظف',
+      role: payload.role || payload.title || 'موظف',
+      department: payload.department || '',
+      section: payload.section || '',
+      manager: payload.manager || '',
+      joinDate: payload.joinDate || nowIso().slice(0, 10),
+      employmentType: payload.employmentType || 'دوام كامل',
+      workType: payload.workType || 'عن بعد',
+      location: payload.location || '',
+      attendance: payload.attendance || 'Online',
+      hours: Number(payload.hours) || 7,
       productivity: Number(payload.productivity) || 70,
       score: Number(payload.score) || 70,
-      status: payload.status || 'active',
+      points: Number(payload.points) || 0,
+      status: payload.status || (payload.draft ? 'draft' : 'active'),
       warned: false,
+      source: payload.source || 'Manual',
+      createdBy: actor,
+      createdAt: nowIso(),
+      lastSynced: '',
+      lastActivity: nowIso(),
+      linkedUser: payload.linkedUser || payload.email || '',
+      systemRole: payload.systemRole || 'employee',
+      notes: [],
+      documents: [],
+      archived: false,
       assignee: '',
       ...pickCommonMeta(payload),
     };
-    get().workforce.employees.unshift(item);
-    pushFeed('decision', `موظف جديد: ${item.name} · ${item.role}`);
+    wf.employees.unshift(item);
+    pushWfAudit({
+      user: actor,
+      action: 'إضافة موظف',
+      employeeId: item.id,
+      employee: item.name,
+      newValue: item.status,
+      source: item.source,
+    });
+    recomputeWorkforceKpis();
+    pushFeed('decision', `موظف جديد: ${item.name} · ${item.title}`);
     save();
     return item;
   };
 
-  const warnEmployee = (id) => {
-    const e = get().workforce.employees.find((x) => x.id === id);
+  const updateEmployee = (id, patch = {}, actor = 'مشغّل هوب') => {
+    const e = wfBag().employees?.find((x) => x.id === id);
+    if (!e) return null;
+    Object.keys(patch).forEach((k) => {
+      if (patch[k] === undefined || patch[k] === e[k]) return;
+      pushWfAudit({
+        user: actor,
+        action: `تعديل موظف (${k})`,
+        employeeId: e.id,
+        employee: e.name,
+        oldValue: String(e[k] ?? ''),
+        newValue: String(patch[k] ?? ''),
+      });
+    });
+    Object.assign(e, patch, { lastActivity: nowIso() });
+    if (patch.title && !patch.role) e.role = patch.title;
+    recomputeWorkforceKpis();
+    save();
+    return e;
+  };
+
+  const archiveEmployee = (id, actor = 'مشغّل هوب') => {
+    const e = wfBag().employees?.find((x) => x.id === id);
+    if (!e) return null;
+    e.archived = true;
+    e.status = 'inactive';
+    pushWfAudit({ user: actor, action: 'أرشفة موظف', employeeId: e.id, employee: e.name, newValue: 'archived' });
+    recomputeWorkforceKpis();
+    save();
+    return e;
+  };
+
+  const warnEmployee = (id, actor = 'مشغّل هوب') => {
+    const e = wfBag().employees.find((x) => x.id === id);
     if (!e) return null;
     e.warned = true;
     e.status = e.productivity < 65 ? 'critical' : 'warning';
+    pushWfAudit({ user: actor, action: 'إنذار موظف', employeeId: e.id, employee: e.name, newValue: e.status });
     pushFeed('alert', `إنذار مبكر: ${e.name}`);
     save();
     return e;
   };
 
-  const rewardEmployee = (id, amount = 300) => {
-    const e = get().workforce.employees.find((x) => x.id === id);
+  const rewardEmployee = (id, amount = 300, extras = {}, actor = 'مشغّل هوب') => {
+    const wf = wfBag();
+    const e = wf.employees.find((x) => x.id === id);
     if (!e) return null;
-    const item = { id: uid('rw'), employee: e.name, amount, reason: 'مكافأة تلقائية للأداء', at: nowIso() };
-    get().workforce.rewards.unshift(item);
-    e.score = Math.min(100, e.score + 3);
-    pushFeed('decision', `مكافأة ${e.name}: ${amount}`);
+    const needsApproval = extras.requiresApproval ?? wf.settings?.requireRewardApproval;
+    const item = {
+      id: nextSecSeq(wf.rewards || [], 'RWD'),
+      employeeId: e.id,
+      employee: e.name,
+      type: extras.type || 'نقاط',
+      value: Number(extras.value ?? amount),
+      points: Number(extras.points ?? (extras.type === 'نقاط' || !extras.type ? amount : 0)),
+      reason: extras.reason || 'مكافأة تلقائية للأداء',
+      source: extras.source || 'Manual',
+      nominatedBy: extras.nominatedBy || actor,
+      grantedBy: needsApproval ? '' : actor,
+      approvedBy: '',
+      approvalDate: '',
+      status: needsApproval && !extras.forceGrant ? 'Pending Approval' : 'Approved',
+      at: nowIso(),
+      createdBy: actor,
+    };
+    if (!Array.isArray(wf.rewards)) wf.rewards = [];
+    wf.rewards.unshift(item);
+    if (item.status === 'Approved') {
+      e.points = (e.points || 0) + (item.points || 0);
+      e.score = Math.min(100, (e.score || 0) + 3);
+      if (!Array.isArray(wf.pointsTx)) wf.pointsTx = [];
+      if (item.points) {
+        wf.pointsTx.unshift({
+          id: nextSecSeq(wf.pointsTx, 'PTX'),
+          employeeId: e.id,
+          employee: e.name,
+          type: 'earn',
+          points: item.points,
+          reason: item.reason,
+          source: 'Reward',
+          createdBy: actor,
+          at: nowIso(),
+        });
+      }
+      item.grantedBy = actor;
+      item.approvedBy = actor;
+      item.approvalDate = nowIso();
+    }
+    pushWfAudit({
+      user: actor,
+      action: item.status === 'Approved' ? 'منح مكافأة' : 'طلب مكافأة',
+      employeeId: e.id,
+      employee: e.name,
+      newValue: `${item.type} ${item.value} · ${item.status}`,
+      source: item.source,
+    });
+    recomputeWorkforceKpis();
+    pushFeed('decision', `مكافأة ${e.name}: ${item.value}`);
     save();
     return item;
   };
 
+  const decideReward = (id, decision, comment = '', actor = 'مشغّل هوب') => {
+    const wf = wfBag();
+    const r = wf.rewards?.find((x) => x.id === id);
+    if (!r) return null;
+    if (decision === 'reject' && !String(comment || '').trim()) return { error: 'التعليق إجباري عند الرفض' };
+    const old = r.status;
+    if (decision === 'approve') {
+      r.status = 'Approved';
+      r.approvedBy = actor;
+      r.approvalDate = nowIso();
+      r.grantedBy = r.grantedBy || actor;
+      const e = wf.employees.find((x) => x.id === r.employeeId || x.name === r.employee);
+      if (e && r.points) {
+        e.points = (e.points || 0) + r.points;
+        if (!Array.isArray(wf.pointsTx)) wf.pointsTx = [];
+        wf.pointsTx.unshift({
+          id: nextSecSeq(wf.pointsTx, 'PTX'),
+          employeeId: e.id,
+          employee: e.name,
+          type: 'earn',
+          points: r.points,
+          reason: r.reason,
+          source: 'Reward Approval',
+          createdBy: actor,
+          at: nowIso(),
+        });
+      }
+    } else {
+      r.status = 'Rejected';
+      r.approvedBy = actor;
+      r.approvalDate = nowIso();
+      r.rejectComment = comment;
+    }
+    pushWfAudit({
+      user: actor,
+      action: decision === 'approve' ? 'اعتماد مكافأة' : 'رفض مكافأة',
+      employeeId: r.employeeId,
+      employee: r.employee,
+      oldValue: old,
+      newValue: r.status,
+      source: r.source,
+    });
+    recomputeWorkforceKpis();
+    save();
+    return r;
+  };
+
+  const importEmployees = (rows = [], actor = 'مشغّل هوب') => {
+    const created = [];
+    let invalid = 0;
+    let duplicates = 0;
+    const wf = wfBag();
+    rows.forEach((row) => {
+      const name = String(row.name || '').trim();
+      if (!name) {
+        invalid += 1;
+        return;
+      }
+      if ((wf.employees || []).some((e) => e.name === name && !e.archived)) {
+        duplicates += 1;
+        return;
+      }
+      created.push(
+        addEmployee(
+          {
+            name,
+            title: row.title || row.role || 'موظف',
+            department: row.department || '',
+            section: row.section || '',
+            manager: row.manager || '',
+            workType: row.workType || 'عن بعد',
+            email: row.email || '',
+            source: 'Excel Import',
+          },
+          actor
+        )
+      );
+    });
+    pushWfAudit({
+      user: actor,
+      action: 'استيراد موظفين',
+      employeeId: '',
+      employee: '',
+      newValue: `imported=${created.length}; invalid=${invalid}; dup=${duplicates}`,
+      source: 'Excel Import',
+    });
+    recomputeWorkforceKpis();
+    save();
+    return { created, invalid, duplicates };
+  };
+
+  const syncWorkforce = (actor = 'مشغّل هوب') => {
+    const wf = wfBag();
+    const conn = (wf.connections || [])[0];
+    if (conn) {
+      conn.lastSync = nowIso();
+      conn.nextSync = new Date(Date.now() + 86400000).toISOString();
+      conn.status = 'Connected';
+      conn.syncedCount = (wf.employees || []).filter((e) => e.source === 'HR System').length;
+    }
+    (wf.employees || [])
+      .filter((e) => e.source === 'HR System' || e.source === 'Integration')
+      .forEach((e) => {
+        e.lastSynced = nowIso();
+      });
+    pushWfAudit({ user: actor, action: 'مزامنة الموظفين', newValue: conn?.syncedCount || 0, source: 'HR System' });
+    recomputeWorkforceKpis();
+    save();
+    return conn;
+  };
+
+  const updateWorkforceSettings = (patch = {}, actor = 'مشغّل هوب') => {
+    const wf = wfBag();
+    if (!wf.settings) wf.settings = {};
+    Object.assign(wf.settings, patch);
+    pushWfAudit({ user: actor, action: 'تعديل إعدادات القوى العاملة', newValue: JSON.stringify(patch) });
+    save();
+    return wf.settings;
+  };
+
   const tickProductivity = () => {
-    get().workforce.employees.forEach((e) => {
+    wfBag().employees.forEach((e) => {
+      if (e.archived || e.status === 'leave' || e.status === 'inactive') return;
       const delta = Math.floor(Math.random() * 7) - 3;
-      e.productivity = Math.max(40, Math.min(100, e.productivity + delta));
-      e.hours = Math.max(4, Math.min(9, +(e.hours + (Math.random() * 0.4 - 0.2)).toFixed(1)));
+      e.productivity = Math.max(40, Math.min(100, (e.productivity || 70) + delta));
+      e.hours = Math.max(4, Math.min(9, +((e.hours || 7) + (Math.random() * 0.4 - 0.2)).toFixed(1)));
       e.score = Math.round(e.productivity * 0.7 + e.hours * 3);
       if (e.productivity < 65) e.status = 'critical';
       else if (e.productivity < 75) e.status = 'warning';
       else e.status = 'active';
+      e.lastActivity = nowIso();
     });
+    recomputeWorkforceKpis();
+    pushFeed('decision', 'تحديث إنتاجية القوى العاملة');
+    save();
+  };
+
+  const dismissWorkforceHelp = () => {
+    wfBag().helpDismissed = true;
     save();
   };
 
@@ -5134,9 +5640,20 @@ const HubStore = (() => {
     addConstitutionArticle,
     addBranch,
     addEmployee,
+    updateEmployee,
+    archiveEmployee,
     warnEmployee,
     rewardEmployee,
+    decideReward,
+    importEmployees,
+    syncWorkforce,
+    updateWorkforceSettings,
+    addWorkforceSavedView,
+    bulkTagEmployees,
+    recomputeWorkforceKpis,
+    pushWfAudit,
     tickProductivity,
+    dismissWorkforceHelp,
     syncSystem,
     syncAllSystems,
     addTask,
