@@ -2331,6 +2331,205 @@ const HubStore = (() => {
     }
     if (hydrateTasksDetails()) changed = true;
     if (hydrateOpsCommandDomains()) changed = true;
+    if (hydrateClientsBatchDomains()) changed = true;
+    return changed;
+  };
+
+  /** Batch B — customers & permissions workspace enrichment */
+  const seedClientsMgmt = () => {
+    const stamp = nowIso();
+    return {
+      schemaVersion: 2,
+      clients: [
+        {
+          id: uid('cli'),
+          clientId: 'CL-1001',
+          name: 'مؤسسة الأفق',
+          email: 'ops@alofoq.example',
+          status: 'active',
+          company: 'مؤسسة الأفق',
+          country: 'السعودية',
+          accountLevel: 'standard',
+          systems: [{ code: 'ERP', name: 'ERP', plan: 'standard', status: 'active' }],
+          orders: [{ number: 'ORD-21', service: 'اشتراك سنوي', status: 'open' }],
+          subscriptions: [{ systemName: 'ERP', plan: 'standard', status: 'active' }],
+          invoices: [{ number: 'INV-9', amount: 1200, status: 'paid' }],
+          wallet: { paid: 800, free: 200, total: 1000, ledger: [{ note: 'شحن افتتاحي', type: '+', amount: 1000 }] },
+          tickets: [{ subject: 'طلب تفعيل مستخدم', status: 'open' }],
+          internalNotes: [{ by: 'غرفة العمليات', note: 'عميل استراتيجي — متابعة أسبوعية', at: stamp }],
+          systemsCount: 1,
+          openOrders: 1,
+          walletTotal: 1000,
+          lastLoginAt: stamp,
+          source: 'System Generated',
+          createdAt: stamp,
+          updatedAt: stamp,
+        },
+        {
+          id: uid('cli'),
+          clientId: 'CL-1002',
+          name: 'مجموعة النور',
+          email: 'admin@alnoor.example',
+          status: 'pending',
+          company: 'مجموعة النور',
+          country: 'الإمارات',
+          accountLevel: 'trial',
+          systems: [],
+          orders: [{ number: 'ORD-44', service: 'تجربة Academy', status: 'pending' }],
+          subscriptions: [],
+          invoices: [],
+          wallet: { paid: 0, free: 50, total: 50, ledger: [] },
+          tickets: [],
+          internalNotes: [],
+          systemsCount: 0,
+          openOrders: 1,
+          walletTotal: 50,
+          lastLoginAt: '',
+          source: 'إدخال يدوي',
+          createdAt: stamp,
+          updatedAt: stamp,
+        },
+        {
+          id: uid('cli'),
+          clientId: 'CL-1003',
+          name: 'شركة المدى',
+          email: 'contact@almad.example',
+          status: 'suspended',
+          company: 'شركة المدى',
+          country: 'السعودية',
+          accountLevel: 'standard',
+          systems: [{ code: 'POSHA', name: 'بوشا', plan: 'basic', status: 'paused' }],
+          orders: [],
+          subscriptions: [{ systemName: 'POSHA', plan: 'basic', status: 'paused' }],
+          invoices: [{ number: 'INV-3', amount: 400, status: 'overdue' }],
+          wallet: { paid: 100, free: 0, total: 100, ledger: [] },
+          tickets: [{ subject: 'تعليق حساب', status: 'open' }],
+          internalNotes: [{ by: 'الامتثال', note: 'موقوف حتى تسوية الفاتورة', at: stamp }],
+          systemsCount: 1,
+          openOrders: 0,
+          walletTotal: 100,
+          lastLoginAt: stamp,
+          source: 'Integration',
+          createdAt: stamp,
+          updatedAt: stamp,
+        },
+      ],
+      auditLog: [],
+      settings: { helpDismissed: false },
+    };
+  };
+
+  const seedRolesHub = () => {
+    const stamp = nowIso();
+    const mk = (code, nameAr, level, systems, permissions) => ({
+      id: uid('role'),
+      code,
+      nameAr,
+      level,
+      systems,
+      permissions,
+      status: 'active',
+      source: 'System Generated',
+      createdAt: stamp,
+      updatedAt: stamp,
+    });
+    return {
+      schemaVersion: 2,
+      roles: [
+        mk('supreme_leader', 'القائد الأعلى', 'admin', ['HUB', 'ERP', 'POSHA', 'ACADEMY', 'FIT'], ['read', 'write', 'admin']),
+        mk('admin', 'مشرف هوب', 'admin', ['HUB', 'ERP', 'POSHA', 'ACADEMY'], ['read', 'write', 'admin']),
+        mk('manager', 'مدير تشغيل', 'manager', ['HUB', 'ERP', 'POSHA'], ['read', 'write']),
+        mk('auditor', 'مدقق', 'auditor', ['HUB', 'ERP'], ['read', 'audit']),
+        mk('employee', 'موظف', 'employee', ['HUB'], ['read']),
+        mk('customer', 'عميل منصة', 'customer', ['POSHA', 'ACADEMY'], ['read']),
+      ],
+      assignments: [
+        {
+          id: uid('ras'),
+          userEmail: 'leader@naiosh.example',
+          userName: 'القائد الأعلى',
+          roleCode: 'supreme_leader',
+          source: 'Manual',
+          at: stamp,
+        },
+        {
+          id: uid('ras'),
+          userEmail: 'ops@alofoq.example',
+          userName: 'مؤسسة الأفق',
+          roleCode: 'customer',
+          source: 'Operating',
+          at: stamp,
+        },
+      ],
+      auditLog: [],
+      settings: { helpDismissed: false },
+    };
+  };
+
+  const hydrateClientsBatchDomains = () => {
+    if (!state) return false;
+    let changed = false;
+    if (!state.clientsMgmt || state.clientsMgmt.schemaVersion !== 2) {
+      state.clientsMgmt = seedClientsMgmt();
+      changed = true;
+    } else {
+      if (!Array.isArray(state.clientsMgmt.auditLog)) {
+        state.clientsMgmt.auditLog = [];
+        changed = true;
+      }
+      if (!state.clientsMgmt.settings) {
+        state.clientsMgmt.settings = { helpDismissed: false };
+        changed = true;
+      }
+    }
+    if (!state.rolesHub || state.rolesHub.schemaVersion !== 2) {
+      state.rolesHub = seedRolesHub();
+      changed = true;
+    } else {
+      if (!Array.isArray(state.rolesHub.auditLog)) {
+        state.rolesHub.auditLog = [];
+        changed = true;
+      }
+      if (!Array.isArray(state.rolesHub.assignments)) {
+        state.rolesHub.assignments = [];
+        changed = true;
+      }
+    }
+    if (!Array.isArray(state.notificationsMeta)) {
+      /* keep notifications array; add meta bag */
+    }
+    if (!state.notificationsWs || state.notificationsWs.schemaVersion !== 2) {
+      state.notificationsWs = {
+        schemaVersion: 2,
+        auditLog: Array.isArray(state.notificationsWs?.auditLog) ? state.notificationsWs.auditLog : [],
+        settings: state.notificationsWs?.settings || { helpDismissed: false },
+      };
+      changed = true;
+    }
+    if (!state.sideProjectsWs || state.sideProjectsWs.schemaVersion !== 2) {
+      state.sideProjectsWs = {
+        schemaVersion: 2,
+        auditLog: [],
+        settings: { helpDismissed: false },
+      };
+      changed = true;
+    }
+    if (!state.rentAdminWs || state.rentAdminWs.schemaVersion !== 2) {
+      state.rentAdminWs = {
+        schemaVersion: 2,
+        auditLog: [],
+        settings: { helpDismissed: false },
+      };
+      changed = true;
+    }
+    if (!state.poshaClientsWs || state.poshaClientsWs.schemaVersion !== 2) {
+      state.poshaClientsWs = {
+        schemaVersion: 2,
+        auditLog: [],
+        settings: { helpDismissed: false },
+      };
+      changed = true;
+    }
     return changed;
   };
 
@@ -4605,6 +4804,250 @@ const HubStore = (() => {
     });
     save();
     return row;
+  };
+
+  // —— Batch B: Clients / Roles / Notifications helpers
+  const clientsBag = () => {
+    const s = get();
+    if (!s.clientsMgmt || s.clientsMgmt.schemaVersion !== 2) s.clientsMgmt = seedClientsMgmt();
+    return s.clientsMgmt;
+  };
+
+  const rolesBag = () => {
+    const s = get();
+    if (!s.rolesHub || s.rolesHub.schemaVersion !== 2) s.rolesHub = seedRolesHub();
+    return s.rolesHub;
+  };
+
+  const recomputeClientCounters = (c) => {
+    c.systemsCount = (c.systems || []).length;
+    c.openOrders = (c.orders || []).filter((o) => o.status === 'open' || o.status === 'pending').length;
+    c.walletTotal = Number(c.wallet?.total ?? c.walletTotal ?? 0);
+    return c;
+  };
+
+  const upsertClient = (payload = {}, actor = 'مشغّل هوب') => {
+    const bag = clientsBag();
+    if (!Array.isArray(bag.clients)) bag.clients = [];
+    let row = payload.id ? bag.clients.find((x) => x.id === payload.id) : null;
+    const stamp = nowIso();
+    if (row) {
+      ['name', 'email', 'clientId', 'status', 'company', 'country', 'accountLevel', 'source'].forEach((k) => {
+        if (payload[k] !== undefined) row[k] = payload[k];
+      });
+      if (payload.systems) row.systems = payload.systems;
+      if (payload.internalNotes) row.internalNotes = payload.internalNotes;
+      row.updatedAt = stamp;
+      recomputeClientCounters(row);
+      pushDomainAudit(bag, {
+        action: 'update',
+        detail: `تحديث عميل: ${row.name}`,
+        by: actor,
+        source: row.source || 'Manual',
+        entityId: row.id,
+      });
+    } else {
+      row = recomputeClientCounters({
+        id: uid('cli'),
+        clientId: payload.clientId || `CL-${1000 + bag.clients.length + 1}`,
+        name: String(payload.name || '').trim() || 'عميل جديد',
+        email: String(payload.email || '').trim().toLowerCase(),
+        status: payload.status || 'pending',
+        company: payload.company || '',
+        country: payload.country || '',
+        accountLevel: payload.accountLevel || 'standard',
+        systems: payload.systems || [],
+        orders: payload.orders || [],
+        subscriptions: payload.subscriptions || [],
+        invoices: payload.invoices || [],
+        wallet: payload.wallet || { paid: 0, free: 0, total: 0, ledger: [] },
+        tickets: payload.tickets || [],
+        internalNotes: payload.internalNotes || [],
+        lastLoginAt: payload.lastLoginAt || '',
+        source: payload.source || 'إدخال يدوي',
+        createdAt: stamp,
+        updatedAt: stamp,
+      });
+      bag.clients.unshift(row);
+      pushDomainAudit(bag, {
+        action: 'create',
+        detail: `عميل جديد: ${row.name}`,
+        by: actor,
+        source: row.source,
+        entityId: row.id,
+      });
+    }
+    save();
+    return row;
+  };
+
+  const setClientStatus = (id, status, actor = 'مشغّل هوب') => {
+    const bag = clientsBag();
+    const row = (bag.clients || []).find((x) => x.id === id || x.email === id);
+    if (!row) return null;
+    row.status = status;
+    row.updatedAt = nowIso();
+    pushDomainAudit(bag, {
+      action: 'status',
+      detail: `${row.name} → ${status}`,
+      by: actor,
+      source: row.source || 'Manual',
+      entityId: row.id,
+    });
+    save();
+    return row;
+  };
+
+  const addClientNote = (id, note, actor = 'مشغّل هوب') => {
+    const bag = clientsBag();
+    const row = (bag.clients || []).find((x) => x.id === id || x.email === id);
+    if (!row || !String(note || '').trim()) return null;
+    if (!Array.isArray(row.internalNotes)) row.internalNotes = [];
+    row.internalNotes.unshift({ by: actor, note: String(note).trim(), at: nowIso() });
+    row.updatedAt = nowIso();
+    pushDomainAudit(bag, {
+      action: 'note',
+      detail: `ملاحظة على ${row.name}`,
+      by: actor,
+      source: 'Internal Notes',
+      entityId: row.id,
+    });
+    save();
+    return row;
+  };
+
+  const assignClientSystem = (id, { code, name, plan } = {}, actor = 'مشغّل هوب') => {
+    const bag = clientsBag();
+    const row = (bag.clients || []).find((x) => x.id === id || x.email === id);
+    if (!row || !code) return null;
+    if (!Array.isArray(row.systems)) row.systems = [];
+    row.systems.unshift({
+      code: String(code).toUpperCase(),
+      name: name || code,
+      plan: plan || 'standard',
+      status: 'active',
+    });
+    recomputeClientCounters(row);
+    row.updatedAt = nowIso();
+    pushDomainAudit(bag, {
+      action: 'assign_system',
+      detail: `${row.name} ← ${code}`,
+      by: actor,
+      source: 'Clients',
+      entityId: row.id,
+    });
+    save();
+    return row;
+  };
+
+  const upsertHubRole = (payload = {}, actor = 'مشغّل هوب') => {
+    const bag = rolesBag();
+    if (!Array.isArray(bag.roles)) bag.roles = [];
+    let row = payload.id ? bag.roles.find((x) => x.id === payload.id) : null;
+    const stamp = nowIso();
+    if (row) {
+      ['code', 'nameAr', 'level', 'status', 'source'].forEach((k) => {
+        if (payload[k] !== undefined) row[k] = payload[k];
+      });
+      if (payload.systems) row.systems = payload.systems;
+      if (payload.permissions) row.permissions = payload.permissions;
+      row.updatedAt = stamp;
+      pushDomainAudit(bag, {
+        action: 'update',
+        detail: `تحديث دور: ${row.nameAr}`,
+        by: actor,
+        source: row.source || 'Manual',
+        entityId: row.id,
+      });
+    } else {
+      row = {
+        id: uid('role'),
+        code: String(payload.code || '').trim() || `role_${Date.now().toString(36)}`,
+        nameAr: String(payload.nameAr || '').trim() || 'دور جديد',
+        level: payload.level || 'employee',
+        systems: payload.systems || ['HUB'],
+        permissions: payload.permissions || ['read'],
+        status: payload.status || 'active',
+        source: payload.source || 'إدخال يدوي',
+        createdAt: stamp,
+        updatedAt: stamp,
+      };
+      bag.roles.unshift(row);
+      pushDomainAudit(bag, {
+        action: 'create',
+        detail: `دور جديد: ${row.nameAr}`,
+        by: actor,
+        source: row.source,
+        entityId: row.id,
+      });
+    }
+    save();
+    return row;
+  };
+
+  const assignHubRole = (payload = {}, actor = 'مشغّل هوب') => {
+    const bag = rolesBag();
+    if (!Array.isArray(bag.assignments)) bag.assignments = [];
+    const item = {
+      id: uid('ras'),
+      userEmail: String(payload.userEmail || '').trim().toLowerCase(),
+      userName: String(payload.userName || '').trim() || payload.userEmail || 'مستخدم',
+      roleCode: String(payload.roleCode || '').trim(),
+      source: payload.source || 'Manual',
+      at: nowIso(),
+      by: actor,
+    };
+    if (!item.userEmail || !item.roleCode) return null;
+    bag.assignments.unshift(item);
+    pushDomainAudit(bag, {
+      action: 'assign',
+      detail: `${item.userName} ← ${item.roleCode}`,
+      by: actor,
+      source: item.source,
+      entityId: item.id,
+    });
+    save();
+    return item;
+  };
+
+  const removeNotification = (id, actor = 'مشغّل هوب') => {
+    const s = get();
+    if (!Array.isArray(s.notifications)) return null;
+    const idx = s.notifications.findIndex((x) => x.id === id);
+    if (idx < 0) return null;
+    const [n] = s.notifications.splice(idx, 1);
+    if (!s.notificationsWs) s.notificationsWs = { schemaVersion: 2, auditLog: [], settings: {} };
+    pushDomainAudit(s.notificationsWs, {
+      action: 'delete',
+      detail: n.title,
+      by: actor,
+      source: n.sourceName || n.source,
+      entityId: n.id,
+    });
+    save();
+    emitNotificationsChanged();
+    return n;
+  };
+
+  const createHubNotification = (payload = {}, actor = 'مشغّل هوب') => {
+    const item = pushNotification({
+      ...payload,
+      source: payload.source || 'HUB',
+      sourceName: payload.sourceName || 'غرفة العمليات',
+    });
+    if (item) {
+      const s = get();
+      if (!s.notificationsWs) s.notificationsWs = { schemaVersion: 2, auditLog: [], settings: {} };
+      pushDomainAudit(s.notificationsWs, {
+        action: 'create',
+        detail: item.title,
+        by: actor,
+        source: item.sourceName,
+        entityId: item.id,
+      });
+      save();
+    }
+    return item;
   };
 
   // —— Measurement
@@ -7284,6 +7727,17 @@ const HubStore = (() => {
     syncIntegrationConnector,
     addCoreInsight,
     closeCoreInsight,
+    upsertClient,
+    setClientStatus,
+    addClientNote,
+    assignClientSystem,
+    upsertHubRole,
+    assignHubRole,
+    removeNotification,
+    createHubNotification,
+    hydrateClientsBatchDomains,
+    clientsBag,
+    rolesBag,
     pushDomainAudit,
     hydrateOpsCommandDomains,
     recalculateMeasurement,
