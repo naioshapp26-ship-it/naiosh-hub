@@ -108,7 +108,7 @@
       ['notifications', 'الإشعارات', 'badge-notif'],
       ['req-settings', 'إعدادات الطلبات'],
     ];
-    const moreActive = more.some(([id]) => state.tab === id);
+    const moreTab = more.some(([id]) => state.tab === id);
     return `
       <div class="posha-ops" id="posha-ops">
         <nav class="posha-mainnav" id="posha-subnav">
@@ -121,11 +121,11 @@
                   }</button>`
               )
               .join('')}
-            <div class="posha-more ${moreActive ? 'is-open' : ''}">
-              <button type="button" class="posha-more-toggle ${moreActive ? 'is-active' : ''}" id="posha-more-toggle" aria-expanded="${moreActive}">
+            <div class="posha-more">
+              <button type="button" class="posha-more-toggle ${moreTab ? 'is-current' : ''}" id="posha-more-toggle" aria-expanded="false" aria-haspopup="true">
                 المزيد <i class="fas fa-chevron-down"></i>
               </button>
-              <div class="posha-more-panel" id="posha-more-panel" ${moreActive ? '' : 'hidden'}>
+              <div class="posha-more-panel" id="posha-more-panel" hidden>
                 ${more
                   .map(
                     ([id, label, badge]) =>
@@ -1067,6 +1067,18 @@
     });
   }
 
+  function closeMoreMenu() {
+    const panel = document.getElementById('posha-more-panel');
+    const toggle = document.getElementById('posha-more-toggle');
+    if (panel) panel.hidden = true;
+    if (toggle) {
+      const moreIds = ['new', 'issues', 'events', 'notifications', 'req-settings'];
+      toggle.classList.toggle('is-current', moreIds.includes(state.tab));
+      toggle.classList.remove('is-open');
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+  }
+
   function jumpTab(tab) {
     if (!tab) return;
     state.tab = tab;
@@ -1075,18 +1087,10 @@
     if (tab === 'approved') state.reqView = 'approved';
     if (tab === 'orders' && state.reqView === 'approved') state.reqView = 'active';
     if (tab !== 'new') state.statusFilter = '';
-    const moreIds = ['new', 'issues', 'events', 'notifications', 'req-settings'];
     document.querySelectorAll('#posha-subnav [data-ptab]').forEach((b) => {
       b.classList.toggle('is-active', b.dataset.ptab === state.tab);
     });
-    const panel = document.getElementById('posha-more-panel');
-    const toggle = document.getElementById('posha-more-toggle');
-    if (panel && toggle) {
-      const open = moreIds.includes(state.tab);
-      panel.hidden = !open;
-      toggle.classList.toggle('is-active', open);
-      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    }
+    closeMoreMenu();
     paintBody();
   }
 
@@ -1372,18 +1376,30 @@
     });
     document.getElementById('posha-refresh').onclick = () => refresh();
     document.getElementById('posha-more-toggle')?.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
       const panel = document.getElementById('posha-more-panel');
+      const toggle = e.currentTarget;
       if (!panel) return;
-      panel.hidden = !panel.hidden;
-      e.currentTarget.classList.toggle('is-active', !panel.hidden);
-      e.currentTarget.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+      const willOpen = panel.hidden;
+      panel.hidden = !willOpen;
+      toggle.classList.toggle('is-open', willOpen);
+      toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
     });
+    if (!mount._moreOutside) {
+      mount._moreOutside = true;
+      document.addEventListener('click', (e) => {
+        if (!document.getElementById('posha-ops')) return;
+        if (e.target.closest('.posha-more')) return;
+        closeMoreMenu();
+      });
+    }
     document.getElementById('posha-subnav').onclick = (e) => {
       const btn = e.target.closest('[data-ptab]');
       if (!btn) return;
       jumpTab(btn.dataset.ptab);
     };
+    closeMoreMenu();
     if (!mount._crListen) {
       mount._crListen = true;
       window.addEventListener('hub-customer-requests-changed', () => {
