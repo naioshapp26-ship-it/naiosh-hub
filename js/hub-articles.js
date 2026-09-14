@@ -675,15 +675,17 @@
     },
     linkCustomerRequests: () => {
       try {
+        let dirty = false;
         window.HubCustomerRequests?.syncFromModules?.();
         state.articles.forEach((a) => {
           if (a.status === 'Draft') return;
-          const req = window.HubCustomerRequests?.ensureForArticle?.(a, a.authorName || 'عميل');
+          const req = window.HubCustomerRequests?.ensureForArticle?.(a, a.authorName || 'عميل', { silent: true });
           if (req?.id && a.requestId !== req.id) {
             a.requestId = req.id;
+            dirty = true;
           }
         });
-        save();
+        if (dirty) save();
       } catch (_) {}
     },
   };

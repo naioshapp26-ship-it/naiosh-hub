@@ -20,14 +20,42 @@
   }
 
   async function api(path, opts = {}) {
-    const res = await fetch(path, {
-      method: opts.method || 'GET',
-      headers: authHeaders(),
-      body: opts.body ? JSON.stringify(opts.body) : undefined,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.ok === false) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
+    const ctrl = new AbortController();
+    const ms = opts.timeoutMs == null ? 8000 : opts.timeoutMs;
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try {
+      const res = await fetch(path, {
+        method: opts.method || 'GET',
+        headers: authHeaders(),
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+        signal: ctrl.signal,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) {
+        const errMsg =
+          typeof data.error === 'string'
+            ? data.error
+            : data.error && typeof data.error === 'object'
+              ? data.error.message || JSON.stringify(data.error)
+              : `HTTP ${res.status}`;
+        throw new Error(errMsg || `HTTP ${res.status}`);
+      }
+      return data;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function errText(e) {
+    if (!e) return 'خطأ غير معروف';
+    if (typeof e === 'string') return e;
+    if (e.name === 'AbortError') return 'انتهت مهلة الاتصال بالخادم';
+    if (e.message && e.message !== '[object Object]') return String(e.message);
+    try {
+      return JSON.stringify(e);
+    } catch (_) {
+      return 'تعذر تحميل البيانات';
+    }
   }
 
   function esc(s) {
@@ -103,13 +131,14 @@
   function summaryCards(s) {
     s = s || {};
     const reqK = cr()?.kpis?.() || {};
+    const pendingReview = reqK.pendingReview || reqK.needsAction || 0;
     const cards = [
-      ['إجمالي العملاء', s.totalClients || 0],
+      ['إجمالي العملاء', s.totalClients || state.clients.length || 0],
       ['النشطون', s.activeClients || 0],
       ['الموقوفون', s.suspendedClients || 0],
       ['الجدد', s.newClients || 0],
-      ['طلبات تحتاج مراجعة', reqK.pendingReview || reqK.needsAction || s.pendingOrders || 0],
-      ['تذاكر مفتوحة', s.openTickets || 0],
+      ['طلبات تحتاج مراجعة', pendingReview],
+      ['تذاكر مفتوحة', s.openTickets || state.tickets.length || 0],
       ['مشاكل تحتاج تدخل', s.openIssues || 0],
       ['فواتير تحتاج مراجعة', s.paymentIssues || 0],
     ];
@@ -980,17 +1009,29 @@
     });
   }
 
+  let _painting = false;
   async function paintBody() {
+    if (_painting) return;
+    _painting = true;
     const body = document.getElementById('posha-body');
-    if (!body) return;
+    if (!body) {
+      _painting = false;
+      return;
+    }
+    try {
+      cr()?.syncFromModules?.();
+      window.HubArticles?.linkCustomerRequests?.();
+    } catch (_) {}
     const s = state.summary || {};
     const reqK = cr()?.kpis?.() || {};
+    const badgeN = reqK.needsAction || reqK.pendingReview || reqK.neu || 0;
     setBadge('badge-new', s.newClients || 0);
-    setBadge('badge-support', s.openTickets || 0);
-    setBadge('badge-orders', reqK.needsAction || reqK.pendingReview || reqK.neu || 0);
+    setBadge('badge-support', s.openTickets || state.tickets.length || 0);
+    setBadge('badge-orders', badgeN);
     setBadge('badge-issues', s.openIssues || 0);
     setBadge('badge-notif', s.unreadAdminNotifications || 0);
 
+    try {
     if (state.tab === 'overview') {
       body.innerHTML =
         summaryCards(s) +
@@ -1009,8 +1050,14 @@
         <button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(t.clientEmail)}">فتح العميل</button>
       </li>`).join('') || '<li>لا تذاكر</li>'}</ul>`;
     } else if (state.tab === 'orders') {
-      body.innerHTML = renderRequestsInbox();
-      wireRequestsUi(body);
+      if (!cr()) {
+        body.innerHTML = `<div class="posha-err">تعذر تحميل طلبات العملاء — وحدة HubCustomerRequests غير محمّلة.
+          <button type="button" class="btn btn-primary btn-sm" id="posha-retry-orders">إعادة المحاولة</button></div>`;
+        document.getElementById('posha-retry-orders')?.addEventListener('click', () => paintBody());
+      } else {
+        body.innerHTML = renderRequestsInbox();
+        wireRequestsUi(body);
+      }
     } else if (state.tab === 'req-settings') {
       body.innerHTML = renderReqSettings();
       wireRequestsUi(body);
@@ -1028,7 +1075,7 @@
           try {
             await api(`/api/admin/posha/issues/${encodeURIComponent(sel.dataset.issue)}/status`, { method: 'POST', body: { status: sel.value } });
             refresh();
-          } catch (e) { alert(e.message); }
+          } catch (e) { alert(errText(e)); }
         };
       });
     } else if (state.tab === 'events') {
@@ -1050,11 +1097,22 @@
           ${n.clientEmail?`<button type="button" class="btn btn-primary btn-sm" data-open-posha="${esc(n.clientEmail)}" data-nid="${esc(n.id)}">فتح</button>`:''}
         </li>`).join('')||'<li>لا إشعارات</li>'}</ul>`;
       document.getElementById('posha-read-all')?.addEventListener('click', async () => {
-        await api('/api/admin/posha/notifications/read', { method: 'POST', body: { all: true } });
-        refresh();
+        try {
+          await api('/api/admin/posha/notifications/read', { method: 'POST', body: { all: true } });
+          refresh();
+        } catch (e) {
+          alert(errText(e));
+        }
       });
     }
     wireOpens();
+    } catch (paintErr) {
+      body.innerHTML = `<div class="posha-err">تعذر عرض القسم: ${esc(errText(paintErr))}
+        <button type="button" class="btn btn-primary btn-sm" id="posha-retry-paint">إعادة المحاولة</button></div>`;
+      document.getElementById('posha-retry-paint')?.addEventListener('click', () => paintBody());
+    } finally {
+      _painting = false;
+    }
   }
 
   function evHtml(e) {
@@ -1085,50 +1143,87 @@
     });
   }
 
+  let _refreshInFlight = null;
+  let _lastApiWarn = '';
+
   async function refresh() {
-    try {
-      const [clients, tickets, events, issues, notifs] = await Promise.all([
-        api('/api/admin/posha/clients'),
-        api('/api/admin/posha/tickets').catch(() => ({ tickets: [] })),
-        api('/api/admin/posha/events').catch(() => ({ events: [] })),
-        api('/api/admin/posha/issues').catch(() => ({ issues: [] })),
-        api('/api/admin/posha/notifications').catch(() => ({ notifications: [], unread: 0 })),
-      ]);
-      state.clients = clients.clients || [];
-      state.summary = clients.summary || {};
-      state.tickets = tickets.tickets || [];
-      state.events = events.events || [];
-      state.issues = issues.issues || [];
-      state.notifications = notifs.notifications || [];
-      await paintBody();
-      updateTopBell(state.summary.unreadAdminNotifications || notifs.unread || 0);
-    } catch (e) {
-      /* Central inbox must still work offline / without Posha API */
-      state.clients = state.clients || [];
-      state.summary = state.summary || {};
-      state.tickets = state.tickets || [];
-      state.events = state.events || [];
-      state.issues = state.issues || [];
-      state.notifications = state.notifications || [];
-      if (state.tab === 'orders' || state.tab === 'req-settings' || state.tab === 'overview') {
-        await paintBody();
-        const body = document.getElementById('posha-body');
-        if (body && state.tab !== 'orders' && state.tab !== 'req-settings') {
-          body.insertAdjacentHTML('afterbegin', `<p class="posha-err">${esc(e.message)} — صندوق الطلبات المركزية متاح محلياً.</p>`);
-        }
-      } else {
-        const body = document.getElementById('posha-body');
-        if (body) {
-          body.innerHTML = `<p class="posha-err">${esc(e.message)}</p>
-            <p><button type="button" class="btn btn-primary btn-sm" data-ptab-fallback="orders">فتح طلبات العملاء</button></p>`;
-          body.querySelector('[data-ptab-fallback]')?.addEventListener('click', () => {
-            state.tab = 'orders';
-            document.querySelectorAll('#posha-subnav button').forEach((b) => b.classList.toggle('is-active', b.dataset.ptab === 'orders'));
-            paintBody();
+    if (_refreshInFlight) return _refreshInFlight;
+    const bodyEl = document.getElementById('posha-body');
+    if (bodyEl && !state.clients.length && bodyEl.querySelector('.posha-loading')) {
+      /* keep initial loader until first paint */
+    }
+    _refreshInFlight = (async () => {
+      let apiWarn = '';
+      try {
+        const soft = (p) =>
+          api(p).catch((e) => {
+            apiWarn = apiWarn || errText(e);
+            return null;
           });
+        const [clients, tickets, events, issues, notifs] = await Promise.all([
+          soft('/api/admin/posha/clients'),
+          soft('/api/admin/posha/tickets'),
+          soft('/api/admin/posha/events'),
+          soft('/api/admin/posha/issues'),
+          soft('/api/admin/posha/notifications'),
+        ]);
+        if (clients) {
+          state.clients = clients.clients || [];
+          state.summary = clients.summary || {};
+        } else {
+          state.clients = state.clients || [];
+          state.summary = state.summary || {};
+        }
+        state.tickets = tickets?.tickets || state.tickets || [];
+        state.events = events?.events || state.events || [];
+        state.issues = issues?.issues || state.issues || [];
+        state.notifications = notifs?.notifications || state.notifications || [];
+        _lastApiWarn = apiWarn;
+        await paintBody();
+        if (apiWarn && bodyEl) {
+          const warn = document.createElement('p');
+          warn.className = 'posha-err';
+          const soft =
+            /path could not be found|404|Not Found|انتهت مهلة/i.test(apiWarn)
+              ? 'تعذر الاتصال بخادم بوشا (API غير متاح حالياً)'
+              : apiWarn;
+          warn.textContent = `${soft} — صندوق الطلبات المركزية متاح محلياً.`;
+          const body = document.getElementById('posha-body');
+          if (body && !body.querySelector('.posha-err')) body.prepend(warn);
+        }
+        updateTopBell(state.summary.unreadAdminNotifications || notifs?.unread || 0);
+      } catch (e) {
+        state.clients = state.clients || [];
+        state.summary = state.summary || {};
+        state.tickets = state.tickets || [];
+        state.events = state.events || [];
+        state.issues = state.issues || [];
+        state.notifications = state.notifications || [];
+        try {
+          await paintBody();
+        } catch (_) {}
+        const body = document.getElementById('posha-body');
+        if (body && !body.querySelector('.posha-err')) {
+          const warn = document.createElement('p');
+          warn.className = 'posha-err';
+          warn.textContent = `${errText(e)} — صندوق الطلبات المركزية متاح محلياً.`;
+          body.prepend(warn);
+        }
+      } finally {
+        _refreshInFlight = null;
+        const still = document.getElementById('posha-body');
+        if (still?.querySelector('.posha-loading')) {
+          try {
+            await paintBody();
+          } catch (_) {
+            still.innerHTML = `<div class="posha-err">تعذر تحميل الصفحة.
+              <button type="button" class="btn btn-primary btn-sm" id="posha-retry-refresh">إعادة المحاولة</button></div>`;
+            document.getElementById('posha-retry-refresh')?.addEventListener('click', () => refresh());
+          }
         }
       }
-    }
+    })();
+    return _refreshInFlight;
   }
 
   function updateTopBell(n) {
@@ -1155,8 +1250,13 @@
 
   function mount(root) {
     if (!root) return;
+    const keepTab = state.tab || 'overview';
     root.innerHTML = shell();
-    document.getElementById('posha-refresh').onclick = refresh;
+    state.tab = keepTab;
+    document.querySelectorAll('#posha-subnav button').forEach((b) => {
+      b.classList.toggle('is-active', b.dataset.ptab === state.tab);
+    });
+    document.getElementById('posha-refresh').onclick = () => refresh();
     document.getElementById('posha-subnav').onclick = (e) => {
       const btn = e.target.closest('[data-ptab]');
       if (!btn) return;
@@ -1171,19 +1271,24 @@
       mount._crListen = true;
       window.addEventListener('hub-customer-requests-changed', () => {
         if (!document.getElementById('posha-ops')) return;
-        if (state.tab === 'orders' || state.tab === 'overview' || state.tab === 'req-settings') paintBody();
-        else {
+        if (_painting || _refreshInFlight) {
           const reqK = cr()?.kpis?.() || {};
-          setBadge('badge-orders', reqK.neu || 0);
+          setBadge('badge-orders', reqK.needsAction || reqK.pendingReview || reqK.neu || 0);
+          return;
         }
+        const reqK = cr()?.kpis?.() || {};
+        const n = reqK.needsAction || reqK.pendingReview || reqK.neu || 0;
+        setBadge('badge-orders', n);
+        if (state.tab === 'orders' || state.tab === 'overview' || state.tab === 'req-settings') paintBody();
       });
     }
     refresh();
     if (!mount._poll) {
       mount._poll = setInterval(() => {
-        if (document.getElementById('posha-ops')) refresh().catch(() => {});
-        else api('/api/admin/posha/summary').then((d) => updateTopBell(d.summary?.unreadAdminNotifications || 0)).catch(() => {});
-      }, 15000);
+        if (!document.getElementById('posha-ops')) return;
+        if (_refreshInFlight) return;
+        refresh().catch(() => {});
+      }, 30000);
     }
   }
 

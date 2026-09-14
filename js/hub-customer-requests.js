@@ -337,24 +337,27 @@
       });
     } catch (_) {}
 
-    // Articles submissions → central REQ linked by referenceId
+    // Articles submissions → central REQ linked by referenceId (no duplicate / no save churn)
     try {
       const artStore = JSON.parse(localStorage.getItem('naiosh_articles_v1') || 'null');
+      let artStoreDirty = false;
       (artStore?.articles || []).forEach((a) => {
         if (!a?.id || a.status === 'Draft') return;
-        const before = !!findByReference('Article', a.id) || !!(a.requestId && get(a.requestId));
+        const had = !!findByReference('Article', a.id) || !!(a.requestId && get(a.requestId));
         const row = ensureForArticle(a, a.authorName || a.createdBy || 'عميل', { silent: true });
-        if (row && (!before || row.referenceId === a.id)) {
-          if (a.requestId !== row.id) {
-            a.requestId = row.id;
-            try {
-              artStore.articles = artStore.articles || [];
-              localStorage.setItem('naiosh_articles_v1', JSON.stringify(artStore));
-            } catch (_) {}
-          }
+        if (!row) return;
+        if (!had) changed = true;
+        if (a.requestId !== row.id) {
+          a.requestId = row.id;
+          artStoreDirty = true;
           changed = true;
         }
       });
+      if (artStoreDirty) {
+        try {
+          localStorage.setItem('naiosh_articles_v1', JSON.stringify(artStore));
+        } catch (_) {}
+      }
     } catch (_) {}
 
     if (changed) save();
@@ -466,11 +469,38 @@
     return m[st] || st || 'Pending Review';
   };
 
+  const STATUS_RANK = {
+    Draft: 0,
+    New: 1,
+    Viewed: 2,
+    Assigned: 3,
+    'Pending Review': 4,
+    'Under Review': 5,
+    'Needs Changes': 4,
+    'Waiting For Customer': 4,
+    'Pending Approval': 5,
+    'In Progress': 6,
+    Approved: 7,
+    Scheduled: 7,
+    Published: 8,
+    Unpublished: 7,
+    Completed: 8,
+    Rejected: 9,
+    Cancelled: 9,
+    Archived: 10,
+  };
+
   const ensureForArticle = (article, actor = 'عميل', { silent } = {}) => {
     if (!article?.id) return null;
     if (article.status === 'Draft') return null;
     let row = findByReference('Article', article.id) || (article.requestId ? get(article.requestId) : null);
-    const status = mapArticleStatus(article.status);
+    let status = mapArticleStatus(article.status);
+    /* Never downgrade an admin-advanced request during silent sync/backfill */
+    if (row && silent) {
+      const cur = STATUS_RANK[row.status] || 0;
+      const next = STATUS_RANK[status] || 0;
+      if (cur > next) status = row.status;
+    }
     const snapshot = {
       articleId: article.id,
       title: article.title,
