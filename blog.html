@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>المدونة | نايوش هوب 360</title>
+  <title>المقالات | نايوش هوب 360</title>
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
+  <link rel="stylesheet" href="css/hub-articles.css?v=1" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -22,6 +23,7 @@
           <a href="index.html">الرئيسية</a>
           <a href="events.html">الفعاليات</a>
           <a href="ads.html">الإعلانات</a>
+          <a class="active" href="blog.html">المقالات</a>
         </nav>
       </div>
       <div class="auth-actions">
@@ -31,44 +33,31 @@
     </div>
   </header>
 
-  <main class="container hub-feature-page">
-    <section class="hub-feature-hero">
-      <p class="hub-feature-kicker"><i class="fas fa-newspaper"></i> مدونة التشغيل · مفعّلة</p>
+  <main class="container hub-feature-page art-page">
+    <section class="art-hero" data-art-hero>
       <h1>مقالات تُشغّل — مش كلام عام</h1>
-      <p>كل مقالة تنتهي بخطوة عملية داخل هوب: فرع · رصيد · دردشة · منصات. وضوح · قياس · سيطرة.</p>
-      <div class="hub-feature-actions">
-        <a class="btn btn-primary" href="#posts"><i class="fas fa-book-open"></i> اقرأ أحدث المقالات</a>
-        <a class="btn btn-secondary" href="system-ops.html?tab=blog" data-blog-publish-cta><i class="fas fa-upload"></i> ارفع مقالًا</a>
-        <a class="btn btn-secondary" href="operating.html"><i class="fas fa-gears"></i> آلية التشغيل</a>
+      <p class="art-lead">كل مقالة تنتهي بخطوة عملية داخل هوب.</p>
+      <p class="art-hint">أرسل مقالك في خطوات بسيطة، وسنراجعه قبل النشر.</p>
+      <div class="art-hero-actions">
+        <button type="button" class="btn btn-primary" data-art="start-submit"><i class="fas fa-plus"></i> ارفع مقالك</button>
+        <button type="button" class="btn btn-secondary" data-art="goto-mine">مقالاتي</button>
+        <a class="btn btn-secondary" href="#posts">تصفح المقالات</a>
       </div>
     </section>
 
-    <aside class="hub-feature-purpose">
-      <span class="hub-feature-purpose-mark"><i class="fas fa-pen-nib"></i></span>
-      <div>
-        <strong>من أين ترفع المقال؟</strong>
-        <p>من <a href="system-ops.html?tab=blog"><strong>تشغيل الأنظمة ← المدونة</strong></a> (أو من آلية التشغيل). أضف العنوان والنص والمرفقات بأي نوع ملف شائع حتى 150 ميجابايت، ثم اضغط نشر — يظهر المقال هنا فورًا.</p>
-      </div>
-    </aside>
+    <div id="art-app"></div>
 
     <section class="hub-feature-section" id="posts">
       <h2 class="hub-feature-section-title">أحدث المقالات التشغيلية</h2>
-      <p class="hub-feature-section-lead">المنشورات الحية من تشغيل الأنظمة تظهر أولًا — الزر يأخذك لمسار التنفيذ.</p>
+      <p class="hub-feature-section-lead">المقالات المعتمدة والمنشورة تظهر هنا بعد مراجعة فريق المحتوى.</p>
       <div class="hub-feature-grid" data-blog-posts></div>
-    </section>
-
-    <section class="hub-feature-hero hub-feature-closing">
-      <h2>من القراءة إلى التنفيذ</h2>
-      <p>المدونة بوابة فهم — التشغيل الحقيقي في الغرفة والمتجر والآلية.</p>
-      <div class="hub-feature-actions">
-        <a class="btn btn-primary" href="operating.html"><i class="fas fa-gears"></i> آلية التشغيل</a>
-        <a class="btn btn-secondary" href="dashboard.html"><i class="fas fa-gauge-high"></i> غرفة العمليات</a>
-      </div>
     </section>
   </main>
 
+  <script src="js/hub-auth.js?v=client2"></script>
   <script src="js/hub-system-ops-engine.js?v=5"></script>
-  <script src="js/hub-blog.js?v=1"></script>
+  <script src="js/hub-articles.js?v=1"></script>
+  <script src="js/hub-articles-ui.js?v=1"></script>
   <script src="js/hub-upload-limits.js?v=2"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
   <script src="js/hub-control-nav.js?v=3"></script>

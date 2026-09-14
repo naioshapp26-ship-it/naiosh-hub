@@ -230,20 +230,47 @@
           )
           .join(' · ')}</div>`;
       };
+      const incoming =
+        typeof window.HubArticles?.list === 'function'
+          ? window.HubArticles.list({ incoming: true }).slice(0, 15)
+          : [];
       host.innerHTML =
         section(
-          'مدونة نايوش هوب · تفعيل ونشر المقالات',
-          `<p class="sysops-note">من هنا ترفع المقالات على المدونة العامة. المرفقات تدعم معظم أنواع الملفات (صور · مستندات · فيديو · أرشيف · CAD) حتى 150 ميجابايت — باستثناء الملفات التنفيذية الخطرة.</p>
+          'المقالات — فصل تجربة العميل عن التشغيل',
+          `<p class="sysops-note"><strong>للعملاء:</strong> رفع المقال يتم عبر رحلة بسيطة في
+            <a href="blog.html#submit" target="_blank" rel="noopener">صفحة المقالات ← ارفع مقالك</a>
+            (بيانات → محتوى → مراجعة → إرسال). لا تطلب من العميل فتح هذه الشاشة التقنية.</p>
+          <p class="sysops-note"><strong>للإدارة:</strong> راجع المقالات الواردة، عيّن مراجعاً، اطلب تعديلاً، اعتمد وانشر من
+            <a href="dashboard.html#content-articles">غرفة العمليات ← المقالات الواردة</a>.
+            آلية التشغيل تشغّل Workflow <code>WF-ARTICLE-01</code> في الخلفية.</p>
+          <div class="sysops-inline" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
+            <a class="btn btn-primary" href="blog.html#submit" target="_blank" rel="noopener">فتح رحلة إرسال المقال</a>
+            <a class="btn btn-secondary" href="dashboard.html#content-articles">صندوق المقالات الواردة</a>
+            <a class="btn btn-secondary" href="blog.html" target="_blank" rel="noopener">المدونة العامة</a>
+          </div>`
+        ) +
+        section(
+          'المقالات الواردة (معاينة)',
+          incoming.length
+            ? listRows(
+                incoming,
+                (a) =>
+                  `<article><strong>${esc(a.title)}</strong><span>${esc(a.authorName)} · ${esc(a.category)}</span>
+                    <small>${esc(a.id)} · ${esc(a.statusAr)} · ${esc((a.submittedAt || '').slice(0, 10))}</small></article>`
+              )
+            : '<p class="sysops-note">لا مقالات واردة بعد — ستظهر هنا عند إرسال مقال من صفحة المدونة.</p>'
+        ) +
+        section(
+          'نشر سريع داخلي (إدارة فقط — يتجاوز رحلة العميل)',
+          `<p class="sysops-note">استخدم هذا فقط للنشر التشغيلي الداخلي. للعملاء استخدم رحلة «ارفع مقالك».</p>
         <form class="sysops-form" data-form="blog">
           <input name="title" required placeholder="عنوان المقال" />
-          <textarea name="body" rows="5" placeholder="نص المقال / الثقافة المجتمعية"></textarea>
+          <textarea name="body" rows="5" placeholder="نص المقال"></textarea>
           <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
-          <label>مرفقات المقال (اختياري — جميع الأنواع المسموحة)
+          <label>مرفقات (اختياري)
             <input type="file" name="attachments" multiple />
           </label>
-          <button class="btn btn-primary" type="submit">نشر على المدونة</button>
-          <a class="btn btn-secondary" href="blog.html" target="_blank" rel="noopener">فتح المدونة العامة</a>
-          <a class="btn btn-secondary" href="operating.html">آلية التشغيل</a>
+          <button class="btn btn-primary" type="submit">نشر داخلي على المدونة</button>
         </form>`
         ) +
         section(

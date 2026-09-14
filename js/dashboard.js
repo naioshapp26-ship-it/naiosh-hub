@@ -8,6 +8,7 @@
     { key: 'roles-permissions', icon: 'fa-shield-alt', label: 'إدارة الأدوار والصلاحيات' },
     { key: 'notifications', icon: 'fa-bell', label: 'إشعارات هوب' },
     { key: 'side-project-regs', icon: 'fa-inbox', label: 'طلبات تسجيل المشاريع' },
+    { key: 'content-articles', icon: 'fa-newspaper', label: 'المقالات الواردة' },
     { key: 'search-admin', icon: 'fa-magnifying-glass', label: 'إدارة محرك البحث' },
     { key: 'rent-admin', icon: 'fa-key', label: 'موافقة السوبر أدمن' },
     { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
@@ -48,6 +49,7 @@
     'roles-permissions': ['إدارة الأدوار والصلاحيات', 'أدوار هوب · مصفوفة أنظمة · تعيينات · تدقيق'],
     notifications: ['مركز إشعارات هوب', 'صندوق موحّد · مقروء/غير مقروء · مصدر · تدقيق'],
     'side-project-regs': ['طلبات تسجيل المشاريع', 'Inbox · متابعة · تواصل · تدقيق'],
+    'content-articles': ['المقالات الواردة', 'مراجعة · اعتماد · نشر · Workflow Runs'],
     'search-admin': ['إدارة محرك البحث', 'أضف نصوصًا وصورًا وملفات وفيديو لتغذية محرك البحث الشامل'],
     'rent-admin': ['موافقة السوبر أدمن', 'اعتماد · رفض · منح نظام · تدقيق'],
     blueprint: ['دستور المعمارية الإمبراطورية', 'هوب مركزي — طبقات · محاور · أول 6 أشهر'],
@@ -324,6 +326,7 @@
     'rent-admin',
     'search-admin',
     'side-project-regs',
+    'content-articles',
     'settings',
   ]);
   const visibleNav =
@@ -1103,6 +1106,7 @@
     'clients-mgmt': renderClientsMgmt,
     notifications: renderNotifications,
     'side-project-regs': renderSideProjectRegs,
+    'content-articles': () => `<div id="articles-admin-mount"></div>`,
     'search-admin': () => `
       <div class="card">
         <h3><span class="title-left"><i class="fas fa-magnifying-glass icon"></i> إدارة محرك البحث الشامل</span></h3>
@@ -1150,6 +1154,10 @@
     if (current === 'posha-clients' && window.HubPoshaClients?.mount) {
       const mount = document.getElementById('posha-mount');
       if (mount) window.HubPoshaClients.mount(mount);
+    }
+    if (current === 'content-articles' && window.HubArticlesAdmin?.mount) {
+      const mount = document.getElementById('articles-admin-mount');
+      if (mount) window.HubArticlesAdmin.mount(mount);
     }
     if (current === 'settings' && window.HubSettingsCenter?.bind) {
       window.HubSettingsCenter.bind(root, {

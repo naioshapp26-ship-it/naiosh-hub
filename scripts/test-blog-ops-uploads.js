@@ -27,20 +27,78 @@ assert.strictEqual(uploads.extFromNameAndMime('x', 'application/octet-stream'), 
 assert.strictEqual(uploads.extFromNameAndMime('bad.exe', 'application/octet-stream'), '');
 
 const blogHtml = fs.readFileSync(path.join(root, 'blog.html'), 'utf8');
-assert(blogHtml.includes('js/hub-blog.js'), 'blog.html must load hub-blog.js');
-assert(blogHtml.includes('system-ops.html?tab=blog'), 'blog must link to ops publish tab');
+assert(blogHtml.includes('js/hub-articles.js'), 'blog.html must load hub-articles.js');
+assert(blogHtml.includes('js/hub-articles-ui.js'), 'blog.html must load articles UI');
+assert(blogHtml.includes('data-art="start-submit"') || blogHtml.includes("data-art=\"start-submit\""), 'blog must have upload CTA');
 assert(blogHtml.includes('data-blog-posts'), 'blog must have live posts host');
+assert(!/system-ops\.html\?tab=blog/.test(blogHtml), 'customer blog must not send users to technical system-ops publish tab');
 
 const opsUi = fs.readFileSync(path.join(root, 'js/hub-system-ops-ui.js'), 'utf8');
 assert(/name="attachments"/.test(opsUi), 'ops blog form must accept attachments');
 assert(/HubUploadLimits\.uploadFile/.test(opsUi), 'ops blog must upload via HubUploadLimits');
+assert(opsUi.includes('blog.html#submit'), 'ops blog tab must point customers to article wizard');
 
 const engine = fs.readFileSync(path.join(root, 'js/hub-system-ops-engine.js'), 'utf8');
 assert(/attachments/.test(engine), 'engine publishPost must store attachments');
 assert(/listPublishedPosts/.test(engine), 'engine must list published posts');
 
 const operating = fs.readFileSync(path.join(root, 'operating.html'), 'utf8');
-assert(operating.includes('system-ops.html?tab=blog'), 'operating page must link to blog publish');
+assert(operating.includes('dashboard.html#content-articles'), 'operating page must link to admin articles inbox');
+assert(operating.includes('blog.html'), 'operating page must link to public blog');
+
+const articlesMod = fs.readFileSync(path.join(root, 'js/hub-articles.js'), 'utf8');
+assert(articlesMod.includes("'ART'") || articlesMod.includes('ART-'), 'articles module uses ART ids');
+assert(articlesMod.includes('WF-ARTICLE-01'), 'articles workflow id present');
+assert(articlesMod.includes('submit'), 'articles module can submit');
+
+const dash = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
+assert(dash.includes('hub-articles-admin.js'), 'dashboard loads articles admin');
+assert(fs.readFileSync(path.join(root, 'js/dashboard.js'), 'utf8').includes('content-articles'), 'dashboard nav has content-articles');
+
+// runtime: one record customer+admin
+const vm = require('vm');
+const mem = {};
+const localStorage = {
+  getItem: (k) => (k in mem ? mem[k] : null),
+  setItem: (k, v) => {
+    mem[k] = String(v);
+  },
+  removeItem: (k) => {
+    delete mem[k];
+  },
+};
+const ctx = {
+  console,
+  Date,
+  Math,
+  JSON,
+  String,
+  Number,
+  Array,
+  Object,
+  localStorage,
+  window: {},
+  CustomEvent: function (n, o) {
+    this.type = n;
+    this.detail = o && o.detail;
+  },
+};
+ctx.window = ctx;
+vm.createContext(ctx);
+vm.runInContext(fs.readFileSync(path.join(root, 'js/hub-articles.js'), 'utf8'), ctx);
+const draft = ctx.HubArticles.createDraft(
+  { title: 'اختبار', category: 'تشغيل', summary: 'نبذة', authorName: 'أحمد', body: 'محتوى المقال الكامل هنا' },
+  'أحمد'
+);
+assert(String(draft.id).startsWith('ART-'), 'creates ART id');
+const sub = ctx.HubArticles.submit(draft.id, 'أحمد');
+assert(sub.ok, 'submit ok');
+assert(sub.article.status === 'Pending Review', 'pending review after submit');
+assert(String(sub.run.runId).startsWith('RUN-'), 'creates RUN id');
+ctx.HubArticles.approve(draft.id, 'Admin');
+ctx.HubArticles.publishNow(draft.id, 'Admin');
+assert(ctx.HubArticles.get(draft.id).status === 'Published', 'published');
+console.log('PASS articles journey: draft → submit → approve → publish');
 
 class FakeReq extends EventEmitter {
   constructor(headers) {
