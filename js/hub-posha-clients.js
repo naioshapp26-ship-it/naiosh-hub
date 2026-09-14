@@ -58,7 +58,7 @@
     filter: '',
     statusFilter: '',
     q: '',
-    reqView: 'all',
+    reqView: 'active',
     reqFilters: { q: '', status: '', type: '', source: '', assignee: '' },
     reqId: null,
     reqTab: 'overview',
@@ -102,12 +102,13 @@
 
   function summaryCards(s) {
     s = s || {};
+    const reqK = cr()?.kpis?.() || {};
     const cards = [
       ['إجمالي العملاء', s.totalClients || 0],
       ['النشطون', s.activeClients || 0],
       ['الموقوفون', s.suspendedClients || 0],
       ['الجدد', s.newClients || 0],
-      ['طلبات تحتاج مراجعة', s.pendingOrders || 0],
+      ['طلبات تحتاج مراجعة', reqK.pendingReview || reqK.needsAction || s.pendingOrders || 0],
       ['تذاكر مفتوحة', s.openTickets || 0],
       ['مشاكل تحتاج تدخل', s.openIssues || 0],
       ['فواتير تحتاج مراجعة', s.paymentIssues || 0],
@@ -338,15 +339,16 @@
   }
 
   function requestsKpisHtml() {
-    const k = cr()?.kpis?.() || { total: 0, neu: 0, open: 0, overdue: 0, completed: 0, waiting: 0, unassigned: 0 };
+    const k = cr()?.kpis?.() || {};
     const cards = [
-      ['إجمالي الطلبات', k.total, 'all'],
-      ['طلبات جديدة', k.neu, 'new'],
-      ['مفتوحة', k.open, 'open'],
-      ['متأخرة SLA', k.overdue, 'overdue'],
-      ['بانتظار العميل', k.waiting, 'waiting'],
-      ['مكتملة', k.completed, 'done'],
-      ['غير معينة', k.unassigned, 'new'],
+      ['كل الطلبات', k.total || 0, 'all'],
+      ['طلبات جديدة', k.neu || 0, 'new'],
+      ['بانتظار المراجعة', k.pendingReview || 0, 'pending_review'],
+      ['قيد المعالجة', k.inProgress || 0, 'open'],
+      ['تحتاج إجراء', k.needsAction || 0, 'pending_review'],
+      ['تمت الموافقة', k.approved || 0, 'approved'],
+      ['مرفوضة', k.rejected || 0, 'rejected'],
+      ['مكتملة', k.completed || 0, 'completed'],
     ];
     return `<div class="posha-kpis posha-req-kpis">${cards
       .map(
@@ -360,9 +362,9 @@
     const k = cr()?.kpis?.() || {};
     const items = [];
     if (k.neu) items.push({ text: `${k.neu} طلبات جديدة`, view: 'new' });
+    if (k.pendingReview) items.push({ text: `${k.pendingReview} بانتظار المراجعة`, view: 'pending_review' });
     if (k.overdue) items.push({ text: `${k.overdue} طلب تجاوز SLA`, view: 'overdue' });
-    if (k.waiting) items.push({ text: `${k.waiting} بانتظار العميل`, view: 'waiting' });
-    if (k.unassigned) items.push({ text: `${k.unassigned} غير معينة`, view: 'new' });
+    if (k.waiting) items.push({ text: `${k.waiting} بانتظار العميل / تعديل`, view: 'waiting' });
     if (!items.length) return '';
     return `<div class="posha-needs">
       <h3><i class="fas fa-bolt"></i> يحتاج إلى إجراء</h3>
@@ -395,13 +397,15 @@
     const sources = [...new Set(all.map((r) => r.sourceModule).filter(Boolean))];
     const assignees = [...new Set(all.map((r) => r.assignedTo).filter(Boolean))];
     const views = [
+      ['active', 'الطلبات النشطة'],
+      ['pending_review', 'بانتظار المراجعة'],
+      ['approved', 'تمت الموافقة عليها'],
+      ['rejected', 'المرفوضة'],
+      ['completed', 'المكتملة'],
       ['all', 'كل الطلبات'],
+      ['articles', 'المقالات فقط'],
       ['new', 'جديدة'],
-      ['open', 'مفتوحة'],
-      ['waiting', 'بانتظار العميل'],
-      ['overdue', 'متأخرة'],
-      ['done', 'مكتملة'],
-      ['today', 'اليوم'],
+      ['waiting', 'تحتاج تعديلات'],
     ];
 
     if (state.reqId) return renderRequestDetail(state.reqId);
@@ -417,65 +421,54 @@
         .map(([id, label]) => `<button type="button" class="chip ${state.reqView === id ? 'is-on' : ''}" data-req-view="${id}">${label}</button>`)
         .join('')}</div>
       <div class="posha-filters posha-req-filters">
-        <input data-req-filter="q" type="search" placeholder="بحث: Request ID · عميل · موضوع · مصدر" value="${esc(state.reqFilters.q)}" />
+        <input data-req-filter="q" type="search" placeholder="بحث: Request ID · Article ID · عميل · موضوع · مصدر" value="${esc(state.reqFilters.q)}" />
         <select data-req-filter="status"><option value="">كل الحالات</option>${Object.entries(cr().STATUS_AR || {})
           .map(([k, v]) => `<option value="${esc(k)}" ${state.reqFilters.status === k ? 'selected' : ''}>${esc(v)}</option>`)
           .join('')}</select>
-        <select data-req-filter="type"><option value="">نوع الطلب</option>${types.map((t) => `<option value="${esc(t)}" ${state.reqFilters.type === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+        <select data-req-filter="type"><option value="">نوع الطلب</option>${types.map((t) => `<option value="${esc(t)}" ${state.reqFilters.type === t ? 'selected' : ''}>${esc((cr().TYPE_LABELS_AR || {})[t] || t)}</option>`).join('')}</select>
         <select data-req-filter="source"><option value="">المصدر</option>${sources.map((t) => `<option value="${esc(t)}" ${state.reqFilters.source === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
         <select data-req-filter="assignee"><option value="">المسؤول</option>${assignees.map((t) => `<option value="${esc(t)}" ${state.reqFilters.assignee === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
       </div>
       <div class="table-wrap posha-req-table-wrap"><table class="data-table posha-table posha-req-table">
         <thead><tr>
-          <th>Request ID</th><th>العميل</th><th>الشركة</th><th>نوع الطلب</th><th>الموضوع</th>
-          <th>المصدر</th><th>الصفحة / الخدمة</th><th>الأولوية</th><th>المسؤول</th>
-          <th>تاريخ الطلب</th><th>آخر تحديث</th><th>الحالة</th><th>SLA</th><th>الإجراءات</th>
+          <th>Request ID</th><th>نوع الطلب</th><th>العميل</th><th>العنوان / الموضوع</th>
+          <th>القسم</th><th>المصدر</th><th>Reference ID</th>
+          <th>تاريخ الطلب</th><th>الحالة</th><th>المسؤول</th><th>الأولوية</th><th>آخر تحديث</th><th>الإجراءات</th>
         </tr></thead>
         <tbody>
           ${
             rows.length
               ? rows
                   .map((r) => {
-                    const sla = cr().slaStatus(r);
+                    const typeLabel = r.requestTypeLabel || (cr().TYPE_LABELS_AR || {})[r.requestType] || r.requestType;
+                    const isArt = r.referenceType === 'Article' || r.requestType === 'Article Submission';
+                    const artActs = isArt && !['Published', 'Rejected', 'Archived'].includes(r.status)
+                      ? `<button type="button" class="btn btn-primary btn-sm" data-req-approve-publish="${esc(r.id)}">موافقة ونشر</button>`
+                      : '';
                     return `<tr>
                       <td><code>${esc(r.requestId || r.id)}</code></td>
-                      <td><button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.email || '')}">${esc(r.customerName || r.customer?.name || '—')}</button></td>
-                      <td>${esc(r.company || r.customer?.company || '—')}</td>
-                      <td>${esc(r.requestType)}</td>
-                      <td>${esc(r.title || r.relatedSolution || '—')}</td>
-                      <td><span class="chip">${esc(r.sourceModule || '—')}</span></td>
-                      <td>${esc(r.sourcePage || r.relatedSolution || '—')}<br><small>${esc(r.sourceAction || '')}</small></td>
-                      <td>${esc(r.priority)}</td>
-                      <td>${esc(r.assignedTo || '—')}<br><small>${esc(r.department || '')}</small></td>
+                      <td>${esc(typeLabel)}</td>
+                      <td><button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.email || '')}">${esc(r.customerName || r.customer?.name || '—')}</button>
+                        <br><small>${esc(r.customerId || '—')}</small></td>
+                      <td>${esc(r.title || '—')}</td>
+                      <td>${esc(r.department || '—')}</td>
+                      <td><span class="chip">${esc(r.sourceModule || '—')}</span><br><small>${esc(r.sourcePage || '')}</small></td>
+                      <td>${r.referenceId ? `<code>${esc(r.referenceId)}</code>` : '—'}</td>
                       <td>${fmt(r.createdAt)}</td>
-                      <td>${fmt(r.updatedAt)}</td>
                       <td><span class="chip">${esc(statusAr(r.status))}</span></td>
-                      <td><span class="chip sla-${esc(sla.replace(/\s/g, ''))}">${esc(sla)}</span></td>
+                      <td>${esc(r.assignedTo || '—')}</td>
+                      <td>${esc(r.priority)}</td>
+                      <td>${fmt(r.updatedAt)}</td>
                       <td class="posha-req-actions">
                         <button type="button" class="btn btn-primary btn-sm" data-req-open="${esc(r.id)}">عرض</button>
-                        <button type="button" class="btn btn-dark btn-sm" data-req-assign="${esc(r.id)}">تعيين</button>
+                        ${artActs}
                         <button type="button" class="btn btn-ghost btn-sm" data-req-status="${esc(r.id)}">الحالة</button>
                         <button type="button" class="btn btn-ghost btn-sm" data-req-more="${esc(r.id)}">⋮</button>
-                        ${
-                          state.moreId === r.id
-                            ? `<div class="posha-more-menu">
-                                <button type="button" data-req-note="${esc(r.id)}">ملاحظة داخلية</button>
-                                <button type="button" data-req-msg="${esc(r.id)}">رسالة للعميل</button>
-                                <button type="button" data-req-info="${esc(r.id)}">طلب معلومات</button>
-                                <button type="button" data-req-att="${esc(r.id)}">إضافة مرفق</button>
-                                <button type="button" data-req-dept="${esc(r.id)}">تحويل لقسم</button>
-                                <button type="button" data-req-task="${esc(r.id)}">إنشاء مهمة</button>
-                                <button type="button" data-req-quote="${esc(r.id)}">إنشاء عرض سعر</button>
-                                <button type="button" data-req-close="${esc(r.id)}">إغلاق</button>
-                                <button type="button" data-req-cancel="${esc(r.id)}">إلغاء</button>
-                              </div>`
-                            : ''
-                        }
                       </td>
                     </tr>`;
                   })
                   .join('')
-              : '<tr><td colspan="14" class="posha-muted">لا طلبات مطابقة — أي طلب من حلول نايوش أو غيرها يظهر هنا تلقائياً.</td></tr>'
+              : '<tr><td colspan="13" class="posha-muted">لا طلبات مطابقة — أي طلب من المقالات أو حلول نايوش أو غيرها يظهر هنا تلقائياً.</td></tr>'
           }
         </tbody>
       </table></div>`;
@@ -486,9 +479,13 @@
     if (!r) return `<p class="posha-err">الطلب غير موجود</p><button type="button" class="btn btn-ghost" data-req-back>رجوع</button>`;
     cr().markViewed?.(id, actor());
     const tab = state.reqTab;
+    const isArt = r.referenceType === 'Article' || r.requestType === 'Article Submission';
+    const art = isArt && r.referenceId ? window.HubArticles?.get?.(r.referenceId) : null;
+    const snap = art || r.articleSnapshot || {};
     const tabs = [
       ['overview', 'نظرة عامة'],
       ['source', 'مصدر الطلب'],
+      ...(isArt ? [['article', 'المقال']] : []),
       ['comms', 'التواصل'],
       ['notes', 'ملاحظات داخلية'],
       ['files', 'المرفقات'],
@@ -502,23 +499,24 @@
           <h4>بيانات العميل</h4>
           <ul class="feed">
             <li><b>الاسم:</b> <button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.email || '')}">${esc(r.customerName || r.customer?.name || '—')}</button></li>
+            <li><b>Client ID:</b> ${esc(r.customerId || '—')}</li>
             <li><b>الشركة:</b> ${esc(r.company || '—')}</li>
             <li><b>الهاتف:</b> ${esc(r.phone || '—')}</li>
             <li><b>البريد:</b> ${esc(r.email || '—')}</li>
             <li><b>الفرع:</b> ${esc(r.branch || '—')}</li>
           </ul>
+          <button type="button" class="btn btn-dark btn-sm" data-open-posha="${esc(r.email || '')}">فتح ملف العميل</button>
         </article>
         <article>
-          <h4>محتوى الطلب</h4>
+          <h4>بيانات الطلب</h4>
           <ul class="feed">
-            <li><b>النوع:</b> ${esc(r.requestType)}</li>
+            <li><b>النوع:</b> ${esc(r.requestTypeLabel || r.requestType)}</li>
             <li><b>الموضوع:</b> ${esc(r.title)}</li>
-            <li><b>الوصف / الاحتياج:</b> ${esc(r.description || r.need || '—')}</li>
-            <li><b>النطاق:</b> ${esc(r.scopeType || '—')} ${esc(r.scopeDetail || '')}</li>
+            <li><b>الوصف:</b> ${esc(r.description || r.need || '—')}</li>
+            <li><b>Reference:</b> ${esc(r.referenceType || '—')} · <code>${esc(r.referenceId || '—')}</code></li>
             <li><b>الأولوية:</b> ${esc(r.priority)}</li>
-            <li><b>الحل/الخدمة المرتبطة:</b> ${esc(r.relatedSolution || r.relatedService || r.relatedProduct || '—')}</li>
             <li><b>Channel:</b> ${esc(r.channel || 'Web')}</li>
-            <li><b>SLA:</b> ${esc(cr().slaStatus(r))} (${r.slaHours || 4}س)</li>
+            <li><b>SLA:</b> ${esc(cr().slaStatus(r))}</li>
           </ul>
         </article>
         <article>
@@ -526,18 +524,39 @@
           <ul class="feed">
             <li><b>Assigned To:</b> ${esc(r.assignedTo || '—')}</li>
             <li><b>Department:</b> ${esc(r.department || '—')}</li>
-            <li><b>Sales Owner:</b> ${esc(r.salesOwner || '—')}</li>
-            <li><b>Consultant:</b> ${esc(r.consultant || '—')}</li>
+            <li><b>Approved By:</b> ${esc(r.approvedBy || '—')}</li>
+            <li><b>Approved At:</b> ${fmt(r.approvedAt)}</li>
             <li><b>Created By:</b> ${esc(r.createdBy || '—')}</li>
           </ul>
+        </article>
+      </div>`;
+    } else if (tab === 'article' && isArt) {
+      body = `<div class="posha-req-grid">
+        <article style="grid-column:1/-1">
+          <h4>بيانات المقال المرتبطة</h4>
+          <ul class="feed">
+            <li><b>Article ID:</b> <code>${esc(r.referenceId || snap.articleId || '—')}</code></li>
+            <li><b>العنوان:</b> ${esc(snap.title || '—')}</li>
+            <li><b>التصنيف:</b> ${esc(snap.category || '—')}</li>
+            <li><b>الكاتب:</b> ${esc(snap.authorName || '—')}</li>
+            <li><b>الملخص:</b> ${esc(snap.summary || '—')}</li>
+            <li><b>تاريخ الإرسال:</b> ${fmt(snap.submittedAt || r.createdAt)}</li>
+          </ul>
+          ${snap.body ? `<div style="white-space:pre-wrap;background:#f9fafb;padding:12px;border-radius:10px;margin-top:8px">${esc(snap.body)}</div>` : ''}
+          ${snap.articleFile ? `<p style="margin-top:8px"><i class="fas fa-paperclip"></i> ${esc(snap.articleFile.name)}</p>` : ''}
+          <div class="posha-req-actions" style="margin-top:12px">
+            <a class="btn btn-dark btn-sm" href="blog.html#mine/${esc(r.referenceId || '')}" target="_blank" rel="noopener">فتح المقال</a>
+            <a class="btn btn-ghost btn-sm" href="blog.html#mine/${esc(r.referenceId || '')}" target="_blank" rel="noopener">معاينة المقال</a>
+          </div>
         </article>
       </div>`;
     } else if (tab === 'source') {
       body = `<ul class="feed">
         <li><b>Source Module:</b> ${esc(r.sourceModule)}</li>
         <li><b>Source Page:</b> ${esc(r.sourcePage)}</li>
-        <li><b>Source Item:</b> ${esc(r.relatedSolution || r.title)}</li>
-        <li><b>Action:</b> ${esc(r.sourceAction)}</li>
+        <li><b>Source Action:</b> ${esc(r.sourceAction)}</li>
+        <li><b>Reference Type:</b> ${esc(r.referenceType || '—')}</li>
+        <li><b>Reference ID:</b> <code>${esc(r.referenceId || '—')}</code></li>
         <li><b>Channel:</b> ${esc(r.channel)}</li>
         <li><b>Created At:</b> ${fmt(r.createdAt)}</li>
       </ul>
@@ -567,6 +586,15 @@
         <tbody>${logs.map((a) => `<tr><td><code>${esc(a.id)}</code></td><td>${esc(a.action)}</td><td>${esc(a.performedBy)}</td><td>${esc(a.oldStatus || a.oldValue || '—')} → ${esc(a.newStatus || a.newValue || '—')}</td><td>${fmt(a.at)}</td></tr>`).join('') || '<tr><td colspan="5">لا سجل</td></tr>'}</tbody></table></div>`;
     }
 
+    const artActions = isArt
+      ? `
+        ${!['Published', 'Rejected', 'Archived'].includes(r.status) ? `<button type="button" class="btn btn-primary btn-sm" data-req-approve-publish="${esc(r.id)}">✓ موافقة ونشر</button>` : ''}
+        <button type="button" class="btn btn-dark btn-sm" data-req-art-changes="${esc(r.id)}">طلب تعديل</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-req-art-reject="${esc(r.id)}">رفض</button>
+        <a class="btn btn-ghost btn-sm" href="blog.html#mine/${esc(r.referenceId || '')}" target="_blank">فتح المقال</a>
+      `
+      : '';
+
     return `
       <div class="posha-req-detail-head">
         <div>
@@ -577,14 +605,14 @@
           <span class="chip">${esc(cr().slaStatus(r))}</span>
         </div>
         <div class="posha-req-actions">
+          ${artActions}
           <button type="button" class="btn btn-dark btn-sm" data-req-assign="${esc(r.id)}">تعيين</button>
-          <button type="button" class="btn btn-primary btn-sm" data-req-status="${esc(r.id)}">تغيير الحالة</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-req-status="${esc(r.id)}">تغيير الحالة</button>
           <button type="button" class="btn btn-ghost btn-sm" data-req-msg="${esc(r.id)}">التواصل مع العميل</button>
-          <button type="button" class="btn btn-ghost btn-sm" data-req-task="${esc(r.id)}">إنشاء مهمة</button>
         </div>
       </div>
       <div class="posha-subnav posha-req-tabs">${tabs
-        .map(([id, label]) => `<button type="button" data-req-tab="${id}" class="${tab === id ? 'is-active' : ''}">${label}</button>`)
+        .map(([tid, label]) => `<button type="button" data-req-tab="${tid}" class="${tab === tid ? 'is-active' : ''}">${label}</button>`)
         .join('')}</div>
       <div class="posha-req-detail-body">${body}</div>`;
   }
@@ -673,6 +701,40 @@
         const next = window.prompt(`الحالة الجديدة:\n${statuses.join(' · ')}`, cr()?.get(id)?.status || 'Under Review');
         if (!next || !statuses.includes(next)) return alert('حالة غير معروفة');
         cr()?.updateStatus(id, next, actor());
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-approve-publish]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-approve-publish');
+        const r = cr()?.get(id);
+        if (!r) return;
+        const ok = window.confirm(
+          `هل تريد اعتماد ونشر هذا المقال؟\n\nRequest: ${r.id}\nArticle: ${r.referenceId || '—'}\nالعنوان: ${r.title || ''}\nالعميل: ${r.customerName || ''}`
+        );
+        if (!ok) return;
+        cr()?.approveAndPublish?.(id, actor());
+        state.reqView = 'approved';
+        state.reqId = id;
+        state.reqTab = 'overview';
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-art-changes]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-art-changes');
+        const note = window.prompt('سبب طلب التعديل؟');
+        if (!note) return;
+        cr()?.updateStatus(id, 'Needs Changes', actor(), note);
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-art-reject]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-art-reject');
+        const note = window.prompt('سبب الرفض؟');
+        if (!note) return;
+        cr()?.updateStatus(id, 'Rejected', actor(), note);
         paintBody();
       };
     });
@@ -877,7 +939,7 @@
     const reqK = cr()?.kpis?.() || {};
     setBadge('badge-new', s.newClients || 0);
     setBadge('badge-support', s.openTickets || 0);
-    setBadge('badge-orders', reqK.neu || s.pendingOrders || 0);
+    setBadge('badge-orders', reqK.needsAction || reqK.pendingReview || reqK.neu || 0);
     setBadge('badge-issues', s.openIssues || 0);
     setBadge('badge-notif', s.unreadAdminNotifications || 0);
 

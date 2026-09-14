@@ -229,6 +229,7 @@
       createdAt: nowIso(),
       updatedAt: nowIso(),
       submittedAt: '',
+      requestId: '',
       timeline: defaultTimeline(),
       messages: [],
     };
@@ -324,10 +325,19 @@
       newValue: 'Pending Review',
     });
     save();
-    return { ok: true, article, run };
+    try {
+      if (window.HubCustomerRequests?.ensureForArticle) {
+        const req = window.HubCustomerRequests.ensureForArticle(article, who);
+        if (req?.id) {
+          article.requestId = req.id;
+          save();
+        }
+      }
+    } catch (_) {}
+    return { ok: true, article, run, requestId: article.requestId };
   };
 
-  const setStatus = (id, status, actor, note = '') => {
+  const setStatus = (id, status, actor, note = '', opts = {}) => {
     const article = get(id);
     if (!article || !STATUS[status]) return null;
     const old = article.status;
@@ -406,6 +416,20 @@
       detail: note,
     });
     save();
+    if (!opts.skipRequestSync) {
+      try {
+        if (window.HubCustomerRequests?.ensureForArticle) {
+          const req = window.HubCustomerRequests.ensureForArticle(article, actor || actorName());
+          if (req?.id && article.requestId !== req.id) {
+            article.requestId = req.id;
+            save();
+          }
+          if (req?.id && window.HubCustomerRequests.updateStatus && req.status !== window.HubCustomerRequests.mapArticleStatus?.(status)) {
+            /* ensureForArticle already synced status */
+          }
+        }
+      } catch (_) {}
+    }
     return article;
   };
 
@@ -445,7 +469,7 @@
   const requestChanges = (id, note, actor) => setStatus(id, 'Needs Changes', actor, note);
   const approve = (id, actor, note) => setStatus(id, 'Approved', actor, note || '');
   const reject = (id, note, actor) => setStatus(id, 'Rejected', actor, note);
-  const publishNow = (id, actor) => setStatus(id, 'Published', actor, 'نشر فوري');
+  const publishNow = (id, actor, opts = {}) => setStatus(id, 'Published', actor, 'نشر فوري', opts);
   const schedule = (id, whenIso, actor) => {
     const article = setStatus(id, 'Scheduled', actor, whenIso);
     if (article) article.scheduledAt = whenIso;
@@ -477,6 +501,9 @@
       performedBy: actor || actorName(),
     });
     save();
+    try {
+      window.HubCustomerRequests?.ensureForArticle?.(article, actor || actorName());
+    } catch (_) {}
     return article;
   };
 
@@ -615,5 +642,22 @@
       save();
       return state.settings;
     },
+    linkCustomerRequests: () => {
+      try {
+        window.HubCustomerRequests?.syncFromModules?.();
+        state.articles.forEach((a) => {
+          if (a.status === 'Draft') return;
+          const req = window.HubCustomerRequests?.ensureForArticle?.(a, a.authorName || 'عميل');
+          if (req?.id && a.requestId !== req.id) {
+            a.requestId = req.id;
+          }
+        });
+        save();
+      } catch (_) {}
+    },
   };
+
+  try {
+    if (window.HubCustomerRequests) window.HubArticles.linkCustomerRequests();
+  } catch (_) {}
 })();

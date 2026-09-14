@@ -36,21 +36,39 @@
     'Contract Request': { department: 'Sales', assignedTo: 'Sales Desk' },
     'Training Request': { department: 'Consulting', assignedTo: 'Consulting Team' },
     'Event Request': { department: 'Sales', assignedTo: 'Sales Desk' },
+    'Article Submission': { department: 'Content', assignedTo: 'Content Desk' },
+    مقال: { department: 'Content', assignedTo: 'Content Desk' },
     'General Request': { department: 'Operations', assignedTo: 'Ops Desk' },
+  };
+
+  const TYPE_LABELS_AR = {
+    'Article Submission': 'مقال',
+    'Solution Request': 'طلب حل',
+    'Cost Reduction Assessment': 'خفض تكاليف',
+    'Cost Reduction Request': 'خفض تكاليف',
+    'Support Request': 'دعم',
+    'Project Registration': 'تسجيل مشروع',
+    'Consultation Request': 'استشارة',
+    'General Request': 'طلب عام',
   };
 
   const STATUS_AR = {
     New: 'جديد',
     Viewed: 'تمت المشاهدة',
     Assigned: 'تم التعيين',
+    'Pending Review': 'بانتظار المراجعة',
     'Under Review': 'قيد المراجعة',
+    'Needs Changes': 'يحتاج تعديلات',
     'Waiting For Customer': 'بانتظار العميل',
     'Pending Approval': 'بانتظار الموافقة',
     'Proposal Sent': 'عرض مرسل',
     'In Progress': 'قيد التنفيذ',
+    Approved: 'تمت الموافقة',
+    Published: 'منشور',
     Completed: 'مكتمل',
     Rejected: 'مرفوض',
     Cancelled: 'ملغي',
+    Archived: 'مؤرشف',
     Draft: 'مسودة',
   };
 
@@ -164,6 +182,9 @@
       relatedService: r.relatedService || '',
       relatedProject: r.relatedProject || '',
       relatedSystem: r.relatedSystem || '',
+      referenceType: r.referenceType || '',
+      referenceId: r.referenceId || '',
+      requestTypeLabel: r.requestTypeLabel || TYPE_LABELS_AR[type] || type,
       solutionId: r.solutionId || '',
       solutionName: r.solutionName || '',
       priority: r.priority || 'عادي',
@@ -173,6 +194,9 @@
       salesOwner: r.salesOwner || route.assignedTo,
       consultant: r.consultant || '',
       approver: r.approver || '',
+      approvedBy: r.approvedBy || '',
+      approvedAt: r.approvedAt || '',
+      publishedAt: r.publishedAt || '',
       createdBy: r.createdBy || r.requestedBy || 'عميل',
       requestedBy: r.requestedBy || r.createdBy || 'عميل',
       createdAt: r.createdAt || nowIso(),
@@ -186,6 +210,7 @@
       scopeType: r.scopeType || '',
       scopeDetail: r.scopeDetail || '',
       costMeta: r.costMeta || null,
+      articleSnapshot: r.articleSnapshot || null,
       customer: r.customer || {
         name: r.customer?.name || r.customerName || '',
         company: r.customer?.company || r.company || '',
@@ -311,11 +336,29 @@
       });
     } catch (_) {}
 
+    // Articles submissions → central REQ linked by referenceId
+    try {
+      const artStore = JSON.parse(localStorage.getItem('naiosh_articles_v1') || 'null');
+      (artStore?.articles || []).forEach((a) => {
+        if (!a?.id || a.status === 'Draft') return;
+        const before = !!findByReference('Article', a.id) || !!(a.requestId && get(a.requestId));
+        const row = ensureForArticle(a, a.authorName || a.createdBy || 'عميل', { silent: true });
+        if (row && (!before || row.referenceId === a.id)) {
+          if (a.requestId !== row.id) {
+            a.requestId = row.id;
+            try {
+              artStore.articles = artStore.articles || [];
+              localStorage.setItem('naiosh_articles_v1', JSON.stringify(artStore));
+            } catch (_) {}
+          }
+          changed = true;
+        }
+      });
+    } catch (_) {}
+
     if (changed) save();
     return state.requests.length;
   };
-
-  syncFromModules();
 
   const create = (payload = {}, actor = 'عميل') => {
     const type = payload.requestType || 'General Request';
@@ -325,6 +368,7 @@
     else if (String(type).includes('Solution') || type === 'Quote Request' || type === 'Consultation Request') prefix = 'SOL-REQ';
     else if (type === 'Project Registration') prefix = 'SP-REG';
     else if (type === 'Support Request') prefix = 'SUP';
+    else if (type === 'Article Submission' || type === 'مقال') prefix = 'REQ';
 
     const id = payload.id || payload.requestId || nextSeq(state.requests, prefix);
     const stamp = nowIso();
@@ -332,7 +376,8 @@
       ...payload,
       id,
       requestId: id,
-      requestType: type,
+      requestType: type === 'مقال' ? 'Article Submission' : type,
+      requestTypeLabel: payload.requestTypeLabel || TYPE_LABELS_AR[type] || TYPE_LABELS_AR[type === 'مقال' ? 'Article Submission' : type] || type,
       title: payload.title || payload.solutionName || payload.need || 'طلب عميل',
       description: payload.description || payload.need || '',
       need: payload.need || payload.description || '',
@@ -341,14 +386,17 @@
       sourceUrl: payload.sourceUrl || '',
       sourceAction: payload.sourceAction || 'Submit Request',
       relatedSolution: payload.relatedSolution || payload.solutionName || '',
+      referenceType: payload.referenceType || '',
+      referenceId: payload.referenceId || '',
+      articleSnapshot: payload.articleSnapshot || null,
       status: payload.status || 'New',
       assignedTo: payload.assignedTo || route.assignedTo,
       department: payload.department || route.department,
       salesOwner: payload.salesOwner || route.assignedTo,
       createdBy: actor,
       requestedBy: actor,
-      createdAt: stamp,
-      updatedAt: stamp,
+      createdAt: payload.createdAt || stamp,
+      updatedAt: payload.updatedAt || stamp,
       channel: payload.channel || 'Web',
       timeline: payload.timeline || [
         { at: stamp, by: actor, text: 'تم إنشاء الطلب', key: 'created' },
@@ -394,6 +442,209 @@
 
   const get = (id) => (state.requests || []).find((r) => r.id === id || r.requestId === id);
 
+  const findByReference = (referenceType, referenceId) =>
+    (state.requests || []).find(
+      (r) =>
+        String(r.referenceType || '') === String(referenceType || '') &&
+        String(r.referenceId || '') === String(referenceId || '')
+    );
+
+  const mapArticleStatus = (st) => {
+    const m = {
+      'Pending Review': 'Pending Review',
+      'Under Review': 'Under Review',
+      'Needs Changes': 'Needs Changes',
+      Approved: 'Approved',
+      Scheduled: 'Approved',
+      Published: 'Published',
+      Rejected: 'Rejected',
+      Archived: 'Archived',
+      Draft: 'Draft',
+    };
+    return m[st] || st || 'Pending Review';
+  };
+
+  const ensureForArticle = (article, actor = 'عميل', { silent } = {}) => {
+    if (!article?.id) return null;
+    if (article.status === 'Draft') return null;
+    let row = findByReference('Article', article.id) || (article.requestId ? get(article.requestId) : null);
+    const status = mapArticleStatus(article.status);
+    const snapshot = {
+      articleId: article.id,
+      title: article.title,
+      category: article.category,
+      summary: article.summary,
+      authorName: article.authorName,
+      body: article.body,
+      coverImage: article.coverImage,
+      articleFile: article.articleFile,
+      attachments: article.attachments,
+      submittedAt: article.submittedAt,
+    };
+    if (row) {
+      Object.assign(row, {
+        title: `مراجعة ونشر مقال: ${article.title || article.id}`,
+        description: article.summary || String(article.body || '').slice(0, 280) || '',
+        customerName: article.authorName || row.customerName,
+        company: article.company || row.company,
+        email: article.authorEmail || row.email,
+        customerId: article.customerId || row.customerId,
+        status,
+        assignedTo: article.reviewer || row.assignedTo || 'Content Desk',
+        department: row.department || 'Content',
+        referenceType: 'Article',
+        referenceId: article.id,
+        requestType: 'Article Submission',
+        requestTypeLabel: 'مقال',
+        articleSnapshot: snapshot,
+        updatedAt: article.updatedAt || nowIso(),
+        publishedAt: article.publishedAt || row.publishedAt || '',
+        customer: {
+          name: article.authorName || row.customer?.name || '',
+          company: article.company || row.customer?.company || '',
+          email: article.authorEmail || row.customer?.email || '',
+          phone: row.customer?.phone || '',
+          branch: row.customer?.branch || '',
+        },
+      });
+      if (!silent) save();
+      return row;
+    }
+    return create(
+      {
+        requestType: 'Article Submission',
+        requestTypeLabel: 'مقال',
+        title: `مراجعة ونشر مقال: ${article.title || article.id}`,
+        description: article.summary || String(article.body || '').slice(0, 280),
+        need: article.summary || '',
+        status,
+        priority: 'متوسطة',
+        sourceModule: 'المقالات',
+        sourcePage: 'مقالات نايوش',
+        sourceUrl: 'blog.html',
+        sourceAction: 'رفع مقال',
+        referenceType: 'Article',
+        referenceId: article.id,
+        customerId: article.customerId || '',
+        customerName: article.authorName || '',
+        company: article.company || '',
+        email: article.authorEmail || '',
+        assignedTo: article.reviewer || 'Content Desk',
+        department: 'Content',
+        channel: 'Web',
+        articleSnapshot: snapshot,
+        createdAt: article.submittedAt || article.createdAt || nowIso(),
+        updatedAt: article.updatedAt || nowIso(),
+        publishedAt: article.publishedAt || '',
+        customer: {
+          name: article.authorName || '',
+          company: article.company || '',
+          email: article.authorEmail || '',
+          phone: '',
+          branch: '',
+        },
+        timeline: [
+          {
+            at: article.submittedAt || nowIso(),
+            by: actor,
+            text: `تم ربط الطلب بالمقال ${article.id}`,
+            key: 'linked',
+          },
+        ],
+      },
+      actor
+    );
+  };
+
+  const mirrorToArticle = (row, actor = 'مشغّل') => {
+    if (row?.referenceType !== 'Article' || !row.referenceId) return;
+    if (row._syncingArticle) return;
+    try {
+      if (!window.HubArticles?.setStatus) return;
+      const art = window.HubArticles.get(row.referenceId);
+      if (!art) return;
+      const target = (() => {
+        const m = {
+          'Pending Review': 'Pending Review',
+          'Under Review': 'Under Review',
+          'Needs Changes': 'Needs Changes',
+          Approved: 'Approved',
+          Published: 'Published',
+          Rejected: 'Rejected',
+          Archived: 'Archived',
+          Completed: 'Published',
+        };
+        return m[row.status];
+      })();
+      if (!target || art.status === target) return;
+      row._syncingArticle = true;
+      window.HubArticles.setStatus(row.referenceId, target, actor, '', { skipRequestSync: true });
+    } catch (_) {
+    } finally {
+      if (row) row._syncingArticle = false;
+    }
+  };
+
+  const approveAndPublish = (requestId, actor = 'مشغّل') => {
+    const row = get(requestId);
+    if (!row || row.referenceType !== 'Article') return null;
+    const stamp = nowIso();
+    row.approvedBy = actor;
+    row.approvedAt = stamp;
+    row.publishedAt = stamp;
+    row.status = 'Published';
+    row.updatedAt = stamp;
+    row.timeline = row.timeline || [];
+    row.timeline.push({ at: stamp, by: actor, text: 'موافقة ونشر المقال', key: 'approved_published' });
+    pushAudit({
+      action: 'Approved',
+      requestId: row.id,
+      performedBy: actor,
+      oldStatus: 'Pending Review',
+      newStatus: 'Published',
+      customer: row.company || row.customerName,
+      sourceModule: row.sourceModule,
+      detail: row.referenceId,
+    });
+    pushAudit({
+      action: 'Published',
+      requestId: row.id,
+      performedBy: actor,
+      newStatus: 'Published',
+      detail: row.referenceId,
+    });
+    try {
+      const bag = JSON.parse(localStorage.getItem('naiosh_hub_notifications_v1') || '{"items":[]}');
+      if (!Array.isArray(bag.items)) bag.items = [];
+      bag.items.unshift({
+        id: `n-${Date.now()}`,
+        title: 'تمت الموافقة على مقالك ونشره بنجاح',
+        message: `Article ${row.referenceId} · Request ${row.id}`,
+        at: stamp,
+        read: false,
+        source: 'المقالات',
+        link: `blog.html#mine/${row.referenceId}`,
+      });
+      bag.items = bag.items.slice(0, 100);
+      localStorage.setItem('naiosh_hub_notifications_v1', JSON.stringify(bag));
+    } catch (_) {}
+    if (window.HubArticles?.publishNow) {
+      row._syncingArticle = true;
+      try {
+        window.HubArticles.publishNow(row.referenceId, actor, { skipRequestSync: true });
+        const art = window.HubArticles.get(row.referenceId);
+        if (art) {
+          art.requestId = row.id;
+          window.HubArticles.update?.(row.referenceId, { requestId: row.id }, actor);
+        }
+      } finally {
+        row._syncingArticle = false;
+      }
+    }
+    save();
+    return row;
+  };
+
   const list = (filter = {}) => {
     syncFromModules();
     return (state.requests || []).filter((r) => {
@@ -405,15 +656,24 @@
       if (filter.priority && r.priority !== filter.priority) return false;
       if (filter.email && (r.email || '').toLowerCase() !== String(filter.email).toLowerCase()) return false;
       if (filter.q) {
-        const hay = `${r.id} ${r.customerName} ${r.company} ${r.email} ${r.title} ${r.requestType} ${r.sourceModule} ${r.relatedSolution}`.toLowerCase();
+        const hay = `${r.id} ${r.customerId || ''} ${r.customerName} ${r.company} ${r.email} ${r.title} ${r.requestType} ${r.sourceModule} ${r.relatedSolution} ${r.referenceId || ''}`.toLowerCase();
         if (!hay.includes(String(filter.q).toLowerCase())) return false;
       }
       if (filter.view === 'new') return r.status === 'New';
-      if (filter.view === 'open') return !['Completed', 'Cancelled', 'Rejected'].includes(r.status);
+      if (filter.view === 'active')
+        return !['Completed', 'Cancelled', 'Rejected', 'Published', 'Archived', 'Approved'].includes(r.status);
+      if (filter.view === 'pending_review')
+        return ['Pending Review', 'Under Review', 'New'].includes(r.status);
+      if (filter.view === 'approved') return ['Approved', 'Published'].includes(r.status);
+      if (filter.view === 'rejected') return r.status === 'Rejected';
+      if (filter.view === 'open') return !['Completed', 'Cancelled', 'Rejected', 'Published', 'Archived'].includes(r.status);
       if (filter.view === 'mine' && filter.actor) return r.assignedTo === filter.actor;
-      if (filter.view === 'waiting') return r.status === 'Waiting For Customer';
+      if (filter.view === 'waiting') return r.status === 'Waiting For Customer' || r.status === 'Needs Changes';
       if (filter.view === 'overdue') return slaStatus(r) === 'Overdue';
-      if (filter.view === 'done') return r.status === 'Completed';
+      if (filter.view === 'done' || filter.view === 'completed')
+        return ['Completed', 'Published'].includes(r.status);
+      if (filter.view === 'articles')
+        return r.requestType === 'Article Submission' || r.referenceType === 'Article';
       if (filter.view === 'today') {
         const d = new Date(r.createdAt).toDateString();
         return d === new Date().toDateString();
@@ -422,7 +682,7 @@
     });
   };
 
-  const updateStatus = (id, status, actor = 'مشغّل', note = '') => {
+  const updateStatus = (id, status, actor = 'مشغّل', note = '', opts = {}) => {
     const row = get(id);
     if (!row) return null;
     const old = row.status;
@@ -441,8 +701,8 @@
       oldValue: old,
       newValue: status,
     });
-    // mirror into solutions store if present (same id)
     mirrorToSolutions(row);
+    if (!opts.skipArticleSync) mirrorToArticle(row, actor);
     save();
     return row;
   };
@@ -569,15 +829,24 @@
 
   const kpis = () => {
     const all = state.requests || [];
-    const open = all.filter((r) => !['Completed', 'Cancelled', 'Rejected'].includes(r.status));
+    const closed = ['Completed', 'Cancelled', 'Rejected', 'Published', 'Archived'];
+    const open = all.filter((r) => !closed.includes(r.status));
     return {
       total: all.length,
       neu: all.filter((r) => r.status === 'New').length,
+      pendingReview: all.filter((r) => ['Pending Review', 'Under Review'].includes(r.status)).length,
+      inProgress: all.filter((r) => ['In Progress', 'Assigned', 'Viewed'].includes(r.status)).length,
+      needsAction: all.filter((r) =>
+        ['New', 'Pending Review', 'Needs Changes'].includes(r.status) || slaStatus(r) === 'Overdue'
+      ).length,
+      approved: all.filter((r) => ['Approved', 'Published'].includes(r.status)).length,
+      rejected: all.filter((r) => r.status === 'Rejected').length,
       open: open.length,
       overdue: all.filter((r) => slaStatus(r) === 'Overdue').length,
-      completed: all.filter((r) => r.status === 'Completed').length,
-      waiting: all.filter((r) => r.status === 'Waiting For Customer').length,
-      unassigned: all.filter((r) => r.status === 'New' && !r.assignedTo).length,
+      completed: all.filter((r) => ['Completed', 'Published'].includes(r.status)).length,
+      waiting: all.filter((r) => r.status === 'Waiting For Customer' || r.status === 'Needs Changes').length,
+      unassigned: all.filter((r) => !r.assignedTo && !closed.includes(r.status)).length,
+      articles: all.filter((r) => r.requestType === 'Article Submission' || r.referenceType === 'Article').length,
     };
   };
 
@@ -588,10 +857,13 @@
     return state.settings;
   };
 
+  syncFromModules();
+
   window.HubCustomerRequests = {
     KEY,
     STATUS_AR,
     DEFAULT_ROUTING,
+    TYPE_LABELS_AR,
     reload: () => {
       state = load();
       syncFromModules();
@@ -609,6 +881,10 @@
     addMessage,
     addAttachment,
     findSimilarOpen,
+    findByReference,
+    ensureForArticle,
+    mapArticleStatus,
+    approveAndPublish,
     slaStatus,
     kpis,
     listAudit: () => state.auditLog || [],

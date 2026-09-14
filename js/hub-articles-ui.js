@@ -524,7 +524,7 @@
     return `<div class="art-shell">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
         <div>
-          <p class="art-step-lead" style="margin:0">رقم المقال <code>${esc(a.id)}</code></p>
+          <p class="art-step-lead" style="margin:0">رقم المقال <code>${esc(a.id)}</code>${a.requestId ? ` · طلب <code>${esc(a.requestId)}</code>` : ''}</p>
           <h2 style="margin:6px 0">${esc(a.title || 'بدون عنوان')}</h2>
           <p><span class="art-chip ${statusClass(a.status)}">${esc(a.statusAr)}</span> · ${esc(A().customerPhase(a))}</p>
         </div>
