@@ -475,14 +475,15 @@
 
   /** مواقع البيع المباشر القابلة للربط بالمتجر */
   const MARKETPLACE_CONNECTORS = [
-    { id: 'amazon', name: 'Amazon', nameAr: 'أمازون', icon: 'fa-brands fa-amazon', color: '#ff9900', featured: true, placeholder: 'https://www.amazon.com/dp/...' },
-    { id: 'alibaba', name: 'Alibaba', nameAr: 'علي بابا', icon: 'fa-brands fa-alipay', color: '#ff6a00', placeholder: 'https://www.alibaba.com/product-detail/...' },
-    { id: 'temu', name: 'Temu', nameAr: 'تيمو', icon: 'fas fa-bag-shopping', color: '#fb7701', featured: true, placeholder: 'https://www.temu.com/...' },
-    { id: 'shein', name: 'Shein', nameAr: 'شي إن', icon: 'fas fa-shirt', color: '#111111', featured: true, placeholder: 'https://www.shein.com/...' },
-    { id: 'noon', name: 'Noon', nameAr: 'نون', icon: 'fas fa-sun', color: '#f3ea48', placeholder: 'https://www.noon.com/...' },
-    { id: 'ebay', name: 'eBay', nameAr: 'إيباي', icon: 'fa-brands fa-ebay', color: '#e53238', placeholder: 'https://www.ebay.com/itm/...' },
-    { id: 'etsy', name: 'Etsy', nameAr: 'إيتسي', icon: 'fa-brands fa-etsy', color: '#f56400', placeholder: 'https://www.etsy.com/listing/...' },
-    { id: 'custom', name: 'Other', nameAr: 'أي متجر كبير', icon: 'fas fa-store', color: '#dc2626', placeholder: 'https://...' },
+    { id: 'amazon', storeId: 'STORE-AMAZON', name: 'Amazon', nameAr: 'أمازون', icon: 'fa-brands fa-amazon', color: '#ff9900', featured: true, websiteUrl: 'https://www.amazon.com', domains: ['amazon.'], placeholder: 'https://www.amazon.com/dp/...' },
+    { id: 'noon', storeId: 'STORE-NOON', name: 'Noon', nameAr: 'نون', icon: 'fas fa-sun', color: '#f3ea48', websiteUrl: 'https://www.noon.com', domains: ['noon.com'], placeholder: 'https://www.noon.com/...' },
+    { id: 'alibaba', storeId: 'STORE-ALIBABA', name: 'Alibaba', nameAr: 'علي بابا', icon: 'fa-brands fa-alipay', color: '#ff6a00', websiteUrl: 'https://www.alibaba.com', domains: ['alibaba.com'], placeholder: 'https://www.alibaba.com/product-detail/...' },
+    { id: 'aliexpress', storeId: 'STORE-ALIEXPRESS', name: 'AliExpress', nameAr: 'علي إكسبريس', icon: 'fas fa-cart-shopping', color: '#e62e04', websiteUrl: 'https://www.aliexpress.com', domains: ['aliexpress.'], placeholder: 'https://www.aliexpress.com/item/...' },
+    { id: 'ebay', storeId: 'STORE-EBAY', name: 'eBay', nameAr: 'إيباي', icon: 'fa-brands fa-ebay', color: '#e53238', websiteUrl: 'https://www.ebay.com', domains: ['ebay.'], placeholder: 'https://www.ebay.com/itm/...' },
+    { id: 'walmart', storeId: 'STORE-WALMART', name: 'Walmart', nameAr: 'وول مارت', icon: 'fas fa-store', color: '#0071ce', websiteUrl: 'https://www.walmart.com', domains: ['walmart.com'], placeholder: 'https://www.walmart.com/ip/...' },
+    { id: 'etsy', storeId: 'STORE-ETSY', name: 'Etsy', nameAr: 'إيتسي', icon: 'fa-brands fa-etsy', color: '#f56400', websiteUrl: 'https://www.etsy.com', domains: ['etsy.com'], placeholder: 'https://www.etsy.com/listing/...' },
+    { id: 'temu', storeId: 'STORE-TEMU', name: 'Temu', nameAr: 'تيمو', icon: 'fas fa-bag-shopping', color: '#fb7701', featured: true, websiteUrl: 'https://www.temu.com', domains: ['temu.com'], placeholder: 'https://www.temu.com/...' },
+    { id: 'shein', storeId: 'STORE-SHEIN', name: 'Shein', nameAr: 'شي إن', icon: 'fas fa-shirt', color: '#111111', featured: true, websiteUrl: 'https://www.shein.com', domains: ['shein.'], placeholder: 'https://www.shein.com/...' },
   ];
 
   const storeCategoryOptions = () =>

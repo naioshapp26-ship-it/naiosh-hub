@@ -1359,7 +1359,7 @@
           : ''
       }
       ${form.includeMarketplaces ? marketplaceFormHtml() : ''}
-      ${commonMetaFormHtml()}`,
+      ${entity === 'store' ? '' : commonMetaFormHtml()}`,
       foot: isPublishable
         ? `
         <button type="button" class="hub-erp-btn ghost" data-hub-modal-close title="إلغاء"><i class="fas fa-xmark"></i> إلغاء</button>
