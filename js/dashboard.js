@@ -3,6 +3,7 @@
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
     { key: 'operating', icon: 'fa-gears', label: 'آلية التشغيل' },
     { key: 'posha-clients', icon: 'fa-building-user', label: 'عملاء بوشا' },
+    { key: 'site-settings', icon: 'fa-gear', label: 'إعدادات الموقع' },
     { key: 'posha-os', icon: 'fa-cubes', label: 'نظام بوشا OS', href: 'posha.html' },
     { key: 'clients-mgmt', icon: 'fa-user-tie', label: 'إدارة العملاء' },
     { key: 'roles-permissions', icon: 'fa-shield-alt', label: 'إدارة الأدوار والصلاحيات' },
@@ -45,6 +46,7 @@
     reports: ['مركز التقارير', 'توليد · عرض · تصدير JSON · جدول · تدقيق'],
     integration: ['التكامل والبوابة', 'موصلات · مزامنة · API · فحص بوابة · تدقيق'],
     'posha-clients': ['عملاء بوشا', 'إدارة العملاء والطلبات والدعم والتنبيهات من مكان واحد'],
+    'site-settings': ['إعدادات الموقع', 'إدارة إعدادات المنصة والمتاجر والطلبات والدفع والإعلانات والتكاملات والأمان من مكان واحد'],
     'clients-mgmt': ['إدارة العملاء', 'Clients 360 · CRUD · مصدر · ملاحظات داخلية · تدقيق'],
     'roles-permissions': ['إدارة الأدوار والصلاحيات', 'أدوار هوب · مصفوفة أنظمة · تعيينات · تدقيق'],
     notifications: ['مركز إشعارات هوب', 'صندوق موحّد · مقروء/غير مقروء · مصدر · تدقيق'],
@@ -320,6 +322,7 @@
   // —— Nav
   const STAFF_ONLY_NAV = new Set([
     'posha-clients',
+    'site-settings',
     'posha-os',
     'clients-mgmt',
     'roles-permissions',
@@ -1103,6 +1106,7 @@
     overview: renderOverview,
     operating: renderOperating,
     'posha-clients': () => (window.HubPoshaWS?.render ? HubPoshaWS.render({ user, toast, esc, bar, badgeStatus, fmtTime }) : '<div class="empty">تعذر تحميل عملاء بوشا</div>'),
+    'site-settings': () => (window.HubSiteSettingsUI?.render ? HubSiteSettingsUI.render() : '<div class="empty">تعذر تحميل إعدادات الموقع</div>'),
     'clients-mgmt': renderClientsMgmt,
     notifications: renderNotifications,
     'side-project-regs': renderSideProjectRegs,
@@ -1154,6 +1158,10 @@
     if (current === 'posha-clients' && window.HubPoshaClients?.mount) {
       const mount = document.getElementById('posha-mount');
       if (mount) window.HubPoshaClients.mount(mount);
+    }
+    if (current === 'site-settings' && window.HubSiteSettingsUI?.mount) {
+      const mount = document.getElementById('site-settings-mount');
+      if (mount) window.HubSiteSettingsUI.mount(mount);
     }
     if (current === 'content-articles' && window.HubArticlesAdmin?.mount) {
       const mount = document.getElementById('articles-admin-mount');
