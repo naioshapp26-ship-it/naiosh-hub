@@ -400,6 +400,8 @@
       ['active', 'الطلبات النشطة'],
       ['pending_review', 'بانتظار المراجعة'],
       ['approved', 'تمت الموافقة عليها'],
+      ['paused', 'موقوفة'],
+      ['archived', 'مؤرشفة'],
       ['rejected', 'المرفوضة'],
       ['completed', 'المكتملة'],
       ['all', 'كل الطلبات'],
@@ -588,9 +590,13 @@
 
     const artActions = isArt
       ? `
-        ${!['Published', 'Rejected', 'Archived'].includes(r.status) ? `<button type="button" class="btn btn-primary btn-sm" data-req-approve-publish="${esc(r.id)}">✓ موافقة ونشر</button>` : ''}
-        <button type="button" class="btn btn-dark btn-sm" data-req-art-changes="${esc(r.id)}">طلب تعديل</button>
-        <button type="button" class="btn btn-ghost btn-sm" data-req-art-reject="${esc(r.id)}">رفض</button>
+        ${!['Published', 'Rejected', 'Archived', 'Unpublished'].includes(r.status) ? `<button type="button" class="btn btn-primary btn-sm" data-req-approve-publish="${esc(r.id)}">✓ موافقة ونشر</button>` : ''}
+        ${['Published', 'Unpublished', 'Approved'].includes(r.status) ? `<button type="button" class="btn btn-dark btn-sm" data-req-art-edit="${esc(r.id)}">تعديل</button>` : ''}
+        ${r.status === 'Published' ? `<button type="button" class="btn btn-ghost btn-sm" data-req-art-pause="${esc(r.id)}">إيقاف</button>` : ''}
+        ${r.status === 'Unpublished' ? `<button type="button" class="btn btn-primary btn-sm" data-req-art-resume="${esc(r.id)}">إعادة نشر</button>` : ''}
+        ${!['Archived'].includes(r.status) ? `<button type="button" class="btn btn-ghost btn-sm" data-req-art-archive="${esc(r.id)}">أرشفة</button>` : ''}
+        ${!['Published', 'Rejected', 'Archived'].includes(r.status) ? `<button type="button" class="btn btn-dark btn-sm" data-req-art-changes="${esc(r.id)}">طلب تعديل</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-req-art-reject="${esc(r.id)}">رفض</button>` : ''}
         <a class="btn btn-ghost btn-sm" href="blog.html#mine/${esc(r.referenceId || '')}" target="_blank">فتح المقال</a>
       `
       : '';
@@ -717,6 +723,48 @@
         state.reqView = 'approved';
         state.reqId = id;
         state.reqTab = 'overview';
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-art-edit]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-art-edit');
+        const r = cr()?.get(id);
+        const art = r?.referenceId ? window.HubArticles?.get?.(r.referenceId) : null;
+        const title = window.prompt('عنوان المقال', art?.title || '');
+        if (title === null) return;
+        const summary = window.prompt('الملخص', art?.summary || '');
+        if (summary === null) return;
+        const bodyText = window.prompt('المحتوى', art?.body || '');
+        if (bodyText === null) return;
+        cr()?.editLinkedArticle?.(id, { title, summary, body: bodyText }, actor());
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-art-pause]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-art-pause');
+        if (!window.confirm('إيقاف النشر (Unpublish) دون حذف الطلب؟')) return;
+        cr()?.pauseRequest?.(id, actor());
+        state.reqView = 'paused';
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-art-resume]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-art-resume');
+        if (!window.confirm('إعادة نشر المقال؟')) return;
+        cr()?.resumeRequest?.(id, actor());
+        state.reqView = 'approved';
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-art-archive]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-art-archive');
+        if (!window.confirm('أرشفة الطلب والمقال؟ السجل سيبقى محفوظاً.')) return;
+        cr()?.archiveRequest?.(id, actor());
+        state.reqView = 'archived';
         paintBody();
       };
     });

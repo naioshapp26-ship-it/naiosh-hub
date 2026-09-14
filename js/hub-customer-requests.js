@@ -65,6 +65,7 @@
     'In Progress': 'قيد التنفيذ',
     Approved: 'تمت الموافقة',
     Published: 'منشور',
+    Unpublished: 'موقوف',
     Completed: 'مكتمل',
     Rejected: 'مرفوض',
     Cancelled: 'ملغي',
@@ -457,6 +458,7 @@
       Approved: 'Approved',
       Scheduled: 'Approved',
       Published: 'Published',
+      Unpublished: 'Unpublished',
       Rejected: 'Rejected',
       Archived: 'Archived',
       Draft: 'Draft',
@@ -570,6 +572,7 @@
           'Needs Changes': 'Needs Changes',
           Approved: 'Approved',
           Published: 'Published',
+          Unpublished: 'Unpublished',
           Rejected: 'Rejected',
           Archived: 'Archived',
           Completed: 'Published',
@@ -645,6 +648,112 @@
     return row;
   };
 
+  const pauseRequest = (requestId, actor = 'مشغّل') => {
+    const row = get(requestId);
+    if (!row) return null;
+    const old = row.status;
+    row.status = 'Unpublished';
+    row.updatedAt = nowIso();
+    row.timeline = row.timeline || [];
+    row.timeline.push({ at: row.updatedAt, by: actor, text: 'إيقاف / إلغاء نشر', key: 'paused' });
+    pushAudit({
+      action: 'Request Paused',
+      requestId: row.id,
+      performedBy: actor,
+      oldStatus: old,
+      newStatus: 'Unpublished',
+      detail: row.referenceId || '',
+      customer: row.company || row.customerName,
+      sourceModule: row.sourceModule,
+    });
+    if (row.referenceType === 'Article' && row.referenceId && window.HubArticles?.unpublish) {
+      row._syncingArticle = true;
+      try {
+        window.HubArticles.unpublish(row.referenceId, actor, { skipRequestSync: true });
+      } finally {
+        row._syncingArticle = false;
+      }
+    }
+    save();
+    return row;
+  };
+
+  const resumeRequest = (requestId, actor = 'مشغّل') => {
+    const row = get(requestId);
+    if (!row) return null;
+    if (row.referenceType === 'Article') return approveAndPublish(requestId, actor);
+    return updateStatus(requestId, 'In Progress', actor, 'إعادة تفعيل');
+  };
+
+  const archiveRequest = (requestId, actor = 'مشغّل') => {
+    const row = get(requestId);
+    if (!row) return null;
+    const old = row.status;
+    row.status = 'Archived';
+    row.updatedAt = nowIso();
+    row.timeline = row.timeline || [];
+    row.timeline.push({ at: row.updatedAt, by: actor, text: 'أرشفة الطلب', key: 'archived' });
+    pushAudit({
+      action: 'Request Archived',
+      requestId: row.id,
+      performedBy: actor,
+      oldStatus: old,
+      newStatus: 'Archived',
+      detail: row.referenceId || '',
+    });
+    if (row.referenceType === 'Article' && row.referenceId && window.HubArticles?.archive) {
+      row._syncingArticle = true;
+      try {
+        window.HubArticles.archive(row.referenceId, actor, { skipRequestSync: true });
+      } finally {
+        row._syncingArticle = false;
+      }
+    }
+    save();
+    return row;
+  };
+
+  const editLinkedArticle = (requestId, patch = {}, actor = 'مشغّل') => {
+    const row = get(requestId);
+    if (!row || row.referenceType !== 'Article' || !row.referenceId) return null;
+    const art = window.HubArticles?.get?.(row.referenceId);
+    if (!art) return null;
+    const oldTitle = art.title;
+    const updated = window.HubArticles.update(row.referenceId, patch, actor);
+    row.title = `مراجعة ونشر مقال: ${updated.title || row.referenceId}`;
+    row.description = updated.summary || row.description;
+    row.articleSnapshot = {
+      articleId: updated.id,
+      title: updated.title,
+      category: updated.category,
+      summary: updated.summary,
+      authorName: updated.authorName,
+      body: updated.body,
+      coverImage: updated.coverImage,
+      articleFile: updated.articleFile,
+      attachments: updated.attachments,
+      submittedAt: updated.submittedAt,
+    };
+    row.updatedAt = nowIso();
+    row.timeline = row.timeline || [];
+    row.timeline.push({ at: row.updatedAt, by: actor, text: 'تعديل المقال المنشور', key: 'edited' });
+    pushAudit({
+      action: 'Published Article Updated',
+      requestId: row.id,
+      performedBy: actor,
+      oldValue: oldTitle,
+      newValue: updated.title,
+      detail: row.referenceId,
+    });
+    if (updated.status === 'Published') {
+      try {
+        window.HubArticles.publishNow?.(row.referenceId, actor, { skipRequestSync: true });
+      } catch (_) {}
+    }
+    save();
+    return { request: row, article: updated };
+  };
+
   const list = (filter = {}) => {
     syncFromModules();
     return (state.requests || []).filter((r) => {
@@ -664,7 +773,9 @@
         return !['Completed', 'Cancelled', 'Rejected', 'Published', 'Archived', 'Approved'].includes(r.status);
       if (filter.view === 'pending_review')
         return ['Pending Review', 'Under Review', 'New'].includes(r.status);
-      if (filter.view === 'approved') return ['Approved', 'Published'].includes(r.status);
+      if (filter.view === 'approved') return ['Approved', 'Published', 'Unpublished'].includes(r.status);
+      if (filter.view === 'paused') return r.status === 'Unpublished';
+      if (filter.view === 'archived') return r.status === 'Archived';
       if (filter.view === 'rejected') return r.status === 'Rejected';
       if (filter.view === 'open') return !['Completed', 'Cancelled', 'Rejected', 'Published', 'Archived'].includes(r.status);
       if (filter.view === 'mine' && filter.actor) return r.assignedTo === filter.actor;
@@ -885,6 +996,10 @@
     ensureForArticle,
     mapArticleStatus,
     approveAndPublish,
+    pauseRequest,
+    resumeRequest,
+    archiveRequest,
+    editLinkedArticle,
     slaStatus,
     kpis,
     listAudit: () => state.auditLog || [],

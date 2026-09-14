@@ -30,6 +30,7 @@
     Approved: 'تم الاعتماد',
     Scheduled: 'مجدول للنشر',
     Published: 'منشور',
+    Unpublished: 'موقوف',
     Rejected: 'مرفوض',
     Archived: 'مؤرشف',
   };
@@ -399,6 +400,21 @@
       }
       mirrorToPublicBlog(article);
     }
+    if (status === 'Unpublished') {
+      unpublishFromPublicBlog(article.id);
+      if (run) {
+        run.status = 'Paused';
+        run.currentStep = 'موقوف عن النشر';
+      }
+    }
+    if (status === 'Archived') {
+      unpublishFromPublicBlog(article.id);
+      if (run) {
+        run.status = 'Archived';
+        run.completedAt = nowIso();
+        run.currentStep = 'مؤرشف';
+      }
+    }
     if (status === 'Rejected') {
       if (run) {
         run.status = 'Rejected';
@@ -470,6 +486,8 @@
   const approve = (id, actor, note) => setStatus(id, 'Approved', actor, note || '');
   const reject = (id, note, actor) => setStatus(id, 'Rejected', actor, note);
   const publishNow = (id, actor, opts = {}) => setStatus(id, 'Published', actor, 'نشر فوري', opts);
+  const unpublish = (id, actor, opts = {}) => setStatus(id, 'Unpublished', actor, 'إيقاف النشر', opts);
+  const archive = (id, actor, opts = {}) => setStatus(id, 'Archived', actor, 'أرشفة', opts);
   const schedule = (id, whenIso, actor) => {
     const article = setStatus(id, 'Scheduled', actor, whenIso);
     if (article) article.scheduledAt = whenIso;
@@ -551,6 +569,17 @@
     } catch (_) {}
   };
 
+  const unpublishFromPublicBlog = (articleId) => {
+    try {
+      const st = window.HubSystemOps?.read?.();
+      if (!st?.blogPosts) return;
+      st.blogPosts.forEach((p) => {
+        if (p.articleId === articleId || p.id === articleId) p.published = false;
+      });
+      window.HubSystemOps.save?.(st);
+    } catch (_) {}
+  };
+
   const listPublished = (limit = 40) => {
     const fromStore = list({ published: true }).slice(0, limit);
     if (fromStore.length) {
@@ -628,6 +657,8 @@
     approve,
     reject,
     publishNow,
+    unpublish,
+    archive,
     schedule,
     resubmit,
     remove,
