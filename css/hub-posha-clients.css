@@ -1,107 +1,693 @@
-.posha-ops { display: grid; gap: 14px; }
-.posha-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-.posha-head h2 { margin: 0; font-size: 1.25rem; }
-.posha-head p { margin: 4px 0 0; color: var(--muted, #6b7280); font-weight: 700; font-size: 13px; }
-.posha-subnav { display: flex; flex-wrap: wrap; gap: 6px; }
-.posha-subnav button {
-  border: 1px solid var(--border, #e5e7eb); background: #fff; border-radius: 999px;
-  padding: 8px 12px; font: inherit; font-weight: 800; font-size: 12px; cursor: pointer;
+/* Posha Clients — Enterprise Customer Operations Workspace */
+
+.hub-posha-ws--v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 100%;
+  max-width: none;
+  padding-bottom: 24px;
 }
-.posha-subnav button.is-active { background: var(--primary, #d70000); color: #fff; border-color: var(--primary, #d70000); }
+
+.posha-ws-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.posha-ws-kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b7280;
+  letter-spacing: 0.02em;
+}
+
+.posha-ws-title {
+  margin: 0;
+  font-size: clamp(1.75rem, 2.2vw, 2rem);
+  font-weight: 900;
+  color: #111;
+  line-height: 1.2;
+}
+
+.posha-ws-sub {
+  margin: 8px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #6b7280;
+  max-width: 42rem;
+}
+
+.posha-ws-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.posha-ws-section {
+  background: #fff;
+  border: 1px solid #e8eaee;
+  border-radius: 16px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  border-top: 3px solid #d70000;
+}
+
+.posha-ws-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.posha-ws-section-head h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #111;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.posha-ws-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #d70000;
+  color: #fff;
+  font-size: 13px;
+}
+
+.posha-ws-pill {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.posha-ws-pill.is-alert {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.posha-ws-pill.is-ok {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #047857;
+}
+
+.posha-ws-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.posha-ws-kpi {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 108px;
+  text-align: right;
+  padding: 16px 18px;
+  border: 1px solid #e8eaee;
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.posha-ws-kpi:hover {
+  border-color: #f0b4b4;
+  box-shadow: 0 4px 14px rgba(215, 0, 0, 0.06);
+}
+
+.posha-ws-kpi span {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.posha-ws-kpi strong {
+  margin-top: 12px;
+  font-size: 1.85rem;
+  font-weight: 900;
+  color: #d70000;
+  line-height: 1;
+}
+
+.posha-ws-needs.is-alert {
+  border-top-color: #d70000;
+  background: #fffafa;
+}
+
+.posha-ws-needs.is-clear {
+  border-top-color: #10b981;
+}
+
+.posha-ws-needs-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.posha-ws-needs-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.posha-ws-need-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.posha-ws-need-main strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  color: #111;
+}
+
+.posha-ws-need-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 8px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.posha-ws-empty {
+  margin: 0;
+  color: #6b7280;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.posha-ws-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.posha-ws-mount {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Inner ops shell */
+.posha-ops {
+  display: grid;
+  gap: 20px;
+}
+
+.posha-mainnav {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e8eaee;
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.posha-mainnav-primary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.posha-mainnav-primary > button[data-ptab],
+.posha-more-toggle {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #111;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.posha-mainnav-primary > button[data-ptab].is-active,
+.posha-more-toggle.is-active,
+.posha-more-panel button.is-active {
+  background: #d70000;
+  color: #fff;
+  border-color: #d70000;
+}
+
+.posha-more {
+  position: relative;
+}
+
+.posha-more-panel {
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 220px;
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+.posha-more-panel button {
+  border: 0;
+  background: transparent;
+  text-align: right;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.posha-more-panel button:hover {
+  background: #f3f4f6;
+}
+
 .posha-badge {
-  display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px;
-  border-radius: 999px; background: #d70000; color: #fff; font-size: 11px; margin-inline-start: 4px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #d70000;
+  color: #fff;
+  font-size: 11px;
+  margin-inline-start: 4px;
 }
-.posha-kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
-.posha-kpis.mini { grid-template-columns: repeat(4, minmax(0,1fr)); }
-.posha-kpis article {
-  background: #fff; border: 1px solid var(--border,#e5e7eb); border-radius: 14px; padding: 12px;
+
+.posha-mainnav-primary > button.is-active .posha-badge {
+  background: #fff;
+  color: #d70000;
 }
-.posha-kpis span { display: block; color: #6b7280; font-size: 12px; font-weight: 800; }
-.posha-kpis strong { display: block; margin-top: 6px; font-size: 1.35rem; color: #d70000; }
-.posha-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
-.posha-filters input, .posha-filters select, .posha-actions input, .posha-reply input, .posha-ticket select {
-  border: 1px solid var(--border,#e5e7eb); border-radius: 10px; padding: 8px 10px; font: inherit;
+
+.posha-body {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
 }
-.posha-filters input { flex: 1; min-width: 220px; }
-.posha-alert { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #fee2e2; color: #b91c1c; font-weight: 900; }
+
+.posha-panel {
+  background: #fff;
+  border: 1px solid #e8eaee;
+  border-radius: 16px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.posha-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.posha-panel-head h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.posha-subtabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.posha-subtab {
+  border: 1px solid #e8eaee;
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: right;
+  cursor: pointer;
+  font: inherit;
+}
+
+.posha-subtab.is-on {
+  border-color: #d70000;
+  background: #fff7f7;
+}
+
+.posha-subtab span {
+  display: block;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.posha-subtab strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.35rem;
+  color: #d70000;
+}
+
+.posha-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.posha-filters input,
+.posha-filters select,
+.posha-actions input,
+.posha-reply input,
+.posha-ticket select {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.posha-filters input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.posha-alert {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 900;
+}
+
 .posha-drawer {
-  position: fixed; inset: 0 auto 0 0; width: min(560px, 94vw); background: #fff;
-  border-left: 1px solid #e5e7eb; box-shadow: -12px 0 40px rgba(0,0,0,.12); z-index: 80; overflow: auto;
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(560px, 94vw);
+  background: #fff;
+  border-left: 1px solid #e5e7eb;
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.12);
+  z-index: 80;
+  overflow: auto;
   padding: 16px;
 }
-.posha-drawer-head { display: flex; justify-content: space-between; gap: 10px; }
-.posha-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0; }
+
+.posha-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.posha-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 12px 0;
+}
+
 .posha-tabs button {
-  border: 1px solid #e5e7eb; background: #fff; border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
 }
-.posha-tabs button.is-active { background: #111; color: #fff; }
-.posha-timeline { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-.posha-timeline li { border: 1px solid #eee; border-radius: 10px; padding: 10px; }
-.posha-timeline small { display: block; color: #6b7280; margin-top: 4px; }
-.posha-ticket { border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
-.posha-thread { display: grid; gap: 6px; margin: 8px 0; }
-.posha-msg { background: #f9fafb; border-radius: 8px; padding: 8px; }
-.posha-msg small { display: block; color: #6b7280; }
-.posha-reply { display: flex; gap: 8px; }
-.posha-reply input { flex: 1; }
-.posha-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
-.posha-muted { color: #6b7280; font-weight: 700; }
-.posha-err { color: #b91c1c; font-weight: 800; }
-.posha-loading { font-weight: 800; color: #6b7280; }
-.feed li.unread { background: #fff7f7; border-radius: 8px; padding: 6px; }
 
-/* Central Customer Requests inbox */
-.posha-req-kpis { margin-bottom: 12px; }
-.posha-kpi-btn {
-  border: 1px solid var(--border,#e5e7eb); background: #fff; border-radius: 14px; padding: 12px;
-  text-align: right; cursor: pointer; font: inherit;
+.posha-tabs button.is-active {
+  background: #111;
+  color: #fff;
 }
-.posha-kpi-btn span { display: block; color: #6b7280; font-size: 12px; font-weight: 800; }
-.posha-kpi-btn strong { display: block; margin-top: 6px; font-size: 1.35rem; color: #d70000; }
-.posha-needs {
-  border: 1px solid #fecaca; background: #fff7f7; border-radius: 14px; padding: 12px 14px; margin-bottom: 12px;
+
+.posha-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
 }
-.posha-needs h3 { margin: 0 0 8px; font-size: 14px; color: #b91c1c; }
-.posha-needs ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.posha-needs button {
-  border: 1px solid #fecaca; background: #fff; border-radius: 999px; padding: 6px 10px;
-  font: inherit; font-weight: 800; font-size: 12px; cursor: pointer; color: #b91c1c;
+
+.posha-timeline li {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 10px;
 }
-.posha-req-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 8px 0; }
-.posha-req-head h3 { margin: 0; }
-.posha-saved-views { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.posha-saved-views .chip {
-  border: 1px solid #e5e7eb; background: #fff; border-radius: 999px; padding: 6px 10px;
-  font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+
+.posha-timeline small {
+  display: block;
+  color: #6b7280;
+  margin-top: 4px;
 }
-.posha-saved-views .chip.is-on { background: #111; color: #fff; border-color: #111; }
-.posha-req-table-wrap { width: 100%; }
-.posha-req-table { font-size: 12px; }
-.posha-req-actions { position: relative; display: flex; flex-wrap: wrap; gap: 4px; }
+
+.posha-ticket {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.posha-thread {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.posha-msg {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.posha-msg small {
+  display: block;
+  color: #6b7280;
+}
+
+.posha-reply {
+  display: flex;
+  gap: 8px;
+}
+
+.posha-reply input {
+  flex: 1;
+}
+
+.posha-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.posha-muted {
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.posha-err {
+  color: #b91c1c;
+  font-weight: 800;
+}
+
+.posha-loading {
+  font-weight: 800;
+  color: #6b7280;
+  padding: 24px;
+}
+
+.feed li.unread {
+  background: #fff7f7;
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.posha-req-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.posha-req-head h3 {
+  margin: 0;
+}
+
+.posha-req-table-wrap {
+  width: 100%;
+}
+
+.posha-req-table {
+  font-size: 13px;
+}
+
+.posha-req-actions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 .posha-more-menu {
-  position: absolute; inset-inline-start: 0; top: 100%; z-index: 20; min-width: 180px;
-  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 12px 28px rgba(0,0,0,.12);
-  display: flex; flex-direction: column; padding: 6px;
-}
-.posha-more-menu button {
-  border: 0; background: transparent; text-align: right; padding: 8px; font: inherit; font-weight: 700; cursor: pointer; border-radius: 8px;
-}
-.posha-more-menu button:hover { background: #f3f4f6; }
-.posha-req-detail-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-.posha-req-detail-head h3 { margin: 6px 0; }
-.posha-req-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
-.posha-req-grid article { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; }
-.posha-req-grid h4 { margin: 0 0 8px; }
-.chip.sla-WithinSLA { background: #ecfdf5; color: #047857; }
-.chip.sla-NearSLA { background: #fffbeb; color: #b45309; }
-.chip.sla-Overdue { background: #fef2f2; color: #b91c1c; }
-.posha-req-settings input { width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 8px; font: inherit; }
-@media (max-width: 1100px) {
-  .posha-req-grid { grid-template-columns: 1fr; }
+  position: absolute;
+  inset-inline-start: 0;
+  top: 100%;
+  z-index: 20;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
 }
 
-@media (max-width: 960px) {
-  .posha-kpis, .posha-kpis.mini { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .posha-drawer { width: 100%; }
+.posha-more-menu button {
+  border: 0;
+  background: transparent;
+  text-align: right;
+  padding: 8px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.posha-more-menu button:hover {
+  background: #f3f4f6;
+}
+
+.posha-req-detail-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.posha-req-detail-head h3 {
+  margin: 6px 0;
+}
+
+.posha-req-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.posha-req-grid article {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.posha-req-grid h4 {
+  margin: 0 0 8px;
+}
+
+.chip.sla-WithinSLA {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.chip.sla-NearSLA {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.chip.sla-Overdue {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.posha-req-settings input {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: inherit;
+}
+
+/* Hide legacy duplicate hero chrome inside posha page when v2 present */
+.hub-posha-ws--v2 .hub-ws-hero,
+.hub-posha-ws--v2 .hub-ws-kpis,
+.hub-posha-ws--v2 .hub-ws-tabs {
+  display: none !important;
+}
+
+@media (max-width: 1100px) {
+  .posha-ws-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .posha-req-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .posha-ws-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .posha-ws-needs-list li {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .posha-mainnav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .posha-mainnav-primary {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+  .posha-drawer {
+    width: 100%;
+  }
 }

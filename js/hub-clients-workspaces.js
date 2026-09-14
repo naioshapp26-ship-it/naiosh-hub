@@ -1079,62 +1079,164 @@
   };
 
   /* ───────── Posha clients (wrap existing ops center) ───────── */
-  const psUi = { tab: 'ops', helpOpen: false };
-  const PS_TABS = [
-    { id: 'ops', label: 'عمليات بوشا', icon: 'fa-building-user' },
-    { id: 'audit', label: 'سجل العمليات', icon: 'fa-clock-rotate-left' },
-    { id: 'settings', label: 'الإعدادات', icon: 'fa-gear' },
-  ];
+  const psUi = { tab: 'ops', helpOpen: false, openInnerTab: '' };
+
+  const renderPoshaNeeds = (needs) => {
+    const esc = Kit().esc;
+    if (!needs.length) {
+      return `<section class="posha-ws-section posha-ws-needs is-clear">
+        <div class="posha-ws-section-head">
+          <h3><i class="fas fa-circle-check"></i> يحتاج إلى إجراء</h3>
+          <span class="posha-ws-pill is-ok">واضح</span>
+        </div>
+        <p class="posha-ws-empty">لا عناصر تحتاج إجراء الآن.</p>
+      </section>`;
+    }
+    return `<section class="posha-ws-section posha-ws-needs is-alert">
+      <div class="posha-ws-section-head">
+        <h3><i class="fas fa-bolt"></i> يحتاج إلى إجراء <span class="posha-ws-count">${needs.length}</span></h3>
+        <span class="posha-ws-pill is-alert">يتطلب تدخل</span>
+      </div>
+      <ul class="posha-ws-needs-list">
+        ${needs
+          .slice(0, 10)
+          .map(
+            (it) => `<li>
+              <div class="posha-ws-need-main">
+                <strong>${esc(it.text)}</strong>
+                <div class="posha-ws-need-meta">
+                  <span>${esc(it.kind || 'تنبيه')}</span>
+                  <span>${esc(it.client || '—')}</span>
+                  <span>${esc(it.priority || 'عادي')}</span>
+                  <span>${esc(it.when || 'الآن')}</span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm btn-primary" data-action="ps-need" data-inner="${esc(it.inner || 'overview')}" data-tab="ops">معالجة</button>
+            </li>`
+          )
+          .join('')}
+      </ul>
+    </section>`;
+  };
 
   const renderPosha = () => {
     const K = Kit();
+    const esc = K.esc;
     const meta = store().get()?.poshaClientsWs || { auditLog: [], settings: {} };
     const clients = store().clientsBag?.()?.clients || [];
     const poshaish = clients.filter((c) => (c.systems || []).some((s) => String(s.code || '').toUpperCase() === 'POSHA') || c.source === 'POSHA');
+    const activeN = poshaish.filter((c) => c.status === 'active').length;
+    const inactiveN = poshaish.filter((c) => c.status !== 'active').length;
     const reqK = window.HubCustomerRequests?.kpis?.() || { neu: 0, open: 0, pendingReview: 0, needsAction: 0 };
     const pendingReqs = reqK.needsAction || reqK.pendingReview || reqK.neu || 0;
+    const live = window.HubPoshaClients?.state || {};
+    const summary = live.summary || {};
+    const openTickets = summary.openTickets || (live.tickets || []).length || 0;
+    const openIssues = summary.openIssues || (live.issues || []).length || 0;
+    const paymentIssues = summary.paymentIssues || 0;
+
     const needs = [
-      ...poshaish.filter((c) => c.status !== 'active').map((c) => ({ text: `عميل بوشا يحتاج متابعة: ${c.name}`, tab: 'ops' })),
+      ...poshaish
+        .filter((c) => c.status !== 'active')
+        .map((c) => ({
+          text: `عميل بوشا يحتاج متابعة: ${c.name}`,
+          kind: 'عميل',
+          client: c.name,
+          priority: 'عالية',
+          when: 'متابعة',
+          inner: 'clients',
+        })),
       ...(pendingReqs
-        ? [{ text: `${pendingReqs} طلبات عملاء تحتاج إجراء في الصندوق الموحد`, tab: 'ops' }]
+        ? [
+            {
+              text: `${pendingReqs} طلبات عملاء تحتاج إجراء في الصندوق الموحد`,
+              kind: 'طلب',
+              client: 'صندوق الطلبات',
+              priority: 'عالية',
+              when: 'مراجعة',
+              inner: 'orders',
+            },
+          ]
         : []),
     ];
-    if (!window.HubPoshaClients) needs.push({ text: 'وحدة عملاء بوشا غير محمّلة', tab: 'ops' });
+    if (!window.HubPoshaClients) {
+      needs.push({
+        text: 'وحدة عملاء بوشا غير محمّلة',
+        kind: 'نظام',
+        client: '—',
+        priority: 'حرج',
+        when: 'الآن',
+        inner: 'overview',
+      });
+    }
 
-    const kpis = [
-      { key: 'local', label: 'عملاء مرتبطون ببوشا', value: poshaish.length, tab: 'ops' },
-      { key: 'pending', label: 'غير نشط', value: poshaish.filter((c) => c.status !== 'active').length, tab: 'ops' },
-      { key: 'reqs', label: 'طلبات تحتاج مراجعة', value: pendingReqs, tab: 'ops' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, tab: 'ops' },
+    const kpisRow1 = [
+      { label: 'إجمالي العملاء', value: poshaish.length || summary.totalClients || 0, inner: 'clients' },
+      { label: 'العملاء النشطون', value: activeN || summary.activeClients || 0, inner: 'clients' },
+      { label: 'العملاء غير النشطين', value: inactiveN, inner: 'clients' },
+      { label: 'طلبات جديدة', value: reqK.neu || 0, inner: 'orders' },
+    ];
+    const kpisRow2 = [
+      { label: 'يحتاج إلى إجراء', value: needs.length, inner: 'orders' },
+      { label: 'تذاكر مفتوحة', value: openTickets, inner: 'support' },
+      { label: 'فواتير تحتاج مراجعة', value: paymentIssues, inner: 'overview' },
+      { label: 'مشاكل تحتاج تدخل', value: openIssues, inner: 'issues' },
     ];
 
     let body = '';
     if (psUi.tab === 'ops') {
-      body = `${K.renderNeeds('ps', needs)}
-        <div id="posha-mount" class="card" style="margin-top:12px;padding:0;border:0;background:transparent;box-shadow:none"></div>`;
+      body = `<div id="posha-mount" class="posha-ws-mount"></div>`;
     } else if (psUi.tab === 'audit') {
-      body = `<article class="card">${K.renderAuditTable(meta.auditLog || [])}</article>`;
+      body = `<section class="posha-ws-section"><div class="posha-ws-section-head"><h3>سجل العمليات</h3></div>${K.renderAuditTable(meta.auditLog || [])}</section>`;
     } else {
-      body = `<article class="card"><p>مركز عمليات بوشا يعمل داخل هوب. سجّل أي تدخل يدوي من غرفة العمليات في Audit عند الحاجة.</p>
-        <button type="button" class="btn btn-dark" data-action="ps-audit-note">تسجيل مراجعة يدوية</button></article>`;
+      body = `<section class="posha-ws-section">
+        <div class="posha-ws-section-head"><h3>الإعدادات</h3></div>
+        <p>مركز عمليات بوشا يعمل داخل هوب. سجّل أي تدخل يدوي في سجل العمليات عند الحاجة.</p>
+        <div class="posha-ws-actions">
+          <button type="button" class="btn btn-primary" data-action="ps-audit-note">تسجيل مراجعة يدوية</button>
+          <button type="button" class="btn btn-ghost" data-action="ps-open-inner" data-inner="req-settings" data-tab="ops">إعدادات الطلبات</button>
+        </div>
+      </section>`;
     }
 
-    return `<div class="hub-ops-ws hub-posha-ws">
-      ${K.renderHeader({
-        prefix: 'ps',
-        title: 'عملاء بوشا',
-        subtitle: 'مركز عمليات · دعم · طلبات · مشاكل · أحداث · إشعارات',
-        icon: 'fa-building-user',
-        actionsHtml: `<button type="button" class="btn btn-ghost btn-sm" data-action="ps-help-open"><i class="fas fa-circle-question"></i></button>`,
-      })}
-      ${K.renderKpis('ps', kpis, '')}
-      ${K.renderTabs('ps', PS_TABS, psUi.tab)}
+    return `<div class="hub-ops-ws hub-posha-ws hub-posha-ws--v2">
+      <header class="posha-ws-header">
+        <div class="posha-ws-header-text">
+          <p class="posha-ws-kicker"><i class="fas fa-building-user"></i> NAIOSH HUB</p>
+          <h1 class="posha-ws-title">عملاء بوشا</h1>
+          <p class="posha-ws-sub">إدارة العملاء والطلبات والدعم والتنبيهات من مكان واحد</p>
+        </div>
+        <div class="posha-ws-header-actions">
+          <button type="button" class="btn btn-primary btn-sm" data-action="ps-refresh"><i class="fas fa-rotate"></i> تحديث</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="ps-tab" data-tab="settings"><i class="fas fa-gear"></i> الإعدادات</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="ps-tab" data-tab="audit"><i class="fas fa-clock-rotate-left"></i> سجل العمليات</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="ps-help-open" title="دليل"><i class="fas fa-circle-question"></i></button>
+        </div>
+      </header>
+
+      <section class="posha-ws-section">
+        <div class="posha-ws-section-head">
+          <h3>ملخص العملاء</h3>
+          ${psUi.tab !== 'ops' ? `<button type="button" class="btn btn-ghost btn-sm" data-action="ps-tab" data-tab="ops">العودة للعمليات</button>` : ''}
+        </div>
+        <div class="posha-ws-kpi-grid">
+          ${[...kpisRow1, ...kpisRow2]
+            .map(
+              (k) => `<button type="button" class="posha-ws-kpi" data-action="ps-open-inner" data-inner="${esc(k.inner)}" data-tab="ops">
+                <span>${esc(k.label)}</span><strong>${esc(String(k.value))}</strong>
+              </button>`
+            )
+            .join('')}
+        </div>
+      </section>
+
+      ${psUi.tab === 'ops' ? renderPoshaNeeds(needs) : ''}
       ${body}
       ${K.renderHelp('ps', {
         title: 'دليل عملاء بوشا',
         dismissed: !!meta.settings?.helpDismissed,
         open: psUi.helpOpen,
-        bodyHtml: `<p>تبويب العمليات يشغّل مركز بوشا التشغيلي. Needs Action يربط العملاء المحليين غير النشطين.</p>`,
+        bodyHtml: `<p>استخدم التبويبات للتنقل بين العملاء والطلبات والدعم. «يحتاج إلى إجراء» يجمع ما يستحق تدخلك أولاً.</p>`,
       })}
     </div>`;
   };
@@ -1151,8 +1253,24 @@
       psUi.tab = btn.dataset.tab || 'ops';
       return true;
     }
-    if (action === 'ps-kpi') {
-      if (btn.dataset.tab) psUi.tab = btn.dataset.tab;
+    if (action === 'ps-kpi' || action === 'ps-open-inner' || action === 'ps-need') {
+      psUi.tab = 'ops';
+      const inner = btn.dataset.inner || 'overview';
+      psUi.openInnerTab = inner;
+      if (window.HubPoshaClients?.state) {
+        window.HubPoshaClients.state.tab = inner;
+        if (inner === 'orders') window.HubPoshaClients.state.reqView = 'active';
+        if (inner === 'approved') {
+          window.HubPoshaClients.state.tab = 'approved';
+          window.HubPoshaClients.state.reqView = 'approved';
+        }
+      }
+      return true;
+    }
+    if (action === 'ps-refresh') {
+      psUi.tab = 'ops';
+      window.HubPoshaClients?.refresh?.();
+      toast?.('تم التحديث');
       return true;
     }
     if (action === 'ps-audit-note') {
