@@ -6950,6 +6950,7 @@ const HubStore = (() => {
   const adMatchesTarget = (ad, kind, name = '') => {
     if (!ad) return false;
     if (ad.publishStatus === 'deferred' || ad.publishStatus === 'draft') return false;
+    if (ad.workflowStatus && !['active', 'approved'].includes(ad.workflowStatus)) return false;
     if (ad.status && ad.status !== 'active') return false;
 
     const places = normalizeList(ad.appearancePlaces);
@@ -6974,6 +6975,79 @@ const HubStore = (() => {
     return listings.filter((ad) => adMatchesTarget(ad, kind, name));
   };
 
+  const nextAdCode = () => {
+    const year = new Date().getFullYear();
+    const listings = get().empire?.adsStudio?.listings || [];
+    let max = 0;
+    listings.forEach((ad) => {
+      const m = String(ad.adCode || ad.id || '').match(new RegExp(`^AD-${year}-(\\d+)$`));
+      if (m) max = Math.max(max, Number(m[1]));
+    });
+    return `AD-${year}-${String(max + 1).padStart(5, '0')}`;
+  };
+
+  const pushAdActivity = (ad, message, actor = 'نظام') => {
+    if (!ad) return;
+    if (!Array.isArray(ad.activity)) ad.activity = [];
+    ad.activity.unshift({ at: nowIso(), message, actor });
+  };
+
+  const placementsToTargets = (placements = [], position = 'top') => {
+    const list = Array.isArray(placements) ? placements : [];
+    const targets = { home: false, offices: [], branches: [], incubators: [], platforms: [] };
+    const places = [];
+    list.forEach((p) => {
+      const key = String(p || '').toLowerCase();
+      if (key === 'home' || key === 'الصفحة الرئيسية') {
+        targets.home = true;
+        places.push('main_interface');
+      } else if (key === 'products' || key === 'صفحة المنتجات') {
+        targets.platforms = targets.platforms.length ? targets.platforms : ['*'];
+        places.push('products');
+      } else if (key === 'store' || key === 'المتجر') {
+        targets.platforms = targets.platforms.length ? targets.platforms : ['*'];
+        places.push('store');
+      } else if (key === 'articles' || key === 'المقالات') {
+        targets.home = true;
+        places.push('articles');
+      } else if (key === 'services' || key === 'الخدمات') {
+        targets.platforms = targets.platforms.length ? targets.platforms : ['*'];
+        places.push('services');
+      } else if (key === 'incubators' || key === 'الحاضنات') {
+        targets.incubators = ['*'];
+        places.push('incubator_home');
+      } else if (key === 'branches' || key === 'الفروع') {
+        targets.branches = ['*'];
+        places.push('branch_home');
+      } else if (key === 'custom' || key === 'صفحة محددة') {
+        targets.home = true;
+        places.push('custom');
+      }
+    });
+    if (position) places.push(`pos_${position}`);
+    if (
+      !targets.home &&
+      !targets.offices.length &&
+      !targets.branches.length &&
+      !targets.incubators.length &&
+      !targets.platforms.length
+    ) {
+      targets.home = true;
+      places.push('main_interface');
+    }
+    return { publishTargets: targets, appearancePlaces: places };
+  };
+
+  const resolveWorkflowStatus = (ad) => {
+    if (!ad) return 'draft';
+    if (ad.workflowStatus) return ad.workflowStatus;
+    if (ad.publishStatus === 'draft') return 'draft';
+    if (ad.status === 'paused') return 'paused';
+    if (ad.status === 'active') return 'active';
+    if (ad.status === 'archived' || ad.status === 'deleted') return 'ended';
+    return ad.status || 'draft';
+  };
+
   const addAdListing = (payload) => {
     const studio = get().empire.adsStudio;
     if (!studio) return null;
@@ -6983,9 +7057,14 @@ const HubStore = (() => {
       deferred: 'paused',
       draft: 'paused',
     };
-    const appearancePlaces = normalizeList(payload.appearancePlaces);
-    const socialShares = normalizeList(payload.socialShares);
-    const publishTargets = normalizePublishTargets(payload);
+    let appearancePlaces = normalizeList(payload.appearancePlaces);
+    let socialShares = normalizeList(payload.socialShares);
+    let publishTargets = normalizePublishTargets(payload);
+    if (Array.isArray(payload.placements) && payload.placements.length) {
+      const mapped = placementsToTargets(payload.placements, payload.position || 'top');
+      publishTargets = mapped.publishTargets;
+      appearancePlaces = mapped.appearancePlaces.concat(appearancePlaces);
+    }
     if (
       !publishTargets.home &&
       !publishTargets.offices.length &&
@@ -6993,7 +7072,6 @@ const HubStore = (() => {
       !publishTargets.incubators.length &&
       !publishTargets.platforms.length
     ) {
-      // fallback: use single branch/incubator/platform/office from common meta + ads studio
       if (payload.office) publishTargets.offices = [payload.office];
       if (payload.branch) publishTargets.branches = [payload.branch];
       if (payload.incubator) publishTargets.incubators = [payload.incubator];
@@ -7004,11 +7082,11 @@ const HubStore = (() => {
         !publishTargets.incubators.length &&
         !publishTargets.platforms.length
       ) {
-        publishTargets.platforms = ['*'];
+        publishTargets.home = true;
       }
     }
     const productType = payload.productType || payload.itemKind || 'رقمية';
-    const desc = payload.desc || payload.description || payload.content || '';
+    const desc = payload.desc || payload.description || payload.content || payload.bodyText || '';
     const adLevel =
       payload.adLevel ||
       (payload.type && String(payload.type).includes('مكتب')
@@ -7023,40 +7101,167 @@ const HubStore = (() => {
       window.HubMarketplaceData?.adTypeForLevel?.(adLevel) ||
       productType ||
       'إعلان هوب';
+    const workflowStatus =
+      payload.workflowStatus ||
+      (publishStatus === 'draft'
+        ? 'draft'
+        : publishStatus === 'deferred'
+          ? 'scheduled'
+          : statusMap[publishStatus] === 'active'
+            ? 'active'
+            : 'paused');
+    const actor =
+      payload.createdBy ||
+      window.HubAuth?.getUser?.()?.email ||
+      window.HubAuth?.getUser?.()?.name ||
+      'عميل';
     const ad = {
       id: uid('ad'),
+      adCode: payload.adCode || nextAdCode(),
       title: payload.title,
+      headline: payload.headline || payload.title || '',
       content: desc,
       desc,
+      bodyText: payload.bodyText || desc,
       price: Number(payload.price) || 0,
       category: payload.category || 'عام',
       subcategory: payload.subcategory || '',
       productType,
       itemKind: productType,
+      contentType: payload.contentType || 'image',
+      mediaDataUrl: payload.mediaDataUrl || payload.imageDataUrl || '',
+      mediaName: payload.mediaName || '',
+      mediaSize: payload.mediaSize || 0,
+      thumbnailDataUrl: payload.thumbnailDataUrl || '',
+      destinationUrl: payload.destinationUrl || payload.ctaUrl || '',
+      ctaLabel: payload.ctaLabel || '',
+      fileAction: payload.fileAction || 'open',
+      placements: Array.isArray(payload.placements) ? payload.placements.slice() : [],
+      position: payload.position || 'top',
+      audience: payload.audience || 'all',
+      audienceDetail: payload.audienceDetail || '',
+      scheduleMode: payload.scheduleMode || 'immediate',
       platformCode: payload.platformCode || '',
       productId: payload.productId || '',
-      views: 0,
-      impressions: 0,
-      clicks: 0,
+      views: Number(payload.views) || 0,
+      impressions: Number(payload.impressions) || 0,
+      clicks: Number(payload.clicks) || 0,
       status: statusMap[publishStatus] || payload.status || 'active',
       publishStatus,
+      workflowStatus,
+      rejectionReason: payload.rejectionReason || '',
+      requestId: payload.requestId || '',
       level: payload.level || 'متوسط',
       adLevel,
       type: adType,
       brand: payload.brand || payload.companyName || 'نايوش هوب',
       adStartDate: payload.adStartDate || '',
       adEndDate: payload.adEndDate || '',
+      adStartTime: payload.adStartTime || '',
+      adEndTime: payload.adEndTime || '',
       appearancePlaces,
       socialShares,
       publishTargets,
       scope: payload.scope || deriveAdScope(publishTargets),
       assignee: '',
+      createdBy: actor,
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+      activity: [],
       ...pickCommonMeta(payload),
     };
+    pushAdActivity(ad, 'تم إنشاء الإعلان', actor);
+    if (workflowStatus === 'pending_review') pushAdActivity(ad, 'تم إرساله للمراجعة', actor);
     studio.listings.unshift(ad);
     const label =
-      publishStatus === 'deferred' ? 'تأجيل نشر إعلان' : publishStatus === 'draft' ? 'مسودة إعلان' : 'إعلان جديد';
+      publishStatus === 'deferred'
+        ? 'تأجيل نشر إعلان'
+        : publishStatus === 'draft'
+          ? 'مسودة إعلان'
+          : workflowStatus === 'pending_review'
+            ? 'إعلان بانتظار المراجعة'
+            : 'إعلان جديد';
     pushFeed('decision', `${label}: ${ad.title}`);
+    save();
+    try {
+      if (workflowStatus === 'pending_review' && window.HubCustomerRequests?.ensureForAd) {
+        const req = window.HubCustomerRequests.ensureForAd(ad, actor);
+        if (req?.id) {
+          ad.requestId = req.id;
+          save();
+        }
+      }
+    } catch (_) {}
+    return ad;
+  };
+
+  const updateAdListing = (id, patch = {}, actor = 'عميل') => {
+    const ad = get().empire.adsStudio?.listings?.find((x) => x.id === id || x.adCode === id);
+    if (!ad) return null;
+    const next = Object.assign({}, patch);
+    if (Array.isArray(next.placements) && next.placements.length) {
+      const mapped = placementsToTargets(next.placements, next.position || ad.position || 'top');
+      next.publishTargets = mapped.publishTargets;
+      next.appearancePlaces = mapped.appearancePlaces;
+      next.scope = deriveAdScope(mapped.publishTargets);
+    }
+    Object.assign(ad, next, { updatedAt: nowIso() });
+    if (ad.status === 'active' && (patch.title || patch.mediaDataUrl || patch.destinationUrl || patch.placements)) {
+      ad.workflowStatus = 'pending_review';
+      ad.publishStatus = 'draft';
+      ad.status = 'paused';
+      pushAdActivity(ad, 'تعديل جوهري — بانتظار مراجعة التعديل', actor);
+      try {
+        if (window.HubCustomerRequests?.ensureForAd) {
+          const req = window.HubCustomerRequests.ensureForAd(ad, actor);
+          if (req?.id) ad.requestId = req.id;
+        }
+      } catch (_) {}
+    } else {
+      pushAdActivity(ad, 'تم حفظ التعديلات', actor);
+    }
+    save();
+    return ad;
+  };
+
+  const setAdWorkflowStatus = (id, workflowStatus, extra = {}, actor = 'Admin') => {
+    const ad = get().empire.adsStudio?.listings?.find((x) => x.id === id || x.adCode === id);
+    if (!ad) return null;
+    ad.workflowStatus = workflowStatus;
+    ad.updatedAt = nowIso();
+    if (workflowStatus === 'active' || workflowStatus === 'approved') {
+      const start = ad.adStartDate ? new Date(ad.adStartDate) : null;
+      const now = new Date();
+      if (ad.scheduleMode === 'scheduled' && start && start > now) {
+        ad.workflowStatus = 'scheduled';
+        ad.publishStatus = 'deferred';
+        ad.status = 'paused';
+        pushAdActivity(ad, 'تمت الموافقة — مجدول للبدء', actor);
+      } else {
+        ad.workflowStatus = 'active';
+        ad.publishStatus = 'published';
+        ad.status = 'active';
+        pushAdActivity(ad, 'تمت الموافقة وبدأ النشر', actor);
+      }
+    } else if (workflowStatus === 'paused') {
+      ad.status = 'paused';
+      ad.publishStatus = ad.publishStatus === 'published' ? 'deferred' : ad.publishStatus;
+      pushAdActivity(ad, 'تم إيقاف الإعلان', actor);
+    } else if (workflowStatus === 'rejected') {
+      ad.status = 'paused';
+      ad.publishStatus = 'draft';
+      ad.rejectionReason = extra.rejectionReason || ad.rejectionReason || '';
+      pushAdActivity(ad, `مرفوض: ${ad.rejectionReason || 'بدون سبب'}`, actor);
+    } else if (workflowStatus === 'ended' || workflowStatus === 'deleted') {
+      ad.status = 'archived';
+      ad.workflowStatus = workflowStatus === 'deleted' ? 'ended' : 'ended';
+      pushAdActivity(ad, workflowStatus === 'deleted' ? 'تم حذف الإعلان' : 'انتهى الإعلان', actor);
+    } else if (workflowStatus === 'pending_review') {
+      ad.status = 'paused';
+      ad.publishStatus = 'draft';
+      pushAdActivity(ad, 'بانتظار المراجعة', actor);
+    }
+    Object.assign(ad, extra);
     save();
     return ad;
   };
@@ -7064,8 +7269,14 @@ const HubStore = (() => {
   const toggleAd = (id) => {
     const ad = get().empire.adsStudio?.listings?.find((x) => x.id === id);
     if (!ad) return null;
-    ad.status = ad.status === 'active' ? 'paused' : 'active';
-    pushFeed('decision', `إعلان · ${ad.title}: ${ad.status}`);
+    if (ad.status === 'active') {
+      return setAdWorkflowStatus(id, 'paused', {}, 'عميل');
+    }
+    ad.status = 'active';
+    ad.workflowStatus = 'active';
+    ad.publishStatus = 'published';
+    pushAdActivity(ad, 'تم تشغيل الإعلان', 'عميل');
+    pushFeed('decision', `إعلان · ${ad.title}: active`);
     save();
     return ad;
   };
@@ -8765,6 +8976,10 @@ const HubStore = (() => {
     addStoreItem,
     linkStoreMarketplace,
     addAdListing,
+    updateAdListing,
+    setAdWorkflowStatus,
+    resolveWorkflowStatus,
+    nextAdCode,
     listAdsFor,
     adMatchesScope,
     adMatchesTarget,

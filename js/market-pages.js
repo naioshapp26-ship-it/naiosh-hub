@@ -770,7 +770,11 @@
 
   if (page === 'apps') renderApps();
   if (page === 'store') renderStore();
-  if (page === 'ads') renderAds();
+  if (page === 'ads') {
+    if (!document.getElementById('ads-workspace') && document.body.dataset.adsWorkspace !== '1') {
+      renderAds();
+    }
+  }
   if (page === 'events') renderEvents();
   if (page === 'products') renderProducts();
 

@@ -37,12 +37,14 @@
     'Training Request': { department: 'Consulting', assignedTo: 'Consulting Team' },
     'Event Request': { department: 'Sales', assignedTo: 'Sales Desk' },
     'Article Submission': { department: 'Content', assignedTo: 'Content Desk' },
+    'Ad Submission': { department: 'Marketing', assignedTo: 'Ads Desk' },
     مقال: { department: 'Content', assignedTo: 'Content Desk' },
     'General Request': { department: 'Operations', assignedTo: 'Ops Desk' },
   };
 
   const TYPE_LABELS_AR = {
     'Article Submission': 'مقال',
+    'Ad Submission': 'طلب نشر إعلان',
     'Solution Request': 'طلب حل',
     'Cost Reduction Assessment': 'خفض تكاليف',
     'Cost Reduction Request': 'خفض تكاليف',
@@ -488,6 +490,79 @@
     Rejected: 9,
     Cancelled: 9,
     Archived: 10,
+  };
+
+  const ensureForAd = (ad, actor = 'عميل', { silent } = {}) => {
+    if (!ad?.id) return null;
+    if (ad.workflowStatus === 'draft' && !ad.requestId) return null;
+    let row = findByReference('Ad', ad.id) || (ad.requestId ? get(ad.requestId) : null);
+    const status =
+      ad.workflowStatus === 'active' || ad.workflowStatus === 'approved' || ad.workflowStatus === 'scheduled'
+        ? 'Approved'
+        : ad.workflowStatus === 'rejected'
+          ? 'Rejected'
+          : ad.workflowStatus === 'paused'
+            ? 'Unpublished'
+            : 'Pending Review';
+    const snapshot = {
+      adId: ad.id,
+      adCode: ad.adCode,
+      title: ad.title,
+      contentType: ad.contentType,
+      placements: ad.placements,
+      destinationUrl: ad.destinationUrl,
+      ctaLabel: ad.ctaLabel,
+      mediaDataUrl: ad.mediaDataUrl ? '[media]' : '',
+      adStartDate: ad.adStartDate,
+      adEndDate: ad.adEndDate,
+      rejectionReason: ad.rejectionReason || '',
+    };
+    if (row) {
+      Object.assign(row, {
+        title: `طلب نشر إعلان: ${ad.title || ad.adCode || ad.id}`,
+        description: ad.desc || ad.headline || '',
+        status: silent && (STATUS_RANK[row.status] || 0) > (STATUS_RANK[status] || 0) ? row.status : status,
+        requestType: 'Ad Submission',
+        requestTypeLabel: 'طلب نشر إعلان',
+        referenceType: 'Ad',
+        referenceId: ad.id,
+        sourceModule: 'إدارة الإعلانات',
+        sourcePage: 'الإعلانات',
+        sourceUrl: 'ads.html',
+        sourceAction: 'نشر إعلان',
+        department: row.department || 'Marketing',
+        assignedTo: row.assignedTo || 'Ads Desk',
+        adSnapshot: snapshot,
+        updatedAt: nowIso(),
+        customerName: ad.createdBy || row.customerName || actor,
+      });
+      if (!silent) save();
+      return row;
+    }
+    return create(
+      {
+        requestType: 'Ad Submission',
+        requestTypeLabel: 'طلب نشر إعلان',
+        title: `طلب نشر إعلان: ${ad.title || ad.adCode || ad.id}`,
+        description: ad.desc || ad.headline || '',
+        status: 'Pending Review',
+        priority: 'متوسطة',
+        sourceModule: 'إدارة الإعلانات',
+        sourcePage: 'الإعلانات',
+        sourceUrl: 'ads.html',
+        sourceAction: 'نشر إعلان',
+        referenceType: 'Ad',
+        referenceId: ad.id,
+        customerName: ad.createdBy || actor,
+        assignedTo: 'Ads Desk',
+        department: 'Marketing',
+        channel: 'Web',
+        adSnapshot: snapshot,
+        createdAt: ad.createdAt || nowIso(),
+        updatedAt: nowIso(),
+      },
+      actor
+    );
   };
 
   const ensureForArticle = (article, actor = 'عميل', { silent } = {}) => {
@@ -1024,6 +1099,7 @@
     findSimilarOpen,
     findByReference,
     ensureForArticle,
+    ensureForAd,
     mapArticleStatus,
     approveAndPublish,
     pauseRequest,

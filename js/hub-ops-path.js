@@ -79,6 +79,8 @@
 
   const mount = () => {
     const key = resolveKey();
+    // Ads page has its own workspace help — do not inject "آلية التشغيل" strip
+    if (key === 'ads' || document.body?.dataset?.adsWorkspace === '1') return;
     const cfg = PATHS[key];
     if (!cfg) return;
     if (document.querySelector('.hub-ops-path')) return;

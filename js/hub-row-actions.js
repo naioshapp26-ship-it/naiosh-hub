@@ -1304,9 +1304,13 @@
   };
 
   const openAdd = (entity) => {
-    // Customer-friendly product/store upload uses the full-page wizard
+    // Customer-friendly product/store/ads upload uses the dedicated workspace wizard
     if (entity === 'products' || entity === 'store') {
       window.location.href = 'store.html#upload';
+      return;
+    }
+    if (entity === 'ads') {
+      window.location.href = 'ads.html#wizard';
       return;
     }
     const form = ADD_FORMS[entity];

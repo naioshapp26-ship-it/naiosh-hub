@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>استوديو الإعلانات | نايوش هوب 360</title>
+  <title>إدارة الإعلانات | نايوش هوب 360</title>
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -14,8 +14,10 @@
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
   <link rel="stylesheet" href="css/hub-row-actions.css" />
   <link rel="stylesheet" href="css/hub-marketplace.css" />
+  <link rel="stylesheet" href="css/hub-ads-workspace.css?v=1" />
+  <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
 </head>
-<body class="homepage" data-market-page="ads">
+<body class="homepage" data-market-page="ads" data-ads-workspace="1">
   <header class="top-nav">
     <div class="container inner">
       <div class="nav-main">
@@ -40,53 +42,14 @@
     </div>
   </header>
 
-  <main class="container market-page">
-    <section class="market-hero">
-      <h1>إدارة الإعلانات — تشغيل متعدد الطبقات</h1>
-      <p>
-        المستوى: المكتب · المنصة · الحاضنة · الفرع — مع خيارات العرض (الواجهة الرئيسية وكل طبقة)
-        ومكان الظهور على الصفحة الرئيسية لكل مستوى.
-      </p>
-      <div class="market-stats">
-        <div class="market-stat"><strong id="stat-ads">0</strong><span>إعلان نشط</span></div>
-        <div class="market-stat"><strong id="stat-views">0</strong><span>مشاهدة</span></div>
-        <div class="market-stat"><strong>4</strong><span>طبقات تشغيل</span></div>
-        <div class="market-stat"><strong>هوب</strong><span>ظهور موحّد</span></div>
-      </div>
-    </section>
-    <section class="hub-ads-model" aria-label="نموذج إدارة الإعلانات">
-      <article>
-        <h3><i class="fas fa-sitemap"></i> المستوى</h3>
-        <ul>
-          <li>المكتب — إعلان مكتب</li>
-          <li>المنصة — إعلان منصة</li>
-          <li>الحاضنة — إعلان حاضنة</li>
-          <li>الفرع — إعلان فرع</li>
-        </ul>
-      </article>
-      <article>
-        <h3><i class="fas fa-eye"></i> خيارات العرض</h3>
-        <ul>
-          <li>عرض في الواجهة الرئيسية</li>
-          <li>عرض في كل المكاتب / المنصات</li>
-          <li>عرض في كل الحاضنات / الفروع</li>
-          <li>أو اختيار عناصر محددة</li>
-        </ul>
-      </article>
-      <article>
-        <h3><i class="fas fa-map-location-dot"></i> مكان الظهور</h3>
-        <ul>
-          <li>الصفحة الرئيسية للمكتب</li>
-          <li>الصفحة الرئيسية للمنصة</li>
-          <li>الصفحة الرئيسية للحاضنة</li>
-          <li>الصفحة الرئيسية للفرع</li>
-        </ul>
-      </article>
-    </section>
-    <div id="ads-cats" class="market-grid" aria-label="تصنيفات الإعلانات"></div>
-    <nav class="market-tabs" id="market-tabs" aria-label="فلاتر الإعلانات"></nav>
-    <div class="ads-latest-grid" id="ads-grid"></div>
+  <main class="ads-workspace" id="ads-workspace">
+    <!-- filled by hub-ads-workspace.js -->
   </main>
+
+  <!-- legacy mounts kept hidden so old renderAds no-ops safely -->
+  <div id="ads-cats" hidden></div>
+  <nav id="market-tabs" hidden></nav>
+  <div id="ads-grid" hidden></div>
 
   <script src="js/hub-side-projects-data.js?v=6"></script>
   <script src="js/empire-blueprint.js"></script>
@@ -98,12 +61,13 @@
   <script src="js/hub-ready-sites.js"></script>
   <script src="js/hub-store.js"></script>
   <script src="js/hub-auth.js"></script>
+  <script src="js/hub-customer-requests.js"></script>
   <script src="js/hub-launcher.js"></script>
   <script src="js/hub-row-actions.js"></script>
   <script src="js/hub-currency.js"></script>
   <script src="js/hub-ads-display.js"></script>
-  <script src="js/market-pages.js"></script>
-  <script src="js/hub-ops-path.js"></script>
+  <script src="js/market-pages.js?v=ads1"></script>
+  <script src="js/hub-ads-workspace.js?v=1"></script>
   <script src="js/mobile-nav.js"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
@@ -113,5 +77,3 @@
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>
 </html>
-
-
