@@ -7,16 +7,19 @@
   'use strict';
 
   var STEPS = [
-    { id: 'store', label: '1. المتجر' },
+    { id: 'place', label: '1. أين يُباع؟' },
     { id: 'product', label: '2. المنتج' },
-    { id: 'price', label: '3. السعر والرابط' },
+    { id: 'link', label: '3. الرابط' },
     { id: 'media', label: '4. الصور' },
     { id: 'review', label: '5. المراجعة' }
   ];
 
   var state = {
     step: 0,
+    purchaseType: '', // INTERNAL | EXTERNAL
     storeId: '',
+    customStoreName: '',
+    customStoreWebsite: '',
     productName: '',
     category: '',
     brand: '',
@@ -30,7 +33,8 @@
     images: [],
     attachments: [],
     submissionId: '',
-    urlError: ''
+    urlError: '',
+    urlOk: false
   };
 
   function esc(v) {
@@ -265,8 +269,8 @@
       return (
         '<div class="su-wizard">' +
           '<div class="su-success">' +
-            '<h3>تم إرسال المنتج بنجاح</h3>' +
-            '<p>الحالة: بانتظار المراجعة</p>' +
+            '<h3>تم إرسال المنتج للمراجعة</h3>' +
+            '<p>الحالة: بانتظار موافقة الإدارة</p>' +
             '<code>' + esc(state.submissionId) + '</code>' +
             '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
               '<a class="btn btn-primary" href="store.html">متابعة الطلب</a>' +
@@ -300,44 +304,75 @@
 
   function stepBodyHtml() {
     var id = STEPS[state.step].id;
-    if (id === 'store') return storeStepHtml();
+    if (id === 'place') return placeStepHtml();
     if (id === 'product') return productStepHtml();
-    if (id === 'price') return priceStepHtml();
+    if (id === 'link') return linkStepHtml();
     if (id === 'media') return mediaStepHtml();
     return reviewStepHtml();
   }
 
-  function storeStepHtml() {
+  function placeStepHtml() {
     var list = stores();
-    var cards = list.map(function (s) {
-      var id = storeKey(s);
-      var selected = state.storeId === id;
-      var url = storeUrl(s);
-      return (
-        '<article class="su-store-card' + (selected ? ' is-selected' : '') + '" data-store-id="' + esc(id) + '">' +
-          '<div class="su-store-logo" style="background:' + esc(s.color || '#111') + '">' + storeLogoHtml(s) + '</div>' +
-          '<div class="su-store-name">' + esc(storeName(s)) + '</div>' +
-          '<div class="su-store-actions">' +
-            '<button type="button" class="btn btn-primary" data-su-select="' + esc(id) + '">' +
-              (selected ? 'محدد ✓' : 'اختيار') +
-            '</button>' +
-            (url
-              ? '<a class="btn btn-outline" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer" data-su-open>فتح الموقع ↗</a>'
-              : '<span class="su-error">لا يوجد رابط رسمي</span>') +
+    var internalSelected = state.purchaseType === 'INTERNAL';
+    var cards =
+      '<article class="su-store-card' +
+      (internalSelected ? ' is-selected' : '') +
+      '" data-place="INTERNAL">' +
+      '<div class="su-store-logo" style="background:#d70000"><i class="fas fa-store" aria-hidden="true"></i></div>' +
+      '<div class="su-store-name">داخل NAIOSh</div>' +
+      '<div class="su-store-actions">' +
+      '<button type="button" class="btn btn-primary" data-su-place="INTERNAL">' +
+      (internalSelected ? 'محدد ✓' : 'اختيار') +
+      '</button></div></article>';
+
+    cards += list
+      .map(function (s) {
+        var id = storeKey(s);
+        var selected = state.purchaseType === 'EXTERNAL' && state.storeId === id;
+        var url = storeUrl(s);
+        return (
+          '<article class="su-store-card' +
+          (selected ? ' is-selected' : '') +
+          '" data-store-id="' +
+          esc(id) +
+          '">' +
+          '<div class="su-store-logo" style="background:' +
+          esc(s.color || '#111') +
+          '">' +
+          storeLogoHtml(s) +
           '</div>' +
-        '</article>'
-      );
-    }).join('');
+          '<div class="su-store-name">' +
+          esc(storeName(s)) +
+          '</div>' +
+          '<div class="su-store-actions">' +
+          '<button type="button" class="btn btn-primary" data-su-select="' +
+          esc(id) +
+          '">' +
+          (selected ? 'محدد ✓' : 'اختيار') +
+          '</button>' +
+          (url
+            ? '<a class="btn btn-outline" href="' +
+              esc(url) +
+              '" target="_blank" rel="noopener noreferrer" data-su-open>فتح الموقع ↗</a>'
+            : '') +
+          '</div></article>'
+        );
+      })
+      .join('');
 
     return (
       '<section class="su-card">' +
-        '<h3>المتاجر المتاحة</h3>' +
-        '<p class="su-hint">اختر المتجر، وافتح موقعه الرسمي إن احتجت، ثم انسخ رابط المنتج.</p>' +
-        '<div class="su-stores-grid">' +
-          cards +
-          '<button type="button" class="su-store-card su-store-add" data-su-add-store>+ إضافة متجر جديد</button>' +
-        '</div>' +
-      '</section>'
+      '<h3>أين سيتم بيع المنتج؟</h3>' +
+      '<p class="su-hint">اختر المكان الذي يستطيع العميل شراء المنتج منه.</p>' +
+      '<p class="su-hint" style="margin-top:-8px">الخطوة ' +
+      (state.step + 1) +
+      ' من ' +
+      STEPS.length +
+      '</p>' +
+      '<div class="su-stores-grid">' +
+      cards +
+      '<button type="button" class="su-store-card su-store-add" data-su-add-store>+ متجر آخر</button>' +
+      '</div></section>'
     );
   }
 
@@ -345,7 +380,7 @@
     return (
       '<section class="su-card">' +
         '<h3>بيانات المنتج</h3>' +
-        '<p class="su-hint">أدخل بيانات المنتج الأساسية بوضوح.</p>' +
+        '<p class="su-hint">الخطوة ' + (state.step + 1) + ' من ' + STEPS.length + ' — أدخل فقط المعلومات الأساسية. السعر بالدولار الأمريكي.</p>' +
         '<div class="su-fields">' +
           field('productName', 'اسم المنتج *', 'text', state.productName, true) +
           fieldSelect('category', 'الفئة *', state.category, [
@@ -356,46 +391,50 @@
             ['beauty', 'تجميل'],
             ['other', 'أخرى']
           ]) +
-          field('brand', 'الماركة', 'text', state.brand) +
-          field('sku', 'SKU / Product Code', 'text', state.sku) +
           field('shortDesc', 'وصف مختصر *', 'textarea', state.shortDesc, true, true) +
-          field('fullDesc', 'وصف كامل', 'textarea', state.fullDesc, false, true) +
-          field('quantity', 'الكمية المتاحة', 'number', state.quantity) +
-          fieldSelect('condition', 'الحالة', state.condition, [
-            ['new', 'جديد'],
-            ['used', 'مستعمل'],
-            ['refurbished', 'مجدّد']
-          ]) +
-        '</div>' +
-      '</section>'
-    );
-  }
-
-  function priceStepHtml() {
-    var store = selectedStore();
-    var url = storeUrl(store);
-    return (
-      '<section class="su-card">' +
-        '<h3>السعر والرابط</h3>' +
-        '<p class="su-hint">السعر بالدولار الأمريكي فقط. افتح المتجر وانسخ رابط صفحة المنتج.</p>' +
-        '<div class="su-fields">' +
           '<label class="su-field">' +
-            '<span>السعر *</span>' +
+            '<span>السعر بالدولار *</span>' +
             '<div class="su-price-row">' +
               '<input type="number" min="0.01" step="0.01" inputmode="decimal" data-su-field="priceUsd" value="' + esc(state.priceUsd) + '" placeholder="49.99">' +
               '<span class="su-price-currency">USD</span>' +
             '</div>' +
             '<small style="font-weight:650;color:#667085">أدخل السعر بالدولار الأمريكي.</small>' +
           '</label>' +
+          field('brand', 'الماركة (اختياري)', 'text', state.brand) +
+          field('quantity', 'الكمية المتاحة', 'number', state.quantity) +
+        '</div>' +
+      '</section>'
+    );
+  }
+
+  function linkStepHtml() {
+    if (state.purchaseType !== 'EXTERNAL') {
+      return (
+        '<section class="su-card">' +
+          '<h3>رابط الشراء</h3>' +
+          '<p class="su-hint">هذا المنتج يُباع داخل نايوش — لا تحتاج رابط متجر خارجي.</p>' +
+        '</section>'
+      );
+    }
+    var store = selectedStore();
+    var name = store ? storeName(store) : 'المتجر';
+    var url = storeUrl(store);
+    return (
+      '<section class="su-card">' +
+        '<h3>أضف رابط المنتج على ' + esc(name) + '</h3>' +
+        '<p class="su-hint">افتح ' + esc(name) + '، انسخ رابط صفحة المنتج، ثم الصقه هنا. الخطوة ' + (state.step + 1) + ' من ' + STEPS.length + '</p>' +
+        '<div class="su-fields">' +
           '<label class="su-field full">' +
             '<span>رابط المنتج على المتجر *</span>' +
             '<div class="su-url-row">' +
               '<input type="url" data-su-field="productUrl" value="' + esc(state.productUrl) + '" placeholder="https://...">' +
               (url
-                ? '<a class="btn btn-outline" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">فتح المتجر</a>'
+                ? '<a class="btn btn-outline" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">فتح ' + esc(name) + ' ↗</a>'
                 : '') +
+              '<button type="button" class="btn btn-outline" data-su-check-url>فحص الرابط</button>' +
             '</div>' +
-            '<small style="font-weight:650;color:#667085">افتح المتجر، انسخ رابط صفحة المنتج، ثم ضعه هنا.</small>' +
+            '<small style="font-weight:650;color:#667085">انسخ رابط المنتج من شريط عنوان المتصفح.</small>' +
+            (state.urlOk ? '<p style="color:#15803d;font-weight:800;margin:0">✓ الرابط صالح</p>' : '') +
             (state.urlError ? '<p class="su-error">' + esc(state.urlError) + '</p>' : '') +
           '</label>' +
         '</div>' +
@@ -448,20 +487,27 @@
 
   function reviewStepHtml() {
     var store = selectedStore();
+    var howBuy =
+      state.purchaseType === 'EXTERNAL'
+        ? (store ? storeName(store) : 'المتجر') +
+          ' → العميل يشاهد المنتج في NAIOSh → يضغط «الشراء من المتجر» → ينتقل إلى المتجر → يكمل الشراء هناك.'
+        : 'داخل NAIOSh → إضافة للسلة أو اشترِ الآن → الدفع داخل نايوش → تأكيد الطلب.';
     return (
       '<section class="su-card">' +
         '<h3>مراجعة قبل الإرسال</h3>' +
-        '<p class="su-hint">تحقق من البيانات ثم أرسل المنتج.</p>' +
+        '<p class="su-hint">الخطوة ' + (state.step + 1) + ' من ' + STEPS.length + ' — تحقق من البيانات ثم أرسل للمراجعة.</p>' +
         '<div class="su-review-grid">' +
-          reviewItem('المتجر', store ? storeName(store) : '—') +
+          reviewItem('نوع الشراء', state.purchaseType === 'EXTERNAL' ? 'خارجي' : 'داخل NAIOSh') +
+          reviewItem('المتجر', state.purchaseType === 'INTERNAL' ? 'NAIOSh' : store ? storeName(store) : '—') +
           reviewItem('اسم المنتج', state.productName || '—') +
           reviewItem('السعر', state.priceUsd ? ('$' + state.priceUsd + ' USD') : '—') +
-          reviewItem('الرابط', state.productUrl || '—') +
+          reviewItem('الرابط', state.purchaseType === 'EXTERNAL' ? state.productUrl || '—' : '— (شراء داخلي)') +
           reviewItem('الفئة', state.category || '—') +
-          reviewItem('الحالة', conditionLabel(state.condition)) +
           reviewItem('الصور', String(state.images.length)) +
-          reviewItem('المرفقات', String(state.attachments.length)) +
         '</div>' +
+        '<div class="hub-purchase-steps" style="margin-top:16px"><strong>كيف سيشتري العميل؟</strong><p style="margin:8px 0 0;font-weight:700;line-height:1.7">' +
+          esc(howBuy) +
+        '</p></div>' +
       '</section>'
     );
   }
@@ -499,7 +545,7 @@
     var right = '<button type="button" class="btn btn-outline" data-su-draft>حفظ كمسودة</button>';
     if (last) {
       right += '<button type="button" class="btn btn-outline" data-su-preview>معاينة</button>';
-      right += '<button type="button" class="btn btn-primary" data-su-submit>إرسال المنتج</button>';
+      right += '<button type="button" class="btn btn-primary" data-su-submit>إرسال للمراجعة</button>';
     } else {
       right += '<button type="button" class="btn btn-primary" data-su-next>التالي</button>';
     }
@@ -516,9 +562,15 @@
 
   function validateStep() {
     state.urlError = '';
-    if (state.step === 0 && !state.storeId) {
-      toast('اختر متجراً أولاً', 'error');
-      return false;
+    if (state.step === 0) {
+      if (!state.purchaseType) {
+        toast('اختر أين سيتم بيع المنتج', 'error');
+        return false;
+      }
+      if (state.purchaseType === 'EXTERNAL' && !state.storeId) {
+        toast('اختر المتجر الخارجي', 'error');
+        return false;
+      }
     }
     if (state.step === 1) {
       if (!String(state.productName || '').trim()) {
@@ -533,20 +585,22 @@
         toast('الوصف المختصر مطلوب', 'error');
         return false;
       }
-    }
-    if (state.step === 2) {
       var price = Number(state.priceUsd);
       if (!(price > 0) || !isFinite(price)) {
         toast('أدخل سعراً صحيحاً بالدولار أكبر من 0', 'error');
         return false;
       }
+    }
+    if (state.step === 2 && state.purchaseType === 'EXTERNAL') {
       var reg = registry();
-      var check = reg ? reg.validateProductUrl(state.productUrl, state.storeId) : { ok: !!state.productUrl };
+      var check = reg ? reg.validateProductUrl(state.productUrl, state.storeId) : { ok: !!(window.HubPurchase && HubPurchase.isHttpUrl(state.productUrl)) };
       if (!check.ok) {
         state.urlError = check.message || 'الرابط غير صالح أو لا يبدو تابعاً للمتجر المختار.';
+        state.urlOk = false;
         toast(state.urlError, 'error');
         return false;
       }
+      state.urlOk = true;
     }
     return true;
   }
@@ -554,7 +608,10 @@
   function resetState() {
     state = {
       step: 0,
+      purchaseType: '',
       storeId: '',
+      customStoreName: '',
+      customStoreWebsite: '',
       productName: '',
       category: '',
       brand: '',
@@ -568,7 +625,8 @@
       images: [],
       attachments: [],
       submissionId: '',
-      urlError: ''
+      urlError: '',
+      urlOk: false
     };
   }
 
@@ -632,26 +690,30 @@
     var payload = {
       store_id: state.storeId,
       storeId: state.storeId,
-      store_name: store ? storeName(store) : '',
-      storeName: store ? storeName(store) : '',
+      store_name: store ? storeName(store) : state.purchaseType === 'INTERNAL' ? 'NAIOSh' : '',
+      storeName: store ? storeName(store) : state.purchaseType === 'INTERNAL' ? 'NAIOSh' : '',
       product_name: state.productName,
       title: state.productName,
-      product_url: state.productUrl,
-      productUrl: state.productUrl,
+      product_url: state.purchaseType === 'EXTERNAL' ? state.productUrl : '',
+      productUrl: state.purchaseType === 'EXTERNAL' ? state.productUrl : '',
       price_usd: price,
       priceUsd: price,
+      price: price,
       category: state.category,
       brand: state.brand,
       sku: state.sku,
       short_desc: state.shortDesc,
       summary: state.shortDesc,
-      full_desc: state.fullDesc,
-      description: state.fullDesc,
+      description: state.shortDesc,
+      desc: state.shortDesc,
       quantity: Number(state.quantity) || 1,
+      stock: Number(state.quantity) || 1,
       condition: state.condition,
       images_count: state.images.length,
       attachments_count: state.attachments.length,
-      currency: 'USD'
+      currency: 'USD',
+      purchaseType: state.purchaseType || 'INTERNAL',
+      status: 'pending_review'
     };
 
     var created = null;
@@ -661,7 +723,7 @@
       toast((err && err.message) || 'تعذر إرسال المنتج', 'error');
       return;
     }
-    state.submissionId = (created && (created.submission_id || created.id)) || ('PRD-REQ-' + Date.now());
+    state.submissionId = (created && (created.submission_id || created.id)) || ('PRD-' + new Date().getFullYear() + '-' + Date.now().toString().slice(-6));
 
     try {
       if (window.HubStore && typeof HubStore.addStoreItem === 'function') {
@@ -670,20 +732,22 @@
           name: state.productName,
           marketplace: state.storeId,
           storeId: state.storeId,
-          storeName: store ? storeName(store) : '',
-          url: state.productUrl,
-          productUrl: state.productUrl,
+          storeName: store ? storeName(store) : 'NAIOSh',
+          url: state.purchaseType === 'EXTERNAL' ? state.productUrl : '',
+          productUrl: state.purchaseType === 'EXTERNAL' ? state.productUrl : '',
           price: price,
           currency: 'USD',
           category: state.category,
           brand: state.brand,
           sku: state.sku,
           description: state.shortDesc,
-          fullDescription: state.fullDesc,
           quantity: Number(state.quantity) || 1,
+          stock: Number(state.quantity) || 1,
           condition: state.condition,
           submissionId: state.submissionId,
-          status: 'pending_review'
+          purchaseType: state.purchaseType || 'INTERNAL',
+          status: 'pending_review',
+          mirrorToCatalog: true
         });
       }
     } catch (e) {}
@@ -893,7 +957,28 @@
       btn.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
+        state.purchaseType = 'EXTERNAL';
         state.storeId = btn.getAttribute('data-su-select');
+        renderShell();
+      });
+    });
+
+    root.querySelectorAll('[data-su-place]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        state.purchaseType = btn.getAttribute('data-su-place') || 'INTERNAL';
+        state.storeId = '';
+        state.productUrl = '';
+        renderShell();
+      });
+    });
+
+    root.querySelectorAll('.su-store-card[data-place]').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('a, button')) return;
+        state.purchaseType = card.getAttribute('data-place') || 'INTERNAL';
+        state.storeId = '';
         renderShell();
       });
     });
@@ -901,10 +986,25 @@
     root.querySelectorAll('.su-store-card[data-store-id]').forEach(function (card) {
       card.addEventListener('click', function (e) {
         if (e.target.closest('a, button')) return;
+        state.purchaseType = 'EXTERNAL';
         state.storeId = card.getAttribute('data-store-id');
         renderShell();
       });
     });
+
+    var checkUrl = root.querySelector('[data-su-check-url]');
+    if (checkUrl) {
+      checkUrl.addEventListener('click', function () {
+        syncFields(root);
+        var reg = registry();
+        var check = reg
+          ? reg.validateProductUrl(state.productUrl, state.storeId)
+          : { ok: !!(window.HubPurchase && HubPurchase.isHttpUrl(state.productUrl)) };
+        state.urlOk = !!check.ok;
+        state.urlError = check.ok ? '' : check.message || 'الرابط غير صالح أو لا يبدو تابعاً للمتجر المختار.';
+        renderShell();
+      });
+    }
 
     root.querySelectorAll('[data-su-field]').forEach(function (el) {
       el.addEventListener('input', function () {
@@ -920,14 +1020,24 @@
         renderShell();
         return;
       }
-      state.step = Math.min(state.step + 1, STEPS.length - 1);
+      var nextStep = Math.min(state.step + 1, STEPS.length - 1);
+      // Skip external URL step for INTERNAL products
+      if (STEPS[nextStep] && STEPS[nextStep].id === 'link' && state.purchaseType === 'INTERNAL') {
+        nextStep = Math.min(nextStep + 1, STEPS.length - 1);
+      }
+      state.step = nextStep;
       renderShell();
     });
 
     var back = root.querySelector('[data-su-back]');
     if (back) back.addEventListener('click', function () {
       syncFields(root);
-      state.step = Math.max(0, state.step - 1);
+      var prev = Math.max(0, state.step - 1);
+      if (STEPS[state.step] && STEPS[state.step].id === 'media' && state.purchaseType === 'INTERNAL') {
+        // skip link step backwards too
+        prev = Math.max(0, state.step - 2);
+      }
+      state.step = prev;
       renderShell();
     });
 

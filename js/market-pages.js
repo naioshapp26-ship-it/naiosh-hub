@@ -152,8 +152,9 @@
           const featured = meta.featured ? ' is-featured' : '';
           const iconStyle = meta.color ? ` style="color:${esc(meta.color)}"` : '';
           const icon = `<i class="${esc(meta.icon || 'fas fa-store')}"${iconStyle}></i>`;
-          if (m.url) {
-            return `<a class="hub-mp-badge${featured}" data-mp="${esc(m.id)}" href="${esc(m.url)}" target="_blank" rel="noopener">${icon} ${esc(label)}</a>`;
+          const url = (m.url || '').trim();
+          if (url && window.HubPurchase?.isHttpUrl?.(url)) {
+            return `<button type="button" class="hub-mp-badge${featured}" data-external-buy="${esc(item.id)}" data-external-url="${esc(url)}">${icon} ${esc(label)}</button>`;
           }
           return `<span class="hub-mp-badge draft${featured}" data-mp="${esc(m.id)}">${icon} ${esc(label)}</span>`;
         })
@@ -162,54 +163,65 @@
 
     const paint = () => {
       const list = (active === 'الكل' ? items : items.filter((i) => i.category === active)).filter(
-        (i) => i.status !== 'archived'
+        (i) => i.status !== 'archived' && i.status !== 'pending_review'
       );
       root.innerHTML = list.length
         ? list
-            .map(
-              (i) => {
-                const site = window.HubReadySites?.siteForProduct?.(i);
-                const media =
-                  site?.face || site?.logo
-                    ? `<div class="card-media has-face">${
-                        site.face
-                          ? `<img class="card-face" src="${esc(site.face)}" alt="${esc(site.nameAr || i.title)}" loading="lazy" />`
-                          : ''
-                      }${
-                        site.logo
-                          ? `<img class="card-logo" src="${esc(site.logo)}" alt="شعار ${esc(site.nameAr || i.title)}" loading="lazy" />`
-                          : ''
-                      }</div>`
-                    : '';
-                return `<article class="market-card">
+            .map((i) => {
+              const P = window.HubPurchase;
+              const purchaseType = P?.resolvePurchaseType?.(i) || 'INTERNAL';
+              const priceLabel = P?.formatUsd?.(i.price) || money(i.price);
+              const storeName = P?.storeLabel?.(i) || 'NAIOSh';
+              const avail = P?.availabilityLabel?.(i) || 'متاح';
+              const site = purchaseType === 'INTERNAL' ? window.HubReadySites?.siteForProduct?.(i) : null;
+              const media =
+                site?.face || site?.logo
+                  ? `<div class="card-media has-face">${
+                      site.face
+                        ? `<img class="card-face" src="${esc(site.face)}" alt="${esc(site.nameAr || i.title)}" loading="lazy" />`
+                        : ''
+                    }${
+                      site.logo
+                        ? `<img class="card-logo" src="${esc(site.logo)}" alt="شعار ${esc(site.nameAr || i.title)}" loading="lazy" />`
+                        : ''
+                    }</div>`
+                  : '';
+              const actionsHtml =
+                P?.cardActionsHtml?.(i, { detailsHref: `store.html?buy=${encodeURIComponent(i.id)}` }) ||
+                `<button type="button" class="btn-mini primary" data-buy="${esc(i.id)}">اشترِ الآن</button>`;
+              return `<article class="market-card" data-purchase-type="${esc(purchaseType)}" data-item-id="${esc(i.id)}">
             ${media}
             <span class="badge-soft">${esc(i.badge || i.itemKind || i.category)}</span>
             <h3>${esc(i.title)}</h3>
+            <div class="hub-purchase-meta">
+              <span>المتجر: ${esc(storeName)}</span>
+              <span>${esc(avail)}</span>
+            </div>
             <p>${esc(i.desc || '')}</p>
-            <div class="price">${money(i.price)}</div>
-            <div class="meta">${esc(i.itemKind || 'منتج')} · ${esc(i.brand || '—')} · نقاط: ${i.points || 0} · مخزون: ${i.stock}${i.assignee ? ` · معيّن: ${esc(i.assignee)}` : ''}</div>
+            <div class="price price-usd">${esc(priceLabel)}</div>
+            ${P?.purchaseStepsHtml?.(i) || ''}
             ${mpBadges(i)}
             ${metaLine(i)}
             <div class="card-actions">
-              <button type="button" class="btn-mini" data-cart="${esc(i.id)}"><i class="fas fa-basket-shopping"></i> أضف للسلة</button>
-              <button type="button" class="btn-mini primary" data-buy="${esc(i.id)}"><i class="fas fa-cart-plus"></i> اشترِ الآن</button>
+              ${actionsHtml}
               ${
-                (() => {
-                  if (!site) return '';
-                  const href =
-                    site.launchCode && window.HubLauncher?.getDirectLaunchUrl
-                      ? window.HubLauncher.getDirectLaunchUrl(site.launchCode)
-                      : site.href;
-                  return `<a class="btn-mini" href="${esc(href)}" ${
-                    site.launchCode ? `data-launch-code="${esc(site.launchCode)}" data-launch-mode="hub"` : ''
-                  }><i class="fas fa-arrow-up-left"></i> ادخل الموقع</a>`;
-                })()
+                purchaseType === 'INTERNAL' && site
+                  ? (() => {
+                      const href =
+                        site.launchCode && window.HubLauncher?.getDirectLaunchUrl
+                          ? window.HubLauncher.getDirectLaunchUrl(site.launchCode)
+                          : site.href;
+                      if (!href || href === 'about:blank') return '';
+                      return `<a class="btn-mini" href="${esc(href)}" ${
+                        site.launchCode ? `data-launch-code="${esc(site.launchCode)}" data-launch-mode="hub"` : ''
+                      }><i class="fas fa-arrow-up-left"></i> ادخل الموقع</a>`;
+                    })()
+                  : ''
               }
             </div>
             ${actions('store', i.id)}
           </article>`;
-              }
-            )
+            })
             .join('')
         : `<div class="shop-empty" style="grid-column:1/-1">لا توجد عناصر في هذا التصنيف — ارفع منتجًا أو خدمة من النموذج أعلاه.</div>`;
     };
@@ -232,6 +244,21 @@
     }
 
     root.onclick = (e) => {
+      const externalBtn = e.target.closest('[data-external-buy]');
+      if (externalBtn && window.HubPurchase?.confirmExternalOpen) {
+        e.preventDefault();
+        const id = externalBtn.getAttribute('data-external-buy');
+        const item = items.find((x) => String(x.id) === String(id)) || {
+          id,
+          purchaseType: 'EXTERNAL',
+          productUrl: externalBtn.getAttribute('data-external-url'),
+        };
+        window.HubPurchase.confirmExternalOpen(item).then((res) => {
+          if (res.cancelled) return;
+          if (!res.ok) toast(res.error || 'تعذر فتح المتجر');
+        });
+        return;
+      }
       const launch = e.target.closest('[data-launch-code]');
       if (launch && window.HubLauncher?.launch) {
         e.preventDefault();
@@ -241,6 +268,10 @@
       const cartBtn = e.target.closest('[data-cart]');
       if (cartBtn && window.HubCart?.add) {
         const item = items.find((x) => String(x.id) === String(cartBtn.dataset.cart));
+        if (item && window.HubPurchase?.resolvePurchaseType?.(item) === 'EXTERNAL') {
+          toast('هذا المنتج يُشترى من متجر خارجي — استخدم زر الانتقال إلى المتجر.');
+          return;
+        }
         if (item) {
           window.HubCart.add(item);
           toast(`أُضيف للسلة: ${item.title}`);
@@ -249,20 +280,25 @@
       }
       const btn = e.target.closest('[data-buy]');
       if (!btn) return;
+      const buyItem = items.find((x) => String(x.id) === String(btn.dataset.buy));
+      if (buyItem && window.HubPurchase?.resolvePurchaseType?.(buyItem) === 'EXTERNAL') {
+        window.HubPurchase.confirmExternalOpen(buyItem);
+        return;
+      }
       if (window.HubReadySites?.buyThenOpen) {
         const result = window.HubReadySites.buyThenOpen(btn.dataset.buy);
         if (!result.ok) return toast(result.error || 'تعذّر إتمام الطلب');
-        toast(`تم الشراء: ${result.order.title} — جاري فتح موقعك…`);
+        toast(`تم الشراء داخل نايوش: ${result.order.title}`);
         paint();
         setStat('stat-orders', store.get().empire.salesStore.orders.length);
         setStat('stat-items', store.get().empire.salesStore.items.length);
-        setTimeout(() => {
-          if (result.site?.launchCode && window.HubLauncher?.launch) {
-            window.HubLauncher.launch(result.site.launchCode, { mode: 'hub', force: true });
-          } else if (result.openHref) {
-            window.location.href = result.openHref;
-          }
-        }, 700);
+        if (result.openHref && /^https?:\/\//i.test(result.openHref)) {
+          setTimeout(() => {
+            if (result.site?.launchCode && window.HubLauncher?.launch) {
+              window.HubLauncher.launch(result.site.launchCode, { mode: 'hub', force: true });
+            }
+          }, 400);
+        }
         return;
       }
       if (!store?.placeStoreOrder) return;
@@ -452,6 +488,15 @@
     const raw = byId.size ? [...byId.values()] : fromData;
     const products = raw.filter((p) => {
       if (window.HubReadySites?.isExcluded?.(p.name) || window.HubReadySites?.isExcluded?.(p.brand)) return false;
+      const linkedStore =
+        (p.storeItemId &&
+          (store?.get?.().empire?.salesStore?.items || []).find((x) => String(x.id) === String(p.storeItemId))) ||
+        null;
+      const purchaseType =
+        window.HubPurchase?.resolvePurchaseType?.(linkedStore || p) ||
+        window.HubPurchase?.resolvePurchaseType?.(p) ||
+        'INTERNAL';
+      if (purchaseType === 'EXTERNAL') return true;
       const site = window.HubReadySites?.siteForProduct?.(p);
       return Boolean(site && window.HubReadySites?.isLiveSite?.(site));
     });
@@ -543,7 +588,7 @@
     const paint = () => {
       const q = (searchInput?.value || '').trim().toLowerCase();
       const list = products.filter((p) => {
-        if (p.status === 'archived' || p.status === 'مؤرشف') return false;
+        if (p.status === 'archived' || p.status === 'مؤرشف' || p.status === 'بانتظار المراجعة' || p.status === 'pending_review') return false;
         if (active !== 'الكل' && p.category !== active) return false;
         if (!q) return true;
         const hay = `${p.sku} ${p.name} ${p.brand} ${p.platform} ${p.category}`.toLowerCase();
@@ -557,9 +602,18 @@
       grid.innerHTML = list.length
         ? list
             .map((p) => {
-              const site = window.HubReadySites?.siteForProduct?.(p);
-              const openUrl = siteHref(p);
-              const buyUrl = `store.html?buy=${encodeURIComponent(p.sku || p.id)}&site=${encodeURIComponent(site?.id || '')}`;
+              const P = window.HubPurchase;
+              const linkedStore =
+                (p.storeItemId &&
+                  (store?.get?.().empire?.salesStore?.items || []).find((x) => String(x.id) === String(p.storeItemId))) ||
+                p;
+              const purchaseType = P?.resolvePurchaseType?.(linkedStore) || P?.resolvePurchaseType?.(p) || 'INTERNAL';
+              const priceLabel = P?.formatUsd?.(p.price) || money(p.price);
+              const storeName = P?.storeLabel?.(linkedStore) || P?.storeLabel?.(p) || 'NAIOSh';
+              const avail = P?.availabilityLabel?.(p) || 'متاح';
+              const site = purchaseType === 'INTERNAL' ? window.HubReadySites?.siteForProduct?.(p) : null;
+              const openUrl = site ? siteHref(p) : 'store.html';
+              const buyUrl = `store.html?buy=${encodeURIComponent(p.storeItemId || p.sku || p.id)}`;
               const media =
                 site?.face || site?.logo
                   ? `<div class="shop-card-media has-face">${
@@ -572,22 +626,32 @@
                         : ''
                     }</div>`
                   : `<div class="shop-card-media"><div class="media-icon"><i class="fas ${esc(p.icon || 'fa-cube')}"></i></div></div>`;
-              return `<article class="shop-card">
+              const actionsHtml =
+                purchaseType === 'EXTERNAL'
+                  ? P.cardActionsHtml(linkedStore || p, { detailsHref: buyUrl })
+                  : `<button type="button" class="primary" data-cart-product="${esc(p.id || p.sku)}"><i class="fas fa-basket-shopping"></i> أضف للسلة</button>
+                    <a class="primary" href="${esc(buyUrl)}"><i class="fas fa-cart-shopping"></i> اشترِ الآن</a>
+                    ${
+                      site
+                        ? `<a href="${esc(openUrl)}" ${
+                            isLiveLaunch(site?.launchCode)
+                              ? `data-launch-code="${esc(site.launchCode)}" data-launch-mode="hub" target="_blank" rel="noopener noreferrer"`
+                              : ''
+                          }><i class="fas fa-arrow-up-left"></i> ادخل الموقع</a>`
+                        : ''
+                    }`;
+              return `<article class="shop-card" data-purchase-type="${esc(purchaseType)}">
                 ${media}
                 <div class="shop-card-body">
                   <h3>${esc(p.name)}</h3>
-                  <div class="shop-card-meta">${esc(p.productType || p.itemKind || 'رقمية')} · ${esc(p.category)}${p.subcategory ? ` / ${esc(p.subcategory)}` : ''} · ${esc(p.brand || '')}</div>
-                  <div class="shop-card-price">${money(p.price)}</div>
-                  <div class="shop-card-meta" style="margin-top:4px">${esc(p.status || 'متوفر')}${site ? ` · موقع: ${esc(site.nameAr)}` : ''}</div>
-                  ${metaLine(p)}
+                  <div class="hub-purchase-meta">
+                    <span>المتجر: ${esc(storeName)}</span>
+                    <span>${esc(avail)}</span>
+                  </div>
+                  <div class="shop-card-price price-usd">${esc(priceLabel)}</div>
+                  ${P?.purchaseStepsHtml?.(linkedStore || p) || ''}
                   <div class="shop-card-actions">
-                    <button type="button" class="primary" data-cart-product="${esc(p.id || p.sku)}"><i class="fas fa-basket-shopping"></i> أضف للسلة</button>
-                    <a class="primary" href="${esc(buyUrl)}"><i class="fas fa-cart-shopping"></i> اشتري</a>
-                    <a href="${esc(openUrl)}" ${
-                      isLiveLaunch(site?.launchCode)
-                        ? `data-launch-code="${esc(site.launchCode)}" data-launch-mode="hub" target="_blank" rel="noopener"`
-                        : ''
-                    }><i class="fas fa-arrow-up-left"></i> ادخل الموقع</a>
+                    ${actionsHtml}
                   </div>
                   ${actions('products', p.id)}
                 </div>
@@ -653,10 +717,32 @@
     });
 
     grid.addEventListener('click', (e) => {
+      const externalBtn = e.target.closest('[data-external-buy]');
+      if (externalBtn && window.HubPurchase?.confirmExternalOpen) {
+        e.preventDefault();
+        const id = externalBtn.getAttribute('data-external-buy');
+        const storeItems = store?.get?.().empire?.salesStore?.items || [];
+        const item =
+          storeItems.find((x) => String(x.id) === String(id)) ||
+          products.find((x) => String(x.storeItemId) === String(id) || String(x.id) === String(id)) || {
+            id,
+            purchaseType: 'EXTERNAL',
+            productUrl: externalBtn.getAttribute('data-external-url'),
+          };
+        window.HubPurchase.confirmExternalOpen(item).then((res) => {
+          if (res.cancelled) return;
+          if (!res.ok) toast(res.error || 'تعذر فتح المتجر');
+        });
+        return;
+      }
       const cartBtn = e.target.closest('[data-cart-product]');
       if (cartBtn && window.HubCart?.add) {
         const key = cartBtn.dataset.cartProduct;
         const p = products.find((x) => String(x.id) === key || String(x.sku) === key);
+        if (p && window.HubPurchase?.resolvePurchaseType?.(p) === 'EXTERNAL') {
+          toast('هذا المنتج يُشترى من متجر خارجي — استخدم زر الانتقال إلى المتجر.');
+          return;
+        }
         if (p) {
           window.HubCart.add({
             id: p.id || p.sku,
@@ -664,6 +750,7 @@
             price: p.price,
             points: p.points || 0,
             platformCode: p.platformCode || '',
+            purchaseType: 'INTERNAL',
           });
           toast(`أُضيف للسلة: ${p.name}`);
         }

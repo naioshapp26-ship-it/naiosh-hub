@@ -241,6 +241,29 @@
     return normalizeStore(state.stores[idx]);
   };
 
+  const updateSubmission = (id, patch = {}) => {
+    const idx = (subs.items || []).findIndex((x) => x.id === id || x.submission_id === id);
+    if (idx < 0) return null;
+    subs.items[idx] = Object.assign({}, subs.items[idx], patch, { updatedAt: nowIso() });
+    saveSubs();
+    return subs.items[idx];
+  };
+
+  const approveSubmission = (id, actor = 'Admin') => {
+    const row = updateSubmission(id, { status: 'Approved/Published', reviewedBy: actor, reviewedAt: nowIso() });
+    if (!row) return null;
+    try {
+      const items = window.HubStore?.get?.()?.empire?.salesStore?.items || [];
+      const item = items.find((x) => x.submissionId === row.id || x.productUrl === row.productUrl);
+      if (item) {
+        item.status = 'active';
+        item.purchaseType = row.storeId && row.storeId !== 'INTERNAL' ? 'EXTERNAL' : item.purchaseType || 'EXTERNAL';
+        window.HubStore?.save?.();
+      }
+    } catch (_) {}
+    return row;
+  };
+
   window.HubStoresRegistry = {
     list: (opts) => list(opts).map(normalizeStore),
     listActive,
@@ -248,6 +271,8 @@
     addStore,
     updateStore,
     createSubmission,
+    updateSubmission,
+    approveSubmission,
     validateProductUrl,
     listSubmissions: () => subs.items.slice(),
     reload: () => {

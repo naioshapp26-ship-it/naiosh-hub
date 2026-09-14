@@ -230,9 +230,18 @@
     }
     const href = mode === 'standalone' ? getStandaloneUrl(app) : getDirectLaunchUrl(app);
     window.HubStore?.recordLaunch?.(app.code, mode);
+    if (!href || href === 'about:blank' || String(href).trim() === '') {
+      if (window.HubActions?.toast) window.HubActions.toast('رابط النظام غير متوفر حالياً');
+      return null;
+    }
     const useBlank = target === '_blank' || app.openInNewTab || app.isLive;
-    if (useBlank) window.open(href, '_blank', 'noopener');
-    else window.location.href = href;
+    if (useBlank) {
+      if (!/^https?:\/\//i.test(href) && !href.startsWith('/') && !href.endsWith('.html')) {
+        if (window.HubActions?.toast) window.HubActions.toast('رابط غير صالح للفتح');
+        return null;
+      }
+      window.open(href, '_blank', 'noopener,noreferrer');
+    } else window.location.href = href;
     return href;
   };
 

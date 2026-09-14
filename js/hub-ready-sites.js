@@ -960,10 +960,11 @@
       const live = window.HubLiveSystems?.isLive?.(site.launchCode);
       return window.HubLauncher.launch(site.launchCode, { mode: 'hub', force: force || live || site.live });
     }
-    if (/^https?:\/\//i.test(site.href)) {
-      window.open(site.href, '_blank', 'noopener');
+    if (/^https?:\/\//i.test(site.href) && String(site.href).trim()) {
+      window.open(site.href, '_blank', 'noopener,noreferrer');
       return site.href;
     }
+    if (!site.href || site.href === 'about:blank') return null;
     window.location.href = site.href;
     return site.href;
   };
@@ -1029,11 +1030,21 @@
     if (isExcluded(item.title) || isExcluded(item.brand)) {
       return { ok: false, error: 'هذا المنتج غير مدرج (كونزو مستبعد)' };
     }
+    const purchaseType = window.HubPurchase?.resolvePurchaseType?.(item) || 'INTERNAL';
+    if (purchaseType === 'EXTERNAL') {
+      return {
+        ok: false,
+        error: 'هذا المنتج يُشترى من متجر خارجي. استخدم زر الانتقال إلى المتجر.',
+        external: true,
+        item,
+      };
+    }
     const buyer = window.HubAuth?.getUser?.()?.email || 'عميل هوب';
     const order = store.placeStoreOrder(itemId, buyer);
     if (!order) return { ok: false, error: 'تعذّر إتمام الشراء' };
     const site = siteForProduct(item);
-    return { ok: true, order, site, openHref: site?.href || 'store.html' };
+    const openHref = site?.href && site.href !== 'about:blank' ? site.href : '';
+    return { ok: true, order, site, openHref, purchaseType: 'INTERNAL' };
   };
 
   window.HubReadySites = {

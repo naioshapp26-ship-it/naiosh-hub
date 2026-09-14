@@ -6804,34 +6804,46 @@ const HubStore = (() => {
   const addStoreItem = (payload) => {
     const store = get().empire.salesStore;
     if (!store) return null;
-    const title = payload.title || payload.name || '';
+    const normalized =
+      window.HubPurchase?.normalizeIncomingPayload?.(payload) || payload || {};
+    const title = normalized.title || normalized.name || '';
     if (!title) return null;
     const connectors = window.HubMarketplaceData?.MARKETPLACE_CONNECTORS || [];
-    const marketplaces = Array.isArray(payload.marketplaces)
-      ? payload.marketplaces
-      : parseMarketplacePayload(payload, connectors);
+    const marketplaces = Array.isArray(normalized.marketplaces)
+      ? normalized.marketplaces
+      : parseMarketplacePayload(normalized, connectors);
+    const purchaseType = String(normalized.purchaseType || 'INTERNAL').toUpperCase() === 'EXTERNAL'
+      ? 'EXTERNAL'
+      : 'INTERNAL';
+    const productUrl = (normalized.productUrl || normalized.url || '').trim();
     const item = {
       id: uid('st'),
       title,
       name: title,
-      desc: payload.desc || payload.description || '',
-      brand: payload.brand || 'نايوش هوب',
-      platform: payload.platform || payload.platformCode || 'هوب',
-      price: Number(payload.price) || 0,
-      points: Number(payload.points) || 0,
-      category: payload.category || 'تشغيل',
-      platformCode: payload.platformCode || '',
-      stock: Number(payload.stock) || 10,
-      sku: payload.sku || `ST-${Date.now().toString().slice(-6)}`,
-      itemKind: payload.itemKind || payload.kind || 'منتج',
-      status: 'active',
-      badge: payload.badge || (payload.itemKind === 'خدمة' ? 'خدمة' : 'جديد'),
+      desc: normalized.desc || normalized.description || normalized.shortDesc || '',
+      brand: normalized.brand || 'نايوش هوب',
+      platform: normalized.platform || normalized.platformCode || 'هوب',
+      price: Number(normalized.price != null ? normalized.price : normalized.priceUsd) || 0,
+      currency: 'USD',
+      points: Number(normalized.points) || 0,
+      category: normalized.category || 'تشغيل',
+      platformCode: normalized.platformCode || '',
+      stock: Number(normalized.stock != null ? normalized.stock : normalized.quantity) || 10,
+      sku: normalized.sku || `ST-${Date.now().toString().slice(-6)}`,
+      itemKind: normalized.itemKind || normalized.kind || 'منتج',
+      status: normalized.status === 'pending_review' ? 'pending_review' : 'active',
+      badge: normalized.badge || (normalized.itemKind === 'خدمة' ? 'خدمة' : 'جديد'),
       marketplaces,
-      mirrorToCatalog: payload.mirrorToCatalog !== false,
-      ...pickCommonMeta(payload),
+      purchaseType,
+      productUrl: purchaseType === 'EXTERNAL' ? productUrl : '',
+      storeId: normalized.storeId || '',
+      storeName: normalized.storeName || '',
+      submissionId: normalized.submissionId || '',
+      mirrorToCatalog: normalized.mirrorToCatalog !== false,
+      ...pickCommonMeta(normalized),
     };
     store.items.unshift(item);
-    pushFeed('decision', `رفع على المتجر: ${item.title} · ${item.category}`);
+    pushFeed('decision', `رفع على المتجر: ${item.title} · ${item.purchaseType}`);
 
     if (item.mirrorToCatalog !== false) {
       const empire = get().empire;
@@ -6844,14 +6856,20 @@ const HubStore = (() => {
         platform: item.platform || 'متجر هوب',
         category: item.category,
         price: item.price,
+        currency: 'USD',
         stock: item.stock,
         sold: 0,
-        status: 'متوفر',
+        status: item.status === 'pending_review' ? 'بانتظار المراجعة' : 'متوفر',
         movement: 'متوسط',
         icon: item.itemKind === 'خدمة' ? 'fa-concierge-bell' : 'fa-bag-shopping',
         storeItemId: item.id,
         itemKind: item.itemKind,
-        ...pickCommonMeta(payload),
+        purchaseType: item.purchaseType,
+        productUrl: item.productUrl,
+        storeId: item.storeId,
+        storeName: item.storeName,
+        marketplaces: item.marketplaces,
+        ...pickCommonMeta(normalized),
       });
     }
     save();

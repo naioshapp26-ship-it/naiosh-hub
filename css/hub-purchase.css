@@ -1,0 +1,137 @@
+/* Purchase UX — EXTERNAL confirm + INTERNAL clarity */
+
+.hub-purchase-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.hub-purchase-confirm__card {
+  width: min(480px, 100%);
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  border-top: 4px solid #d70000;
+}
+
+.hub-purchase-confirm__card h3 {
+  margin: 0 0 10px;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.hub-purchase-confirm__card p {
+  margin: 0 0 10px;
+  color: #445;
+  font-weight: 650;
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+.hub-purchase-confirm__hint {
+  color: #b91c1c !important;
+  font-size: 13px !important;
+}
+
+.hub-purchase-confirm__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.hub-purchase-confirm .btn,
+.hub-purchase-cta-hint + .btn {
+  min-height: 44px;
+}
+
+.hub-purchase-confirm .btn-primary {
+  background: #d70000;
+  border: 1px solid #d70000;
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hub-purchase-confirm .btn-outline {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  color: #111;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hub-purchase-steps {
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid #fee2e2;
+  background: #fff8f8;
+  border-radius: 12px;
+}
+
+.hub-purchase-steps strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.hub-purchase-steps ol {
+  margin: 0;
+  padding-inline-start: 1.2rem;
+  color: #445;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.hub-purchase-cta-hint {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hub-purchase-unavailable {
+  display: block;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 800;
+  margin-top: 6px;
+}
+
+.market-card .hub-purchase-meta,
+.shop-card .hub-purchase-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #445;
+}
+
+.market-card .hub-purchase-meta span,
+.shop-card .hub-purchase-meta span {
+  background: #f5f6f8;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.market-card .price-usd,
+.shop-card-price.price-usd {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #d70000;
+}

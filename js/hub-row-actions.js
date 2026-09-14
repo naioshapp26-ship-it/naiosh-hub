@@ -749,47 +749,28 @@
       title: 'رفع منتج نايوش',
       fields: [
         { id: 'name', label: 'اسم المنتج', required: true },
-        { id: 'brand', label: 'العلامة / العلامة التجارية', value: 'نايوش هوب' },
-        {
-          id: 'productType',
-          label: 'نوع المنتج',
-          type: 'select',
-          required: true,
-          options: [
-            { value: 'رقمية', label: 'رقمية' },
-            { value: 'خدمية', label: 'خدمية' },
-            { value: 'عينية', label: 'عينية' },
-          ],
-          value: 'رقمية',
-        },
         {
           id: 'category',
-          label: 'التصنيف',
+          label: 'الفئة',
           type: 'select',
           required: true,
           optionsFrom: 'storeCategories',
           value: 'تشغيل',
         },
-        {
-          id: 'subcategory',
-          label: 'التصنيف الفرعي',
-          type: 'select',
-          optionsFrom: 'subcategories',
-          value: '',
-        },
-        { id: 'price', label: 'السعر', value: '1000', type: 'number' },
-        { id: 'stock', label: 'المخزون', value: '20', type: 'number' },
-        { id: 'sku', label: 'رمز SKU', value: '' },
-        { id: 'adStartDate', label: 'تاريخ بداية الإعلان', type: 'date', required: true, value: new Date().toISOString().slice(0, 10) },
-        { id: 'adEndDate', label: 'تاريخ نهاية الإعلان', type: 'date', required: true, value: '' },
-        { id: 'desc', label: 'شرح مبسط عن المنتج', type: 'textarea', required: true, value: '' },
+        { id: 'desc', label: 'وصف مختصر', type: 'textarea', required: true, value: '' },
+        { id: 'price', label: 'السعر بالدولار (USD)', value: '49.99', type: 'number', required: true },
+        { id: 'brand', label: 'الماركة (اختياري)', value: 'نايوش هوب' },
+        { id: 'sku', label: 'رمز المنتج SKU (اختياري)', value: '' },
+        { id: 'stock', label: 'الكمية المتاحة', value: '20', type: 'number' },
       ],
-      includeProductExtras: true,
+      includeProductExtras: false,
       save: (v) =>
         window.HubStore.addProduct?.({
           ...v,
-          itemKind: v.productType,
-          icon: v.productType === 'خدمية' ? 'fa-concierge-bell' : v.productType === 'عينية' ? 'fa-box' : 'fa-cloud',
+          currency: 'USD',
+          purchaseType: 'INTERNAL',
+          itemKind: v.productType || 'رقمية',
+          icon: 'fa-bag-shopping',
         }),
     },
     incubators: {
@@ -1300,7 +1281,10 @@
       if (!values.title) values.title = `إعلان: ${proj.projectName}`;
     }
 
-    const meta = await collectCommonMeta();
+    const meta =
+      entity === 'products' || entity === 'store'
+        ? {}
+        : await collectCommonMeta();
     if (meta.error) return toast(meta.error);
     Object.assign(values, meta);
     if (!values.brand && values.companyName) values.brand = values.companyName;
@@ -1320,6 +1304,11 @@
   };
 
   const openAdd = (entity) => {
+    // Customer-friendly product/store upload uses the full-page wizard
+    if (entity === 'products' || entity === 'store') {
+      window.location.href = 'store.html#upload';
+      return;
+    }
     const form = ADD_FORMS[entity];
     if (!form) return toast('استخدم نموذج الإضافة في الصفحة');
     const isPublishable = entity === 'products' || entity === 'ads';
@@ -1330,9 +1319,9 @@
       if (endField && !endField.value) endField.value = defaultEnd.toISOString().slice(0, 10);
     }
     const kickers = {
-      products: 'منتجات رقمية · خدمية · عينية — توجيه حسب التصنيف والنوع عبر الفروع والحاضنات والمنصات',
+      products: 'ارفع منتجك بخطوات بسيطة — السعر بالدولار',
       ads: 'إدارة إعلانات متعددة الطبقات + اختيار المشروع (خاصة · خفيفة · منزلية) من كتالوج نايوش',
-      store: 'نموذج رفع على المتجر — مطابق لنموذج المنتجات',
+      store: 'اختر المتجر ثم أدخل بيانات المنتج والرابط والسعر',
     };
     openModal({
       title: form.title,
@@ -1359,7 +1348,7 @@
           : ''
       }
       ${form.includeMarketplaces ? marketplaceFormHtml() : ''}
-      ${entity === 'store' ? '' : commonMetaFormHtml()}`,
+      ${entity === 'store' || entity === 'products' ? '' : commonMetaFormHtml()}`,
       foot: isPublishable
         ? `
         <button type="button" class="hub-erp-btn ghost" data-hub-modal-close title="إلغاء"><i class="fas fa-xmark"></i> إلغاء</button>

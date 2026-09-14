@@ -14,7 +14,7 @@
   const paint = () => {
     const items = window.HubCart.read();
     if (!items.length) {
-      list.innerHTML = '<p class="hub-feature-section-lead">السلة فارغة — أضف منتجات من المتجر أو المنتجات.</p>';
+      list.innerHTML = '<p class="hub-feature-section-lead">السلة فارغة — أضف منتجات داخلية من المتجر. للمنتجات الخارجية استخدم «الانتقال إلى المتجر» على بطاقة المنتج.</p>';
       summary.innerHTML = '';
       return;
     }
@@ -39,7 +39,7 @@
       <h3>الإجمالي: ${money(window.HubCart.total())}</h3>
       <p>${window.HubCart.count()} عنصر</p>
       <div class="hub-feature-actions">
-        <button type="button" class="btn btn-primary" data-checkout>إتمام الشراء وتفعيل الصلاحية</button>
+        <button type="button" class="btn btn-primary" data-checkout>إتمام الشراء داخل نايوش</button>
         <a class="btn btn-secondary" href="store.html">متابعة التسوق</a>
         <a class="btn btn-secondary" href="office.html">مكتبي</a>
       </div>
