@@ -7232,7 +7232,10 @@ const HubStore = (() => {
     if (workflowStatus === 'active' || workflowStatus === 'approved') {
       const start = ad.adStartDate ? new Date(ad.adStartDate) : null;
       const now = new Date();
-      if (ad.scheduleMode === 'scheduled' && start && start > now) {
+      const startIsFuture = start && !Number.isNaN(start.getTime()) && start.getTime() > now.getTime();
+      ad.approvedBy = extra.approvedBy || actor;
+      ad.approvedAt = extra.approvedAt || nowIso();
+      if (startIsFuture) {
         ad.workflowStatus = 'scheduled';
         ad.publishStatus = 'deferred';
         ad.status = 'paused';

@@ -570,6 +570,11 @@
       '<button type="button" class="ads-ws-btn ghost" data-ads-edit="' +
       esc(ad.id) +
       '">تعديل</button>' +
+      (w === 'rejected'
+        ? '<button type="button" class="ads-ws-btn primary" data-ads-resubmit="' +
+          esc(ad.id) +
+          '">تعديل وإعادة الإرسال</button>'
+        : '') +
       '<button type="button" class="ads-ws-btn ghost" data-ads-toggle="' +
       esc(ad.id) +
       '">' +
@@ -1046,6 +1051,14 @@
       btn.addEventListener('click', function () {
         var ad = listings().find(function (x) { return x.id === btn.getAttribute('data-ads-edit'); });
         if (ad) openWizard(ad);
+      });
+    });
+    root.querySelectorAll('[data-ads-resubmit]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var ad = listings().find(function (x) { return x.id === btn.getAttribute('data-ads-resubmit'); });
+        if (!ad) return;
+        openWizard(ad);
+        alert('عدّل الإعلان ثم اضغط «إرسال للموافقة» لإعادته إلى طلبات العملاء.');
       });
     });
     root.querySelectorAll('[data-ads-toggle]').forEach(function (btn) {

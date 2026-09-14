@@ -65,9 +65,12 @@
     'Pending Approval': 'بانتظار الموافقة',
     'Proposal Sent': 'عرض مرسل',
     'In Progress': 'قيد التنفيذ',
-    Approved: 'تمت الموافقة',
-    Published: 'منشور',
-    Unpublished: 'موقوف',
+    Approved: 'مقبول',
+    Published: 'نشط',
+    Unpublished: 'متوقف',
+    Scheduled: 'مجدول',
+    Active: 'نشط',
+    Ended: 'منتهي',
     Completed: 'مكتمل',
     Rejected: 'مرفوض',
     Cancelled: 'ملغي',
@@ -518,10 +521,13 @@
       rejectionReason: ad.rejectionReason || '',
     };
     if (row) {
+      const prevStatus = row.status;
+      const nextStatus =
+        silent && (STATUS_RANK[row.status] || 0) > (STATUS_RANK[status] || 0) ? row.status : status;
       Object.assign(row, {
         title: `طلب نشر إعلان: ${ad.title || ad.adCode || ad.id}`,
         description: ad.desc || ad.headline || '',
-        status: silent && (STATUS_RANK[row.status] || 0) > (STATUS_RANK[status] || 0) ? row.status : status,
+        status: nextStatus,
         requestType: 'Ad Submission',
         requestTypeLabel: 'طلب نشر إعلان',
         referenceType: 'Ad',
@@ -535,7 +541,15 @@
         adSnapshot: snapshot,
         updatedAt: nowIso(),
         customerName: ad.createdBy || row.customerName || actor,
+        adPublishStatus: ad.workflowStatus || row.adPublishStatus || '',
       });
+      if (status === 'Pending Review' && !silent && (prevStatus === 'Rejected' || prevStatus === 'Needs Changes')) {
+        row.rejectionReason = '';
+        row.rejectedBy = '';
+        row.rejectedAt = '';
+        row.timeline = row.timeline || [];
+        row.timeline.push({ at: nowIso(), by: actor, text: 'إعادة إرسال للمراجعة', key: 'resubmitted' });
+      }
       if (!silent) save();
       return row;
     }
@@ -693,6 +707,28 @@
     }
   };
 
+  const pushCustomerNotification = ({ title, message, link, source }) => {
+    try {
+      const bag = JSON.parse(localStorage.getItem('naiosh_hub_notifications_v1') || '{"items":[]}');
+      if (!Array.isArray(bag.items)) bag.items = [];
+      bag.items.unshift({
+        id: `n-${Date.now()}`,
+        title: title || 'إشعار',
+        message: message || '',
+        at: nowIso(),
+        read: false,
+        source: source || 'طلبات العملاء',
+        link: link || '',
+      });
+      bag.items = bag.items.slice(0, 100);
+      localStorage.setItem('naiosh_hub_notifications_v1', JSON.stringify(bag));
+      window.dispatchEvent(new CustomEvent('hub-notifications-changed'));
+    } catch (_) {}
+  };
+
+  const isPendingReview = (row) =>
+    row && ['New', 'Pending Review', 'Under Review', 'Needs Changes'].includes(row.status);
+
   const approveAndPublish = (requestId, actor = 'مشغّل') => {
     const row = get(requestId);
     if (!row || row.referenceType !== 'Article') return null;
@@ -721,21 +757,12 @@
       newStatus: 'Published',
       detail: row.referenceId,
     });
-    try {
-      const bag = JSON.parse(localStorage.getItem('naiosh_hub_notifications_v1') || '{"items":[]}');
-      if (!Array.isArray(bag.items)) bag.items = [];
-      bag.items.unshift({
-        id: `n-${Date.now()}`,
-        title: 'تمت الموافقة على مقالك ونشره بنجاح',
-        message: `Article ${row.referenceId} · Request ${row.id}`,
-        at: stamp,
-        read: false,
-        source: 'المقالات',
-        link: `blog.html#mine/${row.referenceId}`,
-      });
-      bag.items = bag.items.slice(0, 100);
-      localStorage.setItem('naiosh_hub_notifications_v1', JSON.stringify(bag));
-    } catch (_) {}
+    pushCustomerNotification({
+      title: 'تمت الموافقة على مقالك ونشره بنجاح',
+      message: `Article ${row.referenceId} · Request ${row.id}`,
+      source: 'المقالات',
+      link: `blog.html#mine/${row.referenceId}`,
+    });
     if (window.HubArticles?.publishNow) {
       row._syncingArticle = true;
       try {
@@ -749,6 +776,143 @@
         row._syncingArticle = false;
       }
     }
+    save();
+    return row;
+  };
+
+  const approveRequest = (requestId, actor = 'مشغّل') => {
+    const row = get(requestId);
+    if (!row) return null;
+    if (row.referenceType === 'Article' || row.requestType === 'Article Submission') {
+      return approveAndPublish(requestId, actor);
+    }
+
+    const stamp = nowIso();
+    const old = row.status;
+    row.approvedBy = actor;
+    row.approvedAt = stamp;
+    row.updatedAt = stamp;
+    row.timeline = row.timeline || [];
+
+    if (row.referenceType === 'Ad' || row.requestType === 'Ad Submission') {
+      let adStatus = 'active';
+      try {
+        if (window.HubStore?.setAdWorkflowStatus && row.referenceId) {
+          const updated = window.HubStore.setAdWorkflowStatus(
+            row.referenceId,
+            'active',
+            { approvedBy: actor, approvedAt: stamp },
+            actor
+          );
+          adStatus = updated?.workflowStatus || 'active';
+          if (updated) updated.requestId = row.id;
+        }
+      } catch (_) {}
+      row.status = 'Approved';
+      row.adPublishStatus = adStatus;
+      row.publishedAt = stamp;
+      row.timeline.push({
+        at: stamp,
+        by: actor,
+        text: adStatus === 'scheduled' ? 'موافقة — الإعلان مجدول' : 'موافقة ونشر الإعلان',
+        key: 'approved_ad',
+      });
+      pushAudit({
+        action: 'Approved',
+        requestId: row.id,
+        performedBy: actor,
+        oldStatus: old,
+        newStatus: row.status,
+        customer: row.company || row.customerName,
+        sourceModule: row.sourceModule,
+        detail: `${row.referenceId} · ${adStatus}`,
+      });
+      pushCustomerNotification({
+        title: 'تمت الموافقة على إعلانك',
+        message: `${row.title || row.referenceId} · ${row.id}`,
+        source: 'إدارة الإعلانات',
+        link: 'ads.html',
+      });
+      save();
+      return row;
+    }
+
+    // Generic product/service/other requests
+    row.status = 'Approved';
+    row.timeline.push({ at: stamp, by: actor, text: 'تمت الموافقة على الطلب', key: 'approved' });
+    pushAudit({
+      action: 'Approved',
+      requestId: row.id,
+      performedBy: actor,
+      oldStatus: old,
+      newStatus: 'Approved',
+      customer: row.company || row.customerName,
+      sourceModule: row.sourceModule,
+      detail: row.referenceId || '',
+    });
+    pushCustomerNotification({
+      title: 'تمت الموافقة على طلبك',
+      message: `${row.title || row.id}`,
+      source: row.sourceModule || 'طلبات العملاء',
+      link: row.sourceUrl || 'dashboard.html#posha-clients',
+    });
+    save();
+    return row;
+  };
+
+  const rejectRequest = (requestId, actor = 'مشغّل', reason = '', opts = {}) => {
+    const row = get(requestId);
+    if (!row) return null;
+    const stamp = nowIso();
+    const old = row.status;
+    const note = String(reason || '').trim() || 'مرفوض';
+    row.status = 'Rejected';
+    row.rejectedBy = actor;
+    row.rejectedAt = stamp;
+    row.rejectionReason = note;
+    row.allowResubmit = opts.allowResubmit !== false;
+    row.updatedAt = stamp;
+    row.timeline = row.timeline || [];
+    row.timeline.push({ at: stamp, by: actor, text: `رفض: ${note}`, key: 'rejected' });
+    pushAudit({
+      action: 'Rejected',
+      requestId: row.id,
+      performedBy: actor,
+      oldStatus: old,
+      newStatus: 'Rejected',
+      customer: row.company || row.customerName,
+      sourceModule: row.sourceModule,
+      detail: note,
+    });
+
+    if (row.referenceType === 'Article' && row.referenceId && window.HubArticles?.setStatus) {
+      row._syncingArticle = true;
+      try {
+        window.HubArticles.setStatus(row.referenceId, 'Rejected', actor, note, { skipRequestSync: true });
+      } finally {
+        row._syncingArticle = false;
+      }
+    }
+    if ((row.referenceType === 'Ad' || row.requestType === 'Ad Submission') && row.referenceId) {
+      try {
+        window.HubStore?.setAdWorkflowStatus?.(row.referenceId, 'rejected', { rejectionReason: note }, actor);
+      } catch (_) {}
+    }
+
+    pushCustomerNotification({
+      title:
+        row.referenceType === 'Ad' || row.requestType === 'Ad Submission'
+          ? 'تم رفض إعلانك'
+          : row.referenceType === 'Article'
+            ? 'تم رفض مقالك'
+            : 'تم رفض طلبك',
+      message: note,
+      source: row.sourceModule || 'طلبات العملاء',
+      link: row.sourceUrl || '',
+    });
+    try {
+      addMessage(requestId, `سبب الرفض: ${note}`, actor, { internal: false });
+    } catch (_) {}
     save();
     return row;
   };
@@ -787,6 +951,7 @@
     const row = get(requestId);
     if (!row) return null;
     if (row.referenceType === 'Article') return approveAndPublish(requestId, actor);
+    if (row.referenceType === 'Ad' || row.requestType === 'Ad Submission') return approveRequest(requestId, actor);
     return updateStatus(requestId, 'In Progress', actor, 'إعادة تفعيل');
   };
 
@@ -1102,6 +1267,9 @@
     ensureForAd,
     mapArticleStatus,
     approveAndPublish,
+    approveRequest,
+    rejectRequest,
+    isPendingReview,
     pauseRequest,
     resumeRequest,
     archiveRequest,

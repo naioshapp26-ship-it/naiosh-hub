@@ -583,7 +583,96 @@
   position: relative;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
+  min-width: 220px;
+  align-items: center;
+}
+
+.posha-req-actions .btn-danger {
+  background: #fff;
+  border: 1px solid #fda29b;
+  color: #b42318;
+}
+
+.posha-req-actions .btn-danger:hover {
+  background: #fef3f2;
+}
+
+.posha-req-actions .btn-primary {
+  white-space: nowrap;
+}
+
+.posha-req-actions-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  position: relative;
+}
+
+.posha-more-menu a {
+  text-decoration: none;
+  color: inherit;
+  padding: 8px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+.posha-more-menu a:hover {
+  background: #f3f4f6;
+}
+
+.posha-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.posha-modal {
+  width: min(480px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.18);
+}
+
+.posha-modal h3 {
+  margin: 0 0 6px;
+}
+
+.posha-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0;
+  font-weight: 700;
+}
+
+.posha-field textarea {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  resize: vertical;
+}
+
+.posha-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.posha-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .posha-more-menu {

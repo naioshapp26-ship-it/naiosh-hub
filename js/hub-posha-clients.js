@@ -427,6 +427,86 @@
     return (cr()?.STATUS_AR && cr().STATUS_AR[st]) || st || '—';
   }
 
+  function displayReqStatus(r) {
+    if (!r) return '—';
+    if (requestKind(r) === 'ad') {
+      const ad = findAd(r.referenceId);
+      const w = ad?.workflowStatus || r.adPublishStatus || '';
+      if (w === 'scheduled') return 'مجدول';
+      if (w === 'active') return 'نشط';
+      if (w === 'paused' && r.status === 'Approved') return 'متوقف';
+      if (w === 'ended') return 'منتهي';
+      if (w === 'rejected' || r.status === 'Rejected') return 'مرفوض';
+      if (w === 'pending_review' || isPendingReq(r)) return 'بانتظار المراجعة';
+    }
+    if (r.status === 'Approved') return 'مقبول';
+    if (r.status === 'Published') return 'نشط';
+    if (r.status === 'Unpublished') return 'متوقف';
+    return statusAr(r.status);
+  }
+
+  function moreMenuHtml(r) {
+    if (state.moreId !== r.id) return '';
+    const sourceHref = r.sourceUrl || (requestKind(r) === 'ad' ? 'ads.html' : requestKind(r) === 'article' ? 'blog.html' : '');
+    return `<div class="posha-more-menu" role="menu">
+      <button type="button" data-req-open="${esc(r.id)}" data-req-tab-pref="timeline">سجل الطلب</button>
+      <button type="button" data-req-copy-id="${esc(r.requestId || r.id)}">نسخ Request ID</button>
+      <button type="button" data-open-posha="${esc(r.email || '')}">فتح العميل</button>
+      ${sourceHref ? `<a href="${esc(sourceHref)}" target="_blank" rel="noopener">فتح المصدر</a>` : ''}
+      <button type="button" data-req-delete="${esc(r.id)}">حذف</button>
+    </div>`;
+  }
+
+  function openRejectModal(r) {
+    document.getElementById('posha-reject-modal')?.remove();
+    const title =
+      requestKind(r) === 'ad'
+        ? 'رفض طلب نشر الإعلان'
+        : requestKind(r) === 'article'
+          ? 'رفض طلب نشر المقال'
+          : 'رفض الطلب';
+    const modal = document.createElement('div');
+    modal.id = 'posha-reject-modal';
+    modal.className = 'posha-modal-overlay';
+    modal.innerHTML = `<div class="posha-modal" role="dialog" aria-modal="true">
+      <h3>${esc(title)}</h3>
+      <p class="posha-muted">${esc(r.title || r.requestId || r.id)}</p>
+      <label class="posha-field"><span>سبب الرفض *</span>
+        <textarea id="posha-reject-reason" rows="4" placeholder="اكتب سبب الرفض للعميل..."></textarea>
+      </label>
+      <label class="posha-check"><input type="checkbox" id="posha-reject-resubmit" checked /> السماح للعميل بالتعديل وإعادة الإرسال</label>
+      <div class="posha-modal-actions">
+        <button type="button" class="btn btn-ghost" data-reject-cancel>إلغاء</button>
+        <button type="button" class="btn btn-danger" data-reject-confirm>تأكيد الرفض</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    const close = () => modal.remove();
+    modal.querySelector('[data-reject-cancel]').onclick = close;
+    modal.onclick = (e) => {
+      if (e.target === modal) close();
+    };
+    modal.querySelector('[data-reject-confirm]').onclick = () => {
+      const reason = String(modal.querySelector('#posha-reject-reason')?.value || '').trim();
+      if (!reason) {
+        alert('سبب الرفض مطلوب');
+        return;
+      }
+      const allow = !!modal.querySelector('#posha-reject-resubmit')?.checked;
+      cr()?.rejectRequest?.(r.id, actor(), reason, { allowResubmit: allow }) ||
+        cr()?.updateStatus?.(r.id, 'Rejected', actor(), reason);
+      close();
+      state.reqView = 'rejected';
+      state.reqId = null;
+      state.moreId = null;
+      paintBody();
+      try {
+        document.dispatchEvent(new CustomEvent('posha-counters-refresh'));
+      } catch (_) {}
+    };
+    setTimeout(() => modal.querySelector('#posha-reject-reason')?.focus(), 30);
+  }
+
   function actor() {
     try {
       const u = window.HubAuth?.getUser?.() || JSON.parse(localStorage.getItem('hubUser') || '{}');
@@ -480,39 +560,98 @@
     });
   }
 
+  function requestKind(r) {
+    if (!r) return 'general';
+    if (r.referenceType === 'Ad' || r.requestType === 'Ad Submission') return 'ad';
+    if (r.referenceType === 'Article' || r.requestType === 'Article Submission') return 'article';
+    if (String(r.requestType || '').toLowerCase().includes('product') || r.referenceType === 'Product') return 'product';
+    if (String(r.requestType || '').toLowerCase().includes('service') || r.referenceType === 'Service') return 'service';
+    return 'general';
+  }
+
+  function isPendingReq(r) {
+    return cr()?.isPendingReview?.(r) || ['New', 'Pending Review', 'Under Review', 'Needs Changes'].includes(r?.status);
+  }
+
+  function findAd(refId) {
+    if (!refId) return null;
+    const list = window.HubStore?.get?.()?.empire?.adsStudio?.listings || [];
+    return list.find((x) => x.id === refId || x.adCode === refId) || null;
+  }
+
+  function primaryReqActionsHtml(r) {
+    if (!r) return '';
+    const pending = isPendingReq(r);
+    const kind = requestKind(r);
+    const openBtn = `<button type="button" class="btn btn-dark btn-sm" data-req-open="${esc(r.id)}">عرض التفاصيل</button>`;
+    const moreBtn = `<button type="button" class="btn btn-ghost btn-sm" data-req-more="${esc(r.id)}" title="المزيد">⋮</button>${moreMenuHtml(r)}`;
+    if (!pending) {
+      if (state.tab === 'approved') {
+        const ad = kind === 'ad' ? findAd(r.referenceId) : null;
+        const extra =
+          kind === 'ad' && ad?.status === 'active'
+            ? `<a class="btn btn-ghost btn-sm" href="index.html" target="_blank" rel="noopener">معاينة الإعلان على الموقع</a>`
+            : '';
+        return `<div class="posha-req-actions-inner">${openBtn}
+          <button type="button" class="btn btn-ghost btn-sm" data-req-edit-linked="${esc(r.id)}">تعديل</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-req-pause-linked="${esc(r.id)}">إيقاف</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-req-delete="${esc(r.id)}">حذف</button>
+          ${moreBtn}
+          ${extra}</div>`;
+      }
+      return `<div class="posha-req-actions-inner">${openBtn}${moreBtn}</div>`;
+    }
+    const approveLabel =
+      kind === 'ad' || kind === 'article' ? '✓ قبول' : '✓ قبول';
+    return `<div class="posha-req-actions-inner">${openBtn}
+      <button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">${approveLabel}</button>
+      <button type="button" class="btn btn-danger btn-sm" data-req-reject="${esc(r.id)}">✕ رفض</button>
+      ${moreBtn}</div>`;
+  }
+
   function renderRequestsTable(rows) {
+    const approvedTab = state.tab === 'approved';
     return `<div class="table-wrap posha-req-table-wrap"><table class="data-table posha-table posha-req-table">
         <thead><tr>
           <th>Request ID</th><th>نوع الطلب</th><th>العميل</th><th>العنوان / الموضوع</th>
           <th>المصدر</th><th>Reference ID</th>
-          <th>تاريخ الطلب</th><th>الحالة</th><th>المسؤول</th><th>الإجراءات</th>
+          <th>تاريخ الطلب</th>${approvedTab ? '<th>تاريخ الموافقة</th>' : ''}
+          <th>الحالة</th><th>المسؤول</th><th>الإجراءات</th>
         </tr></thead>
         <tbody>
           ${rows
             .map((r) => {
               const typeLabel = r.requestTypeLabel || (cr().TYPE_LABELS_AR || {})[r.requestType] || r.requestType;
-              const isArt = r.referenceType === 'Article' || r.requestType === 'Article Submission';
-              const artActs =
-                isArt && !['Published', 'Rejected', 'Archived'].includes(r.status)
-                  ? `<button type="button" class="btn btn-primary btn-sm" data-req-approve-publish="${esc(r.id)}">موافقة ونشر</button>`
-                  : '';
-              return `<tr>
+              const sourceHref = r.sourceUrl || (requestKind(r) === 'ad' ? 'ads.html' : requestKind(r) === 'article' ? 'blog.html' : '');
+              const refHref =
+                requestKind(r) === 'ad'
+                  ? `ads.html#ad=${encodeURIComponent(r.referenceId || '')}`
+                  : requestKind(r) === 'article'
+                    ? `blog.html#mine/${encodeURIComponent(r.referenceId || '')}`
+                    : '';
+              return `<tr data-req-row="${esc(r.id)}">
                       <td><code>${esc(r.requestId || r.id)}</code></td>
-                      <td>${esc(typeLabel)}</td>
+                      <td>${esc(typeLabel)}<br><small class="posha-muted">${esc(r.channel || 'عميل')}</small></td>
                       <td><button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.email || '')}">${esc(r.customerName || r.customer?.name || '—')}</button>
                         <br><small>${esc(r.company || r.customerId || '—')}</small></td>
                       <td>${esc(r.title || '—')}</td>
-                      <td><span class="chip">${esc(r.sourceModule || '—')}</span></td>
-                      <td>${r.referenceId ? `<code>${esc(r.referenceId)}</code>` : '—'}</td>
+                      <td>${
+                        sourceHref
+                          ? `<a class="chip" href="${esc(sourceHref)}" target="_blank" rel="noopener">${esc(r.sourceModule || '—')}</a>`
+                          : `<span class="chip">${esc(r.sourceModule || '—')}</span>`
+                      }</td>
+                      <td>${
+                        r.referenceId
+                          ? refHref
+                            ? `<a href="${esc(refHref)}" target="_blank" rel="noopener"><code>${esc(r.referenceId)}</code></a>`
+                            : `<button type="button" class="btn btn-ghost btn-sm" data-req-open-ref="${esc(r.id)}"><code>${esc(r.referenceId)}</code></button>`
+                          : '—'
+                      }</td>
                       <td>${fmt(r.createdAt)}</td>
-                      <td><span class="chip">${esc(statusAr(r.status))}</span></td>
+                      ${approvedTab ? `<td>${fmt(r.approvedAt)}</td>` : ''}
+                      <td><span class="chip">${esc(displayReqStatus(r))}</span></td>
                       <td>${esc(r.assignedTo || '—')}</td>
-                      <td class="posha-req-actions">
-                        <button type="button" class="btn btn-primary btn-sm" data-req-open="${esc(r.id)}">عرض</button>
-                        ${artActs}
-                        <button type="button" class="btn btn-ghost btn-sm" data-req-status="${esc(r.id)}">الحالة</button>
-                        <button type="button" class="btn btn-ghost btn-sm" data-req-more="${esc(r.id)}">⋮</button>
-                      </td>
+                      <td class="posha-req-actions">${primaryReqActionsHtml(r)}</td>
                     </tr>`;
             })
             .join('')}
@@ -568,13 +707,18 @@
     if (!r) return `<p class="posha-err">الطلب غير موجود</p><button type="button" class="btn btn-ghost" data-req-back>رجوع</button>`;
     cr().markViewed?.(id, actor());
     const tab = state.reqTab;
-    const isArt = r.referenceType === 'Article' || r.requestType === 'Article Submission';
+    const kind = requestKind(r);
+    const isArt = kind === 'article';
+    const isAd = kind === 'ad';
     const art = isArt && r.referenceId ? window.HubArticles?.get?.(r.referenceId) : null;
+    const ad = isAd ? findAd(r.referenceId) : null;
     const snap = art || r.articleSnapshot || {};
+    const adSnap = ad || r.adSnapshot || {};
     const tabs = [
       ['overview', 'نظرة عامة'],
       ['source', 'مصدر الطلب'],
       ...(isArt ? [['article', 'المقال']] : []),
+      ...(isAd ? [['ad', 'الإعلان']] : []),
       ['comms', 'التواصل'],
       ['notes', 'ملاحظات داخلية'],
       ['files', 'المرفقات'],
@@ -599,13 +743,16 @@
         <article>
           <h4>بيانات الطلب</h4>
           <ul class="feed">
+            <li><b>Request ID:</b> <code>${esc(r.requestId || r.id)}</code></li>
             <li><b>النوع:</b> ${esc(r.requestTypeLabel || r.requestType)}</li>
             <li><b>الموضوع:</b> ${esc(r.title)}</li>
             <li><b>الوصف:</b> ${esc(r.description || r.need || '—')}</li>
             <li><b>Reference:</b> ${esc(r.referenceType || '—')} · <code>${esc(r.referenceId || '—')}</code></li>
+            <li><b>المصدر:</b> ${esc(r.sourceModule || '—')}</li>
+            <li><b>تاريخ الطلب:</b> ${fmt(r.createdAt)}</li>
+            <li><b>الحالة:</b> ${esc(displayReqStatus(r))}</li>
             <li><b>الأولوية:</b> ${esc(r.priority)}</li>
-            <li><b>Channel:</b> ${esc(r.channel || 'Web')}</li>
-            <li><b>SLA:</b> ${esc(cr().slaStatus(r))}</li>
+            ${r.rejectionReason ? `<li><b>سبب الرفض:</b> ${esc(r.rejectionReason)}</li>` : ''}
           </ul>
         </article>
         <article>
@@ -615,8 +762,42 @@
             <li><b>Department:</b> ${esc(r.department || '—')}</li>
             <li><b>Approved By:</b> ${esc(r.approvedBy || '—')}</li>
             <li><b>Approved At:</b> ${fmt(r.approvedAt)}</li>
+            <li><b>Rejected By:</b> ${esc(r.rejectedBy || '—')}</li>
             <li><b>Created By:</b> ${esc(r.createdBy || '—')}</li>
           </ul>
+        </article>
+      </div>`;
+    } else if (tab === 'ad' && isAd) {
+      const places = Array.isArray(adSnap.placements) ? adSnap.placements.join(' · ') : '—';
+      const media =
+        adSnap.mediaDataUrl && adSnap.contentType === 'video'
+          ? `<video src="${esc(adSnap.mediaDataUrl)}" controls style="max-width:100%;max-height:280px;border-radius:12px"></video>`
+          : adSnap.mediaDataUrl && adSnap.contentType !== 'file'
+            ? `<img src="${esc(adSnap.mediaDataUrl)}" alt="" style="max-width:100%;max-height:280px;border-radius:12px;object-fit:contain" />`
+            : adSnap.mediaName
+              ? `<p><i class="fas fa-paperclip"></i> ${esc(adSnap.mediaName)}</p>`
+              : '<p class="posha-muted">لا توجد معاينة وسائط</p>';
+      body = `<div class="posha-req-grid">
+        <article style="grid-column:1/-1">
+          <h4>معاينة الإعلان قبل القرار</h4>
+          <div style="margin:10px 0">${media}</div>
+          <ul class="feed">
+            <li><b>Ad ID:</b> <code>${esc(adSnap.adCode || adSnap.id || r.referenceId || '—')}</code></li>
+            <li><b>اسم الإعلان:</b> ${esc(adSnap.title || '—')}</li>
+            <li><b>نوع الإعلان:</b> ${esc(adSnap.contentType || '—')}</li>
+            <li><b>عنوان الإعلان:</b> ${esc(adSnap.headline || '—')}</li>
+            <li><b>النص:</b> ${esc(adSnap.desc || adSnap.bodyText || '—')}</li>
+            <li><b>CTA:</b> ${esc(adSnap.ctaLabel || 'بدون')}</li>
+            <li><b>Destination URL:</b> ${adSnap.destinationUrl ? `<a href="${esc(adSnap.destinationUrl)}" target="_blank" rel="noopener noreferrer">${esc(adSnap.destinationUrl)}</a>` : '—'}</li>
+            <li><b>مكان الظهور:</b> ${esc(places)}</li>
+            <li><b>الجمهور:</b> ${esc(adSnap.audience || 'all')}</li>
+            <li><b>تاريخ البداية:</b> ${esc(adSnap.adStartDate || 'فور الموافقة')}</li>
+            <li><b>تاريخ النهاية:</b> ${esc(adSnap.adEndDate || '—')}</li>
+            <li><b>حالة الإعلان:</b> ${esc(adSnap.workflowStatus || adSnap.status || '—')}</li>
+          </ul>
+          <div class="posha-req-actions" style="margin-top:12px">
+            <a class="btn btn-dark btn-sm" href="ads.html" target="_blank" rel="noopener">فتح إدارة الإعلانات</a>
+          </div>
         </article>
       </div>`;
     } else if (tab === 'article' && isArt) {
@@ -675,39 +856,30 @@
         <tbody>${logs.map((a) => `<tr><td><code>${esc(a.id)}</code></td><td>${esc(a.action)}</td><td>${esc(a.performedBy)}</td><td>${esc(a.oldStatus || a.oldValue || '—')} → ${esc(a.newStatus || a.newValue || '—')}</td><td>${fmt(a.at)}</td></tr>`).join('') || '<tr><td colspan="5">لا سجل</td></tr>'}</tbody></table></div>`;
     }
 
-    const artActions = isArt
+    const pending = isPendingReq(r);
+    const decisionActions = pending
       ? `
-        ${!['Published', 'Rejected', 'Archived', 'Unpublished'].includes(r.status) ? `<button type="button" class="btn btn-primary btn-sm" data-req-approve-publish="${esc(r.id)}">✓ موافقة ونشر</button>` : ''}
-        ${['Published', 'Unpublished', 'Approved'].includes(r.status) ? `<button type="button" class="btn btn-dark btn-sm" data-req-art-edit="${esc(r.id)}">تعديل</button>` : ''}
-        ${r.status === 'Published' ? `<button type="button" class="btn btn-ghost btn-sm" data-req-art-pause="${esc(r.id)}">إيقاف</button>` : ''}
-        ${r.status === 'Unpublished' ? `<button type="button" class="btn btn-primary btn-sm" data-req-art-resume="${esc(r.id)}">إعادة نشر</button>` : ''}
-        ${!['Archived'].includes(r.status) ? `<button type="button" class="btn btn-ghost btn-sm" data-req-art-archive="${esc(r.id)}">أرشفة</button>` : ''}
-        ${!['Published', 'Rejected', 'Archived'].includes(r.status) ? `<button type="button" class="btn btn-dark btn-sm" data-req-art-changes="${esc(r.id)}">طلب تعديل</button>
-        <button type="button" class="btn btn-ghost btn-sm" data-req-art-reject="${esc(r.id)}">رفض</button>` : ''}
-        <a class="btn btn-ghost btn-sm" href="blog.html#mine/${esc(r.referenceId || '')}" target="_blank">فتح المقال</a>
+        <button type="button" class="btn btn-ghost btn-sm" data-req-reject="${esc(r.id)}">رفض الطلب</button>
+        <button type="button" class="btn btn-dark btn-sm" data-req-edit-linked="${esc(r.id)}">تعديل</button>
+        <button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">✓ قبول ونشر</button>
       `
-      : '';
+      : primaryReqActionsHtml(r);
 
     return `
       <div class="posha-req-detail-head">
         <div>
           <button type="button" class="btn btn-ghost btn-sm" data-req-back>← رجوع لصندوق الطلبات</button>
           <h3>${esc(r.requestId || r.id)} · ${esc(r.title)}</h3>
-          <span class="chip">${esc(statusAr(r.status))}</span>
+          <span class="chip">${esc(displayReqStatus(r))}</span>
           <span class="chip">${esc(r.priority)}</span>
           <span class="chip">${esc(cr().slaStatus(r))}</span>
         </div>
-        <div class="posha-req-actions">
-          ${artActions}
-          <button type="button" class="btn btn-dark btn-sm" data-req-assign="${esc(r.id)}">تعيين</button>
-          <button type="button" class="btn btn-ghost btn-sm" data-req-status="${esc(r.id)}">تغيير الحالة</button>
-          <button type="button" class="btn btn-ghost btn-sm" data-req-msg="${esc(r.id)}">التواصل مع العميل</button>
-        </div>
+        <div class="posha-req-actions">${decisionActions}</div>
       </div>
-      <div class="posha-subnav posha-req-tabs">${tabs
-        .map(([tid, label]) => `<button type="button" data-req-tab="${tid}" class="${tab === tid ? 'is-active' : ''}">${label}</button>`)
+      <div class="posha-subtabs" id="posha-req-tabs">${tabs
+        .map(([k, l]) => `<button type="button" class="posha-subtab ${tab === k ? 'is-on' : ''}" data-req-tab="${esc(k)}">${esc(l)}</button>`)
         .join('')}</div>
-      <div class="posha-req-detail-body">${body}</div>`;
+      <section class="posha-panel">${body}</section>`;
   }
 
   function renderReqSettings() {
@@ -752,9 +924,35 @@
     });
     body.querySelectorAll('[data-req-open]').forEach((btn) => {
       btn.onclick = () => {
-        state.reqId = btn.getAttribute('data-req-open');
-        state.reqTab = 'overview';
+        const id = btn.getAttribute('data-req-open');
+        state.reqId = id;
+        const r = cr()?.get(id);
+        const kind = requestKind(r);
+        const pref = btn.getAttribute('data-req-tab-pref');
+        state.reqTab = pref || (kind === 'ad' ? 'ad' : kind === 'article' ? 'article' : 'overview');
         state.moreId = null;
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-copy-id]').forEach((btn) => {
+      btn.onclick = async () => {
+        const id = btn.getAttribute('data-req-copy-id') || '';
+        try {
+          await navigator.clipboard.writeText(id);
+          alert('تم نسخ Request ID');
+        } catch (_) {
+          window.prompt('انسخ Request ID', id);
+        }
+        state.moreId = null;
+      };
+    });
+    body.querySelectorAll('[data-req-delete]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-delete');
+        if (!window.confirm('حذف / أرشفة هذا الطلب؟ السجل يبقى محفوظاً.')) return;
+        cr()?.archiveRequest?.(id, actor()) || cr()?.updateStatus?.(id, 'Archived', actor(), 'حذف');
+        state.moreId = null;
+        state.reqId = null;
         paintBody();
       };
     });
@@ -797,19 +995,85 @@
         paintBody();
       };
     });
-    body.querySelectorAll('[data-req-approve-publish]').forEach((btn) => {
+    body.querySelectorAll('[data-req-approve], [data-req-approve-publish]').forEach((btn) => {
       btn.onclick = () => {
-        const id = btn.getAttribute('data-req-approve-publish');
+        const id = btn.getAttribute('data-req-approve') || btn.getAttribute('data-req-approve-publish');
         const r = cr()?.get(id);
         if (!r) return;
+        const kind = requestKind(r);
+        const ad = kind === 'ad' ? findAd(r.referenceId) : null;
+        const places = Array.isArray(ad?.placements) ? ad.placements.join(' · ') : '—';
         const ok = window.confirm(
-          `هل تريد اعتماد ونشر هذا المقال؟\n\nRequest: ${r.id}\nArticle: ${r.referenceId || '—'}\nالعنوان: ${r.title || ''}\nالعميل: ${r.customerName || ''}`
+          kind === 'ad'
+            ? `الموافقة على نشر الإعلان؟\n\nالإعلان: ${ad?.title || r.title || '—'}\nالعميل: ${r.customerName || '—'}\nأماكن الظهور: ${places}\nالبداية: ${ad?.adStartDate || 'فور الموافقة'}\nالنهاية: ${ad?.adEndDate || '—'}`
+            : kind === 'article'
+              ? `هل تريد اعتماد ونشر هذا المقال؟\n\nRequest: ${r.id}\nArticle: ${r.referenceId || '—'}\nالعنوان: ${r.title || ''}\nالعميل: ${r.customerName || ''}`
+              : `الموافقة على الطلب؟\n\n${r.title || r.id}\nالعميل: ${r.customerName || '—'}`
         );
         if (!ok) return;
-        cr()?.approveAndPublish?.(id, actor());
+        const result = cr()?.approveRequest?.(id, actor()) || cr()?.approveAndPublish?.(id, actor());
+        if (!result) return alert('تعذر إتمام الموافقة');
+        state.tab = 'approved';
         state.reqView = 'approved';
+        state.reqId = null;
+        state.moreId = null;
+        paintBody();
+        try {
+          document.dispatchEvent(new CustomEvent('posha-counters-refresh'));
+        } catch (_) {}
+      };
+    });
+    body.querySelectorAll('[data-req-reject], [data-req-art-reject]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-reject') || btn.getAttribute('data-req-art-reject');
+        const r = cr()?.get(id);
+        if (!r) return;
+        openRejectModal(r);
+      };
+    });
+    body.querySelectorAll('[data-req-open-ref]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-open-ref');
         state.reqId = id;
-        state.reqTab = 'overview';
+        const r = cr()?.get(id);
+        state.reqTab = requestKind(r) === 'ad' ? 'ad' : requestKind(r) === 'article' ? 'article' : 'overview';
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-edit-linked]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-edit-linked');
+        const r = cr()?.get(id);
+        if (!r) return;
+        if (requestKind(r) === 'ad') {
+          window.open('ads.html#wizard', '_blank');
+          return;
+        }
+        if (requestKind(r) === 'article') {
+          const artBtn = document.createElement('button');
+          artBtn.setAttribute('data-req-art-edit', id);
+          body.querySelector('[data-req-art-edit]')?.click?.();
+          // fallback prompt edit
+          const art = r.referenceId ? window.HubArticles?.get?.(r.referenceId) : null;
+          const title = window.prompt('عنوان', art?.title || r.title || '');
+          if (title === null) return;
+          cr()?.editLinkedArticle?.(id, { title }, actor());
+          paintBody();
+        }
+      };
+    });
+    body.querySelectorAll('[data-req-pause-linked]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-pause-linked');
+        const r = cr()?.get(id);
+        if (!r) return;
+        if (!window.confirm('إيقاف هذا العنصر؟')) return;
+        if (requestKind(r) === 'ad' && r.referenceId) {
+          window.HubStore?.setAdWorkflowStatus?.(r.referenceId, 'paused', {}, actor());
+          cr()?.updateStatus?.(id, 'Unpublished', actor(), 'إيقاف الإعلان');
+        } else {
+          cr()?.pauseRequest?.(id, actor());
+        }
         paintBody();
       };
     });
@@ -861,15 +1125,6 @@
         const note = window.prompt('سبب طلب التعديل؟');
         if (!note) return;
         cr()?.updateStatus(id, 'Needs Changes', actor(), note);
-        paintBody();
-      };
-    });
-    body.querySelectorAll('[data-req-art-reject]').forEach((btn) => {
-      btn.onclick = () => {
-        const id = btn.getAttribute('data-req-art-reject');
-        const note = window.prompt('سبب الرفض؟');
-        if (!note) return;
-        cr()?.updateStatus(id, 'Rejected', actor(), note);
         paintBody();
       };
     });
