@@ -28,6 +28,7 @@
       effectiveAt: '',
       department: '',
       keywords: '',
+      status: 'draft',
       fileName: '',
       fileDataUrl: '',
     };
@@ -52,6 +53,30 @@
 
   function manage() {
     return Store.canManage();
+  }
+
+  function requireManage() {
+    if (window.HubAuth && HubAuth.requireLogin && !HubAuth.isLoggedIn()) {
+      HubAuth.requireLogin({ next: 'policies.html#add' });
+      return false;
+    }
+    if (!manage()) {
+      toast('إضافة السياسات متاحة لحسابات الإدارة فقط. سجّل الدخول بحساب مخوّل.', 'info');
+      if (window.HubAuth && HubAuth.requireLogin) {
+        HubAuth.requireLogin({ next: 'policies.html#add' });
+      }
+      return false;
+    }
+    return true;
+  }
+
+  function openAddForm() {
+    if (!requireManage()) return;
+    ui.formOpen = true;
+    ui.editId = '';
+    ui.form = blankForm();
+    ui.viewId = '';
+    render();
   }
 
   function fmtDate(iso) {
@@ -209,7 +234,7 @@
   }
 
   function formModal() {
-    if (!ui.formOpen || !manage()) return '';
+    if (!ui.formOpen) return '';
     var f = ui.form;
     var opts = Store.CATEGORIES.filter(function (c) {
       return c.id !== 'all';
@@ -226,6 +251,23 @@
         );
       })
       .join('');
+    var statusOpts = [
+      ['draft', 'مسودة'],
+      ['pending_review', 'قيد المراجعة'],
+      ['published', 'منشورة'],
+    ]
+      .map(function (s) {
+        return (
+          '<option value="' +
+          s[0] +
+          '"' +
+          (f.status === s[0] ? ' selected' : '') +
+          '>' +
+          s[1] +
+          '</option>'
+        );
+      })
+      .join('');
     return (
       '<div class="pol-modal-overlay" data-pol-form-overlay>' +
       '<div class="pol-modal wide" role="dialog" aria-modal="true">' +
@@ -234,31 +276,34 @@
       '</h3>' +
       '<label>اسم السياسة *</label><input data-pol-f="title" value="' +
       esc(f.title) +
-      '" />' +
+      '" placeholder="مثال: سياسة اختبار مركز المعلومات" />' +
       '<label>التصنيف *</label><select data-pol-f="cat">' +
       opts +
       '</select>' +
-      '<label>وصف مختصر *</label><textarea data-pol-f="summary">' +
+      '<label>وصف مختصر *</label><textarea data-pol-f="summary" placeholder="ملخص يظهر في بطاقة السياسة">' +
       esc(f.summary) +
       '</textarea>' +
-      '<label>محتوى السياسة *</label><textarea data-pol-f="body" style="min-height:160px">' +
+      '<label>محتوى السياسة *</label><textarea data-pol-f="body" style="min-height:160px" placeholder="النص الكامل للسياسة">' +
       esc(f.body) +
       '</textarea>' +
       '<label>رقم الإصدار</label><input data-pol-f="version" value="' +
       esc(f.version) +
-      '" />' +
+      '" placeholder="1.0" />' +
       '<label>تاريخ السريان</label><input type="date" data-pol-f="effectiveAt" value="' +
       esc(f.effectiveAt) +
       '" />' +
       '<label>القسم المسؤول</label><input data-pol-f="department" value="' +
       esc(f.department) +
-      '" />' +
+      '" placeholder="الحوكمة والجودة" />' +
       '<label>الكلمات المفتاحية</label><input data-pol-f="keywords" value="' +
       esc(f.keywords) +
-      '" />' +
+      '" placeholder="خصوصية، بيانات، أمن..." />' +
+      '<label>حالة السياسة</label><select data-pol-f="status">' +
+      statusOpts +
+      '</select>' +
+      '<p class="info-lead">الافتراضي «مسودة». النشر المباشر يتطلب صلاحية إدارة — يُفضَّل الحفظ كمسودة ثم الإرسال للمراجعة.</p>' +
       '<label>إرفاق ملف (PDF / DOCX)</label><input type="file" accept=".pdf,.doc,.docx,application/pdf" data-pol-file />' +
       (f.fileName ? '<p class="info-lead">الملف: ' + esc(f.fileName) + '</p>' : '') +
-      '<p class="info-lead">الحالة الافتراضية: مسودة — النشر يتطلب صلاحية مراجعة.</p>' +
       '<div class="pol-actions">' +
       '<button type="button" class="info-btn ghost" data-pol-close-form>إلغاء</button>' +
       '<button type="button" class="info-btn" data-pol-save-draft>حفظ كمسودة</button>' +
@@ -297,9 +342,7 @@
       '<div class="pol-head-row">' +
       '<div><h2 style="margin:0">مكتبة السياسات</h2>' +
       '<p class="info-lead" style="margin-top:6px">ابحث أو صفِّ حسب التصنيف. المنشور فقط يظهر للعملاء.</p></div>' +
-      (manage()
-        ? '<button type="button" class="info-btn primary" data-pol-add><i class="fas fa-plus"></i> إضافة سياسة جديدة</button>'
-        : '') +
+      '<button type="button" class="info-btn primary pol-add-btn" data-pol-add><i class="fas fa-plus"></i> إضافة سياسة جديدة</button>' +
       '</div>' +
       (manage()
         ? '<div class="pol-admin-tabs">' +
@@ -351,11 +394,17 @@
   }
 
   function saveForm(submitReview) {
+    if (!requireManage()) return;
     var f = ui.form;
-    if (!String(f.title || '').trim() || !String(f.summary || '').trim() || !String(f.body || '').trim()) {
-      toast('أكمل الحقول المطلوبة', 'error');
+    if (!String(f.title || '').trim() || !String(f.summary || '').trim() || !String(f.body || '').trim() || !String(f.cat || '').trim()) {
+      toast('أكمل الحقول المطلوبة: الاسم · التصنيف · الوصف · المحتوى', 'error');
       return;
     }
+    var wantedStatus = submitReview ? 'pending_review' : f.status === 'published' ? 'draft' : f.status || 'draft';
+    if (submitReview) wantedStatus = 'pending_review';
+    else if (!submitReview && f.status === 'pending_review') wantedStatus = 'pending_review';
+    else wantedStatus = 'draft';
+
     var row;
     if (ui.editId) {
       row = Store.update(ui.editId, {
@@ -369,24 +418,46 @@
         keywords: f.keywords,
         fileName: f.fileName,
         fileDataUrl: f.fileDataUrl,
-        status: submitReview ? 'pending_review' : 'draft',
+        status: wantedStatus,
       });
     } else {
-      row = Store.create(f);
-      if (row && submitReview) row = Store.setStatus(row.id, 'pending_review', 'إرسال للمراجعة');
+      row = Store.create({
+        title: f.title,
+        cat: f.cat,
+        summary: f.summary,
+        body: f.body,
+        version: f.version,
+        effectiveAt: f.effectiveAt,
+        department: f.department,
+        keywords: f.keywords,
+        fileName: f.fileName,
+        fileDataUrl: f.fileDataUrl,
+      });
+      if (row && wantedStatus !== 'draft') {
+        row = Store.setStatus(row.id, wantedStatus, wantedStatus === 'pending_review' ? 'إرسال للمراجعة' : 'تحديث الحالة');
+      }
     }
     if (!row) {
       toast('تعذر الحفظ — تحقق من الصلاحية', 'error');
       return;
     }
-    if (submitReview && row.status !== 'pending_review') {
-      Store.setStatus(row.id, 'pending_review', 'إرسال للمراجعة');
+    if (f.status === 'published' && manage()) {
+      Store.setStatus(row.id, 'published', 'نشر من نموذج الإضافة');
+      wantedStatus = 'published';
+      row = Store.get(row.id);
     }
     ui.formOpen = false;
     ui.editId = '';
     ui.form = blankForm();
-    ui.adminTab = submitReview ? 'pending_review' : 'draft';
-    toast(submitReview ? 'تم إرسال السياسة للمراجعة' : 'تم حفظ المسودة', 'success');
+    ui.adminTab = wantedStatus === 'published' ? 'published' : wantedStatus === 'pending_review' ? 'pending_review' : 'draft';
+    toast(
+      wantedStatus === 'published'
+        ? 'تم نشر السياسة'
+        : wantedStatus === 'pending_review'
+          ? 'تم إرسال السياسة للمراجعة'
+          : 'تم حفظ المسودة',
+      'success'
+    );
     render();
   }
 
@@ -458,19 +529,12 @@
     });
     var addBtn = root.querySelector('[data-pol-add]');
     if (addBtn) {
-      addBtn.addEventListener('click', function () {
-        if (!manage()) return;
-        ui.formOpen = true;
-        ui.editId = '';
-        ui.form = blankForm();
-        ui.viewId = '';
-        render();
-      });
+      addBtn.addEventListener('click', openAddForm);
     }
     root.querySelectorAll('[data-pol-edit]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var p = Store.get(btn.getAttribute('data-pol-edit'));
-        if (!p || !manage()) return;
+        if (!p || !requireManage()) return;
         ui.editId = p.id;
         ui.formOpen = true;
         ui.viewId = '';
@@ -483,6 +547,7 @@
           effectiveAt: (p.effectiveAt || '').slice(0, 10),
           department: p.department || '',
           keywords: p.keywords || '',
+          status: p.status === 'published' || p.status === 'pending_review' ? p.status : 'draft',
           fileName: p.fileName || '',
           fileDataUrl: p.fileDataUrl || '',
         };
@@ -595,9 +660,9 @@
 
   function applyHash() {
     var h = (location.hash || '').replace(/^#/, '');
-    if (h === 'add' && manage()) {
-      ui.formOpen = true;
-      render();
+    if (h === 'add' && !ui.formOpen) {
+      openAddForm();
+      return;
     }
     if (h.indexOf('policy=') === 0) {
       ui.viewId = decodeURIComponent(h.slice(7));

@@ -13,6 +13,12 @@
   margin-bottom: 8px;
 }
 
+.pol-add-btn {
+  flex: 0 0 auto;
+  min-width: 200px;
+  box-shadow: 0 6px 16px rgba(215, 0, 0, 0.22);
+}
+
 .pol-admin-tabs,
 .pol-cats {
   display: flex;

@@ -135,7 +135,16 @@
   }
 
   function canManage() {
-    return !!(window.HubAuth && HubAuth.isStaff && HubAuth.isStaff());
+    if (window.HubAuth && HubAuth.isStaff && HubAuth.isStaff()) return true;
+    try {
+      var u =
+        (window.HubAuth && HubAuth.getUser && HubAuth.getUser()) ||
+        JSON.parse(localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser') || 'null');
+      var role = String((u && u.role) || '').toLowerCase();
+      return ['supreme_leader', 'chief_engineer', 'admin', 'super_admin', 'manager'].indexOf(role) !== -1;
+    } catch (e) {
+      return false;
+    }
   }
 
   function actorName() {
