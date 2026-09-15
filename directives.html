@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>نظام التوجيه المركزي | نايوش هوب 360</title>
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/hub-theme.css" />
@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-dark-surfaces.css?v=1" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
-  <link rel="stylesheet" href="css/hub-directives.css?v=1" />
+  <link rel="stylesheet" href="css/hub-directives.css?v=3" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -35,12 +35,12 @@
     </div>
   </header>
 
-  <main class="container dir-page" data-dir-root>
+  <main class="dir-page" data-dir-root>
     <section class="dir-hero" aria-label="نظام التوجيه المركزي">
-      <h1>NAIOSH Central Directive &amp; Governance Engine</h1>
+      <h1>التوجيهات</h1>
       <p>
         يحوّل قرار الإدارة من «نص مكتوب» إلى أمر قابل للتنفيذ: مسؤول → مهام → موعد → متابعة → إثبات → تقييم → إغلاق.
-        رقم تلقائي: <strong>NCDE-2026-XXXXX</strong>
+        رقم تلقائي: <strong>DIR-2026-XXXXX</strong>
       </p>
     </section>
 
@@ -48,6 +48,7 @@
 
     <section class="dir-form-wrap" aria-label="إنشاء توجيه">
       <h2>إصدار توجيه جديد</h2>
+      <p class="dir-lead">املأ الحقول ثم أصدر التوجيه ليظهر فورًا في القائمة أدناه.</p>
       <form class="dir-form" data-dir-form>
         <div class="dir-form-grid">
           <label>
@@ -66,6 +67,8 @@
           <label>
             <span>النطاق</span>
             <select name="scope" required>
+              <option value="عامة">عامة</option>
+              <option value="جميع المنظومة">جميع المنظومة</option>
               <option value="إمبراطورية">إمبراطورية</option>
               <option value="دولة">دولة</option>
               <option value="فرع">فرع</option>
@@ -85,22 +88,31 @@
             <span>تاريخ الاستحقاق</span>
             <input type="date" name="dueDate" required />
           </label>
+          <label class="dir-span2">
+            <span>محتوى التوجيه (اختياري)</span>
+            <textarea name="body" rows="3" placeholder="اكتب وصف التوجيه أو التعليمات التنفيذية…"></textarea>
+          </label>
         </div>
         <button type="submit" class="dir-submit"><i class="fas fa-paper-plane"></i> إصدار التوجيه</button>
       </form>
     </section>
 
-    <div class="dir-toolbar">
-      <input type="search" data-dir-q placeholder="بحث في التوجيهات…" aria-label="بحث التوجيهات" />
-      <div class="dir-filters" data-dir-filters role="group" aria-label="تصفية الحالة"></div>
-    </div>
-
-    <section class="dir-list" data-dir-list aria-label="قائمة التوجيهات"></section>
+    <section class="dir-list-wrap" aria-label="قائمة التوجيهات">
+      <h2>قائمة التوجيهات</h2>
+      <p class="dir-lead">ابحث وصَفِّ حسب الحالة، ثم اعرض أو عدّل أو غيّر حالة أي توجيه.</p>
+      <div class="dir-toolbar">
+        <input type="search" data-dir-q placeholder="ابحث في التوجيهات..." aria-label="ابحث في التوجيهات" />
+        <div class="dir-filters" data-dir-filters role="group" aria-label="تصفية الحالة"></div>
+      </div>
+      <div class="dir-list" data-dir-list></div>
+    </section>
   </main>
+
+  <div data-dir-modals></div>
 
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-directives.js?v=1"></script>
+  <script src="js/hub-directives.js?v=3"></script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js?v=3" defer></script>
