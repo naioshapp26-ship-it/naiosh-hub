@@ -7284,28 +7284,140 @@ const HubStore = (() => {
     return ad;
   };
 
-  const addEvent = (payload) => {
+  const addEvent = (payload = {}) => {
     const studio = get().empire.eventsStudio;
     if (!studio) return null;
+    if (!Array.isArray(studio.events)) studio.events = [];
+    const year = new Date().getFullYear();
+    const seq = studio.events.length + 1;
+    const eventCode = payload.eventCode || `EVT-${year}-${String(seq).padStart(5, '0')}`;
+    const pricing = payload.pricing === 'paid' || Number(payload.priceUsd) > 0 ? 'paid' : 'free';
+    const workflowStatus = payload.workflowStatus || payload.status || 'draft';
     const event = {
-      id: uid('ev'),
-      name: payload.name,
-      description: payload.description || '',
+      id: payload.id || uid('ev'),
+      eventCode,
+      name: payload.name || payload.title || 'فعالية',
+      title: payload.name || payload.title || 'فعالية',
+      category: payload.category || 'أخرى',
+      summary: payload.summary || payload.description || '',
+      description: payload.description || payload.summary || '',
+      coverImage: payload.coverImage || payload.image || '',
       date: payload.date || today(),
-      time: payload.time || '18:00',
+      startTime: payload.startTime || payload.time || '18:00',
+      endTime: payload.endTime || '',
+      time: payload.startTime || payload.time || '18:00',
+      attendanceType: payload.attendanceType || 'online',
+      country: payload.country || '',
+      city: payload.city || '',
+      address: payload.address || '',
+      mapsUrl: payload.mapsUrl || '',
+      onlineUrl: payload.onlineUrl || '',
+      locationLabel:
+        payload.locationLabel ||
+        (payload.attendanceType === 'online'
+          ? 'أونلاين'
+          : [payload.city, payload.country].filter(Boolean).join('، ') || payload.platform || '—'),
+      requiresRegistration: payload.requiresRegistration !== false,
+      pricing,
+      priceUsd: pricing === 'paid' ? Number(payload.priceUsd) || 0 : 0,
+      seats: payload.seats != null && payload.seats !== '' ? Number(payload.seats) : null,
+      seatsTaken: Number(payload.seatsTaken) || 0,
+      registrationEnds: payload.registrationEnds || '',
+      organizerName: payload.organizerName || payload.speaker || 'منظم الفعالية',
+      organizerEmail: payload.organizerEmail || '',
+      organizerPhone: payload.organizerPhone || '',
+      organizerWebsite: payload.organizerWebsite || '',
+      speaker: payload.organizerName || payload.speaker || 'منظم الفعالية',
       platform: payload.platform || 'استوديو الفعاليات',
-      status: payload.status || 'قادمة',
-      type: payload.type || 'بث مباشر',
-      speaker: payload.speaker || 'فريق نايوش',
-      duration: payload.duration || '60 دقيقة',
-      department: payload.department || 'غرفة العمليات',
-      assignee: '',
+      type: payload.type || payload.category || 'فعالية',
+      duration: payload.duration || '',
+      department: payload.department || 'التسويق',
+      assignee: payload.assignee || '',
+      workflowStatus,
+      status:
+        workflowStatus === 'published' || workflowStatus === 'approved'
+          ? 'قادمة'
+          : workflowStatus === 'ended'
+            ? 'منتهية'
+            : workflowStatus === 'draft'
+              ? 'مسودة'
+              : workflowStatus === 'pending_review'
+                ? 'بانتظار المراجعة'
+                : workflowStatus === 'needs_changes'
+                  ? 'تحتاج تعديل'
+                  : workflowStatus === 'rejected'
+                    ? 'مرفوض'
+                    : workflowStatus === 'paused'
+                      ? 'متوقف'
+                      : payload.status || 'مسودة',
+      createdBy: payload.createdBy || 'عميل',
+      createdAt: payload.createdAt || nowIso(),
+      updatedAt: nowIso(),
+      requestId: payload.requestId || '',
+      rejectionReason: payload.rejectionReason || '',
+      changeRequestNote: payload.changeRequestNote || '',
+      cancellationPolicy: payload.cancellationPolicy || 'يمكن الإلغاء قبل 24 ساعة من موعد الفعالية.',
       ...pickCommonMeta(payload),
     };
     studio.events.unshift(event);
     pushFeed('decision', `فعالية جديدة: ${event.name}`);
     save();
+    try {
+      if (event.workflowStatus === 'pending_review' && window.HubCustomerRequests?.ensureForEvent) {
+        const req = window.HubCustomerRequests.ensureForEvent(event, event.createdBy || 'عميل');
+        if (req?.id) {
+          event.requestId = req.id;
+          save();
+        }
+      }
+    } catch (_) {}
     return event;
+  };
+
+  const updateEvent = (id, patch = {}, actor = 'عميل') => {
+    const studio = get().empire.eventsStudio;
+    if (!studio?.events) return null;
+    const idx = studio.events.findIndex((e) => e.id === id || e.eventCode === id);
+    if (idx < 0) return null;
+    const prev = studio.events[idx];
+    const next = Object.assign({}, prev, patch, { updatedAt: nowIso() });
+    if (patch.name) next.title = patch.name;
+    if (patch.startTime) next.time = patch.startTime;
+    if (patch.pricing === 'free') next.priceUsd = 0;
+    if (patch.workflowStatus) {
+      const w = patch.workflowStatus;
+      next.status =
+        w === 'published' || w === 'approved'
+          ? 'قادمة'
+          : w === 'ended'
+            ? 'منتهية'
+            : w === 'draft'
+              ? 'مسودة'
+              : w === 'pending_review'
+                ? 'بانتظار المراجعة'
+                : w === 'needs_changes'
+                  ? 'تحتاج تعديل'
+                  : w === 'rejected'
+                    ? 'مرفوض'
+                    : w === 'paused'
+                      ? 'متوقف'
+                      : next.status;
+    }
+    studio.events[idx] = next;
+    save();
+    try {
+      if (
+        (next.workflowStatus === 'pending_review' || next.workflowStatus === 'published') &&
+        window.HubCustomerRequests?.ensureForEvent
+      ) {
+        window.HubCustomerRequests.ensureForEvent(next, actor);
+      }
+    } catch (_) {}
+    return next;
+  };
+
+  const setEventWorkflowStatus = (id, workflowStatus, extra = {}, actor = 'Admin') => {
+    return updateEvent(id, Object.assign({ workflowStatus }, extra), actor);
   };
 
   const addProduct = (payload) => {
@@ -8988,6 +9100,8 @@ const HubStore = (() => {
     adMatchesTarget,
     toggleAd,
     addEvent,
+    updateEvent,
+    setEventWorkflowStatus,
     addProduct,
     addMarketSystem,
     addPlatform,

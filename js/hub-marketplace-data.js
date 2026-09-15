@@ -422,11 +422,11 @@
   ];
 
   const EVENTS = [
-    { id: 'ev-1', name: 'قمة القيادة التشغيلية', description: 'جلسة مباشرة للقادة حول سيادة التشغيل في هوب.', date: '2026-08-12', time: '19:00', platform: 'استوديو الفعاليات', status: 'قادمة', type: 'بث مباشر', speaker: 'القائد الأعلى', duration: '90 دقيقة', department: 'غرفة العمليات' },
-    { id: 'ev-2', name: 'ورشة استوديو الإعلانات', description: 'كيف تنشر إعلانات منتجات المنصات داخل هوب.', date: '2026-08-18', time: '17:30', platform: 'استوديو الإعلانات', status: 'قادمة', type: 'ورشة', speaker: 'فريق التسويق', duration: '60 دقيقة', department: 'التسويق' },
-    { id: 'ev-3', name: 'إطلاق متجر المبيعات', description: 'جولة في متجر المبيعات وربط النقاط بالمشتريات.', date: '2026-08-05', time: '16:00', platform: 'متجر المبيعات', status: 'منتهية', type: 'إطلاق', speaker: 'فريق التجارة', duration: '45 دقيقة', department: 'المبيعات' },
-    { id: 'ev-4', name: 'تكامل الأنظمة مع هوب', description: 'تسجيل أي نظام نايوش ليظهر في سجل التطبيقات.', date: '2026-08-22', time: '20:00', platform: 'التكامل', status: 'قادمة', type: 'ندوة', speaker: 'فريق التكامل', duration: '75 دقيقة', department: 'التقنية' },
-    { id: 'ev-5', name: 'أكاديمية الحوكمة', description: 'مسار امتثال للمنصات والفروع.', date: '2026-08-28', time: '18:00', platform: 'الأكاديمية', status: 'مسودة', type: 'دورة', speaker: 'مركز الحوكمة', duration: '120 دقيقة', department: 'الحوكمة' },
+    { id: 'ev-1', name: 'قمة القيادة التشغيلية', description: 'جلسة مباشرة للقادة حول سيادة التشغيل في هوب.', date: '2026-10-12', time: '19:00', platform: 'استوديو الفعاليات', status: 'قادمة', type: 'مؤتمرات', speaker: 'القائد الأعلى', duration: '90 دقيقة', department: 'غرفة العمليات', category: 'مؤتمرات', attendanceType: 'online', pricing: 'free', workflowStatus: 'published' },
+    { id: 'ev-2', name: 'ورشة استوديو الإعلانات', description: 'كيف تنشر إعلانات منتجات المنصات داخل هوب.', date: '2026-10-18', time: '17:30', platform: 'استوديو الإعلانات', status: 'قادمة', type: 'ورش عمل', speaker: 'فريق التسويق', duration: '60 دقيقة', department: 'التسويق', category: 'تسويق', attendanceType: 'hybrid', pricing: 'free', workflowStatus: 'published' },
+    { id: 'ev-3', name: 'إطلاق متجر المبيعات', description: 'جولة في متجر المبيعات وربط النقاط بالمشتريات.', date: '2026-08-05', time: '16:00', platform: 'متجر المبيعات', status: 'منتهية', type: 'أعمال', speaker: 'فريق التجارة', duration: '45 دقيقة', department: 'المبيعات', category: 'أعمال', attendanceType: 'in_person', pricing: 'free', workflowStatus: 'ended' },
+    { id: 'ev-4', name: 'تكامل الأنظمة مع هوب', description: 'تسجيل أي نظام نايوش ليظهر في سجل التطبيقات.', date: '2026-10-22', time: '20:00', platform: 'التكامل', status: 'قادمة', type: 'تقنية', speaker: 'فريق التكامل', duration: '75 دقيقة', department: 'التقنية', category: 'تقنية', attendanceType: 'online', pricing: 'paid', priceUsd: 49, workflowStatus: 'published', seats: 100, seatsTaken: 12 },
+    { id: 'ev-5', name: 'أكاديمية الحوكمة', description: 'مسار امتثال للمنصات والفروع.', date: '2026-10-28', time: '18:00', platform: 'الأكاديمية', status: 'مسودة', type: 'تدريب', speaker: 'مركز الحوكمة', duration: '120 دقيقة', department: 'الحوكمة', category: 'تدريب', attendanceType: 'online', pricing: 'free', workflowStatus: 'draft' },
   ];
 
   const AD_CATEGORIES = [

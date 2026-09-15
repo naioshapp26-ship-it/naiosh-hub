@@ -563,6 +563,7 @@
   function requestKind(r) {
     if (!r) return 'general';
     if (r.referenceType === 'Ad' || r.requestType === 'Ad Submission') return 'ad';
+    if (r.referenceType === 'Event' || r.requestType === 'Event Submission') return 'event';
     if (r.referenceType === 'Article' || r.requestType === 'Article Submission') return 'article';
     if (String(r.requestType || '').toLowerCase().includes('product') || r.referenceType === 'Product') return 'product';
     if (String(r.requestType || '').toLowerCase().includes('service') || r.referenceType === 'Service') return 'service';
@@ -602,7 +603,7 @@
       return `<div class="posha-req-actions-inner">${openBtn}${moreBtn}</div>`;
     }
     const approveLabel =
-      kind === 'ad' || kind === 'article' ? '✓ قبول' : '✓ قبول';
+      kind === 'ad' || kind === 'article' || kind === 'event' ? '✓ قبول' : '✓ قبول';
     return `<div class="posha-req-actions-inner">${openBtn}
       <button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">${approveLabel}</button>
       <button type="button" class="btn btn-danger btn-sm" data-req-reject="${esc(r.id)}">✕ رفض</button>
@@ -1006,9 +1007,11 @@
         const ok = window.confirm(
           kind === 'ad'
             ? `الموافقة على نشر الإعلان؟\n\nالإعلان: ${ad?.title || r.title || '—'}\nالعميل: ${r.customerName || '—'}\nأماكن الظهور: ${places}\nالبداية: ${ad?.adStartDate || 'فور الموافقة'}\nالنهاية: ${ad?.adEndDate || '—'}`
-            : kind === 'article'
-              ? `هل تريد اعتماد ونشر هذا المقال؟\n\nRequest: ${r.id}\nArticle: ${r.referenceId || '—'}\nالعنوان: ${r.title || ''}\nالعميل: ${r.customerName || ''}`
-              : `الموافقة على الطلب؟\n\n${r.title || r.id}\nالعميل: ${r.customerName || '—'}`
+            : kind === 'event'
+              ? `الموافقة على نشر الفعالية؟\n\n${r.title || r.id}\nالعميل: ${r.customerName || '—'}`
+              : kind === 'article'
+                ? `هل تريد اعتماد ونشر هذا المقال؟\n\nRequest: ${r.id}\nArticle: ${r.referenceId || '—'}\nالعنوان: ${r.title || ''}\nالعميل: ${r.customerName || ''}`
+                : `الموافقة على الطلب؟\n\n${r.title || r.id}\nالعميل: ${r.customerName || '—'}`
         );
         if (!ok) return;
         const result = cr()?.approveRequest?.(id, actor()) || cr()?.approveAndPublish?.(id, actor());

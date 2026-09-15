@@ -38,6 +38,7 @@
     'Event Request': { department: 'Sales', assignedTo: 'Sales Desk' },
     'Article Submission': { department: 'Content', assignedTo: 'Content Desk' },
     'Ad Submission': { department: 'Marketing', assignedTo: 'Ads Desk' },
+    'Event Submission': { department: 'Marketing', assignedTo: 'Events Desk' },
     مقال: { department: 'Content', assignedTo: 'Content Desk' },
     'General Request': { department: 'Operations', assignedTo: 'Ops Desk' },
   };
@@ -45,6 +46,7 @@
   const TYPE_LABELS_AR = {
     'Article Submission': 'مقال',
     'Ad Submission': 'طلب نشر إعلان',
+    'Event Submission': 'طلب نشر فعالية',
     'Solution Request': 'طلب حل',
     'Cost Reduction Assessment': 'خفض تكاليف',
     'Cost Reduction Request': 'خفض تكاليف',
@@ -579,6 +581,94 @@
     );
   };
 
+  const ensureForEvent = (event, actor = 'عميل', { silent } = {}) => {
+    if (!event?.id) return null;
+    if (event.workflowStatus === 'draft' && !event.requestId) return null;
+    let row = findByReference('Event', event.id) || (event.requestId ? get(event.requestId) : null);
+    const status =
+      event.workflowStatus === 'published' || event.workflowStatus === 'approved'
+        ? 'Approved'
+        : event.workflowStatus === 'rejected'
+          ? 'Rejected'
+          : event.workflowStatus === 'needs_changes'
+            ? 'Needs Changes'
+            : event.workflowStatus === 'paused'
+              ? 'Unpublished'
+              : event.workflowStatus === 'ended'
+                ? 'Completed'
+                : 'Pending Review';
+    const snapshot = {
+      eventId: event.id,
+      eventCode: event.eventCode,
+      name: event.name,
+      category: event.category,
+      date: event.date,
+      startTime: event.startTime || event.time,
+      endTime: event.endTime,
+      attendanceType: event.attendanceType,
+      pricing: event.pricing,
+      priceUsd: event.priceUsd,
+      coverImage: event.coverImage ? '[image]' : '',
+      locationLabel: event.locationLabel,
+    };
+    if (row) {
+      const prevStatus = row.status;
+      const nextStatus =
+        silent && (STATUS_RANK[row.status] || 0) > (STATUS_RANK[status] || 0) ? row.status : status;
+      Object.assign(row, {
+        title: `طلب نشر فعالية: ${event.name || event.eventCode || event.id}`,
+        description: event.summary || event.description || '',
+        status: nextStatus,
+        requestType: 'Event Submission',
+        requestTypeLabel: 'طلب نشر فعالية',
+        referenceType: 'Event',
+        referenceId: event.id,
+        sourceModule: 'الفعاليات',
+        sourcePage: 'الفعاليات',
+        sourceUrl: 'events.html',
+        sourceAction: 'نشر فعالية',
+        department: row.department || 'Marketing',
+        assignedTo: row.assignedTo || 'Events Desk',
+        eventSnapshot: snapshot,
+        updatedAt: nowIso(),
+        customerName: event.createdBy || row.customerName || actor,
+        email: event.organizerEmail || row.email || '',
+      });
+      if (status === 'Pending Review' && !silent && (prevStatus === 'Rejected' || prevStatus === 'Needs Changes')) {
+        row.rejectionReason = '';
+        row.timeline = row.timeline || [];
+        row.timeline.push({ at: nowIso(), by: actor, text: 'إعادة إرسال للمراجعة', key: 'resubmitted' });
+      }
+      if (!silent) save();
+      return row;
+    }
+    return create(
+      {
+        requestType: 'Event Submission',
+        requestTypeLabel: 'طلب نشر فعالية',
+        title: `طلب نشر فعالية: ${event.name || event.eventCode || event.id}`,
+        description: event.summary || event.description || '',
+        status: 'Pending Review',
+        priority: 'متوسطة',
+        sourceModule: 'الفعاليات',
+        sourcePage: 'الفعاليات',
+        sourceUrl: 'events.html',
+        sourceAction: 'نشر فعالية',
+        referenceType: 'Event',
+        referenceId: event.id,
+        customerName: event.createdBy || actor,
+        email: event.organizerEmail || '',
+        assignedTo: 'Events Desk',
+        department: 'Marketing',
+        channel: 'Web',
+        eventSnapshot: snapshot,
+        createdAt: event.createdAt || nowIso(),
+        updatedAt: nowIso(),
+      },
+      actor
+    );
+  };
+
   const ensureForArticle = (article, actor = 'عميل', { silent } = {}) => {
     if (!article?.id) return null;
     if (article.status === 'Draft') return null;
@@ -837,6 +927,41 @@
       return row;
     }
 
+    if (row.referenceType === 'Event' || row.requestType === 'Event Submission') {
+      try {
+        if (window.HubStore?.setEventWorkflowStatus && row.referenceId) {
+          const updated = window.HubStore.setEventWorkflowStatus(
+            row.referenceId,
+            'published',
+            { approvedBy: actor, approvedAt: stamp, rejectionReason: '', changeRequestNote: '' },
+            actor
+          );
+          if (updated) updated.requestId = row.id;
+        }
+      } catch (_) {}
+      row.status = 'Approved';
+      row.publishedAt = stamp;
+      row.timeline.push({ at: stamp, by: actor, text: 'موافقة ونشر الفعالية', key: 'approved_event' });
+      pushAudit({
+        action: 'Approved',
+        requestId: row.id,
+        performedBy: actor,
+        oldStatus: old,
+        newStatus: row.status,
+        customer: row.company || row.customerName,
+        sourceModule: row.sourceModule,
+        detail: row.referenceId,
+      });
+      pushCustomerNotification({
+        title: 'تمت الموافقة على فعاليتك ونشرها',
+        message: `${row.title || row.referenceId} · ${row.id}`,
+        source: 'الفعاليات',
+        link: 'events.html#mine-created',
+      });
+      save();
+      return row;
+    }
+
     // Generic product/service/other requests
     row.status = 'Approved';
     row.timeline.push({ at: stamp, by: actor, text: 'تمت الموافقة على الطلب', key: 'approved' });
@@ -898,14 +1023,26 @@
         window.HubStore?.setAdWorkflowStatus?.(row.referenceId, 'rejected', { rejectionReason: note }, actor);
       } catch (_) {}
     }
+    if ((row.referenceType === 'Event' || row.requestType === 'Event Submission') && row.referenceId) {
+      try {
+        window.HubStore?.setEventWorkflowStatus?.(
+          row.referenceId,
+          'rejected',
+          { rejectionReason: note },
+          actor
+        );
+      } catch (_) {}
+    }
 
     pushCustomerNotification({
       title:
         row.referenceType === 'Ad' || row.requestType === 'Ad Submission'
           ? 'تم رفض إعلانك'
-          : row.referenceType === 'Article'
-            ? 'تم رفض مقالك'
-            : 'تم رفض طلبك',
+          : row.referenceType === 'Event' || row.requestType === 'Event Submission'
+            ? 'تم رفض فعاليتك'
+            : row.referenceType === 'Article'
+              ? 'تم رفض مقالك'
+              : 'تم رفض طلبك',
       message: note,
       source: row.sourceModule || 'طلبات العملاء',
       link: row.sourceUrl || '',
@@ -1083,7 +1220,23 @@
       newValue: status,
     });
     mirrorToSolutions(row);
-    if (!opts.skipArticleSync) mirrorToArticle(row, actor);
+    if (row.referenceType === 'Article' && !opts.skipArticleSync) mirrorToArticle(row, actor);
+    if ((row.referenceType === 'Event' || row.requestType === 'Event Submission') && row.referenceId) {
+      try {
+        if (status === 'Needs Changes') {
+          window.HubStore?.setEventWorkflowStatus?.(
+            row.referenceId,
+            'needs_changes',
+            { changeRequestNote: note || row.rejectionReason || '' },
+            actor
+          );
+        } else if (status === 'Unpublished') {
+          window.HubStore?.setEventWorkflowStatus?.(row.referenceId, 'paused', {}, actor);
+        } else if (status === 'Archived') {
+          window.HubStore?.setEventWorkflowStatus?.(row.referenceId, 'ended', {}, actor);
+        }
+      } catch (_) {}
+    }
     save();
     return row;
   };
@@ -1265,6 +1418,7 @@
     findByReference,
     ensureForArticle,
     ensureForAd,
+    ensureForEvent,
     mapArticleStatus,
     approveAndPublish,
     approveRequest,
