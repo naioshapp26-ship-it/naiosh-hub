@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>المنصات السيادية | نايوش هوب 360</title>
-  <meta name="description" content="منصات نايوش 360 السيادية — 18 منصة تشغّل نايوش هوب." />
+  <title>المنصات | نايوش هوب 360</title>
+  <meta name="description" content="منصات نايوش 360 السيادية — اكتشف المنصات، اطلب الوصول، وافتح منصاتك من مركز واحد." />
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/hub-theme.css" />
@@ -16,66 +14,41 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
   <link rel="stylesheet" href="css/hub-row-actions.css" />
-  <link rel="stylesheet" href="css/platforms.css" />
-  <link rel="stylesheet" href="css/hub-booking.css?v=3" />
+  <link rel="stylesheet" href="css/hub-marketplace.css" />
+  <link rel="stylesheet" href="css/hub-platforms-workspace.css?v=2" />
 </head>
-<body class="homepage platforms-page-body" data-hub-entity="platforms">
+<body class="homepage" data-platforms-workspace="1">
   <header class="top-nav">
     <div class="container inner">
       <div class="nav-main">
-        <a class="brand" href="index.html">
-          <img src="assets/logo-hub.jpeg" alt="شعار نايوش هوب" />
-          <span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span>
-        </a>
-        <nav class="nav-links" aria-label="روابط نايوش هوب">
+        <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
+        <nav class="nav-links">
           <a href="index.html">الرئيسية</a>
           <a href="services.html">خدمات</a>
           <a href="products.html">المنتجات</a>
+          <a href="apps.html">الأنظمة</a>
           <a href="store.html">المتجر</a>
           <a href="ads.html">الإعلانات</a>
           <a href="events.html">الفعاليات</a>
-          <a href="apps.html">الأنظمة</a>
           <a href="branches.html">الفروع</a>
           <a href="incubators.html">الحاضنات</a>
           <a class="active" href="platforms.html">المنصات</a>
         </nav>
       </div>
-      <div class="auth-actions" aria-label="إجراءات الحساب">
+      <div class="auth-actions">
         <a href="dashboard.html" class="auth-btn primary">لوحة التحكم</a>
-        <a href="login.html" class="auth-btn">تسجيل الدخول</a>
+        <a href="login.html" class="auth-btn">دخول</a>
       </div>
     </div>
   </header>
 
-  <main class="container products-page">
-    <section class="products-hero">
-      <h1>منصات نايوش 360 السيادية</h1>
-      <p>ثمانية عشر منصة تشغّل نايوش هوب — من الدماغ المركزي إلى السلطة العليا.</p>
-      <div class="products-stats">
-        <div class="products-stat"><strong id="stat-count">18</strong><span>منصة سيادية</span></div>
-        <div class="products-stat"><strong>4</strong><span>مجموعات</span></div>
-        <div class="products-stat"><strong>360</strong><span>رؤية موحّدة</span></div>
-        <div class="products-stat"><strong>هوب</strong><span>تشغيل مركزي</span></div>
-      </div>
-    </section>
-
-    <div class="hub-platform-recharge-banner" data-platform-recharge-banner role="status">
-      <span data-platform-recharge-msg>انتهت الباقة المجانية — اشحن رصيدك للمتابعة.</span>
-      <a class="btn btn-primary" href="index.html" data-hub-charge-open><i class="fas fa-wallet"></i> اشحن رصيدك</a>
-    </div>
-
-    <nav class="products-tabs" id="platformsTabs" aria-label="مجموعات المنصات"></nav>
-      <section class="hub-inline-ads" id="platform-ads" data-hub-ads="platforms" data-hub-ads-title="إعلانات الصفحة الرئيسية للمنصة" data-hub-ads-limit="6" aria-label="إعلانات المنصات"></section>
-    <div id="platformsSections"></div>
+  <main class="platforms-workspace" id="platforms-workspace">
+    <!-- filled by hub-platforms-workspace.js -->
   </main>
 
-  <nav class="floating-actions" aria-label="أزرار جانبية عائمة">
-    <a href="index.html" title="الرئيسية" aria-label="الرئيسية"><i class="fas fa-house"></i></a>
-    <a href="dashboard.html" title="غرفة العمليات" aria-label="غرفة العمليات"><i class="fas fa-gauge-high"></i></a>
-    <a href="login.html" title="دخول" aria-label="دخول"><i class="fas fa-right-to-bracket"></i></a>
-    <button type="button" id="to-top" title="الصعود للأعلى" aria-label="الصعود للأعلى"><i class="fas fa-arrow-up"></i></button>
-  </nav>
+  <section class="hub-inline-ads" id="platform-ads" data-hub-ads="platforms" data-hub-ads-title="إعلانات المنصات" data-hub-ads-limit="6" aria-label="إعلانات المنصات" hidden></section>
 
+  <script src="js/hub-side-projects-data.js?v=6"></script>
   <script src="js/empire-blueprint.js"></script>
   <script src="js/sovereign-platforms.js"></script>
   <script src="js/hub-marketplace-data.js"></script>
@@ -85,21 +58,19 @@
   <script src="js/hub-ready-sites.js"></script>
   <script src="js/hub-store.js"></script>
   <script src="js/hub-auth.js"></script>
+  <script src="js/hub-customer-requests.js"></script>
+  <script src="js/hub-platform-grants.js?v=1"></script>
   <script src="js/hub-launcher.js"></script>
   <script src="js/hub-row-actions.js"></script>
   <script src="js/hub-currency.js"></script>
   <script src="js/hub-ads-display.js"></script>
-  <script src="js/hub-platform-grants.js?v=1"></script>
-  <script src="js/platforms-page.js?v=2"></script>
-  <script src="js/hub-ops-path.js"></script>
+  <script src="js/hub-platforms-workspace.js?v=2"></script>
   <script src="js/mobile-nav.js"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-hero-balance.js" defer></script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js?v=3" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>
 </html>
-

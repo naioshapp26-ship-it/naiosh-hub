@@ -565,6 +565,12 @@
     if (r.referenceType === 'Ad' || r.requestType === 'Ad Submission') return 'ad';
     if (r.referenceType === 'Event' || r.requestType === 'Event Submission') return 'event';
     if (r.referenceType === 'Article' || r.requestType === 'Article Submission') return 'article';
+    if (
+      r.referenceType === 'Platform' ||
+      r.requestType === 'Platform Access Request' ||
+      r.requestType === 'Platform Add Request'
+    )
+      return 'platform';
     if (String(r.requestType || '').toLowerCase().includes('product') || r.referenceType === 'Product') return 'product';
     if (String(r.requestType || '').toLowerCase().includes('service') || r.referenceType === 'Service') return 'service';
     return 'general';
@@ -603,7 +609,11 @@
       return `<div class="posha-req-actions-inner">${openBtn}${moreBtn}</div>`;
     }
     const approveLabel =
-      kind === 'ad' || kind === 'article' || kind === 'event' ? '✓ قبول' : '✓ قبول';
+      kind === 'platform' && r.requestType === 'Platform Access Request'
+        ? '✓ منح الوصول'
+        : kind === 'ad' || kind === 'article' || kind === 'event'
+          ? '✓ قبول'
+          : '✓ قبول';
     return `<div class="posha-req-actions-inner">${openBtn}
       <button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">${approveLabel}</button>
       <button type="button" class="btn btn-danger btn-sm" data-req-reject="${esc(r.id)}">✕ رفض</button>
@@ -623,13 +633,18 @@
           ${rows
             .map((r) => {
               const typeLabel = r.requestTypeLabel || (cr().TYPE_LABELS_AR || {})[r.requestType] || r.requestType;
-              const sourceHref = r.sourceUrl || (requestKind(r) === 'ad' ? 'ads.html' : requestKind(r) === 'article' ? 'blog.html' : '');
+              const rk = requestKind(r);
+              const sourceHref =
+                r.sourceUrl ||
+                (rk === 'ad' ? 'ads.html' : rk === 'article' ? 'blog.html' : rk === 'platform' ? 'platforms.html' : '');
               const refHref =
-                requestKind(r) === 'ad'
+                rk === 'ad'
                   ? `ads.html#ad=${encodeURIComponent(r.referenceId || '')}`
-                  : requestKind(r) === 'article'
+                  : rk === 'article'
                     ? `blog.html#mine/${encodeURIComponent(r.referenceId || '')}`
-                    : '';
+                    : rk === 'platform'
+                      ? `platforms.html#platforms-catalog`
+                      : '';
               return `<tr data-req-row="${esc(r.id)}">
                       <td><code>${esc(r.requestId || r.id)}</code></td>
                       <td>${esc(typeLabel)}<br><small class="posha-muted">${esc(r.channel || 'عميل')}</small></td>
@@ -711,15 +726,20 @@
     const kind = requestKind(r);
     const isArt = kind === 'article';
     const isAd = kind === 'ad';
+    const isPlatform = kind === 'platform';
     const art = isArt && r.referenceId ? window.HubArticles?.get?.(r.referenceId) : null;
     const ad = isAd ? findAd(r.referenceId) : null;
     const snap = art || r.articleSnapshot || {};
     const adSnap = ad || r.adSnapshot || {};
+    const draft = r.platformDraft || {};
+    const platformName =
+      r.platformName || draft.name || (isPlatform ? r.referenceId : '') || '';
     const tabs = [
       ['overview', 'نظرة عامة'],
       ['source', 'مصدر الطلب'],
       ...(isArt ? [['article', 'المقال']] : []),
       ...(isAd ? [['ad', 'الإعلان']] : []),
+      ...(isPlatform ? [['platform', 'المنصة']] : []),
       ['comms', 'التواصل'],
       ['notes', 'ملاحظات داخلية'],
       ['files', 'المرفقات'],
@@ -746,8 +766,10 @@
           <ul class="feed">
             <li><b>Request ID:</b> <code>${esc(r.requestId || r.id)}</code></li>
             <li><b>النوع:</b> ${esc(r.requestTypeLabel || r.requestType)}</li>
+            ${isPlatform ? `<li><b>اسم المنصة:</b> ${esc(platformName || '—')}</li>` : ''}
             <li><b>الموضوع:</b> ${esc(r.title)}</li>
-            <li><b>الوصف:</b> ${esc(r.description || r.need || '—')}</li>
+            <li><b>الوصف / سبب الطلب:</b> ${esc(r.description || r.need || '—')}</li>
+            ${r.intendedUse ? `<li><b>الاستخدام المطلوب:</b> ${esc(r.intendedUse)}</li>` : ''}
             <li><b>Reference:</b> ${esc(r.referenceType || '—')} · <code>${esc(r.referenceId || '—')}</code></li>
             <li><b>المصدر:</b> ${esc(r.sourceModule || '—')}</li>
             <li><b>تاريخ الطلب:</b> ${fmt(r.createdAt)}</li>
@@ -821,6 +843,29 @@
           </div>
         </article>
       </div>`;
+    } else if (tab === 'platform' && isPlatform) {
+      body = `<div class="posha-req-grid">
+        <article style="grid-column:1/-1">
+          <h4>${r.requestType === 'Platform Add Request' ? 'طلب إضافة منصة' : 'طلب وصول لمنصة'}</h4>
+          <ul class="feed">
+            <li><b>اسم المنصة:</b> ${esc(platformName || '—')}</li>
+            <li><b>رمز / مرجع:</b> <code>${esc(r.referenceId || '—')}</code></li>
+            <li><b>نوع الطلب:</b> ${esc(r.requestTypeLabel || r.requestType)}</li>
+            <li><b>المصدر:</b> ${esc(r.sourceModule || '—')}</li>
+            <li><b>سبب الطلب:</b> ${esc(r.need || r.description || '—')}</li>
+            ${r.intendedUse ? `<li><b>الاستخدام المطلوب:</b> ${esc(r.intendedUse)}</li>` : ''}
+            ${draft.url ? `<li><b>رابط المنصة:</b> <a href="${esc(draft.url)}" target="_blank" rel="noopener noreferrer">${esc(draft.url)}</a></li>` : ''}
+            ${draft.category ? `<li><b>التصنيف:</b> ${esc(draft.category)}</li>` : ''}
+            ${draft.summary ? `<li><b>الوصف:</b> ${esc(draft.summary)}</li>` : ''}
+            ${draft.notes ? `<li><b>ملاحظات:</b> ${esc(draft.notes)}</li>` : ''}
+            <li><b>تاريخ الطلب:</b> ${fmt(r.createdAt)}</li>
+            <li><b>الحالة:</b> ${esc(displayReqStatus(r))}</li>
+          </ul>
+          <div class="posha-req-actions" style="margin-top:12px">
+            <a class="btn btn-dark btn-sm" href="platforms.html#platforms-catalog" target="_blank" rel="noopener">فتح صفحة المنصات</a>
+          </div>
+        </article>
+      </div>`;
     } else if (tab === 'source') {
       body = `<ul class="feed">
         <li><b>Source Module:</b> ${esc(r.sourceModule)}</li>
@@ -858,11 +903,17 @@
     }
 
     const pending = isPendingReq(r);
+    const approveLabel =
+      kind === 'platform' && r.requestType === 'Platform Access Request'
+        ? '✓ منح الوصول'
+        : kind === 'platform'
+          ? '✓ قبول الطلب'
+          : '✓ قبول ونشر';
     const decisionActions = pending
       ? `
         <button type="button" class="btn btn-ghost btn-sm" data-req-reject="${esc(r.id)}">رفض الطلب</button>
-        <button type="button" class="btn btn-dark btn-sm" data-req-edit-linked="${esc(r.id)}">تعديل</button>
-        <button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">✓ قبول ونشر</button>
+        <button type="button" class="btn btn-dark btn-sm" data-req-edit-linked="${esc(r.id)}">طلب معلومات</button>
+        <button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">${approveLabel}</button>
       `
       : primaryReqActionsHtml(r);
 
@@ -1011,7 +1062,11 @@
               ? `الموافقة على نشر الفعالية؟\n\n${r.title || r.id}\nالعميل: ${r.customerName || '—'}`
               : kind === 'article'
                 ? `هل تريد اعتماد ونشر هذا المقال؟\n\nRequest: ${r.id}\nArticle: ${r.referenceId || '—'}\nالعنوان: ${r.title || ''}\nالعميل: ${r.customerName || ''}`
-                : `الموافقة على الطلب؟\n\n${r.title || r.id}\nالعميل: ${r.customerName || '—'}`
+                : kind === 'platform'
+                  ? r.requestType === 'Platform Access Request'
+                    ? `منح الوصول للمنصة؟\n\nالمنصة: ${r.referenceId || '—'}\nالعميل: ${r.customerName || '—'}\n${r.title || ''}`
+                    : `الموافقة على طلب إضافة منصة؟\n\n${r.title || '—'}\nالعميل: ${r.customerName || '—'}`
+                  : `الموافقة على الطلب؟\n\n${r.title || r.id}\nالعميل: ${r.customerName || '—'}`
         );
         if (!ok) return;
         const result = cr()?.approveRequest?.(id, actor()) || cr()?.approveAndPublish?.(id, actor());

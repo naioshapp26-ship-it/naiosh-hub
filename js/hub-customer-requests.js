@@ -39,14 +39,47 @@
     'Article Submission': { department: 'Content', assignedTo: 'Content Desk' },
     'Ad Submission': { department: 'Marketing', assignedTo: 'Ads Desk' },
     'Event Submission': { department: 'Marketing', assignedTo: 'Events Desk' },
+    'Platform Access Request': { department: 'Systems', assignedTo: 'Systems Team' },
+    'Platform Add Request': { department: 'Systems', assignedTo: 'Platforms Desk' },
     مقال: { department: 'Content', assignedTo: 'Content Desk' },
     'General Request': { department: 'Operations', assignedTo: 'Ops Desk' },
+  };
+
+  const PLATFORM_ACCESS_KEY = 'naiosh_platform_customer_access_v1';
+
+  const readPlatformAccessStore = () => {
+    try {
+      const raw = localStorage.getItem(PLATFORM_ACCESS_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      if (!parsed.byEmail || typeof parsed.byEmail !== 'object') parsed.byEmail = {};
+      return parsed;
+    } catch {
+      return { byEmail: {} };
+    }
+  };
+
+  const grantPlatformAccess = (email, code) => {
+    const key = String(email || '').trim().toLowerCase();
+    const plat = String(code || '').trim().toUpperCase();
+    if (!key || !plat) return null;
+    const store = readPlatformAccessStore();
+    const row = store.byEmail[key] || { codes: [], updatedAt: '' };
+    const codes = Array.isArray(row.codes) ? row.codes.slice() : [];
+    if (!codes.includes(plat)) codes.push(plat);
+    store.byEmail[key] = { codes, updatedAt: nowIso() };
+    try {
+      localStorage.setItem(PLATFORM_ACCESS_KEY, JSON.stringify(store));
+      window.dispatchEvent(new CustomEvent('hub-platform-access-changed', { detail: { email: key, code: plat } }));
+    } catch (_) {}
+    return store.byEmail[key];
   };
 
   const TYPE_LABELS_AR = {
     'Article Submission': 'مقال',
     'Ad Submission': 'طلب نشر إعلان',
     'Event Submission': 'طلب نشر فعالية',
+    'Platform Access Request': 'طلب وصول لمنصة',
+    'Platform Add Request': 'طلب إضافة منصة',
     'Solution Request': 'طلب حل',
     'Cost Reduction Assessment': 'خفض تكاليف',
     'Cost Reduction Request': 'خفض تكاليف',
@@ -219,6 +252,12 @@
       scopeDetail: r.scopeDetail || '',
       costMeta: r.costMeta || null,
       articleSnapshot: r.articleSnapshot || null,
+      adSnapshot: r.adSnapshot || null,
+      eventSnapshot: r.eventSnapshot || null,
+      platformDraft: r.platformDraft || null,
+      platformName: r.platformName || '',
+      intendedUse: r.intendedUse || '',
+      rejectionReason: r.rejectionReason || '',
       customer: r.customer || {
         name: r.customer?.name || r.customerName || '',
         company: r.customer?.company || r.company || '',
@@ -380,6 +419,7 @@
     else if (type === 'Project Registration') prefix = 'SP-REG';
     else if (type === 'Support Request') prefix = 'SUP';
     else if (type === 'Article Submission' || type === 'مقال') prefix = 'REQ';
+    else if (type === 'Platform Access Request' || type === 'Platform Add Request') prefix = 'PLT';
 
     const id = payload.id || payload.requestId || nextSeq(state.requests, prefix);
     const stamp = nowIso();
@@ -962,6 +1002,46 @@
       return row;
     }
 
+    if (
+      row.referenceType === 'Platform' &&
+      (row.requestType === 'Platform Access Request' || row.requestType === 'Platform Add Request')
+    ) {
+      if (row.requestType === 'Platform Access Request' && row.referenceId && row.email) {
+        grantPlatformAccess(row.email, row.referenceId);
+      }
+      row.status = 'Approved';
+      row.timeline.push({
+        at: stamp,
+        by: actor,
+        text:
+          row.requestType === 'Platform Access Request'
+            ? 'موافقة — تم منح الوصول للمنصة'
+            : 'موافقة — طلب إضافة منصة',
+        key: 'approved_platform',
+      });
+      pushAudit({
+        action: 'Approved',
+        requestId: row.id,
+        performedBy: actor,
+        oldStatus: old,
+        newStatus: row.status,
+        customer: row.company || row.customerName,
+        sourceModule: row.sourceModule,
+        detail: row.referenceId || row.title,
+      });
+      pushCustomerNotification({
+        title:
+          row.requestType === 'Platform Access Request'
+            ? 'تمت الموافقة على طلب الوصول للمنصة'
+            : 'تمت الموافقة على طلب إضافة المنصة',
+        message: `${row.title || row.referenceId || '—'} · ${row.id}`,
+        source: 'منصات نايوش 360',
+        link: 'platforms.html#platforms-mine',
+      });
+      save();
+      return row;
+    }
+
     // Generic product/service/other requests
     row.status = 'Approved';
     row.timeline.push({ at: stamp, by: actor, text: 'تمت الموافقة على الطلب', key: 'approved' });
@@ -1434,5 +1514,8 @@
     pushAudit,
     updateSettings,
     getSettings: () => state.settings,
+    PLATFORM_ACCESS_KEY,
+    grantPlatformAccess,
+    readPlatformAccessStore,
   };
 })();
