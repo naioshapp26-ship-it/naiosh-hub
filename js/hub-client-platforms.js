@@ -73,11 +73,82 @@
   };
 
   const systemOptions = () => {
+    if (window.HubOpsCatalog?.systemOptions) {
+      return window.HubOpsCatalog.systemOptions();
+    }
     const fromMarket = (window.HubMarketplaceData?.APPS || []).filter((a) => a.kind === 'system');
     if (fromMarket.length) {
       return fromMarket.map((a) => ({ code: String(a.code).toUpperCase(), label: a.nameAr || a.code }));
     }
     return SYSTEM_OPTIONS.slice();
+  };
+
+  const grantSystems = (email, systems, entitlements) => {
+    const granted = [];
+    const grants = entitlements?.grants;
+    if (Array.isArray(grants) && grants.length) {
+      grants.forEach((g) => {
+        const code = String(g.systemCode || '').toUpperCase();
+        if (!code) return;
+        try {
+          window.HubStore?.grantSubscription?.({
+            email,
+            systemCode: code,
+            plan: 'standard',
+            permissions: g.permissions || ['read', 'write'],
+            source: 'incubator-booking',
+          });
+        } catch {
+          /* ignore */
+        }
+        granted.push({
+          code,
+          label: g.label || code,
+          kind: g.kind || 'system',
+          parentSystem: g.parentSystem || null,
+          hideParent: false,
+        });
+      });
+      // customer-facing labels from services
+      const services = window.HubOpsCatalog?.customerFacingServices?.(entitlements) || [];
+      if (services.length) {
+        return services.map((s) => ({
+          code: s.code,
+          label: s.label,
+          kind: s.kind,
+          hideParent: !!s.hideParent,
+          systemId: s.systemId,
+          moduleId: s.moduleId,
+        }));
+      }
+      return granted;
+    }
+
+    (systems || []).forEach((sys) => {
+      const code = String(sys.code || sys || '').toUpperCase();
+      if (!code) return;
+      const label = sys.label || code;
+      try {
+        window.HubStore?.grantSubscription?.({
+          email,
+          systemCode: code,
+          plan: 'standard',
+          permissions: ['read', 'write'],
+          source: 'incubator-booking',
+        });
+      } catch {
+        /* ignore */
+      }
+      granted.push({
+        code,
+        label,
+        kind: sys.kind || 'system',
+        hideParent: !!sys.hideParent,
+        systemId: sys.systemId || null,
+        moduleId: sys.moduleId || null,
+      });
+    });
+    return granted;
   };
 
   const branchPool = () =>
@@ -122,28 +193,6 @@
     return affiliated.concat(extras);
   };
 
-  const grantSystems = (email, systems) => {
-    const granted = [];
-    (systems || []).forEach((sys) => {
-      const code = String(sys.code || sys || '').toUpperCase();
-      if (!code) return;
-      const label = sys.label || code;
-      try {
-        window.HubStore?.grantSubscription?.({
-          email,
-          systemCode: code,
-          plan: 'standard',
-          permissions: ['read', 'write'],
-          source: 'incubator-booking',
-        });
-      } catch {
-        /* ignore */
-      }
-      granted.push({ code, label });
-    });
-    return granted;
-  };
-
   const grantFromBooking = (payload = {}) => {
     const email = normEmail(payload.email);
     const platformName = String(payload.platformName || payload.platform || '').trim();
@@ -152,16 +201,26 @@
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, '');
     const systemsIn = Array.isArray(payload.systems) ? payload.systems : [];
+    let entitlements = payload.opsEntitlements || null;
+    if (!entitlements && payload.opsSelection && window.HubOpsCatalog?.resolveEntitlements) {
+      entitlements = window.HubOpsCatalog.resolveEntitlements(payload.opsSelection);
+    }
     if (!email || !platformName) return { ok: false, error: 'الإيميل واسم المنصة مطلوبان' };
     const isHq = String(payload.source || '').toLowerCase() === 'hq';
     if (!isHq) {
       if (!payload.branch) return { ok: false, error: 'اختر الفرع' };
       if (!payload.incubator) return { ok: false, error: 'اختر حاضنة تابعة للفرع' };
     }
-    if (!systemsIn.length) return { ok: false, error: 'اختر الأنظمة التشغيلية حسب حاجة العمل' };
+    const hasEnt = Array.isArray(entitlements?.grants) && entitlements.grants.length;
+    if (!systemsIn.length && !hasEnt) return { ok: false, error: 'اختر الأنظمة أو الوحدات التشغيلية حسب حاجة العمل' };
 
-    const systems = grantSystems(email, systemsIn);
-    const primary = systems[0]?.code || 'ERP';
+    const systems = grantSystems(email, systemsIn, entitlements);
+    const primary =
+      systems.find((s) => s.kind === 'system')?.code ||
+      entitlements?.grants?.find((g) => g.kind === 'system')?.systemCode ||
+      systems[0]?.parentSystem ||
+      systems[0]?.code ||
+      'HUB';
     const host = slug ? `${slug}.naiosh.app` : '';
     let structureGrantId = '';
     let subdomainGrantId = '';
@@ -209,6 +268,8 @@
       incubatorLabel: isHq ? '' : String(payload.incubatorLabel || payload.incubator || '').trim(),
       sectorName: String(payload.sectorName || '').trim(),
       systems,
+      opsEntitlements: entitlements || null,
+      opsMode: entitlements?.mode || 'by_need',
       status: 'active',
       grantId: structureGrantId,
       subdomainGrantId,

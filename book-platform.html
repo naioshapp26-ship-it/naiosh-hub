@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
+  <link rel="stylesheet" href="css/hub-ops-catalog.css?v=1" />
   <link rel="stylesheet" href="css/hub-booking.css?v=8" />
 </head>
 <body class="homepage">
@@ -116,10 +117,10 @@
           <p class="hub-book-hint" data-from-incubator hidden>تظهر هنا فقط الحاضنات التابعة للفرع الذي اخترته.</p>
 
           <fieldset class="hub-book-systems" data-work-systems data-book-systems hidden>
-            <legend>الأنظمة التشغيلية حسب حاجة العمل</legend>
-            <p class="hub-book-systems-lead">اختر الأنظمة التي يحتاجها عملك — تُمنح المختارة فقط، وليس كل أنظمة هوب.</p>
-            <div class="hub-book-systems-list" data-book-systems-list></div>
-            <input type="text" tabindex="-1" aria-hidden="true" data-systems-required autocomplete="off" />
+            <legend>الأنظمة التشغيلية حسب حاجة العميل</legend>
+            <p class="hub-book-systems-lead">نايوش هوب هو المظلة. اختر تشغيلًا شموليًا أو أنظمة/وحدات حسب الحاجة — يمكن منح وحدة واحدة دون تفعيل النظام الأب كاملًا.</p>
+            <div class="hub-book-systems-list" data-book-systems-list data-ops-picker></div>
+            <p class="hub-book-hint" style="margin-top:10px"><a href="ops-catalog-admin.html">إدارة الأنظمة والوحدات</a></p>
           </fieldset>
 
           <label for="book-profile">ارفع ملف تعريفي</label>
@@ -180,11 +181,13 @@
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-system-ops-spec.js"></script>
   <script src="js/hub-system-ops-engine.js"></script>
-  <script src="js/hub-client-platforms.js?v=2"></script>
+  <script src="js/hub-client-platforms.js?v=3"></script>
   <script src="js/hub-client-branches.js?v=1"></script>
+  <script src="js/hub-ops-catalog.js?v=1"></script>
+  <script src="js/hub-ops-picker.js?v=1"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-booking.js?v=14"></script>
+  <script src="js/hub-booking.js?v=15"></script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>

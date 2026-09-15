@@ -303,11 +303,23 @@
 
   const systemsRequiredEl = () => form?.querySelector('[data-systems-required]');
 
-  const selectedSystems = () =>
-    [...(form?.querySelectorAll('[name="systems"]:checked') || [])].map((el) => ({
+  let opsPickerApi = null;
+
+  const selectedSystems = () => {
+    if (opsPickerApi && window.HubOpsCatalog) {
+      const ent = opsPickerApi.getEntitlements();
+      return ent.systemsCompat || [];
+    }
+    return [...(form?.querySelectorAll('[name="systems"]:checked') || [])].map((el) => ({
       code: el.value,
       label: String(el.getAttribute('data-label') || el.value),
     }));
+  };
+
+  const selectedOpsBundle = () => {
+    if (!opsPickerApi || !window.HubOpsCatalog) return null;
+    return opsPickerApi.getEntitlements();
+  };
 
   const syncSystemsRequired = () => {
     const proxy = systemsRequiredEl();
@@ -315,6 +327,11 @@
     if (!needsWorkSystems) {
       proxy.required = false;
       proxy.setCustomValidity('');
+      return;
+    }
+    if (opsPickerApi) {
+      const ok = opsPickerApi.validate();
+      if (!ok) return;
       return;
     }
     const n = selectedSystems().length;
@@ -326,6 +343,12 @@
   const fillSystems = () => {
     const mount = form?.querySelector('[data-book-systems-list]');
     if (!mount) return;
+    if (window.HubOpsPicker && window.HubOpsCatalog) {
+      opsPickerApi = window.HubOpsPicker.mount(mount, { required: !!needsWorkSystems });
+      mount.addEventListener('ops-pick-change', syncSystemsRequired);
+      syncSystemsRequired();
+      return;
+    }
     const options = window.HubClientPlatforms?.systemOptions?.() || [];
     mount.innerHTML = options
       .map(
@@ -458,6 +481,7 @@
       incubator: isHqPlatform ? '' : String(data.get('incubator') || '').trim(),
       incubatorLabel: isHqPlatform ? '' : selectedLabel('incubator'),
       systems,
+      opsEntitlements: selectedOpsBundle(),
       profileFile,
       imageFile,
       videoFile,

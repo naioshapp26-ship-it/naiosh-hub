@@ -84,16 +84,25 @@
     if (meta) meta.textContent = 'أدخلي إيميل الحجز ثم اضغطي عرض منصاتي';
   };
 
-  const systemsHtml = (systems) => {
-    const list = Array.isArray(systems) ? systems : [];
-    if (!list.length) return '<p>لم تُمنح أنظمة تشغيلية بعد.</p>';
-    return `<div class="hub-mine-sys-list">${list
-      .map(
-        (s) =>
-          `<button type="button" class="hub-mine-sys-chip" data-open-system="${esc(s.code)}"><i class="fas fa-cube"></i> ${esc(
-            s.label || s.code
-          )} <span dir="ltr">${esc(s.code)}</span></button>`
-      )
+  const systemsHtml = (systems, entitlements) => {
+    const services =
+      (entitlements && window.HubOpsCatalog?.customerFacingServices?.(entitlements)) ||
+      (Array.isArray(systems) ? systems : []);
+    if (!services.length) return '<p>لم تُمنح خدمات تشغيلية بعد.</p>';
+    return `<div class="hub-mine-sys-list">${services
+      .map((s) => {
+        const label = s.label || s.code;
+        const code = s.code || '';
+        const hint =
+          s.hideParent || s.kind === 'module'
+            ? ''
+            : code
+              ? ` <span dir="ltr">${esc(code)}</span>`
+              : '';
+        return `<button type="button" class="hub-mine-sys-chip" data-open-system="${esc(code)}"><i class="fas fa-cube"></i> ${esc(
+          label
+        )}${hint}</button>`;
+      })
       .join('')}</div>`;
   };
 
@@ -119,8 +128,8 @@
           ? `<div class="hub-mine-host"><i class="fas fa-globe"></i> ${esc(row.host)}</div>`
           : ''
       }
-      <p>الأنظمة التشغيلية حسب حاجة العمل:</p>
-      ${systemsHtml(row.systems)}`;
+      <p>الخدمات داخل نايوش هوب:</p>
+      ${systemsHtml(row.systems, row.opsEntitlements)}`;
     bindOpenActions(article, row);
     return article;
   };
