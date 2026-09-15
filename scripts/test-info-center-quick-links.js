@@ -1,37 +1,24 @@
 #!/usr/bin/env node
 /**
- * Info-center quick links must appear near the top (after hero), not only at the bottom.
+ * Info-center landing must expose clear start cards after the hero.
  */
-const fs = require("fs");
-const path = require("path");
-const assert = require("assert");
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
 
-const root = path.join(__dirname, "..");
-const html = fs.readFileSync(path.join(root, "info-center.html"), "utf8");
-const css = fs.readFileSync(path.join(root, "css/hub-knowledge-center.css"), "utf8");
+const root = path.join(__dirname, '..');
+const html = fs.readFileSync(path.join(root, 'hub-checklist.html'), 'utf8');
 
-const heroEnd = html.indexOf("</section>", html.indexOf('class="kol-hero"'));
-assert(heroEnd > 0, "hero section missing");
+assert(html.includes('مرحبًا بك في مركز معلومات نايوش هوب'), 'welcome title');
+assert(html.includes('ماذا تريد أن تعرف؟'), 'start section');
+assert(html.includes('policies.html'), 'policies card link');
+assert(html.includes('engine-specs.html'), 'specs card link');
+assert(html.includes('#about-hub'), 'about hub anchor');
+assert(html.includes('#guides'), 'guides anchor');
+assert(html.includes('data-info-subnav'), 'internal subnav mount');
+assert(html.includes('hub-info-center-chrome.js'), 'chrome script');
 
-const quick = html.indexOf('class="kol-quick-links"');
-assert(quick > heroEnd, "quick links must follow hero");
+const redirect = fs.readFileSync(path.join(root, 'info-center.html'), 'utf8');
+assert(redirect.includes('hub-checklist.html'), 'legacy info-center redirects home');
 
-const knowledgePanel = html.indexOf('data-kol-panel="knowledge"');
-assert(knowledgePanel > quick, "quick links must appear before knowledge panel");
-
-[
-  "engine-specs.html",
-  "policies.html",
-  "ops-manuals.html",
-  "review-methodology.html",
-  "hub-checklist.html",
-  "directives.html",
-  "job-roles.html",
-].forEach((href) => {
-  assert(html.includes(`href="${href}"`), `missing link ${href}`);
-});
-
-assert(!/kol-page[\s\S]*<p style="margin:18px 0 0;text-align:center/.test(html), "bottom inline link row should be removed");
-assert(css.includes(".kol-quick-links"), "kol-quick-links styles present");
-
-console.log("PASS info-center quick links are at the top");
+console.log('PASS info-center landing start cards');

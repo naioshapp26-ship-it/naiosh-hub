@@ -6,31 +6,31 @@
   'use strict';
 
   const SHARED_KEYWORDS =
-    'مركز المعلومات مركز المعرفة محرك البحث معرفة تشغيل تعلم سياسات أدلة مواصفات مراجعة توجيه وصف وظيفي هوب';
+    'مركز معلومات نايوش هوب مركز المعرفة محرك البحث معرفة تشغيل تعلم سياسات أدلة مواصفات مراجعة توجيه وصف وظيفي هوب';
 
   const PAGES = [
     {
       id: 'info-home',
-      href: 'info-center.html',
-      title: 'مركز المعرفة والتشغيل والتعلم',
-      shortTitle: 'مركز المعرفة',
-      subtitle: 'منصة واحدة داخل هوب: معرفة · تشغيل · تعلم',
+      href: 'hub-checklist.html',
+      title: 'مركز معلومات نايوش هوب',
+      shortTitle: 'مركز المعلومات',
+      subtitle: 'ابدأ هنا: التعريف · السياسات · المواصفات · الأدلة',
       icon: 'fa-circle-info',
-      keywords: 'اسأل نايوش معرفة معتمدة كائنات معرفية محرك المعرفة محرك التشغيل محرك التعلم',
+      keywords: 'ماذا يعني هوب نظرة عامة مركز معلومات تعريف',
     },
     {
       id: 'info-specs',
       href: 'engine-specs.html',
-      title: 'المواصفات الوظيفية للمحرك',
+      title: 'المواصفات الوظيفية لنايوش هوب',
       shortTitle: 'المواصفات',
-      subtitle: 'مواصفات محركات هوب والتكامل وواجهات التشغيل',
+      subtitle: 'مكونات المحرك ووظيفة كل جزء بلغة مفهومة',
       icon: 'fa-gears',
       keywords: 'مواصفات محرك تكامل API وظائف متطلبات',
     },
     {
       id: 'info-policies',
       href: 'policies.html',
-      title: 'مكتبة سياسات نايوش',
+      title: 'سياسات نايوش هوب',
       shortTitle: 'السياسات',
       subtitle: 'السياسات والإجراءات والخصوصية وأمن المعلومات',
       icon: 'fa-scroll',
@@ -56,9 +56,9 @@
     },
     {
       id: 'info-checklist',
-      href: 'hub-checklist.html',
-      title: 'قائمة قدرات نايوش هوب',
-      shortTitle: 'قائمة الهوب',
+      href: 'hub-checklist.html#about-hub',
+      title: 'ما هي نايوش هوب؟',
+      shortTitle: 'ما هي هوب',
       subtitle: 'ماذا يعني هوب = … مع حالة التنفيذ ورابط الصفحة',
       icon: 'fa-list-check',
       keywords: 'قائمة قدرات هوب ترتيب صفحات تم جزئي لسه',

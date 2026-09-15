@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>المواصفات الوظيفية للمحرك | نايوش هوب 360</title>
+  <title>المواصفات الوظيفية لنايوش هوب | مركز معلومات نايوش هوب</title>
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -11,9 +11,9 @@
   <link rel="stylesheet" href="css/hub-theme.css" />
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
-  <link rel="stylesheet" href="css/hub-dark-surfaces.css?v=1" />
-  <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
-  <link rel="stylesheet" href="css/hub-engine-specs.css?v=1" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=20" />
+  <link rel="stylesheet" href="css/hub-info-center-workspace.css?v=1" />
+  <link rel="stylesheet" href="css/hub-engine-specs.css?v=2" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -22,71 +22,62 @@
         <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
         <nav class="nav-links">
           <a href="index.html">الرئيسية</a>
-          <a href="info-center.html">مركز المعرفة</a>
+          <a href="hub-checklist.html">مركز المعلومات</a>
+          <a href="policies.html">السياسات</a>
           <a class="active" href="engine-specs.html">المواصفات</a>
-          <a href="review-methodology.html">المراجعة</a>
-          <a href="hub-checklist.html">قائمة الهوب</a>
-          <a href="operating.html">آلية التشغيل</a>
           <a href="dashboard.html">غرفة العمليات</a>
         </nav>
       </div>
       <div class="auth-actions">
-        <a href="info-center.html" class="auth-btn primary">مركز المعرفة</a>
+        <a href="hub-checklist.html" class="auth-btn primary">رجوع لمركز المعلومات</a>
         <a href="login.html" class="auth-btn">تسجيل الدخول</a>
       </div>
     </div>
   </header>
 
-  <main class="container spec-page" data-spec-root>
-    <section class="spec-hero" aria-label="المواصفات الوظيفية">
-      <h1>المواصفات الوظيفية للمحرك</h1>
+  <main class="info-page spec-page" data-spec-root>
+    <div data-info-crumbs='[{"label":"المواصفات الوظيفية"}]'></div>
+    <div data-info-subnav></div>
+
+    <section class="info-hero" aria-label="المواصفات الوظيفية">
+      <h1>المواصفات الوظيفية لنايوش هوب</h1>
       <p>
-        Blueprint قابل للبناء مباشرة: لكل مكوّن قالب موحّد
-        (الهدف → المستخدمون → الصلاحيات → الشاشة → البيانات → العمليات → Workflow → التكاملات → AI → التدريب → الاختبار → KPIs → التقارير).
-        هوب طبقة تحكم وتنسيق — ليس بالضرورة تنفيذ كل شيء داخله.
+        تعرف على المكونات الرئيسية التي تعمل عليها منظومة نايوش هوب، وما وظيفة كل مكوّن داخل النظام.
+        التفاصيل التقنية تظهر عند الحاجة — ابدأ بالفهم ثم افتح التفاصيل.
       </p>
-      <div class="spec-chain" aria-label="سلسلة المعرفة والتشغيل">
-        <span>معرفة</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>إجراء</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>Workflow</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>تدريب</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>اختبار</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>مهارة</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>صلاحية</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>تشغيل</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>أداء</span><i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>تحسين</span>
-      </div>
     </section>
 
     <section class="spec-kpis" data-spec-kpis aria-label="حالة المواصفات"></section>
 
-    <div class="spec-toolbar">
-      <input type="search" data-spec-q placeholder="بحث في المكوّنات…" aria-label="بحث المواصفات" />
-      <div class="spec-filters" role="group" aria-label="تصفية الحالة">
-        <button type="button" class="is-active" data-spec-filter="all">الكل</button>
-        <button type="button" data-spec-filter="done">تم</button>
-        <button type="button" data-spec-filter="partial">جزئي</button>
-        <button type="button" data-spec-filter="missing">لسه</button>
+    <section class="info-section">
+      <div class="spec-toolbar">
+        <input type="search" data-spec-q placeholder="ابحث في المواصفات..." aria-label="بحث المواصفات" />
+        <div class="spec-filters" data-spec-filters role="group" aria-label="تصفية الحالة">
+          <button type="button" class="is-active" data-spec-filter="all">الكل</button>
+          <button type="button" data-spec-filter="done">تم</button>
+          <button type="button" data-spec-filter="partial">جزئي</button>
+          <button type="button" data-spec-filter="missing">لسه</button>
+        </div>
       </div>
-    </div>
 
-    <div class="spec-section-head">
-      <h2>مراحل البناء (لا تبدأ بالشاشات)</h2>
-      <p>معمارية → Core → بيانات → API → واجهات → معرفة → تشغيل → تعلّم → AI → قياس</p>
-    </div>
-    <section class="spec-phases" data-spec-phases aria-label="مراحل البناء"></section>
+      <div class="spec-section-head">
+        <h2>المكونات الرئيسية</h2>
+        <p>كل بطاقة تشرح الوظيفة بلغة بسيطة — الاسم التقني يظهر بحجم أصغر.</p>
+      </div>
+      <section class="spec-phases" data-spec-phases aria-label="مراحل البناء"></section>
 
-    <div class="spec-section-head">
-      <h2>مكوّنات المواصفات الوظيفية</h2>
-      <p>كل بطاقة = Blueprint جاهز للفريق البرمجي مع رابط لما هو موجود في الهوب الآن</p>
-    </div>
-    <section class="spec-list" data-spec-list aria-label="قائمة المواصفات"></section>
+      <div class="spec-section-head">
+        <h2>تفاصيل المكوّنات</h2>
+        <p>افتح «عرض التفاصيل» فقط عند الحاجة — Progressive Disclosure.</p>
+      </div>
+      <section class="spec-list" data-spec-list aria-label="قائمة المواصفات"></section>
+    </section>
   </main>
 
   <script src="js/hub-upload-limits.js?v=1"></script>
-  <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-engine-specs.js?v=1"></script>
+  <script src="js/hub-info-center-chrome.js?v=1"></script>
+  <script src="js/hub-header-actions.js?v=20"></script>
+  <script src="js/hub-engine-specs.js?v=2"></script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js?v=3" defer></script>

@@ -23,16 +23,96 @@
   ];
 
   const PHASES = [
-    { n: 1, title: 'Enterprise Architecture', items: ['الكيانات', 'العلاقات', 'الأدوار', 'الصلاحيات', 'الخدمات', 'التكاملات'] },
-    { n: 2, title: 'Core Platform', items: ['Identity', 'Permission', 'Organization', 'App Registry', 'Notification', 'Workflow', 'Audit'] },
-    { n: 3, title: 'Data Layer', items: ['Users', 'Orgs', 'Knowledge', 'Workflows', 'Courses', 'Skills', 'Transactions'] },
-    { n: 4, title: 'API / Integration', items: ['Integration Layer', 'مزامنة الأنظمة', 'استيراد/تصدير'] },
-    { n: 5, title: 'HUB UI', items: ['Dashboard', 'Applications', 'Services', 'Learning', 'Wallet', 'Knowledge'] },
-    { n: 6, title: 'مركز المعرفة', items: ['Knowledge Engine', 'Search', 'Version', 'Approval', 'AI Retrieval'] },
-    { n: 7, title: 'التشغيل', items: ['Workflow Engine', 'تحويل الإجراءات'] },
-    { n: 8, title: 'التعلّم', items: ['Learning', 'Assessment', 'Skill', 'Certificate', 'Adaptive'] },
-    { n: 9, title: 'الذكاء الاصطناعي', items: ['Assistant', 'Search', 'Recommendations', 'Analytics', 'Decision Support'] },
-    { n: 10, title: 'القياس', items: ['KPI Engine', 'استخدام', 'جودة', 'تكلفة', 'رضا'] },
+    {
+      n: 1,
+      titleAr: 'معمارية المؤسسة',
+      title: 'Enterprise Architecture',
+      purpose: 'ترسم شكل المنظومة: الكيانات والعلاقات والأدوار قبل البناء.',
+      audience: 'المعماريون والإدارة العليا',
+      where: 'التخطيط والحوكمة',
+      items: ['الكيانات', 'العلاقات', 'الأدوار', 'الصلاحيات', 'الخدمات', 'التكاملات'],
+    },
+    {
+      n: 2,
+      titleAr: 'المنصة الأساسية',
+      title: 'Core Platform',
+      purpose: 'الهوية والصلاحيات وسجل التطبيقات وسير العمل المشترك.',
+      audience: 'فريق المنصة والأمن',
+      where: 'كل أنظمة هوب',
+      items: ['Identity', 'Permission', 'Organization', 'App Registry', 'Notification', 'Workflow', 'Audit'],
+    },
+    {
+      n: 3,
+      titleAr: 'طبقة البيانات',
+      title: 'Data Layer',
+      purpose: 'تخزين المستخدمين والمعرفة والمعاملات بشكل منظم.',
+      audience: 'مهندسو البيانات والتشغيل',
+      where: 'التقارير والبحث والتكامل',
+      items: ['Users', 'Orgs', 'Knowledge', 'Workflows', 'Courses', 'Skills', 'Transactions'],
+    },
+    {
+      n: 4,
+      titleAr: 'التكامل وواجهات الربط',
+      title: 'API / Integration',
+      purpose: 'ربط الأنظمة ومزامنة البيانات باستيراد وتصدير آمن.',
+      audience: 'فرق التكامل',
+      where: 'بين هوب والأنظمة الخارجية',
+      items: ['Integration Layer', 'مزامنة الأنظمة', 'استيراد/تصدير'],
+    },
+    {
+      n: 5,
+      titleAr: 'واجهات هوب',
+      title: 'HUB UI',
+      purpose: 'الشاشات التي يستخدمها العميل يوميًا: لوحة، تطبيقات، خدمات.',
+      audience: 'كل المستخدمين',
+      where: 'المتصفح وتطبيقات هوب',
+      items: ['Dashboard', 'Applications', 'Services', 'Learning', 'Wallet', 'Knowledge'],
+    },
+    {
+      n: 6,
+      titleAr: 'مركز المعلومات',
+      title: 'Knowledge Engine',
+      purpose: 'البحث والإصدارات والاعتماد للمحتوى المعرفي والسياسات.',
+      audience: 'العملاء والإدارة',
+      where: 'مركز معلومات نايوش هوب',
+      items: ['Knowledge Engine', 'Search', 'Version', 'Approval', 'AI Retrieval'],
+    },
+    {
+      n: 7,
+      titleAr: 'التشغيل',
+      title: 'Operations',
+      purpose: 'تحويل الإجراءات إلى مسارات تنفيذ ومتابعة.',
+      audience: 'التشغيل ومدراء الوحدات',
+      where: 'غرفة العمليات والأدلة',
+      items: ['Workflow Engine', 'تحويل الإجراءات'],
+    },
+    {
+      n: 8,
+      titleAr: 'التعلّم',
+      title: 'Learning',
+      purpose: 'تقييم وتدريب وشهادات مربوطة بالمهارة.',
+      audience: 'المتدربون والمدربون',
+      where: 'الأكاديمية والمسارات',
+      items: ['Learning', 'Assessment', 'Skill', 'Certificate', 'Adaptive'],
+    },
+    {
+      n: 9,
+      titleAr: 'الذكاء الاصطناعي',
+      title: 'AI',
+      purpose: 'مساعد واقتراحات ودعم قرار فوق معرفة معتمدة.',
+      audience: 'كل المستخدمين',
+      where: 'اسأل نايوش واللوحات',
+      items: ['Assistant', 'Search', 'Recommendations', 'Analytics', 'Decision Support'],
+    },
+    {
+      n: 10,
+      titleAr: 'القياس والقيادة',
+      title: 'Measurement / Leadership',
+      purpose: 'مؤشرات الأداء والمخاطر وخطط التحسين.',
+      audience: 'الإدارة العليا',
+      where: 'لوحات القيادة',
+      items: ['KPI Engine', 'استخدام', 'جودة', 'تكلفة', 'رضا'],
+    },
   ];
 
   const MODULES = [
@@ -250,8 +330,12 @@
       (p) => `
       <article class="spec-phase">
         <strong>المرحلة ${p.n}</strong>
-        <h3>${p.title}</h3>
+        <h3>${p.titleAr || p.title}</h3>
+        <div class="spec-en">${p.title}</div>
+        <p class="spec-purpose"><b>ما وظيفته؟</b> ${p.purpose || '—'}</p>
+        <p class="spec-purpose"><b>أين يُستخدم؟</b> ${p.where || '—'} · <b>من يحتاجه؟</b> ${p.audience || '—'}</p>
         <ul>${p.items.map((i) => `<li>${i}</li>`).join('')}</ul>
+        <button type="button" class="info-btn sm" data-spec-phase-more="${p.n}">عرض التفاصيل</button>
       </article>`
     ).join('');
   };
@@ -260,9 +344,11 @@
     const list = qs('[data-spec-list]');
     if (!list) return;
     const q = filter.trim().toLowerCase();
+    const statusFilter = qs('[data-spec-filters] .is-active')?.getAttribute('data-spec-filter') || 'all';
     const rows = MODULES.filter((m) => {
+      if (statusFilter !== 'all' && m.status !== statusFilter) return false;
       if (!q) return true;
-      const hay = `${m.title} ${m.goal} ${m.id}`.toLowerCase();
+      const hay = `${m.title} ${m.goal} ${m.id} ${m.users || ''}`.toLowerCase();
       return hay.includes(q);
     });
     list.innerHTML = rows
@@ -270,16 +356,21 @@
         (m) => `
       <article class="spec-card" data-spec-id="${m.id}">
         <header>
-          <h3>${m.title}</h3>
+          <div>
+            <h3>${m.title}</h3>
+            <div class="spec-en">${m.id}</div>
+          </div>
           <span class="spec-badge spec-badge--${m.status}">${statusLabel(m.status)}</span>
         </header>
-        <p class="spec-goal">${m.goal}</p>
-        <dl class="spec-grid">
-          ${SPEC_FIELDS.map((f) => `<div><dt>${f.label}</dt><dd>${m[f.key] || '—'}</dd></div>`).join('')}
-        </dl>
-        <div class="spec-actions">
-          <a class="primary" href="${m.href}">${m.hrefLabel}</a>
-        </div>
+        <p class="spec-goal"><b>ما وظيفته؟</b> ${m.goal}</p>
+        <p class="spec-goal"><b>من يحتاجه؟</b> ${m.users || '—'} · <b>أين؟</b> ${m.screen || '—'}</p>
+        <details>
+          <summary>عرض التفاصيل</summary>
+          <dl class="spec-grid">
+            ${SPEC_FIELDS.map((f) => `<div><dt>${f.label}</dt><dd>${m[f.key] || '—'}</dd></div>`).join('')}
+          </dl>
+        </details>
+        ${m.href ? `<a class="info-btn sm" href="${m.href}">${m.hrefLabel || 'فتح'}</a>` : ''}
       </article>`
       )
       .join('');
@@ -311,14 +402,16 @@
     qsa('[data-spec-filter]').forEach((btn) => {
       btn.addEventListener('click', () => {
         qsa('[data-spec-filter]').forEach((b) => b.classList.toggle('is-active', b === btn));
-        const st = btn.getAttribute('data-spec-filter');
-        const list = qs('[data-spec-list]');
-        if (!list) return;
-        qsa('.spec-card', list).forEach((card) => {
-          const mod = MODULES.find((m) => m.id === card.getAttribute('data-spec-id'));
-          card.hidden = st !== 'all' && mod?.status !== st;
-        });
+        renderList(qs('[data-spec-q]')?.value || '');
       });
+    });
+    qs('[data-spec-phases]')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-spec-phase-more]');
+      if (!btn) return;
+      const n = Number(btn.getAttribute('data-spec-phase-more'));
+      const phase = PHASES.find((p) => p.n === n);
+      if (!phase) return;
+      alert(`${phase.titleAr}\n(${phase.title})\n\n${phase.purpose}\n\n${(phase.items || []).join(' · ')}`);
     });
   };
 

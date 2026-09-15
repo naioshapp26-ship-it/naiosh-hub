@@ -12,7 +12,8 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-dark-surfaces.css?v=1" />
-  <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=20" />
+  <link rel="stylesheet" href="css/hub-info-center-workspace.css?v=1" />
   <link rel="stylesheet" href="css/hub-ops-manuals.css?v=1" />
 </head>
 <body class="homepage">
@@ -24,18 +25,20 @@
           <a href="index.html">الرئيسية</a>
           <a href="operating.html">آلية التشغيل</a>
           <a class="active" href="ops-manuals.html">الأدلة التشغيلية</a>
-          <a href="info-center.html">مركز المعرفة</a>
+          <a href="hub-checklist.html">مركز معلومات نايوش هوب</a>
           <a href="dashboard.html">غرفة العمليات</a>
         </nav>
       </div>
       <div class="auth-actions">
-        <a href="operating.html" class="auth-btn primary">آلية التشغيل</a>
+        <a href="hub-checklist.html" class="auth-btn primary">رجوع لمركز المعلومات</a>
         <a href="login.html" class="auth-btn">تسجيل الدخول</a>
       </div>
     </div>
   </header>
 
-  <main class="container ops-man-page" data-ops-root>
+  <main class="info-page ops-man-page" data-ops-root>
+    <div data-info-crumbs='[{"label":"الأدلة وطريقة الاستخدام"}]'></div>
+    <div data-info-subnav></div>
     <section class="ops-man-hero">
       <h1>منظومة الأدلة التشغيلية</h1>
       <p>
@@ -67,7 +70,8 @@
   </main>
 
   <script src="js/hub-upload-limits.js?v=1"></script>
-  <script src="js/hub-header-actions.js?v=18"></script>
+  <script src="js/hub-info-center-chrome.js?v=1"></script>
+  <script src="js/hub-header-actions.js?v=20"></script>
   <script src="js/hub-ops-manuals.js?v=1"></script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>

@@ -1,174 +1,619 @@
 /**
- * مكتبة سياسات نايوش — ملف 03
- * قالب سياسات الشركة ككائنات قابلة للبحث والربط بالحوكمة
+ * سياسات نايوش هوب — واجهة المكتبة + إضافة/مراجعة/نشر
  */
-(() => {
+(function () {
   'use strict';
 
-  const CATEGORIES = [
-    { id: 'all', label: 'كل الفئات' },
-    { id: 'integrity', label: 'نزاهة وحوكمة' },
-    { id: 'hr', label: 'موارد بشرية' },
-    { id: 'safety', label: 'أمن وسلامة' },
-    { id: 'tech', label: 'تقنية وبيانات' },
-    { id: 'compliance', label: 'امتثال نظامي' },
-    { id: 'culture', label: 'ثقافة وسلوك' },
-    { id: 'ops-finance', label: 'تشغيل ومالية' },
-  ];
+  var root = document.querySelector('[data-pol-root]');
+  if (!root || !window.HubPoliciesStore) return;
 
-  const POLICIES = [
-    { id: 'p01', cat: 'integrity', title: 'سياسة مكافحة الفساد والرشوة في العمل', summary: 'إدارة مخاطر الفساد بشكل استباقي: تعريف السلوكيات المحظورة، الهدايا، الإبلاغ، التحقيق، والإجراءات التأديبية.' },
-    { id: 'p02', cat: 'integrity', title: 'سياسة أخلاقيات التسويق والمبيعات', summary: 'مصداقية الحملات والصفقات: عدم المبالغة أو التضليل، ضوابط الخصومات، وحماية الملكية الفكرية.' },
-    { id: 'p03', cat: 'culture', title: 'سياسة مكافحة التحرش في بيئة العمل', summary: 'منع انتهاك الكرامة: تعريف التحرش، الإبلاغ الفوري، التحقيق، والعواقب التأديبية.' },
-    { id: 'p04', cat: 'hr', title: 'سياسة تخطيط القوى العاملة', summary: 'الاستعداد للكفاءات المستقبلية: تخطيط الإحلال، أولويات التطوير والترقيات، والتنبؤ بالحركة الوظيفية.' },
-    { id: 'p05', cat: 'hr', title: 'سياسة تقييم الوظائف ومقارنة الرواتب', summary: 'إطار نقاط لتقييم الدور لا شاغله: عدالة الرواتب والترقيات والتعيينات.' },
-    { id: 'p06', cat: 'culture', title: 'سياسة احترام التنوع الثقافي ومكافحة التمييز', summary: 'بيئة احترام وتقدير: سلوكيات مطلوبة، ما يُعد تمييزاً، وإجراءات المواجهة.' },
-    { id: 'p07', cat: 'tech', title: 'سياسة خصوصية وحماية البيانات', summary: 'حماية بيانات الموظفين والعملاء: الوصول، التخزين، التخلص، والاستجابة للاختراق.' },
-    { id: 'p08', cat: 'safety', title: 'سياسة الأمن وإجراءات الدخول والخروج', summary: 'خط الدفاع الأول: التحقق من الهوية، المراقبة، التحكم في الوصول، وخطط الطوارئ.' },
-    { id: 'p09', cat: 'culture', title: 'سياسة تكافؤ الفرص في العمل وعدم التمييز', summary: 'الجدارة أساس التمايز: مساواة، دعم ذوي الإعاقة، حظر التنمر والانتقام.' },
-    { id: 'p10', cat: 'culture', title: 'سياسة المشاركة المجتمعية والعمل التطوعي', summary: 'أثر مجتمعي منظم: مشاركة الموظفين، الحوافز، وضوابط السلوك أثناء التطوع.' },
-    { id: 'p11', cat: 'ops-finance', title: 'سياسة البيئة والاستدامة للشركات', summary: 'لا ضرر ولا ضرار: تدوير، طاقة نظيفة، تقليل نفايات، وتدريب على الاستدامة.' },
-    { id: 'p12', cat: 'hr', title: 'سياسة الإجراءات التأديبية للموظفين', summary: 'مرجع موحّد للمخالفات والجزاءات مع الأساس القانوني وجدول الجزاءات.' },
-    { id: 'p13', cat: 'tech', title: 'سياسة السرية وضوابط وسائل التواصل الاجتماعي', summary: 'حماية صورة الشركة وسرية البيانات على الحسابات الشخصية والرسمية.' },
-    { id: 'p14', cat: 'safety', title: 'سياسة الطوارئ وإرشادات السلامة من الحريق', summary: 'استعداد، وقاية، استجابة، ثم توثيق وتحقيق بعد الأزمة.' },
-    { id: 'p15', cat: 'safety', title: 'سياسة الصحة والسلامة المهنية', summary: 'تدابير وقائية، تصميم بيئة العمل، تدريب، وإبلاغ عن الحوادث.' },
-    { id: 'p16', cat: 'hr', title: 'سياسة الإجازات', summary: 'أنواع الإجازات وضوابطها: سنوية، مرضية، وضع، أبوة، حج، ورسمية.' },
-    { id: 'p17', cat: 'hr', title: 'سياسة مكافأة نهاية الخدمة', summary: 'أساس الحساب، حالات الاستحقاق الكلي/الجزئي، العلاقة بالعقود، وتوقيت الصرف.' },
-    { id: 'p18', cat: 'hr', title: 'سياسة الاستقالة وفترة الإشعار', summary: 'خطوات الاستقالة، فترة الإشعار، سريان العقد، الرد، والعدول.' },
-    { id: 'p19', cat: 'safety', title: 'سياسة إصابة العمل وتعويض العامل', summary: 'تعريف الإصابة، الإبلاغ، العلاج، التعويضات، والعودة للعمل.' },
-    { id: 'p20', cat: 'culture', title: 'مدونة السلوك الوظيفي', summary: 'آداب مهنية: احترافية، احترام، التزام بالقوانين، وعواقب الإخلال.' },
-    { id: 'p21', cat: 'compliance', title: 'سياسة الامتثال لنظام السعودة والتوطين', summary: 'التزام نطاقات ومستوى التوطين المستهدف وبرامج الدعم ذات الصلة.' },
-    { id: 'p22', cat: 'hr', title: 'سياسة عقود العمل', summary: 'أنواع العقود، التحويل بينها، فترة التجربة، التجديد والإنهاء.' },
-    { id: 'p23', cat: 'ops-finance', title: 'سياسة البدلات للموظفين', summary: 'سكن، نقل، اتصالات، طبيعة عمل، مسؤولية، طعام، تعليم — ضمن حدود معقولة.' },
-    { id: 'p24', cat: 'safety', title: 'سياسة بيئة العمل الصحية', summary: 'تصميم مكان آمن وصحي، أماكن استراحة، وآلية التحسين المستمر.' },
-    { id: 'p25', cat: 'hr', title: 'سياسة التدريب والتطوير', summary: 'تقييم احتياجات تدريبية، مساواة وشفافية، وتقييم ما بعد التدريب.' },
-    { id: 'p26', cat: 'compliance', title: 'سياسة نقل كفالة وتصاريح العمل', summary: 'نقل الكفالة من/إلى الشركة، التسجيل الرسمي، وتوثيق العقود.' },
-    { id: 'p27', cat: 'hr', title: 'سياسة تقييم الأداء الوظيفي', summary: 'وتيرة ومعايير التقييم، التظلم، وخطط التطوير الفردية.' },
-    { id: 'p28', cat: 'hr', title: 'سياسة التغييرات التنظيمية وإعادة الهيكلة', summary: 'ضوابط التغيير، الاندماج/الاستحواذ، وحقوق الموظفين المتأثرين.' },
-    { id: 'p29', cat: 'compliance', title: 'سياسة الامتثال لأنظمة الإقامات والتأشيرات', summary: 'إصدار وتجديد الإقامات والتأشيرات والتراخيص المهنية.' },
-    { id: 'p30', cat: 'culture', title: 'سياسة حقوق المرأة في العمل', summary: 'بيئة عادلة وآمنة: أمومة، زواج، حماية من التحرش والتمييز.' },
-    { id: 'p31', cat: 'culture', title: 'سياسة الباب المفتوح للتواصل', summary: 'إنصات فعّال: أوقات أسبوعية، قنوات مخصصة، وتواصل مهني بنّاء.' },
-    { id: 'p32', cat: 'culture', title: 'سياسة الزي الرسمي للعمل', summary: 'معايير المظهر المهني وفق الثقافة والسياق (عمل / فعاليات).' },
-    { id: 'p33', cat: 'tech', title: 'سياسة الاستخدام المقبول لموارد تقنية المعلومات', summary: 'أجهزة وبرامج وشبكات: مقبول/محظور، كلمات مرور، وسرية البيانات.' },
-    { id: 'p34', cat: 'hr', title: 'سياسة القيادة والتوجيه التنفيذي', summary: 'اختيار القادة، الجدارات، الخلفاء، وبرامج اكتشاف القادة.' },
-    { id: 'p35', cat: 'hr', title: 'سياسة قياس رضا الموظفين', summary: 'مسوح دورية صادقة لتحسين تجربة العمل اليومية.' },
-    { id: 'p36', cat: 'ops-finance', title: 'سياسة رحلات العمل وتعويض المصاريف', summary: 'ترتيب الرحلات، النفقات المغطاة، والموافقات والحالات الخاصة.' },
-    { id: 'p37', cat: 'ops-finance', title: 'سياسة استخدام سيارات الشركة', summary: 'قيادة آمنة، صيانة، وتقليل الحوادث لحماية الأصول والأرواح.' },
-    { id: 'p38', cat: 'hr', title: 'سياسة التنقلات الداخلية للموظفين', summary: 'مسارات النقل الداخلي، الأهلية، وأثر النقل على الراتب.' },
-    { id: 'p39', cat: 'hr', title: 'سياسة تصنيف الموظفين', summary: 'دوام كامل/جزئي، مؤقت، فريلانسر — حقوق وواجبات وإنهاء خدمة.' },
-    { id: 'p40', cat: 'ops-finance', title: 'سياسة بطاقة الشركة وإدارة المصاريف', summary: 'إصدار واستخدام ومراقبة البطاقات ومنع الاحتيال.' },
-    { id: 'p41', cat: 'hr', title: 'سياسة إطار الجدارات وتطوير المهارات', summary: 'فئات الجدارات ومستوياتها وتقييمها كنموذج عملي.' },
-    { id: 'p42', cat: 'culture', title: 'سياسة تعزيز الترابط بين الفريق', summary: 'فعاليات اجتماعية منظمة، موافقات، وقواعد سلوك أثناء المشاركة.' },
-    { id: 'p43', cat: 'integrity', title: 'سياسة شكاوى الموظفين والإبلاغ عن المخالفات', summary: 'تشجيع البلاغ، حماية المبلّغ، والتحقيق والمعالجة.' },
-  ];
+  var Store = window.HubPoliciesStore;
+  var ui = {
+    q: '',
+    cat: 'all',
+    adminTab: 'published',
+    viewId: '',
+    formOpen: false,
+    form: blankForm(),
+    editId: '',
+  };
 
-  const ACK_KEY = 'hubPolicyAcks';
+  function blankForm() {
+    return {
+      title: '',
+      cat: 'ops',
+      summary: '',
+      body: '',
+      version: '0.1',
+      effectiveAt: '',
+      department: '',
+      keywords: '',
+      fileName: '',
+      fileDataUrl: '',
+    };
+  }
 
-  const qs = (s, r = document) => r.querySelector(s);
-  const qsa = (s, r = document) => [...r.querySelectorAll(s)];
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
-  const readAcks = () => {
+  function toast(msg, type) {
+    if (window.HubUI && HubUI.toast) HubUI.toast(msg, type || 'info');
+    else if (window.HubActions && HubActions.toast) HubActions.toast(msg);
+    else
+      try {
+        alert(msg);
+      } catch (e) {}
+  }
+
+  function manage() {
+    return Store.canManage();
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
     try {
-      return JSON.parse(localStorage.getItem(ACK_KEY) || '[]');
-    } catch (_) {
-      return [];
+      return new Date(iso).toLocaleDateString('ar-SA');
+    } catch (e) {
+      return String(iso).slice(0, 10);
     }
-  };
+  }
 
-  const saveAcks = (ids) => localStorage.setItem(ACK_KEY, JSON.stringify(ids));
+  function statusCls(s) {
+    if (s === 'published') return 'is-pub';
+    if (s === 'draft') return 'is-draft';
+    if (s === 'pending_review') return 'is-pending';
+    if (s === 'needs_changes' || s === 'rejected') return 'is-warn';
+    return 'is-arch';
+  }
 
-  const catLabel = (id) => CATEGORIES.find((c) => c.id === id)?.label || id;
+  function publicList() {
+    return Store.list({ q: ui.q, cat: ui.cat, status: 'published' });
+  }
 
-  const renderKpis = () => {
-    const root = qs('[data-pol-kpis]');
-    if (!root) return;
-    const acks = readAcks();
-    root.innerHTML = [
-      { n: POLICIES.length, l: 'سياسة في المكتبة' },
-      { n: CATEGORIES.length - 1, l: 'فئات' },
-      { n: acks.length, l: 'اطّلعتُ عليها' },
-      { n: POLICIES.length - acks.length, l: 'متبقية' },
-    ]
-      .map((i) => `<article class="pol-kpi"><strong>${i.n}</strong><span>${i.l}</span></article>`)
-      .join('');
-  };
+  function adminList() {
+    var status = ui.adminTab === 'all' ? '' : ui.adminTab;
+    return Store.list({ q: ui.q, cat: ui.cat, status: status, manage: true });
+  }
 
-  const renderCats = () => {
-    const root = qs('[data-pol-cats]');
-    if (!root) return;
-    root.innerHTML = CATEGORIES.map(
-      (c, i) =>
-        `<button type="button" class="${i === 0 ? 'is-active' : ''}" data-pol-cat="${c.id}">${c.label}</button>`
-    ).join('');
-  };
-
-  const renderList = () => {
-    const list = qs('[data-pol-list]');
-    if (!list) return;
-    const q = (qs('[data-pol-q]')?.value || '').trim().toLowerCase();
-    const cat = qs('[data-pol-cats] .is-active')?.getAttribute('data-pol-cat') || 'all';
-    const acks = readAcks();
-    const rows = POLICIES.filter((p) => {
-      const okC = cat === 'all' || p.cat === cat;
-      const hay = `${p.title} ${p.summary}`.toLowerCase();
-      return okC && (!q || hay.includes(q));
-    });
-    if (!rows.length) {
-      list.innerHTML = '<div class="pol-empty">لا توجد سياسات مطابقة.</div>';
-      return;
+  function actionsFor(p) {
+    var btns = [];
+    btns.push('<button type="button" class="info-btn sm primary" data-pol-view="' + esc(p.id) + '">عرض السياسة</button>');
+    if (p.fileDataUrl) {
+      btns.push(
+        '<a class="info-btn sm" href="' +
+          esc(p.fileDataUrl) +
+          '" download="' +
+          esc(p.fileName || p.title + '.pdf') +
+          '">تحميل</a>'
+      );
+    } else {
+      btns.push('<button type="button" class="info-btn sm" data-pol-download="' + esc(p.id) + '">تحميل</button>');
     }
-    list.innerHTML = rows
-      .map((p) => {
-        const done = acks.includes(p.id);
-        return `
-        <article class="pol-card" data-id="${p.id}">
-          <header>
-            <h3>${p.title}</h3>
-            <span class="pol-badge">${catLabel(p.cat)}</span>
-          </header>
-          <p>${p.summary}</p>
-          <div class="pol-actions">
-            <button type="button" class="primary" data-pol-ack="${p.id}">${done ? 'تم الاطلاع ✓' : 'أقرّ بالاطلاع'}</button>
-            <a href="info-center.html">ربط بمركز المعرفة</a>
-            <a href="quality.html">دليل الجودة</a>
-          </div>
-        </article>`;
+    btns.push('<button type="button" class="info-btn sm" data-pol-versions="' + esc(p.id) + '">الإصدارات</button>');
+    if (!manage()) return btns.join('');
+
+    if (p.status === 'draft' || p.status === 'needs_changes') {
+      btns.push('<button type="button" class="info-btn sm" data-pol-edit="' + esc(p.id) + '">تعديل</button>');
+      btns.push('<button type="button" class="info-btn sm" data-pol-submit="' + esc(p.id) + '">إرسال للمراجعة</button>');
+      if (!p.seed) btns.push('<button type="button" class="info-btn sm" data-pol-del="' + esc(p.id) + '">حذف</button>');
+    } else if (p.status === 'pending_review') {
+      btns.push('<button type="button" class="info-btn sm" data-pol-publish="' + esc(p.id) + '">نشر</button>');
+      btns.push('<button type="button" class="info-btn sm" data-pol-changes="' + esc(p.id) + '">طلب تعديل</button>');
+      btns.push('<button type="button" class="info-btn sm" data-pol-reject="' + esc(p.id) + '">رفض</button>');
+    } else if (p.status === 'published') {
+      btns.push('<button type="button" class="info-btn sm" data-pol-edit="' + esc(p.id) + '">تعديل</button>');
+      btns.push('<button type="button" class="info-btn sm" data-pol-unpublish="' + esc(p.id) + '">إلغاء النشر</button>');
+      btns.push('<button type="button" class="info-btn sm" data-pol-archive="' + esc(p.id) + '">أرشفة</button>');
+    } else if (p.status === 'archived' || p.status === 'rejected') {
+      btns.push('<button type="button" class="info-btn sm" data-pol-edit="' + esc(p.id) + '">تعديل</button>');
+    }
+    return btns.join('');
+  }
+
+  function cardHtml(p) {
+    return (
+      '<article class="pol-card">' +
+      '<div class="pol-card-top">' +
+      '<span class="pol-chip">' +
+      esc(Store.catLabel(p.cat)) +
+      '</span>' +
+      '<span class="pol-chip ' +
+      statusCls(p.status) +
+      '">' +
+      esc(Store.statusLabel(p.status)) +
+      '</span>' +
+      '</div>' +
+      '<h3>' +
+      esc(p.title) +
+      '</h3>' +
+      '<p>' +
+      esc(p.summary) +
+      '</p>' +
+      '<div class="pol-meta">' +
+      '<span>الإصدار ' +
+      esc(p.version || '—') +
+      '</span>' +
+      '<span>آخر تحديث: ' +
+      esc(fmtDate(p.updatedAt)) +
+      '</span>' +
+      '<span>' +
+      esc(p.department || '—') +
+      '</span>' +
+      '</div>' +
+      '<div class="pol-actions">' +
+      actionsFor(p) +
+      '</div></article>'
+    );
+  }
+
+  function viewModal() {
+    var p = Store.get(ui.viewId);
+    if (!p) return '';
+    if (!manage() && p.status !== 'published') return '';
+    return (
+      '<div class="pol-modal-overlay" data-pol-view-overlay>' +
+      '<div class="pol-modal wide" role="dialog" aria-modal="true">' +
+      '<button type="button" class="info-btn sm ghost" data-pol-close-view>إغلاق</button>' +
+      '<div class="pol-card-top" style="margin-top:8px">' +
+      '<span class="pol-chip">' +
+      esc(Store.catLabel(p.cat)) +
+      '</span>' +
+      '<span class="pol-chip ' +
+      statusCls(p.status) +
+      '">' +
+      esc(Store.statusLabel(p.status)) +
+      '</span>' +
+      '</div>' +
+      '<h2 style="margin:10px 0 6px;font-weight:900">' +
+      esc(p.title) +
+      '</h2>' +
+      '<div class="pol-meta">' +
+      '<span>الإصدار ' +
+      esc(p.version) +
+      '</span>' +
+      '<span>النشر: ' +
+      esc(fmtDate(p.publishedAt || p.effectiveAt)) +
+      '</span>' +
+      '<span>آخر تحديث: ' +
+      esc(fmtDate(p.updatedAt)) +
+      '</span>' +
+      '<span>' +
+      esc(p.department || '—') +
+      '</span>' +
+      '</div>' +
+      '<h3 style="margin:18px 0 8px;font-weight:900">محتوى السياسة</h3>' +
+      '<div class="pol-body">' +
+      esc(p.body).replace(/\n/g, '<br>') +
+      '</div>' +
+      '<div class="pol-actions" style="margin-top:18px">' +
+      (p.fileDataUrl
+        ? '<a class="info-btn primary" href="' +
+          esc(p.fileDataUrl) +
+          '" download="' +
+          esc(p.fileName || 'policy.pdf') +
+          '">تحميل PDF</a>'
+        : '<button type="button" class="info-btn" data-pol-download="' + esc(p.id) + '">تحميل PDF</button>') +
+      '<button type="button" class="info-btn" data-pol-versions="' +
+      esc(p.id) +
+      '">الإصدارات السابقة</button>' +
+      (manage()
+        ? '<button type="button" class="info-btn" data-pol-edit="' + esc(p.id) + '">تعديل السياسة</button>'
+        : '') +
+      '</div></div></div>'
+    );
+  }
+
+  function formModal() {
+    if (!ui.formOpen || !manage()) return '';
+    var f = ui.form;
+    var opts = Store.CATEGORIES.filter(function (c) {
+      return c.id !== 'all';
+    })
+      .map(function (c) {
+        return (
+          '<option value="' +
+          esc(c.id) +
+          '"' +
+          (f.cat === c.id ? ' selected' : '') +
+          '>' +
+          esc(c.label) +
+          '</option>'
+        );
       })
       .join('');
-  };
+    return (
+      '<div class="pol-modal-overlay" data-pol-form-overlay>' +
+      '<div class="pol-modal wide" role="dialog" aria-modal="true">' +
+      '<h3>' +
+      (ui.editId ? 'تعديل سياسة' : 'إضافة سياسة جديدة') +
+      '</h3>' +
+      '<label>اسم السياسة *</label><input data-pol-f="title" value="' +
+      esc(f.title) +
+      '" />' +
+      '<label>التصنيف *</label><select data-pol-f="cat">' +
+      opts +
+      '</select>' +
+      '<label>وصف مختصر *</label><textarea data-pol-f="summary">' +
+      esc(f.summary) +
+      '</textarea>' +
+      '<label>محتوى السياسة *</label><textarea data-pol-f="body" style="min-height:160px">' +
+      esc(f.body) +
+      '</textarea>' +
+      '<label>رقم الإصدار</label><input data-pol-f="version" value="' +
+      esc(f.version) +
+      '" />' +
+      '<label>تاريخ السريان</label><input type="date" data-pol-f="effectiveAt" value="' +
+      esc(f.effectiveAt) +
+      '" />' +
+      '<label>القسم المسؤول</label><input data-pol-f="department" value="' +
+      esc(f.department) +
+      '" />' +
+      '<label>الكلمات المفتاحية</label><input data-pol-f="keywords" value="' +
+      esc(f.keywords) +
+      '" />' +
+      '<label>إرفاق ملف (PDF / DOCX)</label><input type="file" accept=".pdf,.doc,.docx,application/pdf" data-pol-file />' +
+      (f.fileName ? '<p class="info-lead">الملف: ' + esc(f.fileName) + '</p>' : '') +
+      '<p class="info-lead">الحالة الافتراضية: مسودة — النشر يتطلب صلاحية مراجعة.</p>' +
+      '<div class="pol-actions">' +
+      '<button type="button" class="info-btn ghost" data-pol-close-form>إلغاء</button>' +
+      '<button type="button" class="info-btn" data-pol-save-draft>حفظ كمسودة</button>' +
+      '<button type="button" class="info-btn primary" data-pol-save-submit>إرسال للمراجعة</button>' +
+      '</div></div></div>'
+    );
+  }
 
-  const bind = () => {
-    qs('[data-pol-q]')?.addEventListener('input', renderList);
-    qs('[data-pol-cats]')?.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-pol-cat]');
-      if (!btn) return;
-      qsa('[data-pol-cat]').forEach((b) => b.classList.toggle('is-active', b === btn));
-      renderList();
-    });
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-pol-ack]');
-      if (!btn) return;
-      const id = btn.getAttribute('data-pol-ack');
-      const acks = readAcks();
-      if (!acks.includes(id)) {
-        acks.push(id);
-        saveAcks(acks);
-      }
-      renderKpis();
-      renderList();
-    });
-  };
+  function render() {
+    var list = manage() && ui.adminTab !== 'published' ? adminList() : publicList();
+    if (manage() && ui.adminTab === 'published') list = Store.list({ q: ui.q, cat: ui.cat, status: 'published', manage: true });
+    if (manage() && ui.adminTab === 'draft') list = Store.list({ q: ui.q, cat: ui.cat, status: 'draft', manage: true });
+    if (manage() && ui.adminTab === 'pending_review')
+      list = Store.list({ q: ui.q, cat: ui.cat, status: 'pending_review', manage: true });
 
-  const init = () => {
-    if (!qs('[data-pol-root]')) return;
-    renderKpis();
-    renderCats();
-    renderList();
+    var cats = Store.CATEGORIES.map(function (c) {
+      return (
+        '<button type="button" class="' +
+        (ui.cat === c.id ? 'is-on' : '') +
+        '" data-pol-cat="' +
+        esc(c.id) +
+        '">' +
+        esc(c.label) +
+        '</button>'
+      );
+    }).join('');
+
+    root.innerHTML =
+      '<div data-info-crumbs=\'[{"label":"السياسات"}]\'></div>' +
+      '<div data-info-subnav></div>' +
+      '<section class="info-hero">' +
+      '<h1>سياسات نايوش هوب</h1>' +
+      '<p>مركز موحد لعرض وإدارة السياسات والإجراءات المنظمة للعمل داخل نايوش هوب.</p>' +
+      '</section>' +
+      '<section class="info-section" id="policies-catalog">' +
+      '<div class="pol-head-row">' +
+      '<div><h2 style="margin:0">مكتبة السياسات</h2>' +
+      '<p class="info-lead" style="margin-top:6px">ابحث أو صفِّ حسب التصنيف. المنشور فقط يظهر للعملاء.</p></div>' +
+      (manage()
+        ? '<button type="button" class="info-btn primary" data-pol-add><i class="fas fa-plus"></i> إضافة سياسة جديدة</button>'
+        : '') +
+      '</div>' +
+      (manage()
+        ? '<div class="pol-admin-tabs">' +
+          [
+            ['published', 'منشورة'],
+            ['draft', 'مسودات'],
+            ['pending_review', 'قيد المراجعة'],
+            ['all', 'الكل (إدارة)'],
+          ]
+            .map(function (t) {
+              return (
+                '<button type="button" class="' +
+                (ui.adminTab === t[0] ? 'is-on' : '') +
+                '" data-pol-admin-tab="' +
+                t[0] +
+                '">' +
+                t[1] +
+                '</button>'
+              );
+            })
+            .join('') +
+          '</div>'
+        : '') +
+      '<div class="pol-toolbar">' +
+      '<input type="search" data-pol-q value="' +
+      esc(ui.q) +
+      '" placeholder="ابحث باسم السياسة أو محتواها..." aria-label="بحث السياسات" />' +
+      '</div>' +
+      '<div class="pol-cats">' +
+      cats +
+      '</div>' +
+      '<div class="pol-list">' +
+      (list.length
+        ? list.map(cardHtml).join('')
+        : '<div class="pol-empty">لا توجد سياسات مطابقة.</div>') +
+      '</div></section>' +
+      viewModal() +
+      formModal();
+
+    if (window.HubInfoCenter) {
+      HubInfoCenter.mountNav(root.querySelector('[data-info-subnav]'));
+      HubInfoCenter.mountCrumbs(root.querySelector('[data-info-crumbs]'), [
+        { label: 'الرئيسية', href: 'index.html' },
+        { label: HubInfoCenter.LABEL, href: HubInfoCenter.HOME },
+        { label: 'السياسات' },
+      ]);
+    }
     bind();
+  }
+
+  function saveForm(submitReview) {
+    var f = ui.form;
+    if (!String(f.title || '').trim() || !String(f.summary || '').trim() || !String(f.body || '').trim()) {
+      toast('أكمل الحقول المطلوبة', 'error');
+      return;
+    }
+    var row;
+    if (ui.editId) {
+      row = Store.update(ui.editId, {
+        title: f.title,
+        cat: f.cat,
+        summary: f.summary,
+        body: f.body,
+        version: f.version,
+        effectiveAt: f.effectiveAt,
+        department: f.department,
+        keywords: f.keywords,
+        fileName: f.fileName,
+        fileDataUrl: f.fileDataUrl,
+        status: submitReview ? 'pending_review' : 'draft',
+      });
+    } else {
+      row = Store.create(f);
+      if (row && submitReview) row = Store.setStatus(row.id, 'pending_review', 'إرسال للمراجعة');
+    }
+    if (!row) {
+      toast('تعذر الحفظ — تحقق من الصلاحية', 'error');
+      return;
+    }
+    if (submitReview && row.status !== 'pending_review') {
+      Store.setStatus(row.id, 'pending_review', 'إرسال للمراجعة');
+    }
+    ui.formOpen = false;
+    ui.editId = '';
+    ui.form = blankForm();
+    ui.adminTab = submitReview ? 'pending_review' : 'draft';
+    toast(submitReview ? 'تم إرسال السياسة للمراجعة' : 'تم حفظ المسودة', 'success');
+    render();
+  }
+
+  function downloadText(p) {
+    var blob = new Blob([p.title + '\n\n' + p.body], { type: 'text/plain;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = (p.title || 'policy') + '.txt';
+    a.click();
+    setTimeout(function () {
+      URL.revokeObjectURL(url);
+    }, 500);
+  }
+
+  function bind() {
+    root.querySelectorAll('[data-pol-cat]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        ui.cat = btn.getAttribute('data-pol-cat') || 'all';
+        render();
+      });
+    });
+    root.querySelectorAll('[data-pol-admin-tab]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        ui.adminTab = btn.getAttribute('data-pol-admin-tab') || 'published';
+        render();
+      });
+    });
+    var qEl = root.querySelector('[data-pol-q]');
+    if (qEl) {
+      qEl.addEventListener('input', function () {
+        ui.q = qEl.value;
+        render();
+        var again = root.querySelector('[data-pol-q]');
+        if (again) {
+          again.focus();
+          try {
+            again.setSelectionRange(again.value.length, again.value.length);
+          } catch (e) {}
+        }
+      });
+    }
+    root.querySelectorAll('[data-pol-view]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        ui.viewId = btn.getAttribute('data-pol-view') || '';
+        render();
+      });
+    });
+    root.querySelectorAll('[data-pol-download]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var p = Store.get(btn.getAttribute('data-pol-download'));
+        if (p) downloadText(p);
+      });
+    });
+    root.querySelectorAll('[data-pol-versions]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var p = Store.get(btn.getAttribute('data-pol-versions'));
+        if (!p) return;
+        var lines = (p.versions || [])
+          .map(function (v) {
+            return (v.version || '—') + ' · ' + fmtDate(v.at) + ' · ' + (v.note || '');
+          })
+          .join('\n');
+        toast(lines || 'لا إصدارات سابقة', 'info');
+        try {
+          alert((p.title || '') + '\n\n' + (lines || 'لا إصدارات سابقة'));
+        } catch (e) {}
+      });
+    });
+    var addBtn = root.querySelector('[data-pol-add]');
+    if (addBtn) {
+      addBtn.addEventListener('click', function () {
+        if (!manage()) return;
+        ui.formOpen = true;
+        ui.editId = '';
+        ui.form = blankForm();
+        ui.viewId = '';
+        render();
+      });
+    }
+    root.querySelectorAll('[data-pol-edit]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var p = Store.get(btn.getAttribute('data-pol-edit'));
+        if (!p || !manage()) return;
+        ui.editId = p.id;
+        ui.formOpen = true;
+        ui.viewId = '';
+        ui.form = {
+          title: p.title,
+          cat: p.cat,
+          summary: p.summary,
+          body: p.body,
+          version: p.version,
+          effectiveAt: (p.effectiveAt || '').slice(0, 10),
+          department: p.department || '',
+          keywords: p.keywords || '',
+          fileName: p.fileName || '',
+          fileDataUrl: p.fileDataUrl || '',
+        };
+        render();
+      });
+    });
+    root.querySelectorAll('[data-pol-submit]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        Store.setStatus(btn.getAttribute('data-pol-submit'), 'pending_review', 'إرسال للمراجعة');
+        toast('أُرسلت للمراجعة', 'success');
+        ui.adminTab = 'pending_review';
+        render();
+      });
+    });
+    root.querySelectorAll('[data-pol-publish]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        Store.setStatus(btn.getAttribute('data-pol-publish'), 'published', 'نشر');
+        toast('تم النشر', 'success');
+        ui.adminTab = 'published';
+        render();
+      });
+    });
+    root.querySelectorAll('[data-pol-changes]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        Store.setStatus(btn.getAttribute('data-pol-changes'), 'needs_changes', 'طلب تعديل');
+        toast('أُعيدت لطلب تعديل', 'info');
+        ui.adminTab = 'draft';
+        render();
+      });
+    });
+    root.querySelectorAll('[data-pol-reject]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        Store.setStatus(btn.getAttribute('data-pol-reject'), 'rejected', 'رفض');
+        toast('رُفضت السياسة', 'info');
+        render();
+      });
+    });
+    root.querySelectorAll('[data-pol-unpublish]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        Store.setStatus(btn.getAttribute('data-pol-unpublish'), 'draft', 'إلغاء النشر');
+        toast('أُلغي النشر', 'info');
+        ui.adminTab = 'draft';
+        render();
+      });
+    });
+    root.querySelectorAll('[data-pol-archive]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        Store.setStatus(btn.getAttribute('data-pol-archive'), 'archived', 'أرشفة');
+        toast('تمت الأرشفة', 'info');
+        render();
+      });
+    });
+    root.querySelectorAll('[data-pol-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!confirm('حذف المسودة؟')) return;
+        Store.remove(btn.getAttribute('data-pol-del'));
+        render();
+      });
+    });
+
+    var viewOv = root.querySelector('[data-pol-view-overlay]');
+    if (viewOv) {
+      viewOv.addEventListener('click', function (e) {
+        if (e.target === viewOv || e.target.closest('[data-pol-close-view]')) {
+          ui.viewId = '';
+          render();
+        }
+      });
+    }
+    var formOv = root.querySelector('[data-pol-form-overlay]');
+    if (formOv) {
+      formOv.addEventListener('click', function (e) {
+        if (e.target === formOv || e.target.closest('[data-pol-close-form]')) {
+          ui.formOpen = false;
+          ui.editId = '';
+          render();
+        }
+      });
+      formOv.querySelectorAll('[data-pol-f]').forEach(function (el) {
+        el.addEventListener('input', function () {
+          ui.form[el.getAttribute('data-pol-f')] = el.value;
+        });
+        el.addEventListener('change', function () {
+          ui.form[el.getAttribute('data-pol-f')] = el.value;
+        });
+      });
+      var fileEl = formOv.querySelector('[data-pol-file]');
+      if (fileEl) {
+        fileEl.addEventListener('change', function () {
+          var file = fileEl.files && fileEl.files[0];
+          if (!file) return;
+          if (file.size > 2.5 * 1024 * 1024) {
+            toast('الملف كبير — استخدم أقل من 2.5MB', 'error');
+            return;
+          }
+          var reader = new FileReader();
+          reader.onload = function () {
+            ui.form.fileName = file.name;
+            ui.form.fileDataUrl = String(reader.result || '');
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+      var saveDraft = formOv.querySelector('[data-pol-save-draft]');
+      if (saveDraft) saveDraft.addEventListener('click', function () { saveForm(false); });
+      var saveSub = formOv.querySelector('[data-pol-save-submit]');
+      if (saveSub) saveSub.addEventListener('click', function () { saveForm(true); });
+    }
+  }
+
+  function applyHash() {
+    var h = (location.hash || '').replace(/^#/, '');
+    if (h === 'add' && manage()) {
+      ui.formOpen = true;
+      render();
+    }
+    if (h.indexOf('policy=') === 0) {
+      ui.viewId = decodeURIComponent(h.slice(7));
+      render();
+    }
+  }
+
+  render();
+  applyHash();
+  window.addEventListener('hashchange', applyHash);
+  window.addEventListener('hub:auth', render);
+  window.addEventListener('hub-policies-changed', render);
+
+  window.HubPolicies = {
+    list: Store.list,
+    get: Store.get,
+    canManage: Store.canManage,
   };
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
-
-  window.HubPolicies = { POLICIES, CATEGORIES, readAcks };
 })();

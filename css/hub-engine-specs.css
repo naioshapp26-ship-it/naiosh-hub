@@ -287,3 +287,31 @@
     padding: 22px 16px;
   }
 }
+
+.spec-en {
+  font-size: 12px;
+  font-weight: 750;
+  color: #98a2b3;
+  margin-top: 2px;
+  direction: ltr;
+  text-align: right;
+}
+
+.spec-purpose {
+  margin: 6px 0;
+  font-size: 13px;
+  font-weight: 650;
+  color: #475467;
+  line-height: 1.55;
+}
+
+.spec-phase details,
+.spec-card details {
+  margin-top: 8px;
+}
+
+.spec-card summary {
+  cursor: pointer;
+  font-weight: 800;
+  color: #d70000;
+}

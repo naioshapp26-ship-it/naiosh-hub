@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>قائمة قدرات نايوش هوب | نايوش هوب 360</title>
+  <title>مركز معلومات نايوش هوب | نايوش هوب 360</title>
+  <meta name="description" content="مركز معلومات نايوش هوب — التعريف، السياسات، المواصفات، والأدلة من مكان واحد." />
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -11,59 +12,135 @@
   <link rel="stylesheet" href="css/hub-theme.css" />
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
-  <link rel="stylesheet" href="css/hub-dark-surfaces.css?v=1" />
-  <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
-  <link rel="stylesheet" href="css/hub-checklist.css?v=1" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=20" />
+  <link rel="stylesheet" href="css/hub-info-center-workspace.css?v=1" />
+  <link rel="stylesheet" href="css/hub-checklist.css?v=2" />
 </head>
-<body class="homepage">
+<body class="homepage" data-info-center-home="1">
   <header class="top-nav">
     <div class="container inner">
       <div class="nav-main">
         <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
         <nav class="nav-links">
           <a href="index.html">الرئيسية</a>
-          <a class="active" href="hub-checklist.html">قائمة الهوب</a>
-          <a href="review-methodology.html">المراجعة</a>
-          <a href="engine-specs.html">المواصفات</a>
+          <a href="services.html">خدمات</a>
+          <a href="platforms.html">المنصات</a>
+          <a href="events.html">الفعاليات</a>
           <a href="dashboard.html">غرفة العمليات</a>
         </nav>
       </div>
       <div class="auth-actions">
-        <a href="ops-manuals.html" class="auth-btn primary">الأدلة التشغيلية</a>
+        <a href="dashboard.html" class="auth-btn primary">لوحة التحكم</a>
         <a href="login.html" class="auth-btn">تسجيل الدخول</a>
       </div>
     </div>
   </header>
 
-  <main class="container hcl-page" data-hcl-root>
-    <section class="hcl-hero" aria-label="قائمة قدرات الهوب">
-      <h1>نايوش هوب 360 — ماذا يعني «هوب = …»؟</h1>
+  <main class="info-page" data-hcl-root>
+    <div data-info-crumbs='[{"label":"نظرة عامة"}]'></div>
+    <div data-info-subnav></div>
+
+    <section class="info-hero" id="overview" aria-label="مركز معلومات نايوش هوب">
+      <h1>مرحبًا بك في مركز معلومات نايوش هوب</h1>
       <p>
-        خريطة عملية من ملف العميل «نايوش هوب 360» — كل بند «هوب = …» مع حالة التنفيذ
-        ورابط للصفحة. لتسهيل الاستخدام ابدأ من
-        <a href="user-path.html">مسار المستخدم</a>.
+        ابدأ هنا للتعرّف على نايوش هوب، السياسات، المواصفات، الأدلة والمعلومات التي تساعدك على استخدام المنظومة.
       </p>
     </section>
 
-    <section class="hcl-kpis" data-hcl-kpis aria-label="مؤشرات القائمة"></section>
-
-    <div class="hcl-toolbar">
-      <input type="search" data-hcl-q placeholder="ابحث في قدرات الهوب…" aria-label="بحث القدرات" />
-      <div class="hcl-filters" role="group" aria-label="تصفية الحالة">
-        <button type="button" class="is-active" data-hcl-filter="all">الكل</button>
-        <button type="button" data-hcl-filter="done">تم</button>
-        <button type="button" data-hcl-filter="partial">جزئي</button>
-        <button type="button" data-hcl-filter="missing">لسه</button>
+    <section class="info-section" id="start-here">
+      <h2>ماذا تريد أن تعرف؟</h2>
+      <p class="info-lead">اختر المسار المناسب — بدون شراء وبدون مصطلحات معقدة في البداية.</p>
+      <div class="info-start-grid">
+        <article class="info-start-card">
+          <div class="info-ico"><i class="fas fa-building-columns" aria-hidden="true"></i></div>
+          <h3>ما هي نايوش هوب؟</h3>
+          <p>تعرّف على مفهوم نايوش هوب وطريقة عمل المنظومة.</p>
+          <a class="info-btn primary" href="#about-hub">اقرأ التعريف</a>
+        </article>
+        <article class="info-start-card">
+          <div class="info-ico"><i class="fas fa-scroll" aria-hidden="true"></i></div>
+          <h3>السياسات</h3>
+          <p>استعرض السياسات والإجراءات المنظمة للعمل داخل نايوش هوب.</p>
+          <a class="info-btn primary" href="policies.html">استعرض السياسات</a>
+        </article>
+        <article class="info-start-card">
+          <div class="info-ico"><i class="fas fa-gears" aria-hidden="true"></i></div>
+          <h3>المواصفات الوظيفية</h3>
+          <p>تعرّف على مكونات المحرك والوظائف والخدمات التي يقدمها النظام.</p>
+          <a class="info-btn primary" href="engine-specs.html">عرض المواصفات</a>
+        </article>
+        <article class="info-start-card">
+          <div class="info-ico"><i class="fas fa-book-open" aria-hidden="true"></i></div>
+          <h3>دليل الاستخدام</h3>
+          <p>تعرف خطوة بخطوة على كيفية استخدام خدمات وصفحات نايوش هوب.</p>
+          <a class="info-btn primary" href="#guides">ابدأ الدليل</a>
+        </article>
       </div>
-    </div>
+    </section>
 
-    <section class="hcl-list" data-hcl-list aria-label="قائمة القدرات"></section>
+    <section class="info-section" id="about-hub">
+      <h2>ما هي نايوش هوب؟</h2>
+      <p class="info-lead">
+        نايوش هوب 360 هو الدماغ التشغيلي للمنظومة: نقطة دخول موحّدة للمعلومات والسياسات والأنظمة والخدمات.
+        البنود أدناه تشرح «هوب = …» مع حالة التنفيذ ورابط الصفحة المعنية.
+      </p>
+      <section class="hcl-kpis" data-hcl-kpis aria-label="مؤشرات القائمة"></section>
+      <div class="hcl-toolbar">
+        <input type="search" data-hcl-q placeholder="ابحث في قدرات الهوب…" aria-label="بحث القدرات" />
+        <div class="hcl-filters" role="group" aria-label="تصفية الحالة">
+          <button type="button" class="is-active" data-hcl-filter="all">الكل</button>
+          <button type="button" data-hcl-filter="done">تم</button>
+          <button type="button" data-hcl-filter="partial">جزئي</button>
+          <button type="button" data-hcl-filter="missing">لسه</button>
+        </div>
+      </div>
+      <section class="hcl-list" data-hcl-list aria-label="قائمة القدرات"></section>
+    </section>
+
+    <section class="info-section" id="guides">
+      <h2>دليل استخدام نايوش هوب</h2>
+      <p class="info-lead">خطوات بسيطة بلغة العميل.</p>
+      <div class="info-start-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr))">
+        <article class="info-start-card">
+          <h3>كيف أستخدم مركز المعلومات؟</h3>
+          <p>1) اختر القسم المطلوب من الشريط أعلاه.<br>2) استخدم البحث للوصول للمعلومة.<br>3) افتح السياسة أو الدليل.<br>4) حمّل المستند إذا احتجته.</p>
+        </article>
+        <article class="info-start-card">
+          <h3>كيف أبحث عن سياسة؟</h3>
+          <p>1) افتح «السياسات».<br>2) اكتب اسم السياسة.<br>3) اختر التصنيف إن لزم.<br>4) اضغط «عرض السياسة».</p>
+          <a class="info-btn" href="policies.html">فتح السياسات</a>
+        </article>
+        <article class="info-start-card">
+          <h3>كيف أضيف سياسة؟</h3>
+          <p>للمخوّلين فقط: افتح السياسات ← «+ إضافة سياسة جديدة» ← احفظ كمسودة ← أرسل للمراجعة ← بعد الموافقة تُنشر.</p>
+          <a class="info-btn" href="policies.html#add">إلى إدارة السياسات</a>
+        </article>
+      </div>
+      <p style="margin:16px 0 0"><a class="info-btn ghost" href="ops-manuals.html"><i class="fas fa-book"></i> الأدلة التشغيلية التفصيلية</a></p>
+    </section>
+
+    <section class="info-section" id="info-faq">
+      <h2>أسئلة شائعة</h2>
+      <details open>
+        <summary>ما الفرق بين السياسات والمواصفات؟</summary>
+        <p>السياسات تنظّم السلوك والعمل. المواصفات توضّح مكونات النظام ووظيفة كل جزء.</p>
+      </details>
+      <details>
+        <summary>هل أستطيع إضافة سياسة كعميل؟</summary>
+        <p>لا — الإضافة والمراجعة والنشر للمستخدمين المخوّلين فقط. العميل يقرأ ويبحث ويحمّل المنشور.</p>
+      </details>
+      <details>
+        <summary>أين أبدأ إذا كنت جديدًا؟</summary>
+        <p>ابدأ من بطاقة «ما هي نايوش هوب؟» ثم السياسات أو دليل الاستخدام حسب احتياجك.</p>
+      </details>
+    </section>
   </main>
 
   <script src="js/hub-upload-limits.js?v=1"></script>
-  <script src="js/hub-info-center-pages.js?v=1"></script>
-  <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-checklist.js?v=3"></script>
+  <script src="js/hub-info-center-pages.js?v=2"></script>
+  <script src="js/hub-info-center-chrome.js?v=1"></script>
+  <script src="js/hub-header-actions.js?v=20"></script>
+  <script src="js/hub-checklist.js?v=4"></script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js?v=3" defer></script>
