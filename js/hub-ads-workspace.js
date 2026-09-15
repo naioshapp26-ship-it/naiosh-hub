@@ -396,7 +396,7 @@
         '</div>' +
         '<div class="ads-ws-head-actions">' +
           '<button type="button" class="ads-ws-btn ghost" data-ads-help>؟ كيف أنشئ إعلاناً؟</button>' +
-          '<a class="ads-ws-btn ghost" href="index.html#hub-ads" data-ads-preview>معاينة أماكن الإعلانات</a>' +
+          '<button type="button" class="ads-ws-btn ghost" data-ads-preview-placements>معاينة أماكن الإعلانات</button>' +
           '<button type="button" class="ads-ws-btn primary" data-ads-create><i class="fas fa-plus"></i> إضافة إعلان جديد</button>' +
         '</div>' +
       '</section>'
@@ -470,9 +470,28 @@
       ['paused', 'متوقفة'],
       ['ended', 'منتهية']
     ];
+    var placesPreview =
+      '<div class="ads-places-preview" aria-label="أماكن ظهور الإعلانات">' +
+      '<h3>أماكن ظهور الإعلانات</h3>' +
+      '<div class="ads-places-grid">' +
+      PLACES.map(function (p) {
+        return (
+          '<div class="ads-place-chip"><strong>' +
+          esc(p.label) +
+          '</strong><span>' +
+          esc(p.hint) +
+          '</span></div>'
+        );
+      }).join('') +
+      '</div></div>';
+    var emptyMsg =
+      '<div class="ads-empty" data-ads-empty>لا توجد إعلانات متاحة للمعاينة حالياً.</div>';
     return (
-      '<section class="ads-ws-section" id="ads-mine">' +
-        '<h2>إعلاناتي</h2>' +
+      '<section class="ads-ws-section" id="ads-section" data-ads-section-panel>' +
+        '<h2>قسم الإعلانات</h2>' +
+        '<p class="ads-section-lead">معاينة الإعلانات المتاحة وأماكن ظهورها على المنصة.</p>' +
+        placesPreview +
+        '<h3 class="ads-mine-title">إعلاناتي</h3>' +
         '<div class="ads-tabs">' +
         tabs
           .map(function (t) {
@@ -500,10 +519,8 @@
             '<option value="text"' + (ui.typeFilter === 'text' ? ' selected' : '') + '>نص</option>' +
           '</select>' +
         '</div>' +
-        '<div class="ads-cards">' +
-        (ads.length
-          ? ads.map(cardHtml).join('')
-          : '<div class="ads-empty">لا توجد إعلانات في هذا التصفية. اضغط «إضافة إعلان جديد» للبدء.</div>') +
+        '<div class="ads-cards" id="ads-mine">' +
+        (ads.length ? ads.map(cardHtml).join('') : emptyMsg) +
         '</div></section>'
     );
   }
@@ -1003,12 +1020,45 @@
     reader.readAsDataURL(file);
   }
 
+  function scrollToAdsSection() {
+    var needRender = ui.section !== 'mine' && ui.section !== 'summary';
+    if (needRender) {
+      ui.section = 'mine';
+      render();
+    }
+    var el = document.getElementById('ads-section');
+    if (!el) {
+      ui.section = 'mine';
+      render();
+      el = document.getElementById('ads-section');
+    }
+    if (!el) return;
+    try {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (_) {
+      el.scrollIntoView(true);
+    }
+    try {
+      el.classList.add('is-scroll-target');
+      setTimeout(function () {
+        el.classList.remove('is-scroll-target');
+      }, 1200);
+    } catch (_) {}
+  }
+
   function bind() {
     root.querySelectorAll('[data-ads-section]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         ui.section = btn.getAttribute('data-ads-section');
         ui.successCode = '';
         render();
+      });
+    });
+    root.querySelectorAll('[data-ads-preview-placements]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        scrollToAdsSection();
       });
     });
     root.querySelectorAll('[data-ads-filter]').forEach(function (btn) {
