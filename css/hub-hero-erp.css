@@ -323,6 +323,12 @@ body.homepage .hero-media-stack {
 body.homepage .hero-media-frame {
   position: relative !important;
   width: 100% !important;
+  padding-bottom: 56px;
+  overflow: visible !important;
+}
+
+body.homepage .hero-media-stack {
+  overflow: visible !important;
 }
 
 body.homepage .hero-visual {

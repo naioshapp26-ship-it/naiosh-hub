@@ -16,6 +16,7 @@
     { id: 'integrations', label: 'إعدادات التكاملات', icon: 'fa-plug' },
     { id: 'security', label: 'إعدادات الأمان', icon: 'fa-shield-halved' },
     { id: 'seo', label: 'إعدادات SEO', icon: 'fa-magnifying-glass' },
+    { id: 'searchEngines', label: 'إعدادات محركات البحث', icon: 'fa-globe' },
     { id: 'permissions', label: 'الصلاحيات', icon: 'fa-user-lock' },
     { id: 'audit', label: 'سجل التغييرات', icon: 'fa-clock-rotate-left' },
   ];
@@ -587,6 +588,35 @@
           { key: 'robots', label: 'Robots Settings' },
         ])
       );
+    }
+    if (id === 'searchEngines') {
+      ensureDraft('searchEngines');
+      const g = ui.draft.google || {};
+      return `<div class="ss-card">
+        <h2>إعدادات محركات البحث</h2>
+        <p class="ss-lead">Google Search عبر Programmable Search Engine — ضع Search Engine ID (cx) هنا فقط، لا تكرّره في ملفات أخرى.</p>
+        <h3 style="margin:14px 0 8px">Google Search</h3>
+        <div class="ss-fields">
+          ${toggleField('google.enabled', 'الحالة: فعال', 'عند التعطيل يختفي كارت Google من الرئيسية', g.enabled !== false)}
+          <label class="ss-field"><span>Search Engine ID (cx)<small>من Google Programmable Search</small></span>
+            <input data-draft="google.cx" value="${esc(g.cx || '')}" placeholder="a1b2c3d4e5f6g7h8i" dir="ltr" />
+          </label>
+          <label class="ss-field"><span>عنوان الكارت</span>
+            <input data-draft="google.cardTitle" value="${esc(g.cardTitle || 'محرك بحث Google')}" />
+          </label>
+          <label class="ss-field"><span>الوصف</span>
+            <input data-draft="google.cardDescription" value="${esc(g.cardDescription || 'ابحث على الويب باستخدام Google')}" />
+          </label>
+          <label class="ss-field"><span>طريقة عرض النتائج</span>
+            <select data-draft="google.resultsMode">
+              <option value="standalone" ${g.resultsMode !== 'embedded' ? 'selected' : ''}>صفحة مستقلة داخل الموقع (google-search.html)</option>
+              <option value="embedded" ${g.resultsMode === 'embedded' ? 'selected' : ''}>داخل صفحة NAIOSH HUB</option>
+            </select>
+          </label>
+          ${toggleField('google.openLinksInNewTab', 'فتح الروابط الخارجية في تبويب جديد', '', g.openLinksInNewTab !== false)}
+        </div>
+        <p class="ss-lead" style="margin-top:12px">محرك بحث نايوش يبقى مستقلًا للبحث داخل المنظومة عبر search.html.</p>
+      </div>`;
     }
     if (id === 'permissions') {
       ensureDraft('permissions');

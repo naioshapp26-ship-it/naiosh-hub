@@ -116,6 +116,16 @@
       sitemapEnabled: true,
       robots: 'index,follow',
     },
+    searchEngines: {
+      google: {
+        enabled: true,
+        cx: '',
+        cardTitle: 'محرك بحث Google',
+        cardDescription: 'ابحث على الويب باستخدام Google',
+        resultsMode: 'standalone',
+        openLinksInNewTab: true,
+      },
+    },
     permissions: {
       viewSiteSettings: true,
       manageSiteSettings: true,

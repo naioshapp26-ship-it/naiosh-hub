@@ -391,21 +391,22 @@
   };
 
   const upgradeFloatCard = () => {
-    const card = document.getElementById('hero-float-card');
+    const card =
+      document.getElementById('hero-naiosh-search-card') || document.getElementById('hero-float-card');
     if (!card) return;
 
     const href = searchUrl();
     const html = `
       <div class="hero-float-icon" aria-hidden="true"><i class="fas fa-magnifying-glass"></i></div>
       <div class="hero-float-body">
-        <strong class="hero-float-title">محرك البحث الشامل</strong>
-        <span class="hero-float-desc">افتح الصفحة الكاملة · نية ذكية</span>
+        <strong class="hero-float-title">محرك بحث نايوش</strong>
+        <span class="hero-float-desc">ابحث داخل محتوى ومنظومة نايوش</span>
       </div>`;
 
     if (card.tagName === 'A') {
       card.classList.add('is-search-trigger');
       card.href = href;
-      card.setAttribute('aria-label', 'محرك البحث الشامل — صفحة كاملة');
+      card.setAttribute('aria-label', 'محرك بحث نايوش — داخل المنظومة');
       card.innerHTML = html;
       return;
     }
@@ -414,7 +415,7 @@
     link.id = card.id;
     link.className = `${card.className} is-search-trigger`.trim();
     link.href = href;
-    link.setAttribute('aria-label', 'محرك البحث الشامل — صفحة كاملة');
+    link.setAttribute('aria-label', 'محرك بحث نايوش — داخل المنظومة');
     link.innerHTML = html;
     card.replaceWith(link);
   };
