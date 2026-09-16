@@ -333,166 +333,19 @@
     { id: 'settings', label: 'الإعدادات', icon: 'fa-gear' },
   ];
 
-  const renderNotifications = () => {
-    const K = Kit();
-    const notes = store().listNotifications?.() || [];
-    const meta = store().get()?.notificationsWs || { auditLog: [], settings: {} };
-    const unread = notes.filter((n) => !n.read);
-    const filtered = notes.filter((n) => {
-      if (ntUi.filters.unread === '1' && n.read) return false;
-      if (ntUi.filters.level && n.level !== ntUi.filters.level) return false;
-      if (ntUi.filters.q) {
-        const hay = `${n.title} ${n.body} ${n.sourceName} ${n.source}`.toLowerCase();
-        if (!hay.includes(ntUi.filters.q.toLowerCase())) return false;
-      }
-      return true;
-    });
-    const pg = K.paginate(filtered, ntUi.page, ntUi.pageSize);
-    ntUi.page = pg.page;
-    const needs = unread.slice(0, 8).map((n) => ({ text: n.title, tab: 'inbox', id: n.id }));
-    const kpis = [
-      { key: 'all', label: 'الكل', value: notes.length, tab: 'inbox' },
-      { key: 'unread', label: 'غير مقروء', value: unread.length, tab: 'inbox' },
-      { key: 'sources', label: 'مصادر', value: new Set(notes.map((n) => n.source)).size, tab: 'inbox' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, tab: 'inbox' },
-    ];
-
-    let body = '';
-    if (ntUi.tab === 'inbox') {
-      body = `${K.renderNeeds('nt', needs)}
-        <div class="toolbar" style="flex-wrap:wrap;margin-top:10px">
-          <button type="button" class="btn btn-primary" data-action="nt-mark-all"><i class="fas fa-check-double"></i> تعليم الكل مقروء</button>
-          <button type="button" class="btn btn-dark" data-action="nt-demo"><i class="fas fa-plus"></i> إشعار جديد</button>
-          <div class="field"><label>بحث</label><input data-nt-change="q" value="${K.esc(ntUi.filters.q)}" /></div>
-          <div class="field"><label>غير مقروء فقط</label>
-            <select data-nt-change="unread"><option value="">الكل</option><option value="1" ${ntUi.filters.unread === '1' ? 'selected' : ''}>نعم</option></select>
-          </div>
-        </div>
-        <article class="card" style="margin-top:10px">
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>المصدر</th><th>العنوان</th><th>التفاصيل</th><th>النوع</th><th>الوقت</th><th>الحالة</th><th></th></tr></thead>
-            <tbody>${
-              pg.rows.length
-                ? pg.rows
-                    .map(
-                      (n) => `<tr>
-                        <td><strong>${K.esc(n.sourceName || n.source)}</strong><br/><small>${K.esc(n.source)}</small></td>
-                        <td>${K.esc(n.title)}</td>
-                        <td>${K.esc(n.body || '—')}</td>
-                        <td>${K.esc(n.level)} · ${K.esc(n.category)}</td>
-                        <td>${K.fmtTime(n.at)}</td>
-                        <td>${n.read ? K.badge('مقروء', 'badge-black') : K.badge('جديد', 'badge-red')}</td>
-                        <td class="toolbar" style="margin:0;gap:4px">
-                          ${n.read ? '' : `<button type="button" class="btn btn-sm btn-dark" data-action="nt-read" data-id="${n.id}">مقروء</button>`}
-                          ${n.link ? `<a class="btn btn-sm btn-ghost" href="${K.esc(n.link)}">فتح</a>` : ''}
-                          <button type="button" class="btn btn-sm btn-ghost" data-action="nt-delete" data-id="${n.id}">حذف</button>
-                        </td>
-                      </tr>`
-                    )
-                    .join('')
-                : '<tr><td colspan="7" class="empty">لا إشعارات مطابقة</td></tr>'
-            }</tbody>
-          </table></div>
-          ${K.renderPager('nt', pg.page, pg.pages, pg.total)}
-        </article>`;
-    } else if (ntUi.tab === 'audit') {
-      body = `<article class="card">${K.renderAuditTable(meta.auditLog || [])}</article>`;
-    } else {
-      body = `<article class="card"><p>إشعارات هوب موحّدة من كل الأنظمة. إعدادات الإشعارات العامة من «إعدادات داخلية».</p></article>`;
-    }
-
-    return `<div class="hub-ops-ws hub-notifications-ws">
-      ${K.renderHeader({
-        prefix: 'nt',
-        title: 'مركز إشعارات هوب',
-        subtitle: 'صندوق موحّد · مصدر · مقروء/غير مقروء · تدقيق',
-        icon: 'fa-bell',
-        actionsHtml: `<button type="button" class="btn btn-ghost btn-sm" data-action="nt-help-open"><i class="fas fa-circle-question"></i></button>`,
-      })}
-      ${K.renderKpis('nt', kpis, '')}
-      ${K.renderTabs('nt', NT_TABS, ntUi.tab)}
-      ${body}
-      ${K.renderHelp('nt', {
-        title: 'دليل الإشعارات',
-        dismissed: !!meta.settings?.helpDismissed,
-        open: ntUi.helpOpen,
-        bodyHtml: `<p>كل تنبيه من الأنظمة يصل هنا مع المصدر. علّم كمقروء أو احذف مع بقاء الأثر في سجل العمليات.</p>`,
-      })}
-    </div>`;
+  const renderNotifications = (ctx = {}) => {
+    if (window.HubNotificationsCenter?.render) return window.HubNotificationsCenter.render(ctx);
+    return '<div class="empty">تعذر تحميل مركز الإشعارات</div>';
   };
 
   const handleNotifications = (action, btn, ctx = {}) => {
-    const { toast, user } = ctx;
-    const K = Kit();
-    if (action === 'nt-tab') {
-      ntUi.tab = btn.dataset.tab || 'inbox';
-      return true;
-    }
-    if (action === 'nt-kpi') {
-      if (btn.dataset.key === 'unread') ntUi.filters.unread = '1';
-      else ntUi.filters.unread = '';
-      if (btn.dataset.tab) ntUi.tab = btn.dataset.tab;
-      return true;
-    }
-    if (action === 'nt-page') {
-      ntUi.page = Number(btn.dataset.page) || 1;
-      return true;
-    }
-    if (action === 'nt-mark-all') {
-      store().markAllNotificationsRead?.();
-      const meta = store().get().notificationsWs || (store().get().notificationsWs = { schemaVersion: 2, auditLog: [], settings: {} });
-      store().pushDomainAudit?.(meta, { action: 'mark_all', detail: 'تعليم الكل كمقروء', by: K.actorName(user), source: 'Notifications' });
-      store().save?.();
-      toast?.('تم تعليم الكل كمقروء');
-      return true;
-    }
-    if (action === 'nt-read') {
-      store().markNotificationRead?.(btn.dataset.id);
-      toast?.('مقروء');
-      return true;
-    }
-    if (action === 'nt-delete') {
-      store().removeNotification?.(btn.dataset.id, K.actorName(user));
-      toast?.('حُذف الإشعار');
-      return true;
-    }
-    if (action === 'nt-demo') {
-      store().createHubNotification?.(
-        {
-          title: 'إشعار من غرفة العمليات',
-          body: 'تأكيد أن مركز الإشعارات يستقبل تنبيهات كل الأنظمة.',
-          level: 'info',
-          category: 'system',
-          link: 'dashboard.html#notifications',
-        },
-        K.actorName(user)
-      );
-      toast?.('أُضيف إشعار');
-      return true;
-    }
-    if (action === 'nt-help-open') {
-      ntUi.helpOpen = true;
-      return true;
-    }
-    if (action === 'nt-help-dismiss') {
-      const meta = store().get().notificationsWs;
-      if (meta) {
-        meta.settings = meta.settings || {};
-        meta.settings.helpDismissed = true;
-        store().save?.();
-      }
-      ntUi.helpOpen = false;
-      return true;
-    }
+    if (window.HubNotificationsCenter?.handle) return window.HubNotificationsCenter.handle(action, btn, ctx);
     return false;
   };
 
   const handleNotificationsChange = (el) => {
-    const key = el.getAttribute('data-nt-change');
-    if (!key) return false;
-    ntUi.filters[key] = el.value;
-    ntUi.page = 1;
-    return true;
+    if (window.HubNotificationsCenter?.handleChange) return window.HubNotificationsCenter.handleChange(el);
+    return false;
   };
 
   /* ───────── Side project registrations ───────── */

@@ -230,15 +230,15 @@ const HubStore = (() => {
     const isoDaysAgo = (d, h = 10, m = 0) => new Date(now - d * 86400000 - (10 - h) * 3600000 - m * 60000).toISOString();
     return {
       schemaVersion: 2,
-      score: 91,
+    score: 91,
       prevScore: 88,
-      mfaCoverage: 67,
+    mfaCoverage: 67,
       prevMfaCoverage: 61,
       compliancePct: 84,
       prevCompliancePct: 79,
       closedThisMonth: 8,
       prevClosedThisMonth: 5,
-      controls: [
+    controls: [
         {
           id: ctrl1,
           name: 'OAuth2 / SSO',
@@ -347,8 +347,8 @@ const HubStore = (() => {
           attachments: [],
           archived: false,
         },
-      ],
-      incidents: [
+    ],
+    incidents: [
         {
           id: 'INC-2026-00125',
           title: 'محاولة وصول غير مصرح من عنوان خارجي',
@@ -652,11 +652,11 @@ const HubStore = (() => {
     const rule3 = 'QR-2026-00003';
     return {
       schemaVersion: 2,
-      qualityScore: 87,
+    qualityScore: 87,
       prevQualityScore: 84,
-      classifiedPct: 74,
+    classifiedPct: 74,
       prevClassifiedPct: 68,
-      retentionOk: 91,
+    retentionOk: 91,
       metadataCompletion: 78,
       prevMetadataCompletion: 72,
       people: ['سارة العتيبي', 'أحمد الراشد', 'نور فهد', 'فريق البيانات', 'مركز التكامل', 'الحوكمة'],
@@ -1130,8 +1130,8 @@ const HubStore = (() => {
           detectedAt: isoDaysAgo(5, 9),
           status: 'New',
         },
-      ],
-      policies: [
+    ],
+    policies: [
         {
           id: pol1,
           name: 'سياسة بيانات العملاء الحساسة',
@@ -1335,8 +1335,8 @@ const HubStore = (() => {
       schemaVersion: 2,
       helpDismissed: false,
       activeFlows: 5,
-      successRate: 96,
-      savedHours: 148,
+    successRate: 96,
+    savedHours: 148,
       settings: {
         timezone: 'Asia/Riyadh',
         defaultRetries: 3,
@@ -1484,8 +1484,8 @@ const HubStore = (() => {
           sourceModule: 'أمن المعلومات',
           templateUsed: 'حادث أمني حرج',
         }),
-      ],
-      queue: [
+    ],
+    queue: [
         {
           id: 'Q-2026-00001',
           automationId: a2,
@@ -3609,35 +3609,86 @@ const HubStore = (() => {
     if (cfg.notifySecurity === false && (level === 'critical' || category === 'security')) return null;
     if (cfg.notifyOps === false && category === 'ops') return null;
     if (!Array.isArray(s.notifications)) s.notifications = [];
+    const year = new Date().getFullYear();
+    const seq = String((s.notifications.length || 0) + 1).padStart(5, '0');
+    const code =
+      payload.code ||
+      payload.notificationCode ||
+      `NTF-${year}-${seq}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
     const item = {
-      id: uid('n'),
-      source: (payload.source || 'HUB').toString().toUpperCase(),
-      sourceName: payload.sourceName || payload.source || 'HUB',
+      id: payload.id || uid('n'),
+      code,
+      source: (payload.source || 'HUB').toString(),
+      sourceName: payload.sourceName || payload.source || 'نايوش هوب',
+      section: payload.section || payload.sourceName || payload.source || 'عام',
       title: payload.title || 'إشعار هوب',
-      body: payload.body || '',
+      body: payload.body || payload.message || '',
+      reason: payload.reason || payload.body || payload.message || '',
+      type: payload.type || category || 'system',
+      typeLabel: payload.typeLabel || '',
       level: payload.level || 'info',
       category: payload.category || 'system',
-      link: payload.link || '',
-      read: false,
-      at: nowIso(),
+      priority: payload.priority || (level === 'critical' || level === 'error' ? 'high' : level === 'warning' ? 'medium' : 'low'),
+      link: payload.link || payload.href || '',
+      sourceLink: payload.sourceLink || payload.link || '',
+      actionLabel: payload.actionLabel || '',
+      actionLink: payload.actionLink || payload.link || '',
+      needsAction: payload.needsAction === true || !!payload.actionLabel,
+      status: payload.status || 'new',
+      requestId: payload.requestId || payload.meta?.requestId || null,
+      customerId: payload.customerId || payload.meta?.customerId || null,
+      customerName: payload.customerName || payload.meta?.customerName || null,
+      actorName: payload.actorName || payload.meta?.actorName || null,
+      referenceType: payload.referenceType || payload.meta?.referenceType || null,
+      referenceId: payload.referenceId || payload.meta?.referenceId || null,
+      read: payload.read === true,
+      archived: payload.archived === true,
+      at: payload.at || nowIso(),
       meta: payload.meta || null,
     };
     s.notifications.unshift(item);
-    if (s.notifications.length > 200) s.notifications.length = 200;
+    if (s.notifications.length > 300) s.notifications.length = 300;
     pushFeed('alert', `${item.sourceName}: ${item.title}`);
     save();
     emitNotificationsChanged();
     return item;
   };
 
-  const listNotifications = () => get().notifications || [];
+  const listNotifications = (opts = {}) => {
+    let rows = get().notifications || [];
+    if (opts.includeArchived !== true) rows = rows.filter((n) => !n.archived);
+    return rows;
+  };
 
-  const unreadNotificationsCount = () => (get().notifications || []).filter((n) => !n.read).length;
+  const unreadNotificationsCount = () =>
+    (get().notifications || []).filter((n) => !n.read && !n.archived).length;
 
   const markNotificationRead = (id) => {
     const n = (get().notifications || []).find((x) => x.id === id);
     if (!n) return null;
     n.read = true;
+    if (n.status === 'new') n.status = 'read';
+    save();
+    emitNotificationsChanged();
+    return n;
+  };
+
+  const markNotificationUnread = (id) => {
+    const n = (get().notifications || []).find((x) => x.id === id);
+    if (!n) return null;
+    n.read = false;
+    n.status = 'new';
+    save();
+    emitNotificationsChanged();
+    return n;
+  };
+
+  const archiveNotification = (id) => {
+    const n = (get().notifications || []).find((x) => x.id === id);
+    if (!n) return null;
+    n.archived = true;
+    n.read = true;
+    n.status = 'archived';
     save();
     emitNotificationsChanged();
     return n;
@@ -3646,10 +3697,45 @@ const HubStore = (() => {
   const markAllNotificationsRead = () => {
     (get().notifications || []).forEach((n) => {
       n.read = true;
+      if (n.status === 'new') n.status = 'read';
     });
     save();
     emitNotificationsChanged();
     return listNotifications();
+  };
+
+  const migrateOrphanNotifications = () => {
+    try {
+      const raw = localStorage.getItem('naiosh_hub_notifications_v1');
+      if (!raw) return 0;
+      const parsed = JSON.parse(raw);
+      const items = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.items) ? parsed.items : [];
+      if (!items.length) return 0;
+      let added = 0;
+      items.forEach((n) => {
+        const id = n.id || `orphan-${n.at || Date.now()}`;
+        if ((get().notifications || []).some((x) => x.id === id || x.meta?.orphanId === id)) return;
+        pushNotification({
+          id,
+          title: n.title || 'إشعار',
+          body: n.body || n.message || '',
+          reason: n.message || n.body || '',
+          source: n.source || 'منصة',
+          sourceName: n.source || 'منصة',
+          link: n.link || n.href || 'dashboard.html#notifications',
+          level: n.level || 'info',
+          category: n.category || 'ops',
+          read: !!n.read,
+          at: n.at,
+          meta: { orphanId: id, migrated: true },
+        });
+        added += 1;
+      });
+      localStorage.setItem('naiosh_hub_notifications_v1', JSON.stringify({ items: [], migratedAt: nowIso() }));
+      return added;
+    } catch (_) {
+      return 0;
+    }
   };
 
   const recordLaunch = (code, mode = 'hub') => {
@@ -7490,8 +7576,8 @@ const HubStore = (() => {
         id: uid('mk'),
         name,
         code: payload.code || nextSecSeq(market.catalog, 'SYS'),
-        category: payload.category || 'تشغيل',
-        tenants: Number(payload.tenants) || 1,
+      category: payload.category || 'تشغيل',
+      tenants: Number(payload.tenants) || 1,
         status: payload.status || (payload.draft ? 'Draft' : 'Active'),
         description: payload.description || '',
         owner: payload.owner || actor,
@@ -7514,7 +7600,7 @@ const HubStore = (() => {
         updatedAt: nowIso(),
         users: payload.users || [],
         integrations: payload.integrations || [],
-        ...pickCommonMeta(payload),
+      ...pickCommonMeta(payload),
       },
       market.catalog.length
     );
@@ -8959,7 +9045,10 @@ const HubStore = (() => {
     listNotifications,
     unreadNotificationsCount,
     markNotificationRead,
+    markNotificationUnread,
+    archiveNotification,
     markAllNotificationsRead,
+    migrateOrphanNotifications,
     recordLaunch,
     ingestSystemSync,
     recordActivity,

@@ -338,6 +338,16 @@
     };
   };
 
+  const searchWithAnalytics = (query, typeFilter = 'all', options = {}) => {
+    const packed = search(query, typeFilter, options);
+    if (packed.query && (!packed.results || !packed.results.length)) {
+      try {
+        window.HubSearchCatalog?.recordEmptyQuery?.(packed.query);
+      } catch (_) {}
+    }
+    return packed;
+  };
+
   /** توافق خلفي: searchLegacy يعيد مصفوفة فقط */
   const searchItems = (query, typeFilter = 'all', options = {}) => search(query, typeFilter, options).results;
 
@@ -363,8 +373,8 @@
   };
 
   window.HubUniversalSearch = {
-    search: searchItems,
-    searchOrchestrated: search,
+    search: (q, t, o) => searchWithAnalytics(q, t, o).results,
+    searchOrchestrated: searchWithAnalytics,
     stats,
     collectCatalog,
     suggestedLists: SUGGESTED_LISTS,

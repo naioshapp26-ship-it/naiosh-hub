@@ -1,5 +1,5 @@
 /**
- * Hub Notifications UI — جرس موحّد لكل إشعارات الأنظمة على هوب
+ * Hub Notifications UI — جرس موحّد + اختصار لمركز الإشعارات
  */
 (() => {
   const esc = (v = '') =>
@@ -11,14 +11,14 @@
 
   const fmt = (iso) => {
     try {
-      return new Date(iso).toLocaleString('en-US');
+      return new Date(iso).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
     } catch (_) {
       return iso || '';
     }
   };
 
   const levelIcon = (level) => {
-    if (level === 'alert' || level === 'error') return 'fa-triangle-exclamation';
+    if (level === 'alert' || level === 'error' || level === 'critical') return 'fa-triangle-exclamation';
     if (level === 'success') return 'fa-circle-check';
     if (level === 'warning') return 'fa-circle-exclamation';
     return 'fa-bell';
@@ -43,10 +43,10 @@
       }
       .hub-notify-badge.show { display: inline-flex; }
       .hub-notify-panel {
-        position: fixed; width: min(360px, calc(100vw - 24px));
+        position: fixed; width: min(380px, calc(100vw - 24px));
         background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
         box-shadow: 0 18px 40px rgba(15,23,42,.22); display: none;
-        z-index: 10080; overflow: hidden; max-height: min(70vh, 480px);
+        z-index: 10080; overflow: hidden; max-height: min(70vh, 520px);
       }
       .hub-notify-panel.open { display: flex; flex-direction: column; }
       .hub-notify-head {
@@ -64,21 +64,22 @@
       .hub-notify-list p { margin: 2px 0 0; font-size: 12px; color: #6b7280; line-height: 1.5; }
       .hub-notify-list small { color: #9ca3af; font-size: 11px; }
       .hub-notify-empty { padding: 24px; text-align: center; color: #6b7280; font-size: 13px; }
+      .hub-notify-foot {
+        border-top: 1px solid #eee; padding: 10px 14px; flex: 0 0 auto; text-align: center;
+      }
+      .hub-notify-foot a {
+        color: #b91c1c; font-weight: 800; font-size: 13px; text-decoration: none;
+      }
       body.dashboard-body .hub-notify-btn, body:has(.sidebar) .hub-notify-btn {
         background: rgba(255,255,255,.06); color: #fecaca; border-color: rgba(254,202,202,.25);
       }
-      /* Keep dashboard topbar above empire banner / panels while notifications are used */
       body:has(.sidebar) .topbar,
       body.dashboard-body .topbar {
-        position: relative;
-        z-index: 10050;
-        overflow: visible;
+        position: relative; z-index: 10050; overflow: visible;
       }
       body:has(.sidebar) .topbar-actions,
       body.dashboard-body .topbar-actions {
-        overflow: visible;
-        position: relative;
-        z-index: 2;
+        overflow: visible; position: relative; z-index: 2;
       }
     `;
     document.head.appendChild(style);
@@ -87,16 +88,13 @@
   const placePanel = (btn, panel) => {
     if (!btn || !panel) return;
     const rect = btn.getBoundingClientRect();
-    const width = Math.min(360, window.innerWidth - 24);
+    const width = Math.min(380, window.innerWidth - 24);
     const gap = 8;
     let top = rect.bottom + gap;
     let left = rect.left;
-    // Prefer aligning to the button's start edge (RTL-safe: use left of button, clamp)
-    if (document.documentElement.dir === 'rtl') {
-      left = rect.right - width;
-    }
+    if (document.documentElement.dir === 'rtl') left = rect.right - width;
     left = Math.max(12, Math.min(left, window.innerWidth - width - 12));
-    const estimatedHeight = Math.min(window.innerHeight * 0.7, 480);
+    const estimatedHeight = Math.min(window.innerHeight * 0.7, 520);
     if (top + estimatedHeight > window.innerHeight - 12) {
       top = Math.max(12, rect.top - gap - Math.min(estimatedHeight, rect.top - 12));
     }
@@ -110,6 +108,9 @@
 
   const paint = (root) => {
     if (!root) return;
+    try {
+      window.HubStore?.migrateOrphanNotifications?.();
+    } catch (_) {}
     const badge = root.querySelector('.hub-notify-badge');
     const panel =
       root._hubNotifyPanel ||
@@ -122,7 +123,7 @@
       badge.textContent = String(n);
       badge.classList.toggle('show', n > 0);
     }
-    const notes = getNotes().slice(0, 30);
+    const notes = getNotes().slice(0, 12);
     if (!list) return;
     if (!notes.length) {
       list.innerHTML = '';
@@ -132,12 +133,12 @@
     if (empty) empty.style.display = 'none';
     list.innerHTML = notes
       .map(
-        (x) => `<li class="${x.read ? '' : 'unread'}" data-id="${esc(x.id)}" data-link="${esc(x.link || '')}">
+        (x) => `<li class="${x.read ? '' : 'unread'}" data-id="${esc(x.id)}" data-link="${esc(x.actionLink || x.link || '')}">
           <i class="fas ${levelIcon(x.level)}" style="color:#dc2626;margin-top:3px"></i>
           <div>
             <strong>${esc(x.title)}</strong>
-            <p>${esc(x.body || '')}</p>
-            <small>${esc(x.sourceName || x.source || 'HUB')} · ${esc(fmt(x.at))}</small>
+            <p>${esc(x.reason || x.body || '')}</p>
+            <small>${esc(x.sourceName || x.source || 'هوب')} · ${esc(fmt(x.at))} · ${x.read ? 'مقروء' : 'جديد'}</small>
           </div>
         </li>`
       )
@@ -154,22 +155,20 @@
         <i class="fas fa-bell"></i>
         <span class="hub-notify-badge">0</span>
       </button>
-      <div class="hub-notify-panel" role="dialog" aria-label="مركز الإشعارات">
+      <div class="hub-notify-panel" role="dialog" aria-label="أحدث الإشعارات">
         <div class="hub-notify-head">
-          <span>إشعارات هوب</span>
+          <span>أحدث الإشعارات</span>
           <button type="button" class="btn-mini" data-mark-all style="border:0;background:#f3f4f6;padding:4px 8px;border-radius:8px;cursor:pointer;font-weight:700">تعليم الكل كمقروء</button>
         </div>
         <ul class="hub-notify-list"></ul>
         <div class="hub-notify-empty">لا إشعارات بعد — ستظهر هنا من كل الأنظمة</div>
+        <div class="hub-notify-foot"><a href="dashboard.html#notifications">عرض كل الإشعارات</a></div>
       </div>`;
     host.prepend(wrap);
 
     const btn = wrap.querySelector('.hub-notify-btn');
     const panel = wrap.querySelector('.hub-notify-panel');
-    // Escape topbar stacking context (backdrop-filter) so panel isn't covered by empire banner
-    if (panel && panel.parentElement !== document.body) {
-      document.body.appendChild(panel);
-    }
+    if (panel && panel.parentElement !== document.body) document.body.appendChild(panel);
     wrap._hubNotifyPanel = panel;
     const openPanel = () => {
       panel.classList.add('open');
@@ -192,29 +191,21 @@
       if (!li) return;
       window.HubStore?.markNotificationRead?.(li.dataset.id);
       paint(wrap);
+      closePanel();
       if (li.dataset.link) window.location.href = li.dataset.link;
+      else window.location.href = `dashboard.html#notifications`;
     });
     document.addEventListener('click', (e) => {
       if (e.target.closest('.hub-notify-panel') || e.target.closest('.hub-notify-wrap')) return;
       closePanel();
     });
-    window.addEventListener(
-      'resize',
-      () => {
-        if (panel.classList.contains('open')) placePanel(btn, panel);
-      },
-      { passive: true }
-    );
-    window.addEventListener(
-      'scroll',
-      () => {
-        if (panel.classList.contains('open')) placePanel(btn, panel);
-      },
-      { passive: true, capture: true }
-    );
+    window.addEventListener('resize', () => {
+      if (panel.classList.contains('open')) placePanel(btn, panel);
+    }, { passive: true });
+    window.addEventListener('scroll', () => {
+      if (panel.classList.contains('open')) placePanel(btn, panel);
+    }, { passive: true, capture: true });
     paint(wrap);
-
-    // refresh badge periodically + on storage
     setInterval(() => paint(wrap), 4000);
     window.addEventListener('storage', () => paint(wrap));
     window.addEventListener('hub-notifications-changed', () => paint(wrap));

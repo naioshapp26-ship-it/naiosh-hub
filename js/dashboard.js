@@ -7,10 +7,10 @@
     { key: 'posha-os', icon: 'fa-cubes', label: 'نظام بوشا OS', href: 'posha.html' },
     { key: 'clients-mgmt', icon: 'fa-user-tie', label: 'إدارة العملاء' },
     { key: 'roles-permissions', icon: 'fa-shield-halved', label: 'حوكمة الوصول والأدوار' },
-    { key: 'notifications', icon: 'fa-bell', label: 'إشعارات هوب' },
+    { key: 'notifications', icon: 'fa-bell', label: 'مركز إشعارات نايوش هوب' },
     { key: 'side-project-regs', icon: 'fa-inbox', label: 'طلبات تسجيل المشاريع' },
     { key: 'content-articles', icon: 'fa-newspaper', label: 'المقالات الواردة' },
-    { key: 'search-admin', icon: 'fa-magnifying-glass', label: 'إدارة محرك البحث' },
+    { key: 'search-admin', icon: 'fa-magnifying-glass', label: 'إدارة محرك بحث نايوش' },
     { key: 'rent-admin', icon: 'fa-key', label: 'موافقة السوبر أدمن' },
     { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
     { key: 'platforms', icon: 'fa-layer-group', label: 'المنصات السيادية' },
@@ -49,10 +49,10 @@
     'site-settings': ['إعدادات الموقع', 'إدارة إعدادات المنصة والمتاجر والطلبات والدفع والإعلانات والتكاملات والأمان من مكان واحد'],
     'clients-mgmt': ['إدارة العملاء', 'Clients 360 · CRUD · مصدر · ملاحظات داخلية · تدقيق'],
     'roles-permissions': ['حوكمة الوصول والأدوار', 'إدارة الهوية والمنصب والدور ونطاق العمل والصلاحيات والسلطات'],
-    notifications: ['مركز إشعارات هوب', 'صندوق موحّد · مقروء/غير مقروء · مصدر · تدقيق'],
+    notifications: ['مركز إشعارات نايوش هوب', 'مصدر واضح · سبب · إجراء · طلب مرتبط'],
     'side-project-regs': ['طلبات تسجيل المشاريع', 'Inbox · متابعة · تواصل · تدقيق'],
     'content-articles': ['المقالات الواردة', 'مراجعة · اعتماد · نشر · Workflow Runs'],
-    'search-admin': ['إدارة محرك البحث', 'أضف نصوصًا وصورًا وملفات وفيديو لتغذية محرك البحث الشامل'],
+    'search-admin': ['إدارة محرك بحث نايوش', 'فهرسة · ظهور · اختبار نفس محرك العميل'],
     'rent-admin': ['موافقة السوبر أدمن', 'اعتماد · رفض · منح نظام · تدقيق'],
     blueprint: ['دستور المعمارية الإمبراطورية', 'هوب مركزي — طبقات · محاور · أول 6 أشهر'],
     platforms: ['المنصات السيادية لنايوش 360', '18 منصة تشغّل هوب — من الدماغ المركزي إلى السلطة العليا'],
@@ -1111,21 +1111,10 @@
     notifications: renderNotifications,
     'side-project-regs': renderSideProjectRegs,
     'content-articles': () => `<div id="articles-admin-mount"></div>`,
-    'search-admin': () => `
-      <div class="card">
-        <h3><span class="title-left"><i class="fas fa-magnifying-glass icon"></i> إدارة محرك البحث الشامل</span></h3>
-        <p>من هنا يغذّي الأدمن محرك البحث بالنصوص والصور والملفات والفيديو. كل عنصر منشور يظهر فورًا في زر «محرك البحث الشامل» على الرئيسية.</p>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px">
-          <a class="btn btn-primary" href="search-admin.html"><i class="fas fa-sliders"></i> فتح صفحة إدارة البحث</a>
-          <a class="btn btn-ghost" href="search-content.html" target="_blank"><i class="fas fa-images"></i> مكتبة المحتوى المرفوع</a>
-          <a class="btn btn-ghost" href="search.html" target="_blank"><i class="fas fa-magnifying-glass"></i> تجربة محرك البحث</a>
-        </div>
-        <ul style="margin:16px 0 0;padding:0 18px 0 0;line-height:1.9;font-weight:700;color:#4b5563">
-          <li>أضف عنوانًا + كلمات مفتاحية</li>
-          <li>ارفع صورة أو ملف أو ضع رابط فيديو</li>
-          <li>احفظ → ابحث من الرئيسية بنفس الكلمة</li>
-        </ul>
-      </div>`,
+    'search-admin': () =>
+      window.HubSearchAdminWS?.render
+        ? HubSearchAdminWS.render({ user, toast, esc, bar, badgeStatus, fmtTime })
+        : `<div class="empty">تعذر تحميل إدارة محرك بحث نايوش</div>`,
     'roles-permissions': () => (window.HubRolesWS?.render ? HubRolesWS.render({ user, toast, esc, bar, badgeStatus, fmtTime }) : '<div class="empty">تعذر تحميل الأدوار</div>'),
     'rent-admin': () => (window.HubRentAdminWS?.render ? HubRentAdminWS.render({ user, toast, esc, bar, badgeStatus, fmtTime }) : '<div class="empty">تعذر تحميل موافقة السوبر أدمن</div>'),
     blueprint: renderBlueprint,
@@ -1256,6 +1245,7 @@
       ['cr-', 'HubCoreWS'],
       ['cl-', 'HubClientsWS'],
       ['nt-', 'HubNotificationsWS'],
+      ['sa-', 'HubSearchAdminWS'],
       ['sp-', 'HubSideProjectsWS'],
       ['ag-', 'HubRolesWS'],
       ['rl-', 'HubRolesWS'],
@@ -1709,5 +1699,13 @@
   window.addEventListener('hashchange', () => {
     const next = (window.location.hash || '#overview').replace('#', '');
     if (TITLES[next] && next !== current) activate(next);
+  });
+
+  window.addEventListener('hub-notifications-changed', () => {
+    if (current === 'notifications' || current === 'search-admin') {
+      try {
+        render();
+      } catch (_) {}
+    }
   });
 })();

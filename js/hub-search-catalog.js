@@ -6,9 +6,76 @@
   'use strict';
 
   const KEY = 'naiosh_hub_search_catalog_v1';
+  const SETTINGS_KEY = 'naiosh_hub_search_settings_v1';
+  const AUDIT_KEY = 'naiosh_hub_search_audit_v1';
+  const EMPTY_Q_KEY = 'naiosh_hub_search_empty_queries_v1';
   const limits = () => window.HubUploadLimits || {};
   const MAX_FILE_BYTES = () => limits().MAX_FILE_BYTES || 150 * 1024 * 1024;
   const INLINE_DATA_URL_MAX_BYTES = () => limits().INLINE_DATA_URL_MAX_BYTES || 1.5 * 1024 * 1024;
+
+  const readSettings = () => {
+    try {
+      return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') || {};
+    } catch {
+      return {};
+    }
+  };
+
+  const saveSettings = (next) => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next || {}));
+    return next;
+  };
+
+  const defaultSettings = () => ({
+    autoIndexArticles: true,
+    autoIndexEvents: true,
+    autoIndexProducts: true,
+    autoIndexPages: true,
+    autoIndexInfo: true,
+    ...readSettings(),
+  });
+
+  const readAudit = () => {
+    try {
+      const list = JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]');
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const pushAudit = (entry) => {
+    const list = readAudit();
+    list.unshift({
+      id: `sa-${Date.now()}`,
+      at: new Date().toISOString(),
+      ...entry,
+    });
+    localStorage.setItem(AUDIT_KEY, JSON.stringify(list.slice(0, 200)));
+  };
+
+  const readEmptyQueries = () => {
+    try {
+      const list = JSON.parse(localStorage.getItem(EMPTY_Q_KEY) || '[]');
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const recordEmptyQuery = (q) => {
+    const query = String(q || '').trim();
+    if (!query || query.length < 2) return;
+    const list = readEmptyQueries();
+    const existing = list.find((x) => String(x.query).toLowerCase() === query.toLowerCase());
+    if (existing) {
+      existing.count = (existing.count || 1) + 1;
+      existing.lastAt = new Date().toISOString();
+    } else {
+      list.unshift({ query, count: 1, lastAt: new Date().toISOString(), ignored: false });
+    }
+    localStorage.setItem(EMPTY_Q_KEY, JSON.stringify(list.slice(0, 200)));
+  };
 
   /** نوع الوسائط (طريقة العرض) */
   const MEDIA_META = {
@@ -87,17 +154,83 @@
       mediaDataUrl: payload.mediaDataUrl || '',
       mediaUrl: String(payload.mediaUrl || '').trim(),
       externalUrl: String(payload.externalUrl || '').trim(),
-      status: payload.status === 'draft' ? 'draft' : 'published',
+      status: payload.status === 'draft' ? 'draft' : payload.status === 'hidden' ? 'hidden' : 'published',
+      searchVisible: payload.searchVisible === false ? false : true,
+      indexStatus: payload.indexStatus || 'indexed',
+      indexError: payload.indexError || '',
+      sourceType: payload.sourceType || section || 'content',
+      sourceId: payload.sourceId || '',
+      sourceLabel: payload.sourceLabel || SECTION_META[section]?.pageTitle || 'محرك بحث نايوش',
+      category: payload.category || SECTION_META[section]?.typeAr || 'محتوى',
+      indexedAt: payload.indexedAt || now,
+      firstIndexedAt: payload.firstIndexedAt || payload.createdAt || now,
       createdAt: payload.createdAt || now,
       updatedAt: now,
     };
 
     const all = readLocal();
     const idx = all.findIndex((x) => String(x.id) === String(item.id));
-    if (idx >= 0) all[idx] = { ...all[idx], ...item, createdAt: all[idx].createdAt || item.createdAt };
-    else all.unshift(item);
+    const isNew = idx < 0;
+    if (idx >= 0) {
+      all[idx] = {
+        ...all[idx],
+        ...item,
+        createdAt: all[idx].createdAt || item.createdAt,
+        firstIndexedAt: all[idx].firstIndexedAt || item.firstIndexedAt,
+      };
+    } else all.unshift(item);
     saveLocal(all);
+    pushAudit({
+      action: isNew ? 'إضافة للفهرس' : 'تحديث الفهرس',
+      itemId: item.id,
+      title: item.title,
+      by: payload.actor || 'مشغّل',
+      result: 'نجاح',
+    });
     return { ok: true, item: get(item.id) };
+  };
+
+  const setSearchVisible = (id, visible, actor = 'مشغّل') => {
+    const row = get(id);
+    if (!row) return { ok: false, error: 'غير موجود' };
+    const next = upsert({
+      ...row,
+      searchVisible: !!visible,
+      status: visible ? 'published' : row.status === 'draft' ? 'draft' : 'published',
+      actor,
+    });
+    pushAudit({
+      action: visible ? 'إظهار في البحث' : 'إخفاء من البحث',
+      itemId: id,
+      title: row.title,
+      by: actor,
+      result: 'نجاح',
+    });
+    return next;
+  };
+
+  const reindex = (id, actor = 'مشغّل') => {
+    const row = get(id);
+    if (!row) return { ok: false, error: 'غير موجود' };
+    const now = new Date().toISOString();
+    const next = upsert({
+      ...row,
+      indexStatus: 'indexed',
+      indexError: '',
+      indexedAt: now,
+      searchVisible: row.searchVisible !== false,
+      actor,
+    });
+    pushAudit({ action: 'إعادة فهرسة', itemId: id, title: row.title, by: actor, result: 'نجاح' });
+    return next;
+  };
+
+  const removeFromIndex = (id, actor = 'مشغّل') => {
+    const row = get(id);
+    if (!row) return { ok: false };
+    remove(id);
+    pushAudit({ action: 'إزالة من الفهرس', itemId: id, title: row.title, by: actor, result: 'نجاح' });
+    return { ok: true };
   };
 
   const remove = (id) => {
@@ -159,7 +292,7 @@
 
   const toSearchItems = () =>
     list()
-      .filter((x) => x.status !== 'draft')
+      .filter((x) => x.status !== 'draft' && x.searchVisible !== false && x.indexStatus !== 'failed')
       .map((x) => {
         const section = normalizeSection(x.section, x.kind);
         const sectionMeta = SECTION_META[section] || SECTION_META.content;
@@ -173,7 +306,7 @@
           title: x.title,
           subtitle: x.description || pageName || sectionMeta.typeAr,
           meta: pageName || x.mediaName || sectionMeta.typeAr,
-          href: viewUrl(x.id),
+          href: x.href || viewUrl(x.id),
           preview: x.mediaDataUrl || x.mediaUrl || '',
           mediaMime: x.mediaMime || '',
           pageTitle: pageName,
@@ -195,8 +328,33 @@
             .filter(Boolean)
             .join(' '),
           source: 'admin-catalog',
+          sourceLabel: x.sourceLabel || sectionMeta.pageTitle,
         };
       });
+
+  const stats = () => {
+    const rows = list();
+    return {
+      total: rows.length,
+      published: rows.filter((x) => x.status !== 'draft' && x.searchVisible !== false).length,
+      pending: rows.filter((x) => x.indexStatus === 'pending').length,
+      failed: rows.filter((x) => x.indexStatus === 'failed').length,
+      hidden: rows.filter((x) => x.searchVisible === false).length,
+      sources: new Set(rows.map((x) => x.sourceLabel || x.sourceType || x.section)).size,
+    };
+  };
+
+  const upsertFromSource = (payload = {}, actor = 'نظام') => {
+    const id = payload.id || `src-${payload.sourceType || 'item'}-${payload.sourceId || Date.now()}`;
+    return upsert({
+      ...payload,
+      id,
+      actor,
+      indexStatus: 'indexed',
+      searchVisible: payload.searchVisible !== false,
+      indexedAt: new Date().toISOString(),
+    });
+  };
 
   const exportJson = () => JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), items: list() }, null, 2);
 
@@ -239,6 +397,9 @@
 
   window.HubSearchCatalog = {
     KEY,
+    SETTINGS_KEY,
+    AUDIT_KEY,
+    EMPTY_Q_KEY,
     get MAX_FILE_BYTES() {
       return MAX_FILE_BYTES();
     },
@@ -259,5 +420,17 @@
     importJson,
     pullRemote,
     pushRemote,
+    stats,
+    setSearchVisible,
+    reindex,
+    removeFromIndex,
+    upsertFromSource,
+    defaultSettings,
+    readSettings,
+    saveSettings,
+    readAudit,
+    pushAudit,
+    readEmptyQueries,
+    recordEmptyQuery,
   };
 })();

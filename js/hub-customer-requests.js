@@ -297,19 +297,27 @@
         detail: item.title,
       });
       try {
-        const bag = JSON.parse(localStorage.getItem('naiosh_hub_notifications_v1') || '{"items":[]}');
-        if (!Array.isArray(bag.items)) bag.items = [];
-        bag.items.unshift({
-          id: `n-${Date.now()}`,
-          title: `طلب جديد من ${item.company || item.customerName || 'عميل'}`,
-          message: `${item.requestType}: ${item.title}`,
-          at: nowIso(),
-          read: false,
-          source: item.sourceModule,
+        const typeAr = TYPE_LABELS_AR[item.requestType] || item.requestType || 'طلب';
+        pushCustomerNotification({
+          title: `طلب ${typeAr} جديد`,
+          message: `قام ${item.company || item.customerName || 'عميل'} بإرسال «${item.title}» للمراجعة.`,
+          reason: `تم إنشاء طلب جديد من ${item.sourceModule || 'المنصة'} ويحتاج مراجعة.`,
+          source: item.sourceModule || 'طلبات العملاء',
+          section: item.sourceModule || 'طلبات العملاء',
+          type: 'customer_request',
+          typeLabel: 'طلبات العملاء',
           link: `dashboard.html#posha-clients`,
+          actionLabel: 'مراجعة الطلب',
+          actionLink: `dashboard.html#posha-clients`,
+          needsAction: true,
+          priority: 'medium',
+          requestId: item.id,
+          customerId: item.customerNaioshId || item.customerId || null,
+          customerName: item.company || item.customerName || null,
+          referenceType: item.referenceType || null,
+          referenceId: item.referenceId || null,
+          meta: { requestId: item.id, requestType: item.requestType },
         });
-        bag.items = bag.items.slice(0, 100);
-        localStorage.setItem('naiosh_hub_notifications_v1', JSON.stringify(bag));
       } catch (_) {}
     }
     save();
@@ -837,23 +845,59 @@
     }
   };
 
-  const pushCustomerNotification = ({ title, message, link, source }) => {
+  const pushCustomerNotification = (payload = {}) => {
+    const title = payload.title || 'إشعار';
+    const body = payload.message || payload.body || '';
+    const source = payload.source || 'طلبات العملاء';
+    const link = payload.link || 'dashboard.html#posha-clients';
+    if (window.HubStore?.pushNotification) {
+      return window.HubStore.pushNotification({
+        title,
+        body,
+        reason: payload.reason || body,
+        source,
+        sourceName: source,
+        section: payload.section || source,
+        type: payload.type || 'customer_request',
+        typeLabel: payload.typeLabel || 'طلبات العملاء',
+        category: 'ops',
+        level: payload.level || 'info',
+        priority: payload.priority || 'medium',
+        needsAction: payload.needsAction !== false,
+        actionLabel: payload.actionLabel || 'فتح الطلب',
+        actionLink: link,
+        link,
+        requestId: payload.requestId || null,
+        customerId: payload.customerId || null,
+        customerName: payload.customerName || null,
+        actorName: payload.actorName || null,
+        referenceType: payload.referenceType || null,
+        referenceId: payload.referenceId || null,
+        meta: {
+          requestId: payload.requestId || null,
+          customerId: payload.customerId || null,
+          ...(payload.meta || {}),
+        },
+      });
+    }
     try {
       const bag = JSON.parse(localStorage.getItem('naiosh_hub_notifications_v1') || '{"items":[]}');
       if (!Array.isArray(bag.items)) bag.items = [];
       bag.items.unshift({
         id: `n-${Date.now()}`,
-        title: title || 'إشعار',
-        message: message || '',
+        title,
+        message: body,
         at: nowIso(),
         read: false,
-        source: source || 'طلبات العملاء',
-        link: link || '',
+        source,
+        link,
+        requestId: payload.requestId || null,
       });
       bag.items = bag.items.slice(0, 100);
       localStorage.setItem('naiosh_hub_notifications_v1', JSON.stringify(bag));
       window.dispatchEvent(new CustomEvent('hub-notifications-changed'));
     } catch (_) {}
+    return null;
   };
 
   const isPendingReview = (row) =>
@@ -1504,6 +1548,7 @@
     approveRequest,
     rejectRequest,
     isPendingReview,
+    pushCustomerNotification,
     pauseRequest,
     resumeRequest,
     archiveRequest,

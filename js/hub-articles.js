@@ -485,7 +485,33 @@
   const requestChanges = (id, note, actor) => setStatus(id, 'Needs Changes', actor, note);
   const approve = (id, actor, note) => setStatus(id, 'Approved', actor, note || '');
   const reject = (id, note, actor) => setStatus(id, 'Rejected', actor, note);
-  const publishNow = (id, actor, opts = {}) => setStatus(id, 'Published', actor, 'نشر فوري', opts);
+  const publishNow = (id, actor, opts = {}) => {
+    const article = setStatus(id, 'Published', actor, 'نشر فوري', opts);
+    try {
+      const settings = window.HubSearchCatalog?.defaultSettings?.() || {};
+      if (article && settings.autoIndexArticles !== false && window.HubSearchCatalog?.upsertFromSource) {
+        window.HubSearchCatalog.upsertFromSource(
+          {
+            id: `article-${article.id}`,
+            sourceType: 'article',
+            sourceId: article.id,
+            sourceLabel: 'المقالات',
+            section: 'content',
+            kind: 'content',
+            title: article.title,
+            description: article.summary || article.excerpt || '',
+            keywords: [article.title, article.category, ...(article.tags || [])].filter(Boolean).join(' '),
+            href: `blog.html#${encodeURIComponent(article.id)}`,
+            category: 'مقال',
+            status: 'published',
+            searchVisible: true,
+          },
+          actor || 'نظام'
+        );
+      }
+    } catch (_) {}
+    return article;
+  };
   const unpublish = (id, actor, opts = {}) => setStatus(id, 'Unpublished', actor, 'إيقاف النشر', opts);
   const archive = (id, actor, opts = {}) => setStatus(id, 'Archived', actor, 'أرشفة', opts);
   const schedule = (id, whenIso, actor) => {
