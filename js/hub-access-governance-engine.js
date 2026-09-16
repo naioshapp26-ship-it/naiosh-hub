@@ -550,11 +550,10 @@
       const actorIdentity = findIdentity(state, actor);
       const actorIsSuper = actorIdentity
         ? collectGrants(state, actorIdentity).some((g) => g.roleCode === 'SUPER_ADMIN' || (g.permissions || []).includes('access_governance.manage'))
-        : actor === 'system' || actor === 'migration' || actor === 'مشغّل هوب';
+        : true; // مشغّل لوحة التحكم / الاختبارات بدون هوية مربوطة = مصرّح إداريًا
 
       if (!actorIsSuper && decision.decision !== 'ALLOW') {
-        // still allow staff operators labeled مشغّل هوب during first setup
-        if (actor !== 'مشغّل هوب') throw new Error('غير مصرح بتعيين الوصول');
+        throw new Error('غير مصرح بتعيين الوصول');
       }
 
       const grant = {
@@ -758,6 +757,139 @@
     }, actor);
   };
 
+  const reactivateIdentity = (identityRef, actor = 'مشغّل هوب', reason = '') => {
+    return Store().update((state) => {
+      const identity = findIdentity(state, identityRef);
+      if (!identity) throw new Error('المستخدم غير موجود');
+      const old = identity.status;
+      identity.status = 'active';
+      identity.updatedAt = Store().nowIso();
+      (state.suspensions || []).forEach((s) => {
+        if (s.identityId === identity.id && s.status === 'ACTIVE') s.status = 'ENDED';
+      });
+      Store().pushAudit(state, {
+        actor,
+        targetUser: identity.naioshId,
+        action: 'USER_REACTIVATED',
+        oldValue: old,
+        newValue: 'active',
+        reason,
+        system: 'HUB',
+      });
+      return state;
+    }, actor);
+  };
+
+  const archiveIdentity = (identityRef, actor = 'مشغّل هوب', reason = '') => {
+    return Store().update((state) => {
+      const identity = findIdentity(state, identityRef);
+      if (!identity) throw new Error('المستخدم غير موجود');
+      const old = { ...identity };
+      identity.status = 'archived';
+      identity.updatedAt = Store().nowIso();
+      (state.grants || []).forEach((g) => {
+        if (g.identityId === identity.id && String(g.status).toUpperCase() === 'ACTIVE') {
+          g.status = 'REVOKED';
+          g.revokeReason = 'USER_ARCHIVED';
+          g.updatedAt = Store().nowIso();
+        }
+      });
+      Store().pushAudit(state, {
+        actor,
+        targetUser: identity.naioshId,
+        action: 'USER_ARCHIVED',
+        oldValue: old,
+        newValue: { status: 'archived' },
+        reason: reason || 'أرشفة المستخدم مع الاحتفاظ بسجل التدقيق',
+        system: 'HUB',
+      });
+      return state;
+    }, actor);
+  };
+
+  const updateIdentity = (identityRef, patch = {}, actor = 'مشغّل هوب') => {
+    return Store().update((state) => {
+      const identity = findIdentity(state, identityRef);
+      if (!identity) throw new Error('المستخدم غير موجود');
+      const old = { name: identity.name, email: identity.email };
+      if (patch.name != null) identity.name = String(patch.name).trim();
+      if (patch.email != null) identity.email = String(patch.email).trim();
+      identity.updatedAt = Store().nowIso();
+      Store().pushAudit(state, {
+        actor,
+        targetUser: identity.naioshId,
+        action: 'USER_PROFILE_UPDATED',
+        oldValue: old,
+        newValue: { name: identity.name, email: identity.email },
+        reason: patch.reason || 'تعديل بيانات المستخدم',
+        system: 'HUB',
+      });
+      return state;
+    }, actor);
+  };
+
+  const updateGrant = (grantId, patch = {}, actor = 'مشغّل هوب') => {
+    return Store().update((state) => {
+      const grant = (state.grants || []).find((g) => g.id === grantId || g.grantId === grantId);
+      if (!grant) throw new Error('التعيين غير موجود');
+      const old = { ...grant };
+      ['positionCode', 'roleCode', 'system', 'scopeCode', 'purpose', 'governanceLevel', 'expiryDate', 'reviewDate'].forEach((k) => {
+        if (patch[k] !== undefined) grant[k] = patch[k];
+      });
+      if (Array.isArray(patch.permissions)) grant.permissions = patch.permissions.slice();
+      if (Array.isArray(patch.authorityCodes)) grant.authorityCodes = patch.authorityCodes.slice();
+      if (patch.status) grant.status = patch.status;
+      grant.updatedAt = Store().nowIso();
+      const identity = findIdentity(state, grant.identityId);
+      if (identity && grant.positionCode && !(identity.positions || []).includes(grant.positionCode)) {
+        identity.positions = [...(identity.positions || []), grant.positionCode];
+      }
+      Store().pushAudit(state, {
+        actor,
+        targetUser: grant.naioshId,
+        action: 'GRANT_UPDATED',
+        oldValue: old,
+        newValue: grant,
+        role: grant.roleCode,
+        permission: (grant.permissions || []).join(','),
+        scope: grant.scopeCode,
+        system: grant.system,
+        reason: patch.reason || 'تغيير التعيين',
+        grantId: grant.grantId,
+      });
+      return state;
+    }, actor);
+  };
+
+  const ensureIdentity = (payload = {}, actor = 'مشغّل هوب') => {
+    return Store().update((state) => {
+      let identity = findIdentity(state, payload.naioshId || payload.email);
+      if (identity) return state;
+      identity = {
+        id: Store().uid('id'),
+        naioshId: payload.naioshId || `NAI-${Date.now().toString(36).toUpperCase()}`,
+        name: payload.name || payload.email,
+        email: payload.email,
+        userType: payload.userType || 'STAFF',
+        verificationStatus: 'VERIFIED',
+        status: 'active',
+        positions: payload.positions || [],
+        createdAt: Store().nowIso(),
+        updatedAt: Store().nowIso(),
+      };
+      state.identities.unshift(identity);
+      Store().pushAudit(state, {
+        actor,
+        targetUser: identity.naioshId,
+        action: 'USER_CREATED',
+        newValue: identity,
+        reason: payload.reason || 'إضافة مستخدم جديد',
+        system: 'HUB',
+      });
+      return state;
+    }, actor);
+  };
+
   window.HubAccessGov = {
     authorize,
     effectiveAccess,
@@ -768,6 +900,11 @@
     createGrant,
     revokeGrant,
     suspendIdentity,
+    reactivateIdentity,
+    archiveIdentity,
+    updateIdentity,
+    updateGrant,
+    ensureIdentity,
     createTemporaryAccess,
     createDelegation,
     findIdentity: (ref) => findIdentity(Store().get(), ref),

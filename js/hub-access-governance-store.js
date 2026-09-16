@@ -464,7 +464,35 @@
   };
 
   const ensureDemoIfEmpty = (state) => {
-    if (state.identities.length) return state;
+    const ensureUser = (spec) => {
+      if ((state.identities || []).some((i) => i.email === spec.email || i.naioshId === spec.naioshId)) return;
+      state.identities.push({
+        id: uid('id'),
+        naioshId: spec.naioshId,
+        name: spec.name,
+        email: spec.email,
+        userType: 'STAFF',
+        verificationStatus: 'VERIFIED',
+        status: 'active',
+        positions: spec.positions || [],
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      });
+    };
+    ensureUser({
+      naioshId: 'NAI-MALIKA-001',
+      name: 'المهندسة مليكة',
+      email: 'malika@naiosh.com',
+      positions: [],
+    });
+    ensureUser({
+      naioshId: 'NAI-LEADER-001',
+      name: 'القائد الأعلى',
+      email: 'leader@naiosh.com',
+      positions: ['EMP_SUPREME_LEADER'],
+    });
+    if (state.identities.length > 2 && state.grants.length) return state;
+    if (state.identities.some((i) => i.naioshId === 'NAI-USER-0025')) return state;
     const id = uid('id');
     const naioshId = 'NAI-USER-0025';
     state.identities.push({
@@ -572,8 +600,9 @@
       const sod = (state.sodRules || []).find((r) => r.code === 'SOD-CREATE-APPROVE-PAY');
       if (sod && (sod.conflictingPermissions || []).includes('finance_approvals.approve')) {
         sod.conflictingPermissions = ['customer_requests.create', 'customer_requests.approve'];
-        save(state);
       }
+      ensureDemoIfEmpty(state);
+      save(state);
     }
     return state;
   };
