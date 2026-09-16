@@ -1,5 +1,7 @@
 /* سياسات نايوش هوب */
 
+/* سياسات: خلفية بنية مقصودة فوق القاعدة الزرقاء لـ .info-hero */
+body.homepage .pol-page .info-hero,
 .pol-page .info-hero {
   background: linear-gradient(135deg, #3b2418 0%, #5c3a28 55%, #6e4630 100%);
 }

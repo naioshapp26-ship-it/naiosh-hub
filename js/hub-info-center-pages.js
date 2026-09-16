@@ -57,9 +57,9 @@
     {
       id: 'info-checklist',
       href: 'hub-checklist.html#about-hub',
-      title: 'ما هي نايوش هوب؟',
-      shortTitle: 'ما هي هوب',
-      subtitle: 'ماذا يعني هوب = … مع حالة التنفيذ ورابط الصفحة',
+      title: 'ما هو نايوش هوب؟',
+      shortTitle: 'ما هو هوب',
+      subtitle: 'تعرّف على مفهوم نايوش هوب، ودوره، وكيف تعمل المنظومة',
       icon: 'fa-list-check',
       keywords: 'قائمة قدرات هوب ترتيب صفحات تم جزئي لسه',
     },

@@ -12,6 +12,7 @@ body.homepage :is(
   .rev-hero,
   .dir-hero,
   .ops-man-hero,
+  .info-hero,
   .incubators-hero,
   .incubators-hero-head,
   .sc-hero,
@@ -34,6 +35,7 @@ body.homepage :is(
   .rev-hero,
   .dir-hero,
   .ops-man-hero,
+  .info-hero,
   .incubators-hero,
   .incubators-hero-head,
   .sc-hero,
@@ -56,13 +58,14 @@ body.homepage :is(
   .rev-hero,
   .dir-hero,
   .ops-man-hero,
+  .info-hero,
   .incubators-hero,
   .incubators-hero-head,
   .sc-hero,
   .hero.law-hero .hero-content,
   .law-hero .hero-content
-) :is(p, li, small, label, .sc-lead, .sc-kicker) {
-  color: rgba(255, 255, 255, 0.96) !important;
+) :is(p, li, small, label, .sc-lead, .sc-kicker, .subtitle, .description) {
+  color: rgba(255, 255, 255, 0.90) !important;
 }
 
 body.homepage :is(
@@ -75,9 +78,10 @@ body.homepage :is(
   .jr-hero,
   .rev-hero,
   .dir-hero,
-  .ops-man-hero
+  .ops-man-hero,
+  .info-hero
 ) :is(.hub-feature-kicker, .hub-learn-kicker, .op-kicker) {
-  color: #ffe8ec !important;
+  color: rgba(255, 255, 255, 0.78) !important;
 }
 
 body.homepage .sc-hero .sc-chips span {

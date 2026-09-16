@@ -85,26 +85,55 @@
   color: #b80000;
 }
 
+/* خلفية غامقة → نص فاتح (يتفوق على body.homepage h1/p دون الاعتماد على !important هنا) */
+body.homepage .info-hero,
 .info-hero {
   background: linear-gradient(135deg, #0f2744 0%, #163a66 55%, #1d4f86 100%);
-  color: #fff;
+  color: #ffffff;
   border-radius: 20px;
   padding: 28px 26px;
 }
 
-.info-hero h1 {
+body.homepage .info-hero h1,
+body.homepage .info-hero h2,
+body.homepage .info-hero h3,
+.info-hero h1,
+.info-hero h2,
+.info-hero h3 {
   margin: 0;
   font-size: clamp(1.55rem, 2.6vw, 2.15rem);
   font-weight: 900;
   line-height: 1.35;
+  color: #ffffff;
 }
 
-.info-hero p {
+body.homepage .info-hero p,
+body.homepage .info-hero .subtitle,
+body.homepage .info-hero .description,
+.info-hero p,
+.info-hero .subtitle,
+.info-hero .description {
   margin: 12px 0 0;
   max-width: 780px;
   line-height: 1.7;
   font-weight: 650;
-  opacity: 0.95;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.90);
+}
+
+body.homepage .info-section :is(h1, h2, h3),
+.info-section :is(h1, h2, h3) {
+  color: #101828;
+}
+
+body.homepage .info-section :is(p, li),
+.info-section :is(p, li) {
+  color: #344054;
+}
+
+body.homepage .info-section .info-lead,
+.info-section .info-lead {
+  color: #475467;
 }
 
 .info-section {
@@ -122,9 +151,10 @@
 
 .info-section .info-lead {
   margin: 0 0 16px;
-  color: #667085;
+  color: #475467;
   font-weight: 650;
   line-height: 1.6;
+  font-size: 16px;
 }
 
 .info-start-grid {
@@ -160,15 +190,16 @@
   margin: 0;
   font-size: 1.05rem;
   font-weight: 900;
+  color: #101828;
 }
 
 .info-start-card p {
   margin: 0;
-  color: #667085;
+  color: #475467;
   font-weight: 650;
   line-height: 1.55;
   flex: 1;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .info-btn {

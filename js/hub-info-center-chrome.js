@@ -9,7 +9,7 @@
 
   var NAV = [
     { id: 'overview', href: HOME + '#overview', label: 'نظرة عامة', match: ['hub-checklist.html'] },
-    { id: 'about', href: HOME + '#about-hub', label: 'ما هي نايوش هوب؟', match: ['hub-checklist.html#about'] },
+    { id: 'about', href: HOME + '#about-hub', label: 'ما هو نايوش هوب؟', match: ['hub-checklist.html#about'] },
     { id: 'policies', href: 'policies.html', label: 'السياسات', match: ['policies.html'] },
     { id: 'specs', href: 'engine-specs.html', label: 'المواصفات الوظيفية', match: ['engine-specs.html'] },
     { id: 'guides', href: HOME + '#guides', label: 'الأدلة وطريقة الاستخدام', match: ['ops-manuals.html'] },
