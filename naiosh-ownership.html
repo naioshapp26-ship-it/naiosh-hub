@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ملكية نايوش | نايوش هوب 360</title>
+  <meta name="description" content="المركز الموحد لمعلومات الملكية والحقوق والأصول والوثائق المرتبطة بمنظومة نايوش." />
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/hub-theme.css" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=20" />
+  <link rel="stylesheet" href="css/hub-ownership.css?v=1" />
+</head>
+<body class="homepage">
+  <header class="top-nav">
+    <div class="container inner">
+      <div class="nav-main">
+        <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
+        <nav class="nav-links">
+          <a href="index.html">الرئيسية</a>
+          <a href="services.html">خدمات</a>
+          <a class="active" href="naiosh-ownership.html">ملكية نايوش</a>
+          <a href="platforms.html">المنصات</a>
+          <a href="dashboard.html">غرفة العمليات</a>
+        </nav>
+      </div>
+      <div class="auth-actions">
+        <a href="index.html" class="auth-btn">العودة للرئيسية</a>
+        <a href="dashboard.html" class="auth-btn primary">لوحة التحكم</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="own-page" data-own-root>
+    <section class="own-hero" aria-label="ملكية نايوش">
+      <nav class="own-crumb" aria-label="مسار التنقل">
+        <a href="index.html">الرئيسية</a>
+        <span>›</span>
+        <strong>ملكية نايوش</strong>
+      </nav>
+      <h1>ملكية نايوش</h1>
+      <p>المركز الموحد لمعلومات الملكية والحقوق والأصول والوثائق المرتبطة بمنظومة نايوش.</p>
+      <div class="own-hero-actions">
+        <a class="own-btn" href="index.html"><i class="fas fa-house"></i> العودة للرئيسية</a>
+        <button type="button" class="own-btn primary" data-own-admin data-own-open-add hidden>
+          <i class="fas fa-plus"></i> إضافة سجل
+        </button>
+      </div>
+    </section>
+
+    <section class="own-stats" aria-label="ملخص ملكية نايوش">
+      <article class="own-stat"><strong data-own-stat-total>0</strong><span>إجمالي السجلات</span></article>
+      <article class="own-stat"><strong data-own-stat-docs>0</strong><span>إجمالي الوثائق</span></article>
+      <article class="own-stat"><strong data-own-stat-active>0</strong><span>الوثائق السارية</span></article>
+      <article class="own-stat"><strong data-own-stat-updated>—</strong><span>آخر تحديث</span></article>
+    </section>
+
+    <section class="own-toolbar" aria-label="بحث وتنقل داخلي">
+      <form class="own-search" onsubmit="return false;">
+        <input type="search" data-own-q placeholder="ابحث في بيانات ملكية نايوش..." aria-label="ابحث في بيانات ملكية نايوش" />
+        <button type="button" tabindex="-1" aria-hidden="true"><i class="fas fa-magnifying-glass"></i></button>
+      </form>
+      <nav class="own-jump" aria-label="أقسام الصفحة">
+        <a href="#sec-overview" data-own-jump="sec-overview" class="is-active">نظرة عامة</a>
+        <a href="#sec-ownerships" data-own-jump="sec-ownerships">الملكيات</a>
+        <a href="#sec-ip" data-own-jump="sec-ip">الحقوق</a>
+        <a href="#sec-docs" data-own-jump="sec-docs">الوثائق</a>
+        <a href="#sec-other" data-own-jump="sec-other">أخرى</a>
+        <a href="#sec-actions" data-own-jump="sec-actions">إجراءات</a>
+      </nav>
+    </section>
+
+    <section class="own-section" id="sec-overview">
+      <h2><i class="fas fa-eye"></i> نظرة عامة</h2>
+      <p class="own-section-lead">تعريف مركز الملكية وكيف تُنظَّم البيانات بدل قائمة التنقل الطويلة.</p>
+      <div data-own-section="overview"></div>
+    </section>
+
+    <section class="own-section" id="sec-ownerships">
+      <h2><i class="fas fa-building"></i> الملكيات</h2>
+      <p class="own-section-lead">ملكية المكتب الرئيسي والفرع والحاضنة والمنصة والمكتب والفرانشايز.</p>
+      <div data-own-section="ownerships"></div>
+    </section>
+
+    <section class="own-section" id="sec-ip">
+      <h2><i class="fas fa-copyright"></i> الحقوق · الملكية الفكرية</h2>
+      <p class="own-section-lead">حقوق الملكية الفكرية وحماية الأصول.</p>
+      <div data-own-section="ip"></div>
+    </section>
+
+    <section class="own-section" id="sec-docs">
+      <h2><i class="fas fa-file-contract"></i> الوثائق والتوثيق</h2>
+      <p class="own-section-lead">العقود والختم وبراءات الاختراع والابتكار والعلامات والنماذج وتسوية النزاعات.</p>
+      <div data-own-section="docs"></div>
+    </section>
+
+    <section class="own-section" id="sec-other">
+      <h2><i class="fas fa-folder-open"></i> أخرى</h2>
+      <p class="own-section-lead">تصنيفات مساندة وعناصر إضافية.</p>
+      <div data-own-section="other"></div>
+    </section>
+
+    <section class="own-section" id="sec-actions">
+      <h2><i class="fas fa-plus-circle"></i> إجراءات</h2>
+      <p class="own-section-lead">إضافة ملكية جديدة وإدارة السجلات حسب الصلاحية.</p>
+      <div data-own-section="actions"></div>
+    </section>
+  </main>
+
+  <div data-own-modal></div>
+
+  <script src="js/hub-auth.js"></script>
+  <script src="js/hub-ownership-data.js?v=1"></script>
+  <script src="js/hub-ownership-page.js?v=1"></script>
+  <script src="js/hub-header-actions.js?v=20"></script>
+  <script src="js/hub-control-nav.js?v=3"></script>
+  <script src="js/hub-global-back.js" defer></script>
+</body>
+</html>

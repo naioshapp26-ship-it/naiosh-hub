@@ -4,6 +4,13 @@
   /** اختصارات الهيدر — استأجر نظام موجود في الهيرو فقط (بدون تكرار) */
   const ACTIONS = [
     {
+      id: 'ownership',
+      label: 'ملكية نايوش',
+      href: 'naiosh-ownership.html',
+      className: 'hub-hbtn hub-hbtn--red',
+      icon: 'fa-certificate',
+    },
+    {
       id: 'info',
       label: 'مركز معلومات نايوش هوب',
       href: 'hub-checklist.html',
@@ -38,12 +45,24 @@
     'operating.html',
   ]);
 
+  const removeLegacyOwnershipDropdown = (root) => {
+    root?.querySelectorAll('.nav-dropdown, details.nav-dropdown').forEach((el) => {
+      const label = (el.querySelector('summary')?.textContent || el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (/ملكية نايوش/.test(label)) el.remove();
+    });
+    // أي قائمة منسدلة قديمة لعناصر الملكية داخل الهيدر
+    root?.querySelectorAll('[data-ownership-dropdown], [data-naiosh-ownership-menu]').forEach((el) => el.remove());
+  };
+
   const inject = () => {
     const topNav = document.querySelector('header.top-nav');
     const inner = topNav?.querySelector('.inner');
     const navLinks = inner?.querySelector('.nav-links');
     const auth = inner?.querySelector('.auth-actions');
     if (!inner || !auth) return;
+
+    removeLegacyOwnershipDropdown(topNav);
+    removeLegacyOwnershipDropdown(document);
 
     // امسح الصف الثاني القديم والحقن القديمة (شريط الأيقونات المكرر)
     topNav.querySelectorAll('[data-hub-header-bar]').forEach((el) => el.remove());
@@ -56,6 +75,10 @@
         a.remove();
       }
     });
+
+    // لا تكرار لزر ملكية نايوش إذا وُجد رابط نصي بنفس الوجهة
+    navLinks?.querySelectorAll('a[href="naiosh-ownership.html"]').forEach((a) => a.remove());
+    auth.querySelectorAll('a[href="naiosh-ownership.html"]').forEach((a) => a.remove());
 
     // هيدر الرئيسية: أزل ما هو موجود في القائمة الجانبية (المشاريع الجانبية · سجل معنا · منصتي)
     const path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
@@ -94,7 +117,7 @@
           ? INFO_PAGES.has(path)
             ? ' is-active'
             : ''
-          : path === a.href.toLowerCase()
+          : path === a.href.toLowerCase() || (a.id === 'ownership' && path === 'naiosh-ownership.html')
             ? ' is-active'
             : '';
       return `<a class="${a.className}${active}" href="${a.href}" data-hub-hbtn="${a.id}">

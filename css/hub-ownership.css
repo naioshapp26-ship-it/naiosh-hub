@@ -1,0 +1,404 @@
+/* صفحة ملكية نايوش */
+
+.own-page {
+  width: min(1280px, calc(100% - 28px));
+  margin: 18px auto 80px;
+  display: grid;
+  gap: 20px;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.own-hero {
+  background: linear-gradient(128deg, #1a0508 0%, #7a0f18 48%, #c0122d 100%);
+  color: #fff;
+  border-radius: 22px;
+  padding: 28px 26px;
+  box-shadow: 0 18px 44px rgba(122, 15, 24, 0.28);
+}
+
+.own-crumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.own-crumb a {
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: none;
+}
+
+.own-crumb span {
+  opacity: 0.7;
+}
+
+.own-hero h1 {
+  margin: 0 0 10px;
+  font-size: clamp(30px, 3vw, 34px);
+  font-weight: 900;
+  color: #fff !important;
+}
+
+.own-hero p {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 16px;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.94) !important;
+}
+
+.own-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.own-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.own-stat {
+  background: #fff;
+  border: 1px solid #f1d5d8;
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+}
+
+.own-stat strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 900;
+  color: #c0122d;
+}
+
+.own-stat span {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.own-toolbar {
+  display: grid;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #eee2e4;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.own-search {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.own-search input {
+  min-height: 48px;
+  border: 1px solid #d6d3d1;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.own-search button,
+.own-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid #e5b4ba;
+  background: #fff;
+  color: #7a0f18;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.own-btn.primary,
+.own-search button {
+  background: #c0122d;
+  border-color: #c0122d;
+  color: #fff;
+}
+
+.own-btn.danger {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.own-btn:hover {
+  filter: brightness(0.97);
+}
+
+.own-jump {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.own-jump a {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #ead0d3;
+  background: #fff7f8;
+  color: #7a0f18;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.own-jump a.is-active,
+.own-jump a:hover {
+  background: #c0122d;
+  border-color: #c0122d;
+  color: #fff;
+}
+
+.own-section {
+  background: #fff;
+  border: 1px solid #eee2e4;
+  border-radius: 18px;
+  padding: 22px;
+  scroll-margin-top: 88px;
+}
+
+.own-section h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #1a0508;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.own-section h2 i {
+  color: #c0122d;
+}
+
+.own-section-lead {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.own-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.own-card {
+  border: 1px solid #f0e4e6;
+  border-radius: 16px;
+  background: #fffcfc;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.own-card-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.own-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #fff0f2;
+  color: #c0122d;
+  flex-shrink: 0;
+}
+
+.own-card h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.own-meta {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 750;
+  color: #64748b;
+}
+
+.own-desc {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  color: #334155;
+}
+
+.own-doc-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.own-doc-meta div {
+  background: #fff;
+  border: 1px solid #f1e8ea;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.own-doc-meta span {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.own-doc-meta strong {
+  font-size: 14px;
+  font-weight: 850;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.own-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.own-overview-card {
+  background: #fff7f8;
+  border: 1px solid #f0dce0;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.own-overview-card h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.own-overview-card ul {
+  margin: 10px 0 0;
+  padding-inline-start: 18px;
+}
+
+.own-overview-card li {
+  margin: 6px 0;
+  font-weight: 700;
+  color: #334155;
+}
+
+.own-empty {
+  margin: 0;
+  color: #64748b;
+  font-weight: 750;
+}
+
+.own-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  background: rgba(15, 23, 42, 0.5);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.own-modal {
+  width: min(640px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.own-modal h2 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.own-modal label {
+  display: block;
+  margin: 10px 0 4px;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.own-modal input,
+.own-modal select,
+.own-modal textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #d6d3d1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 15px;
+}
+
+.own-modal textarea {
+  min-height: 90px;
+}
+
+.own-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 1000px) {
+  .own-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .own-grid {
+    grid-template-columns: 1fr;
+  }
+  .own-doc-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .own-page {
+    width: calc(100% - 16px);
+  }
+  .own-stats,
+  .own-two,
+  .own-search {
+    grid-template-columns: 1fr;
+  }
+  .own-section {
+    padding: 16px;
+  }
+}
