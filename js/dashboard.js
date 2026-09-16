@@ -1165,6 +1165,26 @@
         },
       });
     }
+    if (current === 'notifications' && window.HubNotificationsCenter?.afterPaint) {
+      HubNotificationsCenter.afterPaint({
+        user,
+        toast,
+        rerender: () => {
+          renderNav();
+          render();
+        },
+      });
+    }
+    if (current === 'search-admin' && window.HubSearchAdminWS?.afterPaint) {
+      HubSearchAdminWS.afterPaint({
+        user,
+        toast,
+        rerender: () => {
+          renderNav();
+          render();
+        },
+      });
+    }
   };
   window.hubRerender = () => render();
 

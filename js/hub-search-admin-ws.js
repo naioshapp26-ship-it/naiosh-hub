@@ -470,10 +470,56 @@
       </div>`;
   };
 
+  const placeOpenMenu = () => {
+    document.querySelectorAll('.hsa-float-menu').forEach((el) => el.remove());
+    const open = document.querySelector('.hsa-more.is-open');
+    if (!open || !ui.openMenu) return;
+    const btn = open.querySelector('[data-action="sa-menu"]');
+    const srcMenu = open.querySelector('.hsa-more-menu');
+    if (!btn || !srcMenu) return;
+    const float = document.createElement('div');
+    float.className = 'hsa-float-menu';
+    float.setAttribute('role', 'menu');
+    float.innerHTML = srcMenu.innerHTML;
+    document.body.appendChild(float);
+    const r = btn.getBoundingClientRect();
+    const menuW = Math.max(200, float.offsetWidth || 200);
+    const menuH = float.offsetHeight || 180;
+    let top = r.bottom + 6;
+    if (top + menuH > window.innerHeight - 10) top = Math.max(10, r.top - menuH - 6);
+    let left = document.documentElement.dir === 'rtl' ? r.right - menuW : r.left;
+    left = Math.max(10, Math.min(left, window.innerWidth - menuW - 10));
+    float.style.top = `${Math.round(top)}px`;
+    float.style.left = `${Math.round(left)}px`;
+    float.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-action], a[href]');
+      if (!target) return;
+      if (target.tagName === 'A') return;
+      e.preventDefault();
+      e.stopPropagation();
+      const action = target.getAttribute('data-action');
+      const handled = handle(action, target, window.__hubSaCtx || {});
+      if (handled && typeof window.__hubSaRerender === 'function') window.__hubSaRerender();
+    });
+  };
+
+  const afterPaint = (ctx = {}) => {
+    window.__hubSaCtx = ctx;
+    window.__hubSaRerender = ctx.rerender;
+    requestAnimationFrame(() => placeOpenMenu());
+  };
+
+  const clearFloatMenus = () => {
+    document.querySelectorAll('.hsa-float-menu').forEach((el) => el.remove());
+  };
+
   const handle = (action, btn, ctx = {}) => {
     const { toast, user } = ctx;
     const actor = user?.name || user?.email || 'مشغّل هوب';
-    if (action !== 'sa-menu') ui.openMenu = null;
+    if (action !== 'sa-menu') {
+      ui.openMenu = null;
+      clearFloatMenus();
+    }
 
     if (action === 'sa-tab') {
       ui.tab = btn.dataset.tab || 'indexed';
@@ -499,7 +545,9 @@
       return true;
     }
     if (action === 'sa-menu') {
-      ui.openMenu = ui.openMenu === btn.dataset.id ? null : btn.dataset.id;
+      const id = btn.dataset.id;
+      ui.openMenu = ui.openMenu === id ? null : id;
+      if (!ui.openMenu) clearFloatMenus();
       return true;
     }
     if (action === 'sa-view') {
@@ -635,5 +683,5 @@
     return false;
   };
 
-  window.HubSearchAdminWS = { render, handle, ui };
+  window.HubSearchAdminWS = { render, handle, afterPaint, ui };
 })();
