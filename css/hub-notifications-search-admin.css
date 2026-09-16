@@ -141,11 +141,12 @@
 
 .hnc-table-wrap, .hsa-table-wrap {
   width: 100%;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: visible;
   border: 1px solid #eef0f3;
   border-radius: 10px;
   background: #fff;
-  max-height: min(62vh, 720px);
+  max-height: none;
 }
 
 .hnc-table, .hsa-table {
@@ -153,6 +154,7 @@
   border-collapse: separate;
   border-spacing: 0;
   font-size: 14px;
+  overflow: visible;
 }
 
 .hnc-table th, .hnc-table td,
@@ -161,6 +163,18 @@
   border-bottom: 1px solid #eef0f3;
   text-align: start;
   vertical-align: middle;
+}
+
+.hnc-table td:last-child,
+.hsa-table td:last-child {
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+
+.hnc-table tr:has(.hnc-more.is-open) td:last-child,
+.hsa-table tr:has(.hsa-more.is-open) td:last-child {
+  z-index: 20;
 }
 
 .hnc-table th, .hsa-table th {
@@ -227,20 +241,30 @@
   align-items: center;
 }
 
-.hnc-more, .hsa-more { position: relative; display: inline-flex; }
+.hnc-more, .hsa-more {
+  position: relative;
+  display: inline-flex;
+  z-index: 2;
+}
+
+.hnc-more.is-open, .hsa-more.is-open {
+  z-index: 50;
+}
 
 .hnc-more-menu, .hsa-more-menu {
   display: none;
   position: absolute;
-  top: calc(100% + 4px);
+  top: auto;
+  bottom: calc(100% + 4px);
   inset-inline-end: 0;
-  z-index: 40;
-  min-width: 180px;
+  z-index: 60;
+  min-width: 200px;
   padding: 6px;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
   background: #fff;
-  box-shadow: 0 12px 28px rgba(16,24,40,.14);
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.18);
+  overflow: visible;
 }
 
 .hnc-more.is-open .hnc-more-menu,
