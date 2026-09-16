@@ -15,8 +15,12 @@
     tab: 'overview',
     level: null,
     q: '',
-    filters: { level: '', status: '', role: '' },
+    filters: { level: '', status: '', role: '', position: '', system: '' },
     selectedUser: null,
+    drawerTab: 'overview',
+    openMenu: null,
+    page: 1,
+    pageSize: 20,
     wizard: null,
     confirm: null,
     editProfile: null,
@@ -126,46 +130,16 @@
 
   const renderQuickActions = () => `
     <section class="ag-quick" aria-label="إجراءات سريعة">
-      <h3 class="ag-section-title">ماذا تريد أن تفعل؟</h3>
-      <div class="ag-quick-grid">
-        <button type="button" class="ag-quick-card ag-quick-main" data-action="ag-wizard-open">
-          <i class="fas fa-user-plus"></i><strong>+ تعيين مستخدم</strong>
-          <span>اختر مستخدمًا وعيّن منصبه ودوره وصلاحياته خطوة بخطوة</span>
-        </button>
-        <button type="button" class="ag-quick-card" data-action="ag-tab" data-tab="users">
-          <i class="fas fa-users"></i><strong>إدارة المستخدمين</strong>
-          <span>عرض كل المستخدمين وتعديل تعييناتهم</span>
-        </button>
-        <button type="button" class="ag-quick-card" data-action="ag-tab" data-tab="permissions">
-          <i class="fas fa-key"></i><strong>مراجعة الصلاحيات</strong>
-          <span>راجع قاموس الصلاحيات وامنح أو ألغِ وصولًا</span>
-        </button>
-        <button type="button" class="ag-quick-card" data-action="ag-add-user">
-          <i class="fas fa-id-card"></i><strong>إضافة مستخدم جديد</strong>
-        </button>
-        <button type="button" class="ag-quick-card" data-action="ag-tab" data-tab="users" data-focus="edit">
-          <i class="fas fa-pen"></i><strong>تعديل مستخدم</strong>
-        </button>
-        <button type="button" class="ag-quick-card" data-action="ag-wizard-open">
-          <i class="fas fa-arrows-rotate"></i><strong>تغيير منصب أو دور</strong>
-        </button>
-        <button type="button" class="ag-quick-card" data-action="ag-tab" data-tab="permissions">
-          <i class="fas fa-unlock"></i><strong>منح صلاحية</strong>
-        </button>
-        <button type="button" class="ag-quick-card" data-action="ag-tab" data-tab="users" data-focus="suspend">
-          <i class="fas fa-ban"></i><strong>إيقاف وصول</strong>
-        </button>
-        <button type="button" class="ag-quick-card" data-action="ag-tab" data-tab="assignments">
-          <i class="fas fa-link-slash"></i><strong>إلغاء تعيين</strong>
-        </button>
-        <button type="button" class="ag-quick-card" data-action="ag-tab" data-tab="users">
-          <i class="fas fa-magnifying-glass"></i><strong>مراجعة صلاحيات مستخدم</strong>
-        </button>
-      </div>
-      <div class="ag-hero-actions" style="margin-top:12px">
+      <h3 class="ag-section-title">إجراءات سريعة</h3>
+      <div class="ag-quick-btns">
         <button type="button" class="ag-btn ag-btn-primary" data-action="ag-wizard-open"><i class="fas fa-plus"></i> تعيين مستخدم</button>
+        <button type="button" class="ag-btn" data-action="ag-add-user"><i class="fas fa-user-plus"></i> إضافة مستخدم</button>
         <button type="button" class="ag-btn" data-action="ag-tab" data-tab="users">إدارة المستخدمين</button>
+        <button type="button" class="ag-btn" data-action="ag-wizard-open">تغيير منصب أو دور</button>
+        <button type="button" class="ag-btn" data-action="ag-tab" data-tab="permissions">منح صلاحية</button>
         <button type="button" class="ag-btn" data-action="ag-tab" data-tab="permissions">مراجعة الصلاحيات</button>
+        <button type="button" class="ag-btn" data-action="ag-tab" data-tab="users">إيقاف وصول</button>
+        <button type="button" class="ag-btn" data-action="ag-tab" data-tab="assignments">إلغاء تعيين</button>
       </div>
     </section>`;
 
@@ -176,45 +150,43 @@
     return grants.filter((g) => g.governanceLevel === 'SYSTEM').length;
   };
 
+  const countUsersByLevel = (level) => {
+    const ids = new Set(
+      (state().grants || [])
+        .filter((g) => String(g.status).toUpperCase() === 'ACTIVE')
+        .filter((g) => {
+          if (level === 'EMPIRE') return g.governanceLevel === 'EMPIRE';
+          if (level === 'HUB') return g.governanceLevel === 'HUB' || g.system === 'HUB';
+          return g.governanceLevel === 'SYSTEM';
+        })
+        .map((g) => g.identityId)
+    );
+    return ids.size;
+  };
+
   const renderLevels = () => {
     const systems = state().systems || [];
     const posN = (state().positions || []).length;
     const roleN = (state().roles || []).length;
+    const mk = (title, desc, level, users) => `
+      <article class="ag-level-card">
+        <h3>${esc(title)}</h3>
+        <p>${esc(desc)}</p>
+        <div class="ag-level-meta">
+          <span>المستخدمون: <b>${users}</b></span>
+          <span>المناصب: <b>${posN}</b></span>
+          <span>الأدوار: <b>${roleN}</b></span>
+        </div>
+        <div class="ag-actions-row">
+          <button type="button" class="ag-btn ag-btn-sm" data-action="${level === 'SYSTEMS' ? 'ag-level' : 'ag-tab'}" data-level="SYSTEMS" data-tab="users">عرض</button>
+          <button type="button" class="ag-btn ag-btn-sm ag-btn-primary" data-action="ag-wizard-open" data-level="${level === 'SYSTEMS' ? 'SYSTEM' : level}">تعيين مستخدم</button>
+        </div>
+      </article>`;
     return `
       <section class="ag-levels" aria-label="مستويات الإدارة">
-        <article class="ag-level-card ag-level-empire">
-          <div class="ag-level-no">المستوى 01</div>
-          <h3>إمبراطورية نايوش</h3>
-          <p>المستوى السيادي الأعلى لإدارة المناصب والأدوار المركزية.</p>
-          <p class="ag-muted">المستخدمون النشطون: ${countByLevel('EMPIRE')} · المناصب: ${posN} · الأدوار: ${roleN}</p>
-          <div class="ag-actions-row">
-            <button type="button" class="ag-btn ag-btn-sm" data-action="ag-tab" data-tab="users">المستخدمون</button>
-            <button type="button" class="ag-btn ag-btn-sm" data-action="ag-tab" data-tab="positions">المناصب والأدوار</button>
-            <button type="button" class="ag-btn ag-btn-sm ag-btn-primary" data-action="ag-wizard-open" data-level="EMPIRE">تعيين مستخدم</button>
-          </div>
-        </article>
-        <article class="ag-level-card ag-level-hub">
-          <div class="ag-level-no">المستوى 02</div>
-          <h3>نايوش هوب 360</h3>
-          <p>إدارة المستخدمين والأدوار والصلاحيات والسلطات ونطاقات العمل والتدقيق داخل الهوب.</p>
-          <p class="ag-muted">المستخدمون النشطون: ${countByLevel('HUB')}</p>
-          <div class="ag-actions-row">
-            <button type="button" class="ag-btn ag-btn-sm" data-action="ag-tab" data-tab="users">المستخدمون</button>
-            <button type="button" class="ag-btn ag-btn-sm" data-action="ag-tab" data-tab="roles">المناصب والأدوار</button>
-            <button type="button" class="ag-btn ag-btn-sm ag-btn-primary" data-action="ag-wizard-open" data-level="HUB">تعيين مستخدم</button>
-          </div>
-        </article>
-        <article class="ag-level-card ag-level-sys">
-          <div class="ag-level-no">المستوى 03</div>
-          <h3>الأنظمة</h3>
-          <p>المستوى التشغيلي للأنظمة المسجّلة (${systems.length} نظام).</p>
-          <p class="ag-muted">تعيينات الأنظمة: ${countByLevel('SYSTEM')}</p>
-          <div class="ag-actions-row">
-            <button type="button" class="ag-btn ag-btn-sm" data-action="ag-level" data-level="SYSTEMS">عرض الأنظمة</button>
-            <button type="button" class="ag-btn ag-btn-sm" data-action="ag-tab" data-tab="users">المستخدمون</button>
-            <button type="button" class="ag-btn ag-btn-sm ag-btn-primary" data-action="ag-wizard-open" data-level="SYSTEM">تعيين مستخدم</button>
-          </div>
-        </article>
+        ${mk('إمبراطورية نايوش', 'المستوى السيادي الأعلى.', 'EMPIRE', countUsersByLevel('EMPIRE'))}
+        ${mk('نايوش هوب 360', 'إدارة الوصول المركزي للهوب.', 'HUB', countUsersByLevel('HUB'))}
+        ${mk('الأنظمة', `${systems.length} نظام تشغيلي مسجّل.`, 'SYSTEMS', countUsersByLevel('SYSTEM'))}
       </section>`;
   };
 
@@ -285,190 +257,334 @@
       <tbody>${rows || `<tr><td colspan="${headers.length}" class="ag-empty">لا بيانات</td></tr>`}</tbody>
     </table></div>`;
 
-  const userActions = (u, g) => `
-    <div class="ag-row-actions">
+  const userActions = (u, g) => {
+    const open = ui.openMenu === u.naioshId;
+    return `
+    <div class="ag-row-actions ag-row-actions-inline">
       <button type="button" class="ag-btn ag-btn-sm" data-action="ag-select-user" data-id="${esc(u.naioshId)}">عرض</button>
       <button type="button" class="ag-btn ag-btn-sm" data-action="ag-edit-user" data-id="${esc(u.naioshId)}">تعديل</button>
-      <button type="button" class="ag-btn ag-btn-sm" data-action="ag-change-grant" data-id="${esc(u.naioshId)}" data-gid="${esc(g?.grantId || '')}">تغيير التعيين</button>
       <button type="button" class="ag-btn ag-btn-sm" data-action="ag-user-perms" data-id="${esc(u.naioshId)}">الصلاحيات</button>
-      ${
-        u.status === 'suspended'
-          ? `<button type="button" class="ag-btn ag-btn-sm" data-action="ag-reactivate" data-id="${esc(u.naioshId)}">إعادة تفعيل</button>`
-          : `<button type="button" class="ag-btn ag-btn-sm" data-action="ag-confirm" data-kind="suspend" data-id="${esc(u.naioshId)}">إيقاف</button>`
-      }
-      ${
-        g
-          ? `<button type="button" class="ag-btn ag-btn-sm" data-action="ag-confirm" data-kind="revoke" data-id="${esc(g.grantId)}" data-user="${esc(u.name)}">إلغاء التعيين</button>`
-          : `<button type="button" class="ag-btn ag-btn-sm" data-action="ag-wizard-open" data-user="${esc(u.naioshId)}">تعيين</button>`
-      }
-      <button type="button" class="ag-btn ag-btn-sm ag-btn-danger" data-action="ag-confirm" data-kind="archive" data-id="${esc(u.naioshId)}" data-user="${esc(u.name)}">أرشفة</button>
+      <div class="ag-more ${open ? 'is-open' : ''}">
+        <button type="button" class="ag-btn ag-btn-sm ag-more-btn" data-action="ag-menu-toggle" data-id="${esc(u.naioshId)}" aria-expanded="${open ? 'true' : 'false'}" title="المزيد">⋮</button>
+        <div class="ag-more-menu" role="menu">
+          <button type="button" data-action="ag-change-grant" data-id="${esc(u.naioshId)}" data-gid="${esc(g?.grantId || '')}">تغيير التعيين</button>
+          <button type="button" data-action="ag-user-perms" data-id="${esc(u.naioshId)}">منح/إدارة الصلاحيات</button>
+          ${
+            u.status === 'suspended'
+              ? `<button type="button" data-action="ag-reactivate" data-id="${esc(u.naioshId)}">إعادة التفعيل</button>`
+              : `<button type="button" data-action="ag-confirm" data-kind="suspend" data-id="${esc(u.naioshId)}">إيقاف الوصول</button>`
+          }
+          ${
+            g
+              ? `<button type="button" data-action="ag-confirm" data-kind="revoke" data-id="${esc(g.grantId)}" data-user="${esc(u.name)}">إلغاء التعيين</button>`
+              : `<button type="button" data-action="ag-wizard-open" data-user="${esc(u.naioshId)}">تعيين</button>`
+          }
+          <button type="button" class="is-danger" data-action="ag-confirm" data-kind="archive" data-id="${esc(u.naioshId)}" data-user="${esc(u.name)}">أرشفة المستخدم</button>
+        </div>
+      </div>
     </div>`;
+  };
+
+  const renderPagination = (total) => {
+    const pages = Math.max(1, Math.ceil(total / ui.pageSize) || 1);
+    const page = Math.min(Math.max(1, ui.page), pages);
+    ui.page = page;
+    const from = total ? (page - 1) * ui.pageSize + 1 : 0;
+    const to = Math.min(page * ui.pageSize, total);
+    const nums = [];
+    for (let i = 1; i <= pages && i <= 7; i++) nums.push(i);
+    return `
+      <div class="ag-pager">
+        <span>عرض ${from}–${to} من ${total} مستخدم</span>
+        <div class="ag-pager-controls">
+            <select id="ag-page-size" data-action="ag-page-size-noop" hidden></select>
+            <div class="ag-page-size" role="group" aria-label="لكل صفحة">
+              <span>لكل صفحة</span>
+              ${[20, 50, 100]
+                .map(
+                  (n) =>
+                    `<button type="button" class="ag-btn ag-btn-sm ${ui.pageSize === n ? 'ag-btn-primary' : ''}" data-action="ag-page-size" data-size="${n}">${n}</button>`
+                )
+                .join('')}
+            </div>
+          <button type="button" class="ag-btn ag-btn-sm" data-action="ag-page" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>السابق</button>
+          ${nums.map((n) => `<button type="button" class="ag-btn ag-btn-sm ${n === page ? 'ag-btn-primary' : ''}" data-action="ag-page" data-page="${n}">${n}</button>`).join('')}
+          <button type="button" class="ag-btn ag-btn-sm" data-action="ag-page" data-page="${page + 1}" ${page >= pages ? 'disabled' : ''}>التالي</button>
+        </div>
+      </div>`;
+  };
 
   const renderUsers = () => {
     let rows = state().identities || [];
     const q = String(ui.q || '').trim().toLowerCase();
     if (q) rows = rows.filter((u) => [u.name, u.email, u.naioshId].some((x) => String(x || '').toLowerCase().includes(q)));
     if (ui.filters.status) rows = rows.filter((u) => u.status === ui.filters.status);
-    const detail = ui.selectedUser ? engine().effectiveAccess(ui.selectedUser) : null;
-    const identity = detail?.identity;
+    if (ui.filters.level) {
+      rows = rows.filter((u) => {
+        const g = primaryGrant(u);
+        if (!g) return false;
+        if (ui.filters.level === 'HUB') return g.governanceLevel === 'HUB' || g.system === 'HUB';
+        return g.governanceLevel === ui.filters.level;
+      });
+    }
+    if (ui.filters.role) rows = rows.filter((u) => primaryGrant(u)?.roleCode === ui.filters.role);
+    if (ui.filters.position) rows = rows.filter((u) => primaryGrant(u)?.positionCode === ui.filters.position);
+    if (ui.filters.system) rows = rows.filter((u) => primaryGrant(u)?.system === ui.filters.system);
+    const total = rows.length;
+    const start = (ui.page - 1) * ui.pageSize;
+    const pageRows = rows.slice(start, start + ui.pageSize);
 
     return `
-      <section class="ag-panel">
-        <h3 class="ag-section-title">المستخدمون</h3>
-        <p class="ag-lead">من هنا تدير تعيينات كل مستخدم: عرض، تعديل، تغيير الدور، الصلاحيات، إيقاف، إلغاء التعيين، أو أرشفة الحساب.</p>
-        ${searchBar('ابحث بالاسم أو رقم نايوش أو البريد...')}
-        <div class="ag-filters">
-          <label>الحالة
-            <select id="ag-f-status">
-              <option value="">الكل</option>
-              <option value="active" ${ui.filters.status === 'active' ? 'selected' : ''}>نشط</option>
-              <option value="suspended" ${ui.filters.status === 'suspended' ? 'selected' : ''}>موقوف</option>
-              <option value="archived" ${ui.filters.status === 'archived' ? 'selected' : ''}>مؤرشف</option>
-            </select>
-          </label>
-          <button type="button" class="ag-btn" data-action="ag-apply-filters">تطبيق</button>
-        </div>
-        <div class="ag-split">
+      <section class="ag-panel ag-panel-full">
+        <div class="ag-panel-head">
           <div>
-            ${table(
-              ['المستخدم', 'رقم نايوش', 'المستوى', 'المنصب', 'الدور', 'نطاق العمل', 'الحالة', 'تاريخ التعيين', 'آخر تحديث', 'الإجراءات'],
-              rows
-                .map((u) => {
-                  const g = primaryGrant(u);
-                  return `<tr class="${ui.selectedUser === u.naioshId ? 'is-selected' : ''}">
-                    <td><strong>${esc(u.name)}</strong><div class="ag-muted">${esc(u.email)}</div></td>
-                    <td><code>${esc(u.naioshId)}</code></td>
-                    <td>${esc(g ? levelOfGrant(g) : '—')}</td>
-                    <td>${esc(g ? labelPos(g.positionCode) : '—')}</td>
-                    <td>${esc(g ? labelRole(g.roleCode) : '—')}</td>
-                    <td>${esc(g ? labelScope(g.scopeCode) : '—')}</td>
-                    <td>${statusBadge(u.status)}</td>
-                    <td>${fmt(g?.startDate || u.createdAt)}</td>
-                    <td>${fmt(u.updatedAt)}</td>
-                    <td>${userActions(u, g)}</td>
-                  </tr>`;
-                })
-                .join('')
-            )}
+            <h3 class="ag-section-title">المستخدمون وإدارة الوصول</h3>
+            <p class="ag-lead">إدارة المستخدمين وتعيين مناصبهم وأدوارهم وصلاحياتهم.</p>
           </div>
-          <div class="ag-user360">
-            ${
-              identity
-                ? renderUserDetail(identity, detail)
-                : `<p class="ag-empty">اختر مستخدمًا من الجدول أو اضغط «عرض» لإدارة كل عملياته من مكان واحد.</p>`
-            }
+          <div class="ag-actions-row">
+            <button type="button" class="ag-btn" data-action="ag-add-user">+ إضافة مستخدم</button>
+            <button type="button" class="ag-btn ag-btn-primary" data-action="ag-wizard-open">+ تعيين مستخدم</button>
           </div>
         </div>
+        <div class="ag-toolbar ag-toolbar-users">
+          <input type="search" class="ag-search" id="ag-q" value="${esc(ui.q)}" placeholder="ابحث بالاسم أو رقم نايوش..." />
+          <select id="ag-f-level" title="المستوى">
+            <option value="">المستوى</option>
+            <option value="EMPIRE" ${ui.filters.level === 'EMPIRE' ? 'selected' : ''}>إمبراطورية نايوش</option>
+            <option value="HUB" ${ui.filters.level === 'HUB' ? 'selected' : ''}>نايوش هوب 360</option>
+            <option value="SYSTEM" ${ui.filters.level === 'SYSTEM' ? 'selected' : ''}>نظام محدد</option>
+          </select>
+          <select id="ag-f-pos" title="المنصب">
+            <option value="">المنصب</option>
+            ${(state().positions || []).map((p) => `<option value="${esc(p.code)}" ${ui.filters.position === p.code ? 'selected' : ''}>${esc(p.nameAr)}</option>`).join('')}
+          </select>
+          <select id="ag-f-role" title="الدور">
+            <option value="">الدور</option>
+            ${(state().roles || []).map((r) => `<option value="${esc(r.code)}" ${ui.filters.role === r.code ? 'selected' : ''}>${esc(r.nameAr)}</option>`).join('')}
+          </select>
+          <select id="ag-f-sys" title="النظام">
+            <option value="">النظام</option>
+            <option value="HUB" ${ui.filters.system === 'HUB' ? 'selected' : ''}>نايوش هوب 360</option>
+            ${(state().systems || []).map((s) => `<option value="${esc(s.code)}" ${ui.filters.system === s.code ? 'selected' : ''}>${esc(s.nameAr)}</option>`).join('')}
+          </select>
+          <select id="ag-f-status" title="الحالة">
+            <option value="">الحالة</option>
+            <option value="active" ${ui.filters.status === 'active' ? 'selected' : ''}>نشط</option>
+            <option value="suspended" ${ui.filters.status === 'suspended' ? 'selected' : ''}>موقوف</option>
+            <option value="archived" ${ui.filters.status === 'archived' ? 'selected' : ''}>مؤرشف</option>
+          </select>
+          <button type="button" class="ag-btn" data-action="ag-apply-filters">تطبيق</button>
+          <button type="button" class="ag-btn" data-action="ag-clear-filters">مسح</button>
+        </div>
+        ${table(
+          ['المستخدم', 'رقم نايوش', 'المستوى', 'المنصب', 'الدور', 'نطاق العمل', 'الحالة', 'تاريخ التعيين', 'آخر تحديث', 'الإجراءات'],
+          pageRows
+            .map((u) => {
+              const g = primaryGrant(u);
+              return `<tr class="ag-user-row">
+                <td class="ag-user-cell" data-label="المستخدم">
+                  <button type="button" class="ag-user-link" data-action="ag-select-user" data-id="${esc(u.naioshId)}" title="${esc(u.name)}">
+                    <span class="ag-avatar">${esc((u.name || '?').slice(0, 1))}</span>
+                    <span>
+                      <strong class="ag-nowrap" title="${esc(u.name)}">${esc(u.name)}</strong>
+                      <small class="ag-muted ag-ellipsis" title="${esc(u.email)}">${esc(u.email)}</small>
+                    </span>
+                  </button>
+                </td>
+                <td class="ag-nowrap" data-label="رقم نايوش" title="${esc(u.naioshId)}">
+                  <code>${esc(u.naioshId)}</code>
+                  <button type="button" class="ag-copy" data-action="ag-copy-id" data-id="${esc(u.naioshId)}" title="نسخ">نسخ</button>
+                </td>
+                <td class="ag-nowrap" data-label="المستوى" title="${esc(g ? levelOfGrant(g) : '—')}">${esc(g ? levelOfGrant(g) : '—')}</td>
+                <td data-label="المنصب"><span class="ag-chip" title="${esc(g ? labelPos(g.positionCode) : '—')}">${esc(g ? labelPos(g.positionCode) : '—')}</span></td>
+                <td data-label="الدور"><span class="ag-chip" title="${esc(g ? labelRole(g.roleCode) : '—')}">${esc(g ? labelRole(g.roleCode) : '—')}</span></td>
+                <td class="ag-ellipsis" data-label="نطاق العمل" title="${esc(g ? labelScope(g.scopeCode) : '—')}">${esc(g ? labelScope(g.scopeCode) : '—')}</td>
+                <td data-label="الحالة">${statusBadge(u.status)}</td>
+                <td class="ag-nowrap" data-label="تاريخ التعيين" title="${fmt(g?.startDate || u.createdAt)}">${fmt(g?.startDate || u.createdAt)}</td>
+                <td class="ag-nowrap" data-label="آخر تحديث" title="${fmt(u.updatedAt)}">${fmt(u.updatedAt)}</td>
+                <td data-label="الإجراءات">${userActions(u, g)}</td>
+              </tr>`;
+            })
+            .join('')
+        )}
+        ${renderPagination(total)}
       </section>`;
   };
 
-  const renderUserDetail = (identity, detail) => {
+  const renderUserDrawer = () => {
+    if (!ui.selectedUser) return '';
+    const detail = engine().effectiveAccess(ui.selectedUser);
+    const identity = detail?.identity;
+    if (!identity) return '';
     const grants = (state().grants || []).filter((g) => g.identityId === identity.id);
-    const audit = (state().audit || []).filter((a) => a.targetUser === identity.naioshId).slice(0, 12);
+    const audit = (state().audit || []).filter((a) => a.targetUser === identity.naioshId).slice(0, 20);
+    const tabs = [
+      ['overview', 'نظرة عامة'],
+      ['grants', 'التعيينات'],
+      ['perms', 'الصلاحيات'],
+      ['auth', 'السلطات'],
+      ['systems', 'الأنظمة'],
+      ['log', 'السجل'],
+    ];
+    let body = '';
+    if (ui.drawerTab === 'overview') {
+      body = `
+        <p><strong>رقم نايوش:</strong> <code class="ag-nowrap">${esc(identity.naioshId)}</code></p>
+        <p><strong>البريد:</strong> ${esc(identity.email)}</p>
+        <p><strong>الحالة:</strong> ${statusBadge(detail.status === 'SUSPENDED' ? 'suspended' : identity.status)}</p>
+        <p><strong>المناصب:</strong> ${esc((identity.positions || []).map(labelPos).join(' · ') || '—')}</p>`;
+    } else if (ui.drawerTab === 'grants') {
+      body =
+        grants
+          .map(
+            (g) => `<div class="ag-drawer-card">
+              <strong>${esc(levelOfGrant(g))}</strong> · ${esc(labelSys(g.system))}<br>
+              المنصب: ${esc(labelPos(g.positionCode))} · الدور: ${esc(labelRole(g.roleCode))}<br>
+              النطاق: ${esc(labelScope(g.scopeCode))} · ${statusBadge(g.status)}
+            </div>`
+          )
+          .join('') || '<p class="ag-empty">لا تعيينات</p>';
+    } else if (ui.drawerTab === 'perms') {
+      body = `<p>${esc((detail.permissions || []).map(labelPerm).join(' · ') || '—')}</p>`;
+    } else if (ui.drawerTab === 'auth') {
+      body = `<p>${esc((detail.authorities || []).join(' · ') || '—')}</p>`;
+    } else if (ui.drawerTab === 'systems') {
+      body = `<p>${esc(Object.keys(detail.systems || {}).map(labelSys).join(' · ') || '—')}</p>`;
+    } else {
+      body = `<ul class="ag-list">${audit.map((a) => `<li>${fmt(a.timestamp)} — ${esc(a.action)} — ${esc(a.actor)}</li>`).join('') || '<li class="ag-empty">لا أحداث</li>'}</ul>`;
+    }
     return `
-      <h4>بيانات المستخدم وصلاحياته</h4>
-      <p><strong>${esc(identity.name)}</strong> · ${statusBadge(detail.status === 'SUSPENDED' ? 'suspended' : identity.status)}</p>
-      <p class="ag-muted">رقم نايوش: <code>${esc(identity.naioshId)}</code><br>البريد: ${esc(identity.email)}</p>
-      <div class="ag-actions-row">
-        <button type="button" class="ag-btn ag-btn-sm" data-action="ag-edit-user" data-id="${esc(identity.naioshId)}">تعديل البيانات</button>
-        <button type="button" class="ag-btn ag-btn-sm ag-btn-primary" data-action="ag-wizard-open" data-user="${esc(identity.naioshId)}">تعيين / تغيير التعيين</button>
-        <button type="button" class="ag-btn ag-btn-sm" data-action="ag-user-perms" data-id="${esc(identity.naioshId)}">الصلاحيات</button>
-      </div>
-      <h5>التعيينات الحالية</h5>
-      ${
-        grants.length
-          ? `<ul class="ag-list">${grants
-              .map(
-                (g) => `<li>
-                  <strong>${esc(levelOfGrant(g))}</strong> · ${esc(labelSys(g.system))}<br>
-                  المنصب: ${esc(labelPos(g.positionCode))} · الدور: ${esc(labelRole(g.roleCode))}<br>
-                  النطاق: ${esc(labelScope(g.scopeCode))} · ${statusBadge(g.status)}
-                  <div class="ag-row-actions" style="margin-top:6px">
-                    <button type="button" class="ag-btn ag-btn-sm" data-action="ag-change-grant" data-id="${esc(identity.naioshId)}" data-gid="${esc(g.grantId)}">تعديل</button>
-                    <button type="button" class="ag-btn ag-btn-sm" data-action="ag-change-grant" data-id="${esc(identity.naioshId)}" data-gid="${esc(g.grantId)}">تغيير الدور</button>
-                    <button type="button" class="ag-btn ag-btn-sm" data-action="ag-user-perms" data-id="${esc(identity.naioshId)}">تغيير الصلاحيات</button>
-                    ${
-                      String(g.status).toUpperCase() === 'ACTIVE'
-                        ? `<button type="button" class="ag-btn ag-btn-sm" data-action="ag-confirm" data-kind="revoke" data-id="${esc(g.grantId)}" data-user="${esc(identity.name)}">إلغاء التعيين</button>`
-                        : ''
-                    }
-                  </div>
-                </li>`
-              )
-              .join('')}</ul>`
-          : `<p class="ag-empty">لا تعيينات. <button type="button" class="ag-btn ag-btn-sm ag-btn-primary" data-action="ag-wizard-open" data-user="${esc(identity.naioshId)}">تعيين الآن</button></p>`
-      }
-      <h5>الأنظمة المسموح بها</h5>
-      <p>${esc(Object.keys(detail.systems || {}).map(labelSys).join(' · ') || '—')}</p>
-      <h5>الصلاحيات الفعلية</h5>
-      <p>${esc((detail.permissions || []).map(labelPerm).join(' · ') || '—')}</p>
-      <h5>السلطات</h5>
-      <p>${esc((detail.authorities || []).join(' · ') || '—')}</p>
-      <h5>سجل التغييرات</h5>
-      <ul class="ag-list">${audit.map((a) => `<li>${fmt(a.timestamp)} — ${esc(a.action)} — ${esc(a.actor)} — ${esc(a.reason || '')}</li>`).join('') || '<li class="ag-empty">لا أحداث بعد</li>'}</ul>`;
+      <div class="ag-drawer-backdrop" data-action="ag-drawer-close"></div>
+      <aside class="ag-drawer" role="dialog" aria-label="بيانات المستخدم">
+        <header class="ag-drawer-head">
+          <div>
+            <h3>${esc(identity.name)}</h3>
+            <p class="ag-muted ag-nowrap">${esc(identity.naioshId)} · ${statusBadge(identity.status)}</p>
+          </div>
+          <button type="button" class="ag-btn ag-btn-sm" data-action="ag-drawer-close">إغلاق</button>
+        </header>
+        <div class="ag-drawer-actions">
+          <button type="button" class="ag-btn ag-btn-sm" data-action="ag-edit-user" data-id="${esc(identity.naioshId)}">تعديل</button>
+          <button type="button" class="ag-btn ag-btn-sm" data-action="ag-change-grant" data-id="${esc(identity.naioshId)}" data-gid="${esc(primaryGrant(identity)?.grantId || '')}">تغيير التعيين</button>
+          <button type="button" class="ag-btn ag-btn-sm" data-action="ag-user-perms" data-id="${esc(identity.naioshId)}">الصلاحيات</button>
+          ${
+            identity.status === 'suspended'
+              ? `<button type="button" class="ag-btn ag-btn-sm" data-action="ag-reactivate" data-id="${esc(identity.naioshId)}">إعادة تفعيل</button>`
+              : `<button type="button" class="ag-btn ag-btn-sm" data-action="ag-confirm" data-kind="suspend" data-id="${esc(identity.naioshId)}">إيقاف</button>`
+          }
+        </div>
+        <div class="ag-drawer-tabs">
+          ${tabs.map(([id, label]) => `<button type="button" class="${ui.drawerTab === id ? 'is-on' : ''}" data-action="ag-drawer-tab" data-tab="${id}">${esc(label)}</button>`).join('')}
+        </div>
+        <div class="ag-drawer-body">${body}</div>
+      </aside>`;
+  };
+
+  const catalogMore = (menuId, items) => {
+    const open = ui.openMenu === menuId;
+    return `<div class="ag-more ${open ? 'is-open' : ''}">
+      <button type="button" class="ag-btn ag-btn-sm ag-more-btn" data-action="ag-menu-toggle" data-id="${esc(menuId)}" aria-expanded="${open ? 'true' : 'false'}" title="المزيد">⋮</button>
+      <div class="ag-more-menu" role="menu">${items}</div>
+    </div>`;
   };
 
   const renderCatalog = (kind) => {
     if (kind === 'positions') {
       const rows = state().positions || [];
-      return `<section class="ag-panel"><h3 class="ag-section-title">المناصب</h3><p class="ag-lead">المنصب يحدد الموقع المؤسسي فقط — لا يمنح صلاحيات تلقائيًا.</p>
+      const grants = state().grants || [];
+      return `<section class="ag-panel ag-panel-full"><h3 class="ag-section-title">المناصب</h3><p class="ag-lead">المنصب يحدد الموقع المؤسسي فقط — لا يمنح صلاحيات تلقائيًا.</p>
         ${table(
-          ['الاسم', 'المستوى التنظيمي', 'الأدوار المؤهلة', 'الحالة', 'الإجراءات'],
+          ['المنصب', 'المستوى', 'عدد المستخدمين', 'عدد الأدوار', 'الحالة', 'آخر تحديث', 'الإجراءات'],
           rows
-            .map(
-              (p) => `<tr>
-                <td><strong>${esc(p.nameAr)}</strong></td>
-                <td>${esc(p.orgLevel === 'EMPIRE' ? 'إمبراطورية نايوش' : p.orgLevel === 'HUB' ? 'نايوش هوب 360' : p.orgLevel)}</td>
-                <td>${esc((p.eligibleRoles || []).map(labelRole).join(' · '))}</td>
+            .map((p) => {
+              const usersN = new Set(grants.filter((g) => g.positionCode === p.code && String(g.status).toUpperCase() === 'ACTIVE').map((g) => g.identityId)).size;
+              const rolesN = (p.eligibleRoles || []).length;
+              return `<tr>
+                <td><strong class="ag-nowrap" title="${esc(p.nameAr)}">${esc(p.nameAr)}</strong></td>
+                <td class="ag-nowrap">${esc(p.orgLevel === 'EMPIRE' ? 'إمبراطورية نايوش' : p.orgLevel === 'HUB' ? 'نايوش هوب 360' : p.orgLevel)}</td>
+                <td>${usersN}</td>
+                <td>${rolesN}</td>
                 <td>${statusBadge(p.status)}</td>
-                <td class="ag-row-actions">
+                <td class="ag-nowrap">${fmt(p.updatedAt)}</td>
+                <td><div class="ag-row-actions ag-row-actions-inline">
                   <button type="button" class="ag-btn ag-btn-sm" data-action="ag-toast" data-msg="عرض المنصب: ${esc(p.nameAr)}">عرض</button>
+                  <button type="button" class="ag-btn ag-btn-sm" data-action="ag-toast" data-msg="تعديل المنصب متاح عبر لوحة الكتالوج">تعديل</button>
                   <button type="button" class="ag-btn ag-btn-sm" data-action="ag-wizard-open">تعيين مستخدم</button>
-                  <button type="button" class="ag-btn ag-btn-sm" data-action="ag-tab" data-tab="roles">إدارة الأدوار</button>
-                </td>
-              </tr>`
-            )
+                  ${catalogMore(
+                    `pos-${p.code}`,
+                    `<button type="button" data-action="ag-tab" data-tab="roles">إدارة الأدوار</button>
+                     <button type="button" data-action="ag-toast" data-msg="تعطيل المنصب">تعطيل</button>
+                     <button type="button" class="is-danger" data-action="ag-toast" data-msg="أرشفة المنصب">أرشفة</button>`
+                  )}
+                </div></td>
+              </tr>`;
+            })
             .join('')
         )}</section>`;
     }
     if (kind === 'roles') {
-      return `<section class="ag-panel"><h3 class="ag-section-title">الأدوار</h3>
+      const grants = state().grants || [];
+      return `<section class="ag-panel ag-panel-full"><h3 class="ag-section-title">الأدوار</h3>
         ${table(
-          ['الاسم', 'المستوى', 'الأنظمة', 'نطاق العمل الافتراضي', 'الحالة', 'الإجراءات'],
+          ['الدور', 'المستوى', 'النظام', 'عدد المستخدمين', 'عدد الصلاحيات', 'نطاق العمل', 'الحالة', 'الإجراءات'],
           (state().roles || [])
-            .map(
-              (r) => `<tr>
-                <td><strong>${esc(r.nameAr)}</strong></td>
-                <td>${esc(LEVEL_AR[r.level] || r.level)}</td>
-                <td>${esc((r.applicableSystems || []).map(labelSys).join(' · '))}</td>
-                <td>${esc(labelScope(r.defaultScopeType) === r.defaultScopeType ? (r.defaultScopeType === 'HUB-GLOBAL' ? 'نايوش هوب 360' : r.defaultScopeType === 'GLOBAL' ? 'جميع نايوش' : r.defaultScopeType) : labelScope(r.defaultScopeType))}</td>
+            .map((r) => {
+              const usersN = new Set(grants.filter((g) => g.roleCode === r.code && String(g.status).toUpperCase() === 'ACTIVE').map((g) => g.identityId)).size;
+              const scopeLabel =
+                labelScope(r.defaultScopeType) === r.defaultScopeType
+                  ? r.defaultScopeType === 'HUB-GLOBAL'
+                    ? 'نايوش هوب 360'
+                    : r.defaultScopeType === 'GLOBAL'
+                      ? 'جميع نايوش'
+                      : r.defaultScopeType
+                  : labelScope(r.defaultScopeType);
+              return `<tr>
+                <td><span class="ag-chip" title="${esc(r.nameAr)}">${esc(r.nameAr)}</span></td>
+                <td class="ag-nowrap">${esc(LEVEL_AR[r.level] || r.level)}</td>
+                <td class="ag-ellipsis" title="${esc((r.applicableSystems || []).map(labelSys).join(' · '))}">${esc((r.applicableSystems || []).map(labelSys).join(' · ') || '—')}</td>
+                <td>${usersN}</td>
+                <td>${(r.permissions || []).length}</td>
+                <td class="ag-ellipsis" title="${esc(scopeLabel)}">${esc(scopeLabel)}</td>
                 <td>${statusBadge(r.status)}</td>
-                <td class="ag-row-actions">
-                  <button type="button" class="ag-btn ag-btn-sm" data-action="ag-wizard-open">تعيين لمستخدم</button>
-                  <button type="button" class="ag-btn ag-btn-sm" data-action="ag-tab" data-tab="permissions">إدارة الصلاحيات</button>
-                </td>
-              </tr>`
-            )
+                <td><div class="ag-row-actions ag-row-actions-inline">
+                  <button type="button" class="ag-btn ag-btn-sm" data-action="ag-toast" data-msg="عرض الدور: ${esc(r.nameAr)}">عرض</button>
+                  <button type="button" class="ag-btn ag-btn-sm" data-action="ag-toast" data-msg="تعديل الدور">تعديل</button>
+                  <button type="button" class="ag-btn ag-btn-sm" data-action="ag-wizard-open">تعيين</button>
+                  ${catalogMore(`role-${r.code}`, `<button type="button" data-action="ag-tab" data-tab="permissions">إدارة الصلاحيات</button>`)}
+                </div></td>
+              </tr>`;
+            })
             .join('')
         )}</section>`;
     }
     if (kind === 'permissions') {
-      return `<section class="ag-panel"><h3 class="ag-section-title">الصلاحيات</h3>
+      const roles = state().roles || [];
+      const grants = state().grants || [];
+      return `<section class="ag-panel ag-panel-full"><h3 class="ag-section-title">الصلاحيات</h3>
         <p class="ag-lead">قاموس الصلاحيات بالعربية. لمنح صلاحية لمستخدم افتحه من جدول المستخدمين.</p>
         <div class="ag-toolbar"><button type="button" class="ag-btn ag-btn-primary" data-action="ag-wizard-open">+ منح صلاحية عبر تعيين</button></div>
         ${table(
-          ['الصلاحية', 'المورد', 'الإجراء', 'الحالة', 'الإجراءات'],
+          ['الصلاحية', 'الوصف', 'مرتبطة بـ', 'عدد الأدوار', 'عدد المستخدمين', 'الحالة', 'الإجراءات'],
           (state().permissions || [])
             .slice(0, 80)
-            .map(
-              (p) => `<tr>
-                <td>${esc(p.nameAr)}</td>
-                <td>${esc(p.resource)}</td>
-                <td>${esc(ACTION_AR[p.action] || p.action)}</td>
+            .map((p) => {
+              const roleN = roles.filter((r) => (r.permissions || []).includes(p.code)).length;
+              const userN = new Set(grants.filter((g) => (g.permissions || []).includes(p.code) && String(g.status).toUpperCase() === 'ACTIVE').map((g) => g.identityId)).size;
+              return `<tr>
+                <td><strong class="ag-ellipsis" title="${esc(p.nameAr)}">${esc(p.nameAr)}</strong></td>
+                <td class="ag-ellipsis" title="${esc(p.descriptionAr || ACTION_AR[p.action] || p.action)}">${esc(p.descriptionAr || ACTION_AR[p.action] || p.action || '—')}</td>
+                <td class="ag-nowrap">${esc(p.resource || '—')}</td>
+                <td>${roleN}</td>
+                <td>${userN}</td>
                 <td>${statusBadge(p.status)}</td>
-                <td><button type="button" class="ag-btn ag-btn-sm" data-action="ag-wizard-open">تعيين</button></td>
-              </tr>`
-            )
+                <td><div class="ag-row-actions ag-row-actions-inline">
+                  <button type="button" class="ag-btn ag-btn-sm" data-action="ag-toast" data-msg="${esc(p.nameAr)}">عرض</button>
+                  <button type="button" class="ag-btn ag-btn-sm" data-action="ag-toast" data-msg="تعديل الصلاحية">تعديل</button>
+                  <button type="button" class="ag-btn ag-btn-sm" data-action="ag-wizard-open">تعيين</button>
+                  ${catalogMore(`perm-${p.code}`, `<button type="button" data-action="ag-tab" data-tab="roles">الأدوار المرتبطة</button>`)}
+                </div></td>
+              </tr>`;
+            })
             .join('')
         )}</section>`;
     }
@@ -529,15 +645,16 @@
               <td>${esc(labelSys(g.system))}</td>
               <td>${esc(labelScope(g.scopeCode))}</td>
               <td>${statusBadge(g.status)}</td>
-              <td class="ag-row-actions">
+              <td><div class="ag-row-actions ag-row-actions-inline">
                 <button type="button" class="ag-btn ag-btn-sm" data-action="ag-select-user" data-id="${esc(g.naioshId)}">عرض</button>
                 <button type="button" class="ag-btn ag-btn-sm" data-action="ag-change-grant" data-id="${esc(g.naioshId)}" data-gid="${esc(g.grantId)}">تعديل</button>
-                ${
+                ${catalogMore(
+                  `grant-${g.grantId}`,
                   String(g.status).toUpperCase() === 'ACTIVE'
-                    ? `<button type="button" class="ag-btn ag-btn-sm" data-action="ag-confirm" data-kind="revoke" data-id="${esc(g.grantId)}" data-user="${esc(u?.name || '')}">إلغاء التعيين</button>`
-                    : `<button type="button" class="ag-btn ag-btn-sm" data-action="ag-reactivate-grant" data-id="${esc(g.grantId)}">إعادة تفعيل</button>`
-                }
-              </td>
+                    ? `<button type="button" data-action="ag-confirm" data-kind="revoke" data-id="${esc(g.grantId)}" data-user="${esc(u?.name || '')}">إلغاء التعيين</button>`
+                    : `<button type="button" data-action="ag-reactivate-grant" data-id="${esc(g.grantId)}">إعادة تفعيل</button>`
+                )}
+              </div></td>
             </tr>`;
           })
           .join('')
@@ -891,15 +1008,21 @@
   const render = () => {
     engine().processTemporaryExpiry(state());
     return `
-      <div class="ag-root" data-ag-root>
+      <div class="ag-root ${ui.selectedUser ? 'has-drawer' : ''}" data-ag-root>
         <header class="ag-hero">
           <div>
             <h2>حوكمة الوصول والأدوار</h2>
             <p class="ag-desc">من هنا يمكنك تعيين المستخدمين في المناصب والأدوار، وتحديد صلاحياتهم ونطاق عملهم، وتعديل أو إيقاف أو إلغاء وصولهم إلى أنظمة نايوش.</p>
           </div>
+          <div class="ag-hero-actions">
+            <button type="button" class="ag-btn ag-btn-primary" data-action="ag-wizard-open">+ تعيين مستخدم</button>
+            <button type="button" class="ag-btn" data-action="ag-add-user">+ إضافة مستخدم</button>
+            <button type="button" class="ag-btn" data-action="ag-tab" data-tab="permissions">مراجعة الصلاحيات</button>
+          </div>
         </header>
         ${renderNav()}
         <div class="ag-main">${renderBody()}</div>
+        ${renderUserDrawer()}
         ${renderWizard()}${renderConfirm()}${renderSuccess()}${renderEditProfile()}${renderChangeGrant()}${renderUserPerms()}
       </div>`;
   };
@@ -935,11 +1058,14 @@
   const handle = (action, btn, ctx = {}) => {
     const { toast, user } = ctx;
     const actor = user?.name || user?.email || 'مشغّل هوب';
+    if (action !== 'ag-menu-toggle') ui.openMenu = null;
 
     if (action === 'ag-tab') {
       ui.tab = btn.dataset.tab || 'overview';
       ui.level = null;
       ui.selectedUser = null;
+      ui.openMenu = null;
+      ui.page = 1;
       return true;
     }
     if (action === 'ag-level') {
@@ -949,20 +1075,70 @@
     }
     if (action === 'ag-search') {
       ui.q = document.getElementById('ag-q')?.value || '';
+      ui.page = 1;
       return true;
     }
     if (action === 'ag-clear-filters') {
       ui.q = '';
-      ui.filters = { level: '', status: '', role: '' };
+      ui.filters = { level: '', status: '', role: '', position: '', system: '' };
+      ui.page = 1;
       return true;
     }
     if (action === 'ag-apply-filters') {
+      ui.q = document.getElementById('ag-q')?.value || ui.q;
+      ui.filters.level = document.getElementById('ag-f-level')?.value || '';
+      ui.filters.position = document.getElementById('ag-f-pos')?.value || '';
+      ui.filters.role = document.getElementById('ag-f-role')?.value || '';
+      ui.filters.system = document.getElementById('ag-f-sys')?.value || '';
       ui.filters.status = document.getElementById('ag-f-status')?.value || '';
+      ui.page = 1;
+      return true;
+    }
+    if (action === 'ag-page') {
+      const p = Number(btn.dataset.page || 1);
+      if (p >= 1) ui.page = p;
+      return true;
+    }
+    if (action === 'ag-page-size') {
+      const n = Number(btn.dataset.size || 20);
+      if ([20, 50, 100].includes(n)) {
+        ui.pageSize = n;
+        ui.page = 1;
+      }
+      return true;
+    }
+    if (action === 'ag-menu-toggle') {
+      const id = btn.dataset.id;
+      ui.openMenu = ui.openMenu === id ? null : id;
+      return true;
+    }
+    if (action === 'ag-drawer-close') {
+      ui.selectedUser = null;
+      ui.drawerTab = 'overview';
+      ui.openMenu = null;
+      return true;
+    }
+    if (action === 'ag-drawer-tab') {
+      ui.drawerTab = btn.dataset.tab || 'overview';
+      return true;
+    }
+    if (action === 'ag-copy-id') {
+      const text = btn.dataset.id || '';
+      if (text && navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).then(
+          () => toast?.('تم نسخ رقم نايوش'),
+          () => toast?.('تعذر النسخ')
+        );
+      } else {
+        toast?.(text ? `رقم نايوش: ${text}` : 'لا يوجد رقم');
+      }
       return true;
     }
     if (action === 'ag-select-user') {
       ui.selectedUser = btn.dataset.id;
       ui.tab = 'users';
+      ui.drawerTab = 'overview';
+      ui.openMenu = null;
       ui.success = null;
       return true;
     }

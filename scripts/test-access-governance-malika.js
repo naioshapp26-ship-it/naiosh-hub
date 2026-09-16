@@ -83,13 +83,24 @@ assert.ok(audit.some((a) => a.action === 'GRANT_REVOKED'));
 
 const uiSrc = read('js/hub-access-governance-ui.js');
 assert.ok(uiSrc.includes('حوكمة الوصول والأدوار'));
-assert.ok(uiSrc.includes('ماذا تريد أن تفعل؟'));
+assert.ok(uiSrc.includes('إجراءات سريعة'));
 assert.ok(uiSrc.includes('تعيين مستخدم'));
 assert.ok(uiSrc.includes('إلغاء التعيين'));
+assert.ok(uiSrc.includes('ag-more-menu'));
+assert.ok(uiSrc.includes('ag-drawer'));
 assert.ok(uiSrc.includes('نايوش هوب 360'));
 assert.ok(uiSrc.includes('إمبراطورية نايوش'));
+assert.ok(uiSrc.includes('المستخدمون وإدارة الوصول'));
+assert.ok(!uiSrc.includes('اختر مستخدمًا من الجدول أو اضغط «عرض» لإدارة كل عملياته من مكان واحد'));
 assert.ok(!uiSrc.includes('NAIOSHAI EMPIRE'));
 assert.ok(!uiSrc.includes('Temporary Access'));
 assert.ok(!uiSrc.includes('Orphaned Access'));
+assert.ok(!uiSrc.includes('Access Governance 360'));
+
+const cssSrc = read('css/hub-access-governance.css');
+assert.ok(cssSrc.includes('flex-wrap: wrap'));
+assert.ok(!/^\s*overflow-x:\s*auto/m.test(cssSrc.split('.ag-nav')[1]?.split('}')[0] || ''));
+assert.ok(cssSrc.includes('.ag-row-actions-inline'));
+assert.ok(cssSrc.includes('.ag-drawer'));
 
 console.log('PASS سيناريو مليكة التشغيلي + تعريب الواجهة');
