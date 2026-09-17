@@ -973,7 +973,7 @@
                       <td>${fmt(r.createdAt)}</td>
                       ${approvedTab ? `<td>${fmt(r.approvedAt)}</td>` : ''}
                       <td><span class="chip">${esc(displayReqStatus(r))}</span></td>
-                      <td>${esc(r.assignedTo || '—')}</td>
+                      <td>${esc(cr()?.labelOwner?.(r.assignedTo) || r.assignedTo || '—')}</td>
                       <td class="posha-req-actions">${primaryReqActionsHtml(r)}</td>
                     </tr>`;
             })
@@ -1009,13 +1009,13 @@
         </div>
         ${requestsKpisHtml()}
         <div class="posha-filters posha-req-filters">
-          <input data-req-filter="q" type="search" placeholder="بحث: Request ID · Article ID · عميل · موضوع · مصدر" value="${esc(state.reqFilters.q)}" />
+          <input data-req-filter="q" type="search" placeholder="بحث: رقم الطلب · العميل · الموضوع · المصدر" value="${esc(state.reqFilters.q)}" />
           <select data-req-filter="status"><option value="">كل الحالات</option>${Object.entries(cr().STATUS_AR || {})
             .map(([k, v]) => `<option value="${esc(k)}" ${state.reqFilters.status === k ? 'selected' : ''}>${esc(v)}</option>`)
             .join('')}</select>
           <select data-req-filter="type"><option value="">نوع الطلب</option>${types.map((t) => `<option value="${esc(t)}" ${state.reqFilters.type === t ? 'selected' : ''}>${esc((cr().TYPE_LABELS_AR || {})[t] || t)}</option>`).join('')}</select>
-          <select data-req-filter="source"><option value="">المصدر</option>${sources.map((t) => `<option value="${esc(t)}" ${state.reqFilters.source === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
-          <select data-req-filter="assignee"><option value="">المسؤول</option>${assignees.map((t) => `<option value="${esc(t)}" ${state.reqFilters.assignee === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+          <select data-req-filter="source"><option value="">المصدر</option>${sources.map((t) => `<option value="${esc(t)}" ${state.reqFilters.source === t ? 'selected' : ''}>${esc(displaySourceModule(t) || t)}</option>`).join('')}</select>
+          <select data-req-filter="assignee"><option value="">المسؤول</option>${assignees.map((t) => `<option value="${esc(t)}" ${state.reqFilters.assignee === t ? 'selected' : ''}>${esc(cr()?.labelOwner?.(t) || t)}</option>`).join('')}</select>
         </div>
         ${
           rows.length
@@ -1050,7 +1050,7 @@
       ['comms', 'التواصل'],
       ['notes', 'ملاحظات داخلية'],
       ['files', 'المرفقات'],
-      ['timeline', 'Timeline'],
+      ['timeline', 'الخط الزمني'],
       ['audit', 'سجل العمليات'],
     ];
     let body = '';
@@ -1060,7 +1060,7 @@
           <h4>بيانات العميل</h4>
           <ul class="feed">
             <li><b>الاسم:</b> <button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.email || '')}">${esc(r.customerName || r.customer?.name || '—')}</button></li>
-            <li><b>Client ID:</b> ${esc(r.customerId || '—')}</li>
+            <li><b>معرّف العميل:</b> ${esc(r.customerId || '—')}</li>
             <li><b>الشركة:</b> ${esc(r.company || '—')}</li>
             <li><b>الهاتف:</b> ${esc(r.phone || '—')}</li>
             <li><b>البريد:</b> ${esc(r.email || '—')}</li>
@@ -1071,13 +1071,13 @@
         <article>
           <h4>بيانات الطلب</h4>
           <ul class="feed">
-            <li><b>Request ID:</b> <code>${esc(r.requestId || r.id)}</code></li>
-            <li><b>النوع:</b> ${esc(r.requestTypeLabel || r.requestType)}</li>
+            <li><b>معرّف الطلب:</b> <code>${esc(r.requestId || r.id)}</code></li>
+            <li><b>النوع:</b> ${esc(cr()?.labelType?.(r.requestType) || r.requestTypeLabel || r.requestType)}</li>
             ${isPlatform ? `<li><b>اسم المنصة:</b> ${esc(platformName || '—')}</li>` : ''}
             <li><b>الموضوع:</b> ${esc(r.title)}</li>
             <li><b>الوصف / سبب الطلب:</b> ${esc(r.description || r.need || '—')}</li>
             ${r.intendedUse ? `<li><b>الاستخدام المطلوب:</b> ${esc(r.intendedUse)}</li>` : ''}
-            <li><b>Reference:</b> ${esc(r.referenceType || '—')} · <code>${esc(r.referenceId || '—')}</code></li>
+            <li><b>المرجع:</b> ${esc(r.referenceType || '—')} · <code>${esc(r.referenceId || '—')}</code></li>
             <li><b>المصدر:</b> ${esc(displaySourceModule(r.sourceModule) || '—')}</li>
             <li><b>تاريخ الطلب:</b> ${fmt(r.createdAt)}</li>
             <li><b>الحالة:</b> ${esc(displayReqStatus(r))}</li>
@@ -1088,11 +1088,11 @@
         <article>
           <h4>المسؤولون</h4>
           <ul class="feed">
-            <li><b>Assigned To:</b> ${esc(r.assignedTo || '—')}</li>
-            <li><b>Department:</b> ${esc(r.department || '—')}</li>
-            <li><b>Approved By:</b> ${esc(r.approvedBy || '—')}</li>
-            <li><b>Approved At:</b> ${fmt(r.approvedAt)}</li>
-            <li><b>Rejected By:</b> ${esc(r.rejectedBy || '—')}</li>
+            <li><b>المسؤول:</b> ${esc(cr()?.labelOwner?.(r.assignedTo) || r.assignedTo || '—')}</li>
+            <li><b>القسم:</b> ${esc(cr()?.labelDept?.(r.department) || r.department || '—')}</li>
+            <li><b>اعتُمد بواسطة:</b> ${esc(r.approvedBy || '—')}</li>
+            <li><b>تاريخ الاعتماد:</b> ${fmt(r.approvedAt)}</li>
+            <li><b>رُفض بواسطة:</b> ${esc(r.rejectedBy || '—')}</li>
             <li><b>أنشئ بواسطة:</b> ${esc(r.createdBy || '—')}</li>
           </ul>
         </article>
@@ -1244,24 +1244,41 @@
   function renderReqSettings() {
     const s = cr()?.getSettings?.() || {};
     const routing = s.routing || {};
+    const typeAr = (t) => cr()?.labelType?.(t) || cr()?.TYPE_LABELS_AR?.[t] || t;
+    const deptAr = (d) => cr()?.labelDept?.(d) || cr()?.DEPARTMENT_LABELS_AR?.[d] || d;
+    const ownerAr = (o) => cr()?.labelOwner?.(o) || cr()?.OWNER_LABELS_AR?.[o] || o;
+    const deptOpts = Object.keys(cr()?.DEPARTMENT_LABELS_AR || { Sales: 1, Consulting: 1, Support: 1, Projects: 1, 'Financial Consulting': 1, Systems: 1, Content: 1, Marketing: 1, Operations: 1 });
+    const ownerOpts = Object.keys(cr()?.OWNER_LABELS_AR || {});
     return `<div class="posha-req-settings">
       <h3>إعدادات طلبات العملاء</h3>
-      <p class="posha-muted">Routing Rules · SLA · Departments · Default Owners</p>
-      <div class="table-wrap"><table class="data-table posha-table">
-        <thead><tr><th>Request Type</th><th>Department</th><th>Default Owner</th></tr></thead>
+      <p class="posha-muted">قواعد التوجيه · اتفاقية مستوى الخدمة · الأقسام · المسؤول الافتراضي</p>
+      <div class="table-wrap"><table class="data-table posha-table posha-clients-table">
+        <thead><tr><th>نوع الطلب</th><th>القسم</th><th>المسؤول الافتراضي</th></tr></thead>
         <tbody>${Object.entries(routing)
-          .map(
-            ([type, rule]) => `<tr>
-              <td>${esc(type)}</td>
-              <td><input data-route-dept="${esc(type)}" value="${esc(rule.department || '')}" /></td>
-              <td><input data-route-owner="${esc(type)}" value="${esc(rule.assignedTo || '')}" /></td>
-            </tr>`
-          )
+          .map(([type, rule]) => {
+            const dept = rule.department || '';
+            const owner = rule.assignedTo || '';
+            const deptChoices = [...new Set([...deptOpts, dept].filter(Boolean))];
+            const ownerChoices = [...new Set([...ownerOpts, owner].filter(Boolean))];
+            return `<tr>
+              <td><strong>${esc(typeAr(type))}</strong></td>
+              <td>
+                <select data-route-dept="${esc(type)}" aria-label="القسم">
+                  ${deptChoices.map((d) => `<option value="${esc(d)}" ${d === dept ? 'selected' : ''}>${esc(deptAr(d))}</option>`).join('')}
+                </select>
+              </td>
+              <td>
+                <select data-route-owner="${esc(type)}" aria-label="المسؤول الافتراضي">
+                  ${ownerChoices.map((o) => `<option value="${esc(o)}" ${o === owner ? 'selected' : ''}>${esc(ownerAr(o))}</option>`).join('')}
+                </select>
+              </td>
+            </tr>`;
+          })
           .join('')}</tbody>
       </table></div>
       <div class="posha-filters" style="margin-top:12px">
-        <label>SLA افتراضي (ساعات)<input id="posha-sla-default" type="number" value="${s.slaHours?.default ?? 4}" /></label>
-        <label>SLA أولوية مرتفعة<input id="posha-sla-high" type="number" value="${s.slaHours?.high ?? 1}" /></label>
+        <label>اتفاقية مستوى الخدمة الافتراضية (ساعات)<input id="posha-sla-default" type="number" value="${s.slaHours?.default ?? 4}" /></label>
+        <label>اتفاقية مستوى الخدمة — أولوية مرتفعة (ساعات)<input id="posha-sla-high" type="number" value="${s.slaHours?.high ?? 1}" /></label>
       </div>
       <button type="button" class="btn btn-primary" data-req-save-settings>حفظ الإعدادات</button>
     </div>`;
@@ -1341,9 +1358,9 @@
     body.querySelectorAll('[data-req-assign]').forEach((btn) => {
       btn.onclick = () => {
         const id = btn.getAttribute('data-req-assign');
-        const name = window.prompt('Assigned To؟', cr()?.get(id)?.assignedTo || 'Sales Desk');
+        const name = window.prompt('المسؤول؟', cr()?.get(id)?.assignedTo || 'Sales Desk');
         if (!name) return;
-        const dept = window.prompt('Department؟', cr()?.get(id)?.department || 'Sales') || 'Sales';
+        const dept = window.prompt('القسم؟', cr()?.get(id)?.department || 'Sales') || 'Sales';
         cr()?.assign(id, { assignedTo: name, department: dept, salesOwner: name }, actor());
         paintBody();
       };

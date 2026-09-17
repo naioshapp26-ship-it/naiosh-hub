@@ -75,19 +75,59 @@
   };
 
   const TYPE_LABELS_AR = {
-    'Article Submission': 'مقال',
+    'Article Submission': 'طلب نشر مقال',
     'Ad Submission': 'طلب نشر إعلان',
     'Event Submission': 'طلب نشر فعالية',
     'Platform Access Request': 'طلب وصول لمنصة',
     'Platform Add Request': 'طلب إضافة منصة',
     'Solution Request': 'طلب حل',
-    'Cost Reduction Assessment': 'خفض تكاليف',
-    'Cost Reduction Request': 'خفض تكاليف',
-    'Support Request': 'دعم',
+    'Cost Reduction Assessment': 'تقييم خفض التكاليف',
+    'Cost Reduction Request': 'طلب خفض التكاليف',
+    'Support Request': 'طلب دعم',
     'Project Registration': 'تسجيل مشروع',
-    'Consultation Request': 'استشارة',
+    'Consultation Request': 'طلب استشارة',
+    'Quote Request': 'طلب عرض سعر',
+    'Quotation Request': 'طلب تسعير',
+    'Product Request': 'طلب منتج',
+    'Service Request': 'طلب خدمة',
+    'System Request': 'طلب نظام',
+    'Integration Request': 'طلب تكامل',
+    'Contract Request': 'طلب عقد',
+    'Training Request': 'طلب تدريب',
+    'Event Request': 'طلب فعالية',
     'General Request': 'طلب عام',
+    مقال: 'مقال',
   };
+
+  const DEPARTMENT_LABELS_AR = {
+    Sales: 'المبيعات',
+    Consulting: 'الاستشارات',
+    Support: 'الدعم',
+    Projects: 'المشاريع',
+    'Financial Consulting': 'الاستشارات المالية',
+    Systems: 'الأنظمة',
+    Content: 'المحتوى',
+    Marketing: 'التسويق',
+    Operations: 'التشغيل',
+  };
+
+  const OWNER_LABELS_AR = {
+    'Sales Desk': 'مكتب المبيعات',
+    'Consulting Team': 'فريق الاستشارات',
+    'Support Team': 'فريق الدعم',
+    'Projects Team': 'فريق المشاريع',
+    'Financial Consulting Team': 'فريق الاستشارات المالية',
+    'Systems Team': 'فريق الأنظمة',
+    'Content Desk': 'مكتب المحتوى',
+    'Ads Desk': 'مكتب الإعلانات',
+    'Events Desk': 'مكتب الفعاليات',
+    'Platforms Desk': 'مكتب المنصات',
+    'Ops Desk': 'مكتب التشغيل',
+  };
+
+  const labelType = (code) => TYPE_LABELS_AR[code] || code || '—';
+  const labelDept = (code) => DEPARTMENT_LABELS_AR[code] || code || '—';
+  const labelOwner = (code) => OWNER_LABELS_AR[code] || code || '—';
 
   const STATUS_AR = {
     New: 'جديد',
@@ -1522,6 +1562,11 @@
     STATUS_AR,
     DEFAULT_ROUTING,
     TYPE_LABELS_AR,
+    DEPARTMENT_LABELS_AR,
+    OWNER_LABELS_AR,
+    labelType,
+    labelDept,
+    labelOwner,
     reload: () => {
       state = load();
       syncFromModules();

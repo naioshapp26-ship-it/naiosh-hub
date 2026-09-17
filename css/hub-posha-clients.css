@@ -749,12 +749,14 @@
   color: #b91c1c;
 }
 
-.posha-req-settings input {
+.posha-req-settings input,
+.posha-req-settings select {
   width: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 6px 8px;
   font: inherit;
+  background: #fff;
 }
 
 /* Hide legacy duplicate hero chrome inside posha page when v2 present */
