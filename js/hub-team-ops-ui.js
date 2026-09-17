@@ -21,9 +21,26 @@
     selectedUser: null,
     drawerMode: 'overview', // overview | perms
     wizard: null,
+    form: null,
     confirm: null,
     success: null,
     pendingSensitive: null,
+  };
+
+  const bindFormsApi = () => {
+    window.__htoFormsApi = {
+      esc,
+      store,
+      engine,
+      systems,
+      allPositions,
+      allRoles,
+      allPerms,
+      permLabel,
+      actorOf: (user) => user?.name || user?.email || 'مشغّل هوب',
+      toast: (...args) => window.__htoCtx?.toast?.(...args),
+      user: () => window.__htoCtx?.user,
+    };
   };
 
   const OPS_ROLES = null; // يُستبدل بكتالوج الأدوار الكامل من المخزن
@@ -334,7 +351,10 @@
     return badge('نشط', 'is-ok');
   };
 
-  const clearFloat = () => document.querySelectorAll('.hto-float-menu').forEach((el) => el.remove());
+  const clearFloat = () => {
+    if (typeof document === 'undefined') return;
+    document.querySelectorAll('.hto-float-menu').forEach((el) => el.remove());
+  };
 
   const placeOpenMenu = () => {
     clearFloat();
@@ -369,6 +389,8 @@
   const afterPaint = (ctx = {}) => {
     window.__htoCtx = ctx;
     window.__htoRerender = ctx.rerender;
+    bindFormsApi();
+    window.HubTeamOpsForms?.afterPaintForm?.(ui);
     requestAnimationFrame(placeOpenMenu);
     if (!window.__htoDocBound) {
       window.__htoDocBound = true;
@@ -425,7 +447,7 @@
             <h3>فريق إدارة نايوش</h3>
             <p>الأشخاص المعيّنون لإدارة نايوش هوب وأنظمتها والصلاحيات الممنوحة لكل شخص.</p>
           </div>
-          <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open">+ إضافة موظف</button>
+          <button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-employee">+ إضافة موظف</button>
         </div>
         <div class="hto-toolbar">
           <input type="search" id="hto-q" value="${esc(ui.q)}" placeholder="ابحث بالاسم أو رقم الموظف أو رقم نايوش أو البريد" />
@@ -484,7 +506,7 @@
               </div>`
             : `<div class="hto-empty">
                 <p>لا يوجد موظفون معيّنون حتى الآن.</p>
-                <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open">+ إضافة أول موظف</button>
+                <button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-employee">+ إضافة أول موظف</button>
               </div>`
         }
       </section>`;
@@ -500,7 +522,10 @@
     return `<section class="hto-panel">
       <div class="hto-panel-head">
         <div><h3>الأنظمة</h3><p>أنظمة تشغيل ديناميكية — مستقلة أو فرعية — قابلة للإضافة والتعيين عليها.</p></div>
-        <button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-system">+ إضافة نظام</button>
+        <div class="hto-actions">
+          <button type="button" class="hto-btn" data-action="hto-add-workplace">+ إضافة مكان عمل</button>
+          <button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-system">+ إضافة نظام</button>
+        </div>
       </div>
       <div class="hto-toolbar">
         <input type="search" id="hto-q" value="${esc(ui.q)}" placeholder="ابحث عن نظام…" />
@@ -535,6 +560,29 @@
         }</tbody>
       </table></div>
       <p class="hto-muted">الإجمالي الحقيقي: ${systems().length} نظامًا</p>
+      <div class="hto-panel-head" style="margin-top:24px">
+        <div><h3>أماكن / مستويات العمل</h3><p>كتالوج ديناميكي لأماكن العمل والمستويات التنظيمية.</p></div>
+        <button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-workplace">+ إضافة مكان عمل</button>
+      </div>
+      <div class="hto-table-wrap"><table class="hto-table">
+        <thead><tr><th>الرمز</th><th>الاسم</th><th>النوع</th><th>الأب</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+        <tbody>${
+          allPositions().length
+            ? allPositions()
+                .map(
+                  (p) => `<tr>
+                    <td><code>${esc(p.code)}</code></td>
+                    <td><strong>${esc(p.nameAr)}</strong></td>
+                    <td>${esc(p.orgLevel || '—')}</td>
+                    <td>${esc(p.parentEntity || '—')}</td>
+                    <td>${badge(p.status === 'active' || !p.status ? 'نشط' : 'موقوف', p.status === 'inactive' ? 'is-warn' : 'is-ok')}</td>
+                    <td><button type="button" class="hto-btn hto-btn-sm" data-action="hto-edit-workplace" data-code="${esc(p.code)}">تعديل</button></td>
+                  </tr>`
+                )
+                .join('')
+            : '<tr><td colspan="6">لا أماكن عمل مسجلة.</td></tr>'
+        }</tbody>
+      </table></div>
     </section>`;
   };
 
@@ -573,7 +621,10 @@
               <td data-label="الصلاحيات">${permN}</td>
               <td data-label="الموظفون">${usersN}</td>
               <td data-label="الحالة">${badge(r.status === 'active' ? 'نشط' : 'موقوف', r.status === 'active' ? 'is-ok' : 'is-warn')}</td>
-              <td data-label="الإجراءات"><button type="button" class="hto-btn hto-btn-sm" data-action="hto-role-view" data-code="${esc(r.code)}">عرض</button></td>
+              <td data-label="الإجراءات" class="hto-actions">
+                <button type="button" class="hto-btn hto-btn-sm" data-action="hto-edit-role" data-code="${esc(r.code)}">تعديل</button>
+                <button type="button" class="hto-btn hto-btn-sm" data-action="hto-role-view" data-code="${esc(r.code)}">عرض</button>
+              </td>
             </tr>`;
           })
           .join('')}</tbody>
@@ -611,7 +662,7 @@
         <button type="button" class="hto-btn" data-action="hto-apply">تطبيق</button>
       </div>
       <div class="hto-table-wrap"><table class="hto-table">
-        <thead><tr><th>الرمز</th><th>اسم الصلاحية</th><th>القسم</th><th>العملية</th><th>الأدوار</th><th>الموظفون</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الرمز</th><th>اسم الصلاحية</th><th>القسم</th><th>العملية</th><th>الأدوار</th><th>الموظفون</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
         <tbody>${pageRows
           .map((p) => {
             const roleN = roles.filter((r) => (r.permissions || []).includes(p.code)).length;
@@ -624,6 +675,10 @@
               <td data-label="الأدوار">${roleN}</td>
               <td data-label="الموظفون">${empN}</td>
               <td data-label="الحالة">${badge(p.status === 'active' ? 'نشطة' : 'موقوفة', p.status === 'active' ? 'is-ok' : 'is-warn')}</td>
+              <td data-label="الإجراءات" class="hto-actions">
+                <button type="button" class="hto-btn hto-btn-sm" data-action="hto-edit-perm" data-code="${esc(p.code)}">تعديل</button>
+                <button type="button" class="hto-btn hto-btn-sm" data-action="hto-confirm" data-kind="deactivate-perm" data-id="${esc(p.code)}" data-roles="${roleN}" data-emps="${empN}">إيقاف</button>
+              </td>
             </tr>`;
           })
           .join('')}</tbody>
@@ -796,8 +851,9 @@
           }</ul>
         </div>
         <div class="hto-drawer-actions">
+          <button type="button" class="hto-btn" data-action="hto-edit-employee" data-id="${esc(identity.naioshId)}">تعديل البيانات</button>
           <button type="button" class="hto-btn" data-action="hto-perms" data-id="${esc(identity.naioshId)}">الصلاحيات</button>
-          <button type="button" class="hto-btn" data-action="hto-edit-grant" data-id="${esc(identity.naioshId)}" data-gid="${esc(primaryGrant(identity)?.grantId || '')}">تعديل</button>
+          <button type="button" class="hto-btn" data-action="hto-edit-grant" data-id="${esc(identity.naioshId)}" data-gid="${esc(primaryGrant(identity)?.grantId || '')}">تعديل التعيين</button>
           ${
             identity.status === 'suspended'
               ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-reactivate" data-id="${esc(identity.naioshId)}">إعادة التفعيل</button>`
@@ -929,15 +985,25 @@
           ${
             w.step === 3
               ? `<h4>ما دور الموظف؟</h4>
-                 <p class="hto-lead">الدور يقترح صلاحيات افتراضية فقط — الصلاحيات النهائية تُحدَّد في الخطوة التالية.</p>
-                 <div class="hto-pick-list">${allRoles()
-                   .slice(0, 80)
-                   .map(
-                     (r) => `<button type="button" class="hto-pick ${w.roleCode === r.code ? 'is-on' : ''}" data-action="hto-wizard-pick-role" data-code="${esc(r.code)}">
+                 <p class="hto-lead">يُعرض كل الأدوار المسجّلة المتوافقة مع مكان العمل والنظام المختار — بدون قائمة ثابتة.</p>
+                 <div class="hto-pick-list">${(allRoles().filter((r) => {
+                   if (w.system && (r.applicableSystems || []).length && !(r.applicableSystems || []).includes(w.system)) return false;
+                   if (w.positionCode && (r.eligiblePositions || []).length && !(r.eligiblePositions || []).includes(w.positionCode)) return false;
+                   return true;
+                 }).length
+                   ? allRoles()
+                       .filter((r) => {
+                         if (w.system && (r.applicableSystems || []).length && !(r.applicableSystems || []).includes(w.system)) return false;
+                         if (w.positionCode && (r.eligiblePositions || []).length && !(r.eligiblePositions || []).includes(w.positionCode)) return false;
+                         return true;
+                       })
+                       .map(
+                         (r) => `<button type="button" class="hto-pick ${w.roleCode === r.code ? 'is-on' : ''}" data-action="hto-wizard-pick-role" data-code="${esc(r.code)}">
                      <span><strong>${esc(r.nameAr)}</strong><small>${esc(r.description || (r.applicableSystems || []).map(labelSys).join(' · ') || r.level || '')}</small></span>
                    </button>`
-                   )
-                   .join('')}</div>`
+                       )
+                       .join('')
+                   : '<p class="hto-empty">لا أدوار مطابقة للنظام/مكان العمل — أضف دورًا من تبويب الأدوار أو اختر نظامًا آخر.</p>')}</div>`
               : ''
           }
           ${
@@ -979,6 +1045,8 @@
     const c = ui.confirm;
     let title = 'تأكيد';
     let body = '';
+    let primary = 'تأكيد';
+    let altAction = '';
     if (c.kind === 'revoke') {
       title = 'تأكيد إلغاء التعيين';
       body = `سيتم إزالة ${esc(c.user || 'الموظف')} من هذا النظام وسحب الصلاحيات المرتبطة بهذا التعيين. لن يتم حذف حساب نايوش الخاص به.`;
@@ -988,13 +1056,27 @@
     } else if (c.kind === 'sensitive') {
       title = 'صلاحية إدارية حساسة';
       body = `هذه صلاحية إدارية حساسة (${esc(permLabel(c.code))}). منحها يسمح للموظف بتنفيذ عمليات مؤثرة داخل النظام.`;
+    } else if (c.kind === 'disable-system') {
+      title = 'إيقاف النظام؟';
+      body = `هل تريد إيقاف النظام «${esc(c.name || c.id)}»؟ لن يظهر في قوائم التعيين الجديدة ويمكن إعادة تفعيله لاحقًا.`;
+      primary = 'إيقاف النظام';
+    } else if (c.kind === 'deactivate-perm') {
+      const roles = Number(c.roles || 0);
+      const emps = Number(c.emps || 0);
+      title = 'هل تريد حذف هذه الصلاحية؟';
+      body = `هذه الصلاحية مرتبطة بـ ${roles} أدوار و${emps} موظفًا. الحذف المباشر قد يكسر علاقات موجودة — يُفضَّل إيقاف الصلاحية بدلًا من حذفها.`;
+      primary = 'إيقاف الصلاحية';
+      altAction = `<button type="button" class="hto-btn" data-action="hto-confirm-cancel">إلغاء</button>`;
+    } else if (c.kind === 'delete-perm') {
+      title = 'تأكيد حذف الصلاحية';
+      body = 'سيتم حذف الصلاحية من الكتالوج. إذا كانت مرتبطة بأدوار أو موظفين لن يُنفَّذ الحذف.';
     }
     return `<div class="hto-modal"><div class="hto-modal-card">
-      <header><h3>${esc(title)}</h3><button type="button" class="hto-btn" data-action="hto-confirm-cancel">رجوع</button></header>
+      <header><h3>${esc(title)}</h3><button type="button" class="hto-modal-x" data-action="hto-confirm-cancel" aria-label="إغلاق">×</button></header>
       <div class="hto-wizard-body"><p>${body}</p></div>
       <footer>
-        <button type="button" class="hto-btn" data-action="hto-confirm-cancel">رجوع</button>
-        <button type="button" class="hto-btn hto-btn-primary" data-action="hto-confirm-ok">تأكيد</button>
+        ${altAction || `<button type="button" class="hto-btn" data-action="hto-confirm-cancel">إلغاء</button>`}
+        <button type="button" class="hto-btn hto-btn-primary" data-action="hto-confirm-ok">${esc(primary)}</button>
       </footer>
     </div></div>`;
   };
@@ -1028,14 +1110,14 @@
 
     const heroCta =
       ui.tab === 'systems'
-        ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-system">+ إضافة نظام</button>`
+        ? `<div class="hto-actions"><button type="button" class="hto-btn" data-action="hto-add-workplace">+ إضافة مكان عمل</button><button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-system">+ إضافة نظام</button></div>`
         : ui.tab === 'roles'
           ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-role">+ إضافة دور</button>`
           : ui.tab === 'permissions'
             ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-perm">+ إضافة صلاحية</button>`
             : ui.tab === 'audit'
               ? ''
-              : `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open">+ إضافة موظف</button>`;
+              : `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-employee">+ إضافة موظف</button>`;
 
     const counts = {
       systems: systems().length,
@@ -1044,6 +1126,7 @@
       staff: (store().identities || []).filter((i) => isEmployee(i)).length,
     };
 
+    bindFormsApi();
     return `
       <div class="hto-root" data-hto-root>
         <header class="hto-hero">
@@ -1056,7 +1139,7 @@
         </header>
         <nav class="hto-tabs" aria-label="أقسام الصفحة">${tabs.map(([id, label]) => `<button type="button" class="hto-tab ${ui.tab === id ? 'is-on' : ''}" data-action="hto-tab" data-tab="${id}">${esc(label)}</button>`).join('')}</nav>
         <div class="hto-main">${body}</div>
-        ${renderDrawer()}${renderWizard()}${renderConfirm()}${renderSuccess()}
+        ${renderDrawer()}${renderWizard()}${window.HubTeamOpsForms?.renderFormModal?.(ui) || ''}${renderConfirm()}${renderSuccess()}
       </div>`;
   };
 
@@ -1137,10 +1220,16 @@
   const handle = (action, btn, ctx = {}) => {
     const { toast, user } = ctx;
     const actor = actorOf(user);
+    bindFormsApi();
+    window.__htoFormsApi.toast = toast;
+    window.__htoFormsApi.user = () => user;
+    window.__htoFormsApi.engine = engine;
     if (action !== 'hto-menu') {
       ui.openMenu = null;
       clearFloat();
     }
+
+    if (window.HubTeamOpsForms?.handleFormAction?.(action, btn, ui, ctx)) return true;
 
     if (action === 'hto-tab') {
       ui.tab = btn.dataset.tab || 'team';
@@ -1345,33 +1434,21 @@
       return true;
     }
     if (action === 'hto-add-user' || action === 'hto-add-employee') {
-      const name = window.prompt('اسم الموظف الجديد');
-      if (!name) return true;
-      const email = window.prompt('البريد الإلكتروني');
-      if (!email) {
-        toast?.('البريد مطلوب');
-        return true;
-      }
-      try {
-        const existing = engine().findIdentity(email);
-        const created = existing
-          ? engine().registerEmployee({ naioshId: existing.naioshId, email, name }, actor)
-          : engine().registerEmployee({ name, email, asEmployee: true }, actor);
-        if (!created?.employeeNo) throw new Error('لا يمكن حفظ موظف بدون رقم موظف');
-        ui.wizard = ui.wizard || { step: 1, system: 'CRM', roleCode: 'SYSTEM_MANAGER', permissions: [] };
-        ui.wizard.naioshId = created.naioshId;
-        ui.wizard.userQ = created.employeeNo;
-        ui.tab = 'team';
-        ui.selectedUser = created.naioshId;
-        ui.drawerMode = 'overview';
-        ui.success = {
-          message: `تم تسجيل ${created.name} كموظف برقم ${created.employeeNo}. يمكن الآن منحه التعيين والصلاحيات.`,
-          userId: created.naioshId,
-        };
-        toast?.(`تم تسجيل الموظف ${created.employeeNo}`);
-      } catch (e) {
-        toast?.(e.message || 'تعذر تسجيل الموظف');
-      }
+      window.HubTeamOpsForms.openForm(ui, 'employee');
+      ui.tab = 'team';
+      return true;
+    }
+    if (action === 'hto-edit-employee') {
+      const id = engine().findIdentity(btn.dataset.id);
+      if (!id) return true;
+      window.HubTeamOpsForms.openForm(ui, 'employee', {
+        name: id.name,
+        email: id.email,
+        employeeNo: id.employeeNo,
+        naioshId: id.naioshId,
+        phone: id.phone || '',
+        photo: id.photo || '',
+      });
       return true;
     }
     if (action === 'hto-promote-employee') {
@@ -1389,7 +1466,15 @@
       return true;
     }
     if (action === 'hto-confirm') {
-      ui.confirm = { kind: btn.dataset.kind, id: btn.dataset.id, user: btn.dataset.user };
+      ui.confirm = {
+        kind: btn.dataset.kind,
+        id: btn.dataset.id,
+        user: btn.dataset.user,
+        name: btn.dataset.name,
+        roles: btn.dataset.roles,
+        emps: btn.dataset.emps,
+        code: btn.dataset.code,
+      };
       return true;
     }
     if (action === 'hto-confirm-cancel') {
@@ -1410,6 +1495,16 @@
             ui.wizard.sensitiveOk = true;
             ui.wizard.step = Math.min(5, ui.wizard.step + 1);
           }
+        } else if (c.kind === 'disable-system') {
+          const cur = systems().find((s) => s.code === c.id);
+          if (cur) engine().upsertManagedSystem({ ...cur, status: 'inactive' }, actor);
+          toast?.('تم إيقاف النظام');
+        } else if (c.kind === 'deactivate-perm' || c.kind === 'delete-perm') {
+          const cur = (store().permissions || []).find((p) => p.code === c.id);
+          if (cur) {
+            engine().upsertPermission({ ...cur, system: cur.systemHint, status: 'inactive' }, actor);
+            toast?.('تم إيقاف الصلاحية بدلًا من حذفها');
+          }
         }
       } catch (e) {
         toast?.(e.message || 'تعذر إكمال العملية');
@@ -1427,39 +1522,13 @@
       return true;
     }
     if (action === 'hto-add-system') {
-      const nameAr = window.prompt('اسم النظام');
-      if (!nameAr) return true;
-      const code = window.prompt('رمز النظام (إنجليزي مثل SALES أو EVENTS)', nameAr.replace(/\s+/g, '_').toUpperCase().slice(0, 12));
-      if (!code) return true;
-      const classification = window.prompt('التصنيف: independent أو sub', 'independent') || 'independent';
-      let parentCode = null;
-      if (classification === 'sub') parentCode = window.prompt('رمز النظام الأب (مثل ERP)', 'ERP') || 'ERP';
-      const description = window.prompt('وصف النظام', nameAr) || nameAr;
-      try {
-        engine().upsertManagedSystem({ code, nameAr, classification, parentCode, description, status: 'active' }, actor);
-        ui.tab = 'systems';
-        toast?.('تم حفظ النظام وظهوره في القوائم فورًا');
-      } catch (e) {
-        toast?.(e.message || 'تعذر حفظ النظام');
-      }
+      window.HubTeamOpsForms.openForm(ui, 'system');
       return true;
     }
     if (action === 'hto-edit-system') {
-      const code = btn.dataset.code;
-      const cur = systems().find((s) => s.code === code);
+      const cur = systems().find((s) => s.code === btn.dataset.code);
       if (!cur) return true;
-      const nameAr = window.prompt('اسم النظام', cur.nameAr);
-      if (!nameAr) return true;
-      const classification = window.prompt('التصنيف: independent أو sub', cur.classification || 'independent') || cur.classification;
-      let parentCode = cur.parentCode;
-      if (classification === 'sub') parentCode = window.prompt('رمز النظام الأب', parentCode || 'ERP') || parentCode;
-      else parentCode = null;
-      try {
-        engine().upsertManagedSystem({ code, nameAr, classification, parentCode, description: cur.description || nameAr, status: cur.status }, actor);
-        toast?.('تم تحديث النظام');
-      } catch (e) {
-        toast?.(e.message || 'تعذر التحديث');
-      }
+      window.HubTeamOpsForms.openForm(ui, 'system', { ...cur });
       return true;
     }
     if (action === 'hto-toggle-system') {
@@ -1467,45 +1536,50 @@
       const next = btn.dataset.next || 'inactive';
       const cur = systems().find((s) => s.code === code);
       if (!cur) return true;
-      if (next !== 'active' && !window.confirm(`إيقاف النظام ${cur.nameAr}؟`)) return true;
+      if (next !== 'active') {
+        ui.confirm = { kind: 'disable-system', id: code, name: cur.nameAr };
+        return true;
+      }
       try {
         engine().upsertManagedSystem({ ...cur, status: next }, actor);
-        toast?.(next === 'active' ? 'تم تفعيل النظام' : 'تم إيقاف النظام');
+        toast?.('تم تفعيل النظام');
       } catch (e) {
         toast?.(e.message || 'تعذر تغيير الحالة');
       }
       return true;
     }
     if (action === 'hto-add-role') {
-      const nameAr = window.prompt('اسم الدور');
-      if (!nameAr) return true;
-      const code = window.prompt('رمز الدور', nameAr.replace(/\s+/g, '_').toUpperCase().slice(0, 24));
-      if (!code) return true;
-      const system = window.prompt('رمز النظام المرتبط', ui.filters.system || 'HUB') || 'HUB';
-      const description = window.prompt('وصف الدور', '') || '';
-      try {
-        engine().upsertRole({ code, nameAr, description, applicableSystems: [system], permissions: defaultPermsFor(system, 'SYSTEM_MANAGER'), status: 'active' }, actor);
-        ui.tab = 'roles';
-        toast?.('تم حفظ الدور');
-      } catch (e) {
-        toast?.(e.message || 'تعذر حفظ الدور');
-      }
+      window.HubTeamOpsForms.openForm(ui, 'role');
+      return true;
+    }
+    if (action === 'hto-edit-role') {
+      const cur = (store().roles || []).find((r) => r.code === btn.dataset.code);
+      if (!cur) return true;
+      window.HubTeamOpsForms.openForm(ui, 'role', { ...cur, systems: cur.applicableSystems || [] });
       return true;
     }
     if (action === 'hto-add-perm') {
-      const nameAr = window.prompt('اسم الصلاحية (مثل: نشر مقال)');
-      if (!nameAr) return true;
-      const resource = window.prompt('القسم / الوحدة (مثل articles)', 'articles') || 'articles';
-      const actionType = window.prompt('نوع العملية (VIEW/CREATE/EDIT/PUBLISH/...)', 'PUBLISH') || 'PUBLISH';
-      const system = window.prompt('النظام (اختياري)', 'CONTENT') || null;
-      const description = window.prompt('الوصف', nameAr) || nameAr;
-      try {
-        engine().upsertPermission({ nameAr, resource, action: actionType, system, description }, actor);
-        ui.tab = 'permissions';
-        toast?.('تم حفظ الصلاحية');
-      } catch (e) {
-        toast?.(e.message || 'تعذر حفظ الصلاحية');
-      }
+      window.HubTeamOpsForms.openForm(ui, 'permission');
+      return true;
+    }
+    if (action === 'hto-edit-perm') {
+      const cur = (store().permissions || []).find((p) => p.code === btn.dataset.code);
+      if (!cur) return true;
+      window.HubTeamOpsForms.openForm(ui, 'permission', {
+        ...cur,
+        system: cur.systemHint || '',
+        directGrant: cur.directGrant === false ? 'no' : 'yes',
+      });
+      return true;
+    }
+    if (action === 'hto-add-workplace') {
+      window.HubTeamOpsForms.openForm(ui, 'workplace');
+      return true;
+    }
+    if (action === 'hto-edit-workplace') {
+      const cur = (store().positions || []).find((p) => p.code === btn.dataset.code);
+      if (!cur) return true;
+      window.HubTeamOpsForms.openForm(ui, 'workplace', { ...cur });
       return true;
     }
     if (action === 'hto-success-close') {

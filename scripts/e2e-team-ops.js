@@ -18,9 +18,16 @@ const localStorage = (() => {
 })();
 
 const window = { localStorage };
-const ctx = { window, localStorage, console };
+const document = {
+  querySelectorAll: () => [],
+  querySelector: () => null,
+  getElementById: () => null,
+  addEventListener: () => {},
+};
+const ctx = { window, localStorage, document, console };
 vm.createContext(ctx);
-for (const f of ['js/hub-access-governance-store.js', 'js/hub-access-governance-engine.js', 'js/hub-team-ops-ui.js']) {
+ctx.window.document = document;
+for (const f of ['js/hub-access-governance-store.js', 'js/hub-access-governance-engine.js', 'js/hub-team-ops-forms.js', 'js/hub-team-ops-ui.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx);
 }
 
@@ -192,6 +199,53 @@ push('UI-roles-full', (() => {
   return UI.render().includes('+ إضافة دور') && (S.get().roles || []).length > 10;
 })());
 push('UI-clickable-hint', true);
+
+// —— Test 12: نماذج Modal بدل prompt/confirm/alert
+const F = ctx.window.HubTeamOpsForms;
+push('T12-forms-loaded', !!F && !!UI);
+const srcUi = fs.readFileSync(path.join(root, 'js/hub-team-ops-ui.js'), 'utf8');
+const srcForms = fs.readFileSync(path.join(root, 'js/hub-team-ops-forms.js'), 'utf8');
+push('T12-no-prompt-ui', !/\bprompt\s*\(/.test(srcUi));
+push('T12-no-confirm-ui', !/\bconfirm\s*\(/.test(srcUi));
+push('T12-no-alert-ui', !/\balert\s*\(/.test(srcUi));
+push('T12-no-prompt-forms', !/\bprompt\s*\(/.test(srcForms) && !/\bconfirm\s*\(/.test(srcForms) && !/\balert\s*\(/.test(srcForms));
+
+F.openForm(UI.ui, 'permission');
+let modalHtml = UI.render();
+push('T12-perm-modal', modalHtml.includes('إضافة صلاحية جديدة') && modalHtml.includes('حفظ الصلاحية') && modalHtml.includes('hto-form-modal'));
+push('T12-perm-fields', modalHtml.includes('اسم الصلاحية') && modalHtml.includes('رمز الصلاحية') && modalHtml.includes('مستوى حساسية'));
+UI.ui.form = null;
+
+F.openForm(UI.ui, 'system');
+modalHtml = UI.render();
+push('T12-sys-modal', modalHtml.includes('إضافة نظام جديد') && modalHtml.includes('حفظ النظام'));
+UI.ui.form = null;
+
+F.openForm(UI.ui, 'role');
+modalHtml = UI.render();
+push('T12-role-modal', modalHtml.includes('إضافة دور جديد') && modalHtml.includes('الصلاحيات التابعة للدور'));
+UI.ui.form = null;
+
+F.openForm(UI.ui, 'employee');
+modalHtml = UI.render();
+push('T12-emp-modal', modalHtml.includes('إضافة موظف') && modalHtml.includes('رقم الموظف') && modalHtml.includes('البريد الإلكتروني'));
+UI.ui.form = null;
+
+F.openForm(UI.ui, 'workplace');
+modalHtml = UI.render();
+push('T12-workplace-modal', modalHtml.includes('إضافة مكان عمل') && modalHtml.includes('النوع / المستوى'));
+UI.ui.form = null;
+
+UI.handle('hto-add-perm', { dataset: {} }, { toast: () => {} });
+push('T12-add-perm-opens-form', UI.ui.form?.kind === 'permission');
+UI.ui.form = null;
+
+UI.handle('hto-toggle-system', { dataset: { code: 'E2E_SYS', next: 'inactive' } }, { toast: () => {} });
+push('T12-toggle-uses-confirm-modal', UI.ui.confirm?.kind === 'disable-system');
+UI.ui.confirm = null;
+
+E.upsertPosition({ code: 'E2E_POS', nameAr: 'فرع اختبار', orgLevel: 'BRANCH', status: 'active' }, actor);
+push('T12-position-upsert', (S.get().positions || []).some((p) => p.code === 'E2E_POS'));
 
 const failed = tests.filter((t) => !t.ok);
 console.log(

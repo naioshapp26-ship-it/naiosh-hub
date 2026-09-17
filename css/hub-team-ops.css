@@ -628,3 +628,143 @@
 .hto-tabs {
   flex-wrap: wrap;
 }
+
+/* ===== Form modals (no browser prompt) ===== */
+.hto-modal-card.hto-modal-wide {
+  width: min(900px, 100%);
+}
+
+.hto-modal-x {
+  border: 0;
+  background: transparent;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  color: #667085;
+  padding: 0 4px;
+}
+
+.hto-form-body {
+  max-height: min(62vh, 640px);
+  overflow: auto;
+}
+
+.hto-form-banner {
+  background: #fef3f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.hto-form-field {
+  display: grid;
+  gap: 6px;
+}
+
+.hto-form-field.has-error input,
+.hto-form-field.has-error select,
+.hto-form-field.has-error textarea {
+  border-color: #f04438;
+}
+
+.hto-form-field input,
+.hto-form-field select,
+.hto-form-field textarea {
+  width: 100%;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  background: #fff;
+}
+
+.hto-req {
+  color: #b80000;
+}
+
+.hto-field-error {
+  color: #b42318;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hto-field-hint {
+  color: #667085;
+  font-size: 12px;
+}
+
+.hto-radio-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hto-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.hto-check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.hto-perm-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hto-perm-toolbar input {
+  flex: 1;
+  min-width: 160px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.hto-perm-picker {
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  padding: 10px;
+  background: #f9fafb;
+}
+
+.hto-perm-section {
+  margin: 8px 0 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.hto-perm-sec-title {
+  display: block;
+  margin-bottom: 4px;
+  color: #344054;
+}
+
+@media (max-width: 720px) {
+  .hto-modal {
+    padding: 0;
+    place-items: stretch;
+  }
+  .hto-modal-card,
+  .hto-modal-card.hto-modal-wide {
+    width: 100%;
+    max-height: 100vh;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+  .hto-form-body {
+    max-height: calc(100vh - 140px);
+  }
+}
+

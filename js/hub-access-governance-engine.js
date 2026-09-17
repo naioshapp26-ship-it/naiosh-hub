@@ -1116,6 +1116,8 @@
           employeeNo: null,
           name: payload.name || payload.email,
           email: payload.email,
+          phone: payload.phone || '',
+          photo: payload.photo || '',
           userType: 'STAFF',
           isEmployee: true,
           verificationStatus: 'VERIFIED',
@@ -1130,6 +1132,10 @@
         identity.userType = 'STAFF';
         identity.isEmployee = true;
         identity.updatedAt = Store().nowIso();
+        if (payload.name) identity.name = payload.name;
+        if (payload.email) identity.email = payload.email;
+        if (payload.phone != null) identity.phone = payload.phone;
+        if (payload.photo != null) identity.photo = payload.photo;
         if (payload.employeeNo && identity.employeeNo && String(identity.employeeNo).toUpperCase() !== String(payload.employeeNo).toUpperCase()) {
           throw new Error('رقم الموظف مستخدم بالفعل ولا يمكن تكراره');
         }
@@ -1257,8 +1263,11 @@
         classification: payload.classification === 'sub' ? 'sub' : payload.classification === 'umbrella' ? 'umbrella' : 'independent',
         parentCode: payload.parentCode || null,
         description: payload.description || '',
+        station: payload.station || '',
         icon: payload.icon || 'fa-cube',
         url: payload.url || '',
+        sortOrder: Number(payload.sortOrder) || 0,
+        notes: payload.notes || '',
         createdAt: idx >= 0 ? state.managedSystems[idx].createdAt : Store().nowIso(),
         updatedAt: Store().nowIso(),
         source: 'managed',
@@ -1343,6 +1352,9 @@
         systemHint: payload.system || payload.systemHint || null,
         status: payload.status === 'inactive' ? 'inactive' : 'active',
         description: payload.description || '',
+        sensitivity: payload.sensitivity || 'normal',
+        directGrant: payload.directGrant !== false && payload.directGrant !== 'no',
+        notes: payload.notes || '',
       };
       if (idx >= 0) state.permissions[idx] = { ...state.permissions[idx], ...row };
       else state.permissions.unshift(row);
@@ -1351,6 +1363,45 @@
         action: idx >= 0 ? 'PERMISSION_UPDATED' : 'PERMISSION_CREATED',
         permission: code,
         system: row.systemHint,
+        reason: nameAr,
+        newValue: row,
+      });
+      return state;
+    }, actor);
+  };
+
+  const upsertPosition = (payload = {}, actor = 'مشغّل هوب') => {
+    const code = String(payload.code || payload.nameAr || '')
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, '')
+      .slice(0, 40);
+    if (!code) throw new Error('رمز مكان العمل مطلوب');
+    const nameAr = String(payload.nameAr || payload.name || '').trim();
+    if (!nameAr) throw new Error('اسم مكان العمل مطلوب');
+    return Store().update((state) => {
+      if (!Array.isArray(state.positions)) state.positions = [];
+      const idx = state.positions.findIndex((p) => p.code === code);
+      const row = {
+        id: idx >= 0 ? state.positions[idx].id : Store().uid('pos'),
+        code,
+        nameAr,
+        nameEn: payload.nameEn || code,
+        orgLevel: payload.orgLevel || payload.level || 'CUSTOM',
+        parentEntity: payload.parentEntity || payload.parentCode || null,
+        eligibleRoles: payload.eligibleRoles || [],
+        status: payload.status === 'inactive' ? 'inactive' : 'active',
+        description: payload.description || '',
+        sortOrder: Number(payload.sortOrder) || (idx >= 0 ? state.positions[idx].sortOrder : state.positions.length + 1),
+        version: 1,
+        createdAt: idx >= 0 ? state.positions[idx].createdAt : Store().nowIso(),
+        updatedAt: Store().nowIso(),
+      };
+      if (idx >= 0) state.positions[idx] = { ...state.positions[idx], ...row };
+      else state.positions.unshift(row);
+      Store().pushAudit(state, {
+        actor,
+        action: idx >= 0 ? 'POSITION_UPDATED' : 'POSITION_CREATED',
         reason: nameAr,
         newValue: row,
       });
@@ -1378,6 +1429,7 @@
     upsertManagedSystem,
     upsertRole,
     upsertPermission,
+    upsertPosition,
     isEmployeeIdentity: (ref) => {
       const state = Store().get();
       const identity = typeof ref === 'object' && ref?.id ? ref : findIdentity(state, ref);
