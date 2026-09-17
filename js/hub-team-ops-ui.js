@@ -224,8 +224,9 @@
 
   const fmt = (iso) => {
     if (!iso) return '—';
+    if (window.HubFormat?.formatDateTime) return window.HubFormat.formatDateTime(iso);
     try {
-      return new Date(iso).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
+      return new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', numberingSystem: 'latn' });
     } catch {
       return String(iso);
     }
@@ -302,6 +303,8 @@
 
   const empNoOf = (u) => u?.employeeNo || '—';
 
+  const isEmployee = (u) => window.HubAccessGov?.isEmployeeIdentity?.(u) || (u?.userType === 'STAFF' && !!u?.employeeNo && u.status !== 'archived');
+
   const matchIdentityQ = (u, q) => {
     const needle = String(q || '').trim().toLowerCase();
     if (!needle) return true;
@@ -309,16 +312,18 @@
   };
 
   const teamRows = () => {
-    let people = (store().identities || []).filter((u) => u.status !== 'archived');
+    // الموظفون فقط — لا عملاء المنصة
+    let people = (store().identities || []).filter((u) => isEmployee(u));
     const q = String(ui.q || '').trim().toLowerCase();
     if (q) people = people.filter((u) => matchIdentityQ(u, q));
     if (ui.filters.status) people = people.filter((u) => u.status === ui.filters.status);
     if (ui.filters.system || ui.filters.role) {
       people = people.filter((u) => {
         const grants = (store().grants || []).filter((g) => g.identityId === u.id && String(g.status).toUpperCase() === 'ACTIVE');
+        if (ui.filters.role === '__none__') return !grants.length;
         if (!grants.length) return false;
         if (ui.filters.system && !grants.some((g) => g.system === ui.filters.system)) return false;
-        if (ui.filters.role && !grants.some((g) => g.roleCode === ui.filters.role)) return false;
+        if (ui.filters.role && ui.filters.role !== '__none__' && !grants.some((g) => g.roleCode === ui.filters.role)) return false;
         return true;
       });
     }
@@ -382,6 +387,13 @@
 
   const rowActions = (u, g) => {
     const open = ui.openMenu === u.naioshId;
+    if (!g) {
+      return `<div class="hto-actions">
+        <button type="button" class="hto-btn hto-btn-sm hto-btn-primary" data-action="hto-wizard-open" data-user="${esc(u.naioshId)}">تعيين</button>
+        <button type="button" class="hto-btn hto-btn-sm" data-action="hto-view" data-id="${esc(u.naioshId)}">عرض</button>
+        <button type="button" class="hto-btn hto-btn-sm" data-action="hto-edit-grant" data-id="${esc(u.naioshId)}" data-gid="">تعديل</button>
+      </div>`;
+    }
     return `<div class="hto-actions">
       <button type="button" class="hto-btn hto-btn-sm" data-action="hto-view" data-id="${esc(u.naioshId)}">عرض</button>
       <button type="button" class="hto-btn hto-btn-sm" data-action="hto-edit-grant" data-id="${esc(u.naioshId)}" data-gid="${esc(g?.grantId || '')}">تعديل</button>
@@ -395,11 +407,7 @@
               ? `<button type="button" data-action="hto-reactivate" data-id="${esc(u.naioshId)}">إعادة التفعيل</button>`
               : `<button type="button" data-action="hto-confirm" data-kind="suspend" data-id="${esc(u.naioshId)}">إيقاف الوصول</button>`
           }
-          ${
-            g
-              ? `<button type="button" data-action="hto-confirm" data-kind="revoke" data-id="${esc(g.grantId)}" data-user="${esc(u.name)}">إلغاء التعيين</button>`
-              : `<button type="button" data-action="hto-wizard-open" data-user="${esc(u.naioshId)}">تعيين</button>`
-          }
+          <button type="button" data-action="hto-confirm" data-kind="revoke" data-id="${esc(g.grantId)}" data-user="${esc(u.name)}">إلغاء التعيين</button>
           <button type="button" data-action="hto-copy-emp" data-emp="${esc(u.employeeNo || '')}">نسخ رقم الموظف</button>
         </div>
       </div>
@@ -451,11 +459,17 @@
                           <span><strong>${esc(u.name)}</strong><small>${esc(u.email || '')}</small></span>
                         </button>
                       </td>
-                      <td data-label="رقم الموظف" class="hto-nowrap"><code class="hto-emp">${esc(empNoOf(u))}</code></td>
+                      <td data-label="رقم الموظف" class="hto-nowrap">
+                        ${
+                          u.employeeNo
+                            ? `<button type="button" class="hto-emp-link" data-action="hto-view" data-id="${esc(u.naioshId)}" title="فتح ملف الموظف"><code class="hto-emp">${esc(u.employeeNo)}</code></button>`
+                            : '—'
+                        }
+                      </td>
                       <td data-label="رقم نايوش" class="hto-nowrap"><code>${esc(u.naioshId)}</code></td>
                       <td data-label="مكان العمل">${esc(g ? labelSys(g.system) : '—')}</td>
                       <td data-label="الدور"><span class="hto-chip">${esc(g ? labelRole(g.roleCode) : 'بدون تعيين')}</span></td>
-                      <td data-label="الصلاحيات">${g ? `${perms.length} صلاحيات` : '—'}</td>
+                      <td data-label="الصلاحيات">${g ? `${perms.length} صلاحيات` : 'لا توجد صلاحيات'}</td>
                       <td data-label="الحالة">${statusBadge(u.status)}</td>
                       <td data-label="آخر تعديل" class="hto-nowrap">${fmt(u.updatedAt || g?.updatedAt)}</td>
                       <td data-label="الإجراءات">${rowActions(u, g)}</td>
@@ -515,7 +529,8 @@
       USER_SUSPENDED: 'إيقاف وصول',
       USER_REACTIVATED: 'إعادة تفعيل',
       USER_ARCHIVED: 'أرشفة',
-      USER_CREATED: 'إضافة موظف',
+      USER_CREATED: 'إضافة حساب',
+      EMPLOYEE_REGISTERED: 'تسجيل / تعيين كموظف',
       USER_PROFILE_UPDATED: 'تعديل بيانات',
       IDENTITY_UPDATED: 'تعديل بيانات',
     };
@@ -650,8 +665,17 @@
                     </article>`;
                   })
                   .join('')
-              : `<p class="hto-empty">لا تعيينات. <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open" data-user="${esc(identity.naioshId)}">تعيين الآن</button></p>`
+              : `<p class="hto-empty">لا تعيينات بعد — الحالة: بدون تعيين / لا توجد صلاحيات.
+                  <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open" data-user="${esc(identity.naioshId)}">تعيين الآن</button></p>`
           }
+          <h4>سجل التغييرات</h4>
+          <ul class="hto-perm-list">${
+            (store().audit || [])
+              .filter((a) => a.employeeNo === identity.employeeNo || a.targetUser === identity.naioshId || a.identityId === identity.id)
+              .slice(0, 12)
+              .map((a) => `<li>${esc(fmt(a.timestamp))} — ${esc(a.action)} — ${esc(a.actor || '')}</li>`)
+              .join('') || '<li>لا أحداث بعد</li>'
+          }</ul>
         </div>
         <div class="hto-drawer-actions">
           <button type="button" class="hto-btn" data-action="hto-perms" data-id="${esc(identity.naioshId)}">الصلاحيات</button>
@@ -707,9 +731,10 @@
     const w = ui.wizard;
     const steps = ['تحديد الموظف', 'مكان العمل', 'الدور', 'الصلاحيات', 'المراجعة'];
     const users = store().identities || [];
-    const filtered = w.userQ
-      ? users.filter((u) => matchIdentityQ(u, w.userQ))
-      : users.filter((u) => u.status !== 'archived');
+    const qNeedle = String(w.userQ || w.empQ || '').trim();
+    const filtered = qNeedle
+      ? users.filter((row) => row.status !== 'archived' && matchIdentityQ(row, qNeedle))
+      : users.filter((row) => isEmployee(row) || (w.naioshId && row.naioshId === w.naioshId));
     const finalCodes = w.permissions?.length ? w.permissions : [];
     const list = numberPerms(finalCodes);
     const u = users.find((x) => x.naioshId === w.naioshId);
@@ -722,17 +747,17 @@
           ${
             w.step === 1
               ? `<h4>تحديد الموظف</h4>
-                 <p class="hto-lead">ابحث برقم الموظف أو الاسم أو رقم نايوش. إذا كان الحساب موجودًا دون رقم موظف، يُنشأ رقم الموظف تلقائيًا عند أول تعيين.</p>
+                 <p class="hto-lead">ابحث برقم الموظف أو الحساب الموجود. العملاء لا يظهرون في فريق العمل إلا بعد «تعيين كموظف» مع توليد رقم موظف فريد.</p>
                  <label class="hto-field-label">رقم الموظف</label>
                  <input id="hto-w-emp" value="${esc(w.empQ || '')}" placeholder="مثال: EMP-0003" />
                  <div class="hto-actions">
                    <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-find-emp">بحث برقم الموظف</button>
                  </div>
-                 <label class="hto-field-label">أو ابحث عن شخص موجود</label>
-                 <input id="hto-w-q" value="${esc(w.userQ || '')}" placeholder="ابحث بالاسم / رقم نايوش / رقم الموظف" />
+                 <label class="hto-field-label">أو ابحث عن شخص موجود (موظف أو حساب نايوش)</label>
+                 <input id="hto-w-q" value="${esc(w.userQ || '')}" placeholder="ابحث بالاسم / رقم نايوش / رقم الموظف / البريد" />
                  <div class="hto-actions">
                    <button type="button" class="hto-btn" data-action="hto-wizard-search">بحث</button>
-                   <button type="button" class="hto-btn" data-action="hto-add-user">+ إضافة مستخدم جديد</button>
+                   <button type="button" class="hto-btn" data-action="hto-add-employee">+ تسجيل موظف جديد</button>
                  </div>
                  ${
                    u
@@ -741,6 +766,12 @@
                           <p><strong>رقم الموظف:</strong> <code class="hto-emp">${esc(empNoOf(u))}</code></p>
                           <p><strong>رقم نايوش:</strong> ${esc(u.naioshId)}</p>
                           <p><strong>البريد:</strong> ${esc(u.email || '—')}</p>
+                          <p><strong>النوع:</strong> ${isEmployee(u) ? 'موظف' : 'حساب موجود — يحتاج تعيين كموظف'}</p>
+                          ${
+                            !isEmployee(u)
+                              ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-promote-employee" data-id="${esc(u.naioshId)}">تعيين كموظف (توليد رقم موظف)</button>`
+                              : ''
+                          }
                         </div>`
                      : ''
                  }
@@ -748,8 +779,8 @@
                    filtered.slice(0, 50).map(
                      (row) => `<button type="button" class="hto-pick ${w.naioshId === row.naioshId ? 'is-on' : ''}" data-action="hto-wizard-pick-user" data-id="${esc(row.naioshId)}">
                        <span class="hto-avatar">${esc((row.name || '?').slice(0, 1))}</span>
-                       <span><strong>${esc(row.name)}</strong><small>${esc(empNoOf(row))} · ${esc(row.naioshId)} · ${esc(row.email || '')}</small></span>
-                       <em>${row.status === 'active' ? 'نشط' : row.status === 'suspended' ? 'موقوف' : esc(row.status || '')}</em>
+                       <span><strong>${esc(row.name)}</strong><small>${esc(isEmployee(row) ? empNoOf(row) : 'ليس موظفًا بعد')} · ${esc(row.naioshId)} · ${esc(row.email || '')}</small></span>
+                       <em>${isEmployee(row) ? 'موظف' : 'حساب'}</em>
                      </button>`
                    ).join('') || '<p class="hto-empty">لا مستخدمين مطابقين</p>'
                  }</div>`
@@ -909,6 +940,8 @@
     const ops = OPS_ROLES.find((r) => r.code === w.roleCode);
     const permissions = w.permissions?.length ? w.permissions : defaultPermsFor(w.system, w.roleCode);
     try {
+      // ضمان أن الهدف موظف برقم قبل حفظ التعيين
+      engine().registerEmployee({ naioshId: w.naioshId }, actor);
       if (w.editGrantId) {
         engine().updateGrant(
           w.editGrantId,
@@ -1094,9 +1127,21 @@
       return true;
     }
     if (action === 'hto-wizard-next') {
-      if (ui.wizard.step === 1 && !ui.wizard.naioshId) {
-        toast?.('اختر موظفًا أولاً');
-        return true;
+      if (ui.wizard.step === 1) {
+        if (!ui.wizard.naioshId) {
+          toast?.('اختر موظفًا أولاً');
+          return true;
+        }
+        const id = engine().findIdentity(ui.wizard.naioshId);
+        if (!isEmployee(id)) {
+          try {
+            engine().registerEmployee({ naioshId: ui.wizard.naioshId }, actor);
+            toast?.(`تم تعيينه كموظف برقم ${engine().findIdentity(ui.wizard.naioshId)?.employeeNo}`);
+          } catch (e) {
+            toast?.(e.message || 'يجب تعيينه كموظف قبل المتابعة');
+            return true;
+          }
+        }
       }
       if (ui.wizard.step === 2 && !ui.wizard.system) {
         toast?.('اختر مكان العمل');
@@ -1149,7 +1194,7 @@
       ui.selectedUser = null;
       return true;
     }
-    if (action === 'hto-add-user') {
+    if (action === 'hto-add-user' || action === 'hto-add-employee') {
       const name = window.prompt('اسم الموظف الجديد');
       if (!name) return true;
       const email = window.prompt('البريد الإلكتروني');
@@ -1158,14 +1203,38 @@
         return true;
       }
       try {
-        const created = engine().ensureIdentity({ name, email }, actor);
-        const id = created || engine().findIdentity(email);
+        const existing = engine().findIdentity(email);
+        const created = existing
+          ? engine().registerEmployee({ naioshId: existing.naioshId, email, name }, actor)
+          : engine().registerEmployee({ name, email, asEmployee: true }, actor);
+        if (!created?.employeeNo) throw new Error('لا يمكن حفظ موظف بدون رقم موظف');
         ui.wizard = ui.wizard || { step: 1, system: 'CRM', roleCode: 'SYSTEM_MANAGER', permissions: [] };
-        ui.wizard.naioshId = id?.naioshId || '';
-        ui.wizard.userQ = name;
-        toast?.('تمت إضافة المستخدم — أكمل التعيين');
+        ui.wizard.naioshId = created.naioshId;
+        ui.wizard.userQ = created.employeeNo;
+        ui.tab = 'team';
+        ui.selectedUser = created.naioshId;
+        ui.drawerMode = 'overview';
+        ui.success = {
+          message: `تم تسجيل ${created.name} كموظف برقم ${created.employeeNo}. يمكن الآن منحه التعيين والصلاحيات.`,
+          userId: created.naioshId,
+        };
+        toast?.(`تم تسجيل الموظف ${created.employeeNo}`);
       } catch (e) {
-        toast?.(e.message || 'تعذر إضافة المستخدم');
+        toast?.(e.message || 'تعذر تسجيل الموظف');
+      }
+      return true;
+    }
+    if (action === 'hto-promote-employee') {
+      try {
+        const promoted = engine().registerEmployee({ naioshId: btn.dataset.id }, actor);
+        if (!promoted?.employeeNo) throw new Error('لا يمكن حفظ موظف بدون رقم موظف');
+        if (ui.wizard) {
+          ui.wizard.naioshId = promoted.naioshId;
+          ui.wizard.userQ = promoted.employeeNo;
+        }
+        toast?.(`تم تعيينه كموظف: ${promoted.employeeNo}`);
+      } catch (e) {
+        toast?.(e.message || 'تعذر التعيين كموظف');
       }
       return true;
     }

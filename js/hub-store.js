@@ -1936,6 +1936,7 @@ const HubStore = (() => {
     loginImage: '',
     dashboardImage: '',
     banners: [],
+    settingsChangeLog: [],
     updatedAt: null,
   });
 
@@ -1979,7 +1980,7 @@ const HubStore = (() => {
     const d = defaultSettings();
     const out = { ...d };
     Object.keys(d).forEach((key) => {
-      if (key === 'updatedAt') return;
+      if (key === 'updatedAt' || key === 'settingsChangeLog') return;
       if (!(key in raw) || raw[key] === undefined || raw[key] === null) return;
       if (SETTINGS_BOOL.has(key)) {
         out[key] = raw[key] === true || raw[key] === 'true' || raw[key] === 'on' || raw[key] === 1 || raw[key] === '1';
@@ -2013,6 +2014,11 @@ const HubStore = (() => {
     });
     if (!Array.isArray(out.banners)) out.banners = [];
     out.updatedAt = raw.updatedAt || null;
+    if (Array.isArray(raw.settingsChangeLog)) {
+      out.settingsChangeLog = raw.settingsChangeLog.slice(0, 200);
+    } else {
+      out.settingsChangeLog = [];
+    }
     return out;
   };
 
@@ -3443,9 +3449,37 @@ const HubStore = (() => {
 
   const saveSettings = (patch = {}) => {
     const s = get();
-    s.settings = coerceSettings({ ...(s.settings || defaultSettings()), ...(patch || {}), updatedAt: nowIso() });
+    const prev = { ...(s.settings || defaultSettings()) };
+    const next = coerceSettings({ ...prev, ...(patch || {}), updatedAt: nowIso() });
+    const actorUser = (() => {
+      try {
+        return window.HubAuth?.getUser?.() || null;
+      } catch (_) {
+        return null;
+      }
+    })();
+    const actor = actorUser?.name || actorUser?.email || 'مشغّل هوب';
+    const employeeNo = actorUser?.employeeNo || null;
+    if (!Array.isArray(next.settingsChangeLog)) next.settingsChangeLog = Array.isArray(prev.settingsChangeLog) ? prev.settingsChangeLog.slice() : [];
+    Object.keys(patch || {}).forEach((key) => {
+      if (key === 'updatedAt' || key === 'settingsChangeLog') return;
+      const oldVal = prev[key];
+      const newVal = next[key];
+      if (JSON.stringify(oldVal) === JSON.stringify(newVal)) return;
+      next.settingsChangeLog.unshift({
+        id: uid('scl'),
+        at: nowIso(),
+        actor,
+        employeeNo,
+        key,
+        oldValue: oldVal == null ? '' : typeof oldVal === 'object' ? JSON.stringify(oldVal) : String(oldVal),
+        newValue: newVal == null ? '' : typeof newVal === 'object' ? JSON.stringify(newVal) : String(newVal),
+      });
+    });
+    if (next.settingsChangeLog.length > 200) next.settingsChangeLog.length = 200;
+    s.settings = next;
     save();
-    recordActivity('settings', 'تحديث الإعدادات الداخلية', { keys: Object.keys(patch || {}) });
+    recordActivity('settings', 'تحديث الإعدادات الداخلية', { keys: Object.keys(patch || {}), employeeNo, actor });
     return getSettings();
   };
 

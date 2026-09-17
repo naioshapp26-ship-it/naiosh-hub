@@ -34,7 +34,7 @@
     { key: 'measurement', icon: 'fa-chart-simple', label: 'القياس' },
     { key: 'reports', icon: 'fa-scroll', label: 'التقارير' },
     { key: 'integration', icon: 'fa-plug', label: 'التكامل' },
-    { key: 'settings', icon: 'fa-gear', label: 'إعدادات داخلية' },
+    { key: 'settings', icon: 'fa-sliders', label: 'إعدادات النظام' },
   ];
 
   const TITLES = {
@@ -71,7 +71,7 @@
     'systems-automation': ['أتمتة الأنظمة', 'إنشاء · تشغيل · قوالب · سجل عمليات · اتصالات'],
     workforce: ['القوى العاملة', 'موظفين أولاً · بحث وفلاتر · Pagination · ملف موظف · مكافآت واعتماد · مزامنة HR'],
     systems: ['سوق الأنظمة التشغيلية', 'إضافة · تعديل فعلي · مستخدمون · اشتراك · تكاملات · سجل تغييرات'],
-    settings: ['إعدادات داخلية', 'هوية · مظهر · بنرات · لغة · واجهة · إشعارات · ذكاء · أمان — مركز تحكم للإدارة'],
+    settings: ['إعدادات النظام', 'مركز التحكم في إعدادات المنصة: عامة · مستخدمون · متجر · طلبات · أمان · سجل التغييرات'],
   };
 
   const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
@@ -89,9 +89,17 @@
     return;
   }
 
-  // CLIENT experience is a separate product — never enter the ops room
-  if (user.role === 'customer' || user.role === 'client' || user.role === 'client_user') {
-    window.location.replace('client.html');
+  // CLIENT / غير موظف — ممنوع دخول غرفة العمليات حتى بالرابط المباشر
+  const dashGate =
+    window.HubAuth?.canAccessDashboard?.(user) ||
+    (user.role === 'customer' || user.role === 'client' || user.role === 'client_user'
+      ? { ok: false, redirect: 'client.html', message: 'ليس لديك صلاحية للوصول إلى هذه الصفحة.' }
+      : { ok: true });
+  if (!dashGate.ok) {
+    try {
+      sessionStorage.setItem('hubAuthFlash', dashGate.message || 'ليس لديك صلاحية للوصول إلى هذه الصفحة.');
+    } catch (_) {}
+    window.location.replace(dashGate.redirect || 'client.html');
     return;
   }
 
@@ -120,13 +128,15 @@
     window.HubCurrency?.format ? window.HubCurrency.format(n) : `${Number(n) || 0}$`;
 
   const fmtTime = (iso) => {
+    if (window.HubFormat?.formatDateTime) return window.HubFormat.formatDateTime(iso);
     try {
       const s = HubStore.getSettings?.() || {};
-      return new Date(iso).toLocaleString(s.dateFormat || 'ar-EG', {
+      return new Date(iso).toLocaleString(s.dateFormat || 'en-GB', {
         hour: '2-digit',
         minute: '2-digit',
-        day: 'numeric',
-        month: 'short',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
         numberingSystem: 'latn',
         timeZone: s.timezone || 'Asia/Riyadh',
       });

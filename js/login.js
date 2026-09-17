@@ -222,26 +222,31 @@ function fillLogin(email, password, autoSubmit = true) {
     const next = params.get('next') || '';
     const system = (params.get('system') || '').toUpperCase();
     const role = String(user.role || '').toLowerCase();
+    const destGate = window.HubAuth?.canAccessDashboard?.(user);
     const isStaff =
       role === 'supreme_leader' || role === 'chief_engineer' || role === 'admin' || role === 'super_admin';
     const isClientRole =
       role === 'customer' || role === 'client' || role === 'client_user' || role === 'platform_owner';
-    let dest = isStaff ? 'dashboard.html' : isClientRole ? 'client.html' : 'dashboard.html';
+    let dest = 'client.html';
+    if (destGate?.ok || isStaff) dest = 'dashboard.html';
+    else if (isClientRole) dest = role === 'platform_owner' ? 'my-platform.html' : 'client.html';
 
     // CLIENT always lands in Client Portal — never ops room / admin URLs
-    if (isClientRole) {
+    if (isClientRole && !(destGate?.ok)) {
       if (role === 'platform_owner' && (!next || next === 'my-platform.html')) {
         dest = next || 'my-platform.html';
       } else {
         dest = 'client.html';
       }
     } else if (next && !next.startsWith('http') && !next.includes('://')) {
-      if (isStaff && /^client\.html/i.test(next)) {
+      if ((isStaff || destGate?.ok) && /^client\.html/i.test(next)) {
         dest = 'dashboard.html';
+      } else if (isClientRole && !destGate?.ok && /dashboard\.html/i.test(next)) {
+        dest = 'client.html';
       } else {
         dest = next;
       }
-    } else if (system && isStaff && window.HubLauncher?.getDirectLaunchUrl) {
+    } else if (system && (isStaff || destGate?.ok) && window.HubLauncher?.getDirectLaunchUrl) {
       dest = window.HubLauncher.getDirectLaunchUrl(system);
     }
 

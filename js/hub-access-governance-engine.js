@@ -96,28 +96,74 @@
     );
   };
 
+  const STAFF_ROLE_CODES = new Set([
+    'SUPER_ADMIN',
+    'HUB_ADMIN',
+    'HUB_AUDITOR',
+    'HUB_EMPLOYEE',
+    'SYSTEM_MANAGER',
+    'SYSTEM_OWNER',
+    'BRANCH_MANAGER',
+    'REPORT_VIEWER',
+    'INCUBATOR_MANAGER',
+    'PLATFORM_MANAGER',
+  ]);
+  const CUSTOMER_ROLE_CODES = new Set(['PLATFORM_CUSTOMER']);
+
+  const isStaffRole = (code) => STAFF_ROLE_CODES.has(String(code || '').toUpperCase());
+  const isCustomerRole = (code) => CUSTOMER_ROLE_CODES.has(String(code || '').toUpperCase());
+
+  const isEmployeeIdentity = (identity) =>
+    !!identity && identity.userType === 'STAFF' && !!identity.employeeNo && identity.status !== 'archived';
+
   const nextEmployeeNo = (state) => {
     let max = 0;
     (state.identities || []).forEach((i) => {
       const m = String(i.employeeNo || '').match(/^EMP-(\d+)$/i);
       if (m) max = Math.max(max, Number(m[1]));
     });
+    (state.retiredEmployeeNos || []).forEach((c) => {
+      const m = String(c || '').match(/^EMP-(\d+)$/i);
+      if (m) max = Math.max(max, Number(m[1]));
+    });
     return `EMP-${String(max + 1).padStart(4, '0')}`;
   };
 
-  /** رقم الموظف ثابت بعد الإنشاء — يُنشأ عند أول تعيين تشغيلي */
+  /** رقم الموظف فريد وثابت — يُرفض التكرار */
   const assignEmployeeNo = (state, identity, preferred = null) => {
-    if (!identity) return null;
+    if (!identity) throw new Error('الموظف غير موجود');
     if (identity.employeeNo) return identity.employeeNo;
-    const want = preferred && /^EMP-\d+$/i.test(preferred) ? preferred.toUpperCase() : null;
-    const taken = new Set((state.identities || []).map((i) => String(i.employeeNo || '').toUpperCase()).filter(Boolean));
-    if (want && !taken.has(want)) {
+    const taken = new Set(
+      (state.identities || [])
+        .filter((i) => i.id !== identity.id)
+        .map((i) => String(i.employeeNo || '').toUpperCase())
+        .filter(Boolean)
+    );
+    (state.retiredEmployeeNos || []).forEach((c) => taken.add(String(c).toUpperCase()));
+    const want = preferred && /^EMP-\d+$/i.test(String(preferred).trim()) ? String(preferred).trim().toUpperCase() : null;
+    if (want) {
+      if (taken.has(want)) throw new Error('رقم الموظف مستخدم بالفعل ولا يمكن تكراره');
       identity.employeeNo = want;
     } else {
-      identity.employeeNo = nextEmployeeNo(state);
+      let next = nextEmployeeNo(state);
+      let guard = 0;
+      while (taken.has(next) && guard < 10000) {
+        const n = Number(next.slice(4)) + 1;
+        next = `EMP-${String(n).padStart(4, '0')}`;
+        guard += 1;
+      }
+      identity.employeeNo = next;
     }
+    identity.userType = 'STAFF';
+    identity.isEmployee = true;
     identity.updatedAt = Store().nowIso();
     return identity.employeeNo;
+  };
+
+  const assertEmployeeHasNumber = (identity) => {
+    if (!identity || identity.userType !== 'STAFF' || !identity.employeeNo) {
+      throw new Error('لا يمكن حفظ موظف بدون رقم موظف');
+    }
   };
 
   const auditTarget = (state, identityOrRef) => {
@@ -265,6 +311,8 @@
       .forEach((rule) => {
         // قواعد نفس المعاملة لا تُفعَّل إلا عند وجود transactionId
         if (rule.sameTransaction && !context.transactionId) return;
+        // SOD-GRANT-SELF: منع منح صلاحية ذاتية — لا يمنع استخدام صلاحية ممنوحة مسبقًا
+        if (rule.code === 'SOD-GRANT-SELF' && !context.isSelfGrant) return;
         const hit = (rule.conflictingPermissions || []).filter((p) => held.has(p));
         if (hit.length >= 2 && hit.includes(permission)) {
           conflicts.push({
@@ -647,7 +695,7 @@
 
   const createGrant = (payload, actor = 'مشغّل هوب') => {
     return Store().update((state) => {
-      const identity = findIdentity(state, payload.naioshId || payload.identityId || payload.email);
+      const identity = findIdentity(state, payload.naioshId || payload.identityId || payload.email || payload.employeeNo);
       if (!identity) throw new Error('المستخدم غير موجود');
       const role = (state.roles || []).find((r) => r.code === payload.roleCode);
       if (!role) throw new Error('الدور غير موجود');
@@ -656,14 +704,43 @@
       }
       const permissions = payload.permissions?.length ? payload.permissions.slice() : role.permissions.slice();
       assertCanAssign(state, actor, role.code, permissions);
-      assignEmployeeNo(state, identity, payload.employeeNo || null);
+
+      // منح ذاتي لصلاحيات الحوكمة يتطلب اعتمادًا أمنيًا (SOD-GRANT-SELF)
+      const actorId = findIdentity(state, actor);
+      const isSelf =
+        !!actorId &&
+        (actorId.id === identity.id ||
+          actorId.naioshId === identity.naioshId ||
+          (actorId.email && identity.email && actorId.email === identity.email));
+      if (isSelf) {
+        const selfConflicts = permissions.flatMap((p) => checkSod(state, identity, p, { isSelfGrant: true }));
+        if (selfConflicts.some((c) => c.requiredAction === 'REQUIRE_APPROVAL' || c.requiredAction === 'BLOCK')) {
+          if (!payload.approvedBy || payload.approvedBy === actor) {
+            throw new Error('منح صلاحية ذاتية يتطلب اعتمادًا أمنيًا من جهة أخرى');
+          }
+        }
+      }
+
+      if (isStaffRole(role.code)) {
+        // تعيين تشغيلي → يجب أن يكون موظفًا برقم موظف
+        identity.userType = 'STAFF';
+        identity.isEmployee = true;
+        assignEmployeeNo(state, identity, payload.employeeNo || null);
+        assertEmployeeHasNumber(identity);
+      } else if (isCustomerRole(role.code)) {
+        // صلاحيات عميل — لا تحوّله لموظف ولا تمنح رقم موظف
+        if (identity.userType !== 'STAFF') {
+          identity.userType = 'CUSTOMER';
+          identity.isEmployee = false;
+        }
+      }
 
       const grant = {
         id: Store().uid('grant'),
         grantId: `GRANT-${Date.now().toString(36).toUpperCase()}`,
         identityId: identity.id,
         naioshId: identity.naioshId,
-        employeeNo: identity.employeeNo,
+        employeeNo: isStaffRole(role.code) ? identity.employeeNo : identity.employeeNo || null,
         positionCode: payload.positionCode || null,
         roleCode: role.code,
         system: payload.system,
@@ -980,32 +1057,95 @@
         out = identity;
         return state;
       }
+      const asEmployee = payload.asEmployee || payload.asStaff || payload.userType === 'STAFF' || !!payload.employeeNo;
       identity = {
         id: Store().uid('id'),
         naioshId: payload.naioshId || `NAI-${Date.now().toString(36).toUpperCase()}`,
         employeeNo: null,
         name: payload.name || payload.email,
         email: payload.email,
-        userType: payload.userType || 'STAFF',
+        userType: asEmployee ? 'STAFF' : payload.userType || 'CUSTOMER',
+        isEmployee: !!asEmployee,
         verificationStatus: 'VERIFIED',
         status: 'active',
         positions: payload.positions || [],
         createdAt: Store().nowIso(),
         updatedAt: Store().nowIso(),
       };
-      if (payload.asStaff || payload.employeeNo) {
+      if (asEmployee) {
         assignEmployeeNo(state, identity, payload.employeeNo || null);
+        assertEmployeeHasNumber(identity);
       }
       state.identities.unshift(identity);
       Store().pushAudit(state, {
         actor,
         ...auditTarget(state, identity),
-        action: 'USER_CREATED',
+        action: asEmployee ? 'EMPLOYEE_REGISTERED' : 'USER_CREATED',
         newValue: identity,
-        reason: payload.reason || 'إضافة مستخدم جديد',
+        reason: payload.reason || (asEmployee ? 'تسجيل موظف جديد' : 'إضافة مستخدم جديد'),
         system: 'HUB',
       });
       out = identity;
+      return state;
+    }, actor);
+    return out;
+  };
+
+  /**
+   * تحويل مستخدم/عميل موجود إلى موظف تشغيلي — بدون إنشاء حساب نايوش مكرر
+   */
+  const registerEmployee = (payload = {}, actor = 'مشغّل هوب') => {
+    let out = null;
+    Store().update((state) => {
+      // لا تبحث برقم الموظف أولًا حتى لا نعيد استخدام حساب آخر بالخطأ
+      let identity = findIdentity(state, payload.naioshId || payload.email || payload.identityId);
+      if (!identity && payload.employeeNo) {
+        const byEmp = findIdentity(state, payload.employeeNo);
+        if (byEmp) throw new Error('رقم الموظف مستخدم بالفعل ولا يمكن تكراره');
+      }
+      if (!identity) {
+        if (!payload.name && !payload.email) throw new Error('بيانات الموظف مطلوبة');
+        identity = {
+          id: Store().uid('id'),
+          naioshId: payload.naioshId || `NAI-${Date.now().toString(36).toUpperCase()}`,
+          employeeNo: null,
+          name: payload.name || payload.email,
+          email: payload.email,
+          userType: 'STAFF',
+          isEmployee: true,
+          verificationStatus: 'VERIFIED',
+          status: 'active',
+          positions: payload.positions || [],
+          createdAt: Store().nowIso(),
+          updatedAt: Store().nowIso(),
+        };
+        state.identities.unshift(identity);
+      } else {
+        // لا تنشئ حسابًا ثانيًا — رقّه إلى موظف
+        identity.userType = 'STAFF';
+        identity.isEmployee = true;
+        identity.updatedAt = Store().nowIso();
+        if (payload.employeeNo && identity.employeeNo && String(identity.employeeNo).toUpperCase() !== String(payload.employeeNo).toUpperCase()) {
+          throw new Error('رقم الموظف مستخدم بالفعل ولا يمكن تكراره');
+        }
+        if (payload.employeeNo && !identity.employeeNo) {
+          const owner = (state.identities || []).find(
+            (i) => i.id !== identity.id && String(i.employeeNo || '').toUpperCase() === String(payload.employeeNo).toUpperCase()
+          );
+          if (owner) throw new Error('رقم الموظف مستخدم بالفعل ولا يمكن تكراره');
+        }
+      }
+      assignEmployeeNo(state, identity, payload.employeeNo || null);
+      assertEmployeeHasNumber(identity);
+      Store().pushAudit(state, {
+        actor,
+        ...auditTarget(state, identity),
+        action: 'EMPLOYEE_REGISTERED',
+        newValue: { employeeNo: identity.employeeNo, naioshId: identity.naioshId, userType: 'STAFF' },
+        reason: payload.reason || 'تعيين كموظف في فريق إدارة نايوش',
+        system: 'HUB',
+      });
+      out = { ...identity };
       return state;
     }, actor);
     return out;
@@ -1018,30 +1158,43 @@
         'NAI-USER-0025': 'EMP-0002',
         'NAI-MALIKA-001': 'EMP-0003',
       };
-      const grantedIds = new Set(
-        (state.grants || [])
-          .filter((g) => String(g.status || '').toUpperCase() === 'ACTIVE' || String(g.status || '').toUpperCase() === 'REVOKED')
-          .map((g) => g.identityId)
-      );
+      state.retiredEmployeeNos = state.retiredEmployeeNos || [];
+
       (state.identities || []).forEach((i) => {
-        if (i.employeeNo) return;
-        if (preferred[i.naioshId]) {
-          const taken = (state.identities || []).some(
-            (x) => x !== i && String(x.employeeNo || '').toUpperCase() === preferred[i.naioshId]
-          );
-          if (!taken) {
-            i.employeeNo = preferred[i.naioshId];
-            return;
+        const grants = (state.grants || []).filter((g) => g.identityId === i.id && String(g.status).toUpperCase() === 'ACTIVE');
+        const hasStaffGrant = grants.some((g) => isStaffRole(g.roleCode));
+        const onlyCustomer =
+          grants.length > 0 && grants.every((g) => isCustomerRole(g.roleCode)) && !hasStaffGrant;
+
+        if (onlyCustomer || (i.userType === 'CUSTOMER' && !hasStaffGrant && !i.isEmployee)) {
+          // لا تُسقط موظفًا مسجّلًا (STAFF + رقم موظف) حتى لو بقي له منح عميل قديم
+          if (i.userType === 'STAFF' && i.employeeNo) return;
+          if (i.isEmployee && i.employeeNo) return;
+          i.userType = 'CUSTOMER';
+          i.isEmployee = false;
+          if (i.employeeNo) {
+            if (!state.retiredEmployeeNos.includes(i.employeeNo)) state.retiredEmployeeNos.push(i.employeeNo);
+            i.employeeNo = null;
+          }
+          return;
+        }
+
+        if (i.userType === 'STAFF' || i.isEmployee || hasStaffGrant || preferred[i.naioshId]) {
+          i.userType = 'STAFF';
+          i.isEmployee = true;
+          if (!i.employeeNo) {
+            try {
+              assignEmployeeNo(state, i, preferred[i.naioshId] || null);
+            } catch (_) {
+              assignEmployeeNo(state, i, null);
+            }
           }
         }
-        if (grantedIds.has(i.id) || i.userType === 'STAFF') {
-          assignEmployeeNo(state, i);
-        }
       });
+
       (state.grants || []).forEach((g) => {
-        if (g.employeeNo) return;
         const id = findIdentity(state, g.identityId || g.naioshId);
-        if (id?.employeeNo) g.employeeNo = id.employeeNo;
+        if (id?.employeeNo && isStaffRole(g.roleCode)) g.employeeNo = id.employeeNo;
       });
       return state;
     }, 'system');
@@ -1062,12 +1215,20 @@
     updateIdentity,
     updateGrant,
     ensureIdentity,
+    registerEmployee,
     ensureEmployeeNumbers,
+    isEmployeeIdentity: (ref) => {
+      const state = Store().get();
+      const identity = typeof ref === 'object' && ref?.id ? ref : findIdentity(state, ref);
+      return isEmployeeIdentity(identity);
+    },
+    isStaffRole,
     assignEmployeeNo: (identityRef, preferred) => {
       let out = null;
       Store().update((state) => {
         const identity = findIdentity(state, identityRef);
         out = assignEmployeeNo(state, identity, preferred);
+        assertEmployeeHasNumber(identity);
         return state;
       }, 'system');
       return out;
@@ -1076,6 +1237,10 @@
     createTemporaryAccess,
     createDelegation,
     findIdentity: (ref) => findIdentity(Store().get(), ref),
+    listEmployees: () => {
+      const state = Store().get();
+      return (state.identities || []).filter((i) => isEmployeeIdentity(i));
+    },
     collectGrants: (ref) => {
       const state = Store().get();
       const identity = findIdentity(state, ref);

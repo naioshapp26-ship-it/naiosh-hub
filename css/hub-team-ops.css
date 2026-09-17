@@ -514,6 +514,17 @@
   margin: 0 0 8px;
 }
 
+.hto-emp-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.hto-emp-link:hover .hto-emp {
+  text-decoration: underline;
+}
+
 .hto-emp {
   font-weight: 800;
   color: #b80000;

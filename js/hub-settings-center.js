@@ -31,8 +31,9 @@
 
   function fmtSaved(iso) {
     if (!iso) return 'لم يُحفظ بعد';
+    if (window.HubFormat && window.HubFormat.formatDateTime) return window.HubFormat.formatDateTime(iso);
     try {
-      return new Date(iso).toLocaleString('ar-EG');
+      return new Date(iso).toLocaleString('en-GB', { numberingSystem: 'latn' });
     } catch (e) {
       return String(iso);
     }
@@ -314,17 +315,27 @@
 
     var nav = [
       ['overview', 'fa-gauge', 'نظرة عامة'],
-      ['identity', 'fa-building', 'هوية المنشأة'],
+      ['identity', 'fa-building', 'الإعدادات العامة'],
+      ['users-accounts', 'fa-user', 'المستخدمون والحسابات'],
+      ['team', 'fa-id-badge', 'فريق العمل'],
+      ['permissions', 'fa-key', 'الصلاحيات'],
+      ['customers', 'fa-users', 'العملاء'],
+      ['stores-admin', 'fa-store', 'المتجر'],
+      ['orders', 'fa-clipboard-list', 'الطلبات'],
+      ['content', 'fa-newspaper', 'المحتوى'],
+      ['search-engine', 'fa-magnifying-glass', 'محرك البحث'],
+      ['notify', 'fa-bell', 'الإشعارات'],
+      ['systems', 'fa-cubes', 'الأنظمة'],
+      ['security', 'fa-shield-halved', 'الأمان والوصول'],
+      ['advanced', 'fa-screwdriver-wrench', 'الصيانة والنسخ الاحتياطي'],
+      ['changelog', 'fa-clock-rotate-left', 'سجل التغييرات'],
       ['brand', 'fa-palette', 'الهوية البصرية'],
       ['logos', 'fa-image', 'الشعار والصور'],
       ['banners', 'fa-panorama', 'البنرات والفيديو'],
       ['locale', 'fa-globe', 'اللغة والمنطقة'],
       ['interface', 'fa-compass', 'الواجهة'],
-      ['notify', 'fa-bell', 'الإشعارات'],
       ['ai', 'fa-robot', 'الذكاء الاصطناعي'],
-      ['security', 'fa-shield-halved', 'الأمان'],
       ['ops', 'fa-gears', 'التشغيل'],
-      ['advanced', 'fa-screwdriver-wrench', 'متقدم'],
     ]
       .map(function (item, i) {
         return (
@@ -376,27 +387,27 @@
       section(
         'identity',
         'fa-building',
-        'هوية المنشأة',
-        'الاسم والشعار النصي كما يراه المستخدمون.',
+        'الإعدادات العامة',
+        'اسم المنصة والوصف والشعار وحالة الموقع والصيانة.',
         'القائمة الجانبية وعناوين النظام',
         '<div class="sac-grid-2">' +
           field({
             key: 'orgNameAr',
-            label: 'الاسم بالعربي',
+            label: 'اسم المنصة (عربي)',
             help: 'الاسم الذي سيظهر للمستخدمين داخل المنصة.',
             value: s.orgNameAr,
-            search: 'منشأة',
+            search: 'منشأة عامة',
           }) +
           field({
             key: 'orgNameEn',
-            label: 'الاسم بالإنجليزي',
+            label: 'اسم المنصة (إنجليزي)',
             help: 'يُستخدم في الشريط الجانبي والعرض الإنجليزي.',
             value: s.orgNameEn,
           }) +
           '</div>' +
           field({
             key: 'orgTagline',
-            label: 'الشعار / النص تحت الاسم',
+            label: 'وصف / الشعار النصي',
             help: 'جملة قصيرة تحت اسم المنصة.',
             value: s.orgTagline,
           }),
@@ -620,7 +631,7 @@
       section(
         'advanced',
         'fa-screwdriver-wrench',
-        'إعدادات متقدمة وحساسة',
+        'الصيانة والنسخ الاحتياطي',
         'الصيانة والاستيراد/التصدير وإعادة الضبط.',
         'شريط الصيانة ونسخة الإعدادات',
         toggle('maintenanceMode', 'تفعيل وضع الصيانة', 'يظهر شريط تنبيه أعلى غرفة العمليات.', !!s.maintenanceMode, 'صيانة') +
@@ -632,10 +643,266 @@
             rows: 3,
             value: s.maintenanceMessage,
           }) +
-          '<div class="sac-danger card"><h4><i class="fas fa-triangle-exclamation"></i> منطقة حساسة</h4><p>التصفير يعيد القيم الافتراضية فقط دون مسح بقية بيانات هوب.</p><div class="settings-actions"><button type="button" class="btn btn-primary" data-action="save-settings"><i class="fas fa-floppy-disk"></i> حفظ</button><button type="button" class="btn btn-dark" data-action="export-settings"><i class="fas fa-download"></i> تصدير JSON</button><label class="btn btn-ghost" style="cursor:pointer"><i class="fas fa-upload"></i> استيراد JSON<input id="settings-import" type="file" accept="application/json,.json" hidden data-hub-skip-limit /></label><button type="button" class="btn btn-ghost danger" data-action="reset-settings"><i class="fas fa-rotate-left"></i> إعادة للافتراضي</button></div></div><p class="sac-help">صفحات الإدارة المرتبطة:</p><div class="settings-links" style="margin-top:12px"><a class="btn btn-ghost" href="roles-permissions.html"><i class="fas fa-shield-alt"></i> الأدوار والصلاحيات</a><a class="btn btn-ghost" href="search-admin.html"><i class="fas fa-magnifying-glass"></i> إدارة محرك البحث</a><a class="btn btn-ghost" href="system-ops.html"><i class="fas fa-server"></i> تشغيل الأنظمة</a><a class="btn btn-ghost" href="rent-admin.html"><i class="fas fa-key"></i> موافقة السوبر أدمن</a></div>',
+          '<div class="sac-danger card"><h4><i class="fas fa-triangle-exclamation"></i> منطقة حساسة</h4><p>التصفير يعيد القيم الافتراضية فقط دون مسح بقية بيانات هوب. يتطلب تأكيدًا.</p><div class="settings-actions"><button type="button" class="btn btn-primary" data-action="save-settings"><i class="fas fa-floppy-disk"></i> حفظ</button><button type="button" class="btn btn-dark" data-action="export-settings"><i class="fas fa-download"></i> تصدير JSON</button><label class="btn btn-ghost" style="cursor:pointer"><i class="fas fa-upload"></i> استيراد JSON<input id="settings-import" type="file" accept="application/json,.json" hidden data-hub-skip-limit /></label><button type="button" class="btn btn-ghost danger" data-action="reset-settings"><i class="fas fa-rotate-left"></i> إعادة للافتراضي</button></div></div><p class="sac-help">صفحات الإدارة المرتبطة:</p><div class="settings-links" style="margin-top:12px"><a class="btn btn-ghost" href="#roles-permissions"><i class="fas fa-shield-alt"></i> فريق العمل والصلاحيات</a><a class="btn btn-ghost" href="search-admin.html"><i class="fas fa-magnifying-glass"></i> إدارة محرك البحث</a><a class="btn btn-ghost" href="system-ops.html"><i class="fas fa-server"></i> تشغيل الأنظمة</a><a class="btn btn-ghost" href="rent-admin.html"><i class="fas fa-key"></i> موافقة السوبر أدمن</a></div>',
         'maintenance'
       ) +
+      opsSectionsHtml(s) +
       '</div></div></div>'
+    );
+  }
+
+  function opsSectionsHtml(s) {
+    var fmt = function (iso) {
+      return window.HubFormat?.formatDateTime?.(iso) || fmtSaved(iso);
+    };
+    var stores = [];
+    try {
+      stores = (window.HubStoresRegistry?.listAdmin?.() || []).slice(0, 40);
+    } catch (_) {}
+    var storeRows = stores.length
+      ? stores
+          .map(function (st) {
+            var status = st.status === 'disabled' || st.status === 'archived' ? st.status : 'active';
+            var statusAr = status === 'active' ? 'نشط' : status === 'disabled' ? 'موقوف' : 'مؤرشف';
+            var count = 0;
+            try {
+              count = window.HubStoresRegistry?.productCount?.(st.storeId || st.id) || 0;
+            } catch (_) {}
+            return (
+              '<tr data-search="متجر ' +
+              esc(st.nameAr || st.name) +
+              '">' +
+              '<td><strong>' +
+              esc(st.nameAr || st.name || '—') +
+              '</strong></td>' +
+              '<td><img src="' +
+              esc(st.logo || 'assets/logo-hub.jpeg') +
+              '" alt="" style="width:28px;height:28px;object-fit:contain;border-radius:6px" /></td>' +
+              '<td dir="ltr"><a href="' +
+              esc(st.websiteUrl || '#') +
+              '" target="_blank" rel="noopener">' +
+              esc(st.websiteUrl || '—') +
+              '</a></td>' +
+              '<td>' +
+              esc(statusAr) +
+              '</td>' +
+              '<td dir="ltr">' +
+              esc(window.HubFormat?.formatNumber?.(count) || String(count)) +
+              '</td>' +
+              '<td dir="ltr">' +
+              esc(fmt(st.updatedAt || st.createdAt)) +
+              '</td>' +
+              '<td><button type="button" class="btn btn-ghost sac-mini" data-action="sac-store-toggle" data-store-id="' +
+              esc(st.storeId || st.id) +
+              '" data-next-status="' +
+              (status === 'active' ? 'disabled' : 'active') +
+              '">' +
+              (status === 'active' ? 'إيقاف' : 'تفعيل') +
+              '</button></td></tr>'
+            );
+          })
+          .join('')
+      : '<tr><td colspan="7">لا متاجر بعد — أضف متجرًا من الواجهة أو السجل المركزي.</td></tr>';
+
+    var perms = [];
+    try {
+      perms = (window.HubAccessGovStore?.get?.()?.permissions || []).slice(0, 60);
+    } catch (_) {}
+    var permRows = perms.length
+      ? perms
+          .map(function (p) {
+            return (
+              '<tr data-search="صلاحية ' +
+              esc(p.nameAr || p.code) +
+              '"><td>' +
+              esc(p.nameAr || p.code) +
+              '</td><td dir="ltr"><code>' +
+              esc(p.code) +
+              '</code></td><td>' +
+              esc(p.resource || '—') +
+              '</td><td>' +
+              esc(p.status === 'active' ? 'نشطة' : p.status || '—') +
+              '</td></tr>'
+            );
+          })
+          .join('')
+      : '<tr><td colspan="4">كتالوج الصلاحيات غير محمّل.</td></tr>';
+
+    var systems = [];
+    try {
+      systems = window.HubAccessGovStore?.get?.()?.systems || window.HubOpsCatalog?.listSystems?.() || [];
+    } catch (_) {}
+    var sysRows = (systems || [])
+      .slice(0, 40)
+      .map(function (sys) {
+        return (
+          '<tr data-search="نظام ' +
+          esc(sys.nameAr || sys.name || sys.code) +
+          '"><td>' +
+          esc(sys.nameAr || sys.name || sys.code) +
+          '</td><td dir="ltr">' +
+          esc(sys.code) +
+          '</td><td>' +
+          esc(sys.status === 'active' ? 'نشط' : sys.status || '—') +
+          '</td><td>' +
+          esc(sys.level || '—') +
+          '</td></tr>'
+        );
+      })
+      .join('');
+
+    var changelog = Array.isArray(s.settingsChangeLog) ? s.settingsChangeLog.slice(0, 40) : [];
+    var changeRows = changelog.length
+      ? changelog
+          .map(function (c) {
+            return (
+              '<tr data-search="سجل ' +
+              esc(c.key) +
+              '"><td>' +
+              esc(c.actor || '—') +
+              '</td><td dir="ltr">' +
+              esc(c.employeeNo || '—') +
+              '</td><td>' +
+              esc(c.key) +
+              '</td><td dir="ltr">' +
+              esc(String(c.oldValue || '').slice(0, 40)) +
+              '</td><td dir="ltr">' +
+              esc(String(c.newValue || '').slice(0, 40)) +
+              '</td><td dir="ltr">' +
+              esc(fmt(c.at)) +
+              '</td></tr>'
+            );
+          })
+          .join('')
+      : '<tr><td colspan="6">لا تغييرات مسجّلة بعد — احفظ إعدادًا لرؤية السجل.</td></tr>';
+
+    var staffCount = 0;
+    var empPrefix = 'EMP-';
+    try {
+      staffCount = (window.HubAccessGovStore?.get?.()?.identities || []).filter(function (i) {
+        return i.isEmployee || i.userType === 'STAFF';
+      }).length;
+    } catch (_) {}
+
+    return (
+      section(
+        'users-accounts',
+        'fa-user',
+        'المستخدمون والحسابات',
+        'سياسة التسجيل والجلسات والحسابات.',
+        'تسجيل الدخول وحساب العميل',
+        toggle('allowPublicRegister', 'السماح بتسجيل العملاء', 'إن أُوقف يُمنع التسجيل العام.', s.allowPublicRegister !== false, 'تسجيل') +
+          field({
+            key: 'sessionMinutes',
+            label: 'مدة الجلسة (دقيقة)',
+            type: 'number',
+            min: 15,
+            value: s.sessionMinutes || 480,
+            search: 'جلسة مستخدمون',
+          }) +
+          toggle('autoLogoutIdle', 'تسجيل خروج تلقائي عند الخمول', '', !!s.autoLogoutIdle, 'جلسة') +
+          toggle('requireMfa', 'طلب تحقق إضافي (MFA)', 'إعداد أمني اختياري.', !!s.requireMfa, 'أمان'),
+        'users'
+      ) +
+      section(
+        'team',
+        'fa-id-badge',
+        'فريق العمل',
+        'أرقام الموظفين والتعيين الافتراضي.',
+        'EMP وTeam Ops',
+        '<div class="sac-field" data-search="رقم موظف بادئة"><label>بادئة رقم الموظف</label><p class="sac-help">ثابتة لحماية الأرقام القديمة — لا يمكن تغييرها لكسر التسلسل.</p><input type="text" value="' +
+          esc(empPrefix) +
+          '" disabled dir="ltr" /></div>' +
+          '<p class="sac-help" data-search="موظفين عدد">عدد الموظفين المسجّلين: <strong dir="ltr">' +
+          esc(window.HubFormat?.formatNumber?.(staffCount) || String(staffCount)) +
+          '</strong></p>' +
+          '<div class="settings-links"><a class="btn btn-primary" href="#roles-permissions"><i class="fas fa-users-gear"></i> فتح إدارة فريق العمل والصلاحيات</a></div>',
+        'team'
+      ) +
+      section(
+        'permissions',
+        'fa-key',
+        'الصلاحيات',
+        'كتالوج الصلاحيات المتاحة في الحوكمة.',
+        'Access Governance',
+        '<div class="table-wrap"><table class="data-table"><thead><tr><th>الاسم</th><th>الرمز</th><th>المورد</th><th>الحالة</th></tr></thead><tbody>' +
+          permRows +
+          '</tbody></table></div>',
+        'permissions'
+      ) +
+      section(
+        'customers',
+        'fa-users',
+        'العملاء',
+        'عزل بيانات العميل وصفحة العميل.',
+        'CUSTOMER ≠ EMPLOYEE',
+        '<p class="sac-help" data-search="عزل عملاء">كل عميل يرى بياناته فقط. الدخول الإداري يتطلب تعيين موظف رسميًا برقم EMP وصلاحيات.</p>' +
+          '<div class="settings-links"><a class="btn btn-ghost" href="#clients-mgmt"><i class="fas fa-users"></i> إدارة العملاء</a><a class="btn btn-ghost" href="client.html"><i class="fas fa-id-card"></i> صفحة العميل</a></div>',
+        'customers'
+      ) +
+      section(
+        'stores-admin',
+        'fa-store',
+        'إعدادات المتجر',
+        'المتاجر من السجل المركزي — إضافة وتعديل وإيقاف تنعكس على الواجهة.',
+        'HubStoresRegistry',
+        '<div class="settings-actions" style="margin-bottom:12px"><button type="button" class="btn btn-primary" data-action="sac-store-add"><i class="fas fa-plus"></i> إضافة متجر</button></div>' +
+          '<div class="table-wrap"><table class="data-table"><thead><tr><th>اسم المتجر</th><th>الشعار</th><th>الرابط</th><th>الحالة</th><th>المنتجات</th><th>آخر تعديل</th><th>إجراءات</th></tr></thead><tbody>' +
+          storeRows +
+          '</tbody></table></div>',
+        'stores'
+      ) +
+      section(
+        'orders',
+        'fa-clipboard-list',
+        'الطلبات',
+        'حالات الطلب والمراجعة والإشعارات المرتبطة.',
+        'طلبات العملاء',
+        '<p class="sac-help" data-search="طلبات">إدارة أنواع الطلبات والمراجعة تتم عبر صلاحيات customer_requests.* في فريق العمل.</p>' +
+          '<div class="settings-links"><a class="btn btn-ghost" href="#customer-requests"><i class="fas fa-inbox"></i> طلبات العملاء</a></div>',
+        'orders'
+      ) +
+      section(
+        'content',
+        'fa-newspaper',
+        'المحتوى',
+        'المقالات والإعلانات والفعاليات والمشاريع.',
+        'محتوى قابل للنشر',
+        '<div class="settings-links" data-search="مقالات إعلانات فعاليات"><a class="btn btn-ghost" href="#articles">المقالات</a><a class="btn btn-ghost" href="#ads">الإعلانات</a><a class="btn btn-ghost" href="#events">الفعاليات</a></div>',
+        'content'
+      ) +
+      section(
+        'search-engine',
+        'fa-magnifying-glass',
+        'محرك البحث',
+        'مصادر الفهرسة وحالة البحث.',
+        'search-admin',
+        toggle('searchIndexEnabled', 'تفعيل فهرسة البحث', '', s.searchIndexEnabled !== false, 'بحث') +
+          '<div class="settings-links"><a class="btn btn-ghost" href="search-admin.html"><i class="fas fa-magnifying-glass"></i> إدارة محرك البحث</a></div>',
+        'search'
+      ) +
+      section(
+        'systems',
+        'fa-cubes',
+        'الأنظمة',
+        'أنظمة NAIOSH HUB 360 من الكتالوج الحي.',
+        'HubOps / AccessGov',
+        '<div class="table-wrap"><table class="data-table"><thead><tr><th>النظام</th><th>الرمز</th><th>الحالة</th><th>المستوى</th></tr></thead><tbody>' +
+          (sysRows || '<tr><td colspan="4">لا أنظمة.</td></tr>') +
+          '</tbody></table></div>',
+        'systems'
+      ) +
+      section(
+        'changelog',
+        'fa-clock-rotate-left',
+        'سجل التغييرات',
+        'من عدّل ماذا — بالقيمة السابقة والجديدة.',
+        'settingsChangeLog',
+        '<div class="table-wrap"><table class="data-table"><thead><tr><th>المنفّذ</th><th>رقم الموظف</th><th>العنصر</th><th>السابق</th><th>الجديد</th><th>التاريخ</th></tr></thead><tbody>' +
+          changeRows +
+          '</tbody></table></div>',
+        'changelog'
+      )
     );
   }
 
@@ -1044,6 +1311,39 @@
       if (e.target.closest('[data-action="discard-settings"]')) {
         if (!confirm('تجاهل كل التغييرات غير المحفوظة؟')) return;
         if (onRequestRender) onRequestRender();
+        return;
+      }
+
+      if (e.target.closest('[data-action="sac-store-add"]')) {
+        var name = prompt('اسم المتجر الجديد:');
+        if (!name) return;
+        var url = prompt('رابط المتجر (https://...):', 'https://example.com');
+        if (!url) return;
+        try {
+          window.HubStoresRegistry.addStore(
+            { displayName: name, nameAr: name, websiteUrl: url, status: 'active' },
+            (window.HubAuth && HubAuth.getUser && HubAuth.getUser()?.name) || 'Admin'
+          );
+          if (toast) toast('تمت إضافة المتجر');
+          if (onRequestRender) onRequestRender();
+        } catch (err) {
+          if (toast) toast(err.message || 'تعذّرت إضافة المتجر');
+        }
+        return;
+      }
+
+      var storeToggle = e.target.closest('[data-action="sac-store-toggle"]');
+      if (storeToggle) {
+        var sid = storeToggle.dataset.storeId;
+        var nextStatus = storeToggle.dataset.nextStatus || 'disabled';
+        if (nextStatus === 'disabled' && !confirm('إيقاف هذا المتجر؟ لن يظهر في الواجهة حسب قواعد النظام.')) return;
+        try {
+          window.HubStoresRegistry.updateStore(sid, { status: nextStatus }, 'Admin');
+          if (toast) toast(nextStatus === 'disabled' ? 'تم إيقاف المتجر' : 'تم تفعيل المتجر');
+          if (onRequestRender) onRequestRender();
+        } catch (err) {
+          if (toast) toast(err.message || 'تعذّر تحديث المتجر');
+        }
       }
     });
   }

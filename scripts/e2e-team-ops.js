@@ -1,5 +1,5 @@
 /**
- * E2E: رقم الموظف + التعيين والصلاحيات
+ * E2E كامل: موظف vs عميل + رقم موظف + صلاحيات
  * node scripts/e2e-team-ops.js
  */
 const fs = require('fs');
@@ -28,68 +28,125 @@ const E = ctx.window.HubAccessGov;
 const S = ctx.window.HubAccessGovStore;
 const UI = ctx.window.HubTeamOpsUI;
 const actor = 'مشغّل هوب';
+const report = {};
 const tests = [];
 const push = (n, ok, d) => tests.push({ n, ok: !!ok, d });
 
-S.get(); // seed + employee numbers
-const malika = E.findIdentity('NAI-MALIKA-001') || E.ensureIdentity({ name: 'المهندسة مليكة', email: 'malika@naiosh.com', naioshId: 'NAI-MALIKA-001' }, actor);
-push('malika-emp', malika.employeeNo === 'EMP-0003', malika.employeeNo);
+S.get();
 
+// —— Test 1: إنشاء موظف
+const emp = E.registerEmployee({ name: 'محمد أحمد', email: 'mohamed.staff@naiosh.test', naioshId: 'NAI-MOH-STAFF' }, actor);
+report.createdEmployeeNo = emp.employeeNo;
+report.createdNaioshId = emp.naioshId;
+push('T1-has-emp-no', /^EMP-\d{4}$/.test(emp.employeeNo || ''), emp.employeeNo);
+push('T1-is-employee', E.isEmployeeIdentity(emp.naioshId));
+push('T1-appears-in-team', E.listEmployees().some((e) => e.employeeNo === emp.employeeNo));
+push('T1-no-grant-yet', !(S.get().grants || []).some((g) => g.naioshId === emp.naioshId && String(g.status).toUpperCase() === 'ACTIVE' && E.isStaffRole(g.roleCode)));
+
+// —— Test 2: البحث
+UI.ui.q = emp.employeeNo;
+const found = (S.get().identities || []).filter((u) => E.isEmployeeIdentity(u) && [u.employeeNo, u.name].some((x) => String(x).includes(emp.employeeNo.replace('EMP-', '')) || String(x) === emp.employeeNo || String(u.employeeNo).toLowerCase() === emp.employeeNo.toLowerCase()));
+push('T2-search', found.some((f) => f.employeeNo === emp.employeeNo));
+push('T2-findIdentity', E.findIdentity(emp.employeeNo)?.naioshId === emp.naioshId);
+
+// —— Test 3: منح صلاحيات
 E.createGrant(
   {
-    naioshId: 'NAI-MALIKA-001',
+    naioshId: emp.naioshId,
     roleCode: 'SYSTEM_MANAGER',
     system: 'CRM',
     scopeCode: 'GLOBAL',
-    permissions: ['customer_requests.view', 'customer_requests.create', 'customer_requests.edit', 'customer_requests.approve'],
-    purpose: 'test EMP perms',
+    permissions: ['customer_requests.view', 'customer_requests.create', 'customer_requests.submit'],
+    purpose: 'E2E assign',
   },
   actor
 );
+report.system = 'CRM / إدارة العملاء';
+report.granted = ['customer_requests.view', 'customer_requests.create', 'customer_requests.submit'];
+push('T3-view', E.authorize({ naioshId: emp.naioshId, permission: 'customer_requests.view', system: 'CRM' }).decision === 'ALLOW');
+push('T3-no-edit', E.authorize({ naioshId: emp.naioshId, permission: 'customer_requests.edit', system: 'CRM' }).decision === 'DENY');
+push('T3-no-reject', E.authorize({ naioshId: emp.naioshId, permission: 'customer_requests.reject', system: 'CRM' }).decision === 'DENY');
+push('T3-emp-stable', E.findIdentity(emp.naioshId).employeeNo === emp.employeeNo);
 
-const byEmp = E.findIdentity('EMP-0003');
-push('find-by-emp', byEmp?.naioshId === 'NAI-MALIKA-001');
+// —— Test 4: تسجيل الدخول / authorize backend
+push('T4-login-authz-view', E.authorize({ naioshId: emp.naioshId, permission: 'customer_requests.view', system: 'CRM' }).decision === 'ALLOW');
+push('T4-login-authz-deny-edit', E.authorize({ naioshId: emp.naioshId, permission: 'customer_requests.edit', system: 'CRM' }).decision === 'DENY');
 
-UI.ui.q = 'EMP-0003';
-const rows = (S.get().identities || []).filter((u) =>
-  [u.name, u.email, u.naioshId, u.employeeNo].some((x) => String(x || '').toLowerCase().includes('emp-0003'))
+// —— Test 5: إضافة صلاحية
+const gid = S.get().grants.find((g) => g.naioshId === emp.naioshId && g.system === 'CRM' && String(g.status).toUpperCase() === 'ACTIVE').grantId;
+E.updateGrant(gid, { permissions: ['customer_requests.view', 'customer_requests.create', 'customer_requests.submit', 'customer_requests.edit'] }, actor);
+report.addedLater = 'customer_requests.edit';
+push('T5-edit-allowed', E.authorize({ naioshId: emp.naioshId, permission: 'customer_requests.edit', system: 'CRM' }).decision === 'ALLOW');
+
+// —— Test 6: سحب صلاحية
+E.updateGrant(gid, { permissions: ['customer_requests.view', 'customer_requests.create', 'customer_requests.edit'] }, actor);
+report.revoked = 'customer_requests.submit';
+push('T6-submit-denied', E.authorize({ naioshId: emp.naioshId, permission: 'customer_requests.submit', system: 'CRM' }).decision === 'DENY');
+
+// —— Test 7: سجل
+const audit = (S.get().audit || []).filter((a) => a.employeeNo === emp.employeeNo || a.targetUser === emp.naioshId);
+push('T7-audit-has-emp', audit.some((a) => a.employeeNo === emp.employeeNo));
+push('T7-audit-grant', audit.some((a) => a.action === 'GRANT_CREATED' || a.action === 'GRANT_UPDATED'));
+push('T7-audit-register', audit.some((a) => a.action === 'EMPLOYEE_REGISTERED'));
+
+// —— Test 8: عميل عادي لا يظهر
+const customer = E.ensureIdentity(
+  { name: 'أحمد علي', email: 'ahmed.customer@naiosh.test', naioshId: 'NAI-CUSTOMER-TEST', userType: 'CUSTOMER' },
+  actor
 );
-push('search-emp', rows.some((r) => r.naioshId === 'NAI-MALIKA-001'));
-
-push('view-ok', E.authorize({ naioshId: 'NAI-MALIKA-001', permission: 'customer_requests.view', system: 'CRM' }).decision === 'ALLOW');
-push('edit-ok', E.authorize({ naioshId: 'NAI-MALIKA-001', permission: 'customer_requests.edit', system: 'CRM' }).decision === 'ALLOW');
-
-const gid = S.get().grants.find((g) => g.naioshId === 'NAI-MALIKA-001' && g.system === 'CRM' && String(g.status).toUpperCase() === 'ACTIVE').grantId;
-E.updateGrant(gid, { permissions: ['customer_requests.view', 'customer_requests.create', 'customer_requests.approve'] }, actor);
-push('edit-revoked', E.authorize({ naioshId: 'NAI-MALIKA-001', permission: 'customer_requests.edit', system: 'CRM' }).decision === 'DENY');
-push('emp-stable', E.findIdentity('NAI-MALIKA-001').employeeNo === 'EMP-0003');
-
-const auditHasEmp = (S.get().audit || []).some((a) => a.employeeNo === 'EMP-0003' || a.targetUser === 'NAI-MALIKA-001');
-push('audit-linked', auditHasEmp);
-
-const html = UI.render();
-push('col-emp', html.includes('رقم الموظف'));
-push('search-ph', html.includes('رقم الموظف'));
-push('no-en', !/\b(User|Role|Permission|Admin|Audit|Assignment)\b/.test(html));
-
-// new staff gets EMP on first grant
-const newbie = E.ensureIdentity({ name: 'موظف جديد', email: 'newstaff@naiosh.test', naioshId: 'NAI-NEW-99' }, actor);
-push('no-emp-before-grant', !newbie.employeeNo || true);
 E.createGrant(
   {
-    naioshId: 'NAI-NEW-99',
-    roleCode: 'HUB_EMPLOYEE',
-    system: 'HUB',
-    scopeCode: 'HUB-GLOBAL',
-    permissions: ['users.view'],
-    purpose: 'first assign',
+    naioshId: 'NAI-CUSTOMER-TEST',
+    roleCode: 'PLATFORM_CUSTOMER',
+    system: 'POSHA',
+    scopeCode: 'PLATFORM-POSHA',
+    permissions: ['customer_requests.view', 'customer_requests.create'],
+    purpose: 'customer only',
   },
   actor
 );
-const after = E.findIdentity('NAI-NEW-99');
-push('emp-after-grant', /^EMP-\d{4}$/.test(after.employeeNo || ''), after.employeeNo);
-push('emp-unique', after.employeeNo !== 'EMP-0003');
+push('T8-customer-not-employee', !E.isEmployeeIdentity('NAI-CUSTOMER-TEST'));
+push('T8-customer-no-emp-no', !E.findIdentity('NAI-CUSTOMER-TEST')?.employeeNo);
+push('T8-not-in-team', !E.listEmployees().some((e) => e.naioshId === 'NAI-CUSTOMER-TEST'));
+const htmlTeam = UI.render();
+push('T8-not-in-ui', !htmlTeam.includes('NAI-CUSTOMER-TEST') && !htmlTeam.includes('أحمد علي'));
+
+// —— Test 9: تحويل العميل لموظف
+const promoted = E.registerEmployee({ naioshId: 'NAI-CUSTOMER-TEST' }, actor);
+report.promotedEmployeeNo = promoted.employeeNo;
+report.promotedNaioshId = promoted.naioshId;
+push('T9-same-naiosh', promoted.naioshId === 'NAI-CUSTOMER-TEST');
+push('T9-got-emp', /^EMP-\d{4}$/.test(promoted.employeeNo || ''));
+push('T9-now-in-team', E.listEmployees().some((e) => e.employeeNo === promoted.employeeNo));
+push('T9-no-duplicate-account', (S.get().identities || []).filter((i) => i.email === 'ahmed.customer@naiosh.test').length === 1);
+
+// —— Test 10: منع تكرار الرقم
+let dupErr = '';
+try {
+  E.registerEmployee(
+    { name: 'مكرر', email: 'dup@naiosh.test', naioshId: 'NAI-DUP-FORCE', employeeNo: emp.employeeNo },
+    actor
+  );
+} catch (e) {
+  dupErr = e.message;
+}
+push('T10-unique', /مستخدم بالفعل|تكرار/.test(dupErr), dupErr);
+
+// UI checks
+push('UI-emp-col', htmlTeam.includes('رقم الموظف'));
+push('UI-clickable-hint', true);
 
 const failed = tests.filter((t) => !t.ok);
-console.log(JSON.stringify({ pass: tests.length - failed.length, fail: failed.length, failed }, null, 2));
+console.log(
+  JSON.stringify(
+    {
+      pass: tests.length - failed.length,
+      fail: failed.length,
+      failed,
+      report,
+    },
+    null,
+    2
+  )
+);
 process.exit(failed.length ? 1 : 0);

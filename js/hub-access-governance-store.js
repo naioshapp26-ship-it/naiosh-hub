@@ -482,35 +482,75 @@
       'NAI-USER-0025': 'EMP-0002',
       'NAI-MALIKA-001': 'EMP-0003',
     };
+    const STAFF_ROLES = new Set([
+      'SUPER_ADMIN',
+      'HUB_ADMIN',
+      'HUB_AUDITOR',
+      'HUB_EMPLOYEE',
+      'SYSTEM_MANAGER',
+      'SYSTEM_OWNER',
+      'BRANCH_MANAGER',
+      'REPORT_VIEWER',
+      'INCUBATOR_MANAGER',
+      'PLATFORM_MANAGER',
+    ]);
+    const CUSTOMER_ROLES = new Set(['PLATFORM_CUSTOMER']);
+    state.retiredEmployeeNos = state.retiredEmployeeNos || [];
     const used = new Set();
     (state.identities || []).forEach((i) => {
       if (i.employeeNo) used.add(String(i.employeeNo).toUpperCase());
     });
+    state.retiredEmployeeNos.forEach((c) => used.add(String(c).toUpperCase()));
     const nextNo = () => {
       let max = 0;
       used.forEach((c) => {
         const m = String(c).match(/^EMP-(\d+)$/i);
         if (m) max = Math.max(max, Number(m[1]));
       });
-      const n = `EMP-${String(max + 1).padStart(4, '0')}`;
+      let n = `EMP-${String(max + 1).padStart(4, '0')}`;
+      while (used.has(n)) {
+        max += 1;
+        n = `EMP-${String(max).padStart(4, '0')}`;
+      }
       used.add(n);
       return n;
     };
-    const hasGrant = new Set((state.grants || []).map((g) => g.identityId));
+
     (state.identities || []).forEach((i) => {
-      if (i.employeeNo) return;
-      const pref = preferred[i.naioshId];
-      if (pref && !used.has(pref)) {
-        i.employeeNo = pref;
-        used.add(pref);
+      const grants = (state.grants || []).filter((g) => g.identityId === i.id && String(g.status).toUpperCase() === 'ACTIVE');
+      const hasStaffGrant = grants.some((g) => STAFF_ROLES.has(g.roleCode));
+      const onlyCustomer = grants.length > 0 && grants.every((g) => CUSTOMER_ROLES.has(g.roleCode)) && !hasStaffGrant;
+
+      if (onlyCustomer || (i.userType === 'CUSTOMER' && !hasStaffGrant && !i.isEmployee)) {
+        if (i.userType === 'STAFF' && i.employeeNo) return;
+        if (i.isEmployee && i.employeeNo) return;
+        i.userType = 'CUSTOMER';
+        i.isEmployee = false;
+        if (i.employeeNo) {
+          if (!state.retiredEmployeeNos.includes(i.employeeNo)) state.retiredEmployeeNos.push(i.employeeNo);
+          used.add(String(i.employeeNo).toUpperCase());
+          i.employeeNo = null;
+        }
         return;
       }
-      if (hasGrant.has(i.id) || i.userType === 'STAFF') {
-        i.employeeNo = nextNo();
+
+      if (i.userType === 'STAFF' || i.isEmployee || hasStaffGrant || preferred[i.naioshId]) {
+        i.userType = 'STAFF';
+        i.isEmployee = true;
+        if (!i.employeeNo) {
+          const pref = preferred[i.naioshId];
+          if (pref && !used.has(pref)) {
+            i.employeeNo = pref;
+            used.add(pref);
+          } else {
+            i.employeeNo = nextNo();
+          }
+        }
       }
     });
+
     (state.grants || []).forEach((g) => {
-      if (g.employeeNo) return;
+      if (!STAFF_ROLES.has(g.roleCode)) return;
       const id = (state.identities || []).find((x) => x.id === g.identityId || x.naioshId === g.naioshId);
       if (id?.employeeNo) g.employeeNo = id.employeeNo;
     });
@@ -522,6 +562,8 @@
       const existing = (state.identities || []).find((i) => i.email === spec.email || i.naioshId === spec.naioshId);
       if (existing) {
         if (spec.employeeNo && !existing.employeeNo) existing.employeeNo = spec.employeeNo;
+        existing.userType = 'STAFF';
+        existing.isEmployee = true;
         return existing;
       }
       const row = {
@@ -531,6 +573,7 @@
         name: spec.name,
         email: spec.email,
         userType: 'STAFF',
+        isEmployee: true,
         verificationStatus: 'VERIFIED',
         status: 'active',
         positions: spec.positions || [],
@@ -571,6 +614,7 @@
       name: 'مدير فرع الإسكندرية',
       email: 'branch.alex@naiosh.example',
       userType: 'STAFF',
+      isEmployee: true,
       verificationStatus: 'VERIFIED',
       status: 'active',
       positions: ['BRANCH_MANAGER_POS'],
