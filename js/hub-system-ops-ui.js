@@ -135,7 +135,7 @@
           <div class="sysops-actions">
             <a class="btn btn-primary" href="register.html"><i class="fas fa-user-plus"></i> سجل معنا (للمستأجر)</a>
             <a class="btn btn-secondary" href="rent-admin.html"><i class="fas fa-user-shield"></i> موافقة السوبر أدمن</a>
-            <a class="btn btn-secondary" href="roles-permissions.html"><i class="fas fa-shield-alt"></i> الأدوار والصلاحيات</a>
+            <a class="btn btn-secondary" href="dashboard.html#roles-permissions"><i class="fas fa-shield-alt"></i> إدارة فريق العمل والصلاحيات</a>
           </div>`
         ) +
         section(
@@ -159,9 +159,9 @@
           'إدارة الأدوار والصلاحيات',
           `<p class="sysops-note">نفس صفحة ERP بالكامل: الأدوار · مصفوفة الصلاحيات · المستخدمون · سجل التدقيق · صفحات المكاتب والمستأجرين · القائمة حسب نوع الحساب.</p>
           <div class="sysops-actions">
-            <a class="btn btn-primary" href="roles-permissions.html"><i class="fas fa-shield-alt"></i> فتح إدارة الأدوار والصلاحيات</a>
-            <a class="btn btn-secondary" href="roles-permissions.html?tab=permissions">مصفوفة صلاحيات الأنظمة</a>
-            <a class="btn btn-secondary" href="roles-permissions.html?tab=users">المستخدمون وتعيين الأدوار</a>
+            <a class="btn btn-primary" href="dashboard.html#roles-permissions"><i class="fas fa-shield-alt"></i> فتح إدارة فريق العمل والصلاحيات</a>
+            <a class="btn btn-secondary" href="dashboard.html#identity">مصفوفة الصلاحيات (هوية نايوش)</a>
+            <a class="btn btn-secondary" href="dashboard.html#roles-permissions">المستخدمون وتعيين الأدوار</a>
           </div>`
         ) +
         section(

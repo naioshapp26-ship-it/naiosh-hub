@@ -97,7 +97,7 @@
           }
           ${
             r.status === 'active'
-              ? `<a class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px;text-decoration:none" href="roles-permissions.html"><i class="fas fa-user-shield"></i> الأدوار والصلاحيات</a>
+              ? `<a class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px;text-decoration:none" href="dashboard.html#roles-permissions"><i class="fas fa-user-shield"></i> إدارة فريق العمل والصلاحيات</a>
                  <button type="button" class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0;padding:8px 14px" data-sync-login="${escapeHtml(r.id)}"><i class="fas fa-key"></i> تفعيل دخول العميل</button>`
               : ''
           }

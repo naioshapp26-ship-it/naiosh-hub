@@ -631,7 +631,7 @@
                             ? `<button type="button" class="btn btn-primary btn-sm" data-action="rn-approve" data-id="${K.esc(g.id)}"><i class="fas fa-check"></i> اعتماد</button>
                                <button type="button" class="btn btn-dark btn-sm" data-action="rn-reject" data-id="${K.esc(g.id)}"><i class="fas fa-xmark"></i> رفض</button>`
                             : g.status === 'active'
-                              ? `<a class="btn btn-ghost btn-sm" href="roles-permissions.html" target="_blank">الأدوار والصلاحيات</a>`
+                              ? `<a class="btn btn-ghost btn-sm" href="dashboard.html#roles-permissions">إدارة فريق العمل والصلاحيات</a>`
                               : ''
                         }
                       </div>

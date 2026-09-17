@@ -214,6 +214,8 @@
       'tasks',
       'reports',
       'workforce',
+      'identity',
+      'rent-admin',
     ],
     CRM: ['clients-mgmt', 'posha-clients', 'overview'],
     POSHA: ['posha-clients', 'clients-mgmt', 'overview'],

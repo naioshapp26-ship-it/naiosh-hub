@@ -422,6 +422,12 @@
       } catch (_) {}
       return { ok: true, detail: 'تم تطبيق الدور/الصلاحيات' };
     }
+    if (req.applyPayload?.action === 'suspend' && req.applyPayload?.naioshId) {
+      const engine = window.HubAccessGov;
+      if (!engine?.suspendIdentity) throw new Error('محرك الهوية غير متاح');
+      engine.suspendIdentity(req.applyPayload.naioshId, a.name || 'مشغّل هوب', req.reason || 'اعتماد إيقاف حساب');
+      return { ok: true, detail: 'تم إيقاف الحساب' };
+    }
     return { ok: true, detail: 'لا يوجد منفّذ مرتبط — سُجّلت الموافقة فقط' };
   };
 

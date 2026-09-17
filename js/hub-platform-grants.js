@@ -463,7 +463,7 @@
         body: `الدومين ${row.host} وصلاحيات التشغيل لصاحب المنصة ${email || tenantName}`,
         level: 'success',
         category: 'subscription',
-        link: 'roles-permissions.html',
+        link: 'dashboard.html#roles-permissions',
       });
     } catch {
       /* ignore */

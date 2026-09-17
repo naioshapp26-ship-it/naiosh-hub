@@ -18,7 +18,7 @@
     { key: 'store', icon: 'fa-bag-shopping', label: 'متجر المبيعات' },
     { key: 'ads-studio', icon: 'fa-rectangle-ad', label: 'استوديو الإعلانات' },
     { key: 'events-studio', icon: 'fa-calendar-days', label: 'استوديو الفعاليات' },
-    { key: 'identity', icon: 'fa-id-card', label: 'NAIOSH ID' },
+    { key: 'identity', icon: 'fa-id-card', label: 'هوية نايوش' },
     { key: 'organization', icon: 'fa-globe', label: 'الهيكل العالمي' },
     { key: 'incubators', icon: 'fa-building', label: 'الحاضنات' },
     { key: 'wallet', icon: 'fa-coins', label: 'محفظة النقاط' },
@@ -60,7 +60,7 @@
     store: ['متجر المبيعات', 'باقات البيع · طلبات · نقاط المحفظة'],
     'ads-studio': ['استوديو الإعلانات', 'إعلانات منتجات المنصات — ظهور وميزانية ومشاهدات'],
     'events-studio': ['استوديو الفعاليات', 'فعاليات · بث · ورش · إدارة من غرفة العمليات'],
-    identity: ['بوابة الهوية الرقمية', 'هوية موحّدة · دخول موحّد · أدوار'],
+    identity: ['هوية نايوش', 'إدارة الهوية · الدخول الموحد · التحقق الثنائي · ربط الصلاحيات المركزية'],
     organization: ['محرك الهيكل المؤسسي', 'دولة ← فرع ← حاضنة ← منصة ← مكتب إلكتروني'],
     incubators: ['إدارة الحاضنات', '100 حاضنة قطاعية · منصات · مكاتب · أعضاء'],
     wallet: ['اقتصاد النقاط', 'شحن · استهلاك · تسعير · فواتير'],
@@ -338,6 +338,7 @@
     'clients-mgmt',
     'roles-permissions',
     'rent-admin',
+    'identity',
     'search-admin',
     'side-project-regs',
     'content-articles',
@@ -512,39 +513,10 @@
   };
 
   const renderIdentity = () => {
-    const idn = HubStore.get().empire.identity;
-    const bp = window.EmpireBlueprint;
-    return `
-      <div class="kpi-grid">
-        <article class="kpi"><span>المستخدمون</span><strong>${idn.totalUsers.toLocaleString('en-US')}</strong><small>NAIOSH ID</small></article>
-        <article class="kpi"><span>جلسات نشطة</span><strong>${idn.activeSessions}</strong><small>SSO</small></article>
-        <article class="kpi"><span>تفعيل MFA</span><strong>${idn.mfaEnabledPct}%</strong><small>Security</small></article>
-        <article class="kpi"><span>الدومينات المربوطة</span><strong>${idn.ssoDomains.length}</strong><small>Single Sign-On</small></article>
-      </div>
-      <div class="grid-2">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-shield-halved icon"></i> دومينات SSO</span></h3>
-          <ul class="feed">${idn.ssoDomains.map((d) => `<li><b>SSO:</b> ${esc(d)}</li>`).join('')}</ul>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-users icon"></i> مصفوفة الأدوار ولوحات التحكم</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>الدور</th><th>النطاق</th><th>المستخدمون</th></tr></thead>
-            <tbody>
-              ${idn.roles
-                .map((r) => `<tr><td>${esc(r.nameAr)}</td><td>${esc(r.scope)}</td><td>${r.users.toLocaleString('en-US')}</td></tr>`)
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-      </div>
-      <article class="card" style="margin-top:12px">
-        <h3><span class="title-left"><i class="fas fa-key icon"></i> مكوّنات الهوية (من الدستور)</span></h3>
-        <div class="chip-row">
-          ${(bp?.getAxis('naiosh-id')?.components || []).map((c) => `<span class="chip">${esc(c)}</span>`).join('')}
-        </div>
-      </article>
-    `;
+    if (window.HubIdentityUI?.render) {
+      return HubIdentityUI.render({ user, toast, esc, fmtTime });
+    }
+    return '<div class="empty">تعذر تحميل وحدة هوية نايوش</div>';
   };
 
   const renderOrganization = () => {
@@ -1313,6 +1285,7 @@
       ['rl-', 'HubRolesWS'],
       ['rn-', 'HubRentAdminWS'],
       ['ha-', 'HubRentAdminWS'],
+      ['idn-', 'HubIdentityUI'],
       ['ps-', 'HubPoshaWS'],
     ];
     for (const [prefix, name] of opsHandlers) {

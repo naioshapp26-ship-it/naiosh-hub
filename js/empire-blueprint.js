@@ -73,7 +73,7 @@ const EmpireBlueprint = (() => {
       priority: 1,
       name: 'NAIOSH ID',
       nameAr: 'بوابة الهوية الرقمية الموحدة',
-      components: ['تسجيل المستخدمين', 'SSO', 'التحقق الثنائي MFA', 'إدارة الحسابات', 'إدارة الصلاحيات', 'مصفوفة الصلاحيات'],
+      components: ['تسجيل المستخدمين', 'تسجيل الدخول الموحد', 'التحقق الثنائي', 'إدارة الحسابات', 'إدارة الصلاحيات', 'مصفوفة الصلاحيات'],
       roles: ['سوبر أدمن', 'مالك فرع', 'مدير حاضنة', 'مدير منصة', 'مدير مكتب', 'مدرب', 'متدرب', 'مستثمر', 'عميل', 'زائر'],
     },
     {
@@ -157,7 +157,7 @@ const EmpireBlueprint = (() => {
 
   /** Answer 1 — Core Platform must be complete first */
   const corePlatform = [
-    { id: 'naiosh-id', name: 'NAIOSH ID', nameAr: 'هوية رقمية موحدة' },
+    { id: 'naiosh-id', name: 'NAIOSH ID', nameAr: 'هوية نايوش' },
     { id: 'sso', name: 'Single Sign-On', nameAr: 'دخول موحد لكل الدومينات' },
     { id: 'iam', name: 'IAM', nameAr: 'إدارة المستخدمين والصلاحيات والأدوار' },
     { id: 'role-matrix', name: 'Role Matrix Engine', nameAr: 'مصفوفة الصلاحيات الديناميكية' },
