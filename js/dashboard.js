@@ -16,8 +16,8 @@
     { key: 'apps', icon: 'fa-cubes', label: 'سجل الأنظمة' },
     { key: 'products', icon: 'fa-boxes-stacked', label: 'عرض المنتجات' },
     { key: 'store', icon: 'fa-bag-shopping', label: 'متجر المبيعات' },
-    { key: 'ads-studio', icon: 'fa-rectangle-ad', label: 'استوديو الإعلانات' },
-    { key: 'events-studio', icon: 'fa-calendar-days', label: 'استوديو الفعاليات' },
+    { key: 'ads-studio', icon: 'fa-bullhorn', label: 'استوديو الحملات التسويقية' },
+    { key: 'events-studio', icon: 'fa-calendar-days', label: 'استوديو الفعاليات الذكي' },
     { key: 'identity', icon: 'fa-id-card', label: 'هوية نايوش' },
     { key: 'organization', icon: 'fa-globe', label: 'الهيكل العالمي' },
     { key: 'incubators', icon: 'fa-building', label: 'الحاضنات' },
@@ -58,8 +58,8 @@
     apps: ['سجل أنظمة هوب', 'أي نظام نايوش يمكنه الظهور هنا والارتباط بالتشغيل الموحّد'],
     products: ['عرض المنتجات', 'بحث · علامة · سعر · مخزون · حركة البيع'],
     store: ['متجر المبيعات', 'باقات البيع · طلبات · نقاط المحفظة'],
-    'ads-studio': ['استوديو الإعلانات', 'إعلانات منتجات المنصات — ظهور وميزانية ومشاهدات'],
-    'events-studio': ['استوديو الفعاليات', 'فعاليات · بث · ورش · إدارة من غرفة العمليات'],
+    'ads-studio': ['استوديو الحملات التسويقية', 'نسخة ERP كاملة — حملات · تسجيل · مقاطع · نشر'],
+    'events-studio': ['استوديو الفعاليات الذكي', 'نسخة ERP كاملة — فعاليات · بث · ورش · إدارة'],
     identity: ['هوية نايوش', 'إدارة الهوية · الدخول الموحد · التحقق الثنائي · ربط الصلاحيات المركزية'],
     organization: ['محرك الهيكل المؤسسي', 'دولة ← فرع ← حاضنة ← منصة ← مكتب إلكتروني'],
     incubators: ['إدارة الحاضنات', '100 حاضنة قطاعية · منصات · مكاتب · أعضاء'],
@@ -825,89 +825,24 @@
     `;
   };
 
-  const renderAdsStudio = () => {
-    const listings = HubStore.get().empire.adsStudio?.listings || [];
-    return `
-      <div class="toolbar">
-        ${pageActs('ads', 'إضافة')}
-        <div class="field"><label>عنوان الإعلان</label><input id="ad-title" placeholder="عرض منتج المنصة" /></div>
-        <div class="field"><label>السعر ($)</label><input id="ad-price" type="number" value="1000" /></div>
-        <div class="field"><label>التصنيف</label><input id="ad-cat" placeholder="تشغيل" /></div>
-        <div class="field"><label>منصة</label><input id="ad-platform" placeholder="UOS" /></div>
-        <button class="btn btn-primary" data-action="add-ad"><i class="fas fa-plus"></i> نشر سريع</button>
-        <a class="btn btn-ghost" href="ads.html" target="_blank">فتح استوديو الإعلانات</a>
+  const renderAdsStudio = () => `
+    <div class="hub-erp-studio-embed">
+      <div class="toolbar" style="margin-bottom:10px">
+        <a class="btn btn-primary" href="ads.html" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> فتح الصفحة كاملة</a>
+        <span class="muted">نسخة مطابقة من NAIOSH ERP: استوديو الحملات التسويقية</span>
       </div>
-      <div class="kpi-grid">
-        <article class="kpi"><span>إعلانات</span><strong>${listings.length}</strong><small>الكل</small></article>
-        <article class="kpi"><span>نشطة</span><strong>${listings.filter((a) => a.status === 'active').length}</strong><small>ظاهرة</small></article>
-        <article class="kpi"><span>مشاهدات</span><strong>${listings.reduce((s, a) => s + (a.views || 0), 0).toLocaleString('en-US')}</strong><small>تراكمي</small></article>
-        <article class="kpi"><span>منتجات منصات</span><strong>${listings.filter((a) => a.type === 'منتج منصة').length}</strong><small>مهمة</small></article>
-      </div>
-      <article class="card" style="margin-top:12px">
-        <h3><span class="title-left"><i class="fas fa-rectangle-ad icon"></i> إعلانات منتجات المنصات</span></h3>
-        <div class="table-wrap"><table class="data">
-          <thead><tr><th>الإعلان</th><th>المنصة</th><th>السعر ($)</th><th>مشاهدات</th><th>الحالة</th>${metaHead()}<th></th></tr></thead>
-          <tbody>
-            ${listings
-              .map(
-                (a) => `<tr>
-                  <td><strong>${esc(a.title)}</strong><br><small>${esc(a.content || '')}</small></td>
-                  <td>${esc(a.platformCode || '—')}</td>
-                  <td>${money(a.price || 0)}</td>
-                  <td>${Number(a.views || 0).toLocaleString('en-US')}</td>
-                  <td>${badgeStatus(a.status)}</td>
-                  ${metaCells(a)}
-                  <td><button class="btn btn-sm btn-dark" data-action="toggle-ad" data-id="${a.id}">تشغيل/إيقاف</button>${rowActs('ads', a.id)}</td>
-                </tr>`
-              )
-              .join('')}
-          </tbody>
-        </table></div>
-      </article>
-    `;
-  };
+      <iframe src="ads.html" title="استوديو الحملات التسويقية" class="hub-erp-studio-iframe"></iframe>
+    </div>`;
 
-  const renderEventsStudio = () => {
-    const events = HubStore.get().empire.eventsStudio?.events || [];
-    return `
-      <div class="toolbar">
-        ${pageActs('events', 'إضافة')}
-        <div class="field"><label>اسم الفعالية</label><input id="ev-name" placeholder="قمة تشغيلية" /></div>
-        <div class="field"><label>التاريخ</label><input id="ev-date" type="date" /></div>
-        <div class="field"><label>الوقت</label><input id="ev-time" type="time" value="18:00" /></div>
-        <div class="field"><label>النوع</label><input id="ev-type" placeholder="بث مباشر" /></div>
-        <button class="btn btn-primary" data-action="add-event"><i class="fas fa-plus"></i> إنشاء سريع</button>
-        <a class="btn btn-ghost" href="events.html" target="_blank">فتح استوديو الفعاليات</a>
+  const renderEventsStudio = () => `
+    <div class="hub-erp-studio-embed">
+      <div class="toolbar" style="margin-bottom:10px">
+        <a class="btn btn-primary" href="events.html" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> فتح الصفحة كاملة</a>
+        <span class="muted">نسخة مطابقة من NAIOSH ERP: استوديو الفعاليات الذكي</span>
       </div>
-      <div class="kpi-grid">
-        <article class="kpi"><span>فعاليات</span><strong>${events.length}</strong><small>الكل</small></article>
-        <article class="kpi"><span>قادمة</span><strong>${events.filter((e) => e.status === 'قادمة').length}</strong><small>مجدولة</small></article>
-        <article class="kpi"><span>منتهية</span><strong>${events.filter((e) => e.status === 'منتهية').length}</strong><small>أرشيف</small></article>
-        <article class="kpi"><span>مسودات</span><strong>${events.filter((e) => e.status === 'مسودة').length}</strong><small>قيد الإعداد</small></article>
-      </div>
-      <article class="card" style="margin-top:12px">
-        <h3><span class="title-left"><i class="fas fa-calendar-days icon"></i> إدارة الفعاليات</span></h3>
-        <div class="table-wrap"><table class="data">
-          <thead><tr><th>الفعالية</th><th>التاريخ</th><th>النوع</th><th>المتحدّث</th><th>الحالة</th>${metaHead()}<th>إجراءات</th></tr></thead>
-          <tbody>
-            ${events
-              .map(
-                (e) => `<tr>
-                  <td><strong>${esc(e.name)}</strong><br><small>${esc(e.description || '')}</small></td>
-                  <td>${esc(e.date)} ${esc(e.time)}</td>
-                  <td>${esc(e.type)}</td>
-                  <td>${esc(e.speaker)}</td>
-                  <td>${badgeStatus(e.status)}</td>
-                  ${metaCells(e)}
-                  <td>${rowActs('events', e.id)}</td>
-                </tr>`
-              )
-              .join('')}
-          </tbody>
-        </table></div>
-      </article>
-    `;
-  };
+      <iframe src="events.html" title="استوديو الفعاليات الذكي" class="hub-erp-studio-iframe"></iframe>
+    </div>`;
+
 
   const renderIncubators = () => {
     const org = HubStore.get().empire.organization;
