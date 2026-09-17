@@ -1,8 +1,15 @@
 /**
- * عملاء بوشا — Client Operations Center (Admin UI)
+ * عملاء هوب — Client Operations Center (Admin UI)
  */
 (function () {
   'use strict';
+
+  /** توحيد اسم الوحدة للعرض (بيانات قديمة قد تحمل «عملاء بوشا») */
+  function displaySourceModule(v) {
+    const s = String(v || '');
+    if (s === 'عملاء بوشا' || s === 'عملاء بوشا 360') return 'عملاء هوب';
+    return s;
+  }
 
   function authHeaders() {
     const h = { Accept: 'application/json', 'Content-Type': 'application/json' };
@@ -510,9 +517,9 @@
   function actor() {
     try {
       const u = window.HubAuth?.getUser?.() || JSON.parse(localStorage.getItem('hubUser') || '{}');
-      return u?.name || u?.email || 'مشغّل بوشا';
+      return u?.name || u?.email || 'مشغّل هوب';
     } catch {
-      return 'مشغّل بوشا';
+      return 'مشغّل هوب';
     }
   }
 
@@ -676,8 +683,8 @@
                       <td>${esc(r.title || '—')}</td>
                       <td>${
                         sourceHref
-                          ? `<a class="chip" href="${esc(sourceHref)}" target="_blank" rel="noopener">${esc(r.sourceModule || '—')}</a>`
-                          : `<span class="chip">${esc(r.sourceModule || '—')}</span>`
+                          ? `<a class="chip" href="${esc(sourceHref)}" target="_blank" rel="noopener">${esc(displaySourceModule(r.sourceModule) || '—')}</a>`
+                          : `<span class="chip">${esc(displaySourceModule(r.sourceModule) || '—')}</span>`
                       }</td>
                       <td>${
                         r.referenceId
@@ -794,7 +801,7 @@
             <li><b>الوصف / سبب الطلب:</b> ${esc(r.description || r.need || '—')}</li>
             ${r.intendedUse ? `<li><b>الاستخدام المطلوب:</b> ${esc(r.intendedUse)}</li>` : ''}
             <li><b>Reference:</b> ${esc(r.referenceType || '—')} · <code>${esc(r.referenceId || '—')}</code></li>
-            <li><b>المصدر:</b> ${esc(r.sourceModule || '—')}</li>
+            <li><b>المصدر:</b> ${esc(displaySourceModule(r.sourceModule) || '—')}</li>
             <li><b>تاريخ الطلب:</b> ${fmt(r.createdAt)}</li>
             <li><b>الحالة:</b> ${esc(displayReqStatus(r))}</li>
             <li><b>الأولوية:</b> ${esc(r.priority)}</li>
@@ -874,7 +881,7 @@
             <li><b>اسم المنصة:</b> ${esc(platformName || '—')}</li>
             <li><b>رمز / مرجع:</b> <code>${esc(r.referenceId || '—')}</code></li>
             <li><b>نوع الطلب:</b> ${esc(r.requestTypeLabel || r.requestType)}</li>
-            <li><b>المصدر:</b> ${esc(r.sourceModule || '—')}</li>
+            <li><b>المصدر:</b> ${esc(displaySourceModule(r.sourceModule) || '—')}</li>
             <li><b>سبب الطلب:</b> ${esc(r.need || r.description || '—')}</li>
             ${r.intendedUse ? `<li><b>الاستخدام المطلوب:</b> ${esc(r.intendedUse)}</li>` : ''}
             ${draft.url ? `<li><b>رابط المنصة:</b> <a href="${esc(draft.url)}" target="_blank" rel="noopener noreferrer">${esc(draft.url)}</a></li>` : ''}
@@ -891,7 +898,7 @@
       </div>`;
     } else if (tab === 'source') {
       body = `<ul class="feed">
-        <li><b>Source Module:</b> ${esc(r.sourceModule)}</li>
+        <li><b>Source Module:</b> ${esc(displaySourceModule(r.sourceModule))}</li>
         <li><b>Source Page:</b> ${esc(r.sourcePage)}</li>
         <li><b>Source Action:</b> ${esc(r.sourceAction)}</li>
         <li><b>Reference Type:</b> ${esc(r.referenceType || '—')}</li>
@@ -1341,7 +1348,7 @@
             title,
             description: title,
             need: title,
-            sourceModule: 'عملاء بوشا',
+            sourceModule: 'عملاء هوب',
             sourcePage: 'إنشاء يدوي',
             sourceAction: 'Admin Create',
             sourceUrl: 'dashboard.html#posha-clients',
@@ -1372,7 +1379,7 @@
             title,
             description: title,
             need: title,
-            sourceModule: 'عملاء بوشا',
+            sourceModule: 'عملاء هوب',
             sourcePage: 'إنشاء يدوي',
             sourceAction: 'Admin Create',
             sourceUrl: 'dashboard.html#posha-clients',
@@ -1647,7 +1654,7 @@
           warn.className = 'posha-err';
           const soft =
             /path could not be found|404|Not Found|انتهت مهلة/i.test(apiWarn)
-              ? 'تعذر الاتصال بخادم بوشا (API غير متاح حالياً)'
+              ? 'تعذر الاتصال بخادم هوب (API غير متاح حالياً)'
               : apiWarn;
           warn.textContent = `${soft} — صندوق الطلبات المركزية متاح محلياً.`;
           const body = document.getElementById('posha-body');
@@ -1697,7 +1704,7 @@
       bell.type = 'button';
       bell.id = 'posha-admin-bell';
       bell.className = 'btn btn-ghost btn-sm';
-      bell.innerHTML = `<i class="fas fa-bell"></i> بوشا <span class="posha-badge" id="posha-top-badge" hidden>0</span>`;
+      bell.innerHTML = `<i class="fas fa-bell"></i> هوب <span class="posha-badge" id="posha-top-badge" hidden>0</span>`;
       bell.onclick = () => {
         location.hash = 'posha-clients';
         state.tab = 'notifications';

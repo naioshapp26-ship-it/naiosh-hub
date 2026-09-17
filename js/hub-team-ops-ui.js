@@ -200,7 +200,7 @@
       'workforce',
     ],
     CRM: ['clients-mgmt', 'posha-clients', 'overview'],
-    POSHA: ['posha-clients', 'clients-mgmt', 'overview', 'posha-os'],
+    POSHA: ['posha-clients', 'clients-mgmt', 'overview'],
     ERP: ['overview', 'apps', 'systems', 'tasks', 'reports'],
     LMS: ['overview', 'apps'],
     LAW: ['overview', 'governance', 'apps'],

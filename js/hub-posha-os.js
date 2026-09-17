@@ -151,7 +151,7 @@
   }
 
   function renderClients(list) {
-    return '<section class="pos-card"><h3>عملاء بوشا</h3>' +
+    return '<section class="pos-card"><h3>عملاء هوب</h3>' +
       '<div class="pos-table-wrap"><table class="pos-table"><thead><tr>' +
       '<th>العميل</th><th>الحالة</th><th>Lifecycle</th><th>Health</th><th>تهيئة</th><th>أنظمة</th><th>طلبات</th><th>شكاوى</th><th></th>' +
       '</tr></thead><tbody>' +

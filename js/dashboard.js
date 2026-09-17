@@ -2,9 +2,8 @@
   const NAV = [
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
     { key: 'operating', icon: 'fa-gears', label: 'آلية التشغيل' },
-    { key: 'posha-clients', icon: 'fa-building-user', label: 'عملاء بوشا' },
+    { key: 'posha-clients', icon: 'fa-building-user', label: 'عملاء هوب' },
     { key: 'site-settings', icon: 'fa-gear', label: 'إعدادات الموقع' },
-    { key: 'posha-os', icon: 'fa-cubes', label: 'نظام بوشا OS', href: 'posha.html' },
     { key: 'clients-mgmt', icon: 'fa-user-tie', label: 'إدارة العملاء' },
     { key: 'roles-permissions', icon: 'fa-shield-halved', label: 'إدارة فريق العمل والصلاحيات' },
     { key: 'notifications', icon: 'fa-bell', label: 'مركز إشعارات نايوش هوب' },
@@ -45,7 +44,7 @@
     measurement: ['القياس الموحّد', 'درجات · مؤشرات بصيغة · إعادة حساب موثّقة'],
     reports: ['مركز التقارير', 'توليد · عرض · تصدير JSON · جدول · تدقيق'],
     integration: ['التكامل والبوابة', 'موصلات · مزامنة · API · فحص بوابة · تدقيق'],
-    'posha-clients': ['عملاء بوشا', 'إدارة العملاء والطلبات والدعم والتنبيهات من مكان واحد'],
+    'posha-clients': ['عملاء هوب', 'إدارة العملاء والطلبات والدعم والتنبيهات من مكان واحد'],
     'site-settings': ['إعدادات الموقع', 'إدارة إعدادات المنصة والمتاجر والطلبات والدفع والإعلانات والتكاملات والأمان من مكان واحد'],
     'clients-mgmt': ['إدارة العملاء', 'Clients 360 · CRUD · مصدر · ملاحظات داخلية · تدقيق'],
     'roles-permissions': ['إدارة فريق العمل والصلاحيات', 'عيّن المسؤولين عن إدارة نايوش هوب وأنظمتها، وحدد لكل شخص مكان عمله ودوره والصلاحيات المسموح بها.'],
@@ -333,7 +332,6 @@
   const STAFF_ONLY_NAV = new Set([
     'posha-clients',
     'site-settings',
-    'posha-os',
     'clients-mgmt',
     'roles-permissions',
     'rent-admin',
@@ -1135,7 +1133,7 @@
   const renderers = {
     overview: renderOverview,
     operating: renderOperating,
-    'posha-clients': () => (window.HubPoshaWS?.render ? HubPoshaWS.render({ user, toast, esc, bar, badgeStatus, fmtTime }) : '<div class="empty">تعذر تحميل عملاء بوشا</div>'),
+    'posha-clients': () => (window.HubPoshaWS?.render ? HubPoshaWS.render({ user, toast, esc, bar, badgeStatus, fmtTime }) : '<div class="empty">تعذر تحميل عملاء هوب</div>'),
     'site-settings': () => (window.HubSiteSettingsUI?.render ? HubSiteSettingsUI.render() : '<div class="empty">تعذر تحميل إعدادات الموقع</div>'),
     'clients-mgmt': renderClientsMgmt,
     notifications: renderNotifications,

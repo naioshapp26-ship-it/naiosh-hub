@@ -653,7 +653,7 @@
     return (
       '<section class="ads-ws-section">' +
         '<h2>طلبات نشر الإعلانات</h2>' +
-        '<p style="color:#667085;font-weight:700">تظهر أيضاً في عملاء بوشا → طلبات العملاء.</p>' +
+        '<p style="color:#667085;font-weight:700">تظهر أيضاً في عملاء هوب → طلبات العملاء.</p>' +
         '<div class="ads-activity">' +
         (reqs.length
           ? reqs

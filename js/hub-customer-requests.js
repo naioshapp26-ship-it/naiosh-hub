@@ -1,7 +1,7 @@
 /**
  * NAIOSH HUB — Central Customer Requests Inbox
  * One record shared by Customer View (e.g. حلول نايوش → طلباتي)
- * and Admin View (عملاء بوشا → طلبات العملاء).
+ * and Admin View (عملاء هوب → طلبات العملاء).
  */
 (() => {
   'use strict';

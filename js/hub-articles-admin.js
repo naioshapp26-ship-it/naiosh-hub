@@ -1,6 +1,6 @@
 /**
  * Admin — Incoming articles (filtered view of HubCustomerRequests)
- * Same Request IDs / Status as عملاء بوشا → طلبات العملاء
+ * Same Request IDs / Status as عملاء هوب → طلبات العملاء
  */
 (() => {
   'use strict';

@@ -801,7 +801,7 @@
       ...poshaish
         .filter((c) => c.status !== 'active')
         .map((c) => ({
-          text: `عميل بوشا يحتاج متابعة: ${c.name}`,
+          text: `عميل هوب يحتاج متابعة: ${c.name}`,
           kind: 'عميل',
           client: c.name,
           priority: 'عالية',
@@ -823,7 +823,7 @@
     ];
     if (!window.HubPoshaClients) {
       needs.push({
-        text: 'وحدة عملاء بوشا غير محمّلة',
+        text: 'وحدة عملاء هوب غير محمّلة',
         kind: 'نظام',
         client: '—',
         priority: 'حرج',
@@ -853,7 +853,7 @@
     } else {
       body = `<section class="posha-ws-section">
         <div class="posha-ws-section-head"><h3>الإعدادات</h3></div>
-        <p>مركز عمليات بوشا يعمل داخل هوب. سجّل أي تدخل يدوي في سجل العمليات عند الحاجة.</p>
+        <p>مركز عمليات عملاء هوب يعمل داخل المنصة. سجّل أي تدخل يدوي في سجل العمليات عند الحاجة.</p>
         <div class="posha-ws-actions">
           <button type="button" class="btn btn-primary" data-action="ps-audit-note">تسجيل مراجعة يدوية</button>
           <button type="button" class="btn btn-ghost" data-action="ps-open-inner" data-inner="req-settings" data-tab="ops">إعدادات الطلبات</button>
@@ -865,7 +865,7 @@
       <header class="posha-ws-header">
         <div class="posha-ws-header-text">
           <p class="posha-ws-kicker"><i class="fas fa-building-user"></i> NAIOSH HUB</p>
-          <h1 class="posha-ws-title">عملاء بوشا</h1>
+          <h1 class="posha-ws-title">عملاء هوب</h1>
           <p class="posha-ws-sub">إدارة العملاء والطلبات والدعم والتنبيهات من مكان واحد</p>
         </div>
         <div class="posha-ws-header-actions">
@@ -895,7 +895,7 @@
       ${psUi.tab === 'ops' ? renderPoshaNeeds(needs) : ''}
       ${body}
       ${K.renderHelp('ps', {
-        title: 'دليل عملاء بوشا',
+        title: 'دليل عملاء هوب',
         dismissed: !!meta.settings?.helpDismissed,
         open: psUi.helpOpen,
         bodyHtml: `<p>استخدم التبويبات للتنقل بين العملاء والطلبات والدعم. «يحتاج إلى إجراء» يجمع ما يستحق تدخلك أولاً.</p>`,
@@ -938,7 +938,7 @@
     if (action === 'ps-audit-note') {
       store().pushDomainAudit?.(meta(), {
         action: 'manual_review',
-        detail: 'مراجعة يدوية لمركز عملاء بوشا',
+        detail: 'مراجعة يدوية لمركز عملاء هوب',
         by: K.actorName(user),
         source: 'POSHA Ops',
       });

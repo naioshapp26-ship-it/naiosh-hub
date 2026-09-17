@@ -600,7 +600,7 @@
     if (req._similar) {
       toast(`تم إنشاء ${req.requestId || req.id} · يوجد طلب مشابه مفتوح: ${req._similar.id}`);
     } else {
-      toast(`تم إنشاء الطلب ${req.requestId || req.id} — يظهر أيضاً في عملاء بوشا → طلبات العملاء`);
+      toast(`تم إنشاء الطلب ${req.requestId || req.id} — يظهر أيضاً في عملاء هوب → طلبات العملاء`);
     }
   };
 

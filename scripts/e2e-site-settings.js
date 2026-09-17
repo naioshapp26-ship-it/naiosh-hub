@@ -90,11 +90,15 @@ function run() {
     assert.ok(dash.includes('إعدادات الموقع'));
     const idxPosha = dash.indexOf("key: 'posha-clients'");
     const idxSite = dash.indexOf("key: 'site-settings'");
-    const idxOs = dash.indexOf("key: 'posha-os'");
-    assert.ok(idxPosha < idxSite && idxSite < idxOs, 'nav order');
-    pass('1 sidebar order: posha → site-settings → posha-os');
+    const idxClients = dash.indexOf("key: 'clients-mgmt'");
+    assert.ok(idxPosha < idxSite && idxSite < idxClients, 'nav order');
+    assert.ok(dash.includes('عملاء هوب'), 'hub clients label');
+    assert.ok(!dash.includes('عملاء بوشا'), 'old posha clients label removed');
+    assert.ok(!dash.includes('نظام بوشا OS'), 'posha OS nav removed');
+    assert.ok(!/key:\s*'posha-os'/.test(dash), 'posha-os key removed from NAV');
+    pass('1 sidebar order: posha-clients → site-settings → clients-mgmt (no posha-os)');
   } catch (e) {
-    fail('1 sidebar order: posha → site-settings → posha-os', e);
+    fail('1 sidebar order: posha-clients → site-settings → clients-mgmt (no posha-os)', e);
   }
 
   try {

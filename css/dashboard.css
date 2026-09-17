@@ -88,6 +88,9 @@ button, input, select, textarea { font-family: inherit; }
   font-weight: 700;
   font-size: 13px;
   transition: background 0.2s ease;
+  white-space: normal;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .sidebar-nav a:hover,
