@@ -105,11 +105,12 @@
       const dd = String(d.getDate()).padStart(2, '0');
       let h = d.getHours();
       const mi = String(d.getMinutes()).padStart(2, '0');
-      const ampm = h >= 12 ? 'PM' : 'AM';
+      const isPm = h >= 12;
       h = h % 12 || 12;
       const hh = String(h).padStart(2, '0');
+      const period = isPm ? 'م' : 'ص';
       const latin = (v) => (window.HubFormat?.toLatinDigits ? window.HubFormat.toLatinDigits(v) : String(v));
-      return { date: latin(`${yyyy}/${mm}/${dd}`), time: latin(`${hh}:${mi} ${ampm}`) };
+      return { date: latin(`${yyyy}/${mm}/${dd}`), time: latin(`${hh}:${mi} ${period}`) };
     } catch {
       return { date: '—', time: '' };
     }
@@ -1092,7 +1093,7 @@
             <li><b>Approved By:</b> ${esc(r.approvedBy || '—')}</li>
             <li><b>Approved At:</b> ${fmt(r.approvedAt)}</li>
             <li><b>Rejected By:</b> ${esc(r.rejectedBy || '—')}</li>
-            <li><b>Created By:</b> ${esc(r.createdBy || '—')}</li>
+            <li><b>أنشئ بواسطة:</b> ${esc(r.createdBy || '—')}</li>
           </ul>
         </article>
       </div>`;

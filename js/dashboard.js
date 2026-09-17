@@ -197,8 +197,8 @@
 
   // —— Auth UI
   $('#user-name').textContent = user.name || user.email || 'مستخدم';
-  $('#user-role').textContent =
-    user.role === 'supreme_leader'
+  $('#user-role').textContent = window.HubI18n?.role?.(user.role) ||
+    (user.role === 'supreme_leader'
       ? 'القائد الأعلى'
       : user.role === 'chief_engineer'
         ? 'المهندسة مليكة'
@@ -206,7 +206,7 @@
           ? 'عميل'
           : user.role === 'platform_owner'
             ? 'صاحب منصة'
-            : user.role || 'عضو';
+            : user.role || 'عضو');
 
   $('#logout-btn').onclick = () => {
     localStorage.removeItem('hubAuthToken');

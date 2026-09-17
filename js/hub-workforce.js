@@ -650,7 +650,7 @@
   const renderAudit = (wf) => {
     const rows = (wf.auditLog || []).slice(0, 80);
     return `<div class="table-wrap"><table class="data">
-      <thead><tr><th>Transaction ID</th><th>المستخدم</th><th>الإجراء</th><th>الموظف</th><th>القيمة القديمة</th><th>الجديدة</th><th>المصدر</th><th>الوقت</th></tr></thead>
+      <thead><tr><th>رقم العملية</th><th>المستخدم</th><th>الإجراء</th><th>الموظف</th><th>القيمة القديمة</th><th>الجديدة</th><th>المصدر</th><th>الوقت</th></tr></thead>
       <tbody>${
         rows.length
           ? rows

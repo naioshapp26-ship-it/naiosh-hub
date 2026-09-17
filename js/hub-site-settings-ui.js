@@ -15,7 +15,7 @@
     { id: 'notifications', label: 'إعدادات الإشعارات', icon: 'fa-bell' },
     { id: 'integrations', label: 'إعدادات التكاملات', icon: 'fa-plug' },
     { id: 'security', label: 'إعدادات الأمان', icon: 'fa-shield-halved' },
-    { id: 'seo', label: 'إعدادات SEO', icon: 'fa-magnifying-glass' },
+    { id: 'seo', label: 'تحسين محركات البحث', icon: 'fa-magnifying-glass' },
     { id: 'searchEngines', label: 'إعدادات محركات البحث', icon: 'fa-globe' },
     { id: 'permissions', label: 'الصلاحيات', icon: 'fa-user-lock' },
     { id: 'audit', label: 'سجل التغييرات', icon: 'fa-clock-rotate-left' },
@@ -59,10 +59,14 @@
   function actor() {
     try {
       const u = window.HubAuth?.getUser?.() || JSON.parse(localStorage.getItem('hubUser') || '{}');
-      return u?.name || u?.email || 'Admin';
+      return u?.name || u?.email || 'مشغّل هوب';
     } catch (_) {
-      return 'Admin';
+      return 'مشغّل هوب';
     }
+  }
+
+  function L(en, ar) {
+    return window.HubI18n?.label?.(en, ar) || ar || en;
   }
 
   function reg() {
@@ -76,7 +80,8 @@
   function fmt(iso) {
     if (!iso) return '—';
     try {
-      return new Date(iso).toLocaleString('ar-EG');
+      if (window.HubFormat?.formatDateTime) return window.HubFormat.formatDateTime(iso);
+      return new Date(iso).toLocaleString('en-GB');
     } catch (_) {
       return String(iso).slice(0, 19);
     }
@@ -137,9 +142,12 @@
   }
 
   function statusLabel(st) {
-    if (st === 'disabled') return 'معطل';
-    if (st === 'archived') return 'مؤرشف';
-    return 'نشط';
+    return (
+      window.HubI18n?.status?.(st) ||
+      ({ enabled: 'مفعّل', disabled: 'معطّل', active: 'نشط', archived: 'مؤرشف', disabled_legacy: 'معطّل' }[
+        String(st || '').toLowerCase()
+      ] || (st === 'disabled' ? 'معطّل' : st === 'archived' ? 'مؤرشف' : 'نشط'))
+    );
   }
 
   /* ───────── Stores table ───────── */
@@ -196,8 +204,8 @@
     }
     return `<div class="table-wrap"><table class="data-table ss-table">
       <thead><tr>
-        <th>المتجر</th><th>Logo</th><th>URL</th><th>Status</th><th>Products</th>
-        <th>Created By</th><th>Last Updated</th><th>Actions</th>
+        <th>المتجر</th><th>الشعار</th><th>الرابط</th><th>الحالة</th><th>المنتجات</th>
+        <th>أنشئ بواسطة</th><th>آخر تحديث</th><th>الإجراءات</th>
       </tr></thead>
       <tbody>${rows
         .map((s) => {
@@ -270,13 +278,13 @@
         <h3>إعدادات المنتجات</h3>
         <p class="ss-lead">العملة الافتراضية ثابتة USD لوحدة المتجر.</p>
         <div class="ss-fields">
-          <label class="ss-field"><span>Default Currency</span><input value="USD" readonly /></label>
-          ${toggleField('products.requireProductUrl', 'Require Product URL', '', p.requireProductUrl !== false)}
-          ${toggleField('products.requireAdminApproval', 'Require Admin Approval', '', p.requireAdminApproval !== false)}
-          ${toggleField('products.allowExternalStores', 'Allow External Stores', '', p.allowExternalStores !== false)}
-          ${toggleField('products.allowCustomerAddProduct', 'Allow Customer To Add Product', '', p.allowCustomerAddProduct !== false)}
-          ${toggleField('products.allowCustomerSuggestStore', 'Allow Customer To Suggest New Store', '', p.allowCustomerSuggestStore !== false)}
-          ${toggleField('products.openExternalLinksInNewTab', 'Open External Links In New Tab', '', p.openExternalLinksInNewTab !== false)}
+          <label class="ss-field"><span>العملة الافتراضية</span><input value="USD" readonly /></label>
+          ${toggleField('products.requireProductUrl', 'يتطلب رابط المنتج', '', p.requireProductUrl !== false)}
+          ${toggleField('products.requireAdminApproval', 'يتطلب موافقة الإدارة', '', p.requireAdminApproval !== false)}
+          ${toggleField('products.allowExternalStores', 'السماح بالمتاجر الخارجية', '', p.allowExternalStores !== false)}
+          ${toggleField('products.allowCustomerAddProduct', 'السماح للعميل بإضافة منتج', '', p.allowCustomerAddProduct !== false)}
+          ${toggleField('products.allowCustomerSuggestStore', 'السماح للعميل باقتراح متجر جديد', '', p.allowCustomerSuggestStore !== false)}
+          ${toggleField('products.openExternalLinksInNewTab', 'فتح الروابط الخارجية في تبويب جديد', '', p.openExternalLinksInNewTab !== false)}
         </div>
       </div>`;
     }
@@ -284,34 +292,34 @@
     return `<div class="ss-card">
       <h3>الإعدادات العامة للمتجر</h3>
       <div class="ss-fields">
-        <label class="ss-field"><span>Store Status</span>
+        <label class="ss-field"><span>حالة المتجر</span>
           <select data-draft="general.storeStatus">
-            <option value="enabled" ${g.storeStatus !== 'disabled' ? 'selected' : ''}>Enabled</option>
-            <option value="disabled" ${g.storeStatus === 'disabled' ? 'selected' : ''}>Disabled</option>
+            <option value="enabled" ${g.storeStatus !== 'disabled' ? 'selected' : ''}>مفعّل</option>
+            <option value="disabled" ${g.storeStatus === 'disabled' ? 'selected' : ''}>معطّل</option>
           </select>
         </label>
-        <label class="ss-field"><span>Products Per Page</span>
+        <label class="ss-field"><span>عدد المنتجات في الصفحة</span>
           <select data-draft="general.productsPerPage">
             ${[12, 24, 48]
               .map((n) => `<option value="${n}" ${Number(g.productsPerPage) === n ? 'selected' : ''}>${n}</option>`)
               .join('')}
           </select>
         </label>
-        <label class="ss-field"><span>Default View</span>
+        <label class="ss-field"><span>العرض الافتراضي</span>
           <select data-draft="general.defaultView">
-            <option value="grid" ${g.defaultView !== 'list' ? 'selected' : ''}>Grid</option>
-            <option value="list" ${g.defaultView === 'list' ? 'selected' : ''}>List</option>
+            <option value="grid" ${g.defaultView !== 'list' ? 'selected' : ''}>شبكة</option>
+            <option value="list" ${g.defaultView === 'list' ? 'selected' : ''}>قائمة</option>
           </select>
         </label>
-        <label class="ss-field"><span>Currency Display</span><input value="USD ($)" readonly /></label>
-        ${toggleField('general.showStoreLogo', 'Show Store Logo', '', g.showStoreLogo !== false)}
-        ${toggleField('general.showStoreName', 'Show Store Name', '', g.showStoreName !== false)}
-        ${toggleField('general.showProductSource', 'Show Product Source', '', g.showProductSource !== false)}
-        ${toggleField('general.showProductPrice', 'Show Product Price', '', g.showProductPrice !== false)}
-        ${toggleField('general.enableSearch', 'Enable Search', '', g.enableSearch !== false)}
-        ${toggleField('general.enableFilters', 'Enable Filters', '', g.enableFilters !== false)}
-        ${toggleField('general.enableReviews', 'Enable Reviews', '', !!g.enableReviews)}
-        ${toggleField('general.enableProductSharing', 'Enable Product Sharing', '', g.enableProductSharing !== false)}
+        <label class="ss-field"><span>عرض العملة</span><input value="USD ($)" readonly /></label>
+        ${toggleField('general.showStoreLogo', 'إظهار شعار المتجر', '', g.showStoreLogo !== false)}
+        ${toggleField('general.showStoreName', 'إظهار اسم المتجر', '', g.showStoreName !== false)}
+        ${toggleField('general.showProductSource', 'إظهار مصدر المنتج', '', g.showProductSource !== false)}
+        ${toggleField('general.showProductPrice', 'إظهار سعر المنتج', '', g.showProductPrice !== false)}
+        ${toggleField('general.enableSearch', 'تفعيل البحث', '', g.enableSearch !== false)}
+        ${toggleField('general.enableFilters', 'تفعيل الفلاتر', '', g.enableFilters !== false)}
+        ${toggleField('general.enableReviews', 'تفعيل التقييمات', '', !!g.enableReviews)}
+        ${toggleField('general.enableProductSharing', 'تفعيل مشاركة المنتج', '', g.enableProductSharing !== false)}
       </div>
     </div>`;
   }
@@ -326,8 +334,8 @@
     if (!rows.length) return `<div class="ss-empty">لا توجد سجلات بعد.</div>`;
     return `<div class="table-wrap"><table class="data-table ss-table">
       <thead><tr>
-        <th>Transaction ID</th><th>Section</th><th>Action</th><th>Old Value</th><th>New Value</th>
-        <th>Changed By</th><th>Role</th><th>Date</th><th>Time</th>
+        <th>رقم العملية</th><th>القسم</th><th>الإجراء</th><th>القيمة السابقة</th><th>القيمة الجديدة</th>
+        <th>عدّلها</th><th>الدور</th><th>التاريخ</th><th>الوقت</th>
       </tr></thead>
       <tbody>${rows
         .slice(0, 100)
@@ -441,14 +449,14 @@
         `<div class="ss-card"><h2>الإعدادات العامة</h2><p class="ss-lead">هوية المنصة والدعم ووضع الصيانة.</p></div>` +
         sectionFormHtml('general', [
           { key: 'platformName', label: 'اسم المنصة', desc: 'يظهر في العناوين والهوية' },
-          { key: 'siteLogo', label: 'Site Logo', desc: 'رابط أو data URL للشعار' },
-          { key: 'favicon', label: 'Favicon', desc: 'أيقونة المتصفح' },
+          { key: 'siteLogo', label: 'شعار الموقع', desc: 'رابط أو data URL للشعار' },
+          { key: 'favicon', label: 'أيقونة المتصفح', desc: 'أيقونة المتصفح' },
           { key: 'language', label: 'اللغة الافتراضية', desc: 'ar / en' },
-          { key: 'timezone', label: 'Timezone', desc: 'مثال Asia/Riyadh' },
-          { key: 'dateFormat', label: 'Date Format', desc: 'YYYY-MM-DD' },
-          { key: 'supportEmail', label: 'Support Email', type: 'email' },
-          { key: 'supportPhone', label: 'Support Phone' },
-          { key: 'maintenanceMode', label: 'Maintenance Mode', type: 'toggle', desc: 'يعرض تنبيه صيانة' },
+          { key: 'timezone', label: 'المنطقة الزمنية', desc: 'مثال Asia/Riyadh' },
+          { key: 'dateFormat', label: 'صيغة التاريخ', desc: 'YYYY-MM-DD' },
+          { key: 'supportEmail', label: 'بريد الدعم', type: 'email' },
+          { key: 'supportPhone', label: 'هاتف الدعم' },
+          { key: 'maintenanceMode', label: 'وضع الصيانة', type: 'toggle', desc: 'يعرض تنبيه صيانة' },
         ])
       );
     }
@@ -456,14 +464,14 @@
       return (
         `<div class="ss-card"><h2>إعدادات الطلبات</h2><p class="ss-lead">ترتبط مباشرة بـ عملاء هوب ← طلبات العملاء.</p></div>` +
         sectionFormHtml('orders', [
-          { key: 'requestIdFormat', label: 'Request ID Format', desc: 'مثال YYYY-#####' },
-          { key: 'requireAdminApproval', label: 'Require Admin Approval', type: 'toggle' },
-          { key: 'defaultRequestStatus', label: 'Default Request Status' },
-          { key: 'autoAssignment', label: 'Auto Assignment', type: 'toggle' },
-          { key: 'defaultDepartment', label: 'Default Department' },
-          { key: 'slaHours', label: 'SLA (ساعات)', type: 'number' },
-          { key: 'requestNotifications', label: 'Request Notifications', type: 'toggle' },
-          { key: 'customerRequestRouting', label: 'Customer Request Routing', type: 'toggle' },
+          { key: 'requestIdFormat', label: 'صيغة رقم الطلب', desc: 'مثال YYYY-#####' },
+          { key: 'requireAdminApproval', label: 'يتطلب موافقة الإدارة', type: 'toggle' },
+          { key: 'defaultRequestStatus', label: 'الحالة الافتراضية للطلب' },
+          { key: 'autoAssignment', label: 'التعيين التلقائي', type: 'toggle' },
+          { key: 'defaultDepartment', label: 'القسم الافتراضي' },
+          { key: 'slaHours', label: 'اتفاقية مستوى الخدمة — ساعات الرد', type: 'number' },
+          { key: 'requestNotifications', label: 'إشعارات الطلبات', type: 'toggle' },
+          { key: 'customerRequestRouting', label: 'توجيه طلبات العملاء', type: 'toggle' },
         ])
       );
     }
@@ -471,14 +479,14 @@
       return (
         `<div class="ss-card"><h2>إعدادات الدفع</h2></div>` +
         sectionFormHtml('payment', [
-          { key: 'defaultCurrency', label: 'Default Currency', desc: 'USD' },
-          { key: 'paymentMethods', label: 'Payment Methods' },
-          { key: 'taxEnabled', label: 'Tax Settings', type: 'toggle' },
-          { key: 'taxRate', label: 'Tax Rate %', type: 'number' },
-          { key: 'invoicePrefix', label: 'Invoice Settings (prefix)' },
-          { key: 'refundWindowDays', label: 'Refund Rules (days)', type: 'number' },
-          { key: 'paymentNotifications', label: 'Payment Notifications', type: 'toggle' },
-          { key: 'statusRules', label: 'Payment Status Rules' },
+          { key: 'defaultCurrency', label: 'العملة الافتراضية', desc: 'USD' },
+          { key: 'paymentMethods', label: 'طرق الدفع' },
+          { key: 'taxEnabled', label: 'إعدادات الضريبة', type: 'toggle' },
+          { key: 'taxRate', label: 'نسبة الضريبة %', type: 'number' },
+          { key: 'invoicePrefix', label: 'بادئة رقم الفاتورة' },
+          { key: 'refundWindowDays', label: 'مهلة الاسترداد (أيام)', type: 'number' },
+          { key: 'paymentNotifications', label: 'إشعارات الدفع', type: 'toggle' },
+          { key: 'statusRules', label: 'قواعد حالة الدفع' },
         ])
       );
     }
@@ -486,13 +494,13 @@
       return (
         `<div class="ss-card"><h2>إعدادات الشحن</h2></div>` +
         sectionFormHtml('shipping', [
-          { key: 'enableShipping', label: 'Enable Shipping', type: 'toggle' },
-          { key: 'methods', label: 'Shipping Methods' },
-          { key: 'regions', label: 'Shipping Regions' },
-          { key: 'fees', label: 'Shipping Fees' },
-          { key: 'freeShippingMin', label: 'Free Shipping Rules (min USD)', type: 'number' },
-          { key: 'estimatedDelivery', label: 'Estimated Delivery Time' },
-          { key: 'trackingEnabled', label: 'Tracking Settings', type: 'toggle' },
+          { key: 'enableShipping', label: 'تفعيل الشحن', type: 'toggle' },
+          { key: 'methods', label: 'طرق الشحن' },
+          { key: 'regions', label: 'مناطق الشحن' },
+          { key: 'fees', label: 'رسوم الشحن' },
+          { key: 'freeShippingMin', label: 'حد الشحن المجاني (بالدولار)', type: 'number' },
+          { key: 'estimatedDelivery', label: 'وقت التوصيل المتوقع' },
+          { key: 'trackingEnabled', label: 'إعدادات التتبع', type: 'toggle' },
         ])
       );
     }
@@ -500,16 +508,16 @@
       return (
         `<div class="ss-card"><h2>إعدادات الإعلانات</h2><p class="ss-lead">ترتبط بمسار طلبات نشر الإعلانات ← مراجعة ← قبول/رفض ← نشر.</p></div>` +
         sectionFormHtml('ads', [
-          { key: 'enableAdvertisements', label: 'Enable Advertisements', type: 'toggle' },
-          { key: 'requireAdminApproval', label: 'Require Admin Approval', type: 'toggle' },
-          { key: 'allowedTypes', label: 'Allowed Ad Types', desc: 'image,video,text,file' },
-          { key: 'maxImageMb', label: 'Maximum Image Size (MB)', type: 'number' },
-          { key: 'maxVideoMb', label: 'Maximum Video Size (MB)', type: 'number' },
-          { key: 'maxFileMb', label: 'Maximum File Size (MB)', type: 'number' },
-          { key: 'defaultDurationDays', label: 'Default Ad Duration (days)', type: 'number' },
-          { key: 'placements', label: 'Ad Placements' },
-          { key: 'ctaTypes', label: 'CTA Types' },
-          { key: 'autoExpiration', label: 'Auto Expiration', type: 'toggle' },
+          { key: 'enableAdvertisements', label: 'تفعيل الإعلانات', type: 'toggle' },
+          { key: 'requireAdminApproval', label: 'يتطلب موافقة الإدارة', type: 'toggle' },
+          { key: 'allowedTypes', label: 'أنواع الإعلانات المسموحة', desc: 'image,video,text,file' },
+          { key: 'maxImageMb', label: 'الحد الأقصى لحجم الصورة (ميجابايت)', type: 'number' },
+          { key: 'maxVideoMb', label: 'الحد الأقصى لحجم الفيديو (ميجابايت)', type: 'number' },
+          { key: 'maxFileMb', label: 'الحد الأقصى لحجم الملف (ميجابايت)', type: 'number' },
+          { key: 'defaultDurationDays', label: 'مدة الإعلان الافتراضية (أيام)', type: 'number' },
+          { key: 'placements', label: 'مواضع الإعلان' },
+          { key: 'ctaTypes', label: 'أنواع الدعوة للإجراء' },
+          { key: 'autoExpiration', label: 'انتهاء تلقائي', type: 'toggle' },
         ])
       );
     }
@@ -517,14 +525,14 @@
       return (
         `<div class="ss-card"><h2>إعدادات المحتوى</h2><p class="ss-lead">مسار المقالات الحالي.</p></div>` +
         sectionFormHtml('content', [
-          { key: 'enableArticles', label: 'Enable Articles', type: 'toggle' },
-          { key: 'requireArticleApproval', label: 'Require Article Approval', type: 'toggle' },
-          { key: 'categories', label: 'Article Categories' },
-          { key: 'allowedUploadTypes', label: 'Allowed Upload Types' },
-          { key: 'maxImageMb', label: 'Maximum Image Size (MB)', type: 'number' },
-          { key: 'maxAttachmentMb', label: 'Maximum Attachment Size (MB)', type: 'number' },
-          { key: 'publishingWorkflow', label: 'Publishing Workflow' },
-          { key: 'moderationEnabled', label: 'Moderation Settings', type: 'toggle' },
+          { key: 'enableArticles', label: 'تفعيل المقالات', type: 'toggle' },
+          { key: 'requireArticleApproval', label: 'يتطلب موافقة على المقال', type: 'toggle' },
+          { key: 'categories', label: 'تصنيفات المقالات' },
+          { key: 'allowedUploadTypes', label: 'أنواع الملفات المسموحة' },
+          { key: 'maxImageMb', label: 'الحد الأقصى لحجم الصورة (ميجابايت)', type: 'number' },
+          { key: 'maxAttachmentMb', label: 'الحد الأقصى للمرفق (ميجابايت)', type: 'number' },
+          { key: 'publishingWorkflow', label: 'مسار النشر' },
+          { key: 'moderationEnabled', label: 'إعدادات الإشراف', type: 'toggle' },
         ])
       );
     }
@@ -534,29 +542,29 @@
       const t = d.templates || {};
       return `<div class="ss-card"><h2>إعدادات الإشعارات</h2>
         <div class="ss-fields">
-          ${toggleField('inApp', 'In-App Notifications', '', d.inApp !== false)}
-          ${toggleField('email', 'Email Notifications', '', d.email !== false)}
-          ${toggleField('sms', 'SMS Notifications', '', !!d.sms)}
-          ${toggleField('push', 'Push Notifications', '', !!d.push)}
+          ${toggleField('inApp', 'إشعارات داخل التطبيق', '', d.inApp !== false)}
+          ${toggleField('email', 'إشعارات البريد', '', d.email !== false)}
+          ${toggleField('sms', 'إشعارات الرسائل النصية', '', !!d.sms)}
+          ${toggleField('push', 'إشعارات الدفع', '', !!d.push)}
           <h4>Notification Templates</h4>
-          ${textField('templates.newRequest', 'New Request', '', t.newRequest)}
-          ${textField('templates.requestApproved', 'Request Approved', '', t.requestApproved)}
-          ${textField('templates.requestRejected', 'Request Rejected', '', t.requestRejected)}
-          ${textField('templates.articleApproved', 'Article Approved', '', t.articleApproved)}
-          ${textField('templates.adApproved', 'Advertisement Approved', '', t.adApproved)}
-          ${textField('templates.productApproved', 'Product Approved', '', t.productApproved)}
+          ${textField('templates.newRequest', 'طلب جديد', '', t.newRequest)}
+          ${textField('templates.requestApproved', 'تمت الموافقة على الطلب', '', t.requestApproved)}
+          ${textField('templates.requestRejected', 'تم رفض الطلب', '', t.requestRejected)}
+          ${textField('templates.articleApproved', 'تمت الموافقة على المقال', '', t.articleApproved)}
+          ${textField('templates.adApproved', 'تمت الموافقة على الإعلان', '', t.adApproved)}
+          ${textField('templates.productApproved', 'تمت الموافقة على المنتج', '', t.productApproved)}
         </div></div>`;
     }
     if (id === 'integrations') {
       return (
         `<div class="ss-card"><h2>إعدادات التكاملات</h2></div>` +
         sectionFormHtml('integrations', [
-          { key: 'apisEnabled', label: 'APIs', type: 'toggle' },
-          { key: 'webhooksEnabled', label: 'Webhooks', type: 'toggle' },
-          { key: 'externalSystems', label: 'External Systems', type: 'textarea' },
-          { key: 'connectionStatus', label: 'Connection Status' },
-          { key: 'lastSync', label: 'Last Sync' },
-          { key: 'syncIntervalMin', label: 'Sync Settings (minutes)', type: 'number' },
+          { key: 'apisEnabled', label: 'واجهات البرمجة', type: 'toggle' },
+          { key: 'webhooksEnabled', label: 'خطافات الويب', type: 'toggle' },
+          { key: 'externalSystems', label: 'الأنظمة الخارجية', type: 'textarea' },
+          { key: 'connectionStatus', label: 'حالة الاتصال' },
+          { key: 'lastSync', label: 'آخر مزامنة' },
+          { key: 'syncIntervalMin', label: 'فترة المزامنة (دقائق)', type: 'number' },
         ])
       );
     }
@@ -564,28 +572,28 @@
       return (
         `<div class="ss-card"><h2>إعدادات الأمان</h2></div>` +
         sectionFormHtml('security', [
-          { key: 'sessionTimeoutMin', label: 'Session Timeout (min)', type: 'number' },
-          { key: 'passwordMinLength', label: 'Password Policy (min length)', type: 'number' },
-          { key: 'mfaRequired', label: 'MFA', type: 'toggle' },
-          { key: 'maxLoginAttempts', label: 'Login Attempts', type: 'number' },
-          { key: 'lockoutMinutes', label: 'Account Lockout (min)', type: 'number' },
-          { key: 'ipRestrictions', label: 'IP Restrictions', type: 'textarea' },
-          { key: 'auditLogging', label: 'Audit Logging', type: 'toggle' },
+          { key: 'sessionTimeoutMin', label: 'انتهاء الجلسة (دقائق)', type: 'number' },
+          { key: 'passwordMinLength', label: 'سياسة كلمة المرور (الحد الأدنى للطول)', type: 'number' },
+          { key: 'mfaRequired', label: 'المصادقة الثنائية', type: 'toggle' },
+          { key: 'maxLoginAttempts', label: 'محاولات تسجيل الدخول', type: 'number' },
+          { key: 'lockoutMinutes', label: 'قفل الحساب (دقائق)', type: 'number' },
+          { key: 'ipRestrictions', label: 'قيود عناوين IP', type: 'textarea' },
+          { key: 'auditLogging', label: 'تسجيل التدقيق', type: 'toggle' },
         ])
       );
     }
     if (id === 'seo') {
       return (
-        `<div class="ss-card"><h2>إعدادات SEO</h2></div>` +
+        `<div class="ss-card"><h2>تحسين محركات البحث</h2></div>` +
         sectionFormHtml('seo', [
-          { key: 'siteTitle', label: 'Site Title' },
-          { key: 'metaDescription', label: 'Meta Description', type: 'textarea' },
-          { key: 'keywords', label: 'Keywords' },
-          { key: 'openGraphImage', label: 'Open Graph' },
-          { key: 'canonicalBase', label: 'Canonical URLs (base)' },
-          { key: 'indexingEnabled', label: 'Search Engine Indexing', type: 'toggle' },
-          { key: 'sitemapEnabled', label: 'Sitemap', type: 'toggle' },
-          { key: 'robots', label: 'Robots Settings' },
+          { key: 'siteTitle', label: 'عنوان الموقع' },
+          { key: 'metaDescription', label: 'الوصف التعريفي', type: 'textarea' },
+          { key: 'keywords', label: 'الكلمات المفتاحية' },
+          { key: 'openGraphImage', label: 'صورة المشاركة' },
+          { key: 'canonicalBase', label: 'الرابط الأساسي المعتمد' },
+          { key: 'indexingEnabled', label: 'فهرسة محركات البحث', type: 'toggle' },
+          { key: 'sitemapEnabled', label: 'خريطة الموقع', type: 'toggle' },
+          { key: 'robots', label: 'إعدادات Robots' },
         ])
       );
     }
@@ -594,11 +602,11 @@
       const g = ui.draft.google || {};
       return `<div class="ss-card">
         <h2>إعدادات محركات البحث</h2>
-        <p class="ss-lead">Google Search عبر Programmable Search Engine — ضع Search Engine ID (cx) هنا فقط، لا تكرّره في ملفات أخرى.</p>
+        <p class="ss-lead">بحث Google عبر محرك البحث القابل للبرمجة — ضع معرّف محرك البحث (cx) هنا فقط، ولا تكرّره في ملفات أخرى.</p>
         <h3 style="margin:14px 0 8px">Google Search</h3>
         <div class="ss-fields">
           ${toggleField('google.enabled', 'الحالة: فعال', 'عند التعطيل يختفي كارت Google من الرئيسية', g.enabled !== false)}
-          <label class="ss-field"><span>Search Engine ID (cx)<small>من Google Programmable Search</small></span>
+          <label class="ss-field"><span>معرّف محرك البحث (cx)<small>من Google Programmable Search</small></span>
             <input data-draft="google.cx" value="${esc(g.cx || '')}" placeholder="a1b2c3d4e5f6g7h8i" dir="ltr" />
           </label>
           <label class="ss-field"><span>عنوان الكارت</span>
@@ -622,16 +630,16 @@
       ensureDraft('permissions');
       const d = ui.draft;
       const keys = [
-        ['viewSiteSettings', 'View Site Settings'],
-        ['manageSiteSettings', 'Manage Site Settings'],
-        ['manageStores', 'Manage Stores'],
-        ['createStore', 'Create Store'],
-        ['editStore', 'Edit Store'],
-        ['disableStore', 'Disable Store'],
-        ['archiveStore', 'Archive Store'],
-        ['managePaymentSettings', 'Manage Payment Settings'],
-        ['manageSecuritySettings', 'Manage Security Settings'],
-        ['manageIntegrations', 'Manage Integrations'],
+        ['viewSiteSettings', 'عرض إعدادات الموقع'],
+        ['manageSiteSettings', 'إدارة إعدادات الموقع'],
+        ['manageStores', 'إدارة المتاجر'],
+        ['createStore', 'إنشاء متجر'],
+        ['editStore', 'تعديل متجر'],
+        ['disableStore', 'إيقاف متجر'],
+        ['archiveStore', 'أرشفة متجر'],
+        ['managePaymentSettings', 'إدارة إعدادات الدفع'],
+        ['manageSecuritySettings', 'إدارة إعدادات الأمان'],
+        ['manageIntegrations', 'إدارة التكاملات'],
       ];
       return `<div class="ss-card"><h2>الصلاحيات</h2><p class="ss-lead">تحكم في من يستطيع تعديل الإعدادات الحساسة.</p>
         <div class="ss-fields">${keys.map(([k, l]) => toggleField(k, l, '', d[k] !== false)).join('')}</div></div>`;
@@ -662,14 +670,14 @@
           <h3>عرض المتجر</h3>
           <ul class="ss-dl">
             <li><b>الاسم:</b> ${esc(storeName(s))}</li>
-            <li><b>Store ID:</b> <code>${esc(s.storeId)}</code></li>
-            <li><b>Logo:</b> ${s.logo ? `<img class="ss-logo" src="${esc(s.logo)}" alt="">` : '—'}</li>
-            <li><b>URL:</b> ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(url)}</a>` : '—'}</li>
-            <li><b>Status:</b> ${esc(statusLabel(s.status))}</li>
-            <li><b>Products:</b> ${reg()?.productCount?.(s.storeId) || 0}</li>
-            <li><b>Created By:</b> ${esc(s.createdBy || '—')}</li>
+            <li><b>رقم المتجر:</b> <code>${esc(s.storeId)}</code></li>
+            <li><b>الشعار:</b> ${s.logo ? `<img class="ss-logo" src="${esc(s.logo)}" alt="">` : '—'}</li>
+            <li><b>الرابط:</b> ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(url)}</a>` : '—'}</li>
+            <li><b>الحالة:</b> ${esc(statusLabel(s.status))}</li>
+            <li><b>المنتجات:</b> ${reg()?.productCount?.(s.storeId) || 0}</li>
+            <li><b>أنشئ بواسطة:</b> ${esc(s.createdBy || '—')}</li>
             <li><b>Created At:</b> ${fmt(s.createdAt)}</li>
-            <li><b>Last Updated:</b> ${fmt(s.updatedAt || s.createdAt)}</li>
+            <li><b>آخر تحديث:</b> ${fmt(s.updatedAt || s.createdAt)}</li>
           </ul>
           <div class="ss-modal-actions">
             ${url ? `<a class="btn btn-dark" href="${esc(url)}" target="_blank" rel="noopener noreferrer">فتح الموقع</a>` : ''}
@@ -694,11 +702,11 @@
             <label class="ss-field"><span>الحالة</span>
               <select id="ss-edit-status">
                 <option value="active" ${(s.status || 'active') === 'active' ? 'selected' : ''}>Active</option>
-                <option value="disabled" ${s.status === 'disabled' ? 'selected' : ''}>Disabled</option>
+                <option value="disabled" ${s.status === 'disabled' ? 'selected' : ''}>معطّل</option>
               </select>
             </label>
-            <label class="ss-field"><span>Default Currency</span><input value="USD" readonly /></label>
-            <label class="ss-field"><span>Require Product URL</span>
+            <label class="ss-field"><span>العملة الافتراضية</span><input value="USD" readonly /></label>
+            <label class="ss-field"><span>يتطلب رابط المنتج</span>
               <select id="ss-edit-requrl">
                 <option value="on" ${s.requiresProductUrl !== false ? 'selected' : ''}>On</option>
                 <option value="off" ${s.requiresProductUrl === false ? 'selected' : ''}>Off</option>
@@ -763,10 +771,10 @@
     } else if (step === 3) {
       body = `<div class="ss-fields">
         <label class="ss-field"><span>Status</span>
-          <select id="ss-w-status"><option value="active">Active</option><option value="disabled">Disabled</option></select>
+          <select id="ss-w-status"><option value="active">Active</option><option value="disabled">معطّل</option></select>
         </label>
-        <label class="ss-field"><span>Default Currency</span><input value="USD" readonly /></label>
-        <label class="ss-field"><span>Require Product URL</span>
+        <label class="ss-field"><span>العملة الافتراضية</span><input value="USD" readonly /></label>
+        <label class="ss-field"><span>يتطلب رابط المنتج</span>
           <select id="ss-w-requrl"><option value="on">On</option><option value="off">Off</option></select>
         </label>
         <label class="ss-field"><span>Open External Store In New Tab</span>
@@ -778,11 +786,11 @@
       </div>`;
     } else {
       body = `<ul class="ss-dl">
-        <li><b>Logo:</b> ${w.logo ? `<img class="ss-logo" src="${esc(w.logo)}" alt="">` : '—'}</li>
+        <li><b>الشعار:</b> ${w.logo ? `<img class="ss-logo" src="${esc(w.logo)}" alt="">` : '—'}</li>
         <li><b>Store Name:</b> ${esc(w.name || '—')}</li>
-        <li><b>Store ID:</b> STORE-${esc((w.storeCode || '').toUpperCase())}</li>
-        <li><b>URL:</b> ${esc(w.websiteUrl || '—')}</li>
-        <li><b>Status:</b> ${esc(w.status || 'active')}</li>
+        <li><b>رقم المتجر:</b> STORE-${esc((w.storeCode || '').toUpperCase())}</li>
+        <li><b>الرابط:</b> ${esc(w.websiteUrl || '—')}</li>
+        <li><b>الحالة:</b> ${esc(w.status || 'active')}</li>
         <li><b>Currency:</b> USD</li>
         <li><b>Product URL:</b> ${w.requiresProductUrl === false ? 'Off' : 'On'}</li>
       </ul>`;
@@ -1142,7 +1150,7 @@
       const w = ui.wizard;
       if (ui.wizardStep === 0) {
         if (!w.name) return alert('اسم المتجر مطلوب');
-        if (!w.storeCode) return alert('Store Code مطلوب');
+        if (!w.storeCode) return alert('رمز المتجر مطلوب');
       }
       if (ui.wizardStep === 1) {
         if (!w.websiteUrl || !/^https?:\/\//i.test(w.websiteUrl)) return alert('رابط غير صالح');

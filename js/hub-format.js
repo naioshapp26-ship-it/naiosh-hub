@@ -42,17 +42,28 @@
     const mm = pad2(d.getMonth() + 1);
     const yyyy = String(d.getFullYear());
     if (opts.style === 'iso') return `${yyyy}-${mm}-${dd}`;
-    return `${dd}/${mm}/${yyyy}`;
+    // سياسة المنصة: YYYY/MM/DD بأرقام لاتينية
+    return `${yyyy}/${mm}/${dd}`;
   };
 
   const formatTime = (input, opts = {}) => {
     if (!input) return '—';
     const d = input instanceof Date ? input : new Date(input);
     if (Number.isNaN(d.getTime())) return toLatinDigits(input);
-    const hh = pad2(d.getHours());
+    if (opts.hour12 === false) {
+      const hh = pad2(d.getHours());
+      const mi = pad2(d.getMinutes());
+      if (opts.withSeconds) return `${hh}:${mi}:${pad2(d.getSeconds())}`;
+      return `${hh}:${mi}`;
+    }
+    let h = d.getHours();
     const mi = pad2(d.getMinutes());
-    if (opts.withSeconds) return `${hh}:${mi}:${pad2(d.getSeconds())}`;
-    return `${hh}:${mi}`;
+    const isPm = h >= 12;
+    h = h % 12 || 12;
+    const hh = pad2(h);
+    const period = isPm ? 'م' : 'ص';
+    if (opts.withSeconds) return `${hh}:${mi}:${pad2(d.getSeconds())} ${period}`;
+    return `${hh}:${mi} ${period}`;
   };
 
   const formatDateTime = (input) => {

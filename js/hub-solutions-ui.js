@@ -524,7 +524,7 @@
     return `
       <div class="so-panel-head"><h2>سجل العمليات</h2><button type="button" class="btn btn-ghost" data-so="view-catalog">رجوع</button></div>
       <div class="so-table-wrap"><table class="so-table">
-        <thead><tr><th>Transaction ID</th><th>Request ID</th><th>Customer</th><th>Solution</th><th>Action</th><th>By</th><th>Date</th><th>Status</th></tr></thead>
+        <thead><tr><th>رقم العملية</th><th>رقم الطلب</th><th>العميل</th><th>الحل</th><th>الإجراء</th><th>بواسطة</th><th>التاريخ</th><th>الحالة</th></tr></thead>
         <tbody>${rows
           .map(
             (a) => `<tr>

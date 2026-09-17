@@ -534,7 +534,7 @@
           <div class="gov-form-grid">
             ${field('المصدر', '', sourceLabel(p.source), { readonly: true })}
             ${field('طريقة الإضافة', '', p.creationMethod, { readonly: true })}
-            ${field('Created By', '', p.createdBy, { readonly: true })}
+            ${field('أنشئ بواسطة', '', p.createdBy, { readonly: true })}
             ${field('Created At', '', fmtTime(p.createdAt), { readonly: true })}
             ${field('Last Synced', '', fmtTime(p.lastSynced), { readonly: true })}
             ${field('Last Modified By', '', p.lastModifiedBy, { readonly: true })}

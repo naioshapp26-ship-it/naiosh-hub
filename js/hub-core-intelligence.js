@@ -224,7 +224,7 @@
     return `<div class="table-wrap"><table class="data hub-ci-table">
       <thead><tr>
         <th>Decision ID</th><th>عنوان القرار</th><th>النوع</th><th>المصدر</th><th>المحرك</th>
-        <th>الأثر</th><th>الثقة</th><th>Created By</th><th>Approved By</th><th>Status</th><th>Created At</th><th>Actions</th>
+        <th>الأثر</th><th>الثقة</th><th>أنشئ بواسطة</th><th>اعتمد بواسطة</th><th>الحالة</th><th>تاريخ الإنشاء</th><th>الإجراءات</th>
       </tr></thead>
       <tbody>${rows
         .map(
@@ -279,14 +279,14 @@
             <li><b>Source Modules:</b> ${K.esc((d.sourceModules || []).join(' + ') || '—')}</li>
             <li><b>Data Used:</b> ${K.esc(d.dataUsed || '—')}</li>
             <li><b>Model / Rule:</b> ${K.esc(d.model || '—')}</li>
-            <li><b>Last Updated:</b> ${K.fmtTime(d.updatedAt)}</li>
+            <li><b>آخر تحديث:</b> ${K.fmtTime(d.updatedAt)}</li>
             <li><b>Owner / Reviewer / Approver:</b> ${K.esc(d.owner || '—')} · ${K.esc(d.reviewer || '—')} · ${K.esc(d.approver || d.approvedBy || '—')}</li>
           </ul>
         </article>`;
     } else if (tab === 'data') {
       body = `<h4>البيانات الداعمة</h4>
         <div class="table-wrap"><table class="data">
-          <thead><tr><th>Data Source</th><th>Metric</th><th>Value</th><th>Period</th><th>Last Updated</th></tr></thead>
+          <thead><tr><th>مصدر البيانات</th><th>المؤشر</th><th>القيمة</th><th>الفترة</th><th>آخر تحديث</th></tr></thead>
           <tbody>${
             (d.evidence || [])
               .map(

@@ -583,7 +583,7 @@
 
   const renderAuditRows = (rows) =>
     `<div class="table-wrap"><table class="data">
-      <thead><tr><th>Transaction ID</th><th>المستخدم</th><th>العملية</th><th>الحقل</th><th>السابق</th><th>الجديد</th><th>التاريخ</th></tr></thead>
+      <thead><tr><th>رقم العملية</th><th>المستخدم</th><th>العملية</th><th>الحقل</th><th>السابق</th><th>الجديد</th><th>التاريخ</th></tr></thead>
       <tbody>${
         (rows || []).length
           ? rows
@@ -607,7 +607,7 @@
     `<div class="card sm-source" style="margin-top:12px">
       <h4>مصدر النظام</h4>
       <div class="sm-form-grid">
-        <div class="sm-readonly"><span class="muted">Created By</span><strong>${esc(sys.createdBy || '—')}</strong></div>
+        <div class="sm-readonly"><span class="muted">أنشئ بواسطة</span><strong>${esc(sys.createdBy || '—')}</strong></div>
         <div class="sm-readonly"><span class="muted">Created At</span><strong>${fmtTime(sys.createdAt)}</strong></div>
         <div class="sm-readonly"><span class="muted">Creation Method</span><strong>${esc(sourceLabel(sys.creationMethod || sys.source))}</strong></div>
         <div class="sm-readonly"><span class="muted">Imported From</span><strong>${esc(sys.importedFrom || '—')}</strong></div>
@@ -686,7 +686,7 @@
         <div class="sm-form-grid">
           ${field('System ID', '', ui.systemId, { readonly: true })}
           ${field('Created At', '', fmtTime(sysById(m, ui.systemId)?.createdAt), { readonly: true })}
-          ${field('Created By', '', sysById(m, ui.systemId)?.createdBy, { readonly: true })}
+          ${field('أنشئ بواسطة', '', sysById(m, ui.systemId)?.createdBy, { readonly: true })}
         </div>
       </div>`;
   };
