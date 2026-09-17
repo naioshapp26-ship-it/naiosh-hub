@@ -19,6 +19,7 @@
     pageSize: 20,
     openMenu: null,
     selectedUser: null,
+    drawerMode: 'overview', // overview | perms
     wizard: null,
     confirm: null,
     success: null,
@@ -299,12 +300,18 @@
     return grants[0] || null;
   };
 
+  const empNoOf = (u) => u?.employeeNo || '—';
+
+  const matchIdentityQ = (u, q) => {
+    const needle = String(q || '').trim().toLowerCase();
+    if (!needle) return true;
+    return [u.name, u.email, u.naioshId, u.employeeNo].some((x) => String(x || '').toLowerCase().includes(needle));
+  };
+
   const teamRows = () => {
     let people = (store().identities || []).filter((u) => u.status !== 'archived');
     const q = String(ui.q || '').trim().toLowerCase();
-    if (q) {
-      people = people.filter((u) => [u.name, u.email, u.naioshId].some((x) => String(x || '').toLowerCase().includes(q)));
-    }
+    if (q) people = people.filter((u) => matchIdentityQ(u, q));
     if (ui.filters.status) people = people.filter((u) => u.status === ui.filters.status);
     if (ui.filters.system || ui.filters.role) {
       people = people.filter((u) => {
@@ -378,10 +385,10 @@
     return `<div class="hto-actions">
       <button type="button" class="hto-btn hto-btn-sm" data-action="hto-view" data-id="${esc(u.naioshId)}">عرض</button>
       <button type="button" class="hto-btn hto-btn-sm" data-action="hto-edit-grant" data-id="${esc(u.naioshId)}" data-gid="${esc(g?.grantId || '')}">تعديل</button>
+      <button type="button" class="hto-btn hto-btn-sm" data-action="hto-perms" data-id="${esc(u.naioshId)}">الصلاحيات</button>
       <div class="hto-more ${open ? 'is-open' : ''}">
         <button type="button" class="hto-btn hto-btn-sm" data-action="hto-menu" data-id="${esc(u.naioshId)}" title="المزيد" aria-label="المزيد">⋮</button>
         <div class="hto-more-menu">
-          <button type="button" data-action="hto-view" data-id="${esc(u.naioshId)}">الصلاحيات</button>
           <button type="button" data-action="hto-edit-grant" data-id="${esc(u.naioshId)}" data-gid="${esc(g?.grantId || '')}">تغيير التعيين</button>
           ${
             u.status === 'suspended'
@@ -393,6 +400,7 @@
               ? `<button type="button" data-action="hto-confirm" data-kind="revoke" data-id="${esc(g.grantId)}" data-user="${esc(u.name)}">إلغاء التعيين</button>`
               : `<button type="button" data-action="hto-wizard-open" data-user="${esc(u.naioshId)}">تعيين</button>`
           }
+          <button type="button" data-action="hto-copy-emp" data-emp="${esc(u.employeeNo || '')}">نسخ رقم الموظف</button>
         </div>
       </div>
     </div>`;
@@ -415,7 +423,7 @@
           <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open">+ تعيين موظف</button>
         </div>
         <div class="hto-toolbar">
-          <input type="search" id="hto-q" value="${esc(ui.q)}" placeholder="ابحث بالاسم أو رقم نايوش أو البريد" />
+          <input type="search" id="hto-q" value="${esc(ui.q)}" placeholder="ابحث بالاسم أو رقم الموظف أو رقم نايوش أو البريد" />
           <select id="hto-f-sys"><option value="">النظام: الكل</option>${sysOpts.map((s) => `<option value="${esc(s.code)}" ${ui.filters.system === s.code ? 'selected' : ''}>${esc(s.nameAr)}</option>`).join('')}</select>
           <select id="hto-f-role"><option value="">الدور: الكل</option>${OPS_ROLES.map((r) => `<option value="${esc(r.code)}" ${ui.filters.role === r.code ? 'selected' : ''}>${esc(r.nameAr)}</option>`).join('')}</select>
           <select id="hto-f-status">
@@ -428,9 +436,9 @@
         </div>
         ${
           pageRows.length
-            ? `<div class="hto-table-wrap"><table class="hto-table">
+            ? `<div class="hto-table-wrap"><table class="hto-table hto-table-team">
                 <thead><tr>
-                  <th>الموظف</th><th>رقم نايوش</th><th>مكان العمل</th><th>الدور</th><th>الصلاحيات</th><th>الحالة</th><th>آخر تعديل</th><th>الإجراءات</th>
+                  <th>الموظف</th><th>رقم الموظف</th><th>رقم نايوش</th><th>مكان العمل</th><th>الدور</th><th>الصلاحيات</th><th>الحالة</th><th>آخر تعديل</th><th>الإجراءات</th>
                 </tr></thead>
                 <tbody>${pageRows
                   .map((u) => {
@@ -443,6 +451,7 @@
                           <span><strong>${esc(u.name)}</strong><small>${esc(u.email || '')}</small></span>
                         </button>
                       </td>
+                      <td data-label="رقم الموظف" class="hto-nowrap"><code class="hto-emp">${esc(empNoOf(u))}</code></td>
                       <td data-label="رقم نايوش" class="hto-nowrap"><code>${esc(u.naioshId)}</code></td>
                       <td data-label="مكان العمل">${esc(g ? labelSys(g.system) : '—')}</td>
                       <td data-label="الدور"><span class="hto-chip">${esc(g ? labelRole(g.roleCode) : 'بدون تعيين')}</span></td>
@@ -516,11 +525,16 @@
         <p>سجل رقابي لكل عمليات التعيين والمنح والسحب والإيقاف. لا يمكن تعديله أو حذفه من هذه الشاشة.</p>
       </div></div>
       <div class="hto-table-wrap"><table class="hto-table">
-        <thead><tr><th>التاريخ</th><th>الموظف</th><th>العملية</th><th>النظام</th><th>الصلاحية / الدور</th><th>تم بواسطة</th><th>التفاصيل</th></tr></thead>
+        <thead><tr><th>التاريخ</th><th>رقم الموظف</th><th>الموظف</th><th>العملية</th><th>النظام</th><th>الصلاحية / الدور</th><th>تم بواسطة</th><th>التفاصيل</th></tr></thead>
         <tbody>${
           rows.length
             ? rows
                 .map((a) => {
+                  const id = (store().identities || []).find(
+                    (i) => i.naioshId === a.targetUser || i.employeeNo === a.employeeNo || i.id === a.identityId
+                  );
+                  const emp = a.employeeNo || id?.employeeNo || '—';
+                  const name = a.targetName || id?.name || a.targetUser || '—';
                   const permText = a.permission
                     ? String(a.permission)
                         .split(',')
@@ -533,7 +547,8 @@
                       : '—';
                   return `<tr>
                     <td data-label="التاريخ" class="hto-nowrap">${fmt(a.timestamp)}</td>
-                    <td data-label="الموظف">${esc(a.targetUser || '—')}</td>
+                    <td data-label="رقم الموظف" class="hto-nowrap"><code class="hto-emp">${esc(emp)}</code></td>
+                    <td data-label="الموظف">${esc(name)}</td>
                     <td data-label="العملية">${esc(actionAr[a.action] || a.action)}</td>
                     <td data-label="النظام">${esc(a.system ? labelSys(a.system) : '—')}</td>
                     <td data-label="الصلاحية" class="hto-ellipsis" title="${esc(permText)}">${esc(permText)}</td>
@@ -542,7 +557,7 @@
                   </tr>`;
                 })
                 .join('')
-            : `<tr><td colspan="7" class="hto-empty">لا أحداث مسجّلة بعد.</td></tr>`
+            : `<tr><td colspan="8" class="hto-empty">لا أحداث مسجّلة بعد.</td></tr>`
         }</tbody>
       </table></div>
     </section>`;
@@ -554,35 +569,81 @@
     const identity = detail?.identity;
     if (!identity) return '';
     const grants = (store().grants || []).filter((g) => g.identityId === identity.id);
+    const g = primaryGrant(identity) || grants[0];
+    const pool = g ? poolFor(g.system, g.roleCode) : [];
+    const granted = new Set(g?.permissions || []);
+    const permRows = numberPerms(pool.length ? pool : [...granted]);
+
+    if (ui.drawerMode === 'perms') {
+      return `
+      <div class="hto-drawer-backdrop" data-action="hto-drawer-close"></div>
+      <aside class="hto-drawer" role="dialog" aria-label="صلاحيات الموظف">
+        <header class="hto-drawer-head">
+          <div>
+            <h3>صلاحيات ${esc(identity.name)}</h3>
+            <p class="hto-muted">رقم الموظف: <code class="hto-emp">${esc(empNoOf(identity))}</code> · رقم نايوش: ${esc(identity.naioshId)}</p>
+          </div>
+          <button type="button" class="hto-btn" data-action="hto-drawer-close">إغلاق</button>
+        </header>
+        <div class="hto-drawer-body">
+          <p><strong>مكان العمل:</strong> ${esc(g ? labelSys(g.system) : '—')}</p>
+          <p><strong>الدور:</strong> ${esc(g ? labelRole(g.roleCode) : '—')}</p>
+          <div class="hto-table-wrap"><table class="hto-table">
+            <thead><tr><th>رقم الصلاحية</th><th>الصلاحية</th><th>الحالة</th></tr></thead>
+            <tbody>${
+              permRows.length
+                ? permRows
+                    .map(
+                      (p) => `<tr>
+                      <td><code>${esc(p.num)}</code></td>
+                      <td>${esc(p.label)}</td>
+                      <td>${granted.has(p.code) ? badge('ممنوحة', 'is-ok') : badge('غير ممنوحة', 'is-muted')}</td>
+                    </tr>`
+                    )
+                    .join('')
+                : `<tr><td colspan="3" class="hto-empty">لا صلاحيات مرتبطة بهذا التعيين</td></tr>`
+            }</tbody>
+          </table></div>
+        </div>
+        <div class="hto-drawer-actions">
+          <button type="button" class="hto-btn hto-btn-primary" data-action="hto-edit-grant" data-id="${esc(identity.naioshId)}" data-gid="${esc(g?.grantId || '')}">تعديل الصلاحيات</button>
+          <button type="button" class="hto-btn" data-action="hto-view" data-id="${esc(identity.naioshId)}">العودة للتعيينات</button>
+        </div>
+      </aside>`;
+    }
+
     return `
       <div class="hto-drawer-backdrop" data-action="hto-drawer-close"></div>
       <aside class="hto-drawer" role="dialog" aria-label="بيانات الموظف">
         <header class="hto-drawer-head">
           <div>
             <h3>بيانات الموظف وصلاحياته</h3>
-            <p class="hto-muted">${esc(identity.name)} · ${esc(identity.naioshId)}</p>
+            <p class="hto-muted">${esc(identity.name)}</p>
           </div>
           <button type="button" class="hto-btn" data-action="hto-drawer-close">إغلاق</button>
         </header>
         <div class="hto-drawer-body">
+          <p><strong>رقم الموظف:</strong> <code class="hto-emp">${esc(empNoOf(identity))}</code>
+            ${identity.employeeNo ? `<button type="button" class="hto-btn hto-btn-sm" data-action="hto-copy-emp" data-emp="${esc(identity.employeeNo)}">نسخ</button>` : ''}</p>
+          <p><strong>رقم نايوش:</strong> ${esc(identity.naioshId)}</p>
           <p><strong>البريد:</strong> ${esc(identity.email || '—')}</p>
           <p><strong>الحالة:</strong> ${statusBadge(identity.status)}</p>
           <h4>تعيينات الموظف</h4>
           ${
             grants.length
               ? grants
-                  .map((g) => {
-                    const nums = numberPerms(g.permissions || []);
+                  .map((row) => {
+                    const nums = numberPerms(row.permissions || []);
                     return `<article class="hto-card">
-                      <strong>${esc(labelSys(g.system))}</strong>
-                      <p>الدور: ${esc(labelRole(g.roleCode))} · ${statusBadge(g.status)}</p>
-                      <p>${(g.permissions || []).length} صلاحيات</p>
-                      <ul class="hto-perm-list">${nums.map((p) => `<li>✓ ${esc(p.num)} — ${esc(p.label)}</li>`).join('')}</ul>
+                      <strong>${esc(labelSys(row.system))}</strong>
+                      <p>الدور: ${esc(labelRole(row.roleCode))} · ${statusBadge(row.status)}</p>
+                      <p>${(row.permissions || []).length} صلاحيات: ${nums.map((p) => p.num).join('، ') || '—'}</p>
                       <div class="hto-actions" style="margin-top:8px">
-                        <button type="button" class="hto-btn hto-btn-sm" data-action="hto-edit-grant" data-id="${esc(identity.naioshId)}" data-gid="${esc(g.grantId)}">تعديل</button>
+                        <button type="button" class="hto-btn hto-btn-sm" data-action="hto-perms" data-id="${esc(identity.naioshId)}" data-gid="${esc(row.grantId)}">عرض الصلاحيات</button>
+                        <button type="button" class="hto-btn hto-btn-sm" data-action="hto-edit-grant" data-id="${esc(identity.naioshId)}" data-gid="${esc(row.grantId)}">تعديل</button>
                         ${
-                          String(g.status).toUpperCase() === 'ACTIVE'
-                            ? `<button type="button" class="hto-btn hto-btn-sm" data-action="hto-confirm" data-kind="revoke" data-id="${esc(g.grantId)}" data-user="${esc(identity.name)}">إلغاء التعيين</button>`
+                          String(row.status).toUpperCase() === 'ACTIVE'
+                            ? `<button type="button" class="hto-btn hto-btn-sm" data-action="hto-confirm" data-kind="revoke" data-id="${esc(row.grantId)}" data-user="${esc(identity.name)}">إلغاء التعيين</button>`
                             : ''
                         }
                       </div>
@@ -593,6 +654,7 @@
           }
         </div>
         <div class="hto-drawer-actions">
+          <button type="button" class="hto-btn" data-action="hto-perms" data-id="${esc(identity.naioshId)}">الصلاحيات</button>
           <button type="button" class="hto-btn" data-action="hto-edit-grant" data-id="${esc(identity.naioshId)}" data-gid="${esc(primaryGrant(identity)?.grantId || '')}">تعديل</button>
           ${
             identity.status === 'suspended'
@@ -643,10 +705,10 @@
   const renderWizard = () => {
     if (!ui.wizard) return '';
     const w = ui.wizard;
-    const steps = ['اختيار الموظف', 'مكان العمل', 'الدور', 'الصلاحيات', 'المراجعة'];
+    const steps = ['تحديد الموظف', 'مكان العمل', 'الدور', 'الصلاحيات', 'المراجعة'];
     const users = store().identities || [];
     const filtered = w.userQ
-      ? users.filter((u) => [u.name, u.email, u.naioshId].some((x) => String(x || '').toLowerCase().includes(String(w.userQ).toLowerCase())))
+      ? users.filter((u) => matchIdentityQ(u, w.userQ))
       : users.filter((u) => u.status !== 'archived');
     const finalCodes = w.permissions?.length ? w.permissions : [];
     const list = numberPerms(finalCodes);
@@ -659,18 +721,34 @@
         <div class="hto-wizard-body">
           ${
             w.step === 1
-              ? `<h4>اختر الموظف</h4>
-                 <p class="hto-lead">ابحث عن الشخص الذي تريد منحه صلاحية للعمل داخل نايوش.</p>
-                 <input id="hto-w-q" value="${esc(w.userQ || '')}" placeholder="ابحث بالاسم أو رقم نايوش أو البريد الإلكتروني" />
+              ? `<h4>تحديد الموظف</h4>
+                 <p class="hto-lead">ابحث برقم الموظف أو الاسم أو رقم نايوش. إذا كان الحساب موجودًا دون رقم موظف، يُنشأ رقم الموظف تلقائيًا عند أول تعيين.</p>
+                 <label class="hto-field-label">رقم الموظف</label>
+                 <input id="hto-w-emp" value="${esc(w.empQ || '')}" placeholder="مثال: EMP-0003" />
+                 <div class="hto-actions">
+                   <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-find-emp">بحث برقم الموظف</button>
+                 </div>
+                 <label class="hto-field-label">أو ابحث عن شخص موجود</label>
+                 <input id="hto-w-q" value="${esc(w.userQ || '')}" placeholder="ابحث بالاسم / رقم نايوش / رقم الموظف" />
                  <div class="hto-actions">
                    <button type="button" class="hto-btn" data-action="hto-wizard-search">بحث</button>
                    <button type="button" class="hto-btn" data-action="hto-add-user">+ إضافة مستخدم جديد</button>
                  </div>
+                 ${
+                   u
+                     ? `<div class="hto-summary">
+                          <p><strong>المحدد:</strong> ${esc(u.name)}</p>
+                          <p><strong>رقم الموظف:</strong> <code class="hto-emp">${esc(empNoOf(u))}</code></p>
+                          <p><strong>رقم نايوش:</strong> ${esc(u.naioshId)}</p>
+                          <p><strong>البريد:</strong> ${esc(u.email || '—')}</p>
+                        </div>`
+                     : ''
+                 }
                  <div class="hto-pick-list">${
                    filtered.slice(0, 50).map(
                      (row) => `<button type="button" class="hto-pick ${w.naioshId === row.naioshId ? 'is-on' : ''}" data-action="hto-wizard-pick-user" data-id="${esc(row.naioshId)}">
                        <span class="hto-avatar">${esc((row.name || '?').slice(0, 1))}</span>
-                       <span><strong>${esc(row.name)}</strong><small>${esc(row.naioshId)} · ${esc(row.email || '')}</small></span>
+                       <span><strong>${esc(row.name)}</strong><small>${esc(empNoOf(row))} · ${esc(row.naioshId)} · ${esc(row.email || '')}</small></span>
                        <em>${row.status === 'active' ? 'نشط' : row.status === 'suspended' ? 'موقوف' : esc(row.status || '')}</em>
                      </button>`
                    ).join('') || '<p class="hto-empty">لا مستخدمين مطابقين</p>'
@@ -714,6 +792,7 @@
               ? `<h4>راجع التعيين قبل التأكيد</h4>
                     <div class="hto-summary">
                       <p><strong>الموظف:</strong> ${esc(u?.name || w.naioshId)}</p>
+                      <p><strong>رقم الموظف:</strong> <code class="hto-emp">${esc(empNoOf(u))}</code></p>
                       <p><strong>رقم نايوش:</strong> ${esc(w.naioshId)}</p>
                       <p><strong>مكان العمل:</strong> ${esc(labelSys(w.system))}</p>
                       <p><strong>الدور:</strong> ${esc(labelRole(w.roleCode))}</p>
@@ -727,7 +806,7 @@
         <footer>
           ${w.step > 1 ? `<button type="button" class="hto-btn" data-action="hto-wizard-prev">رجوع للتعديل</button>` : '<span></span>'}
           ${w.step < 5 ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-next">التالي</button>` : ''}
-          ${w.step === 5 ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-submit">تأكيد التعيين</button>` : ''}
+          ${w.step === 5 ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-submit">${w.editGrantId ? 'حفظ الصلاحيات' : 'تأكيد التعيين'}</button>` : ''}
         </footer>
       </div>
     </div>`;
@@ -842,7 +921,8 @@
           actor
         );
         const name = engine().findIdentity(w.naioshId)?.name || w.naioshId;
-        ui.success = { message: `تم تحديث صلاحيات ${name} بنجاح.`, userId: w.naioshId };
+        const emp = engine().findIdentity(w.naioshId)?.employeeNo;
+        ui.success = { message: `تم تحديث صلاحيات ${name}${emp ? ` (${emp})` : ''} بنجاح.`, userId: w.naioshId };
         toast?.('تم تحديث الصلاحيات بنجاح.');
       } else {
         engine().createGrant(
@@ -858,11 +938,15 @@
           },
           actor
         );
-        const name = engine().findIdentity(w.naioshId)?.name || w.naioshId;
-        ui.success = { message: `تم تعيين ${name} بنجاح.`, userId: w.naioshId };
+        const id = engine().findIdentity(w.naioshId);
+        ui.success = {
+          message: `تم تعيين ${id?.name || w.naioshId} بنجاح.${id?.employeeNo ? ` رقم الموظف: ${id.employeeNo}` : ''}`,
+          userId: w.naioshId,
+        };
         toast?.('تم تعيين الموظف بنجاح.');
       }
       ui.selectedUser = w.naioshId;
+      ui.drawerMode = 'overview';
       ui.wizard = null;
       ui.tab = 'team';
     } catch (e) {
@@ -911,12 +995,35 @@
     }
     if (action === 'hto-view') {
       ui.selectedUser = btn.dataset.id;
+      ui.drawerMode = 'overview';
       ui.success = null;
       ui.tab = 'team';
       return true;
     }
+    if (action === 'hto-perms') {
+      ui.selectedUser = btn.dataset.id;
+      ui.drawerMode = 'perms';
+      ui.success = null;
+      ui.tab = 'team';
+      return true;
+    }
+    if (action === 'hto-copy-emp') {
+      const emp = btn.dataset.emp || '';
+      if (!emp) {
+        toast?.('لا يوجد رقم موظف بعد');
+        return true;
+      }
+      try {
+        navigator.clipboard?.writeText?.(emp);
+        toast?.(`تم نسخ رقم الموظف ${emp}`);
+      } catch (_) {
+        toast?.(emp);
+      }
+      return true;
+    }
     if (action === 'hto-drawer-close') {
       ui.selectedUser = null;
+      ui.drawerMode = 'overview';
       return true;
     }
     if (action === 'hto-role-view') {
@@ -930,6 +1037,7 @@
         step: 1,
         naioshId: btn.dataset.user || '',
         userQ: '',
+        empQ: '',
         system: 'CRM',
         roleCode: 'SYSTEM_MANAGER',
         permissions: [],
@@ -943,6 +1051,24 @@
     }
     if (action === 'hto-wizard-search') {
       ui.wizard.userQ = document.getElementById('hto-w-q')?.value || '';
+      ui.wizard.empQ = document.getElementById('hto-w-emp')?.value || ui.wizard.empQ || '';
+      return true;
+    }
+    if (action === 'hto-wizard-find-emp') {
+      const empQ = String(document.getElementById('hto-w-emp')?.value || '').trim();
+      ui.wizard.empQ = empQ;
+      if (!empQ) {
+        toast?.('أدخل رقم الموظف');
+        return true;
+      }
+      const found = engine().findIdentity(empQ);
+      if (!found) {
+        toast?.('لا يوجد موظف بهذا الرقم');
+        return true;
+      }
+      ui.wizard.naioshId = found.naioshId;
+      ui.wizard.userQ = found.employeeNo || found.name;
+      toast?.(`تم تحديد ${found.name} (${found.employeeNo || 'بدون رقم بعد'})`);
       return true;
     }
     if (action === 'hto-wizard-pick-user') {

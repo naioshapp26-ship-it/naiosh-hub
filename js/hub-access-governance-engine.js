@@ -81,18 +81,65 @@
   const findIdentity = (state, ref) => {
     if (!ref) return null;
     if (typeof ref === 'object') {
-      return findIdentity(state, ref.naioshId || ref.email || ref.id || ref.name);
+      return findIdentity(state, ref.employeeNo || ref.naioshId || ref.email || ref.id || ref.name);
     }
     const q = String(ref).toLowerCase();
     return (
       (state.identities || []).find(
         (i) =>
           i.id === ref ||
+          String(i.employeeNo || '').toLowerCase() === q ||
           String(i.naioshId || '').toLowerCase() === q ||
           String(i.email || '').toLowerCase() === q ||
           String(i.name || '').toLowerCase() === q
       ) || null
     );
+  };
+
+  const nextEmployeeNo = (state) => {
+    let max = 0;
+    (state.identities || []).forEach((i) => {
+      const m = String(i.employeeNo || '').match(/^EMP-(\d+)$/i);
+      if (m) max = Math.max(max, Number(m[1]));
+    });
+    return `EMP-${String(max + 1).padStart(4, '0')}`;
+  };
+
+  /** رقم الموظف ثابت بعد الإنشاء — يُنشأ عند أول تعيين تشغيلي */
+  const assignEmployeeNo = (state, identity, preferred = null) => {
+    if (!identity) return null;
+    if (identity.employeeNo) return identity.employeeNo;
+    const want = preferred && /^EMP-\d+$/i.test(preferred) ? preferred.toUpperCase() : null;
+    const taken = new Set((state.identities || []).map((i) => String(i.employeeNo || '').toUpperCase()).filter(Boolean));
+    if (want && !taken.has(want)) {
+      identity.employeeNo = want;
+    } else {
+      identity.employeeNo = nextEmployeeNo(state);
+    }
+    identity.updatedAt = Store().nowIso();
+    return identity.employeeNo;
+  };
+
+  const auditTarget = (state, identityOrRef) => {
+    const identity = typeof identityOrRef === 'object' && identityOrRef?.id
+      ? identityOrRef
+      : findIdentity(state, identityOrRef);
+    if (!identity) {
+      return {
+        targetUser: String(identityOrRef || ''),
+        targetName: null,
+        employeeNo: null,
+        naioshId: null,
+        identityId: null,
+      };
+    }
+    return {
+      targetUser: identity.naioshId,
+      targetName: identity.name,
+      employeeNo: identity.employeeNo || null,
+      naioshId: identity.naioshId,
+      identityId: identity.id,
+    };
   };
 
   const BOOTSTRAP_ACTORS = new Set(['مشغّل هوب', 'system', 'migration', 'system-bootstrap', 'bootstrap']);
@@ -609,12 +656,14 @@
       }
       const permissions = payload.permissions?.length ? payload.permissions.slice() : role.permissions.slice();
       assertCanAssign(state, actor, role.code, permissions);
+      assignEmployeeNo(state, identity, payload.employeeNo || null);
 
       const grant = {
         id: Store().uid('grant'),
         grantId: `GRANT-${Date.now().toString(36).toUpperCase()}`,
         identityId: identity.id,
         naioshId: identity.naioshId,
+        employeeNo: identity.employeeNo,
         positionCode: payload.positionCode || null,
         roleCode: role.code,
         system: payload.system,
@@ -640,7 +689,7 @@
       }
       Store().pushAudit(state, {
         actor,
-        targetUser: identity.naioshId,
+        ...auditTarget(state, identity),
         action: 'GRANT_CREATED',
         newValue: grant,
         role: grant.roleCode,
@@ -684,7 +733,7 @@
       });
       Store().pushAudit(state, {
         actor,
-        targetUser: grant.naioshId,
+        ...auditTarget(state, grant.identityId || grant.naioshId),
         action: 'GRANT_REVOKED',
         oldValue: old,
         newValue: { status: 'REVOKED' },
@@ -714,7 +763,7 @@
       });
       Store().pushAudit(state, {
         actor,
-        targetUser: identity.naioshId,
+        ...auditTarget(state, identity),
         action: 'USER_SUSPENDED',
         reason,
         system: 'HUB',
@@ -823,7 +872,7 @@
       });
       Store().pushAudit(state, {
         actor,
-        targetUser: identity.naioshId,
+        ...auditTarget(state, identity),
         action: 'USER_REACTIVATED',
         oldValue: old,
         newValue: 'active',
@@ -850,7 +899,7 @@
       });
       Store().pushAudit(state, {
         actor,
-        targetUser: identity.naioshId,
+        ...auditTarget(state, identity),
         action: 'USER_ARCHIVED',
         oldValue: old,
         newValue: { status: 'archived' },
@@ -868,10 +917,11 @@
       const old = { name: identity.name, email: identity.email };
       if (patch.name != null) identity.name = String(patch.name).trim();
       if (patch.email != null) identity.email = String(patch.email).trim();
+      // رقم الموظف ثابت — لا يُعدَّل من تحديث الملف الشخصي
       identity.updatedAt = Store().nowIso();
       Store().pushAudit(state, {
         actor,
-        targetUser: identity.naioshId,
+        ...auditTarget(state, identity),
         action: 'USER_PROFILE_UPDATED',
         oldValue: old,
         newValue: { name: identity.name, email: identity.email },
@@ -898,12 +948,16 @@
       if (patch.status) grant.status = patch.status;
       grant.updatedAt = Store().nowIso();
       const identity = findIdentity(state, grant.identityId);
-      if (identity && grant.positionCode && !(identity.positions || []).includes(grant.positionCode)) {
-        identity.positions = [...(identity.positions || []), grant.positionCode];
+      if (identity) {
+        assignEmployeeNo(state, identity);
+        grant.employeeNo = identity.employeeNo;
+        if (grant.positionCode && !(identity.positions || []).includes(grant.positionCode)) {
+          identity.positions = [...(identity.positions || []), grant.positionCode];
+        }
       }
       Store().pushAudit(state, {
         actor,
-        targetUser: grant.naioshId,
+        ...auditTarget(state, identity || grant.naioshId),
         action: 'GRANT_UPDATED',
         oldValue: old,
         newValue: grant,
@@ -921,7 +975,7 @@
   const ensureIdentity = (payload = {}, actor = 'مشغّل هوب') => {
     let out = null;
     Store().update((state) => {
-      let identity = findIdentity(state, payload.naioshId || payload.email);
+      let identity = findIdentity(state, payload.employeeNo || payload.naioshId || payload.email);
       if (identity) {
         out = identity;
         return state;
@@ -929,6 +983,7 @@
       identity = {
         id: Store().uid('id'),
         naioshId: payload.naioshId || `NAI-${Date.now().toString(36).toUpperCase()}`,
+        employeeNo: null,
         name: payload.name || payload.email,
         email: payload.email,
         userType: payload.userType || 'STAFF',
@@ -938,10 +993,13 @@
         createdAt: Store().nowIso(),
         updatedAt: Store().nowIso(),
       };
+      if (payload.asStaff || payload.employeeNo) {
+        assignEmployeeNo(state, identity, payload.employeeNo || null);
+      }
       state.identities.unshift(identity);
       Store().pushAudit(state, {
         actor,
-        targetUser: identity.naioshId,
+        ...auditTarget(state, identity),
         action: 'USER_CREATED',
         newValue: identity,
         reason: payload.reason || 'إضافة مستخدم جديد',
@@ -951,6 +1009,42 @@
       return state;
     }, actor);
     return out;
+  };
+
+  const ensureEmployeeNumbers = () => {
+    return Store().update((state) => {
+      const preferred = {
+        'NAI-LEADER-001': 'EMP-0001',
+        'NAI-USER-0025': 'EMP-0002',
+        'NAI-MALIKA-001': 'EMP-0003',
+      };
+      const grantedIds = new Set(
+        (state.grants || [])
+          .filter((g) => String(g.status || '').toUpperCase() === 'ACTIVE' || String(g.status || '').toUpperCase() === 'REVOKED')
+          .map((g) => g.identityId)
+      );
+      (state.identities || []).forEach((i) => {
+        if (i.employeeNo) return;
+        if (preferred[i.naioshId]) {
+          const taken = (state.identities || []).some(
+            (x) => x !== i && String(x.employeeNo || '').toUpperCase() === preferred[i.naioshId]
+          );
+          if (!taken) {
+            i.employeeNo = preferred[i.naioshId];
+            return;
+          }
+        }
+        if (grantedIds.has(i.id) || i.userType === 'STAFF') {
+          assignEmployeeNo(state, i);
+        }
+      });
+      (state.grants || []).forEach((g) => {
+        if (g.employeeNo) return;
+        const id = findIdentity(state, g.identityId || g.naioshId);
+        if (id?.employeeNo) g.employeeNo = id.employeeNo;
+      });
+      return state;
+    }, 'system');
   };
 
   window.HubAccessGov = {
@@ -968,6 +1062,17 @@
     updateIdentity,
     updateGrant,
     ensureIdentity,
+    ensureEmployeeNumbers,
+    assignEmployeeNo: (identityRef, preferred) => {
+      let out = null;
+      Store().update((state) => {
+        const identity = findIdentity(state, identityRef);
+        out = assignEmployeeNo(state, identity, preferred);
+        return state;
+      }, 'system');
+      return out;
+    },
+    nextEmployeeNo: () => nextEmployeeNo(Store().get()),
     createTemporaryAccess,
     createDelegation,
     findIdentity: (ref) => findIdentity(Store().get(), ref),

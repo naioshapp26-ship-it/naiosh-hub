@@ -300,10 +300,23 @@
 
   const pushAudit = (state, evt) => {
     if (!Array.isArray(state.audit)) state.audit = [];
+    let employeeNo = evt.employeeNo || null;
+    let targetName = evt.targetName || null;
+    if ((!employeeNo || !targetName) && evt.targetUser) {
+      const id = (state.identities || []).find(
+        (i) => i.naioshId === evt.targetUser || i.id === evt.targetUser || i.employeeNo === evt.targetUser
+      );
+      if (id) {
+        employeeNo = employeeNo || id.employeeNo || null;
+        targetName = targetName || id.name || null;
+      }
+    }
     state.audit.unshift({
       id: uid('evt'),
       timestamp: nowIso(),
       ...evt,
+      employeeNo,
+      targetName,
     });
     if (state.audit.length > 800) state.audit.length = 800;
   };
@@ -463,12 +476,58 @@
     return state;
   };
 
+  const ensureEmployeeNumbers = (state) => {
+    const preferred = {
+      'NAI-LEADER-001': 'EMP-0001',
+      'NAI-USER-0025': 'EMP-0002',
+      'NAI-MALIKA-001': 'EMP-0003',
+    };
+    const used = new Set();
+    (state.identities || []).forEach((i) => {
+      if (i.employeeNo) used.add(String(i.employeeNo).toUpperCase());
+    });
+    const nextNo = () => {
+      let max = 0;
+      used.forEach((c) => {
+        const m = String(c).match(/^EMP-(\d+)$/i);
+        if (m) max = Math.max(max, Number(m[1]));
+      });
+      const n = `EMP-${String(max + 1).padStart(4, '0')}`;
+      used.add(n);
+      return n;
+    };
+    const hasGrant = new Set((state.grants || []).map((g) => g.identityId));
+    (state.identities || []).forEach((i) => {
+      if (i.employeeNo) return;
+      const pref = preferred[i.naioshId];
+      if (pref && !used.has(pref)) {
+        i.employeeNo = pref;
+        used.add(pref);
+        return;
+      }
+      if (hasGrant.has(i.id) || i.userType === 'STAFF') {
+        i.employeeNo = nextNo();
+      }
+    });
+    (state.grants || []).forEach((g) => {
+      if (g.employeeNo) return;
+      const id = (state.identities || []).find((x) => x.id === g.identityId || x.naioshId === g.naioshId);
+      if (id?.employeeNo) g.employeeNo = id.employeeNo;
+    });
+    return state;
+  };
+
   const ensureDemoIfEmpty = (state) => {
     const ensureUser = (spec) => {
-      if ((state.identities || []).some((i) => i.email === spec.email || i.naioshId === spec.naioshId)) return;
-      state.identities.push({
+      const existing = (state.identities || []).find((i) => i.email === spec.email || i.naioshId === spec.naioshId);
+      if (existing) {
+        if (spec.employeeNo && !existing.employeeNo) existing.employeeNo = spec.employeeNo;
+        return existing;
+      }
+      const row = {
         id: uid('id'),
         naioshId: spec.naioshId,
+        employeeNo: spec.employeeNo || null,
         name: spec.name,
         email: spec.email,
         userType: 'STAFF',
@@ -477,27 +536,38 @@
         positions: spec.positions || [],
         createdAt: nowIso(),
         updatedAt: nowIso(),
-      });
+      };
+      state.identities.push(row);
+      return row;
     };
     ensureUser({
       naioshId: 'NAI-MALIKA-001',
+      employeeNo: 'EMP-0003',
       name: 'المهندسة مليكة',
       email: 'malika@naiosh.com',
       positions: [],
     });
     ensureUser({
       naioshId: 'NAI-LEADER-001',
+      employeeNo: 'EMP-0001',
       name: 'القائد الأعلى',
       email: 'leader@naiosh.com',
       positions: ['EMP_SUPREME_LEADER'],
     });
-    if (state.identities.length > 2 && state.grants.length) return state;
-    if (state.identities.some((i) => i.naioshId === 'NAI-USER-0025')) return state;
+    if (state.identities.length > 2 && state.grants.length) {
+      ensureEmployeeNumbers(state);
+      return state;
+    }
+    if (state.identities.some((i) => i.naioshId === 'NAI-USER-0025')) {
+      ensureEmployeeNumbers(state);
+      return state;
+    }
     const id = uid('id');
     const naioshId = 'NAI-USER-0025';
     state.identities.push({
       id,
       naioshId,
+      employeeNo: 'EMP-0002',
       name: 'مدير فرع الإسكندرية',
       email: 'branch.alex@naiosh.example',
       userType: 'STAFF',
@@ -512,6 +582,7 @@
       grantId: 'GRANT-DEMO-ALEX',
       identityId: id,
       naioshId,
+      employeeNo: 'EMP-0002',
       positionCode: 'BRANCH_MANAGER_POS',
       roleCode: 'BRANCH_MANAGER',
       system: 'ERP',
@@ -536,6 +607,7 @@
       grantId: 'GRANT-DEMO-HUB-VIEW',
       identityId: id,
       naioshId,
+      employeeNo: 'EMP-0002',
       positionCode: 'BRANCH_MANAGER_POS',
       roleCode: 'REPORT_VIEWER',
       system: 'HUB',
@@ -555,6 +627,7 @@
       createdAt: nowIso(),
       updatedAt: nowIso(),
     });
+    ensureEmployeeNumbers(state);
     return state;
   };
 
@@ -590,6 +663,7 @@
       const legacy = readLegacyRolesHub();
       migrateFromLegacy(state, legacy);
       ensureDemoIfEmpty(state);
+      ensureEmployeeNumbers(state);
       save(state);
     } else {
       state.systems = listSystems();
@@ -602,6 +676,7 @@
         sod.conflictingPermissions = ['customer_requests.create', 'customer_requests.approve'];
       }
       ensureDemoIfEmpty(state);
+      ensureEmployeeNumbers(state);
       save(state);
     }
     return state;
