@@ -65,6 +65,17 @@
     }
   }
 
+  function showToast(msg) {
+    try {
+      if (typeof window.__hubToast === 'function') return window.__hubToast(msg);
+    } catch (_) {}
+    const el = document.createElement('div');
+    el.className = 'posha-toast';
+    el.textContent = String(msg || '');
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+  }
+
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -74,10 +85,83 @@
   function fmt(iso) {
     if (!iso) return '—';
     try {
-      return new Date(iso).toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' });
+      const HF = window.HubFormat;
+      if (HF?.formatDateTime) return HF.toLatinDigits(HF.formatDateTime(iso));
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '—';
+      return d.toLocaleString('en-GB');
     } catch {
       return String(iso).slice(0, 16);
     }
+  }
+
+  function fmtDateParts(iso) {
+    if (!iso) return { date: '—', time: '' };
+    try {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return { date: '—', time: '' };
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      let h = d.getHours();
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      const hh = String(h).padStart(2, '0');
+      const latin = (v) => (window.HubFormat?.toLatinDigits ? window.HubFormat.toLatinDigits(v) : String(v));
+      return { date: latin(`${yyyy}/${mm}/${dd}`), time: latin(`${hh}:${mi} ${ampm}`) };
+    } catch {
+      return { date: '—', time: '' };
+    }
+  }
+
+  function num(v, fallback = '—') {
+    if (v == null || v === '') return fallback;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return window.HubFormat?.toLatinDigits?.(v) || String(v);
+    return window.HubFormat?.formatNumber?.(n) || String(n);
+  }
+
+  function clientStatusAr(st) {
+    const map = {
+      active: 'نشط',
+      pending: 'بانتظار التفعيل',
+      suspended: 'موقوف',
+      closed: 'مغلق',
+      inactive: 'مغلق',
+      new: 'جديد',
+    };
+    return map[String(st || '').toLowerCase()] || st || '—';
+  }
+
+  function clientStatusClass(st) {
+    const s = String(st || '').toLowerCase();
+    if (s === 'active') return 'is-ok';
+    if (s === 'suspended' || s === 'closed' || s === 'inactive') return 'is-bad';
+    if (s === 'pending' || s === 'new') return 'is-warn';
+    return '';
+  }
+
+  function reqCountFor(c) {
+    const fromCr = (cr()?.list?.({}) || []).filter(
+      (r) =>
+        String(r.email || '').toLowerCase() === String(c.email || '').toLowerCase() ||
+        (c.clientId && (r.clientId === c.clientId || r.client_id === c.clientId))
+    ).length;
+    if (fromCr) return fromCr;
+    return Number(c.openOrders || 0) || Number(c.ordersCount || 0) || 0;
+  }
+
+  function alertsCountFor(c) {
+    const notifN = (state.notifications || []).filter(
+      (n) => String(n.clientEmail || '').toLowerCase() === String(c.email || '').toLowerCase() && !n.is_read
+    ).length;
+    if (notifN) return notifN;
+    let n = 0;
+    if (c.hasAlert) n += 1;
+    if (c.openTickets > 0) n += Number(c.openTickets) || 0;
+    if (c.unpaidInvoices > 0) n += Number(c.unpaidInvoices) || 0;
+    return n;
   }
 
   const state = {
@@ -92,7 +176,10 @@
     notifications: [],
     filter: '',
     statusFilter: '',
+    systemFilter: '',
+    requestsFilter: '',
     q: '',
+    clientMenuEmail: null,
     reqView: 'active',
     reqFilters: { q: '', status: '', type: '', source: '', assignee: '' },
     reqId: null,
@@ -177,50 +264,150 @@
     return `<div class="posha-kpis">${cards.map(([l, v]) => `<article><span>${esc(l)}</span><strong>${v}</strong></article>`).join('')}</div>`;
   }
 
-  function clientsTable(list) {
-    if (!list.length) return '<p class="posha-muted">لا عملاء مطابقون.</p>';
-    return `<div class="table-wrap"><table class="data-table posha-table">
-      <thead><tr>
-        <th>Client ID</th><th>العميل</th><th>الحالة</th><th>أنظمة</th><th>طلبات</th><th>تذاكر</th>
-        <th>المحفظة</th><th>آخر دخول</th><th>تنبيه</th><th></th>
-      </tr></thead>
-      <tbody>${list.map((c) => `<tr>
-        <td>${esc(c.clientId)}</td>
-        <td><strong>${esc(c.name)}</strong><br><small>${esc(c.email)}${c.phone ? ' · ' + esc(c.phone) : ''}${c.company ? '<br>' + esc(c.company) : ''}</small></td>
-        <td><span class="chip">${esc(c.status)}</span></td>
-        <td>${c.systemsCount || 0}</td>
-        <td>${c.openOrders || 0}</td>
-        <td>${c.openTickets || 0}</td>
-        <td>${Number(c.walletTotal || 0).toLocaleString('en-US')}</td>
-        <td>${fmt(c.lastLoginAt)}</td>
-        <td>${c.hasAlert ? '<span class="posha-alert">!</span>' : '—'}</td>
-        <td><button type="button" class="btn btn-primary btn-sm" data-open-posha="${esc(c.email)}">فتح 360</button></td>
-      </tr>`).join('')}</tbody></table></div>`;
+  function clientMenuHtml(c) {
+    if (state.clientMenuEmail !== c.email) return '';
+    const suspend = String(c.status).toLowerCase() === 'suspended';
+    return `<div class="posha-client-menu" role="menu">
+      <button type="button" data-open-posha="${esc(c.email)}" data-ctab-pref="overview">عرض التفاصيل</button>
+      <button type="button" data-open-posha="${esc(c.email)}" data-ctab-pref="overview">تعديل بيانات العميل</button>
+      <button type="button" data-client-goto-reqs="${esc(c.email)}" data-client-id="${esc(c.clientId || '')}">عرض الطلبات</button>
+      <button type="button" data-client-systems="${esc(c.email)}">عرض الأنظمة</button>
+      <button type="button" data-open-posha="${esc(c.email)}" data-ctab-pref="wallet">عرض المحفظة</button>
+      <button type="button" data-open-posha="${esc(c.email)}" data-ctab-pref="activity">عرض النشاط</button>
+      <button type="button" class="${suspend ? '' : 'is-danger'}" data-client-toggle-status="${esc(c.email)}" data-next="${suspend ? 'active' : 'suspended'}">${suspend ? 'تفعيل الحساب' : 'إيقاف الحساب'}</button>
+    </div>`;
+  }
+
+  function clientsTable(list, opts = {}) {
+    if (!list.length) return '<p class="posha-muted posha-clients-empty">لا عملاء مطابقون.</p>';
+    const rows = list
+      .map((c) => {
+        const sysN = Number(c.systemsCount || (c.systems || []).length || 0);
+        const reqN = reqCountFor(c);
+        const alertN = alertsCountFor(c);
+        const wallet = c.walletTotal;
+        const login = fmtDateParts(c.lastLoginAt);
+        const menuOpen = state.clientMenuEmail === c.email;
+        return `
+        <tr class="posha-client-row" data-client-email="${esc(c.email)}">
+          <td class="posha-col-client" data-label="العميل">
+            <div class="posha-client-cell">
+              <strong class="posha-client-name">${esc(c.name || '—')}</strong>
+              <span class="posha-client-email">${esc(c.email || '—')}</span>
+            </div>
+          </td>
+          <td class="posha-col-id" data-label="رقم العميل"><code class="posha-client-id">${esc(c.clientId || '—')}</code></td>
+          <td class="posha-col-status" data-label="الحالة"><span class="posha-status-badge ${clientStatusClass(c.status)}">${esc(clientStatusAr(c.status))}</span></td>
+          <td class="posha-col-systems" data-label="الأنظمة">
+            <button type="button" class="posha-link-btn" data-client-systems="${esc(c.email)}" title="عرض الأنظمة">${num(sysN)} ${sysN === 1 ? 'نظام' : 'أنظمة'}</button>
+          </td>
+          <td class="posha-col-reqs" data-label="الطلبات">
+            <button type="button" class="posha-link-btn" data-client-goto-reqs="${esc(c.email)}" data-client-id="${esc(c.clientId || '')}">${num(reqN)} ${reqN === 1 ? 'طلب' : 'طلبات'}</button>
+          </td>
+          <td class="posha-col-wallet" data-label="المحفظة">${wallet == null || wallet === '' ? '—' : num(wallet)}</td>
+          <td class="posha-col-login" data-label="آخر دخول">
+            <div class="posha-datetime">
+              <span>${esc(login.date)}</span>
+              ${login.time ? `<span class="posha-time">${esc(login.time)}</span>` : ''}
+            </div>
+          </td>
+          <td class="posha-col-alerts" data-label="التنبيهات">${alertN ? num(alertN) : '—'}</td>
+          <td class="posha-col-actions" data-label="الإجراءات">
+            <div class="posha-client-actions ${menuOpen ? 'is-open' : ''}">
+              <button type="button" class="btn btn-primary btn-sm" data-open-posha="${esc(c.email)}">عرض</button>
+              <button type="button" class="btn btn-ghost btn-sm posha-more-btn" data-client-menu="${esc(c.email)}" aria-label="المزيد" aria-expanded="${menuOpen ? 'true' : 'false'}">⋮</button>
+              ${clientMenuHtml(c)}
+            </div>
+          </td>
+        </tr>`;
+      })
+      .join('');
+
+    const cards = list
+      .map((c) => {
+        const sysN = Number(c.systemsCount || (c.systems || []).length || 0);
+        const reqN = reqCountFor(c);
+        const login = fmtDateParts(c.lastLoginAt);
+        const menuOpen = state.clientMenuEmail === c.email;
+        return `<article class="posha-client-card" data-client-email="${esc(c.email)}">
+          <header>
+            <div>
+              <strong class="posha-client-name">${esc(c.name || '—')}</strong>
+              <span class="posha-client-email">${esc(c.email || '—')}</span>
+            </div>
+            <span class="posha-status-badge ${clientStatusClass(c.status)}">${esc(clientStatusAr(c.status))}</span>
+          </header>
+          <dl class="posha-card-meta">
+            <div><dt>رقم العميل</dt><dd><code class="posha-client-id">${esc(c.clientId || '—')}</code></dd></div>
+            <div><dt>الأنظمة</dt><dd><button type="button" class="posha-link-btn" data-client-systems="${esc(c.email)}">${num(sysN)}</button></dd></div>
+            <div><dt>الطلبات</dt><dd><button type="button" class="posha-link-btn" data-client-goto-reqs="${esc(c.email)}" data-client-id="${esc(c.clientId || '')}">${num(reqN)}</button></dd></div>
+            <div><dt>المحفظة</dt><dd>${c.walletTotal == null ? '—' : num(c.walletTotal)}</dd></div>
+            <div><dt>آخر دخول</dt><dd>${esc(login.date)}${login.time ? ` - ${esc(login.time)}` : ''}</dd></div>
+            <div><dt>التنبيهات</dt><dd>${alertsCountFor(c) ? num(alertsCountFor(c)) : '—'}</dd></div>
+          </dl>
+          <footer class="posha-client-actions ${menuOpen ? 'is-open' : ''}">
+            <button type="button" class="btn btn-primary btn-sm" data-open-posha="${esc(c.email)}">عرض التفاصيل</button>
+            <button type="button" class="btn btn-ghost btn-sm posha-more-btn" data-client-menu="${esc(c.email)}" aria-label="المزيد">⋮</button>
+            ${clientMenuHtml(c)}
+          </footer>
+        </article>`;
+      })
+      .join('');
+
+    return `
+      <div class="posha-clients-block ${opts.compact ? 'is-compact' : ''}">
+        <div class="posha-clients-table-wrap">
+          <table class="posha-clients-table" role="table">
+            <thead>
+              <tr>
+                <th scope="col">العميل</th>
+                <th scope="col">رقم العميل</th>
+                <th scope="col">الحالة</th>
+                <th scope="col">الأنظمة</th>
+                <th scope="col">الطلبات</th>
+                <th scope="col">المحفظة</th>
+                <th scope="col">آخر دخول</th>
+                <th scope="col">التنبيهات</th>
+                <th scope="col">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="posha-clients-cards" aria-label="قائمة العملاء">${cards}</div>
+      </div>`;
   }
 
   function filterBar() {
-    return `<div class="posha-filters">
-      <input id="posha-q" type="search" placeholder="بحث عن عميل..." value="${esc(state.q)}" />
-      <select id="posha-status">
-        <option value="">كل الحالات</option>
+    const systems = [...new Set(state.clients.flatMap((c) => (c.systems || []).map((s) => s.code || s.name).filter(Boolean)))];
+    return `<div class="posha-filters posha-clients-filters">
+      <input id="posha-q" type="search" placeholder="ابحث بالاسم أو رقم العميل أو البريد" value="${esc(state.q)}" />
+      <select id="posha-status" aria-label="الحالة">
+        <option value="">الحالة: الكل</option>
         <option value="active" ${state.statusFilter === 'active' ? 'selected' : ''}>نشط</option>
-        <option value="pending" ${state.statusFilter === 'pending' ? 'selected' : ''}>قيد التفعيل</option>
+        <option value="pending" ${state.statusFilter === 'pending' ? 'selected' : ''}>بانتظار التفعيل</option>
         <option value="suspended" ${state.statusFilter === 'suspended' ? 'selected' : ''}>موقوف</option>
-        <option value="new" ${state.statusFilter === 'new' ? 'selected' : ''}>جديد</option>
-        <option value="tickets" ${state.statusFilter === 'tickets' ? 'selected' : ''}>لديه تذاكر</option>
-        <option value="orders" ${state.statusFilter === 'orders' ? 'selected' : ''}>لديه طلبات</option>
-        <option value="payments" ${state.statusFilter === 'payments' ? 'selected' : ''}>مشاكل دفع</option>
-        <option value="alerts" ${state.statusFilter === 'alerts' ? 'selected' : ''}>تنبيهات</option>
+        <option value="closed" ${state.statusFilter === 'closed' ? 'selected' : ''}>مغلق</option>
       </select>
+      <select id="posha-system" aria-label="النظام">
+        <option value="">النظام: الكل</option>
+        ${systems.map((s) => `<option value="${esc(s)}" ${state.systemFilter === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
+      </select>
+      <select id="posha-reqs" aria-label="الطلبات">
+        <option value="">الطلبات: الكل</option>
+        <option value="with" ${state.requestsFilter === 'with' ? 'selected' : ''}>لديه طلبات</option>
+        <option value="without" ${state.requestsFilter === 'without' ? 'selected' : ''}>بدون طلبات</option>
+      </select>
+      <button type="button" class="btn btn-ghost btn-sm" id="posha-clear-filters">مسح الفلاتر</button>
     </div>`;
   }
 
   function overviewHtml() {
     const latestReqs = cr()?.list?.({ view: 'active' })?.slice(0, 6) || [];
-    const latestClients = state.clients.slice(0, 6);
+    const latestClients = filteredClients().slice(0, 6);
     const latestEvents = (state.events || []).slice(0, 8);
     return `
-      <section class="posha-panel">
+      <section class="posha-panel posha-panel-requests">
         <div class="posha-panel-head">
           <h3>أحدث طلبات العملاء</h3>
           <button type="button" class="btn btn-ghost btn-sm" data-ptab-jump="orders">عرض الكل</button>
@@ -243,14 +430,15 @@
             : `<p class="posha-ws-empty">لا توجد طلبات عملاء جديدة. <button type="button" class="btn btn-ghost btn-sm" data-ptab-jump="orders">عرض كل الطلبات</button></p>`
         }
       </section>
-      <section class="posha-panel">
+      <section class="posha-panel posha-panel-clients">
         <div class="posha-panel-head">
           <h3>أحدث العملاء</h3>
           <button type="button" class="btn btn-ghost btn-sm" data-ptab-jump="clients">عرض الكل</button>
         </div>
-        ${clientsTable(latestClients)}
+        ${filterBar()}
+        ${clientsTable(latestClients, { compact: true })}
       </section>
-      <section class="posha-panel">
+      <section class="posha-panel posha-panel-activity">
         <div class="posha-panel-head">
           <h3>آخر الأنشطة</h3>
           <button type="button" class="btn btn-ghost btn-sm" data-ptab-jump="events">مركز الأحداث</button>
@@ -268,17 +456,27 @@
       );
     }
     const f = state.statusFilter;
-    if (f === 'active' || f === 'pending' || f === 'suspended') list = list.filter((c) => c.status === f);
+    if (f === 'active' || f === 'pending' || f === 'suspended' || f === 'closed') {
+      list = list.filter((c) => String(c.status || '').toLowerCase() === f);
+    }
     if (f === 'new') list = list.filter((c) => c.isNew);
     if (f === 'tickets') list = list.filter((c) => c.openTickets > 0);
-    if (f === 'orders') list = list.filter((c) => c.openOrders > 0);
+    if (f === 'orders') list = list.filter((c) => reqCountFor(c) > 0);
     if (f === 'payments') list = list.filter((c) => c.unpaidInvoices > 0);
-    if (f === 'alerts') list = list.filter((c) => c.hasAlert);
+    if (f === 'alerts') list = list.filter((c) => alertsCountFor(c) > 0);
+    if (state.systemFilter) {
+      list = list.filter((c) =>
+        (c.systems || []).some((s) => s.code === state.systemFilter || s.name === state.systemFilter)
+      );
+    }
+    if (state.requestsFilter === 'with') list = list.filter((c) => reqCountFor(c) > 0);
+    if (state.requestsFilter === 'without') list = list.filter((c) => reqCountFor(c) === 0);
     return list;
   }
 
-  async function open360(email) {
+  async function open360(email, tabPref) {
     state.selectedEmail = email;
+    if (tabPref) state.drawerTab = tabPref;
     const drawer = document.getElementById('posha-drawer');
     drawer.hidden = false;
     drawer.innerHTML = '<div class="posha-loading">تحميل ملف العميل…</div>';
@@ -291,139 +489,217 @@
     }
   }
 
+  function showSystemsModal(email) {
+    const c = state.clients.find((x) => x.email === email) || state.detail?.client;
+    const systems = c?.systems || [];
+    document.getElementById('posha-systems-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'posha-systems-modal';
+    modal.className = 'posha-modal-overlay';
+    modal.innerHTML = `<div class="posha-modal" role="dialog" aria-modal="true">
+      <h3>أنظمة العميل</h3>
+      <p class="posha-muted">${esc(c?.name || email)} · ${esc(c?.clientId || '')}</p>
+      <ul class="feed">${systems.length ? systems.map((s) => `<li><b>${esc(s.name || s.code)}</b> · ${esc(s.status || '—')}</li>`).join('') : '<li>لا أنظمة مرتبطة</li>'}</ul>
+      <div class="posha-modal-actions">
+        <button type="button" class="btn btn-ghost" data-close>إغلاق</button>
+        <button type="button" class="btn btn-primary" data-open-full>فتح الملف</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    const close = () => modal.remove();
+    modal.querySelector('[data-close]').onclick = close;
+    modal.onclick = (e) => {
+      if (e.target === modal) close();
+    };
+    modal.querySelector('[data-open-full]').onclick = () => {
+      close();
+      open360(email, 'systems');
+    };
+  }
+
+  function confirmClientStatus(email, next) {
+    const c = state.clients.find((x) => x.email === email);
+    document.getElementById('posha-status-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'posha-status-modal';
+    modal.className = 'posha-modal-overlay';
+    const activating = next === 'active';
+    modal.innerHTML = `<div class="posha-modal" role="dialog" aria-modal="true">
+      <h3>${activating ? 'تفعيل الحساب؟' : 'إيقاف الحساب؟'}</h3>
+      <p>سيتم ${activating ? 'إعادة تفعيل' : 'إيقاف'} حساب <strong>${esc(c?.name || email)}</strong> (${esc(c?.clientId || '')}).</p>
+      <div class="posha-modal-actions">
+        <button type="button" class="btn btn-ghost" data-cancel>إلغاء</button>
+        <button type="button" class="btn ${activating ? 'btn-primary' : 'btn-danger'}" data-ok>${activating ? 'تأكيد التفعيل' : 'تأكيد الإيقاف'}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    const close = () => modal.remove();
+    modal.querySelector('[data-cancel]').onclick = close;
+    modal.onclick = (e) => {
+      if (e.target === modal) close();
+    };
+    modal.querySelector('[data-ok]').onclick = async () => {
+      try {
+        await api(`/api/admin/posha/clients/${encodeURIComponent(email)}/status`, {
+          method: 'POST',
+          body: { status: next },
+        });
+        close();
+        showToast(activating ? 'تم تفعيل الحساب' : 'تم إيقاف الحساب');
+        refresh();
+      } catch (e) {
+        showToast(errText(e));
+      }
+    };
+  }
+
   function paintDrawer() {
     const drawer = document.getElementById('posha-drawer');
     const c = state.detail?.client;
     if (!c) return;
     const tl = (state.detail.timeline || []).slice(0, 30);
+    const crList = (cr()?.list?.({}) || []).filter(
+      (r) => String(r.email || '').toLowerCase() === String(c.email || '').toLowerCase() || r.clientId === c.clientId
+    );
+    const tabLabels = {
+      overview: 'نظرة عامة',
+      systems: 'الأنظمة',
+      orders: 'الطلبات',
+      subscriptions: 'الاشتراكات',
+      invoices: 'الفواتير',
+      wallet: 'المحفظة',
+      support: 'الدعم',
+      notifications: 'الإشعارات',
+      activity: 'النشاط',
+      security: 'الأمان',
+      notes: 'ملاحظات',
+    };
     drawer.innerHTML = `
       <div class="posha-drawer-inner">
         <div class="posha-drawer-head">
           <div>
-            <h3>${esc(c.name)} · ${esc(c.clientId)}</h3>
-            <p>${esc(c.email)} · ${esc(c.phone || '—')} · ${esc(c.status)} · انضمام ${fmt(c.createdAt)} · آخر دخول ${fmt(c.lastLoginAt)}</p>
+            <h3>${esc(c.name)}</h3>
+            <p class="posha-drawer-meta">
+              <span>رقم العميل: <code>${esc(c.clientId || '—')}</code></span>
+              <span>${esc(c.email)}</span>
+              <span>${esc(c.phone || '—')}</span>
+              <span class="posha-status-badge ${clientStatusClass(c.status)}">${esc(clientStatusAr(c.status))}</span>
+            </p>
+            <p class="posha-muted">التسجيل: ${esc(fmtDateParts(c.createdAt).date)} · آخر دخول: ${esc(fmtDateParts(c.lastLoginAt).date)} ${esc(fmtDateParts(c.lastLoginAt).time)}</p>
           </div>
           <button type="button" class="btn btn-ghost btn-sm" id="posha-close-drawer">إغلاق</button>
         </div>
         <div class="posha-tabs" id="posha-ctabs">
-          ${['overview','systems','orders','subscriptions','invoices','wallet','support','notifications','activity','security','notes']
-            .map((t) => `<button type="button" data-ctab="${t}">${t}</button>`).join('')}
+          ${Object.keys(tabLabels)
+            .map((t) => `<button type="button" data-ctab="${t}">${tabLabels[t]}</button>`)
+            .join('')}
         </div>
         <div id="posha-ctab-body"></div>
       </div>`;
-    document.getElementById('posha-close-drawer').onclick = () => { drawer.hidden = true; };
+    document.getElementById('posha-close-drawer').onclick = () => {
+      drawer.hidden = true;
+    };
     const paint = (tab) => {
       document.querySelectorAll('#posha-ctabs button').forEach((b) => b.classList.toggle('is-active', b.dataset.ctab === tab));
       const body = document.getElementById('posha-ctab-body');
       if (tab === 'overview') {
         body.innerHTML = `<div class="posha-kpis mini">
-          <article><span>أنظمة</span><strong>${(c.systems||[]).length}</strong></article>
-          <article><span>طلبات</span><strong>${(c.orders||[]).length}</strong></article>
-          <article><span>تذاكر</span><strong>${(c.tickets||[]).length}</strong></article>
-          <article><span>محفظة</span><strong>${c.wallet?.total||0}</strong></article>
+          <article><span>الأنظمة المرتبطة</span><strong>${num((c.systems || []).length)}</strong></article>
+          <article><span>طلبات العميل</span><strong>${num(crList.length || (c.orders || []).length)}</strong></article>
+          <article><span>الطلبات المقبولة</span><strong>${num(crList.filter((r) => /Approved|Published|accepted/i.test(r.status)).length)}</strong></article>
+          <article><span>المحفظة</span><strong>${num(c.wallet?.total ?? 0)}</strong></article>
         </div>
-        <h4>Timeline</h4>
-        <ul class="posha-timeline">${tl.map((e) => `<li><strong>${esc(e.type||e.title)}</strong> — ${esc(e.message||e.title||'')}<small>${fmt(e.at)} · ${esc(e.actor_id||'')}</small></li>`).join('') || '<li>لا أحداث</li>'}</ul>`;
+        <div class="posha-drawer-overview">
+          <p><strong>البريد:</strong> ${esc(c.email)}</p>
+          <p><strong>الهاتف:</strong> ${esc(c.phone || '—')}</p>
+          <p><strong>حالة الحساب:</strong> ${esc(clientStatusAr(c.status))}</p>
+          <p><strong>تاريخ التسجيل:</strong> ${esc(fmtDateParts(c.createdAt).date)}</p>
+          <p><strong>آخر تسجيل دخول:</strong> ${esc(fmtDateParts(c.lastLoginAt).date)} ${esc(fmtDateParts(c.lastLoginAt).time)}</p>
+        </div>
+        <h4>آخر الأنشطة</h4>
+        <ul class="posha-timeline">${tl.map((e) => `<li><strong>${esc(e.type || e.title)}</strong> — ${esc(e.message || e.title || '')}<small>${esc(fmtDateParts(e.at).date)} ${esc(fmtDateParts(e.at).time)}</small></li>`).join('') || '<li>لا أحداث</li>'}</ul>`;
       } else if (tab === 'systems') {
         body.innerHTML = `<div class="posha-actions">
           <input id="ps-code" placeholder="ERP" /><input id="ps-name" placeholder="اسم النظام" />
           <button class="btn btn-primary btn-sm" id="ps-act">تفعيل / تعيين</button>
         </div>
-        <ul class="feed">${(c.systems||[]).map((s)=>`<li><b>${esc(s.name)}</b> · ${esc(s.plan)} · ${esc(s.status)}</li>`).join('')||'<li>لا أنظمة</li>'}</ul>`;
+        <ul class="feed">${(c.systems || []).map((s) => `<li><b>${esc(s.name || s.code)}</b> · ${esc(s.plan || '—')} · ${esc(s.status || '—')}</li>`).join('') || '<li>لا أنظمة</li>'}</ul>`;
         document.getElementById('ps-act').onclick = async () => {
           try {
             await api(`/api/admin/posha/clients/${encodeURIComponent(c.email)}/activate-system`, {
-              method: 'POST', body: { code: document.getElementById('ps-code').value, name: document.getElementById('ps-name').value }
+              method: 'POST',
+              body: { code: document.getElementById('ps-code').value, name: document.getElementById('ps-name').value },
             });
-            open360(c.email); refresh();
-          } catch (e) { alert(e.message); }
+            open360(c.email);
+            refresh();
+          } catch (e) {
+            showToast(e.message);
+          }
         };
       } else if (tab === 'orders') {
-        body.innerHTML = `<ul class="feed">${(c.orders||[]).map((o)=>`<li>
-          <b>${esc(o.number)}</b> ${esc(o.service)} · ${esc(o.status)}
-          <select data-order="${esc(o.id)}" class="posha-order-status">
-            ${['pending_review','in_progress','approved','completed','rejected','cancelled'].map((s)=>`<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}
-          </select>
-        </li>`).join('')||'<li>لا طلبات</li>'}</ul>`;
-        body.querySelectorAll('.posha-order-status').forEach((sel) => {
-          sel.onchange = async () => {
-            try {
-              await api(`/api/admin/posha/clients/${encodeURIComponent(c.email)}/order-status`, {
-                method: 'POST', body: { orderId: sel.dataset.order, status: sel.value }
-              });
-              open360(c.email);
-            } catch (e) { alert(e.message); }
-          };
-        });
+        const rows = crList.length
+          ? crList.map((r) => `<li><b>${esc(r.requestId || r.id)}</b> ${esc(r.title || r.requestType || '')} · ${esc(displayReqStatus(r) || r.status)}</li>`).join('')
+          : (c.orders || []).map((o) => `<li><b>${esc(o.number)}</b> ${esc(o.service)} · ${esc(o.status)}</li>`).join('');
+        body.innerHTML = `<ul class="feed">${rows || '<li>لا طلبات</li>'}</ul>`;
       } else if (tab === 'subscriptions') {
-        body.innerHTML = `<ul class="feed">${(c.subscriptions||[]).map((s)=>`<li><b>${esc(s.systemName)}</b> · ${esc(s.plan)} · ${esc(s.status)}</li>`).join('')||'<li>—</li>'}</ul>`;
+        body.innerHTML = `<ul class="feed">${(c.subscriptions || []).map((s) => `<li><b>${esc(s.systemName)}</b> · ${esc(s.plan)} · ${esc(s.status)}</li>`).join('') || '<li>—</li>'}</ul>`;
       } else if (tab === 'invoices') {
-        body.innerHTML = `<ul class="feed">${(c.invoices||[]).map((i)=>`<li><b>${esc(i.number)}</b> · ${i.amount} · ${esc(i.status)}</li>`).join('')||'<li>—</li>'}</ul>`;
+        body.innerHTML = `<ul class="feed">${(c.invoices || []).map((i) => `<li><b>${esc(i.number)}</b> · ${num(i.amount)} · ${esc(i.status)}</li>`).join('') || '<li>—</li>'}</ul>`;
       } else if (tab === 'wallet') {
-        body.innerHTML = `<p><b>مدفوع:</b> ${c.wallet?.paid||0} · <b>مجاني:</b> ${c.wallet?.free||0} · <b>الإجمالي:</b> ${c.wallet?.total||0}</p>
+        body.innerHTML = `<p><b>مدفوع:</b> ${num(c.wallet?.paid || 0)} · <b>مجاني:</b> ${num(c.wallet?.free || 0)} · <b>الإجمالي:</b> ${num(c.wallet?.total || 0)}</p>
           <div class="posha-actions"><input id="pw-amt" type="number" min="1" placeholder="مبلغ الشحن" />
           <input id="pw-note" placeholder="ملاحظة" /><button class="btn btn-primary btn-sm" id="pw-go">إضافة رصيد</button></div>
-          <ul class="feed">${(c.wallet?.ledger||[]).slice(0,10).map((l)=>`<li>${esc(l.note)} · ${l.type} ${l.amount}</li>`).join('')}</ul>`;
+          <ul class="feed">${(c.wallet?.ledger || []).slice(0, 10).map((l) => `<li>${esc(l.note)} · ${esc(l.type)} ${num(l.amount)}</li>`).join('')}</ul>`;
         document.getElementById('pw-go').onclick = async () => {
           try {
             await api(`/api/admin/posha/clients/${encodeURIComponent(c.email)}/wallet-credit`, {
-              method: 'POST', body: { amount: Number(document.getElementById('pw-amt').value), note: document.getElementById('pw-note').value }
+              method: 'POST',
+              body: { amount: Number(document.getElementById('pw-amt').value), note: document.getElementById('pw-note').value },
             });
-            open360(c.email); refresh();
-          } catch (e) { alert(e.message); }
+            open360(c.email);
+            refresh();
+          } catch (e) {
+            showToast(e.message);
+          }
         };
       } else if (tab === 'support') {
-        body.innerHTML = (c.tickets||[]).map((t) => `
+        body.innerHTML =
+          (c.tickets || [])
+            .map(
+              (t) => `
           <article class="posha-ticket">
-            <div><strong>${esc(t.number||t.id)}</strong> — ${esc(t.subject)}
+            <div><strong>${esc(t.number || t.id)}</strong> — ${esc(t.subject)}
               <span class="chip">${esc(t.status)}</span>
-              <select data-tstatus="${esc(t.id)}">
-                ${['OPEN','IN_PROGRESS','WAITING_FOR_CLIENT','RESOLVED','CLOSED'].map((s)=>`<option ${String(t.status).toUpperCase()===s?'selected':''}>${s}</option>`).join('')}
-              </select>
             </div>
-            <div class="posha-thread">${(t.messages||[]).map((m)=>`<div class="posha-msg"><b>${esc(m.sender_role||m.from)}</b>: ${esc(m.message||m.body)}<small>${fmt(m.at||m.created_at)}</small></div>`).join('')}</div>
-            <form data-treply="${esc(t.id)}" class="posha-reply"><input name="message" required placeholder="رد الإدارة…" /><button class="btn btn-primary btn-sm">إرسال</button></form>
-          </article>`).join('') || '<p>لا تذاكر</p>';
-        body.querySelectorAll('[data-tstatus]').forEach((sel) => {
-          sel.onchange = async () => {
-            try {
-              await api(`/api/admin/posha/tickets/${encodeURIComponent(sel.dataset.tstatus)}/status`, { method: 'POST', body: { status: sel.value } });
-              open360(c.email); refresh();
-            } catch (e) { alert(e.message); }
-          };
-        });
-        body.querySelectorAll('[data-treply]').forEach((form) => {
-          form.onsubmit = async (e) => {
-            e.preventDefault();
-            const msg = new FormData(form).get('message');
-            try {
-              await api(`/api/admin/posha/tickets/${encodeURIComponent(form.dataset.treply)}/reply`, { method: 'POST', body: { message: msg } });
-              open360(c.email); refresh();
-            } catch (err) { alert(err.message); }
-          };
-        });
+            <div class="posha-thread">${(t.messages || []).map((m) => `<div class="posha-msg"><b>${esc(m.sender_role || m.from)}</b>: ${esc(m.message || m.body)}<small>${fmt(m.at || m.created_at)}</small></div>`).join('')}</div>
+          </article>`
+            )
+            .join('') || '<p>لا تذاكر</p>';
       } else if (tab === 'notifications') {
-        body.innerHTML = `<ul class="feed">${(c.notifications||[]).slice(0,20).map((n)=>`<li><b>${esc(n.title)}</b> — ${esc(n.body||'')}<small>${fmt(n.at)}</small></li>`).join('')||'<li>—</li>'}</ul>`;
+        body.innerHTML = `<ul class="feed">${(c.notifications || []).slice(0, 20).map((n) => `<li><b>${esc(n.title)}</b> — ${esc(n.body || '')}<small>${fmt(n.at)}</small></li>`).join('') || '<li>—</li>'}</ul>`;
       } else if (tab === 'activity') {
-        body.innerHTML = `<ul class="posha-timeline">${tl.map((e)=>`<li><strong>${esc(e.type)}</strong> ${esc(e.message||'')}<small>${fmt(e.at)}</small></li>`).join('')||'<li>—</li>'}</ul>`;
+        body.innerHTML = `<ul class="posha-timeline">${tl.map((e) => `<li><strong>${esc(e.type)}</strong> ${esc(e.message || '')}<small>${fmt(e.at)}</small></li>`).join('') || '<li>—</li>'}</ul>`;
       } else if (tab === 'security') {
-        body.innerHTML = `<p>آخر دخول: ${fmt(c.lastLoginAt)}</p>
-          <ul class="feed">${(c.sessions||[]).map((s)=>`<li>${esc(s.device)} · ${esc(s.browser)} · ${esc(s.ip||'—')}<small>${fmt(s.at)}</small></li>`).join('')||'<li>لا جلسات مخزّنة</li>'}</ul>
+        body.innerHTML = `<p>آخر دخول: ${esc(fmtDateParts(c.lastLoginAt).date)} ${esc(fmtDateParts(c.lastLoginAt).time)}</p>
+          <ul class="feed">${(c.sessions || []).map((s) => `<li>${esc(s.device)} · ${esc(s.browser)} · ${esc(s.ip || '—')}<small>${fmt(s.at)}</small></li>`).join('') || '<li>لا جلسات مخزّنة</li>'}</ul>
           <p class="posha-muted">كلمات المرور والـtokens غير مرئية للإدارة.</p>`;
       } else if (tab === 'notes') {
         body.innerHTML = `<form id="posha-note-form" class="posha-reply"><input name="note" required placeholder="ملاحظة داخلية" /><button class="btn btn-primary btn-sm">إضافة</button></form>
-          <ul class="feed">${(c.internalNotes||[]).map((n)=>`<li><b>${esc(n.by)}</b>: ${esc(n.note)}<small>${fmt(n.at)}</small></li>`).join('')||'<li>—</li>'}</ul>`;
+          <ul class="feed">${(c.internalNotes || []).map((n) => `<li><b>${esc(n.by)}</b>: ${esc(n.note)}<small>${fmt(n.at)}</small></li>`).join('') || '<li>—</li>'}</ul>`;
         document.getElementById('posha-note-form').onsubmit = async (e) => {
           e.preventDefault();
           try {
             await api(`/api/admin/clients/${encodeURIComponent(c.email)}/notes`, { method: 'POST', body: { note: new FormData(e.target).get('note') } });
             open360(c.email);
-          } catch (err) { alert(err.message); }
+          } catch (err) {
+            showToast(err.message);
+          }
         };
       }
     };
-    document.querySelectorAll('#posha-ctabs button').forEach((b) => b.onclick = () => paint(b.dataset.ctab));
-    paint('overview');
+    document.querySelectorAll('#posha-ctabs button').forEach((b) => (b.onclick = () => paint(b.dataset.ctab)));
+    paint(state.drawerTab || 'overview');
+    state.drawerTab = null;
   }
 
   function cr() {
@@ -1471,17 +1747,20 @@
     if (state.tab === 'overview') {
       body.innerHTML = overviewHtml();
       wireRequestsUi(body);
+      wireFilters();
+      wireClientsUi(body);
       body.querySelectorAll('[data-ptab-jump]').forEach((btn) => {
         btn.onclick = () => jumpTab(btn.getAttribute('data-ptab-jump'));
       });
     } else if (state.tab === 'clients' || state.tab === 'new') {
       if (state.tab === 'new') state.statusFilter = state.statusFilter || 'new';
-      body.innerHTML = `<section class="posha-panel">
+      body.innerHTML = `<section class="posha-panel posha-panel-clients">
         <div class="posha-panel-head"><h3>${state.tab === 'new' ? 'العملاء الجدد' : 'العملاء'}</h3></div>
         ${filterBar()}
         ${clientsTable(filteredClients())}
       </section>`;
       wireFilters();
+      wireClientsUi(body);
     } else if (state.tab === 'support') {
       const openT = state.tickets.filter((t) => !/closed|resolved|مغلق/i.test(String(t.status || '')));
       const closedT = state.tickets.filter((t) => /closed|resolved|مغلق/i.test(String(t.status || '')));
@@ -1600,14 +1879,68 @@
       state.statusFilter = e.target.value;
       paintBody();
     });
+    document.getElementById('posha-system')?.addEventListener('change', (e) => {
+      state.systemFilter = e.target.value;
+      paintBody();
+    });
+    document.getElementById('posha-reqs')?.addEventListener('change', (e) => {
+      state.requestsFilter = e.target.value;
+      paintBody();
+    });
+    document.getElementById('posha-clear-filters')?.addEventListener('click', () => {
+      state.q = '';
+      state.statusFilter = '';
+      state.systemFilter = '';
+      state.requestsFilter = '';
+      paintBody();
+    });
+  }
+
+  function wireClientsUi(root = document) {
+    root.querySelectorAll('[data-client-menu]').forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const email = btn.getAttribute('data-client-menu');
+        state.clientMenuEmail = state.clientMenuEmail === email ? null : email;
+        paintBody();
+      };
+    });
+    root.querySelectorAll('[data-client-systems]').forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        showSystemsModal(btn.getAttribute('data-client-systems'));
+      };
+    });
+    root.querySelectorAll('[data-client-goto-reqs]').forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const email = btn.getAttribute('data-client-goto-reqs');
+        const clientId = btn.getAttribute('data-client-id') || '';
+        state.tab = 'orders';
+        state.reqFilters = state.reqFilters || {};
+        state.reqFilters.q = email || clientId;
+        state.clientMenuEmail = null;
+        paintBody();
+      };
+    });
+    root.querySelectorAll('[data-client-toggle-status]').forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        confirmClientStatus(btn.getAttribute('data-client-toggle-status'), btn.getAttribute('data-next') || 'suspended');
+        state.clientMenuEmail = null;
+      };
+    });
   }
 
   function wireOpens() {
     document.querySelectorAll('[data-open-posha]').forEach((btn) => {
-      btn.onclick = () => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
         const id = btn.getAttribute('data-nid');
         if (id) api('/api/admin/posha/notifications/read', { method: 'POST', body: { id } }).catch(() => {});
-        open360(btn.getAttribute('data-open-posha'));
+        const tabPref = btn.getAttribute('data-ctab-pref') || '';
+        state.clientMenuEmail = null;
+        open360(btn.getAttribute('data-open-posha'), tabPref || undefined);
       };
     });
   }
