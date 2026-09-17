@@ -26,13 +26,12 @@
     pendingSensitive: null,
   };
 
-  const OPS_ROLES = [
-    { code: 'SUPER_ADMIN', nameAr: 'المدير الأعلى', desc: 'إدارة عليا للنطاقات المسموح بها.', positionCode: 'EMP_SUPREME_LEADER' },
-    { code: 'SYSTEM_MANAGER', nameAr: 'مدير النظام', desc: 'إدارة النظام المحدد ومتابعة عملياته وفق الصلاحيات الممنوحة.', positionCode: 'SYSTEM_OWNER_POS' },
-    { code: 'HUB_ADMIN', nameAr: 'مشرف', desc: 'متابعة ومراجعة العمليات داخل النظام المحدد.', positionCode: 'HUB_ADMIN_POS' },
-    { code: 'HUB_EMPLOYEE', nameAr: 'موظف تشغيل', desc: 'تنفيذ المهام اليومية المسموح بها.', positionCode: 'HUB_EMPLOYEE_POS' },
-    { code: 'HUB_AUDITOR', nameAr: 'مراجع', desc: 'عرض ومراجعة البيانات والطلبات دون إدارة كاملة.', positionCode: 'HUB_AUDITOR_POS' },
-  ];
+  const OPS_ROLES = null; // يُستبدل بكتالوج الأدوار الكامل من المخزن
+
+  const allRoles = () => (store().roles || []).filter((r) => r.status !== 'archived' && r.code !== 'PLATFORM_CUSTOMER');
+  const allPerms = () => (store().permissions || []).filter((p) => p.status !== 'inactive');
+  const allPositions = () => (store().positions || []).filter((p) => p.status !== 'archived' && p.code !== 'CUSTOMER_POS');
+  const classAr = (c) => ({ independent: 'نظام مستقل', sub: 'نظام فرعي', umbrella: 'نظام رئيسي', main: 'نظام رئيسي' }[c] || c || '—');
 
   const SENSITIVE = new Set([
     'users.manage',
@@ -258,15 +257,9 @@
 
   const labelSys = (code) => systems().find((s) => s.code === code)?.nameAr || code || '—';
   const labelRole = (code) => {
-    const ops = OPS_ROLES.find((r) => r.code === code);
-    if (ops) return ops.nameAr;
     const r = (store().roles || []).find((x) => x.code === code);
     if (!r) return code || '—';
     if (r.code === 'SUPER_ADMIN') return 'المدير الأعلى';
-    if (r.code === 'HUB_ADMIN') return 'مشرف';
-    if (r.code === 'HUB_EMPLOYEE') return 'موظف تشغيل';
-    if (r.code === 'HUB_AUDITOR') return 'مراجع';
-    if (r.code === 'SYSTEM_MANAGER') return 'مدير النظام';
     return r.nameAr || code;
   };
 
@@ -289,11 +282,15 @@
     }));
 
   const poolFor = (systemCode, roleCode) => {
-    const pool = SYSTEM_POOLS[systemCode] || SYSTEM_POOLS.HUB;
     const role = (store().roles || []).find((r) => r.code === roleCode);
     const rolePerms = role?.permissions || [];
-    const merged = [...new Set([...pool, ...rolePerms])];
-    return merged.filter((code) => (store().permissions || []).some((p) => p.code === code) || PERM_AR[code] || pool.includes(code));
+    const sysPool = SYSTEM_POOLS[systemCode] || [];
+    const catalog = allPerms().map((p) => p.code);
+    const byHint = allPerms()
+      .filter((p) => !p.systemHint || p.systemHint === systemCode || systemCode === 'HUB')
+      .map((p) => p.code);
+    const merged = [...new Set([...rolePerms, ...sysPool, ...byHint.slice(0, 80), ...catalog.filter((c) => rolePerms.includes(c))])];
+    return merged.length ? merged : catalog.slice(0, 40);
   };
 
   const primaryGrant = (identity) => {
@@ -428,12 +425,12 @@
             <h3>فريق إدارة نايوش</h3>
             <p>الأشخاص المعيّنون لإدارة نايوش هوب وأنظمتها والصلاحيات الممنوحة لكل شخص.</p>
           </div>
-          <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open">+ تعيين موظف</button>
+          <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open">+ إضافة موظف</button>
         </div>
         <div class="hto-toolbar">
           <input type="search" id="hto-q" value="${esc(ui.q)}" placeholder="ابحث بالاسم أو رقم الموظف أو رقم نايوش أو البريد" />
           <select id="hto-f-sys"><option value="">النظام: الكل</option>${sysOpts.map((s) => `<option value="${esc(s.code)}" ${ui.filters.system === s.code ? 'selected' : ''}>${esc(s.nameAr)}</option>`).join('')}</select>
-          <select id="hto-f-role"><option value="">الدور: الكل</option>${OPS_ROLES.map((r) => `<option value="${esc(r.code)}" ${ui.filters.role === r.code ? 'selected' : ''}>${esc(r.nameAr)}</option>`).join('')}</select>
+          <select id="hto-f-role"><option value="">الدور: الكل</option>${allRoles().map((r) => `<option value="${esc(r.code)}" ${ui.filters.role === r.code ? 'selected' : ''}>${esc(r.nameAr)}</option>`).join('')}</select>
           <select id="hto-f-status">
             <option value="">الحالة: الكل</option>
             <option value="active" ${ui.filters.status === 'active' ? 'selected' : ''}>نشط</option>
@@ -446,7 +443,7 @@
           pageRows.length
             ? `<div class="hto-table-wrap"><table class="hto-table hto-table-team">
                 <thead><tr>
-                  <th>الموظف</th><th>رقم الموظف</th><th>رقم نايوش</th><th>مكان العمل</th><th>الدور</th><th>الصلاحيات</th><th>الحالة</th><th>آخر تعديل</th><th>الإجراءات</th>
+                  <th>الموظف</th><th>رقم الموظف</th><th>رقم نايوش</th><th>مكان العمل</th><th>النظام</th><th>الدور</th><th>الصلاحيات</th><th>الحالة</th><th>آخر تعديل</th><th>الإجراءات</th>
                 </tr></thead>
                 <tbody>${pageRows
                   .map((u) => {
@@ -467,7 +464,8 @@
                         }
                       </td>
                       <td data-label="رقم نايوش" class="hto-nowrap"><code>${esc(u.naioshId)}</code></td>
-                      <td data-label="مكان العمل">${esc(g ? labelSys(g.system) : '—')}</td>
+                      <td data-label="مكان العمل">${esc(g?.positionCode ? allPositions().find((p) => p.code === g.positionCode)?.nameAr || g.positionCode : '—')}</td>
+                      <td data-label="النظام">${esc(g ? labelSys(g.system) : '—')}</td>
                       <td data-label="الدور"><span class="hto-chip">${esc(g ? labelRole(g.roleCode) : 'بدون تعيين')}</span></td>
                       <td data-label="الصلاحيات">${g ? `${perms.length} صلاحيات` : 'لا توجد صلاحيات'}</td>
                       <td data-label="الحالة">${statusBadge(u.status)}</td>
@@ -486,37 +484,156 @@
               </div>`
             : `<div class="hto-empty">
                 <p>لا يوجد موظفون معيّنون حتى الآن.</p>
-                <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open">+ تعيين أول موظف</button>
+                <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open">+ إضافة أول موظف</button>
               </div>`
         }
       </section>`;
   };
 
-  const renderRoles = () => {
+  const renderSystems = () => {
+    const q = String(ui.q || '').trim().toLowerCase();
+    let rows = systems().slice();
+    if (q) rows = rows.filter((s) => [s.code, s.nameAr, s.classification, s.parentCode].some((x) => String(x || '').toLowerCase().includes(q)));
     const grants = store().grants || [];
+    const roles = store().roles || [];
+    const perms = store().permissions || [];
     return `<section class="hto-panel">
       <div class="hto-panel-head">
-        <div>
-          <h3>الأدوار</h3>
-          <p>أنشئ أدوارًا جاهزة تساعد على اقتراح مجموعة من الصلاحيات عند تعيين الموظفين.</p>
-        </div>
+        <div><h3>الأنظمة</h3><p>أنظمة تشغيل ديناميكية — مستقلة أو فرعية — قابلة للإضافة والتعيين عليها.</p></div>
+        <button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-system">+ إضافة نظام</button>
+      </div>
+      <div class="hto-toolbar">
+        <input type="search" id="hto-q" value="${esc(ui.q)}" placeholder="ابحث عن نظام…" />
+        <button type="button" class="hto-btn" data-action="hto-apply">تطبيق</button>
       </div>
       <div class="hto-table-wrap"><table class="hto-table">
-        <thead><tr><th>اسم الدور</th><th>الوصف</th><th>عدد الموظفين</th><th>عدد الصلاحيات الافتراضية</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
-        <tbody>${OPS_ROLES.map((r) => {
-          const full = (store().roles || []).find((x) => x.code === r.code);
-          const usersN = new Set(grants.filter((g) => g.roleCode === r.code && String(g.status).toUpperCase() === 'ACTIVE').map((g) => g.identityId)).size;
-          const permN = (full?.permissions || []).length;
-          return `<tr>
-            <td data-label="اسم الدور"><strong>${esc(r.nameAr)}</strong></td>
-            <td data-label="الوصف">${esc(r.desc)}</td>
-            <td data-label="عدد الموظفين">${usersN}</td>
-            <td data-label="الصلاحيات الافتراضية">${permN}</td>
-            <td data-label="الحالة">${badge('نشط', 'is-ok')}</td>
-            <td data-label="الإجراءات"><button type="button" class="hto-btn hto-btn-sm" data-action="hto-role-view" data-code="${esc(r.code)}">عرض</button></td>
-          </tr>`;
-        }).join('')}</tbody>
+        <thead><tr><th>رمز النظام</th><th>اسم النظام</th><th>التصنيف</th><th>النظام الأب</th><th>الموظفون</th><th>الأدوار</th><th>الصلاحيات</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+        <tbody>${
+          rows.length
+            ? rows
+                .map((s) => {
+                  const empN = new Set(grants.filter((g) => g.system === s.code && String(g.status).toUpperCase() === 'ACTIVE').map((g) => g.identityId)).size;
+                  const roleN = roles.filter((r) => (r.applicableSystems || []).includes(s.code)).length;
+                  const permN = perms.filter((p) => !p.systemHint || p.systemHint === s.code).length;
+                  return `<tr>
+                    <td data-label="الرمز"><code>${esc(s.code)}</code></td>
+                    <td data-label="الاسم"><strong>${esc(s.nameAr)}</strong></td>
+                    <td data-label="التصنيف">${esc(classAr(s.classification))}</td>
+                    <td data-label="الأب">${esc(s.parentCode ? labelSys(s.parentCode) : '—')}</td>
+                    <td data-label="الموظفون">${empN}</td>
+                    <td data-label="الأدوار">${roleN}</td>
+                    <td data-label="الصلاحيات">${permN}</td>
+                    <td data-label="الحالة">${badge(s.status === 'active' ? 'فعال' : 'موقوف', s.status === 'active' ? 'is-ok' : 'is-warn')}</td>
+                    <td data-label="الإجراءات" class="hto-actions">
+                      <button type="button" class="hto-btn hto-btn-sm" data-action="hto-edit-system" data-code="${esc(s.code)}">تعديل</button>
+                      <button type="button" class="hto-btn hto-btn-sm" data-action="hto-toggle-system" data-code="${esc(s.code)}" data-next="${s.status === 'active' ? 'inactive' : 'active'}">${s.status === 'active' ? 'إيقاف' : 'تفعيل'}</button>
+                    </td>
+                  </tr>`;
+                })
+                .join('')
+            : '<tr><td colspan="9">لا أنظمة مطابقة.</td></tr>'
+        }</tbody>
       </table></div>
+      <p class="hto-muted">الإجمالي الحقيقي: ${systems().length} نظامًا</p>
+    </section>`;
+  };
+
+  const renderRoles = () => {
+    const grants = store().grants || [];
+    const q = String(ui.q || '').trim().toLowerCase();
+    let roles = allRoles();
+    if (q) roles = roles.filter((r) => [r.code, r.nameAr, r.level].some((x) => String(x || '').toLowerCase().includes(q)));
+    if (ui.filters.system) roles = roles.filter((r) => (r.applicableSystems || []).includes(ui.filters.system));
+    const pages = Math.max(1, Math.ceil(roles.length / ui.pageSize) || 1);
+    ui.page = Math.min(ui.page, pages);
+    const start = (ui.page - 1) * ui.pageSize;
+    const pageRows = roles.slice(start, start + ui.pageSize);
+    return `<section class="hto-panel">
+      <div class="hto-panel-head">
+        <div><h3>الأدوار</h3><p>كتالوج الأدوار الكامل من المصدر الأساسي مع إمكانية إضافة أدوار جديدة.</p></div>
+        <button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-role">+ إضافة دور</button>
+      </div>
+      <div class="hto-toolbar">
+        <input type="search" id="hto-q" value="${esc(ui.q)}" placeholder="ابحث في الأدوار…" />
+        <select id="hto-f-sys"><option value="">النظام: الكل</option>${systems().map((s) => `<option value="${esc(s.code)}" ${ui.filters.system === s.code ? 'selected' : ''}>${esc(s.nameAr)}</option>`).join('')}</select>
+        <button type="button" class="hto-btn" data-action="hto-apply">تطبيق</button>
+        <button type="button" class="hto-btn" data-action="hto-clear">مسح</button>
+      </div>
+      <div class="hto-table-wrap"><table class="hto-table">
+        <thead><tr><th>رمز الدور</th><th>اسم الدور</th><th>المستوى</th><th>الأنظمة</th><th>الصلاحيات</th><th>الموظفون</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+        <tbody>${pageRows
+          .map((r) => {
+            const usersN = new Set(grants.filter((g) => g.roleCode === r.code && String(g.status).toUpperCase() === 'ACTIVE').map((g) => g.identityId)).size;
+            const permN = (r.permissions || []).length;
+            return `<tr>
+              <td data-label="الرمز"><code>${esc(r.code)}</code></td>
+              <td data-label="الاسم"><strong>${esc(r.nameAr)}</strong><div class="hto-muted">${esc(r.description || r.source || '')}</div></td>
+              <td data-label="المستوى">${esc(r.level || '—')}</td>
+              <td data-label="الأنظمة">${esc((r.applicableSystems || []).map(labelSys).join('، ') || '—')}</td>
+              <td data-label="الصلاحيات">${permN}</td>
+              <td data-label="الموظفون">${usersN}</td>
+              <td data-label="الحالة">${badge(r.status === 'active' ? 'نشط' : 'موقوف', r.status === 'active' ? 'is-ok' : 'is-warn')}</td>
+              <td data-label="الإجراءات"><button type="button" class="hto-btn hto-btn-sm" data-action="hto-role-view" data-code="${esc(r.code)}">عرض</button></td>
+            </tr>`;
+          })
+          .join('')}</tbody>
+      </table></div>
+      <div class="hto-pager"><span>عرض ${roles.length ? start + 1 : 0}–${Math.min(start + ui.pageSize, roles.length)} من ${roles.length}</span>
+        <div class="hto-actions">
+          <button type="button" class="hto-btn" data-action="hto-page" data-page="${ui.page - 1}" ${ui.page <= 1 ? 'disabled' : ''}>السابق</button>
+          <button type="button" class="hto-btn" data-action="hto-page" data-page="${ui.page + 1}" ${ui.page >= pages ? 'disabled' : ''}>التالي</button>
+        </div>
+      </div>
+    </section>`;
+  };
+
+  const renderPermissions = () => {
+    const q = String(ui.q || '').trim().toLowerCase();
+    let perms = allPerms();
+    if (q) perms = perms.filter((p) => [p.code, p.nameAr, p.resource, p.action].some((x) => String(x || '').toLowerCase().includes(q)));
+    if (ui.filters.system) {
+      perms = perms.filter((p) => !p.systemHint || p.systemHint === ui.filters.system || p.resource === String(ui.filters.system).toLowerCase());
+    }
+    const grants = store().grants || [];
+    const roles = store().roles || [];
+    const pages = Math.max(1, Math.ceil(perms.length / ui.pageSize) || 1);
+    ui.page = Math.min(ui.page, pages);
+    const start = (ui.page - 1) * ui.pageSize;
+    const pageRows = perms.slice(start, start + ui.pageSize);
+    return `<section class="hto-panel">
+      <div class="hto-panel-head">
+        <div><h3>الصلاحيات</h3><p>كتالوج الصلاحيات الكامل من المصدر الأساسي — بدون اختصار.</p></div>
+        <button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-perm">+ إضافة صلاحية</button>
+      </div>
+      <div class="hto-toolbar">
+        <input type="search" id="hto-q" value="${esc(ui.q)}" placeholder="ابحث في الصلاحيات…" />
+        <select id="hto-f-sys"><option value="">النظام: الكل</option>${systems().map((s) => `<option value="${esc(s.code)}" ${ui.filters.system === s.code ? 'selected' : ''}>${esc(s.nameAr)}</option>`).join('')}</select>
+        <button type="button" class="hto-btn" data-action="hto-apply">تطبيق</button>
+      </div>
+      <div class="hto-table-wrap"><table class="hto-table">
+        <thead><tr><th>الرمز</th><th>اسم الصلاحية</th><th>القسم</th><th>العملية</th><th>الأدوار</th><th>الموظفون</th><th>الحالة</th></tr></thead>
+        <tbody>${pageRows
+          .map((p) => {
+            const roleN = roles.filter((r) => (r.permissions || []).includes(p.code)).length;
+            const empN = new Set(grants.filter((g) => (g.permissions || []).includes(p.code) && String(g.status).toUpperCase() === 'ACTIVE').map((g) => g.identityId)).size;
+            return `<tr>
+              <td data-label="الرمز"><code>${esc(p.code)}</code></td>
+              <td data-label="الاسم"><strong>${esc(permLabel(p.code))}</strong></td>
+              <td data-label="القسم">${esc(p.resource || '—')}</td>
+              <td data-label="العملية">${esc(ACTION_AR[p.action] || p.action || '—')}</td>
+              <td data-label="الأدوار">${roleN}</td>
+              <td data-label="الموظفون">${empN}</td>
+              <td data-label="الحالة">${badge(p.status === 'active' ? 'نشطة' : 'موقوفة', p.status === 'active' ? 'is-ok' : 'is-warn')}</td>
+            </tr>`;
+          })
+          .join('')}</tbody>
+      </table></div>
+      <div class="hto-pager"><span>عرض ${perms.length ? start + 1 : 0}–${Math.min(start + ui.pageSize, perms.length)} من ${perms.length}</span>
+        <div class="hto-actions">
+          <button type="button" class="hto-btn" data-action="hto-page" data-page="${ui.page - 1}" ${ui.page <= 1 ? 'disabled' : ''}>السابق</button>
+          <button type="button" class="hto-btn" data-action="hto-page" data-page="${ui.page + 1}" ${ui.page >= pages ? 'disabled' : ''}>التالي</button>
+        </div>
+      </div>
     </section>`;
   };
 
@@ -601,7 +718,8 @@
           <button type="button" class="hto-btn" data-action="hto-drawer-close">إغلاق</button>
         </header>
         <div class="hto-drawer-body">
-          <p><strong>مكان العمل:</strong> ${esc(g ? labelSys(g.system) : '—')}</p>
+          <p><strong>مكان العمل:</strong> ${esc(g?.positionCode ? allPositions().find((p) => p.code === g.positionCode)?.nameAr || g.positionCode : '—')}</p>
+          <p><strong>النظام:</strong> ${esc(g ? labelSys(g.system) : '—')}</p>
           <p><strong>الدور:</strong> ${esc(g ? labelRole(g.roleCode) : '—')}</p>
           <div class="hto-table-wrap"><table class="hto-table">
             <thead><tr><th>رقم الصلاحية</th><th>الصلاحية</th><th>الحالة</th></tr></thead>
@@ -788,12 +906,21 @@
           }
           ${
             w.step === 2
-              ? `<h4>أين سيعمل هذا الموظف؟</h4>
-                 <p class="hto-lead">اختر النظام أو القسم الذي سيكون الموظف مسؤولًا عنه. يمكن لنفس الشخص أن يكون له أكثر من تعيين.</p>
+              ? `<h4>مكان العمل والنظام</h4>
+                 <p class="hto-lead">اختر مستوى/مكان العمل ثم النظام التشغيلي الذي سيعمل عليه الموظف.</p>
+                 <h5>مكان / مستوى العمل</h5>
+                 <div class="hto-pick-list">${allPositions()
+                   .map(
+                     (p) => `<button type="button" class="hto-pick ${w.positionCode === p.code ? 'is-on' : ''}" data-action="hto-wizard-pick-pos" data-code="${esc(p.code)}">
+                       <span><strong>${esc(p.nameAr)}</strong><small>${esc(p.orgLevel || '')}</small></span>
+                     </button>`
+                   )
+                   .join('')}</div>
+                 <h5>النظام</h5>
                  <div class="hto-pick-list">${systems()
                    .map(
                      (s) => `<button type="button" class="hto-pick ${w.system === s.code ? 'is-on' : ''}" data-action="hto-wizard-pick-sys" data-code="${esc(s.code)}">
-                       <span><strong>${esc(s.nameAr)}</strong></span>
+                       <span><strong>${esc(s.nameAr)}</strong><small>${esc(classAr(s.classification))}${s.parentCode ? ` · يتبع ${labelSys(s.parentCode)}` : ''}</small></span>
                      </button>`
                    )
                    .join('')}</div>`
@@ -803,11 +930,14 @@
             w.step === 3
               ? `<h4>ما دور الموظف؟</h4>
                  <p class="hto-lead">الدور يقترح صلاحيات افتراضية فقط — الصلاحيات النهائية تُحدَّد في الخطوة التالية.</p>
-                 <div class="hto-pick-list">${OPS_ROLES.map(
-                   (r) => `<button type="button" class="hto-pick ${w.roleCode === r.code ? 'is-on' : ''}" data-action="hto-wizard-pick-role" data-code="${esc(r.code)}">
-                     <span><strong>${esc(r.nameAr)}</strong><small>${esc(r.desc)}</small></span>
+                 <div class="hto-pick-list">${allRoles()
+                   .slice(0, 80)
+                   .map(
+                     (r) => `<button type="button" class="hto-pick ${w.roleCode === r.code ? 'is-on' : ''}" data-action="hto-wizard-pick-role" data-code="${esc(r.code)}">
+                     <span><strong>${esc(r.nameAr)}</strong><small>${esc(r.description || (r.applicableSystems || []).map(labelSys).join(' · ') || r.level || '')}</small></span>
                    </button>`
-                 ).join('')}</div>`
+                   )
+                   .join('')}</div>`
               : ''
           }
           ${
@@ -825,7 +955,8 @@
                       <p><strong>الموظف:</strong> ${esc(u?.name || w.naioshId)}</p>
                       <p><strong>رقم الموظف:</strong> <code class="hto-emp">${esc(empNoOf(u))}</code></p>
                       <p><strong>رقم نايوش:</strong> ${esc(w.naioshId)}</p>
-                      <p><strong>مكان العمل:</strong> ${esc(labelSys(w.system))}</p>
+                      <p><strong>مكان العمل:</strong> ${esc(allPositions().find((p) => p.code === w.positionCode)?.nameAr || w.positionCode || '—')}</p>
+                      <p><strong>النظام:</strong> ${esc(labelSys(w.system))}</p>
                       <p><strong>الدور:</strong> ${esc(labelRole(w.roleCode))}</p>
                       <p><strong>الحالة:</strong> نشط</p>
                       <p><strong>عدد الصلاحيات:</strong> ${list.length}</p>
@@ -883,30 +1014,45 @@
   const render = () => {
     const tabs = [
       ['team', 'فريق العمل'],
-      ['assign', 'تعيين موظف'],
+      ['systems', 'الأنظمة'],
       ['roles', 'الأدوار'],
+      ['permissions', 'الصلاحيات'],
       ['audit', 'سجل الصلاحيات'],
     ];
     let body = '';
     if (ui.tab === 'team') body = renderTeam();
-    else if (ui.tab === 'assign') {
-      body = `<section class="hto-panel"><div class="hto-panel-head"><div>
-        <h3>تعيين موظف</h3>
-        <p>اختر الشخص، مكان العمل، الدور، ثم الصلاحيات — ثم راجع وأكّد ليُطبَّق الوصول فعليًا.</p>
-      </div>
-      <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open">بدء التعيين</button>
-      </div></section>`;
-    } else if (ui.tab === 'roles') body = renderRoles();
+    else if (ui.tab === 'systems') body = renderSystems();
+    else if (ui.tab === 'roles') body = renderRoles();
+    else if (ui.tab === 'permissions') body = renderPermissions();
     else body = renderAudit();
+
+    const heroCta =
+      ui.tab === 'systems'
+        ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-system">+ إضافة نظام</button>`
+        : ui.tab === 'roles'
+          ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-role">+ إضافة دور</button>`
+          : ui.tab === 'permissions'
+            ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-perm">+ إضافة صلاحية</button>`
+            : ui.tab === 'audit'
+              ? ''
+              : `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open">+ إضافة موظف</button>`;
+
+    const counts = {
+      systems: systems().length,
+      roles: allRoles().length,
+      perms: allPerms().length,
+      staff: (store().identities || []).filter((i) => isEmployee(i)).length,
+    };
 
     return `
       <div class="hto-root" data-hto-root>
         <header class="hto-hero">
           <div>
             <h2>إدارة فريق العمل والصلاحيات</h2>
-            <p>عيّن المسؤولين عن إدارة نايوش هوب وأنظمتها، وحدد لكل شخص مكان عمله ودوره والصلاحيات المسموح بها.</p>
+            <p>مركز ديناميكي: أنظمة ← أماكن عمل ← أدوار ← صلاحيات ← موظفون ← سجل.</p>
+            <p class="hto-kpis-inline"><span>الأنظمة: <strong>${counts.systems}</strong></span> · <span>الأدوار: <strong>${counts.roles}</strong></span> · <span>الصلاحيات: <strong>${counts.perms}</strong></span> · <span>الموظفون: <strong>${counts.staff}</strong></span></p>
           </div>
-          <button type="button" class="hto-btn hto-btn-primary" data-action="hto-wizard-open">+ تعيين موظف</button>
+          ${heroCta}
         </header>
         <nav class="hto-tabs" aria-label="أقسام الصفحة">${tabs.map(([id, label]) => `<button type="button" class="hto-tab ${ui.tab === id ? 'is-on' : ''}" data-action="hto-tab" data-tab="${id}">${esc(label)}</button>`).join('')}</nav>
         <div class="hto-main">${body}</div>
@@ -937,7 +1083,6 @@
       return true;
     }
     const role = (store().roles || []).find((r) => r.code === w.roleCode);
-    const ops = OPS_ROLES.find((r) => r.code === w.roleCode);
     const permissions = w.permissions?.length ? w.permissions : defaultPermsFor(w.system, w.roleCode);
     try {
       // ضمان أن الهدف موظف برقم قبل حفظ التعيين
@@ -948,6 +1093,7 @@
           {
             roleCode: w.roleCode,
             system: w.system,
+            positionCode: w.positionCode || role?.eligiblePositions?.[0] || null,
             permissions,
             reason: 'تعديل تعيين من إدارة فريق العمل',
           },
@@ -961,7 +1107,7 @@
         engine().createGrant(
           {
             naioshId: w.naioshId,
-            positionCode: ops?.positionCode || role?.eligiblePositions?.[0] || null,
+            positionCode: w.positionCode || role?.eligiblePositions?.[0] || null,
             roleCode: w.roleCode,
             system: w.system || 'HUB',
             scopeCode: w.system === 'HUB' ? 'HUB-GLOBAL' : 'GLOBAL',
@@ -998,9 +1144,8 @@
 
     if (action === 'hto-tab') {
       ui.tab = btn.dataset.tab || 'team';
-      if (ui.tab === 'assign') {
-        ui.wizard = { step: 1, naioshId: '', system: 'CRM', roleCode: 'SYSTEM_MANAGER', permissions: [], userQ: '' };
-      }
+      ui.page = 1;
+      ui.q = '';
       return true;
     }
     if (action === 'hto-apply') {
@@ -1072,10 +1217,11 @@
         userQ: '',
         empQ: '',
         system: 'CRM',
+        positionCode: '',
         roleCode: 'SYSTEM_MANAGER',
         permissions: [],
       };
-      ui.tab = 'assign';
+      ui.tab = 'team';
       return true;
     }
     if (action === 'hto-wizard-close') {
@@ -1111,6 +1257,10 @@
     if (action === 'hto-wizard-pick-sys') {
       ui.wizard.system = btn.dataset.code;
       ui.wizard.permissions = [];
+      return true;
+    }
+    if (action === 'hto-wizard-pick-pos') {
+      ui.wizard.positionCode = btn.dataset.code;
       return true;
     }
     if (action === 'hto-wizard-pick-role') {
@@ -1276,6 +1426,88 @@
       }
       return true;
     }
+    if (action === 'hto-add-system') {
+      const nameAr = window.prompt('اسم النظام');
+      if (!nameAr) return true;
+      const code = window.prompt('رمز النظام (إنجليزي مثل SALES أو EVENTS)', nameAr.replace(/\s+/g, '_').toUpperCase().slice(0, 12));
+      if (!code) return true;
+      const classification = window.prompt('التصنيف: independent أو sub', 'independent') || 'independent';
+      let parentCode = null;
+      if (classification === 'sub') parentCode = window.prompt('رمز النظام الأب (مثل ERP)', 'ERP') || 'ERP';
+      const description = window.prompt('وصف النظام', nameAr) || nameAr;
+      try {
+        engine().upsertManagedSystem({ code, nameAr, classification, parentCode, description, status: 'active' }, actor);
+        ui.tab = 'systems';
+        toast?.('تم حفظ النظام وظهوره في القوائم فورًا');
+      } catch (e) {
+        toast?.(e.message || 'تعذر حفظ النظام');
+      }
+      return true;
+    }
+    if (action === 'hto-edit-system') {
+      const code = btn.dataset.code;
+      const cur = systems().find((s) => s.code === code);
+      if (!cur) return true;
+      const nameAr = window.prompt('اسم النظام', cur.nameAr);
+      if (!nameAr) return true;
+      const classification = window.prompt('التصنيف: independent أو sub', cur.classification || 'independent') || cur.classification;
+      let parentCode = cur.parentCode;
+      if (classification === 'sub') parentCode = window.prompt('رمز النظام الأب', parentCode || 'ERP') || parentCode;
+      else parentCode = null;
+      try {
+        engine().upsertManagedSystem({ code, nameAr, classification, parentCode, description: cur.description || nameAr, status: cur.status }, actor);
+        toast?.('تم تحديث النظام');
+      } catch (e) {
+        toast?.(e.message || 'تعذر التحديث');
+      }
+      return true;
+    }
+    if (action === 'hto-toggle-system') {
+      const code = btn.dataset.code;
+      const next = btn.dataset.next || 'inactive';
+      const cur = systems().find((s) => s.code === code);
+      if (!cur) return true;
+      if (next !== 'active' && !window.confirm(`إيقاف النظام ${cur.nameAr}؟`)) return true;
+      try {
+        engine().upsertManagedSystem({ ...cur, status: next }, actor);
+        toast?.(next === 'active' ? 'تم تفعيل النظام' : 'تم إيقاف النظام');
+      } catch (e) {
+        toast?.(e.message || 'تعذر تغيير الحالة');
+      }
+      return true;
+    }
+    if (action === 'hto-add-role') {
+      const nameAr = window.prompt('اسم الدور');
+      if (!nameAr) return true;
+      const code = window.prompt('رمز الدور', nameAr.replace(/\s+/g, '_').toUpperCase().slice(0, 24));
+      if (!code) return true;
+      const system = window.prompt('رمز النظام المرتبط', ui.filters.system || 'HUB') || 'HUB';
+      const description = window.prompt('وصف الدور', '') || '';
+      try {
+        engine().upsertRole({ code, nameAr, description, applicableSystems: [system], permissions: defaultPermsFor(system, 'SYSTEM_MANAGER'), status: 'active' }, actor);
+        ui.tab = 'roles';
+        toast?.('تم حفظ الدور');
+      } catch (e) {
+        toast?.(e.message || 'تعذر حفظ الدور');
+      }
+      return true;
+    }
+    if (action === 'hto-add-perm') {
+      const nameAr = window.prompt('اسم الصلاحية (مثل: نشر مقال)');
+      if (!nameAr) return true;
+      const resource = window.prompt('القسم / الوحدة (مثل articles)', 'articles') || 'articles';
+      const actionType = window.prompt('نوع العملية (VIEW/CREATE/EDIT/PUBLISH/...)', 'PUBLISH') || 'PUBLISH';
+      const system = window.prompt('النظام (اختياري)', 'CONTENT') || null;
+      const description = window.prompt('الوصف', nameAr) || nameAr;
+      try {
+        engine().upsertPermission({ nameAr, resource, action: actionType, system, description }, actor);
+        ui.tab = 'permissions';
+        toast?.('تم حفظ الصلاحية');
+      } catch (e) {
+        toast?.(e.message || 'تعذر حفظ الصلاحية');
+      }
+      return true;
+    }
     if (action === 'hto-success-close') {
       ui.success = null;
       ui.tab = 'team';
@@ -1309,7 +1541,7 @@
     handle,
     afterPaint,
     ui,
-    OPS_ROLES,
+    OPS_ROLES: allRoles,
     PANEL_BY_SYSTEM,
     allowedPanelsForUser,
     authorizeAction: (hubUser, permission, system) => {

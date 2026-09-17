@@ -65,30 +65,55 @@
   ];
 
   const listSystems = () => {
-    const fromOps = window.HubOpsCatalog?.listSystems?.() || window.HubOpsCatalog?.get?.()?.systems;
+    const fromOps = window.HubOpsCatalog?.listSystems?.({ includeUmbrella: true }) || window.HubOpsCatalog?.get?.()?.systems;
+    const normalize = (s) => ({
+      code: s.code || s.id,
+      nameAr: s.nameAr || s.name || s.shortName || s.code,
+      nameEn: s.nameEn || s.shortName || s.code,
+      level: s.isUmbrella || s.code === 'HUB' || s.level === 'HUB' ? 'HUB' : 'SYSTEM',
+      status: s.status || 'active',
+      classification: s.classification || (s.parentCode ? 'sub' : s.isUmbrella ? 'umbrella' : 'independent'),
+      parentCode: s.parentCode || s.parentId || null,
+      description: s.description || '',
+      icon: s.icon || 'fa-cube',
+      url: s.url || s.link || '',
+      createdAt: s.createdAt || null,
+      updatedAt: s.updatedAt || null,
+      source: s.source || 'catalog',
+    });
     if (Array.isArray(fromOps) && fromOps.length) {
-      return fromOps
-        .filter((s) => s && s.status !== 'archived')
-        .map((s) => ({
-          code: s.code || s.id,
-          nameAr: s.name || s.shortName || s.code,
-          nameEn: s.shortName || s.code,
-          level: s.isUmbrella || s.code === 'HUB' ? 'HUB' : 'SYSTEM',
-          status: s.status || 'active',
-        }));
+      return fromOps.filter((s) => s && s.status !== 'archived').map(normalize);
     }
     return [
-      { code: 'HUB', nameAr: 'نايوش هوب', nameEn: 'HUB', level: 'HUB', status: 'active' },
-      { code: 'ERP', nameAr: 'نايوش إي آر بي', nameEn: 'ERP', level: 'SYSTEM', status: 'active' },
-      { code: 'CRM', nameAr: 'إدارة العملاء', nameEn: 'CRM', level: 'SYSTEM', status: 'active' },
-      { code: 'LMS', nameAr: 'نظام التعلم', nameEn: 'LMS', level: 'SYSTEM', status: 'active' },
-      { code: 'LAW', nameAr: 'نايوش لو', nameEn: 'LAW', level: 'SYSTEM', status: 'active' },
-      { code: 'FIT', nameAr: 'نايوش فيت', nameEn: 'FIT', level: 'SYSTEM', status: 'active' },
-      { code: 'ACADEMY', nameAr: 'أكاديمية نايوش', nameEn: 'ACADEMY', level: 'SYSTEM', status: 'active' },
-      { code: 'POSHA', nameAr: 'بوشا', nameEn: 'POSHA', level: 'SYSTEM', status: 'active' },
-      { code: 'NAIS', nameAr: 'نايس', nameEn: 'NAIS', level: 'SYSTEM', status: 'active' },
-      { code: 'SMARTX', nameAr: 'سمارتكس', nameEn: 'SMARTX', level: 'SYSTEM', status: 'active' },
-    ];
+      { code: 'HUB', nameAr: 'نايوش هوب', nameEn: 'HUB', level: 'HUB', status: 'active', classification: 'umbrella', parentCode: null },
+      { code: 'ERP', nameAr: 'نايوش إي آر بي', nameEn: 'ERP', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'CRM', nameAr: 'إدارة العملاء', nameEn: 'CRM', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'LMS', nameAr: 'نظام التعلم', nameEn: 'LMS', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'LAW', nameAr: 'نايوش لو', nameEn: 'LAW', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'FIT', nameAr: 'نايوش فيت', nameEn: 'FIT', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'ACADEMY', nameAr: 'أكاديمية نايوش', nameEn: 'ACADEMY', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'POSHA', nameAr: 'بوشا', nameEn: 'POSHA', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'NAIS', nameAr: 'نايس', nameEn: 'NAIS', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'SMARTX', nameAr: 'سمارتكس', nameEn: 'SMARTX', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'SALES', nameAr: 'المبيعات', nameEn: 'SALES', level: 'SYSTEM', status: 'active', classification: 'sub', parentCode: 'ERP' },
+      { code: 'MARKETING', nameAr: 'التسويق', nameEn: 'MARKETING', level: 'SYSTEM', status: 'active', classification: 'sub', parentCode: 'ERP' },
+      { code: 'EVENTS', nameAr: 'استوديو الفعاليات', nameEn: 'EVENTS', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'ADS', nameAr: 'استوديو الإعلانات', nameEn: 'ADS', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'STORE', nameAr: 'المتجر', nameEn: 'STORE', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+      { code: 'CONTENT', nameAr: 'المحتوى والمدونة', nameEn: 'CONTENT', level: 'SYSTEM', status: 'active', classification: 'independent', parentCode: null },
+    ].map((s) => ({ ...s, description: '', icon: 'fa-cube', url: '', createdAt: null, updatedAt: null, source: 'seed' }));
+  };
+
+  const mergeSystemsState = (state) => {
+    const base = listSystems();
+    const managed = Array.isArray(state.managedSystems) ? state.managedSystems : [];
+    const map = new Map();
+    base.forEach((s) => map.set(s.code, { ...s }));
+    managed.forEach((s) => {
+      if (!s?.code) return;
+      map.set(s.code, { ...(map.get(s.code) || {}), ...s, source: 'managed' });
+    });
+    return [...map.values()];
   };
 
   const seedPermissions = () => {
@@ -104,19 +129,60 @@
       ['audit', 'التدقيق'],
       ['delegations', 'التفويضات'],
       ['workflow', 'سير العمل'],
+      ['articles', 'المقالات'],
+      ['ads', 'الإعلانات'],
+      ['events', 'الفعاليات'],
+      ['products', 'المنتجات'],
+      ['stores', 'المتجر'],
+      ['content', 'المحتوى'],
+      ['reports', 'التقارير'],
+      ['notifications', 'الإشعارات'],
+      ['search', 'محرك البحث'],
+      ['sales', 'المبيعات'],
+      ['marketing', 'التسويق'],
+      ['settings', 'الإعدادات'],
     ];
     const actionsByResource = {
       access_governance: ['VIEW', 'MANAGE', 'CONFIGURE', 'AUDIT'],
-      roles: ['VIEW', 'CREATE', 'EDIT', 'ASSIGN', 'SUSPEND', 'AUDIT'],
-      positions: ['VIEW', 'CREATE', 'EDIT', 'ASSIGN', 'AUDIT'],
-      users: ['VIEW', 'CREATE', 'EDIT', 'SUSPEND', 'ASSIGN', 'AUDIT'],
-      customer_requests: ['VIEW', 'CREATE', 'EDIT', 'SUBMIT', 'APPROVE', 'REJECT', 'ASSIGN', 'EXPORT'],
-      policies: ['VIEW', 'CREATE', 'EDIT', 'PUBLISH', 'APPROVE', 'AUDIT'],
+      roles: ['VIEW', 'CREATE', 'EDIT', 'ASSIGN', 'SUSPEND', 'AUDIT', 'MANAGE', 'DELETE'],
+      positions: ['VIEW', 'CREATE', 'EDIT', 'ASSIGN', 'AUDIT', 'MANAGE'],
+      users: ['VIEW', 'CREATE', 'EDIT', 'SUSPEND', 'ASSIGN', 'AUDIT', 'MANAGE', 'DELETE'],
+      customer_requests: ['VIEW', 'CREATE', 'EDIT', 'SUBMIT', 'APPROVE', 'REJECT', 'ASSIGN', 'EXPORT', 'MANAGE'],
+      policies: ['VIEW', 'CREATE', 'EDIT', 'PUBLISH', 'APPROVE', 'AUDIT', 'DELETE'],
       finance_approvals: ['VIEW', 'APPROVE', 'REJECT', 'AUDIT'],
-      systems: ['VIEW', 'CONFIGURE', 'MANAGE', 'EXECUTE'],
+      systems: ['VIEW', 'CONFIGURE', 'MANAGE', 'EXECUTE', 'CREATE', 'EDIT', 'SUSPEND', 'DELETE'],
       audit: ['VIEW', 'EXPORT', 'AUDIT'],
       delegations: ['VIEW', 'CREATE', 'EDIT', 'SUSPEND', 'APPROVE'],
       workflow: ['VIEW', 'EXECUTE', 'ASSIGN', 'APPROVE'],
+      articles: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'PUBLISH', 'APPROVE', 'REJECT', 'EXPORT'],
+      ads: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'PUBLISH', 'APPROVE', 'REJECT', 'MANAGE'],
+      events: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'PUBLISH', 'APPROVE', 'MANAGE'],
+      products: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'PUBLISH', 'MANAGE', 'EXPORT'],
+      stores: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'SUSPEND', 'MANAGE', 'CONFIGURE'],
+      content: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'PUBLISH', 'APPROVE', 'MANAGE'],
+      reports: ['VIEW', 'CREATE', 'EXPORT', 'AUDIT'],
+      notifications: ['VIEW', 'CREATE', 'EDIT', 'MANAGE', 'CONFIGURE'],
+      search: ['VIEW', 'CONFIGURE', 'MANAGE', 'AUDIT'],
+      sales: ['VIEW', 'CREATE', 'EDIT', 'APPROVE', 'EXPORT', 'MANAGE'],
+      marketing: ['VIEW', 'CREATE', 'EDIT', 'PUBLISH', 'MANAGE'],
+      settings: ['VIEW', 'CONFIGURE', 'MANAGE', 'AUDIT'],
+    };
+    const actionAr = {
+      VIEW: 'عرض',
+      CREATE: 'إضافة',
+      EDIT: 'تعديل',
+      DELETE: 'حذف',
+      APPROVE: 'اعتماد',
+      ASSIGN: 'تعيين',
+      SUSPEND: 'إيقاف',
+      MANAGE: 'إدارة',
+      AUDIT: 'تدقيق',
+      CONFIGURE: 'إعدادات',
+      EXECUTE: 'تشغيل',
+      EXPORT: 'تصدير',
+      SUBMIT: 'إرسال',
+      REJECT: 'رفض',
+      PUBLISH: 'نشر',
     };
     const out = [];
     resources.forEach(([code, nameAr]) => {
@@ -126,8 +192,9 @@
           code: `${code}.${action.toLowerCase()}`,
           resource: code,
           action,
-          nameAr: `${nameAr} · ${action}`,
+          nameAr: `${actionAr[action] || action} — ${nameAr}`,
           nameEn: `${code}.${action}`,
+          systemHint: code === 'sales' || code === 'marketing' ? 'ERP' : null,
           status: 'active',
         });
       });
@@ -138,13 +205,20 @@
   const seedPositions = () => [
     { code: 'EMP_SUPREME_LEADER', nameAr: 'القائد الأعلى', nameEn: 'Supreme Leader', orgLevel: 'EMPIRE', parentEntity: 'NAIOSHAI_EMPIRE', eligibleRoles: ['SUPER_ADMIN'], status: 'active' },
     { code: 'EMP_GOVERNOR', nameAr: 'حاكم إمبراطوري', nameEn: 'Empire Governor', orgLevel: 'EMPIRE', parentEntity: 'NAIOSHAI_EMPIRE', eligibleRoles: ['SUPER_ADMIN'], status: 'active' },
+    { code: 'HQ_MAIN_POS', nameAr: 'المقر الرئيسي', nameEn: 'Headquarters', orgLevel: 'HQ', parentEntity: 'HQ', eligibleRoles: [], status: 'active' },
+    { code: 'HQ_OFFICE_POS', nameAr: 'المكتب الرئيسي', nameEn: 'Main Office', orgLevel: 'HQ', parentEntity: 'HQ', eligibleRoles: ['HQ_ADMIN', 'HQ_EXECUTIVE_MANAGER'], status: 'active' },
     { code: 'HUB_ADMIN_POS', nameAr: 'مشرف هوب', nameEn: 'Hub Admin', orgLevel: 'HUB', parentEntity: 'NAIOSHAI_HUB_360', eligibleRoles: ['HUB_ADMIN', 'HUB_AUDITOR'], status: 'active' },
     { code: 'HUB_AUDITOR_POS', nameAr: 'مدقق هوب', nameEn: 'Hub Auditor', orgLevel: 'HUB', parentEntity: 'NAIOSHAI_HUB_360', eligibleRoles: ['HUB_AUDITOR'], status: 'active' },
     { code: 'HUB_EMPLOYEE_POS', nameAr: 'موظف هوب', nameEn: 'Hub Employee', orgLevel: 'HUB', parentEntity: 'NAIOSHAI_HUB_360', eligibleRoles: ['HUB_EMPLOYEE'], status: 'active' },
-    { code: 'BRANCH_MANAGER_POS', nameAr: 'مدير فرع', nameEn: 'Branch Manager', orgLevel: 'BRANCH', parentEntity: 'BRANCH', eligibleRoles: ['BRANCH_MANAGER', 'REPORT_VIEWER'], status: 'active' },
-    { code: 'INCUBATOR_MANAGER_POS', nameAr: 'مدير حاضنة', nameEn: 'Incubator Manager', orgLevel: 'INCUBATOR', parentEntity: 'INCUBATOR', eligibleRoles: ['INCUBATOR_MANAGER'], status: 'active' },
-    { code: 'PLATFORM_MANAGER_POS', nameAr: 'مدير منصة', nameEn: 'Platform Manager', orgLevel: 'PLATFORM', parentEntity: 'PLATFORM', eligibleRoles: ['PLATFORM_MANAGER'], status: 'active' },
+    { code: 'BRANCH_MANAGER_POS', nameAr: 'الفرع', nameEn: 'Branch', orgLevel: 'BRANCH', parentEntity: 'BRANCH', eligibleRoles: ['BRANCH_MANAGER', 'REPORT_VIEWER', 'ASSISTANT_BRANCH_MANAGER', 'BRANCH_ADMIN'], status: 'active' },
+    { code: 'INCUBATOR_MANAGER_POS', nameAr: 'الحاضنة', nameEn: 'Incubator', orgLevel: 'INCUBATOR', parentEntity: 'INCUBATOR', eligibleRoles: ['INCUBATOR_MANAGER', 'ASSISTANT_INCUBATOR_MANAGER', 'INCUBATOR_ADMIN'], status: 'active' },
+    { code: 'PLATFORM_MANAGER_POS', nameAr: 'المنصة', nameEn: 'Platform', orgLevel: 'PLATFORM', parentEntity: 'PLATFORM', eligibleRoles: ['PLATFORM_MANAGER', 'ASSISTANT_PLATFORM_MANAGER', 'PLATFORM_ADMIN'], status: 'active' },
+    { code: 'OFFICE_POS', nameAr: 'المكتب', nameEn: 'Office', orgLevel: 'OFFICE', parentEntity: 'OFFICE', eligibleRoles: ['OFFICE_EXECUTIVE', 'OFFICE_ADMIN'], status: 'active' },
+    { code: 'INDEPENDENT_POS', nameAr: 'المستقل', nameEn: 'Independent', orgLevel: 'INDEPENDENT', parentEntity: 'INDEPENDENT', eligibleRoles: ['FREELANCER_MANAGER', 'FREELANCER_TRAINER'], status: 'active' },
     { code: 'SYSTEM_OWNER_POS', nameAr: 'مالك نظام', nameEn: 'System Owner', orgLevel: 'SYSTEM', parentEntity: 'SYSTEM', eligibleRoles: ['SYSTEM_OWNER', 'SYSTEM_MANAGER'], status: 'active' },
+    { code: 'SUPERVISOR_POS', nameAr: 'المشرف', nameEn: 'Supervisor', orgLevel: 'SUPERVISOR', parentEntity: 'HUB', eligibleRoles: ['HUB_ADMIN', 'SYSTEM_MANAGER'], status: 'active' },
+    { code: 'USER_POS', nameAr: 'المستخدم', nameEn: 'User', orgLevel: 'USER', parentEntity: 'HUB', eligibleRoles: ['HUB_EMPLOYEE', 'EDITOR'], status: 'active' },
+    { code: 'VISITOR_POS', nameAr: 'الزائر', nameEn: 'Visitor', orgLevel: 'VISITOR', parentEntity: 'PLATFORM', eligibleRoles: ['PLATFORM_CUSTOMER'], status: 'active' },
     { code: 'CUSTOMER_POS', nameAr: 'عميل منصة', nameEn: 'Platform Customer', orgLevel: 'CUSTOMER', parentEntity: 'PLATFORM', eligibleRoles: ['PLATFORM_CUSTOMER'], status: 'active' },
   ].map((p) => ({
     id: uid('pos'),
@@ -173,19 +247,57 @@
       updatedAt: '2026-01-01T00:00:00.000Z',
       legacyCodes: [],
     });
-    return [
-      mk('SUPER_ADMIN', 'المدير الأعلى', 'Super Admin', 'EMPIRE', ['HUB', 'ERP', 'CRM', 'LMS', 'LAW', 'FIT', 'ACADEMY', 'POSHA'], ['access_governance.manage', 'roles.manage', 'users.manage', 'systems.manage', 'audit.view', 'finance_approvals.approve', 'policies.publish', 'roles.assign', 'users.assign'], ['EMP_SUPREME_LEADER', 'EMP_GOVERNOR'], 'GLOBAL'),
-      mk('HUB_ADMIN', 'مشرف', 'Hub Admin', 'HUB', ['HUB'], ['access_governance.view', 'roles.edit', 'users.assign', 'systems.configure', 'audit.view', 'delegations.create', 'customer_requests.view', 'customer_requests.approve'], ['HUB_ADMIN_POS'], 'HUB-GLOBAL'),
+    const allSys = ['HUB', 'ERP', 'CRM', 'LMS', 'LAW', 'FIT', 'ACADEMY', 'POSHA', 'NAIS', 'SMARTX', 'SALES', 'MARKETING', 'EVENTS', 'ADS', 'STORE', 'CONTENT'];
+    const opsView = ['users.view', 'customer_requests.view', 'systems.view', 'workflow.execute'];
+    const contentBase = ['articles.view', 'articles.create', 'articles.edit', 'content.view', 'content.create'];
+    const core = [
+      mk('SUPER_ADMIN', 'المدير الأعلى', 'Super Admin', 'EMPIRE', allSys, ['access_governance.manage', 'roles.manage', 'users.manage', 'systems.manage', 'audit.view', 'finance_approvals.approve', 'policies.publish', 'roles.assign', 'users.assign', 'settings.manage'], ['EMP_SUPREME_LEADER', 'EMP_GOVERNOR'], 'GLOBAL'),
+      mk('HUB_ADMIN', 'مشرف', 'Hub Admin', 'HUB', ['HUB'], ['access_governance.view', 'roles.edit', 'users.assign', 'systems.configure', 'audit.view', 'delegations.create', 'customer_requests.view', 'customer_requests.approve'], ['HUB_ADMIN_POS', 'SUPERVISOR_POS'], 'HUB-GLOBAL'),
       mk('HUB_AUDITOR', 'مراجع', 'Hub Auditor', 'HUB', ['HUB', 'ERP'], ['audit.view', 'audit.export', 'roles.view', 'users.view', 'access_governance.view', 'customer_requests.view'], ['HUB_AUDITOR_POS'], 'HUB-GLOBAL'),
-      mk('HUB_EMPLOYEE', 'موظف تشغيل', 'Hub Employee', 'HUB', ['HUB'], ['users.view', 'customer_requests.view', 'customer_requests.create'], ['HUB_EMPLOYEE_POS'], 'DEPARTMENT'),
-      mk('BRANCH_MANAGER', 'مدير فرع', 'Branch Manager', 'SYSTEM', ['ERP', 'CRM'], ['customer_requests.view', 'customer_requests.approve', 'finance_approvals.approve', 'users.view', 'workflow.execute'], ['BRANCH_MANAGER_POS'], 'BRANCH'),
-      mk('REPORT_VIEWER', 'عارض تقارير', 'Report Viewer', 'SYSTEM', ['HUB', 'ERP'], ['users.view', 'audit.view', 'customer_requests.view'], ['BRANCH_MANAGER_POS', 'HUB_EMPLOYEE_POS'], 'BRANCH'),
+      mk('HUB_EMPLOYEE', 'موظف تشغيل', 'Hub Employee', 'HUB', ['HUB'], ['users.view', 'customer_requests.view', 'customer_requests.create'], ['HUB_EMPLOYEE_POS', 'USER_POS'], 'DEPARTMENT'),
+      mk('BRANCH_MANAGER', 'مدير فرع', 'Branch Manager', 'SYSTEM', ['ERP', 'CRM', 'SALES'], ['customer_requests.view', 'customer_requests.approve', 'finance_approvals.approve', 'users.view', 'workflow.execute', 'sales.view', 'sales.approve'], ['BRANCH_MANAGER_POS'], 'BRANCH'),
+      mk('REPORT_VIEWER', 'عارض تقارير', 'Report Viewer', 'SYSTEM', ['HUB', 'ERP'], ['users.view', 'audit.view', 'customer_requests.view', 'reports.view', 'reports.export'], ['BRANCH_MANAGER_POS', 'HUB_EMPLOYEE_POS'], 'BRANCH'),
       mk('INCUBATOR_MANAGER', 'مدير حاضنة', 'Incubator Manager', 'SYSTEM', ['HUB', 'ACADEMY'], ['users.view', 'systems.view', 'workflow.execute'], ['INCUBATOR_MANAGER_POS'], 'INCUBATOR'),
       mk('PLATFORM_MANAGER', 'مدير منصة', 'Platform Manager', 'SYSTEM', ['HUB', 'POSHA'], ['systems.configure', 'users.assign', 'customer_requests.approve'], ['PLATFORM_MANAGER_POS'], 'PLATFORM'),
-      mk('SYSTEM_OWNER', 'مالك نظام', 'System Owner', 'SYSTEM', ['ERP', 'CRM', 'LMS', 'LAW'], ['systems.manage', 'roles.assign', 'audit.view'], ['SYSTEM_OWNER_POS'], 'SYSTEM'),
-      mk('SYSTEM_MANAGER', 'مدير النظام', 'System Manager', 'SYSTEM', ['ERP', 'CRM', 'LMS', 'POSHA'], ['systems.configure', 'users.view', 'workflow.execute', 'customer_requests.view', 'customer_requests.edit', 'customer_requests.approve', 'customer_requests.reject'], ['SYSTEM_OWNER_POS'], 'SYSTEM'),
-      mk('PLATFORM_CUSTOMER', 'عميل منصة', 'Platform Customer', 'SYSTEM', ['POSHA', 'ACADEMY', 'LMS'], ['customer_requests.view', 'customer_requests.create', 'customer_requests.submit'], ['CUSTOMER_POS'], 'PLATFORM'),
+      mk('SYSTEM_OWNER', 'مالك نظام', 'System Owner', 'SYSTEM', ['ERP', 'CRM', 'LMS', 'LAW', 'SALES', 'EVENTS', 'ADS', 'STORE', 'CONTENT'], ['systems.manage', 'roles.assign', 'audit.view'], ['SYSTEM_OWNER_POS'], 'SYSTEM'),
+      mk('SYSTEM_MANAGER', 'مدير النظام', 'System Manager', 'SYSTEM', ['ERP', 'CRM', 'LMS', 'POSHA', 'SALES', 'MARKETING', 'EVENTS', 'ADS', 'STORE', 'CONTENT'], ['systems.configure', 'users.view', 'workflow.execute', 'customer_requests.view', 'customer_requests.edit', 'customer_requests.approve', 'customer_requests.reject'], ['SYSTEM_OWNER_POS'], 'SYSTEM'),
+      mk('PLATFORM_CUSTOMER', 'عميل منصة', 'Platform Customer', 'SYSTEM', ['POSHA', 'ACADEMY', 'LMS'], ['customer_requests.view', 'customer_requests.create', 'customer_requests.submit'], ['CUSTOMER_POS', 'VISITOR_POS'], 'PLATFORM'),
     ];
+    const extended = [
+      ['IT_MANAGER', 'مدير برمجيات وتكنولوجيا المعلومات', 'HQ', ['HUB', 'SMARTX', 'NAIS'], ['systems.manage', 'systems.configure', 'users.manage', 'audit.view', 'search.manage'], ['HQ_OFFICE_POS']],
+      ['HQ_EXECUTIVE_MANAGER', 'مدير تنفيذي - المكتب الرئيسي', 'HQ', ['HUB', 'ERP'], ['users.view', 'users.assign', 'systems.view', 'reports.view', 'workflow.approve'], ['HQ_OFFICE_POS', 'HQ_MAIN_POS']],
+      ['HQ_FINANCIAL_MANAGER', 'مدير مالي - المكتب الرئيسي', 'HQ', ['ERP', 'HUB'], ['finance_approvals.view', 'finance_approvals.approve', 'reports.view', 'reports.export', 'audit.view'], ['HQ_OFFICE_POS']],
+      ['HQ_MARKETING_MANAGER', 'مدير تسويق - المكتب الرئيسي', 'HQ', ['MARKETING', 'ADS', 'CONTENT', 'HUB'], ['marketing.view', 'marketing.manage', 'ads.manage', 'ads.publish', 'content.publish'], ['HQ_OFFICE_POS']],
+      ['HQ_PROCUREMENT_MANAGER', 'مدير مشتريات - المكتب الرئيسي', 'HQ', ['ERP'], ['systems.view', 'workflow.execute', 'reports.view'], ['HQ_OFFICE_POS']],
+      ['HQ_PR_MANAGER', 'مدير علاقات عامة - المكتب الرئيسي', 'HQ', ['CONTENT', 'ADS', 'HUB'], ['content.view', 'content.publish', 'ads.view', 'notifications.manage'], ['HQ_OFFICE_POS']],
+      ['LEGAL_MANAGER', 'مدير القانونية والاستشارات', 'HQ', ['LAW', 'HUB'], ['policies.view', 'policies.approve', 'policies.publish', 'audit.view'], ['HQ_OFFICE_POS']],
+      ['CONTENT_MANAGER', 'مدير تحرير محتوى ومقالات', 'HQ', ['CONTENT', 'ADS', 'EVENTS'], [...contentBase, 'articles.publish', 'articles.approve', 'content.manage'], ['HQ_OFFICE_POS', 'USER_POS']],
+      ['INITIATIVES_MANAGER', 'مدير المبادرات', 'HQ', ['HUB', 'ACADEMY'], opsView.concat(['events.view', 'events.manage']), ['HQ_OFFICE_POS']],
+      ['FREELANCER_MANAGER', 'مدير فريلانسر', 'HQ', ['HUB'], opsView.concat(['users.assign']), ['INDEPENDENT_POS']],
+      ['EXECUTIVE_DESIGNER', 'إداري تنفيذي مصمم', 'HQ', ['CONTENT', 'ADS'], ['content.view', 'content.create', 'content.edit', 'ads.view', 'ads.create'], ['HQ_OFFICE_POS']],
+      ['EXECUTIVE_MARKETER', 'إداري تنفيذي مسوق', 'HQ', ['MARKETING', 'ADS'], ['marketing.view', 'marketing.create', 'marketing.edit', 'ads.create', 'ads.publish'], ['HQ_OFFICE_POS']],
+      ['EXECUTIVE_SALES', 'إداري تنفيذي مبيعات', 'HQ', ['SALES', 'CRM', 'STORE'], ['sales.view', 'sales.create', 'sales.edit', 'customer_requests.view', 'products.view'], ['HQ_OFFICE_POS']],
+      ['EXECUTIVE_CALLCENTER', 'إداري تنفيذي كول سنتر', 'HQ', ['CRM', 'HUB'], ['customer_requests.view', 'customer_requests.create', 'customer_requests.edit', 'notifications.view'], ['HQ_OFFICE_POS']],
+      ['EXECUTIVE_SOCIAL_MEDIA', 'إداري تنفيذي منصات التواصل', 'HQ', ['MARKETING', 'ADS', 'CONTENT'], ['marketing.view', 'ads.create', 'ads.publish', 'content.create'], ['PLATFORM_MANAGER_POS']],
+      ['EDITOR', 'محرر', 'HQ', ['CONTENT', 'ADS'], ['articles.view', 'articles.create', 'articles.edit', 'content.view', 'content.edit'], ['USER_POS']],
+      ['HQ_ADMIN', 'مدير المكتب الرئيسي', 'HQ', ['HUB', 'ERP'], ['users.view', 'users.assign', 'systems.view', 'workflow.execute'], ['HQ_OFFICE_POS', 'HQ_MAIN_POS']],
+      ['ASSISTANT_BRANCH_MANAGER', 'مساعد مدير فرع', 'BRANCH', ['ERP', 'CRM'], opsView.concat(['customer_requests.approve']), ['BRANCH_MANAGER_POS']],
+      ['BRANCH_ADMIN', 'إداري فرع', 'BRANCH', ['ERP', 'CRM'], opsView, ['BRANCH_MANAGER_POS']],
+      ['ASSISTANT_INCUBATOR_MANAGER', 'مساعد مدير حاضنة', 'INCUBATOR', ['HUB', 'ACADEMY'], opsView, ['INCUBATOR_MANAGER_POS']],
+      ['INCUBATOR_ADMIN', 'إداري حاضنة', 'INCUBATOR', ['HUB', 'ACADEMY'], opsView, ['INCUBATOR_MANAGER_POS']],
+      ['ASSISTANT_PLATFORM_MANAGER', 'مساعد مدير منصة', 'PLATFORM', ['HUB', 'POSHA'], opsView.concat(['systems.configure']), ['PLATFORM_MANAGER_POS']],
+      ['PLATFORM_ADMIN', 'إداري منصة', 'PLATFORM', ['HUB', 'POSHA'], opsView, ['PLATFORM_MANAGER_POS']],
+      ['OFFICE_EXECUTIVE', 'مسؤول تنفيذي مكاتب', 'OFFICE', ['HUB'], opsView, ['OFFICE_POS']],
+      ['OFFICE_ADMIN', 'إداري تنفيذي مكاتب', 'OFFICE', ['HUB'], opsView, ['OFFICE_POS']],
+      ['LOGISTICS_EMPLOYEE', 'موظف لوجستيات', 'ALL', ['ERP', 'STORE'], ['products.view', 'stores.view', 'workflow.execute'], ['USER_POS']],
+      ['PERMANENT_TRAINER', 'مدرب دائم', 'ALL', ['LMS', 'ACADEMY'], ['systems.view', 'users.view', 'workflow.execute'], ['USER_POS']],
+      ['FREELANCER_TRAINER', 'مدرب فريلانسر', 'ALL', ['LMS', 'ACADEMY'], ['systems.view', 'users.view'], ['INDEPENDENT_POS']],
+      ['VOLUNTEER_TRAINER', 'مدرب متطوع', 'ALL', ['ACADEMY'], ['systems.view'], ['INDEPENDENT_POS']],
+      ['INITIATIVES_VOLUNTEER', 'متطوع مبادرات', 'ALL', ['HUB'], ['systems.view', 'events.view'], ['INDEPENDENT_POS']],
+    ].map(([code, nameAr, level, systems, perms, positions]) =>
+      mk(code, nameAr, code, level, systems, perms, positions, level === 'HQ' ? 'HUB-GLOBAL' : level)
+    );
+    return [...core, ...extended];
   };
 
   const seedAuthorities = () => [
@@ -277,6 +389,7 @@
     migratedAt: null,
     componentStatus: { ...COMPONENT_STATUS },
     systems: listSystems(),
+    managedSystems: [],
     positions: stampPos(seedPositions()),
     roles: seedRoles(),
     permissions: seedPermissions(),
@@ -685,8 +798,30 @@
     }
   };
 
+  const ensureCatalogFresh = (state) => {
+    if (!Array.isArray(state.managedSystems)) state.managedSystems = [];
+    state.systems = mergeSystemsState(state);
+    // دمج أدوار/صلاحيات/مناصب الكتالوج دون حذف ما أضافه المدير
+    const seedR = seedRoles();
+    const haveR = new Set((state.roles || []).map((r) => r.code));
+    seedR.forEach((r) => {
+      if (!haveR.has(r.code)) state.roles.push(r);
+    });
+    const seedP = seedPermissions();
+    const haveP = new Set((state.permissions || []).map((p) => p.code));
+    seedP.forEach((p) => {
+      if (!haveP.has(p.code)) state.permissions.push(p);
+    });
+    const seedPos = stampPos(seedPositions());
+    const havePos = new Set((state.positions || []).map((p) => p.code));
+    seedPos.forEach((p) => {
+      if (!havePos.has(p.code)) state.positions.push(p);
+    });
+  };
+
   const save = (state) => {
-    state.systems = listSystems();
+    if (!Array.isArray(state.managedSystems)) state.managedSystems = [];
+    state.systems = mergeSystemsState(state);
     state.updatedAt = nowIso();
     localStorage.setItem(KEY, JSON.stringify(state));
     try {
@@ -708,19 +843,19 @@
       migrateFromLegacy(state, legacy);
       ensureDemoIfEmpty(state);
       ensureEmployeeNumbers(state);
+      ensureCatalogFresh(state);
       save(state);
     } else {
-      state.systems = listSystems();
       state.componentStatus = { ...COMPONENT_STATUS, ...(state.componentStatus || {}) };
       if (!Array.isArray(state.permissions) || !state.permissions.length) state.permissions = seedPermissions();
       if (!Array.isArray(state.sodRules) || !state.sodRules.length) state.sodRules = seedSodRules();
-      // refresh known SoD definition (safe patch)
       const sod = (state.sodRules || []).find((r) => r.code === 'SOD-CREATE-APPROVE-PAY');
       if (sod && (sod.conflictingPermissions || []).includes('finance_approvals.approve')) {
         sod.conflictingPermissions = ['customer_requests.create', 'customer_requests.approve'];
       }
       ensureDemoIfEmpty(state);
       ensureEmployeeNumbers(state);
+      ensureCatalogFresh(state);
       save(state);
     }
     return state;
@@ -746,6 +881,7 @@
     uid,
     nowIso,
     listSystems,
+    mergeSystemsState,
     emptyBag,
     migrateFromLegacy,
   };

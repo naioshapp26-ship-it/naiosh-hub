@@ -138,18 +138,15 @@
       status: 'active',
       sortOrder: 90,
     },
-    {
-      id: 'SMARTX',
-      code: 'SMARTX',
-      name: 'سمارتكس — اجتماعات وقاعات',
-      shortName: 'SMARTX',
-      description: 'اجتماعات وقاعات افتراضية.',
-      icon: 'fa-video',
-      type: 'system',
-      status: 'active',
-      sortOrder: 100,
-    },
-  ].map((s) => ({ ...s, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }));
+      { code: 'SMARTX', name: 'سمارتكس — اجتماعات وقاعات', shortName: 'SMARTX', description: 'اجتماعات وقاعات افتراضية.', icon: 'fa-video', type: 'system', status: 'active', sortOrder: 100 },
+      { code: 'SALES', name: 'المبيعات', shortName: 'SALES', description: 'عمليات البيع والعروض والفواتير التشغيلية.', icon: 'fa-cart-shopping', type: 'system', status: 'active', sortOrder: 110, parentCode: 'ERP', classification: 'sub' },
+      { code: 'MARKETING', name: 'التسويق', shortName: 'MARKETING', description: 'التسويق والنمو والحملات.', icon: 'fa-bullhorn', type: 'system', status: 'active', sortOrder: 120, parentCode: 'ERP', classification: 'sub' },
+      { code: 'EVENTS', name: 'استوديو الفعاليات', shortName: 'EVENTS', description: 'إدارة الفعاليات والجدولة والنشر.', icon: 'fa-calendar-days', type: 'system', status: 'active', sortOrder: 130, classification: 'independent' },
+      { code: 'ADS', name: 'استوديو الإعلانات', shortName: 'ADS', description: 'إدارة الإعلانات والحملات الإعلانية.', icon: 'fa-rectangle-ad', type: 'system', status: 'active', sortOrder: 140, classification: 'independent' },
+      { code: 'STORE', name: 'المتجر', shortName: 'STORE', description: 'متجر المبيعات والمنتجات.', icon: 'fa-store', type: 'system', status: 'active', sortOrder: 150, classification: 'independent' },
+      { code: 'CONTENT', name: 'المحتوى والمدونة', shortName: 'CONTENT', description: 'المقالات والمدونة والمحتوى المنشور.', icon: 'fa-newspaper', type: 'system', status: 'active', sortOrder: 160, classification: 'independent' },
+      { code: 'POSHA', name: 'عملاء هوب / بوشا', shortName: 'POSHA', description: 'عمليات العملاء والطلبات والدعم.', icon: 'fa-building-user', type: 'system', status: 'active', sortOrder: 25, classification: 'independent' },
+    ].map((s) => ({ ...s, id: s.code || s.id, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', isUmbrella: !!s.isUmbrella, classification: s.classification || (s.parentCode ? 'sub' : s.isUmbrella ? 'umbrella' : 'independent'), parentCode: s.parentCode || null }));
 
   const SEED_MODULES = [
     mkMod('ERP_INV', 'ERP', 'إدارة المخزون', 'إدارة المخزون وحركات الأصناف.', 10, { hideParentDefault: true }),
@@ -279,9 +276,12 @@
       description,
       icon: String(payload.icon || 'fa-cube').trim(),
       type: String(payload.type || 'system').trim(),
-      status: payload.status === 'inactive' ? 'inactive' : 'active',
+      status: payload.status === 'inactive' || payload.status === 'disabled' ? 'inactive' : 'active',
       sortOrder: Number(payload.sortOrder) || state.systems.length * 10 + 10,
       isUmbrella: false,
+      classification: payload.classification === 'sub' ? 'sub' : payload.classification === 'umbrella' ? 'umbrella' : 'independent',
+      parentCode: payload.parentCode || payload.parentId || null,
+      url: payload.url || payload.link || '',
       createdAt: nowIso(),
       updatedAt: nowIso(),
     };
@@ -305,8 +305,11 @@
       description: patch.description != null ? String(patch.description).trim() : cur.description,
       icon: patch.icon != null ? String(patch.icon).trim() : cur.icon,
       type: patch.type != null ? String(patch.type).trim() : cur.type,
-      status: patch.status === 'inactive' || patch.status === 'active' ? patch.status : cur.status,
+      status: patch.status === 'inactive' || patch.status === 'active' || patch.status === 'disabled' ? (patch.status === 'disabled' ? 'inactive' : patch.status) : cur.status,
       sortOrder: patch.sortOrder != null ? Number(patch.sortOrder) : cur.sortOrder,
+      classification: patch.classification != null ? String(patch.classification) : cur.classification,
+      parentCode: patch.parentCode !== undefined ? patch.parentCode || null : cur.parentCode,
+      url: patch.url != null ? String(patch.url).trim() : cur.url,
       updatedAt: nowIso(),
     };
     write(state);

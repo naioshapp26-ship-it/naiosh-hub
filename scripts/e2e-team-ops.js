@@ -108,8 +108,10 @@ E.createGrant(
 push('T8-customer-not-employee', !E.isEmployeeIdentity('NAI-CUSTOMER-TEST'));
 push('T8-customer-no-emp-no', !E.findIdentity('NAI-CUSTOMER-TEST')?.employeeNo);
 push('T8-not-in-team', !E.listEmployees().some((e) => e.naioshId === 'NAI-CUSTOMER-TEST'));
-const htmlTeam = UI.render();
-push('T8-not-in-ui', !htmlTeam.includes('NAI-CUSTOMER-TEST') && !htmlTeam.includes('أحمد علي'));
+UI.ui.tab = 'team';
+UI.ui.q = '';
+const htmlTeamEarly = UI.render();
+push('T8-not-in-ui', !htmlTeamEarly.includes('NAI-CUSTOMER-TEST') && !htmlTeamEarly.includes('أحمد علي'));
 
 // —— Test 9: تحويل العميل لموظف
 const promoted = E.registerEmployee({ naioshId: 'NAI-CUSTOMER-TEST' }, actor);
@@ -132,8 +134,63 @@ try {
 }
 push('T10-unique', /مستخدم بالفعل|تكرار/.test(dupErr), dupErr);
 
+// —— Test 11: أنظمة/أدوار/صلاحيات ديناميكية
+const beforeSys = (S.get().systems || []).length;
+const beforeRoles = (S.get().roles || []).length;
+const beforePerms = (S.get().permissions || []).length;
+E.upsertManagedSystem(
+  { code: 'E2E_SYS', nameAr: 'نظام اختبار', classification: 'independent', description: 'نظام تجريبي', status: 'active' },
+  actor
+);
+E.upsertRole(
+  {
+    code: 'E2E_ROLE',
+    nameAr: 'دور اختبار',
+    applicableSystems: ['E2E_SYS'],
+    permissions: ['articles.publish', 'articles.view'],
+    status: 'active',
+  },
+  actor
+);
+E.upsertPermission({ nameAr: 'نشر مقال اختبار', resource: 'articles', action: 'PUBLISH', system: 'CONTENT' }, actor);
+push('T11-system-added', (S.get().systems || []).some((s) => s.code === 'E2E_SYS'));
+push('T11-system-count-up', (S.get().systems || []).length >= beforeSys);
+push('T11-roles-catalog-large', beforeRoles >= 30, beforeRoles);
+push('T11-perms-catalog-large', beforePerms >= 80, beforePerms);
+push('T11-role-added', (S.get().roles || []).some((r) => r.code === 'E2E_ROLE'));
+push('T11-perm-added', (S.get().permissions || []).some((p) => p.code === 'articles.publish'));
+E.createGrant(
+  {
+    naioshId: emp.naioshId,
+    roleCode: 'E2E_ROLE',
+    system: 'E2E_SYS',
+    scopeCode: 'GLOBAL',
+    permissions: ['articles.publish', 'articles.view'],
+    purpose: 'e2e independent system',
+  },
+  actor
+);
+push('T11-grant-on-new-system', E.authorize({ naioshId: emp.naioshId, permission: 'articles.publish', system: 'E2E_SYS' }).decision === 'ALLOW');
+push('T11-erp-subsystems', (S.get().systems || []).some((s) => s.code === 'SALES') && (S.get().systems || []).some((s) => s.code === 'EVENTS'));
+
 // UI checks
+UI.ui.tab = 'team';
+const htmlTeam = UI.render();
 push('UI-emp-col', htmlTeam.includes('رقم الموظف'));
+push('UI-tabs-systems', htmlTeam.includes('الأنظمة') && htmlTeam.includes('الصلاحيات'));
+push('UI-no-global-assign-on-audit', (() => {
+  UI.ui.tab = 'audit';
+  const h = UI.render();
+  return h.includes('سجل الصلاحيات') && !h.includes('+ تعيين موظف');
+})());
+push('UI-systems-cta', (() => {
+  UI.ui.tab = 'systems';
+  return UI.render().includes('+ إضافة نظام');
+})());
+push('UI-roles-full', (() => {
+  UI.ui.tab = 'roles';
+  return UI.render().includes('+ إضافة دور') && (S.get().roles || []).length > 10;
+})());
 push('UI-clickable-hint', true);
 
 const failed = tests.filter((t) => !t.ok);

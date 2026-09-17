@@ -110,7 +110,12 @@
   ]);
   const CUSTOMER_ROLE_CODES = new Set(['PLATFORM_CUSTOMER']);
 
-  const isStaffRole = (code) => STAFF_ROLE_CODES.has(String(code || '').toUpperCase());
+  const isStaffRole = (code) => {
+    const c = String(code || '').toUpperCase();
+    if (!c) return false;
+    if (CUSTOMER_ROLE_CODES.has(c)) return false;
+    return STAFF_ROLE_CODES.has(c) || !CUSTOMER_ROLE_CODES.has(c);
+  };
   const isCustomerRole = (code) => CUSTOMER_ROLE_CODES.has(String(code || '').toUpperCase());
 
   const isEmployeeIdentity = (identity) =>
@@ -1200,6 +1205,159 @@
     }, 'system');
   };
 
+  const upsertManagedSystem = (payload = {}, actor = 'مشغّل هوب') => {
+    const code = String(payload.code || payload.name || '')
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, '')
+      .slice(0, 24);
+    if (!code) throw new Error('رمز النظام مطلوب');
+    const nameAr = String(payload.nameAr || payload.name || '').trim();
+    if (!nameAr) throw new Error('اسم النظام مطلوب');
+    // حدّث كتالوج العمليات إن وُجد
+    try {
+      const cat = window.HubOpsCatalog;
+      if (cat?.getSystem?.(code)) {
+        cat.updateSystem(code, {
+          name: nameAr,
+          description: payload.description || nameAr,
+          status: payload.status === 'disabled' || payload.status === 'inactive' ? 'inactive' : 'active',
+          classification: payload.classification,
+          parentCode: payload.parentCode,
+          icon: payload.icon,
+          url: payload.url,
+        });
+      } else if (cat?.addSystem) {
+        const res = cat.addSystem({
+          code,
+          name: nameAr,
+          description: payload.description || nameAr,
+          classification: payload.classification || 'independent',
+          parentCode: payload.parentCode || null,
+          icon: payload.icon || 'fa-cube',
+          url: payload.url || '',
+          status: payload.status === 'disabled' || payload.status === 'inactive' ? 'inactive' : 'active',
+        });
+        if (!res?.ok && !cat.getSystem?.(code)) throw new Error(res?.error || 'تعذر إضافة النظام');
+      }
+    } catch (e) {
+      if (e.message && !/رمز النظام مستخدم/.test(e.message)) {
+        /* continue to managedSystems */
+      }
+    }
+    return Store().update((state) => {
+      if (!Array.isArray(state.managedSystems)) state.managedSystems = [];
+      const idx = state.managedSystems.findIndex((s) => s.code === code);
+      const row = {
+        code,
+        nameAr,
+        nameEn: payload.nameEn || code,
+        level: code === 'HUB' ? 'HUB' : 'SYSTEM',
+        status: payload.status === 'disabled' || payload.status === 'inactive' ? 'inactive' : 'active',
+        classification: payload.classification === 'sub' ? 'sub' : payload.classification === 'umbrella' ? 'umbrella' : 'independent',
+        parentCode: payload.parentCode || null,
+        description: payload.description || '',
+        icon: payload.icon || 'fa-cube',
+        url: payload.url || '',
+        createdAt: idx >= 0 ? state.managedSystems[idx].createdAt : Store().nowIso(),
+        updatedAt: Store().nowIso(),
+        source: 'managed',
+      };
+      if (idx >= 0) state.managedSystems[idx] = { ...state.managedSystems[idx], ...row };
+      else state.managedSystems.push(row);
+      state.systems = Store().mergeSystemsState(state);
+      Store().pushAudit(state, {
+        actor,
+        action: idx >= 0 ? 'SYSTEM_UPDATED' : 'SYSTEM_CREATED',
+        targetUser: code,
+        system: code,
+        reason: nameAr,
+        newValue: row,
+      });
+      return state;
+    }, actor);
+  };
+
+  const upsertRole = (payload = {}, actor = 'مشغّل هوب') => {
+    const code = String(payload.code || payload.nameAr || '')
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, '')
+      .slice(0, 40);
+    if (!code) throw new Error('رمز الدور مطلوب');
+    const nameAr = String(payload.nameAr || payload.name || '').trim();
+    if (!nameAr) throw new Error('اسم الدور مطلوب');
+    return Store().update((state) => {
+      if (!Array.isArray(state.roles)) state.roles = [];
+      const idx = state.roles.findIndex((r) => r.code === code);
+      const row = {
+        id: idx >= 0 ? state.roles[idx].id : Store().uid('role'),
+        code,
+        nameAr,
+        nameEn: payload.nameEn || code,
+        level: payload.level || 'SYSTEM',
+        applicableSystems: payload.applicableSystems || payload.systems || ['HUB'],
+        defaultScopeType: payload.defaultScopeType || 'SYSTEM',
+        permissions: Array.isArray(payload.permissions) ? payload.permissions.slice() : [],
+        authorities: payload.authorityCodes || [],
+        eligiblePositions: payload.eligiblePositions || payload.positionCodes || [],
+        status: payload.status === 'inactive' || payload.status === 'disabled' ? 'inactive' : 'active',
+        version: (idx >= 0 ? state.roles[idx].version || 1 : 0) + 1,
+        source: 'Team Ops',
+        createdAt: idx >= 0 ? state.roles[idx].createdAt : Store().nowIso(),
+        updatedAt: Store().nowIso(),
+        legacyCodes: [],
+        description: payload.description || '',
+      };
+      if (idx >= 0) state.roles[idx] = { ...state.roles[idx], ...row };
+      else state.roles.unshift(row);
+      Store().pushAudit(state, {
+        actor,
+        action: idx >= 0 ? 'ROLE_UPDATED' : 'ROLE_CREATED',
+        role: code,
+        permission: (row.permissions || []).join(','),
+        reason: nameAr,
+        newValue: row,
+      });
+      return state;
+    }, actor);
+  };
+
+  const upsertPermission = (payload = {}, actor = 'مشغّل هوب') => {
+    let code = String(payload.code || '').trim().toLowerCase();
+    const resource = String(payload.resource || payload.section || 'custom').trim().toLowerCase().replace(/[^a-z0-9_]/g, '') || 'custom';
+    const action = String(payload.action || payload.actionType || 'VIEW').trim().toUpperCase();
+    if (!code) code = `${resource}.${action.toLowerCase()}`;
+    const nameAr = String(payload.nameAr || payload.name || '').trim();
+    if (!nameAr) throw new Error('اسم الصلاحية مطلوب');
+    return Store().update((state) => {
+      if (!Array.isArray(state.permissions)) state.permissions = [];
+      const idx = state.permissions.findIndex((p) => p.code === code);
+      const row = {
+        id: idx >= 0 ? state.permissions[idx].id : `perm-${code.replace(/\./g, '-')}`,
+        code,
+        resource,
+        action,
+        nameAr,
+        nameEn: payload.nameEn || code,
+        systemHint: payload.system || payload.systemHint || null,
+        status: payload.status === 'inactive' ? 'inactive' : 'active',
+        description: payload.description || '',
+      };
+      if (idx >= 0) state.permissions[idx] = { ...state.permissions[idx], ...row };
+      else state.permissions.unshift(row);
+      Store().pushAudit(state, {
+        actor,
+        action: idx >= 0 ? 'PERMISSION_UPDATED' : 'PERMISSION_CREATED',
+        permission: code,
+        system: row.systemHint,
+        reason: nameAr,
+        newValue: row,
+      });
+      return state;
+    }, actor);
+  };
+
   window.HubAccessGov = {
     authorize,
     effectiveAccess,
@@ -1217,6 +1375,9 @@
     ensureIdentity,
     registerEmployee,
     ensureEmployeeNumbers,
+    upsertManagedSystem,
+    upsertRole,
+    upsertPermission,
     isEmployeeIdentity: (ref) => {
       const state = Store().get();
       const identity = typeof ref === 'object' && ref?.id ? ref : findIdentity(state, ref);

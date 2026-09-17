@@ -611,3 +611,20 @@
     width: 100vw;
   }
 }
+
+.hto-kpis-inline {
+  margin: 8px 0 0;
+  font-size: 13px;
+  opacity: 0.92;
+}
+.hto-kpis-inline strong {
+  font-variant-numeric: tabular-nums;
+}
+.hto-muted {
+  color: #667085;
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+.hto-tabs {
+  flex-wrap: wrap;
+}
