@@ -30,7 +30,7 @@
     ops: { href: 'system-ops.html', title: 'تشغيل الأنظمة والمنح', type: 'content', typeAr: 'تشغيل', icon: 'fa-gears' },
     instructions: { href: 'systems-instructions.html', title: 'تعليمات أنظمة نايوش', type: 'content', typeAr: 'تعليمات', icon: 'fa-book-open' },
     register: { href: 'register.html', title: 'سجل معنا', type: 'content', typeAr: 'تسجيل', icon: 'fa-user-plus' },
-    approve: { href: 'rent-admin.html', title: 'موافقة السوبر أدمن', type: 'content', typeAr: 'موافقة', icon: 'fa-user-shield' },
+    approve: { href: 'dashboard.html#rent-admin', title: 'موافقات المدير الأعلى', type: 'content', typeAr: 'موافقة', icon: 'fa-user-shield' },
   };
 
   /** Intent registry — Intent ID هو العقد البرمجي */

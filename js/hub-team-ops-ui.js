@@ -1167,6 +1167,49 @@
     }
     const role = (store().roles || []).find((r) => r.code === w.roleCode);
     const permissions = w.permissions?.length ? w.permissions : defaultPermsFor(w.system, w.roleCode);
+    const identity = engine().findIdentity(w.naioshId);
+    const existingGrant = w.editGrantId
+      ? (store().grants || []).find((g) => g.grantId === w.editGrantId || g.id === w.editGrantId)
+      : null;
+
+    const needsApproval = window.HubHigherApprovals?.requiresHigherManagerApproval?.({
+      type: w.editGrantId ? 'role_change' : 'role_grant',
+      roleCode: w.roleCode,
+      permissions,
+    });
+
+    if (needsApproval && window.HubHigherApprovals?.enqueueRoleAssignment) {
+      try {
+        engine().registerEmployee({ naioshId: w.naioshId }, actor);
+      } catch (_) {}
+      const ticket = window.HubHigherApprovals.enqueueRoleAssignment(
+        {
+          naioshId: w.naioshId,
+          subjectName: identity?.name || w.naioshId,
+          subjectEmployeeNo: identity?.employeeNo || '',
+          roleCode: w.roleCode,
+          system: w.system || 'HUB',
+          positionCode: w.positionCode || role?.eligiblePositions?.[0] || null,
+          permissions,
+          editGrantId: w.editGrantId || null,
+          currentRoleCode: existingGrant?.roleCode || '',
+          currentPermissions: existingGrant?.permissions || [],
+          reason: w.editGrantId ? 'طلب تعديل تعيين يتطلب موافقة المدير الأعلى' : 'طلب تفعيل دور يتطلب موافقة المدير الأعلى',
+          scopeCode: w.system === 'HUB' ? 'HUB-GLOBAL' : 'GLOBAL',
+          governanceLevel: w.system === 'HUB' ? 'HUB' : w.roleCode === 'SUPER_ADMIN' ? 'EMPIRE' : 'SYSTEM',
+        },
+        { name: actor, email: user?.email, employeeNo: user?.employeeNo, naioshId: user?.naioshId }
+      );
+      ui.success = {
+        message: `لم يُنفَّذ التعيين بعد. أُنشئ طلب موافقة ${ticket.id} ويظهر في «موافقات المدير الأعلى».`,
+        userId: w.naioshId,
+      };
+      ui.wizard = null;
+      ui.tab = 'team';
+      toast?.(`أُرسل طلب الموافقة ${ticket.id}`);
+      return true;
+    }
+
     try {
       // ضمان أن الهدف موظف برقم قبل حفظ التعيين
       engine().registerEmployee({ naioshId: w.naioshId }, actor);

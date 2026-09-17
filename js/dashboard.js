@@ -10,7 +10,7 @@
     { key: 'side-project-regs', icon: 'fa-inbox', label: 'طلبات تسجيل المشاريع' },
     { key: 'content-articles', icon: 'fa-newspaper', label: 'المقالات الواردة' },
     { key: 'search-admin', icon: 'fa-magnifying-glass', label: 'إدارة محرك بحث نايوش' },
-    { key: 'rent-admin', icon: 'fa-key', label: 'موافقة السوبر أدمن' },
+    { key: 'rent-admin', icon: 'fa-user-shield', label: 'موافقات المدير الأعلى' },
     { key: 'blueprint', icon: 'fa-sitemap', label: 'دستور المعمارية' },
     { key: 'platforms', icon: 'fa-layer-group', label: 'المنصات السيادية' },
     { key: 'apps', icon: 'fa-cubes', label: 'سجل الأنظمة' },
@@ -52,7 +52,7 @@
     'side-project-regs': ['طلبات تسجيل المشاريع', 'Inbox · متابعة · تواصل · تدقيق'],
     'content-articles': ['المقالات الواردة', 'مراجعة · اعتماد · نشر · Workflow Runs'],
     'search-admin': ['إدارة محرك بحث نايوش', 'فهرسة · ظهور · اختبار نفس محرك العميل'],
-    'rent-admin': ['موافقة السوبر أدمن', 'اعتماد · رفض · منح نظام · تدقيق'],
+    'rent-admin': ['موافقات المدير الأعلى', 'مراجعة واعتماد العمليات الحساسة قبل التنفيذ'],
     blueprint: ['دستور المعمارية الإمبراطورية', 'هوب مركزي — طبقات · محاور · أول 6 أشهر'],
     platforms: ['المنصات السيادية لنايوش 360', '18 منصة تشغّل هوب — من الدماغ المركزي إلى السلطة العليا'],
     apps: ['سجل أنظمة هوب', 'أي نظام نايوش يمكنه الظهور هنا والارتباط بالتشغيل الموحّد'],
@@ -105,7 +105,10 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const root = $('#panel-root');
   const toastEl = $('#toast');
-  let current = (location.hash || '').replace(/^#/, '') || 'overview';
+  let current = (() => {
+    const raw = (location.hash || '').replace(/^#/, '') || 'overview';
+    return raw.split('?')[0].split('&')[0] || 'overview';
+  })();
   if (!TITLES[current]) current = 'overview';
   let reportTab = 'daily';
   let govTab = 'policies';
@@ -1144,7 +1147,7 @@
         ? HubSearchAdminWS.render({ user, toast, esc, bar, badgeStatus, fmtTime })
         : `<div class="empty">تعذر تحميل إدارة محرك بحث نايوش</div>`,
     'roles-permissions': () => (window.HubRolesWS?.render ? HubRolesWS.render({ user, toast, esc, bar, badgeStatus, fmtTime }) : '<div class="empty">تعذر تحميل الأدوار</div>'),
-    'rent-admin': () => (window.HubRentAdminWS?.render ? HubRentAdminWS.render({ user, toast, esc, bar, badgeStatus, fmtTime }) : '<div class="empty">تعذر تحميل موافقة السوبر أدمن</div>'),
+    'rent-admin': () => (window.HubRentAdminWS?.render ? HubRentAdminWS.render({ user, toast, esc, bar, badgeStatus, fmtTime }) : '<div class="empty">تعذر تحميل موافقات المدير الأعلى</div>'),
     blueprint: renderBlueprint,
     platforms: renderPlatforms,
     apps: renderApps,
@@ -1309,6 +1312,7 @@
       ['ag-', 'HubRolesWS'],
       ['rl-', 'HubRolesWS'],
       ['rn-', 'HubRentAdminWS'],
+      ['ha-', 'HubRentAdminWS'],
       ['ps-', 'HubPoshaWS'],
     ];
     for (const [prefix, name] of opsHandlers) {
@@ -1743,6 +1747,9 @@
       }
       return;
     }
+    if (e.target.closest?.('[data-ha-q]') || e.target.matches?.('[data-ha-field="value"]')) {
+      return;
+    }
     const sel = e.target.closest('[data-action="sp-reg-status"]');
     if (!sel) return;
     const id = sel.dataset.id;
@@ -1752,16 +1759,38 @@
     render();
   });
 
-  const hash = (window.location.hash || '#overview').replace('#', '');
-  activate(TITLES[hash] ? hash : 'overview');
+  const panelFromHash = () => {
+    const raw = (window.location.hash || '#overview').replace(/^#/, '');
+    const key = raw.split('?')[0].split('&')[0] || 'overview';
+    return TITLES[key] ? key : 'overview';
+  };
+
+  const hash = panelFromHash();
+  activate(hash);
 
   window.addEventListener('hashchange', () => {
-    const next = (window.location.hash || '#overview').replace('#', '');
-    if (TITLES[next] && next !== current) activate(next);
+    const next = panelFromHash();
+    if (next !== current) activate(next);
   });
 
   window.addEventListener('hub-notifications-changed', () => {
     if (current === 'notifications' || current === 'search-admin') {
+      try {
+        render();
+      } catch (_) {}
+    }
+  });
+
+  window.addEventListener('hub-ha-rerender', () => {
+    if (current === 'rent-admin') {
+      try {
+        render();
+      } catch (_) {}
+    }
+  });
+
+  window.addEventListener('hub-higher-approvals-changed', () => {
+    if (current === 'rent-admin') {
       try {
         render();
       } catch (_) {}

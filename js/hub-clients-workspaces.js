@@ -646,19 +646,19 @@
     return `<div class="hub-ops-ws hub-rent-ws">
       ${K.renderHeader({
         prefix: 'rn',
-        title: 'موافقة السوبر أدمن',
-        subtitle: 'اعتماد طلبات سجل معنا · منح النظام · تدقيق',
-        icon: 'fa-key',
+        title: 'موافقات المدير الأعلى',
+        subtitle: 'مراجعة واعتماد العمليات الحساسة قبل التنفيذ',
+        icon: 'fa-user-shield',
         actionsHtml: `<button type="button" class="btn btn-ghost btn-sm" data-action="rn-help-open"><i class="fas fa-circle-question"></i></button>`,
       })}
       ${K.renderKpis('rn', kpis, '')}
       ${K.renderTabs('rn', RN_TABS, rnUi.tab)}
       ${body}
       ${K.renderHelp('rn', {
-        title: 'دليل موافقة السوبر أدمن',
+        title: 'دليل موافقات المدير الأعلى',
         dismissed: !!meta.settings?.helpDismissed,
         open: rnUi.helpOpen,
-        bodyHtml: `<p>اعتمد الطلب لمنح النظام والاشتراك، أو ارفضه. بعدها أكمل الأدوار من صفحة الصلاحيات إن لزم.</p>`,
+        bodyHtml: `<p>اعتمد أو ارفض الطلبات الحساسة هنا. إدارة الأدوار نفسها تتم من «إدارة فريق العمل والصلاحيات».</p>`,
       })}
     </div>`;
   };

@@ -28,6 +28,45 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
 
+  const openHubModal = ({ title, bodyHtml, confirmLabel, onConfirm }) => {
+    const prev = document.querySelector('.ha-inline-modal-backdrop');
+    if (prev) prev.remove();
+    const backdrop = document.createElement('div');
+    backdrop.className = 'ha-inline-modal-backdrop';
+    backdrop.style.cssText =
+      'position:fixed;inset:0;background:rgba(15,23,42,.45);display:grid;place-items:center;z-index:12000;padding:16px;direction:rtl';font-family:Cairo,sans-serif';';
+    backdrop.innerHTML = `<div role="dialog" aria-modal="true" style="width:min(420px,100%);background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.2)">
+      <header style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #e5e7eb">
+        <h3 style="margin:0;font-size:1rem">${escapeHtml(title || '')}</h3>
+        <button type="button" data-close style="border:0;background:transparent;font-size:1.4rem;cursor:pointer">×</button>
+      </header>
+      <div style="padding:14px 16px">${bodyHtml || ''}</div>
+      <footer style="display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid #e5e7eb">
+        <button type="button" data-close style="padding:8px 14px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;cursor:pointer">إلغاء</button>
+        <button type="button" data-ok style="padding:8px 14px;border-radius:8px;border:0;background:#9b1c1c;color:#fff;cursor:pointer">${escapeHtml(confirmLabel || 'تأكيد')}</button>
+      </footer>
+    </div>`;
+    const close = () => backdrop.remove();
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop || e.target.closest('[data-close]')) close();
+    });
+    backdrop.querySelector('[data-ok]')?.addEventListener('click', async () => {
+      const ok = await onConfirm?.(backdrop);
+      if (ok !== false) close();
+    });
+    document.body.appendChild(backdrop);
+    return backdrop;
+  };
+
+  const toastMsg = (msg) => {
+    openHubModal({
+      title: 'تنبيه',
+      bodyHtml: `<p>${escapeHtml(msg)}</p>`,
+      confirmLabel: 'حسناً',
+      onConfirm: () => true,
+    });
+  };
+
   const renderPlatformList = () => {
     const root = $('[data-platform-admin-list]');
     if (!root || !platforms()) return;
@@ -70,7 +109,7 @@
     root.querySelectorAll('[data-approve-platform]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const res = platforms().approveGrant(btn.getAttribute('data-approve-platform'));
-        if (!res.ok) return alert(res.error || 'فشل الاعتماد');
+        if (!res.ok) return toastMsg(res.error || 'فشل الاعتماد');
         const g = res.grant;
         if (g?.adminEmail && (g.requestedSystem || g.platform)) {
           try {
@@ -91,25 +130,47 @@
     root.querySelectorAll('[data-reject-platform]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const res = platforms().rejectGrant(btn.getAttribute('data-reject-platform'));
-        if (!res.ok) return alert(res.error || 'فشل الرفض');
+        if (!res.ok) return toastMsg(res.error || 'فشل الرفض');
         renderPlatformList();
       });
     });
     root.querySelectorAll('[data-sync-login]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', () => {
         const grant = platforms().getGrant(btn.getAttribute('data-sync-login'));
-        if (!grant?.adminEmail) return alert('الطلب غير موجود');
-        const password = window.prompt(
-          `كلمة مرور الدخول للعميل ${grant.adminEmail}\n(نفس كلمة «سجل معنا» أو كلمة جديدة تُعطى للعميل)`
-        );
-        if (!password || password.length < 8) {
-          alert('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
-          return;
-        }
-        btn.disabled = true;
-        const res = await platforms().ensureTenantLogin?.({ email: grant.adminEmail, password, grant });
-        btn.disabled = false;
-        alert(res?.ok ? `تم تفعيل الدخول لـ ${grant.adminEmail}` : res?.error || 'فشل التفعيل');
+        if (!grant?.adminEmail) return toastMsg('الطلب غير موجود');
+        openHubModal({
+          title: 'تفعيل دخول العميل',
+          bodyHtml: `<p>كلمة مرور الدخول للعميل: <b dir="ltr">${escapeHtml(grant.adminEmail)}</b></p>
+            <p style="color:#6b7280;font-size:.9rem">نفس كلمة «سجل معنا» أو كلمة جديدة (8 أحرف على الأقل).</p>
+            <label style="display:block;font-weight:700">كلمة المرور
+              <input type="password" data-pw style="width:100%;margin-top:6px;padding:8px;border:1px solid #e5e7eb;border-radius:8px" autocomplete="new-password" />
+            </label>
+            <p data-err style="color:#b91c1c;margin:8px 0 0;display:none"></p>`,
+          confirmLabel: 'تأكيد',
+          onConfirm: async (box) => {
+            const password = box.querySelector('[data-pw]')?.value || '';
+            const err = box.querySelector('[data-err]');
+            if (!password || password.length < 8) {
+              if (err) {
+                err.style.display = 'block';
+                err.textContent = 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
+              }
+              return false;
+            }
+            btn.disabled = true;
+            const res = await platforms().ensureTenantLogin?.({ email: grant.adminEmail, password, grant });
+            btn.disabled = false;
+            if (!res?.ok) {
+              if (err) {
+                err.style.display = 'block';
+                err.textContent = res?.error || 'فشل التفعيل';
+              }
+              return false;
+            }
+            toastMsg(`تم تفعيل الدخول لـ ${grant.adminEmail}`);
+            return true;
+          },
+        });
       });
     });
   };
@@ -146,7 +207,7 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الربط…';
         const res = await store().activateRentalAsync(btn.getAttribute('data-approve'));
         if (!res.ok) {
-          alert(res.error || 'فشل الاعتماد / ربط ERP');
+          toastMsg(res.error || 'فشل الاعتماد / ربط ERP');
           renderList();
           return;
         }
@@ -156,7 +217,7 @@
     root.querySelectorAll('[data-reject]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const res = store().rejectRental(btn.getAttribute('data-reject'));
-        if (!res.ok) return alert(res.error || 'فشل الرفض');
+        if (!res.ok) return toastMsg(res.error || 'فشل الرفض');
         renderList();
       });
     });
