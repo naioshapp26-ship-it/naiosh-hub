@@ -80,16 +80,24 @@
 
   const findIdentity = (state, ref) => {
     if (!ref) return null;
+    if (typeof ref === 'object') {
+      return findIdentity(state, ref.naioshId || ref.email || ref.id || ref.name);
+    }
     const q = String(ref).toLowerCase();
     return (
       (state.identities || []).find(
         (i) =>
           i.id === ref ||
           String(i.naioshId || '').toLowerCase() === q ||
-          String(i.email || '').toLowerCase() === q
+          String(i.email || '').toLowerCase() === q ||
+          String(i.name || '').toLowerCase() === q
       ) || null
     );
   };
+
+  const BOOTSTRAP_ACTORS = new Set(['مشغّل هوب', 'system', 'migration', 'system-bootstrap', 'bootstrap']);
+
+  const isBootstrapActor = (actor) => BOOTSTRAP_ACTORS.has(String(actor || '').trim());
 
   const isSuspended = (state, identity) => {
     if (!identity || identity.status === 'suspended' || identity.status === 'revoked') return true;
@@ -531,6 +539,65 @@
     };
   };
 
+  const ROLE_POWER = {
+    PLATFORM_CUSTOMER: 1,
+    HUB_EMPLOYEE: 2,
+    REPORT_VIEWER: 2,
+    HUB_AUDITOR: 3,
+    HUB_ADMIN: 4,
+    SYSTEM_MANAGER: 5,
+    BRANCH_MANAGER: 5,
+    PLATFORM_MANAGER: 5,
+    INCUBATOR_MANAGER: 5,
+    SYSTEM_OWNER: 6,
+    SUPER_ADMIN: 10,
+  };
+
+  const actorGrantPower = (state, actorIdentity, actorRef) => {
+    if (!actorIdentity) {
+      if (isBootstrapActor(actorRef)) return { isBootstrap: true, isSuper: true, perms: new Set(), maxRole: 10 };
+      return { isBootstrap: false, isSuper: false, perms: new Set(), maxRole: 0, unknown: true };
+    }
+    const grants = collectGrants(state, actorIdentity);
+    const perms = new Set();
+    let maxRole = 0;
+    let isSuper = false;
+    grants.forEach((g) => {
+      (g.permissions || []).forEach((p) => perms.add(p));
+      maxRole = Math.max(maxRole, ROLE_POWER[g.roleCode] || 0);
+      if (g.roleCode === 'SUPER_ADMIN' || (g.permissions || []).includes('access_governance.manage')) isSuper = true;
+    });
+    if (perms.has('access_governance.manage')) isSuper = true;
+    return { isBootstrap: false, isSuper, perms, maxRole };
+  };
+
+  const assertCanAssign = (state, actor, roleCode, permissions = []) => {
+    const actorIdentity = findIdentity(state, actor);
+    const power = actorGrantPower(state, actorIdentity, actor);
+    if (power.unknown) throw new Error('غير مصرح بتعيين الوصول');
+    if (power.isBootstrap || power.isSuper) return;
+    const decision = authorize({
+      naioshId: actorIdentity?.naioshId || actor,
+      permission: 'roles.assign',
+      system: 'HUB',
+      governanceLevel: 'HUB',
+    });
+    const canAssign =
+      decision.decision === 'ALLOW' ||
+      power.perms.has('roles.assign') ||
+      power.perms.has('users.assign') ||
+      power.perms.has('access_governance.manage');
+    if (!canAssign) throw new Error('غير مصرح بتعيين الوصول');
+    const targetPower = ROLE_POWER[roleCode] || 0;
+    if (targetPower > power.maxRole) {
+      throw new Error('لا يمكنك منح دور أعلى من حدود سلطتك');
+    }
+    const illegal = (permissions || []).filter((p) => !power.perms.has(p) && !power.perms.has('roles.manage'));
+    if (illegal.length) {
+      throw new Error('لا يمكنك منح صلاحيات أعلى من حدود سلطتك');
+    }
+  };
+
   const createGrant = (payload, actor = 'مشغّل هوب') => {
     return Store().update((state) => {
       const identity = findIdentity(state, payload.naioshId || payload.identityId || payload.email);
@@ -540,21 +607,8 @@
       if (payload.positionCode && role.eligiblePositions?.length && !role.eligiblePositions.includes(payload.positionCode)) {
         throw new Error('الدور غير مؤهل لهذا المنصب');
       }
-      const decision = authorize({
-        naioshId: actor,
-        permission: 'roles.assign',
-        system: 'HUB',
-        governanceLevel: 'HUB',
-      });
-      // Allow bootstrap when actor is system/migration or SUPER_ADMIN path unavailable
-      const actorIdentity = findIdentity(state, actor);
-      const actorIsSuper = actorIdentity
-        ? collectGrants(state, actorIdentity).some((g) => g.roleCode === 'SUPER_ADMIN' || (g.permissions || []).includes('access_governance.manage'))
-        : true; // مشغّل لوحة التحكم / الاختبارات بدون هوية مربوطة = مصرّح إداريًا
-
-      if (!actorIsSuper && decision.decision !== 'ALLOW') {
-        throw new Error('غير مصرح بتعيين الوصول');
-      }
+      const permissions = payload.permissions?.length ? payload.permissions.slice() : role.permissions.slice();
+      assertCanAssign(state, actor, role.code, permissions);
 
       const grant = {
         id: Store().uid('grant'),
@@ -565,7 +619,7 @@
         roleCode: role.code,
         system: payload.system,
         scopeCode: payload.scopeCode,
-        permissions: payload.permissions?.length ? payload.permissions : role.permissions.slice(),
+        permissions,
         authorityCodes: payload.authorityCodes || [],
         purpose: payload.purpose || '',
         grantedBy: actor,
@@ -833,6 +887,9 @@
       const grant = (state.grants || []).find((g) => g.id === grantId || g.grantId === grantId);
       if (!grant) throw new Error('التعيين غير موجود');
       const old = { ...grant };
+      const nextRole = patch.roleCode || grant.roleCode;
+      const nextPerms = Array.isArray(patch.permissions) ? patch.permissions.slice() : grant.permissions || [];
+      assertCanAssign(state, actor, nextRole, nextPerms);
       ['positionCode', 'roleCode', 'system', 'scopeCode', 'purpose', 'governanceLevel', 'expiryDate', 'reviewDate'].forEach((k) => {
         if (patch[k] !== undefined) grant[k] = patch[k];
       });
@@ -862,9 +919,13 @@
   };
 
   const ensureIdentity = (payload = {}, actor = 'مشغّل هوب') => {
-    return Store().update((state) => {
+    let out = null;
+    Store().update((state) => {
       let identity = findIdentity(state, payload.naioshId || payload.email);
-      if (identity) return state;
+      if (identity) {
+        out = identity;
+        return state;
+      }
       identity = {
         id: Store().uid('id'),
         naioshId: payload.naioshId || `NAI-${Date.now().toString(36).toUpperCase()}`,
@@ -886,8 +947,10 @@
         reason: payload.reason || 'إضافة مستخدم جديد',
         system: 'HUB',
       });
+      out = identity;
       return state;
     }, actor);
+    return out;
   };
 
   window.HubAccessGov = {

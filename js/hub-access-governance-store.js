@@ -174,16 +174,16 @@
       legacyCodes: [],
     });
     return [
-      mk('SUPER_ADMIN', 'سوبر آدمن', 'Super Admin', 'EMPIRE', ['HUB', 'ERP', 'CRM', 'LMS', 'LAW', 'FIT', 'ACADEMY', 'POSHA'], ['access_governance.manage', 'roles.manage', 'users.manage', 'systems.manage', 'audit.view', 'finance_approvals.approve', 'policies.publish'], ['EMP_SUPREME_LEADER', 'EMP_GOVERNOR'], 'GLOBAL'),
-      mk('HUB_ADMIN', 'مشرف هوب', 'Hub Admin', 'HUB', ['HUB'], ['access_governance.view', 'roles.edit', 'users.assign', 'systems.configure', 'audit.view', 'delegations.create'], ['HUB_ADMIN_POS'], 'HUB-GLOBAL'),
-      mk('HUB_AUDITOR', 'مدقق هوب', 'Hub Auditor', 'HUB', ['HUB', 'ERP'], ['audit.view', 'audit.export', 'roles.view', 'users.view', 'access_governance.view'], ['HUB_AUDITOR_POS'], 'HUB-GLOBAL'),
-      mk('HUB_EMPLOYEE', 'موظف هوب', 'Hub Employee', 'HUB', ['HUB'], ['users.view', 'customer_requests.view', 'customer_requests.create'], ['HUB_EMPLOYEE_POS'], 'DEPARTMENT'),
+      mk('SUPER_ADMIN', 'المدير الأعلى', 'Super Admin', 'EMPIRE', ['HUB', 'ERP', 'CRM', 'LMS', 'LAW', 'FIT', 'ACADEMY', 'POSHA'], ['access_governance.manage', 'roles.manage', 'users.manage', 'systems.manage', 'audit.view', 'finance_approvals.approve', 'policies.publish', 'roles.assign', 'users.assign'], ['EMP_SUPREME_LEADER', 'EMP_GOVERNOR'], 'GLOBAL'),
+      mk('HUB_ADMIN', 'مشرف', 'Hub Admin', 'HUB', ['HUB'], ['access_governance.view', 'roles.edit', 'users.assign', 'systems.configure', 'audit.view', 'delegations.create', 'customer_requests.view', 'customer_requests.approve'], ['HUB_ADMIN_POS'], 'HUB-GLOBAL'),
+      mk('HUB_AUDITOR', 'مراجع', 'Hub Auditor', 'HUB', ['HUB', 'ERP'], ['audit.view', 'audit.export', 'roles.view', 'users.view', 'access_governance.view', 'customer_requests.view'], ['HUB_AUDITOR_POS'], 'HUB-GLOBAL'),
+      mk('HUB_EMPLOYEE', 'موظف تشغيل', 'Hub Employee', 'HUB', ['HUB'], ['users.view', 'customer_requests.view', 'customer_requests.create'], ['HUB_EMPLOYEE_POS'], 'DEPARTMENT'),
       mk('BRANCH_MANAGER', 'مدير فرع', 'Branch Manager', 'SYSTEM', ['ERP', 'CRM'], ['customer_requests.view', 'customer_requests.approve', 'finance_approvals.approve', 'users.view', 'workflow.execute'], ['BRANCH_MANAGER_POS'], 'BRANCH'),
       mk('REPORT_VIEWER', 'عارض تقارير', 'Report Viewer', 'SYSTEM', ['HUB', 'ERP'], ['users.view', 'audit.view', 'customer_requests.view'], ['BRANCH_MANAGER_POS', 'HUB_EMPLOYEE_POS'], 'BRANCH'),
       mk('INCUBATOR_MANAGER', 'مدير حاضنة', 'Incubator Manager', 'SYSTEM', ['HUB', 'ACADEMY'], ['users.view', 'systems.view', 'workflow.execute'], ['INCUBATOR_MANAGER_POS'], 'INCUBATOR'),
       mk('PLATFORM_MANAGER', 'مدير منصة', 'Platform Manager', 'SYSTEM', ['HUB', 'POSHA'], ['systems.configure', 'users.assign', 'customer_requests.approve'], ['PLATFORM_MANAGER_POS'], 'PLATFORM'),
       mk('SYSTEM_OWNER', 'مالك نظام', 'System Owner', 'SYSTEM', ['ERP', 'CRM', 'LMS', 'LAW'], ['systems.manage', 'roles.assign', 'audit.view'], ['SYSTEM_OWNER_POS'], 'SYSTEM'),
-      mk('SYSTEM_MANAGER', 'مدير نظام', 'System Manager', 'SYSTEM', ['ERP', 'CRM', 'LMS'], ['systems.configure', 'users.view', 'workflow.execute'], ['SYSTEM_OWNER_POS'], 'SYSTEM'),
+      mk('SYSTEM_MANAGER', 'مدير النظام', 'System Manager', 'SYSTEM', ['ERP', 'CRM', 'LMS', 'POSHA'], ['systems.configure', 'users.view', 'workflow.execute', 'customer_requests.view', 'customer_requests.edit', 'customer_requests.approve', 'customer_requests.reject'], ['SYSTEM_OWNER_POS'], 'SYSTEM'),
       mk('PLATFORM_CUSTOMER', 'عميل منصة', 'Platform Customer', 'SYSTEM', ['POSHA', 'ACADEMY', 'LMS'], ['customer_requests.view', 'customer_requests.create', 'customer_requests.submit'], ['CUSTOMER_POS'], 'PLATFORM'),
     ];
   };

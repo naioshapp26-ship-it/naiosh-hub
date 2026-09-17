@@ -453,7 +453,7 @@
       <button type="button" data-req-copy-id="${esc(r.requestId || r.id)}">نسخ Request ID</button>
       <button type="button" data-open-posha="${esc(r.email || '')}">فتح العميل</button>
       ${sourceHref ? `<a href="${esc(sourceHref)}" target="_blank" rel="noopener">فتح المصدر</a>` : ''}
-      <button type="button" data-req-delete="${esc(r.id)}">حذف</button>
+      ${canPerm('customer_requests.reject', 'CRM') || canPerm('customer_requests.reject', 'POSHA') ? `<button type="button" data-req-delete="${esc(r.id)}">حذف</button>` : ''}
     </div>`;
   }
 
@@ -514,6 +514,29 @@
     } catch {
       return 'مشغّل بوشا';
     }
+  }
+
+  function currentHubUser() {
+    try {
+      return window.HubAuth?.getUser?.() || JSON.parse(localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser') || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  function canPerm(permission, system = 'POSHA') {
+    const u = currentHubUser();
+    if (u.role === 'supreme_leader' || u.role === 'chief_engineer' || u.role === 'platform_owner') return true;
+    if (!window.HubAccessGov?.authorize) return true;
+    const identity = window.HubAccessGov.findIdentity?.(u.naioshId || u.email);
+    if (!identity) return true;
+    const d = window.HubAccessGov.authorize({
+      naioshId: identity.naioshId,
+      email: identity.email,
+      permission,
+      system,
+    });
+    return d.decision === 'ALLOW';
   }
 
   function requestsKpisHtml() {
@@ -1000,6 +1023,10 @@
     });
     body.querySelectorAll('[data-req-delete]').forEach((btn) => {
       btn.onclick = () => {
+        if (!(canPerm('customer_requests.reject', 'CRM') || canPerm('customer_requests.reject', 'POSHA'))) {
+          alert('ليس لديك صلاحية حذف الطلب.');
+          return;
+        }
         const id = btn.getAttribute('data-req-delete');
         if (!window.confirm('حذف / أرشفة هذا الطلب؟ السجل يبقى محفوظاً.')) return;
         cr()?.archiveRequest?.(id, actor()) || cr()?.updateStatus?.(id, 'Archived', actor(), 'حذف');
@@ -1049,6 +1076,10 @@
     });
     body.querySelectorAll('[data-req-approve], [data-req-approve-publish]').forEach((btn) => {
       btn.onclick = () => {
+        if (!(canPerm('customer_requests.approve', 'CRM') || canPerm('customer_requests.approve', 'POSHA'))) {
+          alert('ليس لديك صلاحية قبول الطلب.');
+          return;
+        }
         const id = btn.getAttribute('data-req-approve') || btn.getAttribute('data-req-approve-publish');
         const r = cr()?.get(id);
         if (!r) return;

@@ -6,7 +6,7 @@
     { key: 'site-settings', icon: 'fa-gear', label: 'إعدادات الموقع' },
     { key: 'posha-os', icon: 'fa-cubes', label: 'نظام بوشا OS', href: 'posha.html' },
     { key: 'clients-mgmt', icon: 'fa-user-tie', label: 'إدارة العملاء' },
-    { key: 'roles-permissions', icon: 'fa-shield-halved', label: 'حوكمة الوصول والأدوار' },
+    { key: 'roles-permissions', icon: 'fa-shield-halved', label: 'إدارة فريق العمل والصلاحيات' },
     { key: 'notifications', icon: 'fa-bell', label: 'مركز إشعارات نايوش هوب' },
     { key: 'side-project-regs', icon: 'fa-inbox', label: 'طلبات تسجيل المشاريع' },
     { key: 'content-articles', icon: 'fa-newspaper', label: 'المقالات الواردة' },
@@ -48,7 +48,7 @@
     'posha-clients': ['عملاء بوشا', 'إدارة العملاء والطلبات والدعم والتنبيهات من مكان واحد'],
     'site-settings': ['إعدادات الموقع', 'إدارة إعدادات المنصة والمتاجر والطلبات والدفع والإعلانات والتكاملات والأمان من مكان واحد'],
     'clients-mgmt': ['إدارة العملاء', 'Clients 360 · CRUD · مصدر · ملاحظات داخلية · تدقيق'],
-    'roles-permissions': ['حوكمة الوصول والأدوار', 'إدارة الهوية والمنصب والدور ونطاق العمل والصلاحيات والسلطات'],
+    'roles-permissions': ['إدارة فريق العمل والصلاحيات', 'عيّن المسؤولين عن إدارة نايوش هوب وأنظمتها، وحدد لكل شخص مكان عمله ودوره والصلاحيات المسموح بها.'],
     notifications: ['مركز إشعارات نايوش هوب', 'مصدر واضح · سبب · إجراء · طلب مرتبط'],
     'side-project-regs': ['طلبات تسجيل المشاريع', 'Inbox · متابعة · تواصل · تدقيق'],
     'content-articles': ['المقالات الواردة', 'مراجعة · اعتماد · نشر · Workflow Runs'],
@@ -332,10 +332,22 @@
     'content-articles',
     'settings',
   ]);
-  const visibleNav =
-    user.role === 'customer' ? NAV.filter((n) => !STAFF_ONLY_NAV.has(n.key) && !n.href) : NAV;
+  const buildVisibleNav = () => {
+    let list =
+      user.role === 'customer' || user.role === 'client' || user.role === 'client_user'
+        ? NAV.filter((n) => !STAFF_ONLY_NAV.has(n.key) && !n.href)
+        : NAV.slice();
+    try {
+      const allowed = window.HubTeamOpsUI?.allowedPanelsForUser?.(user);
+      if (allowed instanceof Set) {
+        list = list.filter((n) => allowed.has(n.key) || n.href);
+      }
+    } catch (_) {}
+    return list;
+  };
 
   const renderNav = () => {
+    const visibleNav = buildVisibleNav();
     $('#sidebar-nav').innerHTML = visibleNav.map((n) => {
       const href = n.href || `#${n.key}`;
       const active = n.key === current ? 'active' : '';
@@ -364,7 +376,15 @@
   };
 
   const activate = (key) => {
-    current = TITLES[key] ? key : 'overview';
+    let next = TITLES[key] ? key : 'overview';
+    try {
+      const allowed = window.HubTeamOpsUI?.allowedPanelsForUser?.(user);
+      if (allowed instanceof Set && !allowed.has(next)) {
+        next = allowed.has('overview') ? 'overview' : [...allowed][0] || 'overview';
+        toast?.('ليس لديك صلاحية لفتح هذا القسم.');
+      }
+    } catch (_) {}
+    current = next;
     history.replaceState(null, '', `#${current}`);
     $('#page-title').textContent = TITLES[current][0];
     $('#page-sub').textContent = TITLES[current][1];
@@ -1185,6 +1205,16 @@
         },
       });
     }
+    if (current === 'roles-permissions' && window.HubTeamOpsUI?.afterPaint) {
+      HubTeamOpsUI.afterPaint({
+        user,
+        toast,
+        rerender: () => {
+          renderNav();
+          render();
+        },
+      });
+    }
   };
   window.hubRerender = () => render();
 
@@ -1267,6 +1297,7 @@
       ['nt-', 'HubNotificationsWS'],
       ['sa-', 'HubSearchAdminWS'],
       ['sp-', 'HubSideProjectsWS'],
+      ['hto-', 'HubRolesWS'],
       ['ag-', 'HubRolesWS'],
       ['rl-', 'HubRolesWS'],
       ['rn-', 'HubRentAdminWS'],

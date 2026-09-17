@@ -551,18 +551,25 @@
     return true;
   };
 
-  /* ───────── Access Governance 360 ───────── */
+  /* ───────── إدارة فريق العمل والصلاحيات ───────── */
   const rlUi = { helpOpen: false };
 
   const renderRoles = (ctx = {}) => {
+    if (window.HubTeamOpsUI && window.HubTeamOpsUI.render) {
+      return '<div class="hub-ops-ws hub-roles-ws hub-team-ops-ws">' + window.HubTeamOpsUI.render(ctx) + '</div>';
+    }
     if (window.HubAccessGovUI && window.HubAccessGovUI.render) {
       return '<div class="hub-ops-ws hub-roles-ws hub-access-gov-ws">' + window.HubAccessGovUI.render(ctx) + '</div>';
     }
-    return '<div class="empty">تعذّر تحميل Access Governance 360</div>';
+    return '<div class="empty">تعذّر تحميل إدارة فريق العمل والصلاحيات</div>';
   };
 
   const handleRoles = (action, btn, ctx = {}) => {
-    if (String(action || '').startsWith('ag-') && window.HubAccessGovUI && window.HubAccessGovUI.handle) {
+    const a = String(action || '');
+    if (a.startsWith('hto-') && window.HubTeamOpsUI?.handle) {
+      return window.HubTeamOpsUI.handle(action, btn, ctx);
+    }
+    if (a.startsWith('ag-') && window.HubAccessGovUI?.handle) {
       return window.HubAccessGovUI.handle(action, btn, ctx);
     }
     return false;
