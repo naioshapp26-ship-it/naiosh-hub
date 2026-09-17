@@ -302,11 +302,13 @@
     .platform-card:hover { border-color: var(--primary-border); background: var(--primary-light); }
     .platform-card input:checked + .platform-card { border-color: var(--primary); }
   </style>
-<link rel="stylesheet" href="https://web-production-419e2.up.railway.app/public/global-back.css?v=20260618back">    <script src="https://web-production-419e2.up.railway.app/tenant-path-client.js?v=20260628-tenant-scope"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://web-production-419e2.up.railway.app/tenant-path-client.js?v=20260628-tenant-scope"></script>
     <script src="https://web-production-419e2.up.railway.app/tenant-branding.js"></script>
 </head>
-<body><a href="dashboard.html" target="_parent" style="position:fixed;top:10px;left:10px;z-index:99999;background:#9b1c1c;color:#fff;padding:8px 12px;border-radius:10px;text-decoration:none;font-family:Cairo,sans-serif;font-weight:700">رجوع للوحة التحكم</a>
-  <div class="max-w-7xl mx-auto p-4 md:p-6 space-y-5">
+<body>
+  <script src="js/hub-staff-gate.js?v=1"></script>
+  <div class="w-full max-w-none mx-auto p-4 md:p-6 lg:px-8 space-y-5 min-h-screen">
 
     <!-- ═══ Header ═══ -->
     <header class="rounded-2xl p-6 relative overflow-hidden bg-slate-900 text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #7f1d1d 100%);">
@@ -320,14 +322,14 @@
             </span>
           </div>
           <h1 class="text-2xl md:text-3xl font-extrabold mb-1.5 text-white" style="color: #ffffff !important;">استوديو الحملات التسويقية</h1>
-          <p class="text-red-100/80 text-sm leading-relaxed max-w-xl">منصة موحدة لإدارة الحملات، تسجيل المقاطع، وتجهيز الريلز للنشر على المنصات الرقمية بسهولة.</p>
+          <p class="text-red-100/80 text-sm leading-relaxed max-w-xl">إدارة الحملات والمحتوى التسويقي والتسجيل والنشر من مكان واحد.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+          <a id="hub-studio-back" href="dashboard.html#overview" class="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl font-bold transition-all border border-white/15 text-sm">
+            <i class="fas fa-arrow-right text-xs"></i> رجوع إلى لوحة التحكم
+          </a>
           <button type="button" class="btn btn-primary text-sm" onclick="openAddFlow('create-event')"><i class="fas fa-plus"></i> حملة جديدة</button>
           <button type="button" class="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl font-bold transition-all border border-white/15 text-sm" onclick="openAddFlow('add-content')"><i class="fas fa-video text-xs"></i> رفع محتوى</button>
-          <a href="https://web-production-419e2.up.railway.app/index.html" class="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl font-bold transition-all border border-white/15 text-sm">
-            <i class="fas fa-arrow-right text-xs"></i> رجوع للرئيسية
-          </a>
         </div>
       </div>
     </header>
@@ -1615,5 +1617,15 @@
       alert('تعذر تحميل بيانات الاستوديو.');
     });
   </script>
-<script src="https://web-production-419e2.up.railway.app/public/global-back.js?v=20260618back" defer></script></body>
+<script>
+(function () {
+  try {
+    var ret = sessionStorage.getItem('hubStudioReturn') || localStorage.getItem('hubStudioReturn') || 'dashboard.html#overview';
+    if (!/^dashboard\.html/.test(ret)) ret = 'dashboard.html#overview';
+    var a = document.getElementById('hub-studio-back');
+    if (a) a.setAttribute('href', ret);
+  } catch (_) {}
+})();
+</script>
+</body>
 </html>

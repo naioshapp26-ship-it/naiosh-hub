@@ -2351,17 +2351,3 @@ body.hub-ai-off [data-ai-assistant-root] { display: none !important; }
   flex-wrap: wrap;
 }
 
-/* ERP studios embedded in dashboard */
-.hub-erp-studio-embed {
-  margin: 0;
-}
-.hub-erp-studio-iframe {
-  width: 100%;
-  min-height: calc(100vh - 160px);
-  height: 85vh;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: #fff;
-  display: block;
-}
-

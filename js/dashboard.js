@@ -16,8 +16,8 @@
     { key: 'apps', icon: 'fa-cubes', label: 'سجل الأنظمة' },
     { key: 'products', icon: 'fa-boxes-stacked', label: 'عرض المنتجات' },
     { key: 'store', icon: 'fa-bag-shopping', label: 'متجر المبيعات' },
-    { key: 'ads-studio', icon: 'fa-bullhorn', label: 'استوديو الحملات التسويقية' },
-    { key: 'events-studio', icon: 'fa-calendar-days', label: 'استوديو الفعاليات الذكي' },
+    { key: 'ads-studio', icon: 'fa-bullhorn', label: 'استوديو الحملات التسويقية', href: 'ads.html' },
+    { key: 'events-studio', icon: 'fa-calendar-days', label: 'استوديو الفعاليات الذكي', href: 'events.html' },
     { key: 'identity', icon: 'fa-id-card', label: 'هوية نايوش' },
     { key: 'organization', icon: 'fa-globe', label: 'الهيكل العالمي' },
     { key: 'incubators', icon: 'fa-building', label: 'الحاضنات' },
@@ -352,7 +352,7 @@
     try {
       const allowed = window.HubTeamOpsUI?.allowedPanelsForUser?.(user);
       if (allowed instanceof Set) {
-        list = list.filter((n) => allowed.has(n.key) || n.href);
+        list = list.filter((n) => allowed.has(n.key));
       }
     } catch (_) {}
     return list;
@@ -369,7 +369,11 @@
       const a = e.target.closest('a[data-panel]');
       if (!a) return;
       if (a.dataset.external === '1') {
-        // افتح الصفحة الخارجية مباشرة (مثل ERP → super-admin-page)
+        try {
+          const ret = studioReturnTarget();
+          sessionStorage.setItem('hubStudioReturn', ret);
+          localStorage.setItem('hubStudioReturn', ret);
+        } catch (_) {}
         document.body.classList.remove('nav-open');
         return;
       }
@@ -387,7 +391,31 @@
     `;
   };
 
+  const studioReturnTarget = () => {
+    const from = current && current !== 'ads-studio' && current !== 'events-studio' ? current : 'overview';
+    return `dashboard.html#${from}`;
+  };
+
   const activate = (key) => {
+    // الاستوديوهات تُفتح صفحات كاملة — لا تُعرض داخل لوحة التحكم
+    if (key === 'ads-studio' || key === 'events-studio') {
+      try {
+        const allowed = window.HubTeamOpsUI?.allowedPanelsForUser?.(user);
+        if (allowed instanceof Set && !allowed.has(key)) {
+          toast?.('ليس لديك صلاحية لفتح هذا الاستوديو.');
+          key = 'overview';
+        } else {
+          const ret = studioReturnTarget();
+          sessionStorage.setItem('hubStudioReturn', ret);
+          localStorage.setItem('hubStudioReturn', ret);
+          window.location.href = key === 'ads-studio' ? 'ads.html' : 'events.html';
+          return;
+        }
+      } catch (_) {
+        window.location.href = key === 'ads-studio' ? 'ads.html' : 'events.html';
+        return;
+      }
+    }
     let next = TITLES[key] ? key : 'overview';
     try {
       const allowed = window.HubTeamOpsUI?.allowedPanelsForUser?.(user);
@@ -825,23 +853,15 @@
     `;
   };
 
-  const renderAdsStudio = () => `
-    <div class="hub-erp-studio-embed">
-      <div class="toolbar" style="margin-bottom:10px">
-        <a class="btn btn-primary" href="ads.html" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> فتح الصفحة كاملة</a>
-        <span class="muted">نسخة مطابقة من NAIOSH ERP: استوديو الحملات التسويقية</span>
-      </div>
-      <iframe src="ads.html" title="استوديو الحملات التسويقية" class="hub-erp-studio-iframe"></iframe>
-    </div>`;
+  const renderAdsStudio = () => {
+    window.location.href = 'ads.html';
+    return '<div class="empty">جاري فتح استوديو الحملات التسويقية…</div>';
+  };
 
-  const renderEventsStudio = () => `
-    <div class="hub-erp-studio-embed">
-      <div class="toolbar" style="margin-bottom:10px">
-        <a class="btn btn-primary" href="events.html" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> فتح الصفحة كاملة</a>
-        <span class="muted">نسخة مطابقة من NAIOSH ERP: استوديو الفعاليات الذكي</span>
-      </div>
-      <iframe src="events.html" title="استوديو الفعاليات الذكي" class="hub-erp-studio-iframe"></iframe>
-    </div>`;
+  const renderEventsStudio = () => {
+    window.location.href = 'events.html';
+    return '<div class="empty">جاري فتح استوديو الفعاليات الذكي…</div>';
+  };
 
 
   const renderIncubators = () => {

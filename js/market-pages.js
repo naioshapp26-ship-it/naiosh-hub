@@ -465,7 +465,7 @@
           <div class="meta">${esc(e.type)} · ${esc(e.speaker)} · ${esc(e.platform)}${e.assignee ? ` · معيّن: ${esc(e.assignee)}` : ''}</div>
           ${metaLine(e)}
           <div class="card-actions">
-            <a class="btn-mini primary" href="dashboard.html#events-studio"><i class="fas fa-ticket"></i> إدارة من غرفة العمليات</a>
+            <a class="btn-mini primary" href="events.html"><i class="fas fa-ticket"></i> استوديو الفعاليات الذكي</a>
           </div>
           ${actions('events', e.id)}
         </article>`
