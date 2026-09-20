@@ -17,12 +17,15 @@
   <script>
     /* Early capture — same pattern as NAIS (__NAIS_DEFERRED_PROMPT__ / nais:beforeinstallprompt) */
     window.__HUB_DEFERRED_PROMPT__ = null;
-    window.addEventListener('beforeinstallprompt', function (event) {
-      event.preventDefault();
+    function hubCaptureInstallPrompt(event) {
+      try { event.preventDefault(); } catch (e) {}
       window.__HUB_DEFERRED_PROMPT__ = event;
       console.info('beforeinstallprompt fired');
-      window.dispatchEvent(new CustomEvent('hub:beforeinstallprompt', { detail: event }));
-    });
+      try {
+        window.dispatchEvent(new CustomEvent('hub:beforeinstallprompt', { detail: event }));
+      } catch (e) {}
+    }
+    window.addEventListener('beforeinstallprompt', hubCaptureInstallPrompt, true);
     window.addEventListener('appinstalled', function () {
       window.__HUB_DEFERRED_PROMPT__ = null;
       console.info('appinstalled fired');
@@ -47,7 +50,7 @@
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
   <link rel="stylesheet" href="css/hub-service-requests.css?v=1" />
   <link rel="stylesheet" href="css/hub-home-engage.css?v=1" />
-  <link rel="stylesheet" href="css/hub-pwa.css?v=5" />
+  <link rel="stylesheet" href="css/hub-pwa.css?v=6" />
 </head>
 <body class="homepage">
   <div class="announcement-bar" id="announcement-bar" role="status" aria-live="polite">
@@ -593,6 +596,6 @@
   <script src="js/hub-universal-search.js?v=11" defer></script>
   <script src="js/hub-universal-search-ui.js?v=11" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
-  <script src="js/hub-pwa.js?v=5" defer></script>
+  <script src="js/hub-pwa.js?v=6" defer></script>
 </body>
 </html>
