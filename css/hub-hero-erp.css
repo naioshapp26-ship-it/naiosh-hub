@@ -86,30 +86,31 @@ body.homepage .hero-inner.container {
   overflow: visible !important;
 }
 
-/* اختصارات علوية صغيرة — لا تزيد ارتفاع البانر */
+/* اختصارات صغيرة داخل محتوى الهيرو — فوق العنوان مباشرة */
 body.homepage .hero-offer-shortcuts {
-  position: absolute !important;
-  top: 10px !important;
-  inset-inline-start: clamp(28px, 3.2vw, 56px) !important;
-  inset-inline-end: clamp(32px, 3.6vw, 68px) !important;
-  z-index: 6 !important;
+  position: static !important;
+  inset: auto !important;
+  top: auto !important;
   display: flex !important;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 8px !important;
-  margin: 0 !important;
+  gap: 6px 10px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 0 10px !important;
   padding: 0 !important;
-  pointer-events: none !important;
+  pointer-events: auto !important;
+  /* LTR حتى يبقى «خفض التكاليف» يسار العنوان و«حلول نايوش» يمينه كما في الصورة */
   direction: ltr !important;
+  z-index: 1 !important;
 }
 
 body.homepage .hero-offer-chip {
-  pointer-events: auto !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 5px !important;
-  max-width: min(46vw, 220px) !important;
+  max-width: calc(50% - 5px) !important;
   min-height: 0 !important;
   padding: 4px 9px !important;
   border-radius: 999px !important;
@@ -606,26 +607,20 @@ body.homepage .hub-ops-path {
   }
 
   body.homepage .hero-offer-shortcuts {
-    position: absolute !important;
-    top: 8px !important;
-    inset-inline-start: 16px !important;
-    inset-inline-end: 16px !important;
-    justify-content: center !important;
+    position: static !important;
+    inset: auto !important;
+    top: auto !important;
+    justify-content: space-between !important;
     flex-wrap: wrap !important;
     gap: 6px !important;
-    margin: 0 !important;
-    pointer-events: none !important;
-    direction: rtl !important;
+    margin: 0 0 8px !important;
+    direction: ltr !important;
   }
 
   body.homepage .hero-offer-chip {
     max-width: none !important;
     font-size: 11px !important;
     padding: 5px 10px !important;
-  }
-
-  body.homepage .container.hero-inner {
-    padding-top: 44px !important;
   }
 
   body.homepage .hero-media-stack {
