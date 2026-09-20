@@ -214,7 +214,31 @@
 </head>
 <body>
   <script src="js/hub-staff-gate.js?v=1"></script>
+  <script src="js/hub-studio-api.js?v=1"></script>
   <div class="w-full max-w-none mx-auto p-4 md:p-6 lg:px-8 space-y-5 min-h-screen">
+
+    <div id="studio-load-status" data-studio-load-status class="studio-load-status is-loading" role="status" aria-live="polite">
+      <div class="studio-load-status__inner">
+        <i class="fas fa-spinner fa-spin" data-studio-load-icon></i>
+        <div>
+          <strong data-studio-load-title>جارٍ تحميل بيانات الاستوديو…</strong>
+          <p data-studio-load-msg>يرجى الانتظار لحظات.</p>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" data-studio-retry hidden><i class="fas fa-rotate-right"></i> إعادة المحاولة</button>
+      </div>
+    </div>
+    <style>
+      .studio-load-status{margin:0 0 14px}
+      .studio-load-status[hidden]{display:none!important}
+      .studio-load-status__inner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;border:1px solid #e2e8f0;background:#f8fafc}
+      .studio-load-status.is-loading .studio-load-status__inner{border-color:#bfdbfe;background:#eff6ff}
+      .studio-load-status.is-error .studio-load-status__inner{border-color:#fecaca;background:#fff1f2}
+      .studio-load-status.is-empty .studio-load-status__inner{border-color:#e2e8f0;background:#fff}
+      .studio-load-status strong{display:block;font-size:14px}
+      .studio-load-status p{margin:2px 0 0;font-size:12px;color:#64748b}
+      .studio-load-status i{color:#2563eb}
+      .studio-load-status.is-error i{color:#dc2626}
+    </style>
 
     <!-- ═══ Header ═══ -->
     <header class="rounded-2xl p-6 relative overflow-hidden bg-slate-900 text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%);">
@@ -779,12 +803,40 @@
     };
 
     async function api(path, options = {}) {
-      const response = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...options });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || 'Operation failed');
+      if (!window.HubStudioApi?.request) throw new Error('عميل بيانات الاستوديو غير محمّل.');
+      return window.HubStudioApi.request(path, options);
+    }
+
+    function setStudioLoadState(kind, title, message, { retry = false } = {}) {
+      const box = document.getElementById('studio-load-status');
+      if (!box) return;
+      const icon = box.querySelector('[data-studio-load-icon]');
+      const titleEl = box.querySelector('[data-studio-load-title]');
+      const msgEl = box.querySelector('[data-studio-load-msg]');
+      const retryBtn = box.querySelector('[data-studio-retry]');
+      box.hidden = false;
+      box.classList.remove('is-loading', 'is-error', 'is-empty', 'is-ok');
+      box.classList.add(kind === 'ok' ? 'is-ok' : kind === 'error' ? 'is-error' : kind === 'empty' ? 'is-empty' : 'is-loading');
+      if (icon) icon.className = kind === 'loading' ? 'fas fa-spinner fa-spin' : kind === 'error' ? 'fas fa-triangle-exclamation' : kind === 'empty' ? 'fas fa-inbox' : 'fas fa-circle-check';
+      if (titleEl) titleEl.textContent = title || '';
+      if (msgEl) msgEl.textContent = message || '';
+      if (retryBtn) retryBtn.hidden = !retry;
+      if (kind === 'ok') {
+        box.hidden = true;
       }
-      return response.json();
+    }
+
+    async function refreshStudioData() {
+      setStudioLoadState('loading', 'جارٍ تحميل بيانات الاستوديو…', 'يرجى الانتظار لحظات.');
+      try {
+        await loadAll();
+        // Empty ≠ error: الجداول تعرض Empty State داخليًا
+        setStudioLoadState('ok', 'تم التحميل', '');
+      } catch (error) {
+        console.error('[studio-load]', error?.status || '', error?.url || '', error);
+        const msg = error?.message || 'حدثت مشكلة أثناء الاتصال بالخدمة. حاول مرة أخرى.';
+        setStudioLoadState('error', 'تعذر تحميل بيانات الاستوديو.', msg, { retry: true });
+      }
     }
 
     async function loadAll() {
@@ -977,9 +1029,9 @@
         alert('هذا الملف صورة وليس فيديو.');
         return;
       }
-      window.open(`/api/events-studio/recordings/${id}/view`, '_blank');
+      window.open(window.HubStudioApi.resolve(`/api/events-studio/recordings/${id}/view`), '_blank');
     };
-    window.downloadVideo = (id) => window.open(`/api/events-studio/recordings/${id}/download`, '_blank');
+    window.downloadVideo = (id) => window.open(window.HubStudioApi.resolve(`/api/events-studio/recordings/${id}/download`), '_blank');
     window.deleteMaterial = async (id) => {
       if (!confirm('هل تريد حذف هذا الفيديو؟')) return;
       await api(`/api/events-studio/recordings/${id}`, { method: 'DELETE' });
@@ -1008,7 +1060,7 @@
     window.downloadReel = (id) => {
       const reel = state.reels.find((item) => item.id === Number(id));
       if (!reel) return;
-      window.open(`/api/events-studio/recordings/${reel.recordingId}/download`, '_blank');
+      window.open(window.HubStudioApi.resolve(`/api/events-studio/recordings/${reel.recordingId}/download`), '_blank');
     };
     window.deleteReel = async (id) => {
       if (!confirm('هل تريد حذف Reel؟')) return;
@@ -1210,7 +1262,7 @@
       formData.append('contentType', 'Reel');
       formData.append('campaignDepartment', 'فريق الفعاليات');
 
-      const response = await fetch('/api/events-studio/recordings/upload', { method: 'POST', body: formData });
+      const response = await fetch(window.HubStudioApi.resolve('/api/events-studio/recordings/upload'), { method: 'POST', body: formData });
       const body = await response.json();
       if (!response.ok) {
         alert(body.error || 'فشل رفع التسجيل.');
@@ -1263,7 +1315,7 @@
       formData.append('contentType', document.getElementById('contentType').value);
       formData.append('campaignDepartment', document.getElementById('campaignDepartment').value);
 
-      const response = await fetch('/api/events-studio/recordings/upload', { method: 'POST', body: formData });
+      const response = await fetch(window.HubStudioApi.resolve('/api/events-studio/recordings/upload'), { method: 'POST', body: formData });
       const body = await response.json();
       if (!response.ok) {
         alert(body.error || 'فشل رفع التسجيل.');
@@ -1479,7 +1531,7 @@
         formData.append('contentType', 'Reel');
         formData.append('campaignDepartment', 'فريق الفعاليات');
 
-        const uploadRes = await fetch('/api/events-studio/recordings/upload', { method: 'POST', body: formData });
+        const uploadRes = await fetch(window.HubStudioApi.resolve('/api/events-studio/recordings/upload'), { method: 'POST', body: formData });
         const uploadBody = await uploadRes.json();
         if (!uploadRes.ok) throw new Error(uploadBody.error || 'فشل الرفع');
 
@@ -1518,10 +1570,8 @@
 
     // ─────────────────────────────────────────────────────────────────
 
-    loadAll().catch((error) => {
-      console.error(error);
-      alert('تعذر تحميل بيانات الاستوديو.');
-    });
+    document.querySelector('[data-studio-retry]')?.addEventListener('click', () => refreshStudioData());
+    refreshStudioData();
   </script>
 <script>
 (function () {
