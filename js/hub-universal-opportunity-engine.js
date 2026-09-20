@@ -225,9 +225,9 @@
 
   const publishSector = (pkg) => {
     const L = lib();
-    if (!L) throw new Error('Sector library missing');
+    if (!L) throw new Error('مكتبة القطاعات غير متاحة.');
     const item = L.emptyPackage({ ...pkg, published: true });
-    if (!item.sectorId || !item.sectorNameAr) throw new Error('Sector ID and Arabic name required');
+    if (!item.sectorId || !item.sectorNameAr) throw new Error('يرجى إدخال رمز القطاع واسم القطاع بالعربية.');
     const existing = L.SECTORS.findIndex((s) => s.sectorId === item.sectorId);
     if (existing >= 0) L.SECTORS[existing] = { ...L.SECTORS[existing], ...item };
     else L.SECTORS.splice(L.SECTORS.length - 1, 0, item); // before "other"

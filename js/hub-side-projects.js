@@ -25,8 +25,11 @@
   const catalogGrid = root.querySelector('[data-sp-catalog]');
   const catalogLead = root.querySelector('[data-sp-catalog-lead]');
   const catFilter = root.querySelector('[data-sp-cat-filter]');
+  const capitalFilter = root.querySelector('[data-sp-capital-filter]');
+  const modeFilter = root.querySelector('[data-sp-mode-filter]');
   const typeTabs = root.querySelector('[data-sp-type-tabs]');
   const catDir = root.querySelector('[data-sp-cat-dir]');
+  const catHint = root.querySelector('[data-sp-cat-hint]');
   const searchEl = root.querySelector('[data-sp-search]');
   const openedEl = root.querySelector('[data-sp-opened]');
   const statsEl = root.querySelector('[data-sp-stats]');
@@ -35,8 +38,11 @@
   const regModal = document.getElementById('sp-reg-modal');
   const regForm = document.querySelector('[data-sp-reg-form]');
   const regListEl = root.querySelector('[data-sp-reg-list]');
+  const myListEl = root.querySelector('[data-sp-my-list]');
   const selectedBox = root.querySelector('[data-sp-selected-project]');
   const selectedNameEl = root.querySelector('[data-sp-selected-name]');
+  const successModal = document.getElementById('sp-success-modal');
+  const successBody = document.querySelector('[data-sp-success-body]');
 
   const COUNTRIES = [
     'المملكة العربية السعودية',
@@ -103,27 +109,53 @@
     { label: 'جدوى مبسطة', icon: 'fa-chart-line', href: 'incubators.html' },
     { label: 'التسعير', icon: 'fa-tags', href: 'store.html' },
     { label: 'الموردون', icon: 'fa-truck', href: 'systems/erp.html?from=hub&return=side-projects.html' },
-    { label: 'Marketing Studio', icon: 'fa-bullhorn', href: 'ads.html' },
-    { label: 'العملاء + CRM', icon: 'fa-users', href: 'systems/crm.html?from=hub&return=side-projects.html' },
+    { label: 'استوديو التسويق', icon: 'fa-bullhorn', href: 'ads.html' },
+    { label: 'العملاء وإدارة العلاقات', icon: 'fa-users', href: 'systems/crm.html?from=hub&return=side-projects.html' },
     { label: 'قياس وتحسين', icon: 'fa-gauge-high', href: 'dashboard.html' },
     { label: 'حاضنة نايوش', icon: 'fa-seedling', href: 'incubators.html' },
   ];
 
   const OPS_STEPS = [
-    { n: '1', label: 'تدريب مصغر Adaptive', href: 'courses.html', icon: 'fa-graduation-cap' },
+    { n: '1', label: 'تدريب مصغر تكيّفي', href: 'courses.html', icon: 'fa-graduation-cap' },
     { n: '2', label: 'خطة تشغيل', href: 'office.html', icon: 'fa-clipboard-list' },
     { n: '3', label: 'دراسة جدوى مبسطة', href: 'incubators.html', icon: 'fa-chart-line' },
     { n: '4', label: 'التسعير', href: 'store.html', icon: 'fa-tags' },
-    { n: '5', label: 'الموردون / ERP', href: 'systems/erp.html?from=hub&return=side-projects.html', icon: 'fa-truck' },
-    { n: '6', label: 'Marketing Studio', href: 'ads.html', icon: 'fa-bullhorn' },
-    { n: '7', label: 'CRM والعملاء', href: 'systems/crm.html?from=hub&return=side-projects.html', icon: 'fa-users' },
+    { n: '5', label: 'الموردون / نظام الموارد', href: 'systems/erp.html?from=hub&return=side-projects.html', icon: 'fa-truck' },
+    { n: '6', label: 'استوديو التسويق', href: 'ads.html', icon: 'fa-bullhorn' },
+    { n: '7', label: 'العملاء وإدارة العلاقات', href: 'systems/crm.html?from=hub&return=side-projects.html', icon: 'fa-users' },
     { n: '8', label: 'قياس النتائج', href: 'dashboard.html', icon: 'fa-gauge-high' },
     { n: '9', label: 'تحسين المشروع', href: 'office.html', icon: 'fa-arrows-rotate' },
     { n: '10', label: 'التوسع للحاضنة', href: 'incubators.html', icon: 'fa-seedling' },
   ];
 
+  const CAT_DESC = {
+    'low-capital': 'مشاريع تبدأ برأس مال محدود مع إمكانية ربح جيدة عند الاختبار السريع.',
+    'low-loss': 'مشاريع يمكن تشغيلها وإدارتها عبر الإنترنت دون موقع فعلي دائم.',
+    events: 'أفكار مرتبطة بالمناسبات والأعياد والاحتفالات الموسمية.',
+    executable: 'مشاريع عملية يمكن تنفيذها بسرعة بخطوات واضحة.',
+    retirees: 'مناسبة لمن لديهم وقت مرن وخبرة حياتية أو مهنية.',
+    summer: 'مشاريع تنشط في الصيف أو تعتمد على الموسم الصيفي.',
+    experts: 'تتطلب مهارة أو خبرة عملية مسبقة لتحقيق نتائج أفضل.',
+    accessible: 'تُختار حسب القدرة والمهارة المتاحة لديك.',
+    malls: 'محطات أو أكشاك خفيفة داخل المولات والمواقع التجارية.',
+    cart: 'مشاريع متنقلة تُدار من عربة صغيرة أو نقطة بيع خفيفة.',
+    emotions: 'مشاريع مرتبطة بالمشاعر الإنسانية والهدايا والتجارب.',
+    'home-light': 'مشاريع منزلية خفيفة لا تحتاج تجهيزات ثقيلة.',
+    'home-women': 'مشاريع منزلية مناسبة للتشغيل من المنزل بمرونة.',
+    winter: 'أفكار يمكن تنشيطها أو تشغيلها خلال فصل الشتاء.',
+  };
+
   let activeType = 'all';
   let pageByCat = {};
+  let regStep = 1;
+  const REG_STEP_LABELS = [
+    '',
+    'اختيار المشروع',
+    'البيانات الأساسية',
+    'الخبرة والتفاصيل',
+    'الاحتياجات والمرفقات',
+    'المراجعة والإرسال',
+  ];
 
   const PAGE_SIZE = 24;
 
@@ -181,12 +213,79 @@
     selectedNameEl.textContent = selectedProject.title;
   };
 
-  const paintRegistrations = () => {
-    if (!regListEl) return;
+  const journeyMark = (key, value = true) => {
+    try {
+      window.HubSideProjectsJourney?.mark?.(key, value);
+      window.dispatchEvent(new CustomEvent('hub-sp-journey-changed'));
+    } catch (_) {}
+  };
+
+  const progressForStatus = (status) => {
+    const map = {
+      مسودة: 20,
+      جديد: 40,
+      'قيد المتابعة': 55,
+      'يحتاج تعديل': 50,
+      'تم التواصل': 70,
+      مقبول: 90,
+      مرفوض: 100,
+      مغلق: 100,
+    };
+    return map[status] || 10;
+  };
+
+  const nextActionFor = (r) => {
+    if (r.status === 'مسودة') return { label: 'متابعة المسودة', action: 'resume', id: r.id };
+    if (r.status === 'يحتاج تعديل') return { label: 'تعديل وإعادة الإرسال', action: 'revise', id: r.id };
+    if (r.status === 'مقبول') return { label: 'اختبر المشروع', action: 'test', id: r.projectId };
+    return { label: 'عرض التفاصيل', action: 'details', id: r.id };
+  };
+
+  const paintMyProjects = () => {
+    if (!myListEl) return;
     const list = readRegistrations();
     if (!list.length) {
+      myListEl.innerHTML =
+        '<p class="sp-empty">لا مشاريع بعد — اختر فكرة من القائمة ثم اضغط «ابدأ مشروعك».</p>';
+      return;
+    }
+    myListEl.innerHTML = list
+      .map((r) => {
+        const note = regApi?.latestAdminNote?.(r);
+        const next = nextActionFor(r);
+        const pct = progressForStatus(r.status);
+        return `<article class="sp-my-card" data-id="${esc(r.id)}">
+          <div class="sp-my-card__main">
+            <div class="sp-my-card__top">
+              <h3>${esc(r.projectName)}</h3>
+              <span class="sp-status-pill">${esc(r.status || 'جديد')}</span>
+            </div>
+            <p class="sp-my-meta">رقم الطلب: <strong dir="ltr">${esc(r.id)}</strong></p>
+            <p class="sp-my-meta">النوع / القطاع: ${esc(r.categoryName || '—')} · صاحب المشروع: ${esc(r.ownerName || '—')}</p>
+            <p class="sp-my-meta">تاريخ الإنشاء: ${esc(new Date(r.createdAt).toLocaleString('en-US'))} · آخر تحديث: ${esc(new Date(r.updatedAt || r.createdAt).toLocaleString('en-US'))}</p>
+            <div class="sp-progress"><span style="width:${pct}%"></span></div>
+            <small>نسبة التقدم: ${pct}%</small>
+            ${
+              r.status === 'يحتاج تعديل' && note
+                ? `<div class="sp-revise-box"><strong>سبب طلب التعديل:</strong><p>${esc(note.note)}</p></div>`
+                : ''
+            }
+          </div>
+          <div class="sp-my-card__actions">
+            <button type="button" class="btn btn-primary" data-sp-my-action="${esc(next.action)}" data-sp-my-id="${esc(next.id)}">${esc(next.label)}</button>
+          </div>
+        </article>`;
+      })
+      .join('');
+  };
+
+  const paintRegistrations = () => {
+    if (!regListEl) return;
+    const list = readRegistrations().filter((r) => r.status !== 'مسودة');
+    paintMyProjects();
+    if (!list.length) {
       regListEl.innerHTML =
-        '<p class="sp-empty">لا طلبات تسجيل بعد — اختر مشروعاً واضغط على أيقونة أو اسم المشروع لفتح نموذج التسجيل. الطلبات تُرسل لصفحة الفريق الداخلية.</p>';
+        '<p class="sp-empty">لا طلبات مُرسلة بعد — أكمل البيانات من «ابدأ مشروعك» ثم أرسل المشروع. الطلبات تصل لصفحة الفريق الداخلية.</p>';
       return;
     }
     regListEl.innerHTML = list
@@ -198,87 +297,86 @@
             <small>${esc(r.ownerName)} · ${esc(r.phone || '—')} · ${esc(r.email || '—')}</small>
             <p>${esc(r.country)} · ${esc(r.education)} · خبرة ${esc(String(r.experienceYears))} سنة · حالة: ${esc(r.status || 'جديد')}</p>
             <p class="sp-reg-exp">مجالات: ${esc([r.experience1, r.experience2, r.experience3].filter(Boolean).join(' · ') || '—')}</p>
-            <p class="sp-reg-files">
-              ملف: ${esc(r.fileDoc?.name || '—')} ·
-              صورة: ${esc(r.fileImage?.name || '—')} ·
-              فيديو: ${esc(r.fileVideo?.name || '—')}
-            </p>
-            ${r.currentWork ? `<p>عمل حالي: ${esc(r.currentWork)}</p>` : ''}
-            ${r.commercialOrNotes ? `<p>ملاحظات / سجل: ${esc(r.commercialOrNotes)}</p>` : ''}
-            <small>تاريخ التسجيل ${esc(new Date(r.createdAt).toLocaleString('en-US'))}</small>
+            <small>رقم الطلب ${esc(r.id)} · تاريخ التسجيل ${esc(new Date(r.createdAt).toLocaleString('en-US'))}</small>
           </div>
-          <a class="btn btn-secondary" href="side-project-registrations.html">متابعة الفريق</a>
+          <a class="btn btn-secondary" href="#sp-my-projects">مشاريعي</a>
         </article>`
       )
       .join('');
     if (list.length > 8) {
       regListEl.insertAdjacentHTML(
         'beforeend',
-        `<p class="sp-empty"><a href="side-project-registrations.html">عرض كل الطلبات (${list.length.toLocaleString('en-US')}) في صفحة الفريق</a></p>`
+        `<p class="sp-empty"><a href="#sp-my-projects">عرض كل المشاريع (${list.length.toLocaleString('en-US')})</a></p>`
       );
     }
   };
 
-  const closeRegModal = () => {
-    if (!regModal) return;
-    regModal.hidden = true;
-    document.body.classList.remove('sp-reg-open');
+  const setRegStep = (step) => {
+    regStep = Math.max(1, Math.min(5, step));
+    regForm?.querySelectorAll('[data-sp-reg-step]').forEach((panel) => {
+      const n = Number(panel.getAttribute('data-sp-reg-step'));
+      const on = n === regStep;
+      panel.hidden = !on;
+      panel.classList.toggle('is-active', on);
+    });
+    const label = document.querySelector('[data-sp-reg-step-label]');
+    if (label) label.textContent = `الخطوة ${regStep} من 5 — ${REG_STEP_LABELS[regStep] || ''}`;
+    const prev = regForm?.querySelector('[data-sp-reg-prev]');
+    const next = regForm?.querySelector('[data-sp-reg-next]');
+    const submit = regForm?.querySelector('[data-sp-reg-submit]');
+    if (prev) prev.hidden = regStep <= 1;
+    if (next) next.hidden = regStep >= 5;
+    if (submit) submit.hidden = regStep < 5;
+    if (regStep === 5) paintRegReview();
   };
 
-  const openRegModal = (project) => {
-    if (!regModal || !regForm || !project) return;
-    selectedProject = { id: project.id, title: project.title, categoryId: project.categoryId };
-    paintSelectedProject();
-    const idInput = regForm.querySelector('[data-sp-reg-project-id]');
-    const nameInput = regForm.querySelector('[data-sp-reg-project-name]');
-    if (idInput) idInput.value = project.id;
-    if (nameInput) nameInput.value = project.title;
-    regModal.hidden = false;
-    document.body.classList.add('sp-reg-open');
-    regForm.querySelector('[name="ownerName"]')?.focus();
-  };
-
-  const fillCountries = () => {
-    const sel = regForm?.querySelector('[data-sp-reg-country]');
-    if (!sel || sel.options.length > 1) return;
-    sel.innerHTML =
-      `<option value="">— اختر الدولة —</option>` +
-      COUNTRIES.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-  };
-
-  const submitRegistration = async (e) => {
-    e.preventDefault();
-    if (!regForm) return;
-    if (!regApi?.create) return toast('نظام استقبال التسجيلات غير متاح');
-    if (!regForm.checkValidity()) {
-      regForm.reportValidity();
-      return toast('أكمل حقول التسجيل المطلوبة');
-    }
+  const paintRegReview = () => {
+    const box = regForm?.querySelector('[data-sp-reg-review]');
+    if (!box || !regForm) return;
     const fd = new FormData(regForm);
-    const phone = String(fd.get('phone') || '').trim();
-    const email = String(fd.get('email') || '').trim();
-    if (!phone && !email) {
-      return toast('أضف رقم جوال أو بريداً إلكترونياً حتى يتمكن الفريق من التواصل معك');
-    }
-    toast('جاري رفع الملفات (حتى 150 ميجابايت)...');
+    const rows = [
+      ['اسم المشروع', fd.get('projectName')],
+      ['صاحب المشروع', fd.get('ownerName')],
+      ['الجوال', fd.get('phone')],
+      ['البريد', fd.get('email')],
+      ['التواصل المفضّل', fd.get('preferredContact')],
+      ['الدولة', fd.get('country')],
+      ['المستوى العلمي', fd.get('education')],
+      ['سنوات الخبرة', fd.get('experienceYears')],
+      ['مجال الخبرة 1', fd.get('experience1')],
+      ['مجال الخبرة 2', fd.get('experience2') || '—'],
+      ['مجال الخبرة 3', fd.get('experience3') || '—'],
+      ['عمل حالي', fd.get('currentWork') || '—'],
+      ['ملاحظات / سجل', fd.get('commercialOrNotes') || '—'],
+    ];
+    box.innerHTML = `<dl class="sp-reg-review-grid">${rows
+      .map(
+        ([k, v], i) =>
+          `<div><dt>${esc(k)}</dt><dd>${esc(v || '—')}</dd><button type="button" class="btn btn-secondary btn-sm" data-sp-reg-edit-step="${i < 1 ? 1 : i < 5 ? 2 : i < 9 ? 3 : 4}">تعديل</button></div>`
+      )
+      .join('')}</dl>`;
+  };
+
+  const collectRegPayload = async ({ includeFiles = true } = {}) => {
+    const fd = new FormData(regForm);
     let fileDoc;
     let fileImage;
     let fileVideo;
-    try {
+    if (includeFiles) {
       [fileDoc, fileImage, fileVideo] = await Promise.all([
         fileMeta(regForm.querySelector('[name="fileDoc"]')),
         fileMeta(regForm.querySelector('[name="fileImage"]')),
         fileMeta(regForm.querySelector('[name="fileVideo"]')),
       ]);
-    } catch (err) {
-      return toast(err.message || 'فشل رفع الملف');
     }
-    const payload = {
+    const cat = data.categories.find((c) => c.id === selectedProject?.categoryId);
+    return {
+      id: String(fd.get('registrationId') || '').trim() || undefined,
       projectId: String(fd.get('projectId') || selectedProject?.id || ''),
       projectName: String(fd.get('projectName') || '').trim(),
       ownerName: String(fd.get('ownerName') || '').trim(),
-      phone,
-      email,
+      phone: String(fd.get('phone') || '').trim(),
+      email: String(fd.get('email') || '').trim(),
       preferredContact: String(fd.get('preferredContact') || '').trim(),
       country: String(fd.get('country') || '').trim(),
       education: String(fd.get('education') || '').trim(),
@@ -291,20 +389,165 @@
       fileVideo,
       currentWork: String(fd.get('currentWork') || '').trim(),
       commercialOrNotes: String(fd.get('commercialOrNotes') || '').trim(),
+      categoryId: selectedProject?.categoryId || '',
+      categoryName: cat?.nameAr || '',
     };
-    const result = regApi.create(payload);
-    if (!result?.ok) return toast(result?.error || 'تعذّر إرسال التسجيل');
-    paintRegistrations();
-    closeRegModal();
-    regForm.reset();
-    if (selectedProject) {
-      const nameInput = regForm.querySelector('[data-sp-reg-project-name]');
+  };
+
+  const fillRegFromRecord = (r) => {
+    if (!regForm || !r) return;
+    const set = (name, val) => {
+      const el = regForm.querySelector(`[name="${name}"]`);
+      if (el && val != null) el.value = val;
+    };
+    set('registrationId', r.id);
+    set('projectId', r.projectId);
+    set('projectName', r.projectName);
+    set('ownerName', r.ownerName);
+    set('phone', r.phone);
+    set('email', r.email);
+    set('preferredContact', r.preferredContact || 'جوال');
+    set('country', r.country);
+    set('education', r.education);
+    set('experienceYears', r.experienceYears);
+    set('experience1', r.experience1);
+    set('experience2', r.experience2);
+    set('experience3', r.experience3);
+    set('currentWork', r.currentWork);
+    set('commercialOrNotes', r.commercialOrNotes);
+    selectedProject = {
+      id: r.projectId,
+      title: r.projectName,
+      categoryId: r.categoryId,
+    };
+    paintSelectedProject();
+  };
+
+  const showSuccess = (record) => {
+    if (!successModal || !successBody || !record) return;
+    successBody.innerHTML = `
+      <ul class="sp-success-list">
+        <li><span>رقم المشروع / الطلب</span><strong dir="ltr">${esc(record.id)}</strong></li>
+        <li><span>اسم المشروع</span><strong>${esc(record.projectName)}</strong></li>
+        <li><span>تاريخ الإرسال</span><strong>${esc(new Date(record.submittedAt || record.updatedAt || record.createdAt).toLocaleString('en-US'))}</strong></li>
+        <li><span>الحالة الحالية</span><strong>${esc(record.status)}</strong></li>
+      </ul>`;
+    successModal.hidden = false;
+    document.body.classList.add('sp-success-open');
+  };
+
+  const closeSuccess = () => {
+    if (!successModal) return;
+    successModal.hidden = true;
+    document.body.classList.remove('sp-success-open');
+  };
+
+  const closeRegModal = () => {
+    if (!regModal) return;
+    regModal.hidden = true;
+    document.body.classList.remove('sp-reg-open');
+  };
+
+  const openRegModal = (project, record = null) => {
+    if (!regModal || !regForm) return;
+    fillCountries();
+    if (record) {
+      fillRegFromRecord(record);
+    } else if (project) {
+      regForm.reset();
+      selectedProject = { id: project.id, title: project.title, categoryId: project.categoryId };
+      paintSelectedProject();
       const idInput = regForm.querySelector('[data-sp-reg-project-id]');
-      if (nameInput) nameInput.value = selectedProject.title;
-      if (idInput) idInput.value = selectedProject.id;
+      const nameInput = regForm.querySelector('[data-sp-reg-project-name]');
+      const regId = regForm.querySelector('[data-sp-reg-id]');
+      if (idInput) idInput.value = project.id;
+      if (nameInput) nameInput.value = project.title;
+      if (regId) regId.value = '';
+    } else return;
+    journeyMark('started', true);
+    journeyMark('ideaChosen', true);
+    journeyMark('selectedProjectId', selectedProject?.id || true);
+    setRegStep(1);
+    regModal.hidden = false;
+    document.body.classList.add('sp-reg-open');
+    regForm.querySelector('[name="projectName"]')?.focus();
+  };
+
+  const fillCountries = () => {
+    const sel = regForm?.querySelector('[data-sp-reg-country]');
+    if (!sel || sel.options.length > 1) return;
+    sel.innerHTML =
+      `<option value="">— اختر الدولة —</option>` +
+      COUNTRIES.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  };
+
+  const validateRegStep = (step) => {
+    const panel = regForm?.querySelector(`[data-sp-reg-step="${step}"]`);
+    if (!panel) return true;
+    const fields = [...panel.querySelectorAll('input, select, textarea')].filter((el) => el.required);
+    for (const el of fields) {
+      if (!el.checkValidity()) {
+        el.reportValidity();
+        return false;
+      }
     }
-    toast(`تم إرسال التسجيل للفريق: ${result.record.projectName}`);
-    document.getElementById('sp-registrations')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (step === 2) {
+      const phone = String(regForm.querySelector('[name="phone"]')?.value || '').trim();
+      const email = String(regForm.querySelector('[name="email"]')?.value || '').trim();
+      if (!phone && !email) {
+        toast('يرجى إدخال رقم جوال أو بريد إلكتروني.');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const saveDraftNow = async () => {
+    if (!regApi?.saveDraft) return toast('حفظ المسودة غير متاح');
+    try {
+      const payload = await collectRegPayload({ includeFiles: true });
+      const result = regApi.saveDraft(payload);
+      if (!result?.ok) return toast(result?.error || 'تعذّر حفظ المسودة');
+      const regId = regForm.querySelector('[data-sp-reg-id]');
+      if (regId) regId.value = result.record.id;
+      paintRegistrations();
+      journeyMark('detailsDone', true);
+      toast('تم حفظ المسودة بنجاح.');
+    } catch (err) {
+      toast(err.message || 'تعذّر حفظ المسودة');
+    }
+  };
+
+  const submitRegistration = async (e) => {
+    e.preventDefault();
+    if (!regForm) return;
+    if (!regApi?.create) return toast('نظام استقبال التسجيلات غير متاح');
+    if (!validateRegStep(1) || !validateRegStep(2) || !validateRegStep(3)) {
+      return toast('يرجى إكمال الحقول المطلوبة قبل الإرسال.');
+    }
+    toast('جاري تجهيز الإرسال...');
+    try {
+      const payload = await collectRegPayload({ includeFiles: true });
+      const existingId = payload.id;
+      const existing = existingId ? regApi.get?.(existingId) : null;
+      let result;
+      if (existing && (existing.status === 'يحتاج تعديل' || existing.status === 'مسودة')) {
+        result = regApi.resubmit(existingId, payload);
+      } else if (existingId && existing) {
+        result = regApi.update(existingId, { ...payload, status: 'جديد' });
+      } else {
+        result = regApi.create({ ...payload, status: 'جديد' });
+      }
+      if (!result?.ok) return toast(result?.error || 'تعذّر إرسال المشروع');
+      paintRegistrations();
+      closeRegModal();
+      journeyMark('detailsDone', true);
+      showSuccess(result.record);
+      toast('تم إرسال المشروع للمراجعة.');
+      document.getElementById('sp-my-projects')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      toast(err.message || 'تعذّر إرسال المشروع');
+    }
   };
 
   const countByCat = (() => {
@@ -567,14 +810,14 @@
     const compact = opts.compact !== false && opts.score == null;
     return `<article class="sp-card${compact ? ' is-compact' : ''}" data-id="${esc(p.id)}">
       <div class="sp-card-top">
-        <button type="button" class="sp-card-icon sp-card-icon-btn" data-sp-register="${esc(p.id)}" title="تسجيل المشروع" aria-label="تسجيل المشروع ${esc(p.title)}">
+        <button type="button" class="sp-card-icon sp-card-icon-btn" data-sp-register="${esc(p.id)}" title="ابدأ مشروعك" aria-label="ابدأ مشروعك ${esc(p.title)}">
           <i class="fas ${esc(
             data.categories.find((c) => c.id === p.categoryId)?.icon || 'fa-lightbulb'
           )}"></i>
         </button>
         <div>
           <h3>
-            <button type="button" class="sp-card-title-btn" data-sp-register="${esc(p.id)}" title="تسجيل المشروع">
+            <button type="button" class="sp-card-title-btn" data-sp-register="${esc(p.id)}" title="ابدأ مشروعك">
               ${esc(p.title)}
             </button>
           </h3>
@@ -592,7 +835,7 @@
       ${compact ? '' : detailRows(p)}
       <div class="sp-card-actions">
         ${compact ? `<button type="button" class="btn btn-secondary" data-sp-expand="${esc(p.id)}"><i class="fas fa-chevron-down"></i> التفاصيل</button>` : ''}
-        <button type="button" class="btn btn-primary" data-sp-register="${esc(p.id)}"><i class="fas fa-file-signature"></i> تسجيل المشروع</button>
+        <button type="button" class="btn btn-primary" data-sp-register="${esc(p.id)}"><i class="fas fa-play"></i> ابدأ مشروعك</button>
         <button type="button" class="btn btn-secondary" data-sp-open="${esc(p.id)}"><i class="fas fa-flask"></i> اختبر المشروع</button>
         <a class="btn btn-secondary" href="courses.html">تدريب</a>
         <a class="btn btn-secondary" href="ads.html">تسويق</a>
@@ -627,10 +870,19 @@
   const filteredProjects = () => {
     const q = (searchEl?.value || '').trim().toLowerCase();
     const cat = catFilter?.value || '';
+    const capital = capitalFilter?.value || '';
+    const mode = modeFilter?.value || '';
     const allowed = new Set(catsForType(activeType).map((c) => c.id));
     let list = data.projects.filter((p) => allowed.has(p.categoryId));
     if (cat) list = list.filter((p) => p.categoryId === cat);
-    if (q) list = list.filter((p) => `${p.title} ${p.section}`.toLowerCase().includes(q));
+    if (capital) list = list.filter((p) => p.capital === capital);
+    if (mode) list = list.filter((p) => p.mode === mode);
+    if (q) {
+      list = list.filter((p) => {
+        const hay = `${p.title} ${p.section} ${(p.skills || []).join(' ')} ${p.customers || ''}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
     return list;
   };
 
@@ -652,15 +904,28 @@
   const paintCatDir = () => {
     if (!catDir) return;
     const cats = catsForType(activeType);
+    const activeId = catFilter?.value || '';
+    if (catHint) {
+      if (activeId && CAT_DESC[activeId]) {
+        const cat = data.categories.find((c) => c.id === activeId);
+        catHint.hidden = false;
+        catHint.innerHTML = `<strong>${esc(cat?.nameAr || '')}</strong><p>${esc(CAT_DESC[activeId])}</p>`;
+      } else {
+        catHint.hidden = true;
+        catHint.innerHTML = '';
+      }
+    }
     catDir.innerHTML = cats
       .map((c) => {
         const n = countByCat[c.id] || 0;
-        const active = catFilter?.value === c.id ? ' is-active' : '';
+        const active = activeId === c.id ? ' is-active' : '';
+        const desc = CAT_DESC[c.id] ? `<em>${esc(CAT_DESC[c.id])}</em>` : '';
         return `<button type="button" class="sp-cat-card${active}" data-sp-chip="${esc(c.id)}">
           <span class="sp-cat-card-icon"><i class="fas ${esc(c.icon)}"></i></span>
           <span class="sp-cat-card-copy">
             <strong>${esc(c.nameAr)}</strong>
             <small>${n.toLocaleString('en-US')} مشروع</small>
+            ${desc}
           </span>
         </button>`;
       })
@@ -1019,10 +1284,19 @@
     paintCatDir();
     paintCatalog();
   });
+  capitalFilter?.addEventListener('change', () => {
+    pageByCat = {};
+    paintCatalog();
+  });
+  modeFilter?.addEventListener('change', () => {
+    pageByCat = {};
+    paintCatalog();
+  });
   typeTabs?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-sp-type]');
     if (!btn) return;
     setType(btn.getAttribute('data-sp-type') || 'all');
+    journeyMark('typeChosen', true);
   });
   catDir?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-sp-chip]');
@@ -1032,14 +1306,30 @@
     pageByCat = {};
     paintCatDir();
     paintCatalog();
+    journeyMark('typeChosen', true);
     document.getElementById('sp-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   regForm?.addEventListener('submit', submitRegistration);
+  regForm?.querySelector('[data-sp-reg-next]')?.addEventListener('click', () => {
+    if (!validateRegStep(regStep)) return toast('يرجى إكمال الحقول المطلوبة في هذه الخطوة.');
+    setRegStep(regStep + 1);
+  });
+  regForm?.querySelector('[data-sp-reg-prev]')?.addEventListener('click', () => setRegStep(regStep - 1));
+  regForm?.querySelector('[data-sp-reg-draft]')?.addEventListener('click', () => saveDraftNow());
+  regForm?.addEventListener('click', (e) => {
+    const edit = e.target.closest('[data-sp-reg-edit-step]');
+    if (!edit) return;
+    setRegStep(Number(edit.getAttribute('data-sp-reg-edit-step') || 1));
+  });
   document.querySelectorAll('[data-sp-reg-close]').forEach((el) => {
     el.addEventListener('click', closeRegModal);
   });
+  document.querySelectorAll('[data-sp-success-close]').forEach((el) => {
+    el.addEventListener('click', closeSuccess);
+  });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && regModal && !regModal.hidden) closeRegModal();
+    if (e.key === 'Escape' && successModal && !successModal.hidden) closeSuccess();
   });
   root.querySelector('[data-sp-open-reg-selected]')?.addEventListener('click', () => {
     if (!selectedProject) return toast('اختر مشروعاً أولاً من القائمة');
@@ -1047,6 +1337,30 @@
     openRegModal(p);
   });
   root.addEventListener('click', (e) => {
+    const myAct = e.target.closest('[data-sp-my-action]');
+    if (myAct) {
+      const action = myAct.getAttribute('data-sp-my-action');
+      const id = myAct.getAttribute('data-sp-my-id');
+      if (action === 'resume' || action === 'revise') {
+        const rec = regApi?.get?.(id);
+        if (!rec) return toast('الطلب غير موجود.');
+        const p = data.projects.find((x) => x.id === rec.projectId) || {
+          id: rec.projectId,
+          title: rec.projectName,
+          categoryId: rec.categoryId,
+        };
+        openRegModal(p, rec);
+        return;
+      }
+      if (action === 'test') {
+        if (id) openProject(id);
+        return;
+      }
+      if (action === 'details') {
+        regApi?.openDetails?.(id);
+        return;
+      }
+    }
     const more = e.target.closest('[data-sp-more]');
     if (more) {
       const id = more.getAttribute('data-sp-more');
@@ -1076,7 +1390,10 @@
       return;
     }
     const openBtn = e.target.closest('[data-sp-open]');
-    if (openBtn) openProject(openBtn.getAttribute('data-sp-open'));
+    if (openBtn) {
+      openProject(openBtn.getAttribute('data-sp-open'));
+      journeyMark('openedProject', true);
+    }
     const rm = e.target.closest('[data-sp-remove]');
     if (rm) {
       writeOpened(readOpened().filter((x) => x.id !== rm.getAttribute('data-sp-remove')));

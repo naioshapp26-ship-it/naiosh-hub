@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
-  <link rel="stylesheet" href="css/hub-side-projects.css?v=12" />
+  <link rel="stylesheet" href="css/hub-side-projects.css?v=13" />
   <link rel="stylesheet" href="css/hub-sector-engine.css?v=1" />
 </head>
 <body class="homepage">
@@ -40,10 +40,15 @@
     <section class="sp-client-intro" id="sp-client-intro" aria-labelledby="sp-client-intro-title" data-sp-intro>
       <header class="sp-client-intro__head">
         <p class="sp-client-intro__kicker"><i class="fas fa-handshake"></i> تعريف مباشر للعميل</p>
-        <h2 id="sp-client-intro-title">إبدأ التحدي مع نفسك اولا</h2>
+        <h2 id="sp-client-intro-title">ابدأ التحدي مع نفسك أولًا</h2>
         <p>
-          أخبر نايوش عن مشروعك.. دورك في المشروع.. وماذا تحتاج من نايوش .. نقيم لك ما تحتاجه ونكون معاك خطوة بخطوة
+          أخبر نايوش عن مشروعك.. دورك في المشروع.. وماذا تحتاج من نايوش .. نقيّم لك ما تحتاجه ونكون معك خطوة بخطوة
         </p>
+        <div class="sp-guide-actions">
+          <button type="button" class="btn btn-primary" data-sp-open-howto><i class="fas fa-rocket"></i> كيف أبدأ؟</button>
+          <button type="button" class="btn btn-secondary" data-sp-open-guide><i class="fas fa-book-open"></i> دليل التشغيل</button>
+          <a class="btn btn-secondary" href="#sp-my-projects"><i class="fas fa-folder-open"></i> مشاريعي</a>
+        </div>
       </header>
 
       <form class="sp-client-intake" data-sp-intake novalidate>
@@ -109,18 +114,28 @@
       </div>
     </section>
 
+    <section class="sp-panel sp-journey-panel" id="sp-journey" aria-labelledby="sp-journey-title">
+      <div class="sp-panel-head">
+        <h2 id="sp-journey-title"><i class="fas fa-route"></i> رحلة مشروعك</h2>
+        <p>مسار واضح من البداية إلى المتابعة — مرتبط بأقسام الصفحة الفعلية.</p>
+      </div>
+      <div class="sp-now" data-sp-now aria-live="polite"></div>
+      <div class="sp-journey-meta" data-sp-journey-meta role="progressbar" aria-valuemin="0" aria-valuemax="8">أكملت 0 من 8 خطوات</div>
+      <ol class="sp-journey-list" data-sp-journey-list></ol>
+    </section>
+
     <section class="hub-feature-hero sp-hero">
-      <p class="hub-feature-kicker"><i class="fas fa-lightbulb"></i> NAIOSH UNIVERSAL SECTOR OPPORTUNITY ENGINE</p>
+      <p class="hub-feature-kicker"><i class="fas fa-lightbulb"></i> محرك الفرص القطاعي الموحّد</p>
       <h1>المشاريع الجانبية · محرك الفرص القطاعي</h1>
       <p>
         نواة واحدة لكل القطاعات: اكتشف الفرص بجملة طبيعية، أو تصفّح القوائم
         <strong>خاصة · خفيفة · منزلية</strong> — القطاع = بيانات وليس كودًا جديدًا.
       </p>
       <div class="hub-feature-actions">
-        <a class="btn btn-primary" href="#uso-engine"><i class="fas fa-magnifying-glass"></i> Universal Discovery</a>
+        <a class="btn btn-primary" href="#uso-engine"><i class="fas fa-magnifying-glass"></i> اكتشاف الفرص</a>
         <a class="btn btn-secondary" href="#sp-types"><i class="fas fa-folder-open"></i> تصفح القوائم</a>
         <a class="btn btn-secondary" href="#sp-form"><i class="fas fa-user-check"></i> اقترح حسب ملفي</a>
-        <a class="btn btn-secondary" href="#sp-registrations"><i class="fas fa-file-signature"></i> تسجيل المشروع</a>
+        <a class="btn btn-secondary" href="#sp-my-projects"><i class="fas fa-file-signature"></i> مشاريعي</a>
       </div>
     </section>
 
@@ -128,11 +143,11 @@
 
     <section class="sp-panel" id="uso-engine" aria-labelledby="uso-title" data-uso-root>
       <div class="sp-panel-head">
-        <h2 id="uso-title"><i class="fas fa-satellite-dish"></i> NAIOSH Universal Discovery</h2>
+        <h2 id="uso-title"><i class="fas fa-satellite-dish"></i> اكتشاف الفرص الموحّد</h2>
         <p class="uso-hero-note">محرك فرص قطاعي موحّد — لا محرك لكل قطاع. اكتب احتياجك؛ يحدد النظام القطاعات والمهارات والفرص والتقاطعات وبوابة التحقق.</p>
       </div>
       <div class="uso-root">
-        <div class="uso-stats" data-uso-stats aria-label="Sector Command Center"></div>
+        <div class="uso-stats" data-uso-stats aria-label="مركز قيادة القطاعات"></div>
         <form class="uso-discovery" data-uso-form>
           <label>اكتب بجملة طبيعية
             <input data-uso-query type="search" placeholder="مثال: لدي خبرة في صيانة المعدات وأريد مشروعًا جانبيًا" />
@@ -143,7 +158,7 @@
           </div>
         </form>
         <div>
-          <h3 style="margin:0 0 8px;font-size:15px">Sector Library</h3>
+          <h3 style="margin:0 0 8px;font-size:15px">مكتبة القطاعات</h3>
           <div class="uso-sectors" data-uso-sectors></div>
         </div>
         <div data-uso-results></div>
@@ -151,32 +166,33 @@
           <h3 style="margin:0 0 8px;font-size:15px">دورة التشغيل الموحّدة</h3>
           <ol class="uso-cycle" data-uso-cycle></ol>
         </div>
-        <pre class="uso-arch" aria-label="معمارية المحرك">UNIVERSAL ENGINE + SECTOR CONFIG + SKILL TAXONOMY + MARKET DATA + RULES + COMPLIANCE + SAFETY + TEMPLATES
-→ Sector Opportunity Engine
+        <pre class="uso-arch" aria-label="معمارية المحرك">محرك موحّد + إعداد القطاع + تصنيف المهارات + بيانات السوق + قواعد + امتثال + سلامة + قوالب
+→ محرك فرص القطاع
 القاعدة: القطاع الجديد = بيانات + مهارات + قواعد + قوالب — وليس كودًا جديدًا.</pre>
         <form class="uso-publish" id="uso-publish" data-uso-publish>
-          <h3 style="margin:0;font-size:15px"><i class="fas fa-upload"></i> ADD NEW SECTOR · نشر قطاع بدون تعديل النواة</h3>
+          <h3 style="margin:0;font-size:15px"><i class="fas fa-upload"></i> إضافة قطاع جديد — نشر قطاع بدون تعديل النواة</h3>
           <div class="uso-publish-grid">
-            <label>Sector ID
-              <input name="sectorId" required placeholder="example-sector" />
+            <label>رمز القطاع
+              <span class="sp-field-help" title="رمز فريد يستخدم لتعريف القطاع داخل النظام.">?</span>
+              <input name="sectorId" required placeholder="مثال: example-sector" dir="ltr" />
             </label>
-            <label>الاسم بالعربي
-              <input name="sectorNameAr" required placeholder="اسم القطاع" />
+            <label>اسم القطاع بالعربية
+              <input name="sectorNameAr" required placeholder="أدخل اسم القطاع بالعربية" />
             </label>
-            <label>الاسم بالإنجليزي
-              <input name="sectorNameEn" placeholder="Sector name" />
+            <label>الاسم الدولي للقطاع
+              <input name="sectorNameEn" placeholder="اختياري — اسم بديل للتكامل التقني" />
             </label>
             <label>قطاعات فرعية
-              <input name="subSectors" placeholder="فرعي ١، فرعي ٢" />
+              <input name="subSectors" placeholder="فرعي 1، فرعي 2" />
             </label>
-            <label class="full" style="grid-column:1/-1">مهارات
-              <input name="skills" placeholder="مهارة١، مهارة٢" />
+            <label class="full" style="grid-column:1/-1">المهارات
+              <input name="skills" placeholder="مهارة 1، مهارة 2" />
             </label>
-            <label class="full" style="grid-column:1/-1">قالب فرصة أول
+            <label class="full" style="grid-column:1/-1">قالب الفرصة الأولى
               <input name="template" placeholder="عنوان فرصة قابلة للاختبار" />
             </label>
           </div>
-          <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> PUBLISH SECTOR</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> نشر القطاع</button>
           <p class="uso-publish-msg" data-uso-publish-msg hidden></p>
         </form>
       </div>
@@ -186,9 +202,10 @@
     <section class="sp-panel" id="sp-types" aria-labelledby="sp-types-title">
       <div class="sp-panel-head">
         <h2 id="sp-types-title"><i class="fas fa-layer-group"></i> نوع المشروع</h2>
-        <p>اختر النوع أولًا — ثم افتح القائمة المناسبة من ملفات العميل.</p>
+        <p>اختر نوع المشروع أولًا، ثم اختر المشروع المناسب من القائمة.</p>
       </div>
       <div class="sp-type-tabs" data-sp-type-tabs role="tablist" aria-label="أنواع المشاريع"></div>
+      <div class="sp-cat-hint" data-sp-cat-hint hidden></div>
       <div class="sp-cat-dir" data-sp-cat-dir></div>
     </section>
 
@@ -198,12 +215,28 @@
         <p data-sp-catalog-lead>اختر نوعًا أو قائمة لعرض المشاريع. التفاصيل تظهر عند التوسيع.</p>
       </div>
       <div class="sp-catalog-toolbar">
-        <label class="sp-field grow">بحث
-          <input type="search" data-sp-search placeholder="ابحث باسم المشروع…" />
+        <label class="sp-field grow">ابحث عن مشروع أو فكرة
+          <input type="search" data-sp-search placeholder="ابحث عن مشروع أو فكرة..." />
         </label>
         <label class="sp-field">القائمة
           <select data-sp-cat-filter>
             <option value="">كل القوائم في النوع</option>
+          </select>
+        </label>
+        <label class="sp-field">رأس المال
+          <select data-sp-capital-filter>
+            <option value="">الكل</option>
+            <option value="منخفض جدًا">منخفض جدًا</option>
+            <option value="منخفض">منخفض</option>
+            <option value="متوسط">متوسط</option>
+          </select>
+        </label>
+        <label class="sp-field">طريقة التشغيل
+          <select data-sp-mode-filter>
+            <option value="">الكل</option>
+            <option value="رقمي">رقمي</option>
+            <option value="ميداني">ميداني</option>
+            <option value="مختلط">مختلط</option>
           </select>
         </label>
       </div>
@@ -233,7 +266,7 @@
     <section class="sp-panel" id="sp-path" aria-labelledby="sp-path-title">
       <div class="sp-panel-head">
         <h2 id="sp-path-title"><i class="fas fa-diagram-project"></i> مسار التشغيل داخل هوب</h2>
-        <p>بعد اختيار المشروع: تدريب ← خطة ← جدوى ← تسعير ← موردون ← تسويق ← CRM ← قياس ← حاضنة.</p>
+        <p>بعد اختيار المشروع: تدريب ← خطة ← جدوى ← تسعير ← موردون ← تسويق ← العملاء ← قياس ← حاضنة.</p>
       </div>
       <ol class="sp-engine-path" data-sp-path></ol>
     </section>
@@ -244,6 +277,14 @@
         <p>المشاريع التي فتحتها للاختبار والتشغيل داخل هوب.</p>
       </div>
       <div class="sp-opened-list" data-sp-opened></div>
+    </section>
+
+    <section class="sp-panel" id="sp-my-projects" aria-labelledby="sp-my-title">
+      <div class="sp-panel-head">
+        <h2 id="sp-my-title"><i class="fas fa-briefcase"></i> مشاريعي</h2>
+        <p>متابعة طلباتك ومسوداتك وحالاتها والإجراء التالي المطلوب منك.</p>
+      </div>
+      <div class="sp-my-list" data-sp-my-list></div>
     </section>
 
     <section class="sp-panel" id="sp-registrations" aria-labelledby="sp-reg-title">
@@ -259,7 +300,7 @@
         <span class="sp-selected-label">المشروع المختار للتسجيل</span>
         <strong data-sp-selected-name>—</strong>
         <button type="button" class="btn btn-primary" data-sp-open-reg-selected>
-          <i class="fas fa-file-signature"></i> فتح نموذج التسجيل
+          <i class="fas fa-play"></i> ابدأ مشروعك
         </button>
       </div>
       <div class="sp-reg-list" data-sp-reg-list></div>
@@ -271,99 +312,173 @@
     <div class="sp-reg-modal__panel" role="dialog" aria-modal="true" aria-labelledby="sp-reg-modal-title">
       <header class="sp-reg-modal__head">
         <div>
-          <p class="sp-reg-kicker"><i class="fas fa-file-signature"></i> تسجيل صاحب المشروع</p>
-          <h2 id="sp-reg-modal-title">نموذج التسجيل</h2>
+          <p class="sp-reg-kicker"><i class="fas fa-file-signature"></i> إنشاء مشروعك</p>
+          <h2 id="sp-reg-modal-title">ابدأ مشروعك</h2>
+          <p class="sp-reg-step-indicator" data-sp-reg-step-label>الخطوة 1 من 5 — اختيار المشروع</p>
         </div>
         <button type="button" class="sp-reg-close" data-sp-reg-close aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
       </header>
       <form class="sp-reg-form" data-sp-reg-form novalidate>
         <input type="hidden" name="projectId" data-sp-reg-project-id />
-        <div class="sp-reg-grid">
-          <label class="sp-field grow">اسم صاحب المشروع
-            <input name="ownerName" type="text" required autocomplete="name" placeholder="الاسم الكامل" />
-          </label>
-          <label class="sp-field">رقم الجوال <span class="sp-req-hint">(للتواصل)</span>
-            <input name="phone" type="tel" required autocomplete="tel" placeholder="05xxxxxxxx" />
-          </label>
-          <label class="sp-field">البريد الإلكتروني <span class="sp-req-hint">(للتواصل)</span>
-            <input name="email" type="email" required autocomplete="email" placeholder="name@example.com" />
-          </label>
-          <label class="sp-field">وسيلة التواصل المفضّلة
-            <select name="preferredContact" required>
-              <option value="جوال">جوال</option>
-              <option value="إيميل">إيميل</option>
-              <option value="الاتنين">الجوال والإيميل</option>
-            </select>
-          </label>
-          <label class="sp-field grow">اسم المشروع
-            <input name="projectName" type="text" required data-sp-reg-project-name placeholder="اسم المشروع المختار" />
-          </label>
-          <label class="sp-field">الدولة
-            <select name="country" required data-sp-reg-country>
-              <option value="">— اختر الدولة —</option>
-            </select>
-          </label>
-          <label class="sp-field">المستوى العلمي
-            <select name="education" required>
-              <option value="">— اختر —</option>
-              <option>ثانوي</option>
-              <option>دبلوم</option>
-              <option>بكالوريوس</option>
-              <option>ماجستير</option>
-              <option>دكتوراه</option>
-              <option>أخرى</option>
-            </select>
-          </label>
-          <label class="sp-field">سنوات الخبرة
-            <input name="experienceYears" type="number" min="0" max="60" required placeholder="مثال: 3" />
-          </label>
-          <label class="sp-field grow">مجال الخبرة 1
-            <input name="experience1" type="text" required placeholder="مثال: تسويق رقمي" />
-          </label>
-          <label class="sp-field grow">مجال الخبرة 2
-            <input name="experience2" type="text" placeholder="اختياري" />
-          </label>
-          <label class="sp-field grow">مجال الخبرة 3
-            <input name="experience3" type="text" placeholder="اختياري" />
-          </label>
-          <label class="sp-field">رفع ملف
-            <input name="fileDoc" type="file" accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.zip" />
-          </label>
-          <label class="sp-field">رفع صورة
-            <input name="fileImage" type="file" accept="image/*" />
-          </label>
-          <label class="sp-field">رفع فيديو
-            <input name="fileVideo" type="file" accept="video/*" />
-          </label>
-          <p class="sp-hint">الحد الأقصى للصورة والملف والفيديو: 150 ميجابايت</p>
-          <label class="sp-field grow">هل لديك عمل حالي؟
-            <textarea name="currentWork" rows="2" placeholder="اذكر طبيعة العمل الحالي إن وُجد"></textarea>
-          </label>
-          <label class="sp-field grow">سجل تجاري / معلومات أخرى مفيدة
-            <textarea name="commercialOrNotes" rows="3" placeholder="رقم السجل التجاري أو أي معلومة إضافية تفيد التسجيل"></textarea>
-          </label>
+        <input type="hidden" name="registrationId" data-sp-reg-id />
+        <div class="sp-reg-steps" data-sp-reg-steps>
+          <div class="sp-reg-step is-active" data-sp-reg-step="1">
+            <h3>اختيار المشروع</h3>
+            <label class="sp-field grow">اسم المشروع
+              <input name="projectName" type="text" required data-sp-reg-project-name placeholder="اسم المشروع المختار" />
+            </label>
+            <p class="sp-hint">يمكنك تعديل الاسم الظاهر، مع الإبقاء على المشروع المختار من القائمة.</p>
+          </div>
+          <div class="sp-reg-step" data-sp-reg-step="2" hidden>
+            <h3>البيانات الأساسية</h3>
+            <div class="sp-reg-grid">
+              <label class="sp-field grow">اسم صاحب المشروع
+                <input name="ownerName" type="text" required autocomplete="name" placeholder="الاسم الكامل" />
+              </label>
+              <label class="sp-field">رقم الجوال <span class="sp-req-hint">(للتواصل)</span>
+                <input name="phone" type="tel" required autocomplete="tel" placeholder="05xxxxxxxx" />
+              </label>
+              <label class="sp-field">البريد الإلكتروني <span class="sp-req-hint">(للتواصل)</span>
+                <input name="email" type="email" required autocomplete="email" placeholder="name@example.com" dir="ltr" />
+              </label>
+              <label class="sp-field">وسيلة التواصل المفضّلة
+                <select name="preferredContact" required>
+                  <option value="جوال">جوال</option>
+                  <option value="إيميل">إيميل</option>
+                  <option value="الاتنين">الجوال والإيميل</option>
+                </select>
+              </label>
+              <label class="sp-field">الدولة
+                <select name="country" required data-sp-reg-country>
+                  <option value="">— اختر الدولة —</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="sp-reg-step" data-sp-reg-step="3" hidden>
+            <h3>الخبرة والتفاصيل</h3>
+            <div class="sp-reg-grid">
+              <label class="sp-field">المستوى العلمي
+                <select name="education" required>
+                  <option value="">— اختر —</option>
+                  <option>ثانوي</option>
+                  <option>دبلوم</option>
+                  <option>بكالوريوس</option>
+                  <option>ماجستير</option>
+                  <option>دكتوراه</option>
+                  <option>أخرى</option>
+                </select>
+              </label>
+              <label class="sp-field">سنوات الخبرة
+                <input name="experienceYears" type="number" min="0" max="60" required placeholder="مثال: 3" />
+              </label>
+              <label class="sp-field grow">مجال الخبرة 1
+                <input name="experience1" type="text" required placeholder="مثال: تسويق رقمي" />
+              </label>
+              <label class="sp-field grow">مجال الخبرة 2
+                <input name="experience2" type="text" placeholder="اختياري" />
+              </label>
+              <label class="sp-field grow">مجال الخبرة 3
+                <input name="experience3" type="text" placeholder="اختياري" />
+              </label>
+              <label class="sp-field grow">هل لديك عمل حالي؟
+                <textarea name="currentWork" rows="2" placeholder="اذكر طبيعة العمل الحالي إن وُجد"></textarea>
+              </label>
+            </div>
+          </div>
+          <div class="sp-reg-step" data-sp-reg-step="4" hidden>
+            <h3>الاحتياجات والمرفقات</h3>
+            <div class="sp-reg-grid">
+              <label class="sp-field">رفع ملف
+                <input name="fileDoc" type="file" accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.zip" />
+              </label>
+              <label class="sp-field">رفع صورة
+                <input name="fileImage" type="file" accept="image/*" />
+              </label>
+              <label class="sp-field">رفع فيديو
+                <input name="fileVideo" type="file" accept="video/*" />
+              </label>
+              <p class="sp-hint">الحد الأقصى للصورة والملف والفيديو: 150 ميجابايت</p>
+              <label class="sp-field grow">سجل تجاري / معلومات أخرى مفيدة
+                <textarea name="commercialOrNotes" rows="3" placeholder="رقم السجل التجاري أو أي معلومة إضافية تفيد التسجيل"></textarea>
+              </label>
+            </div>
+          </div>
+          <div class="sp-reg-step" data-sp-reg-step="5" hidden>
+            <h3>مراجعة بيانات المشروع</h3>
+            <div class="sp-reg-review" data-sp-reg-review></div>
+            <p class="sp-hint">راجع البيانات قبل الإرسال. يمكنك الرجوع لأي خطوة للتعديل.</p>
+          </div>
         </div>
         <footer class="sp-reg-form-actions">
-          <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> إرسال التسجيل</button>
+          <button type="button" class="btn btn-secondary" data-sp-reg-prev hidden>السابق</button>
+          <button type="button" class="btn btn-secondary" data-sp-reg-draft><i class="fas fa-floppy-disk"></i> حفظ كمسودة</button>
+          <button type="button" class="btn btn-primary" data-sp-reg-next>التالي</button>
+          <button type="submit" class="btn btn-primary" data-sp-reg-submit hidden><i class="fas fa-check"></i> إرسال المشروع</button>
           <button type="button" class="btn btn-secondary" data-sp-reg-close>إلغاء</button>
         </footer>
       </form>
     </div>
   </div>
 
+  <div class="sp-success-modal" id="sp-success-modal" hidden data-sp-success-modal>
+    <div class="sp-success-modal__backdrop" data-sp-success-close aria-hidden="true"></div>
+    <div class="sp-success-modal__panel" role="dialog" aria-modal="true" aria-labelledby="sp-success-title">
+      <h2 id="sp-success-title"><i class="fas fa-circle-check"></i> تم إرسال مشروعك بنجاح</h2>
+      <div class="sp-success-body" data-sp-success-body></div>
+      <p class="sp-hint">سيتم إشعارك عند حدوث أي تحديث على مشروعك.</p>
+      <div class="sp-success-actions">
+        <a class="btn btn-primary" href="#sp-my-projects" data-sp-success-close>متابعة المشروع</a>
+        <a class="btn btn-secondary" href="#sp-my-projects" data-sp-success-close>مشاريعي</a>
+        <button type="button" class="btn btn-secondary" data-sp-success-close>العودة إلى المشاريع الجانبية</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-guide-modal" id="sp-howto-modal" hidden data-sp-guide-modal>
+    <div class="sp-guide-modal__backdrop" data-sp-guide-close aria-hidden="true"></div>
+    <div class="sp-guide-modal__panel" role="dialog" aria-modal="true" aria-labelledby="sp-howto-title">
+      <header>
+        <h2 id="sp-howto-title"><i class="fas fa-rocket"></i> كيف أبدأ؟</h2>
+        <button type="button" class="sp-reg-close" data-sp-guide-close aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
+      </header>
+      <ol data-sp-howto-list></ol>
+      <div class="sp-guide-modal__actions">
+        <button type="button" class="btn btn-primary" data-sp-start-now>ابدأ الآن</button>
+        <button type="button" class="btn btn-secondary" data-sp-open-guide>دليل التشغيل الكامل</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-guide-modal" id="sp-ops-guide-modal" hidden data-sp-guide-modal>
+    <div class="sp-guide-modal__backdrop" data-sp-guide-close aria-hidden="true"></div>
+    <div class="sp-guide-modal__panel" role="dialog" aria-modal="true" aria-labelledby="sp-ops-guide-title">
+      <header>
+        <h2 id="sp-ops-guide-title"><i class="fas fa-book-open"></i> دليل تشغيل المشاريع الجانبية</h2>
+        <button type="button" class="sp-reg-close" data-sp-guide-close aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
+      </header>
+      <div data-sp-full-guide></div>
+      <div class="sp-guide-modal__actions">
+        <button type="button" class="btn btn-primary" data-sp-start-now>ابدأ الآن</button>
+        <button type="button" class="btn btn-secondary" data-sp-guide-close>إغلاق</button>
+      </div>
+    </div>
+  </div>
+
   <div class="sp-toast" id="sp-toast" role="status" aria-live="polite"></div>
 
   <script src="js/hub-store.js" defer></script>
-  <script src="js/hub-side-project-registrations.js?v=1" defer></script>
+  <script src="js/hub-side-project-registrations.js?v=2" defer></script>
   <script src="js/hub-sector-library.js?v=1" defer></script>
-  <script src="js/hub-universal-opportunity-engine.js?v=1" defer></script>
-  <script src="js/hub-sector-engine-ui.js?v=1" defer></script>
+  <script src="js/hub-universal-opportunity-engine.js?v=2" defer></script>
+  <script src="js/hub-sector-engine-ui.js?v=2" defer></script>
   <script src="js/hub-upload-limits.js?v=1" defer></script>
   <script src="js/hub-header-actions.js?v=18" defer></script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
-  <script src="js/hub-page-guide.js?v=3" defer></script>
+  <script src="js/hub-page-guide.js?v=4" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
-  <script src="js/hub-side-projects-boot.js?v=2" defer></script>
+  <script src="js/hub-side-projects-journey.js?v=1" defer></script>
+  <script src="js/hub-side-projects-boot.js?v=3" defer></script>
 </body>
 </html>

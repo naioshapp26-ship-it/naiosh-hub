@@ -30,6 +30,8 @@
   };
 
   const statusClass = (status) => {
+    if (status === 'مسودة') return 'is-draft';
+    if (status === 'يحتاج تعديل') return 'is-revise';
     if (status === 'قيد المتابعة') return 'is-follow';
     if (status === 'تم التواصل' || status === 'مقبول') return 'is-contacted is-accepted';
     if (status === 'مرفوض') return 'is-rejected';
@@ -156,8 +158,19 @@
     if (!sel) return;
     const id = sel.getAttribute('data-spr-status');
     const status = sel.value;
-    const updated = api.setStatus(id, status);
+    const noteInput = root.querySelector(`[data-spr-note-input="${CSS.escape(id)}"]`);
+    let note = String(noteInput?.value || '').trim();
+    if (status === 'يحتاج تعديل' && !note) {
+      note = window.prompt('اكتب سبب طلب التعديل للعميل:') || '';
+      if (!note.trim()) {
+        toast('يرجى كتابة سبب طلب التعديل.');
+        paint();
+        return;
+      }
+    }
+    const updated = api.setStatus(id, status, note);
     if (!updated) return toast('تعذّر تحديث الحالة');
+    if (noteInput) noteInput.value = '';
     toast(`تم تحديث الحالة: ${status}`);
     paint();
   });

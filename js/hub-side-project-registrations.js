@@ -5,7 +5,7 @@
   'use strict';
 
   const KEY = 'naiosh_side_project_registrations_v1';
-  const STATUSES = ['جديد', 'قيد المتابعة', 'تم التواصل', 'مقبول', 'مرفوض', 'مغلق'];
+  const STATUSES = ['مسودة', 'جديد', 'قيد المتابعة', 'يحتاج تعديل', 'تم التواصل', 'مقبول', 'مرفوض', 'مغلق'];
 
   const read = () => {
     try {
@@ -32,57 +32,125 @@
     return { ok: true, phone, email };
   };
 
-  const create = (payload = {}) => {
+  const buildRecord = (payload = {}, prev = null) => {
     const contact = normalizeContact(payload);
-    if (!contact.ok) return { ok: false, error: contact.error };
-    const ownerName = String(payload.ownerName || '').trim();
-    const projectName = String(payload.projectName || '').trim();
-    if (!ownerName) return { ok: false, error: 'اسم صاحب المشروع مطلوب' };
-    if (!projectName) return { ok: false, error: 'اسم المشروع مطلوب' };
+    if (!contact.ok && payload.status !== 'مسودة') return { ok: false, error: contact.error };
+    const ownerName = String(payload.ownerName || prev?.ownerName || '').trim();
+    const projectName = String(payload.projectName || prev?.projectName || '').trim();
+    const asDraft = payload.status === 'مسودة';
+    if (!asDraft) {
+      if (!ownerName) return { ok: false, error: 'يرجى إدخال اسم صاحب المشروع.' };
+      if (!projectName) return { ok: false, error: 'يرجى إدخال اسم المشروع.' };
+      if (!contact.ok) return { ok: false, error: contact.error };
+    } else if (!projectName && !ownerName) {
+      return { ok: false, error: 'أدخل على الأقل اسم المشروع أو اسم صاحب المشروع لحفظ المسودة.' };
+    }
 
+    const status = STATUSES.includes(payload.status) ? payload.status : 'جديد';
+    const now = new Date().toISOString();
     const record = {
-      id: payload.id || `reg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
-      projectId: String(payload.projectId || ''),
-      projectName,
-      ownerName,
-      phone: contact.phone,
-      email: contact.email,
-      preferredContact: payload.preferredContact || (contact.phone ? 'جوال' : 'إيميل'),
-      country: String(payload.country || '').trim(),
-      education: String(payload.education || '').trim(),
-      experienceYears: Number(payload.experienceYears || 0),
-      experience1: String(payload.experience1 || '').trim(),
-      experience2: String(payload.experience2 || '').trim(),
-      experience3: String(payload.experience3 || '').trim(),
-      fileDoc: payload.fileDoc || null,
-      fileImage: payload.fileImage || null,
-      fileVideo: payload.fileVideo || null,
-      currentWork: String(payload.currentWork || '').trim(),
-      commercialOrNotes: String(payload.commercialOrNotes || '').trim(),
-      status: 'جديد',
-      adminNotes: [],
-      createdAt: payload.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      id: payload.id || prev?.id || `reg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      projectId: String(payload.projectId || prev?.projectId || ''),
+      projectName: projectName || prev?.projectName || 'مسودة مشروع',
+      ownerName: ownerName || prev?.ownerName || '',
+      phone: contact.ok ? contact.phone : String(payload.phone || prev?.phone || '').trim(),
+      email: contact.ok ? contact.email : String(payload.email || prev?.email || '').trim(),
+      preferredContact:
+        payload.preferredContact || prev?.preferredContact || (contact.phone ? 'جوال' : contact.email ? 'إيميل' : ''),
+      country: String(payload.country || prev?.country || '').trim(),
+      education: String(payload.education || prev?.education || '').trim(),
+      experienceYears: Number(payload.experienceYears ?? prev?.experienceYears ?? 0),
+      experience1: String(payload.experience1 || prev?.experience1 || '').trim(),
+      experience2: String(payload.experience2 || prev?.experience2 || '').trim(),
+      experience3: String(payload.experience3 || prev?.experience3 || '').trim(),
+      fileDoc: payload.fileDoc !== undefined ? payload.fileDoc : prev?.fileDoc || null,
+      fileImage: payload.fileImage !== undefined ? payload.fileImage : prev?.fileImage || null,
+      fileVideo: payload.fileVideo !== undefined ? payload.fileVideo : prev?.fileVideo || null,
+      currentWork: String(payload.currentWork || prev?.currentWork || '').trim(),
+      commercialOrNotes: String(payload.commercialOrNotes || prev?.commercialOrNotes || '').trim(),
+      categoryId: String(payload.categoryId || prev?.categoryId || ''),
+      categoryName: String(payload.categoryName || prev?.categoryName || ''),
+      status,
+      adminNotes: Array.isArray(prev?.adminNotes) ? prev.adminNotes.slice() : [],
+      createdAt: prev?.createdAt || payload.createdAt || now,
+      updatedAt: now,
+      submittedAt: status !== 'مسودة' ? prev?.submittedAt || now : prev?.submittedAt || null,
     };
+    return { ok: true, record };
+  };
 
+  const upsert = (record, { notify } = {}) => {
     const list = read().filter((x) => x.id !== record.id);
     list.unshift(record);
     save(list);
-
-    try {
-      window.HubStore?.pushNotification?.({
-        source: 'SIDE-PROJECTS',
-        sourceName: 'المشاريع الجانبية',
-        title: 'طلب تسجيل مشروع جديد',
-        body: `${record.ownerName} · ${record.projectName} · ${record.phone || record.email}`,
-        level: 'info',
-        category: 'side-projects',
-        link: 'dashboard.html#side-project-regs',
-        meta: { registrationId: record.id },
-      });
-    } catch (_) {}
-
+    if (notify) {
+      try {
+        window.HubStore?.pushNotification?.({
+          source: 'SIDE-PROJECTS',
+          sourceName: 'المشاريع الجانبية',
+          title: notify.title || 'طلب تسجيل مشروع',
+          body: notify.body || `${record.ownerName} · ${record.projectName}`,
+          level: 'info',
+          category: 'side-projects',
+          link: 'dashboard.html#side-project-regs',
+          meta: { registrationId: record.id, projectId: record.projectId, status: record.status },
+        });
+      } catch (_) {}
+    }
     return { ok: true, record };
+  };
+
+  const create = (payload = {}) => {
+    const built = buildRecord({ ...payload, status: payload.status || 'جديد' });
+    if (!built.ok) return built;
+    const notify =
+      built.record.status === 'مسودة'
+        ? null
+        : {
+            title: 'طلب تسجيل مشروع جديد',
+            body: `${built.record.ownerName} · ${built.record.projectName} · ${built.record.phone || built.record.email}`,
+          };
+    return upsert(built.record, { notify });
+  };
+
+  const update = (id, payload = {}) => {
+    const prev = get(id);
+    if (!prev) return { ok: false, error: 'الطلب غير موجود.' };
+    const built = buildRecord({ ...payload, id }, prev);
+    if (!built.ok) return built;
+    return upsert(built.record);
+  };
+
+  const saveDraft = (payload = {}) => {
+    const prev = payload.id ? get(payload.id) : null;
+    const built = buildRecord({ ...payload, status: 'مسودة' }, prev);
+    if (!built.ok) return built;
+    return upsert(built.record);
+  };
+
+  const resubmit = (id, payload = {}) => {
+    const prev = get(id);
+    if (!prev) return { ok: false, error: 'الطلب غير موجود.' };
+    const built = buildRecord({ ...payload, id, status: 'جديد' }, prev);
+    if (!built.ok) return built;
+    const now = new Date().toISOString();
+    built.record.updatedAt = now;
+    built.record.submittedAt = now;
+    built.record.adminNotes = [
+      ...(built.record.adminNotes || []),
+      { at: now, status: 'جديد', note: 'أعاد العميل إرسال المشروع بعد التعديل.' },
+    ];
+    return upsert(built.record, {
+      notify: {
+        title: 'إعادة إرسال مشروع جانبي',
+        body: `${built.record.ownerName} · ${built.record.projectName}`,
+      },
+    });
+  };
+
+  const latestAdminNote = (r) => {
+    const notes = (r?.adminNotes || []).slice().reverse();
+    return notes.find((n) => String(n.note || '').trim()) || null;
   };
 
   const get = (id) => read().find((x) => String(x.id) === String(id)) || null;
@@ -262,9 +330,13 @@
     STATUSES,
     read,
     create,
+    update,
+    saveDraft,
+    resubmit,
     get,
     setStatus,
     addNote,
+    latestAdminNote,
     remove,
     counts,
     detailsHtml,
