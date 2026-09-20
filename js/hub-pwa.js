@@ -96,8 +96,8 @@
     }
     return `
       <ol class="hub-pwa-guide-steps">
-        <li>في شريط عنوان المتصفح ابحث عن أيقونة <strong>التثبيت</strong> (⊕ أو شاشة كمبيوتر).</li>
-        <li>أو من قائمة المتصفح اختر <strong>تثبيت نايوش هوب</strong> / <strong>Install app</strong>.</li>
+        <li>في شريط عنوان المتصفح ابحث عن أيقونة <strong>التثبيت</strong>.</li>
+        <li>أو من قائمة المتصفح اختر <strong>تثبيت نايوش هوب</strong> أو <strong>تثبيت التطبيق</strong>.</li>
         <li>أكد التثبيت ليفتح كتطبيق مستقل باسم <strong>نايوش هوب</strong>.</li>
       </ol>`;
   };
