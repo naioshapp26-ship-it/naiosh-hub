@@ -50,12 +50,16 @@
   color: #fff;
   background: linear-gradient(90deg, #8a000c, #d70000 45%, #8a000c);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+  z-index: 40;
 }
 
 .hub-pwa-status[hidden],
 .hub-pwa-install-btn[hidden],
 .hub-pwa-installed-badge[hidden],
-.hub-pwa-hero-btn[hidden] {
+.hub-pwa-hero-btn[hidden],
+.hub-pwa-float-btn[hidden],
+.hub-pwa-guide[hidden] {
   display: none !important;
 }
 
@@ -71,10 +75,129 @@
   filter: brightness(1.08);
 }
 
+.hub-pwa-float-btn {
+  position: fixed;
+  inset-inline-start: 16px;
+  bottom: 18px;
+  z-index: 1200;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #d70000, #8a000c);
+  color: #fff;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 12px 28px rgba(120, 0, 14, 0.45);
+  cursor: pointer;
+}
+
+.hub-pwa-float-btn:hover,
+.hub-pwa-float-btn:focus-visible {
+  filter: brightness(1.08);
+}
+
+.hub-pwa-guide {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.hub-pwa-guide-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.hub-pwa-guide-card {
+  position: relative;
+  width: min(440px, 100%);
+  max-height: min(88vh, 640px);
+  overflow: auto;
+  background: #120206;
+  color: #fff;
+  border: 1px solid rgba(215, 0, 0, 0.45);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  padding: 18px 18px 16px;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+}
+
+.hub-pwa-guide-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.hub-pwa-guide-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.hub-pwa-guide-x {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.hub-pwa-guide-reason {
+  margin: 0 0 12px;
+  color: #ffd0d4;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.hub-pwa-guide-steps {
+  margin: 0 0 16px;
+  padding-inline-start: 1.3rem;
+  color: #f5f5f5;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.85;
+}
+
+.hub-pwa-guide-steps li + li {
+  margin-top: 6px;
+}
+
+.hub-pwa-guide-done {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #d70000, #8a000c);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+body.hub-pwa-guide-open {
+  overflow: hidden;
+}
+
 @media (max-width: 900px) {
   .hub-pwa-install-btn span,
   .hub-pwa-installed-badge span {
-    /* keep full Arabic label; allow wrap only if needed */
     white-space: nowrap;
   }
 

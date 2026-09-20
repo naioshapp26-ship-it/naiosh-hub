@@ -19,6 +19,8 @@
     pending: 'جارٍ تجهيز خيار التثبيت... إن لم تظهر النافذة استخدم قائمة المتصفح لإضافة التطبيق',
     manual: 'استخدم خيارات المتصفح لإضافة التطبيق إلى جهازك',
     failed: 'تعذر بدء التثبيت',
+    guideTitle: 'تثبيت تطبيق نايوش هوب على جهازك',
+    guideClose: 'إغلاق',
   };
 
   let deferredPrompt = null;
@@ -26,21 +28,18 @@
   let statusEl = null;
   let installBtn = null;
   let installedBadge = null;
+  let guideEl = null;
+
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+  const isIos = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+  const isChromiumInstallCapable = () =>
+    !isIos && /Chrome\/|Edg\/|OPR\/|SamsungBrowser\//.test(ua) && !/Firefox\//.test(ua);
 
   const isStandalone = () => {
     const mq = window.matchMedia('(display-mode: standalone)');
     const iosStandalone = 'standalone' in window.navigator && window.navigator.standalone === true;
     return mq.matches || iosStandalone;
-  };
-
-  const isChromiumInstallCapable = () => {
-    if (typeof navigator === 'undefined') return false;
-    const ua = navigator.userAgent;
-    return (
-      !/iPhone|iPad|iPod/.test(ua) &&
-      /Chrome\/|Edg\/|OPR\/|SamsungBrowser\//.test(ua) &&
-      !/Firefox\//.test(ua)
-    );
   };
 
   const setStatus = (message) => {
@@ -50,7 +49,7 @@
   };
 
   const syncHeroVisibility = () => {
-    document.querySelectorAll('[data-hub-pwa-install-hero]').forEach((btn) => {
+    document.querySelectorAll('[data-hub-pwa-install-hero], [data-hub-pwa-install-float]').forEach((btn) => {
       btn.hidden = installState === 'installed';
     });
   };
@@ -66,6 +65,7 @@
         installedBadge.title = LABELS.installed;
         installedBadge.setAttribute('aria-label', LABELS.installed);
       }
+      hideGuide();
     } else {
       if (installBtn) {
         installBtn.hidden = false;
@@ -74,6 +74,77 @@
       if (installedBadge) installedBadge.hidden = true;
     }
     syncHeroVisibility();
+  };
+
+  const guideStepsHtml = () => {
+    if (isIos) {
+      return `
+        <ol class="hub-pwa-guide-steps">
+          <li>افتح هذه الصفحة في <strong>Safari</strong>.</li>
+          <li>اضغط زر <strong>المشاركة</strong> (□↑) أسفل أو أعلى الشاشة.</li>
+          <li>اختر <strong>إضافة إلى الشاشة الرئيسية</strong>.</li>
+          <li>أكد الاسم <strong>نايوش هوب</strong> ثم اضغط <strong>إضافة</strong>.</li>
+        </ol>`;
+    }
+    if (isAndroid) {
+      return `
+        <ol class="hub-pwa-guide-steps">
+          <li>افتح القائمة ⋮ في أعلى المتصفح.</li>
+          <li>اختر <strong>تثبيت التطبيق</strong> أو <strong>إضافة إلى الشاشة الرئيسية</strong>.</li>
+          <li>أكد التثبيت ليظهر تطبيق <strong>نايوش هوب</strong> على جهازك.</li>
+        </ol>`;
+    }
+    return `
+      <ol class="hub-pwa-guide-steps">
+        <li>في شريط عنوان المتصفح ابحث عن أيقونة <strong>التثبيت</strong> (⊕ أو شاشة كمبيوتر).</li>
+        <li>أو من قائمة المتصفح اختر <strong>تثبيت نايوش هوب</strong> / <strong>Install app</strong>.</li>
+        <li>أكد التثبيت ليفتح كتطبيق مستقل باسم <strong>نايوش هوب</strong>.</li>
+      </ol>`;
+  };
+
+  const hideGuide = () => {
+    if (guideEl) guideEl.hidden = true;
+    document.body.classList.remove('hub-pwa-guide-open');
+  };
+
+  const showGuide = (reasonMessage) => {
+    if (!guideEl) return;
+    const reason = guideEl.querySelector('[data-hub-pwa-guide-reason]');
+    if (reason) reason.textContent = reasonMessage || LABELS.manual;
+    const body = guideEl.querySelector('[data-hub-pwa-guide-body]');
+    if (body) body.innerHTML = guideStepsHtml();
+    guideEl.hidden = false;
+    document.body.classList.add('hub-pwa-guide-open');
+    setStatus(reasonMessage || LABELS.manual);
+  };
+
+  const ensureGuide = () => {
+    if (document.querySelector('[data-hub-pwa-guide]')) {
+      guideEl = document.querySelector('[data-hub-pwa-guide]');
+      return;
+    }
+    guideEl = document.createElement('div');
+    guideEl.className = 'hub-pwa-guide';
+    guideEl.setAttribute('data-hub-pwa-guide', '');
+    guideEl.setAttribute('role', 'dialog');
+    guideEl.setAttribute('aria-modal', 'true');
+    guideEl.setAttribute('aria-label', LABELS.guideTitle);
+    guideEl.hidden = true;
+    guideEl.innerHTML = `
+      <div class="hub-pwa-guide-backdrop" data-hub-pwa-guide-close></div>
+      <div class="hub-pwa-guide-card">
+        <div class="hub-pwa-guide-head">
+          <h2>${LABELS.guideTitle}</h2>
+          <button type="button" class="hub-pwa-guide-x" data-hub-pwa-guide-close aria-label="${LABELS.guideClose}">×</button>
+        </div>
+        <p class="hub-pwa-guide-reason" data-hub-pwa-guide-reason></p>
+        <div data-hub-pwa-guide-body></div>
+        <button type="button" class="hub-pwa-guide-done" data-hub-pwa-guide-close>${LABELS.guideClose}</button>
+      </div>`;
+    document.body.appendChild(guideEl);
+    guideEl.addEventListener('click', (e) => {
+      if (e.target && e.target.closest('[data-hub-pwa-guide-close]')) hideGuide();
+    });
   };
 
   const capturePrompt = (event) => {
@@ -105,7 +176,7 @@
           if (e.detail) finish(e.detail);
         };
         window.addEventListener('hub:beforeinstallprompt', onCustom, { once: true });
-        const timer = setTimeout(() => finish(null), 1200);
+        const timer = setTimeout(() => finish(null), 1500);
         if (window.__HUB_DEFERRED_PROMPT__) finish(window.__HUB_DEFERRED_PROMPT__);
       });
     }
@@ -133,12 +204,30 @@
 
   const onInstallClick = async () => {
     console.info('[HUB PWA] Install button clicked');
+    if (installState === 'installed' || isStandalone()) {
+      setState('installed');
+      setStatus(LABELS.installed);
+      return;
+    }
+
     const result = await promptInstall();
-    if (result === 'accepted') setStatus(LABELS.success);
-    else if (result === 'dismissed') setStatus(LABELS.cancelled);
-    else if (result === 'pending' || installState === 'pending') setStatus(LABELS.pending);
-    else if (result === 'failed') setStatus(LABELS.failed);
-    else setStatus(LABELS.manual);
+    if (result === 'accepted') {
+      setStatus(LABELS.success);
+      return;
+    }
+    if (result === 'dismissed') {
+      setStatus(LABELS.cancelled);
+      return;
+    }
+    if (result === 'pending' || installState === 'pending') {
+      showGuide(LABELS.pending);
+      return;
+    }
+    if (result === 'failed') {
+      showGuide(LABELS.failed);
+      return;
+    }
+    showGuide(LABELS.manual);
   };
 
   const ensureUi = () => {
@@ -200,9 +289,24 @@
       heroCtas.appendChild(heroBtn);
     }
 
-    document.querySelectorAll('[data-hub-pwa-install], [data-hub-pwa-install-hero]').forEach((btn) => {
-      btn.addEventListener('click', onInstallClick);
-    });
+    if (!document.querySelector('[data-hub-pwa-install-float]')) {
+      const floatBtn = document.createElement('button');
+      floatBtn.type = 'button';
+      floatBtn.className = 'hub-pwa-float-btn';
+      floatBtn.setAttribute('data-hub-pwa-install-float', '');
+      floatBtn.setAttribute('aria-label', LABELS.install);
+      floatBtn.innerHTML =
+        '<i class="fas fa-download" aria-hidden="true"></i><span>تثبيت تطبيق نايوش هوب</span>';
+      document.body.appendChild(floatBtn);
+    }
+
+    ensureGuide();
+
+    document
+      .querySelectorAll('[data-hub-pwa-install], [data-hub-pwa-install-hero], [data-hub-pwa-install-float]')
+      .forEach((btn) => {
+        btn.addEventListener('click', onInstallClick);
+      });
   };
 
   const bootListeners = () => {
@@ -234,6 +338,7 @@
       deferredPrompt = null;
       window.__HUB_DEFERRED_PROMPT__ = null;
       setStatus(LABELS.success);
+      hideGuide();
     });
 
     const timeoutMs = isChromiumInstallCapable() ? 15000 : 60000;

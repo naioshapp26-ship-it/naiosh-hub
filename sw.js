@@ -12,7 +12,7 @@
  * Cache name is Hub-specific so it never collides with NAIS (nais-shell-v1).
  */
 
-const CACHE_NAME = 'hub-shell-v1';
+const CACHE_NAME = 'hub-shell-v2';
 
 /** Assets pre-cached on SW install to enable fast offline startup. */
 const SHELL_URLS = [
