@@ -101,33 +101,125 @@
     { label: 'بيانات الشخص', icon: 'fa-id-card' },
     { label: 'تحليل الفرص', icon: 'fa-brain' },
     { label: 'اقتراح مناسب', icon: 'fa-lightbulb' },
-    { label: 'تصنيف المخاطر', icon: 'fa-shield-halved' },
-    { label: 'متطلبات البداية', icon: 'fa-list-check' },
     { label: 'اختيار الفرصة', icon: 'fa-hand-pointer' },
-    { label: 'تدريب مصغر', icon: 'fa-graduation-cap', href: 'courses.html' },
-    { label: 'خطة تشغيل', icon: 'fa-clipboard-list', href: 'office.html' },
-    { label: 'جدوى مبسطة', icon: 'fa-chart-line', href: 'incubators.html' },
-    { label: 'التسعير', icon: 'fa-tags', href: 'store.html' },
-    { label: 'الموردون', icon: 'fa-truck', href: 'systems/erp.html?from=hub&return=side-projects.html' },
-    { label: 'استوديو التسويق', icon: 'fa-bullhorn', href: 'ads.html' },
-    { label: 'العملاء وإدارة العلاقات', icon: 'fa-users', href: 'systems/crm.html?from=hub&return=side-projects.html' },
-    { label: 'قياس وتحسين', icon: 'fa-gauge-high', href: 'dashboard.html' },
-    { label: 'حاضنة نايوش', icon: 'fa-seedling', href: 'incubators.html' },
+    { label: 'التدريب', icon: 'fa-graduation-cap' },
+    { label: 'خطة التشغيل', icon: 'fa-clipboard-list' },
+    { label: 'دراسة الجدوى', icon: 'fa-chart-line' },
+    { label: 'الموارد', icon: 'fa-truck' },
+    { label: 'التسويق', icon: 'fa-bullhorn' },
+    { label: 'عملاء المشروع', icon: 'fa-users' },
+    { label: 'القياس والتحسين', icon: 'fa-gauge-high' },
+    { label: 'التوسع للحاضنة', icon: 'fa-seedling' },
   ];
 
-  const OPS_STEPS = [
-    { n: '1', label: 'تدريب مصغر تكيّفي', href: 'courses.html', icon: 'fa-graduation-cap' },
-    { n: '2', label: 'خطة تشغيل', href: 'office.html', icon: 'fa-clipboard-list' },
-    { n: '3', label: 'دراسة جدوى مبسطة', href: 'incubators.html', icon: 'fa-chart-line' },
-    { n: '4', label: 'التسعير', href: 'store.html', icon: 'fa-tags' },
-    { n: '5', label: 'الموردون / نظام الموارد', href: 'systems/erp.html?from=hub&return=side-projects.html', icon: 'fa-truck' },
-    { n: '6', label: 'استوديو التسويق', href: 'ads.html', icon: 'fa-bullhorn' },
-    { n: '7', label: 'العملاء وإدارة العلاقات', href: 'systems/crm.html?from=hub&return=side-projects.html', icon: 'fa-users' },
-    { n: '8', label: 'قياس النتائج', href: 'dashboard.html', icon: 'fa-gauge-high' },
-    { n: '9', label: 'تحسين المشروع', href: 'office.html', icon: 'fa-arrows-rotate' },
-    { n: '10', label: 'التوسع للحاضنة', href: 'incubators.html', icon: 'fa-seedling' },
+  /** مراحل تشغيل المشروع → أداة موجودة + سياق المشروع (ليست اختصارات عامة) */
+  const OPS_STAGES = [
+    {
+      id: 'learn',
+      n: '1',
+      stageLabel: 'التدريب',
+      toolLabel: 'التدريب المصغّر',
+      href: 'courses.html',
+      icon: 'fa-graduation-cap',
+      always: true,
+    },
+    {
+      id: 'plan',
+      n: '2',
+      stageLabel: 'خطة التشغيل',
+      toolLabel: 'خطة تشغيل المشروع',
+      href: 'office.html',
+      icon: 'fa-clipboard-list',
+      always: true,
+    },
+    {
+      id: 'feasibility',
+      n: '3',
+      stageLabel: 'دراسة الجدوى',
+      toolLabel: 'دراسة جدوى مبسطة للمشروع',
+      href: 'office.html',
+      icon: 'fa-chart-line',
+      always: true,
+    },
+    {
+      id: 'resources',
+      n: '4',
+      stageLabel: 'تخطيط الموارد',
+      toolLabel: 'موارد هذا المشروع',
+      href: 'systems/erp.html',
+      icon: 'fa-boxes-stacked',
+      always: true,
+    },
+    {
+      id: 'marketing',
+      n: '5',
+      stageLabel: 'التسويق',
+      toolLabel: 'استوديو الحملات التسويقية للمشروع',
+      href: 'ads.html',
+      icon: 'fa-bullhorn',
+      always: true,
+    },
+    {
+      id: 'customers',
+      n: '6',
+      stageLabel: 'عملاء المشروع',
+      toolLabel: 'العملاء المحتملون لهذا المشروع',
+      href: 'systems/crm.html',
+      icon: 'fa-users',
+      always: true,
+    },
+    {
+      id: 'measure',
+      n: '7',
+      stageLabel: 'قياس النتائج',
+      toolLabel: 'قياس نتائج المشروع',
+      href: 'office.html',
+      icon: 'fa-gauge-high',
+      always: true,
+    },
+    {
+      id: 'improve',
+      n: '8',
+      stageLabel: 'تحسين المشروع',
+      toolLabel: 'تحسين وتشغيل المشروع',
+      href: 'office.html',
+      icon: 'fa-arrows-rotate',
+      always: true,
+    },
+    {
+      id: 'incubator',
+      n: '9',
+      stageLabel: 'التوسع',
+      toolLabel: 'الحاضنة المناسبة',
+      href: 'incubators.html',
+      icon: 'fa-seedling',
+      always: true,
+    },
+    {
+      id: 'sell',
+      n: '10',
+      stageLabel: 'بيع المنتج',
+      toolLabel: 'رفع منتج للمتجر',
+      href: 'store.html',
+      icon: 'fa-store',
+      always: false,
+      when: (p) => {
+        if (!p) return false;
+        if (p.mode === 'رقمي') return true;
+        const hay = `${p.title || ''} ${p.categoryName || ''} ${(p.skills || []).join(' ')}`;
+        return /منتج|بيع|متجر|تجارة|متجر/.test(hay);
+      },
+    },
   ];
 
+  const stagesForProject = (p) =>
+    OPS_STAGES.filter((s) => s.always || (typeof s.when === 'function' && s.when(p)));
+
+  const stationStatusLabel = (status) => {
+    if (status === 'done') return 'مكتملة';
+    if (status === 'current') return 'قيد العمل';
+    return 'لم تبدأ';
+  };
   const CAT_DESC = {
     'low-capital': 'مشاريع تبدأ برأس مال محدود مع إمكانية ربح جيدة عند الاختبار السريع.',
     'low-loss': 'مشاريع يمكن تشغيلها وإدارتها عبر الإنترنت دون موقع فعلي دائم.',
@@ -593,7 +685,7 @@
 
     const training =
       p.difficulty === 'سهل'
-        ? 'تدريب مصغر ١–٣ أيام (Adaptive Microlearning)'
+        ? 'تدريب مصغر ١–٣ أيام (تعلّم تكيّفي مختصر)'
         : p.difficulty === 'متوسط'
           ? 'مسار تعلّم قصير ١–٢ أسبوع'
           : 'تأهيل عملي مكثف + مرافقة';
@@ -608,7 +700,7 @@
     const suppliers =
       p.mode === 'رقمي'
         ? 'أدوات رقمية · قوالب · منصات نشر · اشتراكات برمجية'
-        : 'موردو مواد أولية · تغليف · لوجستيات خفيفة · Neg عبر ERP';
+        : 'موردو مواد أولية · تغليف · لوجستيات خفيفة · تفاوض عبر نظام الموارد';
     const scale =
       p.categoryId === 'low-capital' || p.mode === 'رقمي'
         ? 'عالية — قابل للتوسع عبر الحاضنة والمنصات'
@@ -837,9 +929,6 @@
         ${compact ? `<button type="button" class="btn btn-secondary" data-sp-expand="${esc(p.id)}"><i class="fas fa-chevron-down"></i> التفاصيل</button>` : ''}
         <button type="button" class="btn btn-primary" data-sp-register="${esc(p.id)}"><i class="fas fa-play"></i> ابدأ مشروعك</button>
         <button type="button" class="btn btn-secondary" data-sp-open="${esc(p.id)}"><i class="fas fa-flask"></i> اختبر المشروع</button>
-        <a class="btn btn-secondary" href="courses.html">تدريب</a>
-        <a class="btn btn-secondary" href="ads.html">تسويق</a>
-        <a class="btn btn-secondary" href="incubators.html">حاضنة</a>
       </div>
       ${compact ? `<div class="sp-card-details" hidden>${detailRows(p)}</div>` : ''}
     </article>`;
@@ -1004,6 +1093,37 @@
     paintCatalog();
   };
 
+  const projectCtxPayload = (item, p) => {
+    const cat = data.categories.find((c) => c.id === (p?.categoryId || item.categoryId));
+    return {
+      id: item.id || p?.id,
+      title: item.title || p?.title || 'مشروع جانبي',
+      categoryId: p?.categoryId || item.categoryId || '',
+      categoryName: cat?.nameAr || p?.categoryName || '',
+      mode: p?.mode || '',
+    };
+  };
+
+  const openStageForProject = (item, p, stage) => {
+    const ctxApi = window.HubSpProjectContext;
+    const project = projectCtxPayload(item, p);
+    if (!ctxApi?.openStation) {
+      toast('تعذر فتح المرحلة — حدّث الصفحة وحاول مجددًا.');
+      return;
+    }
+    if (!stage?.href) {
+      toast('هذه الوظيفة غير متاحة لهذا المشروع حاليًا.');
+      return;
+    }
+    ctxApi.openStation(stage.href, project, {
+      stageId: stage.id,
+      stage: stage.id,
+      stageLabel: stage.stageLabel,
+      tool: stage.toolLabel,
+      label: stage.stageLabel,
+    });
+  };
+
   const paintOpened = () => {
     const list = readOpened();
     if (!openedEl) return;
@@ -1012,32 +1132,52 @@
         '<p class="sp-empty">لا مشاريع قيد الاختبار بعد — تصفّح القوائم أو اقترح حسب ملفك ثم اضغط «اختبر المشروع».</p>';
       return;
     }
+    const ctxApi = window.HubSpProjectContext;
     openedEl.innerHTML = list
       .map((item) => {
-        const p = data.projects.find((x) => x.id === item.id);
-        return `<article class="sp-opened-card">
+        const raw = data.projects.find((x) => x.id === item.id);
+        const p = raw ? enrich(raw) : { id: item.id, title: item.title, categoryId: item.categoryId };
+        const stages = stagesForProject(p);
+        const stations = stages
+          .map((s) => {
+            const st = ctxApi?.getStationStatus?.(item.id, s.id) || 'todo';
+            return `<button type="button" class="sp-station is-${esc(st)}" data-sp-stage="${esc(s.id)}" data-sp-project="${esc(item.id)}" title="${esc(s.toolLabel)}">
+              <span class="sp-station__n">${esc(s.n)}</span>
+              <i class="fas ${esc(s.icon)}" aria-hidden="true"></i>
+              <strong>${esc(s.stageLabel)}</strong>
+              <small>${esc(s.toolLabel)}</small>
+              <em>${esc(stationStatusLabel(st))}</em>
+            </button>`;
+          })
+          .join('');
+        return `<article class="sp-opened-card" id="sp-opened-${esc(item.id)}" data-opened-id="${esc(item.id)}">
           <div class="sp-opened-main">
-            <h3>${esc(item.title || p?.title || 'مشروع')}</h3>
-            <small>بدأ الاختبار ${esc(new Date(item.openedAt).toLocaleString('en-US'))}</small>
-            <p>مسار التشغيل: تعلّم ← خطة ← جدوى ← تسعير ← موردون ← تسويق ← CRM ← قياس ← تحسين ← حاضنة.</p>
-            <ol class="sp-ops-steps">
-              ${OPS_STEPS.map(
-                (s) =>
-                  `<li><a href="${esc(s.href)}"><span>${s.n}</span><i class="fas ${s.icon}" aria-hidden="true"></i>${esc(s.label)}</a></li>`
-              ).join('')}
-            </ol>
+            <div class="sp-opened-head">
+              <div>
+                <h3>${esc(item.title || p?.title || 'مشروع')}</h3>
+                <small>رقم المشروع: <b dir="ltr">${esc(item.id)}</b> · بدأ الاختبار ${esc(new Date(item.openedAt).toLocaleString('en-US'))}</small>
+              </div>
+              <button type="button" class="btn btn-secondary" data-sp-remove="${esc(item.id)}">إزالة من الاختبار</button>
+            </div>
+            <p class="sp-opened-lead">رحلة تشغيل هذا المشروع — كل محطة تفتح الأداة الصحيحة مع سياق المشروع، ثم يمكنك العودة إليه.</p>
+            <div class="sp-stations" role="list">${stations}</div>
           </div>
-          <div class="sp-card-actions">
-            <a class="btn btn-primary" href="courses.html">تدريب</a>
-            <a class="btn btn-secondary" href="ads.html">تسويق</a>
-            <a class="btn btn-secondary" href="systems/crm.html?from=hub&return=side-projects.html">CRM</a>
-            <a class="btn btn-secondary" href="systems/erp.html?from=hub&return=side-projects.html">ERP</a>
-            <a class="btn btn-secondary" href="incubators.html">الحاضنات</a>
-            <button type="button" class="btn btn-secondary" data-sp-remove="${esc(item.id)}">إزالة</button>
+          <div class="sp-card-actions sp-opened-shortcuts">
+            <button type="button" class="btn btn-primary" data-sp-stage="learn" data-sp-project="${esc(item.id)}"><i class="fas fa-graduation-cap"></i> تدريب</button>
+            <button type="button" class="btn btn-secondary" data-sp-stage="marketing" data-sp-project="${esc(item.id)}"><i class="fas fa-bullhorn"></i> تسويق</button>
+            <button type="button" class="btn btn-secondary" data-sp-stage="customers" data-sp-project="${esc(item.id)}"><i class="fas fa-users"></i> عملاء المشروع</button>
+            <button type="button" class="btn btn-secondary" data-sp-stage="resources" data-sp-project="${esc(item.id)}"><i class="fas fa-boxes-stacked"></i> موارد المشروع</button>
+            <button type="button" class="btn btn-secondary" data-sp-stage="incubator" data-sp-project="${esc(item.id)}"><i class="fas fa-seedling"></i> الحاضنة</button>
           </div>
         </article>`;
       })
       .join('');
+
+    // Deep-link focus: #sp-opened-<id>
+    const hash = (location.hash || '').replace(/^#/, '');
+    if (hash.startsWith('sp-opened-')) {
+      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const openProject = (id) => {
@@ -1054,7 +1194,10 @@
     paintOpened();
     paintStats();
     toast(`تم فتح المشروع للاختبار: ${p.title}`);
-    document.getElementById('sp-opened')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    try {
+      history.replaceState(null, '', `#sp-opened-${encodeURIComponent(p.id)}`);
+    } catch (_) {}
+    document.getElementById(`sp-opened-${p.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const introRoot = root.querySelector('[data-sp-intro]');
@@ -1337,6 +1480,21 @@
     openRegModal(p);
   });
   root.addEventListener('click', (e) => {
+    const stageBtn = e.target.closest('[data-sp-stage][data-sp-project]');
+    if (stageBtn) {
+      const projectId = stageBtn.getAttribute('data-sp-project');
+      const stageId = stageBtn.getAttribute('data-sp-stage');
+      const item = readOpened().find((x) => x.id === projectId) || { id: projectId };
+      const raw = data.projects.find((x) => x.id === projectId);
+      const p = raw ? enrich(raw) : item;
+      const stage = stagesForProject(p).find((s) => s.id === stageId) || OPS_STAGES.find((s) => s.id === stageId);
+      if (!stage || (!stage.always && !(typeof stage.when === 'function' && stage.when(p)))) {
+        toast('هذه الوظيفة غير متاحة لهذا المشروع حاليًا.');
+        return;
+      }
+      openStageForProject(item, p, stage);
+      return;
+    }
     const myAct = e.target.closest('[data-sp-my-action]');
     if (myAct) {
       const action = myAct.getAttribute('data-sp-my-action');
