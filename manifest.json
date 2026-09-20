@@ -6,7 +6,6 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "id": "/",
   "theme_color": "#d70000",
   "background_color": "#0a0a0a",
   "lang": "ar",
@@ -14,25 +13,25 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/assets/hub-icon-192.png",
+      "src": "/hub-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/hub-icon-192.png",
+      "src": "/hub-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/assets/hub-icon-512.png",
+      "src": "/hub-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/hub-icon-512.png",
+      "src": "/hub-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

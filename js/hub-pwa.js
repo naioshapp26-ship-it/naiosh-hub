@@ -4,9 +4,8 @@
   /**
    * NAIOSH HUB PWA — same UX + architecture as NAIS:
    * header button "نزّل التطبيق"
-   * small tooltip under the button (not a guide modal)
+   * small tooltip under the button
    * deferred beforeinstallprompt → __HUB_DEFERRED_PROMPT__ + hub:beforeinstallprompt
-   * states: pending | available | unsupported | installed | dismissed
    */
 
   const LABELS = {
@@ -27,7 +26,6 @@
   let tipTimer = null;
   let installBtn = null;
   let installedBadge = null;
-  let wrapEl = null;
 
   const isChromiumInstallCapable = () => {
     if (typeof navigator === 'undefined') return false;
@@ -52,7 +50,7 @@
     clearTimeout(tipTimer);
     tipTimer = setTimeout(() => {
       if (tipEl) tipEl.hidden = true;
-    }, 6500);
+    }, 7000);
   };
 
   const setState = (next) => {
@@ -87,26 +85,40 @@
     setState('available');
   };
 
+  const waitForPrompt = (ms) =>
+    new Promise((resolve) => {
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        window.removeEventListener('hub:beforeinstallprompt', onCustom);
+        window.removeEventListener('beforeinstallprompt', onNative);
+        resolve(value);
+      };
+      const onCustom = (e) => {
+        if (e.detail) finish(e.detail);
+      };
+      const onNative = (e) => {
+        try {
+          e.preventDefault();
+        } catch (_) {}
+        finish(e);
+      };
+      window.addEventListener('hub:beforeinstallprompt', onCustom, { once: true });
+      window.addEventListener('beforeinstallprompt', onNative, { once: true });
+      const timer = setTimeout(() => finish(null), ms);
+      if (window.__HUB_DEFERRED_PROMPT__) finish(window.__HUB_DEFERRED_PROMPT__);
+    });
+
   const promptInstall = async () => {
     let promptEvent = deferredPrompt || window.__HUB_DEFERRED_PROMPT__ || null;
 
+    // User gesture often unlocks beforeinstallprompt — short wait like NAIS
     if (!promptEvent) {
-      promptEvent = await new Promise((resolve) => {
-        let settled = false;
-        const finish = (value) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          window.removeEventListener('hub:beforeinstallprompt', onCustom);
-          resolve(value);
-        };
-        const onCustom = (e) => {
-          if (e.detail) finish(e.detail);
-        };
-        window.addEventListener('hub:beforeinstallprompt', onCustom, { once: true });
-        const timer = setTimeout(() => finish(null), 1200);
-        if (window.__HUB_DEFERRED_PROMPT__) finish(window.__HUB_DEFERRED_PROMPT__);
-      });
+      showTip(LABELS.pending);
+      promptEvent = await waitForPrompt(1200);
+      if (promptEvent) capturePrompt(promptEvent);
     }
 
     if (!promptEvent) {
@@ -141,9 +153,11 @@
   };
 
   const removeExtraUi = () => {
-    document.querySelectorAll('[data-hub-pwa-install-hero], [data-hub-pwa-install-float], [data-hub-pwa-guide], [data-hub-pwa-status]').forEach((el) => {
-      el.remove();
-    });
+    document
+      .querySelectorAll(
+        '[data-hub-pwa-install-hero], [data-hub-pwa-install-float], [data-hub-pwa-guide], [data-hub-pwa-status]'
+      )
+      .forEach((el) => el.remove());
     document.body.classList.remove('hub-pwa-guide-open');
   };
 
@@ -153,7 +167,8 @@
     const auth = document.querySelector('header.top-nav .auth-actions');
     if (!auth) return;
 
-    if (!auth.querySelector('[data-hub-pwa-root]')) {
+    let wrapEl = auth.querySelector('[data-hub-pwa-root]');
+    if (!wrapEl) {
       wrapEl = document.createElement('div');
       wrapEl.className = 'hub-pwa-actions';
       wrapEl.setAttribute('data-hub-pwa-root', '');
@@ -187,7 +202,6 @@
       wrapEl.appendChild(tipEl);
       auth.insertBefore(wrapEl, auth.firstChild);
     } else {
-      wrapEl = auth.querySelector('[data-hub-pwa-root]');
       installBtn = wrapEl.querySelector('[data-hub-pwa-install]');
       installedBadge = wrapEl.querySelector('[data-hub-pwa-installed]');
       tipEl = wrapEl.querySelector('[data-hub-pwa-tip]');
@@ -239,8 +253,23 @@
   const registerServiceWorker = () => {
     if (!('serviceWorker' in navigator)) return;
 
-    const run = () => {
-      fetch('/manifest.json')
+    const run = async () => {
+      // One-time cleanup so users stuck on old hub-shell caches get a fresh SW (v3+)
+      try {
+        const ver = 'hub-pwa-v5';
+        if (localStorage.getItem('hub-pwa-asset-ver') !== ver) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+          const keys = await caches.keys();
+          await Promise.all(keys.filter((k) => String(k).startsWith('hub-shell-')).map((k) => caches.delete(k)));
+          localStorage.setItem('hub-pwa-asset-ver', ver);
+          console.info('[HUB PWA] Cleared old Hub service worker/cache');
+        }
+      } catch (err) {
+        console.warn('[HUB PWA] SW cleanup failed:', err);
+      }
+
+      fetch('/manifest.json', { cache: 'no-store' })
         .then((res) => {
           if (res.ok) console.info('[HUB PWA] Manifest loaded');
           else console.warn('[HUB PWA] Manifest fetch returned non-OK status:', res.status);
@@ -248,9 +277,12 @@
         .catch((err) => console.warn('[HUB PWA] Manifest fetch failed:', err));
 
       navigator.serviceWorker
-        .register('/sw.js', { scope: '/' })
+        .register('/sw.js', { scope: '/', updateViaCache: 'none' })
         .then((reg) => {
           console.info('[HUB PWA] Service worker registered', reg.scope);
+          try {
+            reg.update();
+          } catch (_) {}
           return navigator.serviceWorker.ready;
         })
         .then(() => {
@@ -262,7 +294,9 @@
           console.info('[HUB PWA] Service worker not controlling yet, waiting for controllerchange');
           navigator.serviceWorker.addEventListener(
             'controllerchange',
-            () => console.info('[HUB PWA] Service worker now controlling page'),
+            () => {
+              console.info('[HUB PWA] Service worker now controlling page');
+            },
             { once: true }
           );
         })
