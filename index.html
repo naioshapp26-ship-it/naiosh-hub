@@ -43,7 +43,7 @@
   <link rel="stylesheet" href="css/hub-row-actions.css" />
   <link rel="stylesheet" href="css/platforms.css" />
   <link rel="stylesheet" href="css/hub-marketplace.css" />
-  <link rel="stylesheet" href="css/hub-product-gallery.css?v=30" />
+  <link rel="stylesheet" href="css/hub-product-gallery.css?v=31" />
   <link rel="stylesheet" href="css/hub-hero-erp.css?v=31" />
   <link rel="stylesheet" href="css/hub-balance.css?v=7" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=20" />
@@ -205,29 +205,23 @@
     <a href="#hub-products" class="scroll-indicator" aria-label="الانتقال للأسفل"><i class="fas fa-chevron-down"></i></a>
   </section>
 
-  <section class="hub-product-gallery" id="hub-products" aria-label="معرض منتجات نايوش هوب">
-    <div class="container">
+  <section class="hub-product-gallery" id="hub-products" aria-label="كتالوج مواقع نايوش الجاهزة">
+    <div class="container hub-gallery-shell">
       <div class="hub-product-gallery-head">
         <div>
           <h2>منتجات نايوش هوب</h2>
           <p>معرض بصري لكل الأنظمة اللي اشتغلنا عليها — لقطات كبيرة زي متجر التطبيقات، تعطي قوة وحضور لكل منتج.</p>
         </div>
-        <div class="hub-gallery-controls" aria-label="تحكم المعرض">
-          <button type="button" id="hub-gallery-prev" aria-label="السابق"><i class="fas fa-chevron-right"></i></button>
-          <button type="button" id="hub-gallery-next" aria-label="التالي"><i class="fas fa-chevron-left"></i></button>
-        </div>
       </div>
-    </div>
 
-    <div class="hub-gallery-track-wrap">
-      <div class="hub-gallery-track" id="hub-gallery-track" tabindex="0" aria-label="تمرير لقطات المواقع الجاهزة">
-        <!-- تُملأ ديناميكيًا من HubReadySites — اضغط أي لقطة للدخول مباشرة -->
+      <div class="hub-gallery-filters" data-hub-gallery-filters hidden aria-label="تصفية الأنظمة"></div>
+
+      <div class="hub-gallery-track" id="hub-gallery-track" aria-label="كتالوج المواقع الجاهزة">
+        <!-- تُملأ ديناميكيًا من HubReadySites -->
       </div>
-    </div>
 
-    <div class="container">
       <div class="hub-gallery-foot">
-        <span style="color:#5c6470;font-weight:700;font-size:14px">مرّر لاستعراض اللقطات · اضغط أي موقع للدخول فورًا</span>
+        <span>اختر النظام المناسب وادخل مباشرة · الأنظمة المباشرة معلَّمة</span>
         <a class="btn-link" href="store.html">اشترِ وفعّل موقعك <i class="fas fa-arrow-left"></i></a>
       </div>
     </div>
@@ -589,7 +583,7 @@
   <script src="js/hub-hero-balance.js?v=2" defer></script>
   <script src="js/hub-header-actions.js?v=20" defer></script>
   <script src="js/home.js" defer></script>
-  <script src="js/hub-product-gallery.js?v=30" defer></script>
+  <script src="js/hub-product-gallery.js?v=31" defer></script>
   <script src="js/hub-home-engage.js?v=2" defer></script>
   <script src="js/hub-ops-path.js" defer></script>
   <script src="js/hub-notifications-ui.js?v=2" defer></script>

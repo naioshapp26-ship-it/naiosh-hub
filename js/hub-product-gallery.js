@@ -1,10 +1,8 @@
 /**
- * معرض المواقع الجاهزة — عرض فاخر · وجه سينمائي
+ * كتالوج مواقع نايوش الجاهزة — شبكة منظمة (مصدر البيانات: HubReadySites)
  */
 (() => {
   const track = document.getElementById('hub-gallery-track');
-  const prev = document.getElementById('hub-gallery-prev');
-  const next = document.getElementById('hub-gallery-next');
   if (!track) return;
 
   const esc = (v = '') =>
@@ -18,6 +16,8 @@
     (s) => !window.HubReadySites?.isExcluded?.(s.nameAr)
   );
 
+  let activeTag = 'الكل';
+
   const domainOf = (s) => {
     const live = window.HubLiveSystems?.get?.(s.launchCode);
     if (live?.domain) return live.domain;
@@ -30,7 +30,7 @@
   const visualHtml = (s, index) => {
     const live = s.live || window.HubLiveSystems?.isLive?.(s.launchCode);
     const badges = `
-      ${live ? `<span class="hub-gallery-live"><i class="fas fa-circle"></i> LIVE</span>` : ''}
+      ${live ? `<span class="hub-gallery-live"><i class="fas fa-circle"></i> متاح</span>` : ''}
       <span class="hub-gallery-index">${String(index + 1).padStart(2, '0')}</span>
     `;
     if (s.face || s.logo) {
@@ -70,23 +70,55 @@
         ? window.HubLauncher.getDirectLaunchUrl(s.launchCode)
         : s.href;
     const domain = domainOf(s);
-    return `<a class="hub-gallery-shot" href="${esc(href)}" data-ready-site="${esc(s.id)}" style="--i:${index}"${
+    return `<a class="hub-gallery-shot" href="${esc(href)}" data-ready-site="${esc(s.id)}" data-gallery-tag="${esc(s.tag || 'موقع جاهز')}"${
       s.launchCode ? ` data-launch-code="${esc(s.launchCode)}" data-launch-mode="hub"` : ''
     }>
       ${visualHtml(s, index)}
       <div class="hub-gallery-copy">
         <span class="tag">${esc(s.tag || 'موقع جاهز')}</span>
         <h3>${esc(s.nameAr)}</h3>
-        ${domain ? `<div class="hub-gallery-domain">${esc(domain)}</div>` : ''}
+        ${domain ? `<div class="hub-gallery-domain" dir="ltr">${esc(domain)}</div>` : ''}
         <p>${esc(s.desc || '')}</p>
         <span class="hub-gallery-enter"><i class="fas fa-arrow-left"></i> ادخل النظام</span>
       </div>
     </a>`;
   };
 
-  if (sites.length) {
-    track.innerHTML = sites.map(cardHtml).join('');
-  }
+  const visibleSites = () =>
+    activeTag === 'الكل' ? sites : sites.filter((s) => (s.tag || 'موقع جاهز') === activeTag);
+
+  const paintCards = () => {
+    const list = visibleSites();
+    track.innerHTML = list.length
+      ? list.map((s, i) => cardHtml(s, sites.indexOf(s) >= 0 ? sites.indexOf(s) : i)).join('')
+      : '<p class="hub-gallery-empty">لا أنظمة في هذا التصنيف حاليًا.</p>';
+  };
+
+  const paintFilters = () => {
+    const box = document.querySelector('[data-hub-gallery-filters]');
+    if (!box) return;
+    const counts = {};
+    sites.forEach((s) => {
+      const t = s.tag || 'موقع جاهز';
+      counts[t] = (counts[t] || 0) + 1;
+    });
+    const tags = Object.keys(counts);
+    const hasGroup = tags.some((t) => counts[t] >= 2);
+    if (!hasGroup || tags.length < 2) {
+      box.hidden = true;
+      box.innerHTML = '';
+      activeTag = 'الكل';
+      return;
+    }
+    box.hidden = false;
+    const all = ['الكل', ...tags];
+    box.innerHTML = all
+      .map(
+        (t) =>
+          `<button type="button" class="hub-gallery-filter${t === activeTag ? ' is-active' : ''}" data-gallery-filter="${esc(t)}">${esc(t)}${t === 'الكل' ? '' : ` (${counts[t]})`}</button>`
+      )
+      .join('');
+  };
 
   const head = document.querySelector('.hub-product-gallery-head > div');
   if (head && !head.querySelector('.hub-gallery-kicker')) {
@@ -98,137 +130,26 @@
 
   const headP = document.querySelector('.hub-product-gallery-head p:not(.hub-gallery-kicker)');
   if (headP) {
-    headP.textContent = 'واجهة فاخرة لكل نظام بوجهه الحقيقي — مرّر بهدوء، اختَر، وادخل مباشرة.';
+    headP.textContent = 'كتالوج الأنظمة الجاهزة — اختر النظام وادخل مباشرة بوجهه الحقيقي.';
   }
   const headH = document.querySelector('.hub-product-gallery-head h2');
   if (headH) headH.textContent = 'مواقع نايوش الجاهزة';
 
   const foot = document.querySelector('.hub-gallery-foot span');
   if (foot) {
-    foot.textContent = 'مرّر للتصفح · الأنظمة المباشرة معلَّمة · اضغط للدخول فورًا';
+    foot.textContent = 'اختر النظام المناسب وادخل مباشرة · الأنظمة المباشرة معلَّمة';
   }
 
-  let dots = document.querySelector('.hub-gallery-dots');
-  if (!dots) {
-    dots = document.createElement('div');
-    dots.className = 'hub-gallery-dots';
-    dots.setAttribute('aria-label', 'مؤشر المعرض');
-    track.parentElement?.appendChild(dots);
-  }
-  const cards = () => [...track.querySelectorAll('.hub-gallery-shot')];
-  const paintDots = () => {
-    const list = cards();
-    dots.innerHTML = list
-      .map((_, i) => `<button type="button" aria-label="البطاقة ${i + 1}" data-dot="${i}"></button>`)
-      .join('');
-  };
-  paintDots();
+  paintFilters();
+  paintCards();
 
-  const isRtl = () => getComputedStyle(track).direction === 'rtl';
-
-  const stepPx = () => {
-    const card = cards()[0];
-    if (!card) return 360;
-    const gap = parseFloat(getComputedStyle(track).columnGap || getComputedStyle(track).gap || '24') || 24;
-    return card.getBoundingClientRect().width + gap;
-  };
-
-  /** البطاقة الأقرب لحافة البداية (يمين في RTL) */
-  const activeIndex = () => {
-    const list = cards();
-    if (!list.length) return 0;
-    const root = track.getBoundingClientRect();
-    let best = 0;
-    let bestDist = Infinity;
-    list.forEach((card, i) => {
-      const r = card.getBoundingClientRect();
-      const dist = isRtl() ? Math.abs(r.right - root.right) : Math.abs(r.left - root.left);
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = i;
-      }
-    });
-    return best;
-  };
-
-  const isVisibleInTrack = (el) => {
-    const root = track.getBoundingClientRect();
-    const r = el.getBoundingClientRect();
-    return r.right > root.left + 8 && r.left < root.right - 8;
-  };
-
-  /** البداية: أول بطاقة ظاهرة ومحاذية للحافة */
-  const atStart = () => {
-    const list = cards();
-    if (!list[0]) return true;
-    const root = track.getBoundingClientRect();
-    const r = list[0].getBoundingClientRect();
-    if (!isVisibleInTrack(list[0])) return false;
-    return isRtl() ? r.right >= root.right - 10 : r.left <= root.left + 10;
-  };
-
-  /** النهاية: آخر بطاقة ظاهرة ومحاذية للحافة — مش بس موجودة شمال الشاشة */
-  const atEnd = () => {
-    const list = cards();
-    const last = list[list.length - 1];
-    if (!last) return true;
-    const root = track.getBoundingClientRect();
-    const r = last.getBoundingClientRect();
-    if (!isVisibleInTrack(last)) return false;
-    return isRtl() ? r.left <= root.left + 10 : r.right >= root.right - 10;
-  };
-
-  /** تمرير بخطوة ثابتة — Chrome RTL: السالب نحو النهاية */
-  const scrollByDir = (dir) => {
-    // dir +1 = التالي (نحو بطاقات أعلى رقمًا)، -1 = السابق
-    const amount = stepPx();
-    const rtl = isRtl();
-    const delta = rtl ? -dir * amount : dir * amount;
-    track.scrollBy({ left: delta, behavior: 'smooth' });
-  };
-
-  const scrollToIndex = (index) => {
-    const list = cards();
-    if (!list.length) return;
-    const i = Math.max(0, Math.min(list.length - 1, Number(index) || 0));
-    const card = list[i];
-    const root = track.getBoundingClientRect();
-    const rect = card.getBoundingClientRect();
-    const diff = isRtl() ? rect.right - root.right : rect.left - root.left;
-    if (Math.abs(diff) < 1) return;
-    track.scrollTo({ left: track.scrollLeft + diff, behavior: 'smooth' });
-  };
-
-  const updateButtons = () => {
-    const idx = activeIndex();
-    if (prev) prev.disabled = atStart();
-    if (next) next.disabled = atEnd();
-    dots.querySelectorAll('button').forEach((b, i) => b.classList.toggle('is-active', i === idx));
-  };
-
-  prev?.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (atStart()) return;
-    scrollByDir(-1);
-    requestAnimationFrame(() => setTimeout(updateButtons, 380));
-  });
-  next?.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (atEnd()) return;
-    scrollByDir(1);
-    requestAnimationFrame(() => setTimeout(updateButtons, 380));
-  });
-  dots.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-dot]');
+  document.querySelector('[data-hub-gallery-filters]')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-gallery-filter]');
     if (!btn) return;
-    scrollToIndex(Number(btn.dataset.dot));
-    requestAnimationFrame(() => setTimeout(updateButtons, 380));
+    activeTag = btn.getAttribute('data-gallery-filter') || 'الكل';
+    paintFilters();
+    paintCards();
   });
-  track.addEventListener('scroll', () => requestAnimationFrame(updateButtons), { passive: true });
-  window.addEventListener('resize', updateButtons);
-  updateButtons();
 
   track.addEventListener('click', (e) => {
     const a = e.target.closest('[data-launch-code]');
