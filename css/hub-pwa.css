@@ -1,4 +1,4 @@
-/* زر نزّل التطبيق — نفس أسلوب نايس: زر هيدر + تلميح صغير تحته */
+/* زر نزّل التطبيق + إشعار تثبيت يظهر تلقائيًا حتى التثبيت */
 
 .hub-pwa-actions {
   position: relative;
@@ -19,6 +19,7 @@
   cursor: pointer;
   font-family: 'Cairo', 'Tajawal', sans-serif !important;
   font-weight: 800 !important;
+  animation: hub-pwa-pulse 2.4s ease-in-out infinite;
 }
 
 .hub-pwa-install-btn:hover,
@@ -61,13 +62,121 @@
   white-space: normal;
 }
 
+.hub-pwa-notice {
+  position: fixed;
+  inset-inline-end: 16px;
+  bottom: 18px;
+  z-index: 1300;
+  width: min(420px, calc(100vw - 24px));
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+}
+
+.hub-pwa-notice-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 12px 10px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1a0508 0%, #3a0008 55%, #120204 100%);
+  border: 1px solid rgba(215, 0, 0, 0.55);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  color: #fff;
+}
+
+.hub-pwa-notice-icon {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #d70000, #8a000c);
+  font-size: 16px;
+}
+
+.hub-pwa-notice-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hub-pwa-notice-copy strong {
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.hub-pwa-notice-copy span {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.45;
+}
+
+.hub-pwa-notice-cta {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #8a000c;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hub-pwa-notice-close {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .hub-pwa-tip[hidden],
 .hub-pwa-install-btn[hidden],
-.hub-pwa-installed-badge[hidden] {
+.hub-pwa-installed-badge[hidden],
+.hub-pwa-notice[hidden] {
   display: none !important;
 }
 
+@keyframes hub-pwa-pulse {
+  0%,
+  100% {
+    box-shadow: 0 6px 14px rgba(120, 0, 14, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(215, 0, 0, 0.22), 0 8px 18px rgba(120, 0, 14, 0.4);
+  }
+}
+
 @media (max-width: 900px) {
+  .hub-pwa-notice {
+    inset-inline: 10px;
+    bottom: 12px;
+    width: auto;
+  }
+
+  .hub-pwa-notice-inner {
+    flex-wrap: wrap;
+  }
+
+  .hub-pwa-notice-cta {
+    order: 3;
+    width: 100%;
+  }
+
   body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .hub-pwa-actions {
     width: 100%;
     margin-top: 8px;

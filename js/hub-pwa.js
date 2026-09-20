@@ -2,9 +2,9 @@
   'use strict';
 
   /**
-   * NAIOSH HUB PWA — same UX + architecture as NAIS:
+   * NAIOSH HUB PWA — same architecture as NAIS + soft install notice:
    * header button "نزّل التطبيق"
-   * small tooltip under the button
+   * auto notification that keeps appearing until the app is installed
    * deferred beforeinstallprompt → __HUB_DEFERRED_PROMPT__ + hub:beforeinstallprompt
    */
 
@@ -18,7 +18,13 @@
     pending: 'جارٍ تجهيز خيار التثبيت... إن لم تظهر النافذة استخدم أيقونة التثبيت في شريط العنوان',
     manual: 'اضغط أيقونة التثبيت في شريط العنوان أعلى الصفحة (بجانب النجمة) لإكمال التثبيت',
     failed: 'تعذر بدء التثبيت',
+    noticeTitle: 'نزّل تطبيق نايوش هوب',
+    noticeBody: 'ثبّت التطبيق على جهازك لفتحه بسرعة كتطبيق مستقل.',
+    noticeClose: 'إخفاء الآن',
   };
+
+  const DISMISS_KEY = 'hub-pwa-notice-dismissed-at';
+  const DISMISS_MS = 45 * 60 * 1000; // يعود الإشعار بعد 45 دقيقة إن لم يُثبَّت
 
   let deferredPrompt = null;
   let installState = 'pending';
@@ -26,6 +32,7 @@
   let tipTimer = null;
   let installBtn = null;
   let installedBadge = null;
+  let noticeEl = null;
 
   const isChromiumInstallCapable = () => {
     if (typeof navigator === 'undefined') return false;
@@ -43,6 +50,32 @@
     return mq.matches || iosStandalone;
   };
 
+  const isNoticeDismissedTemporarily = () => {
+    try {
+      const raw = sessionStorage.getItem(DISMISS_KEY) || localStorage.getItem(DISMISS_KEY);
+      const at = Number(raw || 0);
+      if (!at) return false;
+      return Date.now() - at < DISMISS_MS;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  const markNoticeDismissed = () => {
+    try {
+      const now = String(Date.now());
+      sessionStorage.setItem(DISMISS_KEY, now);
+      localStorage.setItem(DISMISS_KEY, now);
+    } catch (_) {}
+  };
+
+  const clearNoticeDismissed = () => {
+    try {
+      sessionStorage.removeItem(DISMISS_KEY);
+      localStorage.removeItem(DISMISS_KEY);
+    } catch (_) {}
+  };
+
   const showTip = (message) => {
     if (!tipEl || !message) return;
     tipEl.textContent = message;
@@ -53,11 +86,25 @@
     }, 7000);
   };
 
+  const syncNotice = () => {
+    if (!noticeEl) return;
+    if (installState === 'installed' || isStandalone()) {
+      noticeEl.hidden = true;
+      return;
+    }
+    if (isNoticeDismissedTemporarily()) {
+      noticeEl.hidden = true;
+      return;
+    }
+    noticeEl.hidden = false;
+  };
+
   const setState = (next) => {
     installState = next;
     document.documentElement.dataset.hubPwaState = next;
 
     if (next === 'installed') {
+      clearNoticeDismissed();
       if (installBtn) installBtn.hidden = true;
       if (installedBadge) {
         installedBadge.hidden = false;
@@ -71,6 +118,7 @@
       }
       if (installedBadge) installedBadge.hidden = true;
     }
+    syncNotice();
   };
 
   const capturePrompt = (event) => {
@@ -114,7 +162,6 @@
   const promptInstall = async () => {
     let promptEvent = deferredPrompt || window.__HUB_DEFERRED_PROMPT__ || null;
 
-    // User gesture often unlocks beforeinstallprompt — short wait like NAIS
     if (!promptEvent) {
       showTip(LABELS.pending);
       promptEvent = await waitForPrompt(1200);
@@ -145,11 +192,52 @@
   const onInstallClick = async () => {
     console.info('[HUB PWA] Install button clicked');
     const result = await promptInstall();
-    if (result === 'accepted') showTip(LABELS.success);
-    else if (result === 'dismissed') showTip(LABELS.cancelled);
+    if (result === 'accepted') {
+      showTip(LABELS.success);
+      syncNotice();
+    } else if (result === 'dismissed') showTip(LABELS.cancelled);
     else if (result === 'pending' || installState === 'pending') showTip(LABELS.pending);
     else if (result === 'failed') showTip(LABELS.failed);
     else showTip(LABELS.manual);
+  };
+
+  const ensureNotice = () => {
+    noticeEl = document.querySelector('[data-hub-pwa-notice]');
+    if (!noticeEl) {
+      noticeEl = document.createElement('div');
+      noticeEl.className = 'hub-pwa-notice';
+      noticeEl.setAttribute('data-hub-pwa-notice', '');
+      noticeEl.setAttribute('role', 'status');
+      noticeEl.setAttribute('aria-live', 'polite');
+      noticeEl.hidden = true;
+      noticeEl.innerHTML = `
+        <div class="hub-pwa-notice-inner">
+          <div class="hub-pwa-notice-icon" aria-hidden="true"><i class="fas fa-download"></i></div>
+          <div class="hub-pwa-notice-copy">
+            <strong>${LABELS.noticeTitle}</strong>
+            <span>${LABELS.noticeBody}</span>
+          </div>
+          <button type="button" class="hub-pwa-notice-cta" data-hub-pwa-notice-install aria-label="${LABELS.ariaInstall}">
+            ${LABELS.button}
+          </button>
+          <button type="button" class="hub-pwa-notice-close" data-hub-pwa-notice-close aria-label="${LABELS.noticeClose}">×</button>
+        </div>`;
+      document.body.appendChild(noticeEl);
+    }
+
+    const cta = noticeEl.querySelector('[data-hub-pwa-notice-install]');
+    const closeBtn = noticeEl.querySelector('[data-hub-pwa-notice-close]');
+    if (cta && !cta.dataset.hubPwaBound) {
+      cta.dataset.hubPwaBound = '1';
+      cta.addEventListener('click', onInstallClick);
+    }
+    if (closeBtn && !closeBtn.dataset.hubPwaBound) {
+      closeBtn.dataset.hubPwaBound = '1';
+      closeBtn.addEventListener('click', () => {
+        markNoticeDismissed();
+        syncNotice();
+      });
+    }
   };
 
   const removeExtraUi = () => {
@@ -163,9 +251,13 @@
 
   const ensureUi = () => {
     removeExtraUi();
+    ensureNotice();
 
     const auth = document.querySelector('header.top-nav .auth-actions');
-    if (!auth) return;
+    if (!auth) {
+      syncNotice();
+      return;
+    }
 
     let wrapEl = auth.querySelector('[data-hub-pwa-root]');
     if (!wrapEl) {
@@ -211,6 +303,12 @@
       installBtn.dataset.hubPwaBound = '1';
       installBtn.addEventListener('click', onInstallClick);
     }
+
+    // إشعار يظهر تلقائيًا ويظل يعود حتى التثبيت
+    setTimeout(() => syncNotice(), 1200);
+    setInterval(() => {
+      if (installState !== 'installed' && !isStandalone()) syncNotice();
+    }, 60 * 1000);
   };
 
   const bootListeners = () => {
@@ -254,9 +352,8 @@
     if (!('serviceWorker' in navigator)) return;
 
     const run = async () => {
-      // One-time cleanup so users stuck on old hub-shell caches get a fresh SW (v3+)
       try {
-        const ver = 'hub-pwa-v5';
+        const ver = 'hub-pwa-v7';
         if (localStorage.getItem('hub-pwa-asset-ver') !== ver) {
           const regs = await navigator.serviceWorker.getRegistrations();
           await Promise.all(regs.map((r) => r.unregister()));
@@ -294,9 +391,7 @@
           console.info('[HUB PWA] Service worker not controlling yet, waiting for controllerchange');
           navigator.serviceWorker.addEventListener(
             'controllerchange',
-            () => {
-              console.info('[HUB PWA] Service worker now controlling page');
-            },
+            () => console.info('[HUB PWA] Service worker now controlling page'),
             { once: true }
           );
         })
