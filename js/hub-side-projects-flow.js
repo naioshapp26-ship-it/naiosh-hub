@@ -152,15 +152,25 @@
 
   const markCatalogSelection = () => {
     const id = state.project?.id || '';
-    root.querySelectorAll('.sp-card[data-id]').forEach((card) => {
-      const match = card.getAttribute('data-id') === id;
-      card.classList.toggle('is-selected', match);
-      card.querySelectorAll('button.btn.btn-primary[data-sp-select]').forEach((btn) => {
-        btn.innerHTML = match
-          ? '<i class="fas fa-check"></i> تم اختيار المشروع'
-          : '<i class="fas fa-check"></i> اختر هذا المشروع';
-      });
+    root.querySelectorAll('.sp-card.is-selected').forEach((card) => {
+      if (card.getAttribute('data-id') === id) return;
+      card.classList.remove('is-selected');
+      const btn = card.querySelector('button.btn.btn-primary[data-sp-select]');
+      if (btn) btn.innerHTML = '<i class="fas fa-check"></i> اختر هذا المشروع';
     });
+    if (!id) return;
+    let card = null;
+    try {
+      card = root.querySelector(`.sp-card[data-id="${CSS.escape(id)}"]`);
+    } catch (_) {
+      card = root.querySelector(`.sp-card[data-id="${id}"]`);
+    }
+    if (!card) return;
+    card.classList.add('is-selected');
+    const btn = card.querySelector('button.btn.btn-primary[data-sp-select]');
+    if (btn && !btn.textContent.includes('تم اختيار')) {
+      btn.innerHTML = '<i class="fas fa-check"></i> تم اختيار المشروع';
+    }
   };
 
   const captureAssessDraft = () => {
@@ -441,6 +451,7 @@
 
   window.HubSideProjectsFlow = {
     selectProject,
+    markCatalogSelection,
     getState: () => ({
       project: state.project ? { ...state.project } : null,
       role: resolvedRole(),
@@ -514,9 +525,4 @@
   } catch (_) {}
 
   paint();
-
-  // Remarque selection after catalog re-renders
-  const mo = new MutationObserver(() => markCatalogSelection());
-  const catalog = root.querySelector('[data-sp-catalog]');
-  if (catalog) mo.observe(catalog, { childList: true, subtree: true });
 })();

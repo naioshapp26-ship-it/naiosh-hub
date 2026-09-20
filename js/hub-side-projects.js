@@ -1085,6 +1085,9 @@
         </section>`;
       })
       .join('');
+    try {
+      window.HubSideProjectsFlow?.markCatalogSelection?.();
+    } catch (_) {}
   };
 
   const setType = (typeId, { resetCat = true } = {}) => {
