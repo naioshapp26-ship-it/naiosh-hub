@@ -11,9 +11,9 @@
     google: {
       enabled: true,
       cx: '',
-      cardTitle: 'محرك بحث Google',
-      cardDescription: 'ابحث على الويب باستخدام Google',
-      resultsMode: 'standalone', // standalone | embedded
+      cardTitle: 'محرك بحث جوجل',
+      cardDescription: 'ابحث على الإنترنت باستخدام جوجل',
+      resultsMode: 'web', // web = Google.com مباشرة | standalone = صفحة داخلية اختيارية
       openLinksInNewTab: true,
     },
   });
@@ -48,8 +48,18 @@
 
   const hasCx = () => !!getCx();
 
+  /** رابط بحث Google الحقيقي على الويب */
+  const webSearchUrl = (q = '') => {
+    const query = String(q || '').trim();
+    if (!query) return '';
+    return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+  };
+
+  /** للتوافق مع الصفحات القديمة — إن وُجد cx يمكن استخدام صفحة داخلية */
   const resultsUrl = (q = '') => {
     const query = String(q || '').trim();
+    const mode = getGoogle().resultsMode;
+    if (mode === 'web' || !hasCx()) return webSearchUrl(query);
     if (query) {
       try {
         sessionStorage.setItem('hubGoogleSearchQ', query);
@@ -60,7 +70,6 @@
     const params = new URLSearchParams();
     if (query) params.set('q', query);
     const qs = params.toString();
-    // keep .html so static hosts preserve the query string
     return qs ? `google-search.html?${qs}` : 'google-search.html';
   };
 
@@ -71,6 +80,7 @@
     isEnabled,
     getCx,
     hasCx,
+    webSearchUrl,
     resultsUrl,
   };
 })();

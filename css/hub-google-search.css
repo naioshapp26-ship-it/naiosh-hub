@@ -99,10 +99,23 @@ body.homepage .hero-search-engines .hero-float-card.is-google-search {
   cursor: pointer;
   display: grid;
   place-items: center;
+  flex-shrink: 0;
+}
+
+.hero-google-msg {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #b91c1c;
+  line-height: 1.4;
+}
+
+.hero-google-msg[hidden] {
+  display: none !important;
 }
 
 .hero-search-engines .is-expanded {
-  max-width: 280px;
+  max-width: 300px;
   min-width: 240px;
 }
 

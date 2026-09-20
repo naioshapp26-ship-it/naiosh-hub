@@ -1,6 +1,6 @@
 /**
  * كروت محركات البحث في هيرو الرئيسية
- * نايوش = بحث داخلي | Google = CSE رسمي
+ * نايوش = بحث داخلي فقط | جوجل = بحث مباشر على Google في تبويب جديد
  */
 (() => {
   'use strict';
@@ -19,17 +19,28 @@
     <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l.1.1 6.2 5.2C39.2 37.2 44 32.5 44 24c0-1.3-.1-2.5-.4-3.5z"/>
   </svg>`;
 
+  const googleSearchUrl = (query) =>
+    `https://www.google.com/search?q=${encodeURIComponent(String(query || '').trim())}`;
+
+  const openGoogleSearch = (query) => {
+    const q = String(query || '').trim();
+    if (!q) return false;
+    window.open(googleSearchUrl(q), '_blank', 'noopener,noreferrer');
+    return true;
+  };
+
   const mount = () => {
     const frame = document.querySelector('.hero-media-frame');
     if (!frame || frame.dataset.searchEnginesReady === '1') return;
     frame.dataset.searchEnginesReady = '1';
 
-    // remove legacy single float card if present
     const legacy = document.getElementById('hero-float-card');
     if (legacy) legacy.remove();
 
     const g = window.HubGoogleSearchConfig?.getGoogle?.() || {};
     const googleOn = window.HubGoogleSearchConfig?.isEnabled?.() !== false;
+    const title = g.cardTitle || 'محرك بحث جوجل';
+    const desc = g.cardDescription || 'ابحث على الإنترنت باستخدام جوجل';
 
     const row = document.createElement('div');
     row.className = 'hero-search-engines';
@@ -41,7 +52,7 @@
         <div class="hero-float-icon" aria-hidden="true"><i class="fas fa-magnifying-glass"></i></div>
         <div class="hero-float-body">
           <strong class="hero-float-title">محرك بحث نايوش</strong>
-          <span class="hero-float-desc">ابحث داخل محتوى ومنظومة نايوش</span>
+          <span class="hero-float-desc">ابحث داخل محتوى ومنصات وخدمات نايوش</span>
         </div>
       </a>`;
 
@@ -50,16 +61,17 @@
           <button type="button" class="hero-google-hit" data-google-expand aria-expanded="false" aria-controls="hero-google-panel">
             <span class="hero-float-icon is-google" aria-hidden="true">${googleSvg}</span>
             <span class="hero-float-body">
-              <strong class="hero-float-title">${esc(g.cardTitle || 'محرك بحث Google')}</strong>
-              <span class="hero-float-desc">${esc(g.cardDescription || 'ابحث على الويب باستخدام Google')}</span>
+              <strong class="hero-float-title">${esc(title)}</strong>
+              <span class="hero-float-desc">${esc(desc)}</span>
             </span>
           </button>
           <form class="hero-google-panel" id="hero-google-panel" data-google-panel hidden>
             <label class="hero-google-field">
-              <span class="visually-hidden">ابحث باستخدام Google</span>
-              <input type="search" name="q" data-google-input placeholder="ابحث باستخدام Google..." autocomplete="off" />
-              <button type="submit" class="hero-google-go" aria-label="بحث في Google"><i class="fas fa-magnifying-glass"></i></button>
+              <span class="visually-hidden">ابحث في جوجل</span>
+              <input type="search" name="q" data-google-input placeholder="ابحث في جوجل..." autocomplete="off" enterkeyhint="search" />
+              <button type="submit" class="hero-google-go" aria-label="بحث في جوجل"><i class="fas fa-magnifying-glass"></i></button>
             </label>
+            <p class="hero-google-msg" data-google-msg hidden role="status" aria-live="polite"></p>
           </form>
         </div>`
       : '';
@@ -74,24 +86,67 @@
     const panel = card.querySelector('[data-google-panel]');
     const input = card.querySelector('[data-google-input]');
     const form = card.querySelector('form');
+    const msg = card.querySelector('[data-google-msg]');
+
+    const showMsg = (text) => {
+      if (!msg) return;
+      const t = String(text || '').trim();
+      if (!t) {
+        msg.hidden = true;
+        msg.textContent = '';
+        return;
+      }
+      msg.hidden = false;
+      msg.textContent = t;
+    };
+
+    const expand = () => {
+      if (!panel) return;
+      panel.hidden = false;
+      expandBtn?.setAttribute('aria-expanded', 'true');
+      card.classList.add('is-expanded');
+      setTimeout(() => input?.focus(), 30);
+    };
 
     expandBtn?.addEventListener('click', () => {
       const open = panel?.hidden === false;
-      if (panel) panel.hidden = open;
-      expandBtn.setAttribute('aria-expanded', open ? 'false' : 'true');
-      card.classList.toggle('is-expanded', !open);
-      if (!open) setTimeout(() => input?.focus(), 30);
+      if (open) {
+        panel.hidden = true;
+        expandBtn.setAttribute('aria-expanded', 'false');
+        card.classList.remove('is-expanded');
+        showMsg('');
+      } else {
+        expand();
+      }
+    });
+
+    // النقر على الكارت (خارج الحقل) يفتح حقل الكتابة
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('a, button, input, form')) return;
+      expand();
     });
 
     form?.addEventListener('submit', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       const q = String(input?.value || '').trim();
       if (!q) {
+        showMsg('اكتب ما تريد البحث عنه أولًا.');
         input?.focus();
         return;
       }
-      const url = window.HubGoogleSearchConfig?.resultsUrl?.(q) || `google-search.html?q=${encodeURIComponent(q)}`;
-      location.href = url;
+      showMsg('');
+      openGoogleSearch(q);
+    });
+
+    input?.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      form?.requestSubmit?.() || form?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    });
+
+    input?.addEventListener('input', () => {
+      if (String(input.value || '').trim()) showMsg('');
     });
   };
 
@@ -111,5 +166,5 @@
     mount();
   });
 
-  window.HubHeroSearchEngines = { mount };
+  window.HubHeroSearchEngines = { mount, openGoogleSearch, googleSearchUrl };
 })();

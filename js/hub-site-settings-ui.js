@@ -602,22 +602,23 @@
       const g = ui.draft.google || {};
       return `<div class="ss-card">
         <h2>إعدادات محركات البحث</h2>
-        <p class="ss-lead">بحث Google عبر محرك البحث القابل للبرمجة — ضع معرّف محرك البحث (cx) هنا فقط، ولا تكرّره في ملفات أخرى.</p>
-        <h3 style="margin:14px 0 8px">Google Search</h3>
+        <p class="ss-lead">محرك جوجل يفتح نتائج Google الحقيقية على الإنترنت. محرك نايوش يبقى للبحث داخل المنظومة فقط.</p>
+        <h3 style="margin:14px 0 8px">محرك بحث جوجل</h3>
         <div class="ss-fields">
-          ${toggleField('google.enabled', 'الحالة: فعال', 'عند التعطيل يختفي كارت Google من الرئيسية', g.enabled !== false)}
-          <label class="ss-field"><span>معرّف محرك البحث (cx)<small>من Google Programmable Search</small></span>
+          ${toggleField('google.enabled', 'الحالة: فعال', 'عند التعطيل يختفي كارت جوجل من الرئيسية', g.enabled !== false)}
+          <label class="ss-field"><span>معرّف محرك البحث (cx)<small>اختياري — لصفحة google-search الداخلية فقط</small></span>
             <input data-draft="google.cx" value="${esc(g.cx || '')}" placeholder="a1b2c3d4e5f6g7h8i" dir="ltr" />
           </label>
           <label class="ss-field"><span>عنوان الكارت</span>
-            <input data-draft="google.cardTitle" value="${esc(g.cardTitle || 'محرك بحث Google')}" />
+            <input data-draft="google.cardTitle" value="${esc(g.cardTitle || 'محرك بحث جوجل')}" />
           </label>
           <label class="ss-field"><span>الوصف</span>
-            <input data-draft="google.cardDescription" value="${esc(g.cardDescription || 'ابحث على الويب باستخدام Google')}" />
+            <input data-draft="google.cardDescription" value="${esc(g.cardDescription || 'ابحث على الإنترنت باستخدام جوجل')}" />
           </label>
-          <label class="ss-field"><span>طريقة عرض النتائج</span>
+          <label class="ss-field"><span>طريقة البحث</span>
             <select data-draft="google.resultsMode">
-              <option value="standalone" ${g.resultsMode !== 'embedded' ? 'selected' : ''}>صفحة مستقلة داخل الموقع (google-search.html)</option>
+              <option value="web" ${!g.resultsMode || g.resultsMode === 'web' ? 'selected' : ''}>فتح نتائج Google مباشرة في تبويب جديد</option>
+              <option value="standalone" ${g.resultsMode === 'standalone' ? 'selected' : ''}>صفحة مستقلة داخل الموقع (google-search.html)</option>
               <option value="embedded" ${g.resultsMode === 'embedded' ? 'selected' : ''}>داخل صفحة NAIOSH HUB</option>
             </select>
           </label>

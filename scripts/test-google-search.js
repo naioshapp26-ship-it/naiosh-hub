@@ -1,5 +1,5 @@
 /**
- * اختبارات محرك بحث Google + عدم كسر محرك نايوش
+ * اختبارات محرك بحث جوجل (ويب) + عدم كسر محرك نايوش
  * Run: node scripts/test-google-search.js
  */
 const assert = (c, m) => {
@@ -16,14 +16,16 @@ const index = read('index.html');
 assert(index.includes('hub-hero-search-engines.js'), 'index missing hero search engines');
 assert(index.includes('hub-google-search-config.js'), 'index missing google config');
 assert(index.includes('hub-google-search.css'), 'index missing google css');
-assert(fs.existsSync(path.join(root, 'google-search.html')), 'google-search.html missing');
-assert(read('google-search.html').includes('cse.google.com') || read('js/hub-google-search.js').includes('cse.google.com'), 'must use official CSE');
-assert(read('js/hub-google-search.js').includes('cse.google.com/cse.js'), 'CSE script URL missing');
-assert(!read('js/hub-google-search.js').includes('fakeResults'), 'no fake results');
 
-const settings = read('js/hub-site-settings.js');
-assert(settings.includes('searchEngines'), 'site settings missing searchEngines');
-assert(read('js/hub-site-settings-ui.js').includes('إعدادات محركات البحث'), 'admin UI section missing');
+const hero = read('js/hub-hero-search-engines.js');
+assert(hero.includes('https://www.google.com/search?q='), 'hero must open Google.com');
+assert(hero.includes('encodeURIComponent'), 'hero must encode query');
+assert(hero.includes("'_blank'"), 'hero must open new tab');
+assert(hero.includes('noopener,noreferrer'), 'hero must use noopener');
+assert(hero.includes('اكتب ما تريد البحث عنه أولًا'), 'empty query Arabic message');
+assert(hero.includes('ابحث في جوجل...'), 'Arabic placeholder');
+assert(hero.includes('search.html'), 'Naiosh card still points to search.html');
+assert(!hero.includes('location.href = url'), 'must not navigate same tab to internal google page');
 
 const local = {};
 const storage = {
@@ -34,8 +36,15 @@ const storage = {
   removeItem: (k) => delete local[k],
 };
 
+const opened = [];
 const sb = {
   window: {},
+  document: {
+    readyState: 'complete',
+    body: { classList: { contains: () => false } },
+    querySelector: () => null,
+    addEventListener: () => {},
+  },
   localStorage: storage,
   console,
   Date,
@@ -47,32 +56,42 @@ const sb = {
   Number,
   Boolean,
   CustomEvent: function () {},
+  encodeURIComponent,
 };
 sb.window = sb;
 sb.globalThis = sb;
 sb.URLSearchParams = URLSearchParams;
+sb.window.open = (url, target, features) => {
+  opened.push({ url, target, features });
+  return { closed: false };
+};
+sb.window.addEventListener = () => {};
 
 vm.runInNewContext(read('js/hub-site-settings.js'), sb);
 vm.runInNewContext(read('js/hub-google-search-config.js'), sb);
+vm.runInNewContext(read('js/hub-hero-search-engines.js'), sb);
 
 const cfg = sb.window.HubGoogleSearchConfig;
 assert(cfg.isEnabled(), 'google enabled by default');
-assert(cfg.resultsUrl('ERP Systems').includes('q=ERP'), 'results url encodes q');
+assert(cfg.webSearchUrl('نايوش هوب') === 'https://www.google.com/search?q=' + encodeURIComponent('نايوش هوب'), 'web url encodes Arabic');
+assert(cfg.resultsUrl('ERP Systems').startsWith('https://www.google.com/search?q='), 'default results go to Google.com');
+
+const api = sb.window.HubHeroSearchEngines;
+assert(api.openGoogleSearch('نايوش هوب') === true, 'open with query');
+assert(opened.length === 1, 'opened once');
+assert(opened[0].url.includes(encodeURIComponent('نايوش هوب')), 'opened correct q');
+assert(opened[0].target === '_blank', 'new tab');
+assert(api.openGoogleSearch('   ') === false, 'empty blocked');
+assert(opened.length === 1, 'empty did not open');
 
 sb.window.HubSiteSettings.updateSection('searchEngines', {
   google: { enabled: false, cx: 'test-cx-123' },
 });
 assert(!cfg.isEnabled(), 'disable hides google');
-assert(cfg.getCx() === 'test-cx-123', 'cx from central settings');
-
-sb.window.HubSiteSettings.updateSection('searchEngines', {
-  google: { enabled: true, cx: 'test-cx-123', openLinksInNewTab: true },
-});
-assert(cfg.isEnabled(), 're-enable works');
 
 const ui = read('js/hub-universal-search-ui.js');
 assert(ui.includes('محرك بحث نايوش'), 'naiosh search card label preserved');
 assert(ui.includes('search.html'), 'naiosh still uses search.html');
 
-console.log('✓ Google search wiring + config + Naiosh intact');
+console.log('✓ Google web search + Naiosh separation OK');
 console.log('\nAll google-search tests passed.');

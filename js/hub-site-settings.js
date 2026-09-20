@@ -120,9 +120,9 @@
       google: {
         enabled: true,
         cx: '',
-        cardTitle: 'محرك بحث Google',
-        cardDescription: 'ابحث على الويب باستخدام Google',
-        resultsMode: 'standalone',
+        cardTitle: 'محرك بحث جوجل',
+        cardDescription: 'ابحث على الإنترنت باستخدام جوجل',
+        resultsMode: 'web',
         openLinksInNewTab: true,
       },
     },
