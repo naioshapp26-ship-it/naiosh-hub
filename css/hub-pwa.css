@@ -1,6 +1,7 @@
-/* زر تثبيت تطبيق نايوش هوب — متناسق مع أزرار الهيدر الحالية */
+/* زر نزّل التطبيق — نفس أسلوب نايس: زر هيدر + تلميح صغير تحته */
 
 .hub-pwa-actions {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -29,178 +30,44 @@
   display: inline-flex !important;
   align-items: center;
   gap: 6px;
-  background: rgba(15, 118, 110, 0.92) !important;
+  background: rgba(15, 23, 42, 0.82) !important;
   color: #fff !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   cursor: default;
   user-select: none;
-  opacity: 0.92;
+  opacity: 0.88;
   font-family: 'Cairo', 'Tajawal', sans-serif !important;
   font-weight: 800 !important;
   pointer-events: none;
 }
 
-.hub-pwa-status {
-  margin: 0;
-  padding: 8px clamp(12px, 1.6vw, 28px);
-  text-align: center;
+.hub-pwa-tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 80;
+  min-width: 220px;
+  max-width: min(320px, 80vw);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #1f2937;
+  color: #f8fafc;
   font-family: 'Cairo', 'Tajawal', sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: #fff;
-  background: linear-gradient(90deg, #8a000c, #d70000 45%, #8a000c);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  position: relative;
-  z-index: 40;
+  line-height: 1.55;
+  text-align: right;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  white-space: normal;
 }
 
-.hub-pwa-status[hidden],
+.hub-pwa-tip[hidden],
 .hub-pwa-install-btn[hidden],
-.hub-pwa-installed-badge[hidden],
-.hub-pwa-hero-btn[hidden],
-.hub-pwa-float-btn[hidden],
-.hub-pwa-guide[hidden] {
+.hub-pwa-installed-badge[hidden] {
   display: none !important;
 }
 
-.hub-pwa-hero-btn {
-  background: linear-gradient(135deg, #d70000, #8a000c) !important;
-  color: #fff !important;
-  border: 1px solid rgba(255, 255, 255, 0.28) !important;
-  cursor: pointer;
-}
-
-.hub-pwa-hero-btn:hover,
-.hub-pwa-hero-btn:focus-visible {
-  filter: brightness(1.08);
-}
-
-.hub-pwa-float-btn {
-  position: fixed;
-  inset-inline-start: 16px;
-  bottom: 18px;
-  z-index: 1200;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border: 0;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #d70000, #8a000c);
-  color: #fff;
-  font-family: 'Cairo', 'Tajawal', sans-serif;
-  font-size: 14px;
-  font-weight: 800;
-  box-shadow: 0 12px 28px rgba(120, 0, 14, 0.45);
-  cursor: pointer;
-}
-
-.hub-pwa-float-btn:hover,
-.hub-pwa-float-btn:focus-visible {
-  filter: brightness(1.08);
-}
-
-.hub-pwa-guide {
-  position: fixed;
-  inset: 0;
-  z-index: 1400;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-
-.hub-pwa-guide-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.62);
-}
-
-.hub-pwa-guide-card {
-  position: relative;
-  width: min(440px, 100%);
-  max-height: min(88vh, 640px);
-  overflow: auto;
-  background: #120206;
-  color: #fff;
-  border: 1px solid rgba(215, 0, 0, 0.45);
-  border-radius: 18px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
-  padding: 18px 18px 16px;
-  font-family: 'Cairo', 'Tajawal', sans-serif;
-}
-
-.hub-pwa-guide-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.hub-pwa-guide-head h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 900;
-  color: #fff;
-}
-
-.hub-pwa-guide-x {
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.hub-pwa-guide-reason {
-  margin: 0 0 12px;
-  color: #ffd0d4;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.6;
-}
-
-.hub-pwa-guide-steps {
-  margin: 0 0 16px;
-  padding-inline-start: 1.3rem;
-  color: #f5f5f5;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.85;
-}
-
-.hub-pwa-guide-steps li + li {
-  margin-top: 6px;
-}
-
-.hub-pwa-guide-done {
-  width: 100%;
-  min-height: 44px;
-  border: 0;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #d70000, #8a000c);
-  color: #fff;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-body.hub-pwa-guide-open {
-  overflow: hidden;
-}
-
 @media (max-width: 900px) {
-  .hub-pwa-install-btn span,
-  .hub-pwa-installed-badge span {
-    white-space: nowrap;
-  }
-
   body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .hub-pwa-actions {
     width: 100%;
     margin-top: 8px;
@@ -210,5 +77,11 @@ body.hub-pwa-guide-open {
   body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .hub-pwa-installed-badge {
     width: 100%;
     justify-content: center;
+  }
+
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .hub-pwa-tip {
+    inset-inline-end: auto;
+    inset-inline-start: 0;
+    max-width: 100%;
   }
 }
