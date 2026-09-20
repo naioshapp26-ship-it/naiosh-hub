@@ -1,6 +1,5 @@
 /**
  * دليل التشغيل + رحلة المشروع لصفحة المشاريع الجانبية
- * يربط الخطوات بالعناصر الفعلية في الصفحة دون إعادة تصميم.
  */
 (() => {
   'use strict';
@@ -13,69 +12,48 @@
 
   const STEPS = [
     {
-      id: 'intro',
-      title: 'التعرف على المشاريع الجانبية',
-      desc: 'افهم الفكرة وأخبر نايوش عن تحديك واحتياجك.',
-      action: 'ابدأ التعريف',
-      target: '#sp-client-intro',
-    },
-    {
-      id: 'type',
-      title: 'اختيار نوع المشروع',
-      desc: 'اختر التصنيف الأنسب (خاصة · خفيفة · منزلية أو كل القوائم).',
-      action: 'اختيار نوع المشروع',
-      target: '#sp-types',
-    },
-    {
       id: 'idea',
-      title: 'اختيار الفكرة',
-      desc: 'ابحث في القوائم واختر المشروع المناسب لك.',
+      title: 'اختر المشروع',
+      desc: 'اختر مشروعًا من الكتالوج حسب التصنيف أو البحث.',
       action: 'تصفح المشاريع',
       target: '#sp-catalog',
     },
     {
+      id: 'role',
+      title: 'حدد دورك',
+      desc: 'اختر دورك في المشروع من القائمة.',
+      action: 'تحديد الدور',
+      target: '#sp-flow',
+    },
+    {
+      id: 'need',
+      title: 'حدد احتياجك',
+      desc: 'حدد كيف تريد أن تساعدك نايوش.',
+      action: 'تحديد الاحتياج',
+      target: '#sp-flow',
+    },
+    {
+      id: 'assess',
+      title: 'قيّم جاهزيتك',
+      desc: 'أجب عن أسئلة الجاهزية المرتبطة بالمشروع.',
+      action: 'تقييم الجاهزية',
+      target: '#sp-flow',
+    },
+    {
       id: 'start',
-      title: 'بدء المشروع',
-      desc: 'اضغط «ابدأ مشروعك» لفتح مسار التسجيل.',
-      action: 'مشاريعي / التسجيل',
-      target: '#sp-my-projects',
-    },
-    {
-      id: 'details',
-      title: 'إكمال البيانات',
-      desc: 'أدخل بياناتك وخبراتك والمرفقات، ويمكنك الحفظ كمسودة.',
-      action: 'فتح نموذج التسجيل',
-      target: '#sp-registrations',
-    },
-    {
-      id: 'review',
-      title: 'المراجعة والإرسال',
-      desc: 'راجع الملخص ثم أرسل المشروع لفريق نايوش.',
-      action: 'طلبات التسجيل',
-      target: '#sp-registrations',
-    },
-    {
-      id: 'follow',
-      title: 'متابعة الحالة',
-      desc: 'تابع رقم الطلب وحالته من «مشاريعي»، ونفّذ التعديل إن طُلب.',
-      action: 'مشاريعي',
-      target: '#sp-my-projects',
-    },
-    {
-      id: 'run',
-      title: 'التشغيل بعد الموافقة',
-      desc: 'بعد القبول يمكنك اختبار المشروع ومتابعة مسار التشغيل داخل هوب.',
-      action: 'مشاريع قيد الاختبار',
-      target: '#sp-opened',
+      title: 'ابدأ المشروع',
+      desc: 'راجع اختياراتك ثم أنشئ مشروعك فعليًا.',
+      action: 'ابدأ المشروع',
+      target: '#sp-flow',
     },
   ];
 
   const HOW_TO = [
-    'اختر نوع المشروع.',
-    'اختر الفكرة المناسبة من القائمة.',
-    'اضغط «ابدأ مشروعك».',
-    'أكمل البيانات المطلوبة (أو احفظ كمسودة).',
-    'راجع بياناتك ثم أرسل المشروع.',
+    'اختر مشروعًا من القائمة المتاحة.',
+    'حدد دورك في المشروع.',
+    'حدد ما تحتاجه من نايوش.',
+    'أكمل تقييم الجاهزية.',
+    'راجع البيانات ثم اضغط «ابدأ المشروع».',
     'تابع الحالة من «مشاريعي».',
   ];
 
@@ -86,35 +64,19 @@
     },
     {
       q: 'كيف أبدأ؟',
-      a: 'افتح «كيف أبدأ؟» أو ابدأ من التعريف، ثم اختر نوع المشروع والفكرة واضغط «ابدأ مشروعك».',
+      a: 'اختر مشروعًا من الكتالوج، حدد دورك واحتياجك، أكمل تقييم الجاهزية، ثم ابدأ المشروع.',
     },
     {
-      q: 'كيف أختار نوع المشروع؟',
-      a: 'من قسم «نوع المشروع» اختر خاصة أو خفيفة أو منزلية أو كل القوائم، ثم اقرأ وصف التصنيف.',
+      q: 'هل أكتب اسم مشروع من عندي؟',
+      a: 'لا — اختر من المشاريع المتاحة. إن احتجت مشروعًا غير موجود يمكنك طلبه عبر التواصل مع نايوش لاحقًا.',
     },
     {
-      q: 'كيف أكمل بيانات المشروع؟',
-      a: 'نموذج التسجيل مقسوم لخطوات: اختيار المشروع، بياناتك، الخبرة، المرفقات، ثم المراجعة.',
+      q: 'ماذا يعني قيّم جاهزيتك؟',
+      a: 'أسئلة قصيرة عن الخبرة والوقت والميزانية والأدوات لتعرف إن كنت جاهزًا للبدء أو تحتاج تجهيزات.',
     },
     {
-      q: 'كيف أرسل المشروع؟',
-      a: 'في خطوة المراجعة اضغط «إرسال المشروع». يصل الطلب لفريق نايوش برقم طلب وحالة واضحة.',
-    },
-    {
-      q: 'ماذا يحدث بعد الإرسال؟',
-      a: 'تظهر لك شاشة نجاح برقم الطلب، ويصل إشعار للإدارة للمتابعة والتواصل.',
-    },
-    {
-      q: 'كيف أتابع المشروع؟',
-      a: 'من قسم «مشاريعي» ترى الحالة وآخر تحديث والإجراء التالي.',
-    },
-    {
-      q: 'كيف أتعامل مع طلب التعديل؟',
-      a: 'إن ظهرت حالة «يحتاج تعديل» سترى سبب الطلب، ثم تعدّل وتعيد الإرسال.',
-    },
-    {
-      q: 'متى يُعتبر المشروع مكتملًا؟',
-      a: 'عند وصول الحالة إلى «مقبول» أو «مغلق» حسب قرار الإدارة، ويمكنك بعدها تشغيل مسار الاختبار.',
+      q: 'ماذا يحدث بعد ابدأ المشروع؟',
+      a: 'يُنشأ سجل مشروع مرتبط بحسابك ويظهر في «مشاريعي» للمتابعة.',
     },
   ];
 
@@ -148,26 +110,30 @@
 
   const computeProgress = () => {
     const j = readJourney();
+    const flow = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('naiosh_sp_start_flow_v1') || '{}') || {};
+      } catch {
+        return {};
+      }
+    })();
     const regs = regApi?.read?.() || [];
-    const mine = regs.filter((r) => r.status !== 'مسودة' || r.ownerName || r.projectName);
-    const hasDraft = regs.some((r) => r.status === 'مسودة');
     const hasSubmitted = regs.some((r) => r.status && r.status !== 'مسودة');
-    const needsFix = regs.some((r) => r.status === 'يحتاج تعديل');
-    const accepted = regs.some((r) => r.status === 'مقبول' || r.status === 'مغلق');
     const done = {
-      intro: !!j.introDone || !!j.intakeDone,
-      type: !!j.typeChosen,
-      idea: !!j.ideaChosen || !!j.selectedProjectId,
-      start: !!j.started || hasDraft || hasSubmitted,
-      details: hasDraft || hasSubmitted || !!j.detailsDone,
-      review: hasSubmitted,
-      follow: hasSubmitted || needsFix,
-      run: accepted || !!j.openedProject,
+      idea: !!j.ideaChosen || !!j.selectedProjectId || !!flow.projectId,
+      role: !!flow.role && flow.role !== '__other__' ? true : !!(flow.role === '__other__' && flow.roleOther),
+      need: Array.isArray(flow.needs) && flow.needs.length > 0,
+      assess: !!flow.assessment,
+      start: hasSubmitted || !!j.started,
     };
+    // fix role done check
+    done.role = !!(
+      flow.role &&
+      (flow.role !== '__other__' || String(flow.roleOther || '').trim())
+    );
     const completed = STEPS.filter((s) => done[s.id]).length;
     let current = STEPS.find((s) => !done[s.id]) || STEPS[STEPS.length - 1];
-    if (needsFix) current = STEPS.find((s) => s.id === 'follow') || current;
-    return { done, completed, total: STEPS.length, current, needsFix, mineCount: mine.length };
+    return { done, completed, total: STEPS.length, current };
   };
 
   const paintNowBanner = (prog) => {
@@ -191,6 +157,7 @@
     if (meta) {
       meta.textContent = `أكملت ${prog.completed} من ${prog.total} خطوات`;
       meta.setAttribute('aria-valuenow', String(prog.completed));
+      meta.setAttribute('aria-valuemax', String(prog.total));
     }
     list.innerHTML = STEPS.map((s, i) => {
       const state = prog.done[s.id] ? 'done' : prog.current.id === s.id ? 'current' : 'todo';
@@ -207,89 +174,55 @@
     paintNowBanner(prog);
   };
 
-  const openModal = (id) => {
-    const modal = document.getElementById(id);
-    if (!modal) return;
-    modal.hidden = false;
-    document.body.classList.add('sp-guide-open');
-  };
-
-  const closeModals = () => {
-    document.querySelectorAll('[data-sp-guide-modal]').forEach((m) => {
-      m.hidden = true;
-    });
-    document.body.classList.remove('sp-guide-open');
-  };
-
-  const paintHowTo = () => {
-    const ol = document.querySelector('[data-sp-howto-list]');
-    if (ol) ol.innerHTML = HOW_TO.map((t) => `<li>${t}</li>`).join('');
-  };
-
-  const paintFullGuide = () => {
-    const box = document.querySelector('[data-sp-full-guide]');
-    if (!box) return;
-    box.innerHTML = FULL_GUIDE.map(
-      (item) => `<article class="sp-guide-item"><h3>${item.q}</h3><p>${item.a}</p></article>`
-    ).join('');
-  };
-
   const paint = () => paintJourney();
 
-  // Bind
-  paintHowTo();
-  paintFullGuide();
-  paint();
-
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-sp-guide-close]')) {
-      closeModals();
-      return;
-    }
-    if (e.target.closest('[data-sp-open-howto]')) {
-      openModal('sp-howto-modal');
-      return;
-    }
-    if (e.target.closest('[data-sp-open-guide]')) {
-      closeModals();
-      openModal('sp-ops-guide-modal');
-      return;
-    }
-    if (e.target.closest('[data-sp-start-now]')) {
-      closeModals();
-      mark('introDone', true);
-      scrollTo('#sp-types');
-      return;
-    }
-    const jump = e.target.closest('[data-sp-jump]');
-    if (jump && root.contains(jump)) {
-      const target = jump.getAttribute('data-sp-jump');
-      closeModals();
-      scrollTo(target);
-    }
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModals();
-  });
-
-  window.addEventListener('hub-sp-registrations-changed', paint);
-  window.addEventListener('hub-sp-journey-changed', paint);
-
-  // Observe user actions from page
-  root.querySelector('[data-sp-intake]')?.addEventListener('submit', () => mark('intakeDone', true));
-  root.querySelector('[data-sp-type-tabs]')?.addEventListener('click', (e) => {
-    if (e.target.closest('[data-sp-type]')) mark('typeChosen', true);
-  });
-  root.querySelector('[data-sp-cat-dir]')?.addEventListener('click', (e) => {
-    if (e.target.closest('[data-sp-chip]')) mark('typeChosen', true);
-  });
-
-  window.HubSideProjectsJourney = {
-    mark,
-    read: readJourney,
-    write: writeJourney,
-    paint,
-    STEPS,
-    scrollTo,
+  const bind = () => {
+    root.addEventListener('click', (e) => {
+      const jump = e.target.closest('[data-sp-jump]');
+      if (jump) {
+        scrollTo(jump.getAttribute('data-sp-jump'));
+        return;
+      }
+      if (e.target.closest('[data-sp-open-howto]')) {
+        const modal = document.getElementById('sp-howto-modal');
+        const body = document.querySelector('[data-sp-howto-list]');
+        if (body) {
+          body.innerHTML = HOW_TO.map((x) => `<li>${x}</li>`).join('');
+        }
+        if (modal) modal.hidden = false;
+        return;
+      }
+      if (e.target.closest('[data-sp-open-guide]')) {
+        const modal = document.getElementById('sp-ops-guide-modal');
+        const body = document.querySelector('[data-sp-full-guide]');
+        if (body) {
+          body.innerHTML = FULL_GUIDE.map(
+            (g) => `<article class="sp-guide-item"><h3>${g.q}</h3><p>${g.a}</p></article>`
+          ).join('');
+        }
+        if (modal) modal.hidden = false;
+        return;
+      }
+      if (e.target.closest('[data-sp-start-now]')) {
+        document.querySelectorAll('[data-sp-guide-close],[data-sp-howto-close]').forEach((b) => {
+          const m = b.closest('.sp-guide-modal, .sp-howto-modal');
+          if (m) m.hidden = true;
+        });
+        scrollTo('#sp-catalog');
+      }
+      if (e.target.closest('[data-sp-guide-close],[data-sp-howto-close]')) {
+        e.target.closest('.sp-guide-modal, .sp-howto-modal')?.setAttribute('hidden', '');
+        const m = e.target.closest('.sp-guide-modal, .sp-howto-modal');
+        if (m) m.hidden = true;
+      }
+    });
+    window.addEventListener('hub-sp-journey-changed', paint);
+    window.addEventListener('hub-sp-registrations-changed', paint);
+    window.addEventListener('storage', paint);
   };
+
+  window.HubSideProjectsJourney = { mark, read: readJourney, paint };
+
+  bind();
+  paint();
 })();

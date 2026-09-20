@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
-  <link rel="stylesheet" href="css/hub-side-projects.css?v=14" />
+  <link rel="stylesheet" href="css/hub-side-projects.css?v=15" />
   <link rel="stylesheet" href="css/hub-sector-engine.css?v=1" />
 </head>
 <body class="homepage">
@@ -39,88 +39,164 @@
   <main class="container hub-feature-page" data-side-projects-page>
     <section class="sp-client-intro" id="sp-client-intro" aria-labelledby="sp-client-intro-title" data-sp-intro>
       <header class="sp-client-intro__head">
-        <p class="sp-client-intro__kicker"><i class="fas fa-handshake"></i> تعريف مباشر للعميل</p>
-        <h2 id="sp-client-intro-title">ابدأ التحدي مع نفسك أولًا</h2>
+        <p class="sp-client-intro__kicker"><i class="fas fa-lightbulb"></i> المشاريع الجانبية</p>
+        <h2 id="sp-client-intro-title">اختر مشروعك وابدأ</h2>
         <p>
-          أخبر نايوش عن مشروعك.. دورك في المشروع.. وماذا تحتاج من نايوش .. نقيّم لك ما تحتاجه ونكون معك خطوة بخطوة
+          اختر المشروع المناسب لك من المشاريع المتاحة، ثم حدد دورك وما تحتاجه من نايوش، وأكمل تقييم جاهزيتك للبدء.
         </p>
         <div class="sp-guide-actions">
-          <button type="button" class="btn btn-primary" data-sp-open-howto><i class="fas fa-rocket"></i> كيف أبدأ؟</button>
-          <button type="button" class="btn btn-secondary" data-sp-open-guide><i class="fas fa-book-open"></i> دليل التشغيل</button>
+          <button type="button" class="btn btn-primary" data-sp-open-howto><i class="fas fa-circle-question"></i> كيف أبدأ؟</button>
           <a class="btn btn-secondary" href="#sp-my-projects"><i class="fas fa-folder-open"></i> مشاريعي</a>
         </div>
       </header>
 
-      <form class="sp-client-intake" data-sp-intake novalidate>
-        <label class="sp-client-intake__field">
-          <span>مشروعك / التحدي</span>
-          <textarea name="project" rows="2" required placeholder="مثال: أبي أفتح خدمة صيانة منزلية بجانب وظيفتي"></textarea>
-        </label>
-        <label class="sp-client-intake__field">
-          <span>دورك في المشروع</span>
-          <input name="role" type="text" required placeholder="مثال: صاحب المشروع · تسويق · تنفيذ" />
-        </label>
-        <label class="sp-client-intake__field">
-          <span>ماذا تحتاج من نايوش؟</span>
-          <input name="need" type="text" required placeholder="مثال: فكرة مناسبة · خطة · تدريب · تسجيل" />
-        </label>
-        <button type="submit" class="btn btn-primary sp-client-intake__submit">
-          <i class="fas fa-wand-magic-sparkles"></i> قيّم نفسك وابدأ الخطوة
-        </button>
-      </form>
+      <nav class="sp-flow-steps" data-sp-flow-steps aria-label="خطوات بدء المشروع">
+        <ol>
+          <li class="is-current" data-sp-flow-step="1"><span>1</span> اختر المشروع</li>
+          <li data-sp-flow-step="2"><span>2</span> حدد دورك</li>
+          <li data-sp-flow-step="3"><span>3</span> حدد احتياجك</li>
+          <li data-sp-flow-step="4"><span>4</span> قيّم جاهزيتك</li>
+          <li data-sp-flow-step="5"><span>5</span> ابدأ المشروع</li>
+        </ol>
+      </nav>
+    </section>
 
-      <div class="sp-client-intro__cards" role="list">
-        <button type="button" class="sp-client-intro__card sp-client-intro__card--blue" data-sp-intro-step="understand" role="listitem">
-          <span class="sp-client-intro__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <path d="M12 3v18" />
-            </svg>
-          </span>
-          <h3>افهم الفكرة بسرعة</h3>
-          <p>شرح واضح وخلاصة مركّزة، دون قراءة طويلة.</p>
-          <span class="sp-client-intro__cta">افتح ملخصات المشاريع</span>
-        </button>
-        <button type="button" class="sp-client-intro__card sp-client-intro__card--green" data-sp-intro-step="match" role="listitem">
-          <span class="sp-client-intro__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="8" />
-              <circle cx="12" cy="12" r="4" />
-              <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
-            </svg>
-          </span>
-          <h3>خذ ما يناسب مشروعك</h3>
-          <p>توصيات أقرب لدورك ومرحلتك والتحدي الذي تعمل عليه.</p>
-          <span class="sp-client-intro__cta">اقترح حسب التحدي</span>
-        </button>
-        <button type="button" class="sp-client-intro__card sp-client-intro__card--purple" data-sp-intro-step="act" role="listitem">
-          <span class="sp-client-intro__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 12.5l4.5 4.5L19 7.5" />
-            </svg>
-          </span>
-          <h3>حوّلها إلى خطوة</h3>
-          <p>خطوات عملية وقوالب وقوائم تساعدك على التطبيق.</p>
-          <span class="sp-client-intro__cta">افتح مسار التشغيل</span>
-        </button>
+    <section class="sp-panel" id="sp-types" aria-labelledby="sp-types-title">
+      <div class="sp-panel-head">
+        <h2 id="sp-types-title"><i class="fas fa-layer-group"></i> اختر مشروعك</h2>
+        <p>ابدأ بالتصنيف أو البحث، ثم اختر مشروعًا من القائمة المتاحة في النظام.</p>
+      </div>
+      <div class="sp-type-tabs" data-sp-type-tabs role="tablist" aria-label="أنواع المشاريع"></div>
+      <div class="sp-cat-hint" data-sp-cat-hint hidden></div>
+      <div class="sp-cat-dir" data-sp-cat-dir></div>
+    </section>
+
+    <section class="sp-panel" id="sp-catalog" aria-labelledby="sp-catalog-title">
+      <div class="sp-panel-head">
+        <h2 id="sp-catalog-title"><i class="fas fa-list"></i> المشاريع المتاحة</h2>
+        <p data-sp-catalog-lead>اختر تصنيفًا أو ابحث، ثم اضغط «اختر هذا المشروع».</p>
+      </div>
+      <div class="sp-catalog-toolbar">
+        <label class="sp-field grow">ابحث عن مشروع
+          <input type="search" data-sp-search placeholder="ابحث باسم المشروع أو المهارة..." />
+        </label>
+        <label class="sp-field">القائمة
+          <select data-sp-cat-filter>
+            <option value="">كل القوائم في النوع</option>
+          </select>
+        </label>
+        <label class="sp-field">رأس المال
+          <select data-sp-capital-filter>
+            <option value="">الكل</option>
+            <option value="منخفض جدًا">منخفض جدًا</option>
+            <option value="منخفض">منخفض</option>
+            <option value="متوسط">متوسط</option>
+          </select>
+        </label>
+        <label class="sp-field">طريقة التشغيل
+          <select data-sp-mode-filter>
+            <option value="">الكل</option>
+            <option value="رقمي">رقمي</option>
+            <option value="ميداني">ميداني</option>
+            <option value="مختلط">مختلط</option>
+          </select>
+        </label>
+      </div>
+      <div class="sp-catalog-groups" data-sp-catalog></div>
+    </section>
+
+    <section class="sp-panel sp-flow-panel" id="sp-flow" aria-labelledby="sp-flow-title" data-sp-flow>
+      <div class="sp-panel-head">
+        <h2 id="sp-flow-title"><i class="fas fa-flag-checkered"></i> أكمل رحلة البدء</h2>
+        <p>بعد اختيار المشروع من القائمة أعلاه، أكمل الدور والاحتياج وتقييم الجاهزية ثم ابدأ.</p>
       </div>
 
-      <div class="sp-client-intro__results" data-sp-intro-results hidden>
-        <div class="sp-client-intro__results-head">
-          <h3><i class="fas fa-ranking-star"></i> فرص مناسبة لتحديك</h3>
-          <p data-sp-intro-results-lead>نتائج التقييم — اختر مشروعًا للتسجيل أو الاختبار.</p>
+      <div class="sp-flow-selected" data-sp-flow-selected>
+        <div class="sp-flow-selected__empty" data-sp-flow-empty>
+          <i class="fas fa-hand-pointer"></i>
+          <strong>لم يُختر مشروع بعد</strong>
+          <span>اختر مشروعًا من الكتالوج أعلاه للمتابعة.</span>
         </div>
-        <div class="sp-client-intro__results-grid" data-sp-intro-results-grid></div>
+        <div class="sp-flow-selected__card" data-sp-flow-picked hidden>
+          <span class="sp-selected-label">المشروع المختار</span>
+          <strong data-sp-flow-project-name>—</strong>
+          <p class="sp-flow-meta" data-sp-flow-project-meta></p>
+          <button type="button" class="btn btn-secondary" data-sp-flow-change><i class="fas fa-rotate"></i> تغيير المشروع</button>
+        </div>
+      </div>
+
+      <div class="sp-flow-grid" data-sp-flow-fields hidden>
+        <label class="sp-field">
+          <span>ما دورك في المشروع؟</span>
+          <select data-sp-flow-role required>
+            <option value="">— اختر دورك —</option>
+            <option value="صاحب المشروع">صاحب المشروع</option>
+            <option value="مدير المشروع">مدير المشروع</option>
+            <option value="شريك">شريك</option>
+            <option value="منفذ">منفذ</option>
+            <option value="مسوق">مسوق</option>
+            <option value="مقدم خدمة">مقدم خدمة</option>
+            <option value="مستقل">مستقل</option>
+            <option value="عضو فريق">عضو فريق</option>
+            <option value="__other__">دور آخر</option>
+          </select>
+        </label>
+        <label class="sp-field" data-sp-flow-role-other-wrap hidden>
+          <span>اكتب دورك</span>
+          <input type="text" data-sp-flow-role-other placeholder="مثال: مستشار تشغيلي" />
+        </label>
+
+        <fieldset class="sp-flow-needs">
+          <legend>كيف تريد أن تساعدك نايوش؟</legend>
+          <div class="sp-flow-needs__grid" data-sp-flow-needs>
+            <label><input type="checkbox" value="استشارة" /> استشارة</label>
+            <label><input type="checkbox" value="تدريب" /> تدريب</label>
+            <label><input type="checkbox" value="دراسة المشروع" /> دراسة المشروع</label>
+            <label><input type="checkbox" value="خطة تنفيذ" /> خطة تنفيذ</label>
+            <label><input type="checkbox" value="تسويق" /> تسويق</label>
+            <label><input type="checkbox" value="متابعة" /> متابعة</label>
+            <label><input type="checkbox" value="مساهمة" /> مساهمة</label>
+            <label><input type="checkbox" value="خدمات تشغيلية" /> خدمات تشغيلية</label>
+            <label><input type="checkbox" value="__other__" data-sp-flow-need-other-toggle /> احتياج آخر</label>
+          </div>
+          <label class="sp-field" data-sp-flow-need-other-wrap hidden>
+            <span>اكتب ما تحتاجه</span>
+            <input type="text" data-sp-flow-need-other placeholder="اكتب احتياجك بوضوح" />
+          </label>
+        </fieldset>
+
+        <div class="sp-flow-assess" data-sp-flow-assess>
+          <h3><i class="fas fa-clipboard-check"></i> قيّم جاهزيتك للمشروع</h3>
+          <p data-sp-flow-assess-lead>أجب عن الأسئلة التالية المرتبطة بالمشروع المختار.</p>
+          <div class="sp-flow-assess__qs" data-sp-flow-assess-qs></div>
+          <button type="button" class="btn btn-primary" data-sp-flow-assess-run>
+            <i class="fas fa-percent"></i> احسب نتيجة الجاهزية
+          </button>
+          <div class="sp-flow-assess__result" data-sp-flow-assess-result hidden></div>
+        </div>
+
+        <div class="sp-flow-review" data-sp-flow-review hidden>
+          <h3><i class="fas fa-list-check"></i> راجع اختياراتك</h3>
+          <dl class="sp-flow-review__dl" data-sp-flow-review-body></dl>
+        </div>
+
+        <div class="sp-flow-actions">
+          <button type="button" class="btn btn-secondary" data-sp-flow-edit>تعديل</button>
+          <button type="button" class="btn btn-primary" data-sp-flow-start disabled>
+            <i class="fas fa-play"></i> ابدأ المشروع
+          </button>
+        </div>
+        <p class="sp-flow-msg" data-sp-flow-msg hidden role="status"></p>
       </div>
     </section>
 
     <section class="sp-panel sp-journey-panel" id="sp-journey" aria-labelledby="sp-journey-title">
       <div class="sp-panel-head">
         <h2 id="sp-journey-title"><i class="fas fa-route"></i> رحلة مشروعك</h2>
-        <p>مسار واضح من البداية إلى المتابعة — مرتبط بأقسام الصفحة الفعلية.</p>
+        <p>مسار واضح من الاختيار إلى المتابعة.</p>
       </div>
       <div class="sp-now" data-sp-now aria-live="polite"></div>
-      <div class="sp-journey-meta" data-sp-journey-meta role="progressbar" aria-valuemin="0" aria-valuemax="8">أكملت 0 من 8 خطوات</div>
+      <div class="sp-journey-meta" data-sp-journey-meta role="progressbar" aria-valuemin="0" aria-valuemax="5">أكملت 0 من 5 خطوات</div>
       <ol class="sp-journey-list" data-sp-journey-list></ol>
     </section>
 
@@ -133,7 +209,7 @@
       </p>
       <div class="hub-feature-actions">
         <a class="btn btn-primary" href="#uso-engine"><i class="fas fa-magnifying-glass"></i> اكتشاف الفرص</a>
-        <a class="btn btn-secondary" href="#sp-types"><i class="fas fa-folder-open"></i> تصفح القوائم</a>
+        <a class="btn btn-secondary" href="#sp-types"><i class="fas fa-folder-open"></i> تصفح المشاريع</a>
         <a class="btn btn-secondary" href="#sp-form"><i class="fas fa-user-check"></i> اقترح حسب ملفي</a>
         <a class="btn btn-secondary" href="#sp-my-projects"><i class="fas fa-file-signature"></i> مشاريعي</a>
       </div>
@@ -199,49 +275,7 @@
     </section>
 
 
-    <section class="sp-panel" id="sp-types" aria-labelledby="sp-types-title">
-      <div class="sp-panel-head">
-        <h2 id="sp-types-title"><i class="fas fa-layer-group"></i> نوع المشروع</h2>
-        <p>اختر نوع المشروع أولًا، ثم اختر المشروع المناسب من القائمة.</p>
-      </div>
-      <div class="sp-type-tabs" data-sp-type-tabs role="tablist" aria-label="أنواع المشاريع"></div>
-      <div class="sp-cat-hint" data-sp-cat-hint hidden></div>
-      <div class="sp-cat-dir" data-sp-cat-dir></div>
-    </section>
 
-    <section class="sp-panel" id="sp-catalog" aria-labelledby="sp-catalog-title">
-      <div class="sp-panel-head">
-        <h2 id="sp-catalog-title"><i class="fas fa-list"></i> مشاريع القائمة</h2>
-        <p data-sp-catalog-lead>اختر نوعًا أو قائمة لعرض المشاريع. التفاصيل تظهر عند التوسيع.</p>
-      </div>
-      <div class="sp-catalog-toolbar">
-        <label class="sp-field grow">ابحث عن مشروع أو فكرة
-          <input type="search" data-sp-search placeholder="ابحث عن مشروع أو فكرة..." />
-        </label>
-        <label class="sp-field">القائمة
-          <select data-sp-cat-filter>
-            <option value="">كل القوائم في النوع</option>
-          </select>
-        </label>
-        <label class="sp-field">رأس المال
-          <select data-sp-capital-filter>
-            <option value="">الكل</option>
-            <option value="منخفض جدًا">منخفض جدًا</option>
-            <option value="منخفض">منخفض</option>
-            <option value="متوسط">متوسط</option>
-          </select>
-        </label>
-        <label class="sp-field">طريقة التشغيل
-          <select data-sp-mode-filter>
-            <option value="">الكل</option>
-            <option value="رقمي">رقمي</option>
-            <option value="ميداني">ميداني</option>
-            <option value="مختلط">مختلط</option>
-          </select>
-        </label>
-      </div>
-      <div class="sp-catalog-groups" data-sp-catalog></div>
-    </section>
 
     <section class="sp-panel" id="sp-form" aria-labelledby="sp-form-title">
       <div class="sp-panel-head">
@@ -468,7 +502,7 @@
   <div class="sp-toast" id="sp-toast" role="status" aria-live="polite"></div>
 
   <script src="js/hub-store.js" defer></script>
-  <script src="js/hub-side-project-registrations.js?v=2" defer></script>
+  <script src="js/hub-side-project-registrations.js?v=3" defer></script>
   <script src="js/hub-sp-project-context.js?v=1" defer></script>
   <script src="js/hub-sector-library.js?v=1" defer></script>
   <script src="js/hub-universal-opportunity-engine.js?v=2" defer></script>
@@ -479,7 +513,7 @@
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js?v=4" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
-  <script src="js/hub-side-projects-journey.js?v=1" defer></script>
-  <script src="js/hub-side-projects-boot.js?v=3" defer></script>
+  <script src="js/hub-side-projects-journey.js?v=2" defer></script>
+  <script src="js/hub-side-projects-boot.js?v=4" defer></script>
 </body>
 </html>

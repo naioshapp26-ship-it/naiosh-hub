@@ -68,6 +68,30 @@
       fileVideo: payload.fileVideo !== undefined ? payload.fileVideo : prev?.fileVideo || null,
       currentWork: String(payload.currentWork || prev?.currentWork || '').trim(),
       commercialOrNotes: String(payload.commercialOrNotes || prev?.commercialOrNotes || '').trim(),
+      role: String(payload.role || prev?.role || '').trim(),
+      needs: Array.isArray(payload.needs)
+        ? payload.needs
+        : Array.isArray(prev?.needs)
+          ? prev.needs
+          : String(payload.needText || prev?.needText || '')
+              .split(/[·,|]/)
+              .map((s) => s.trim())
+              .filter(Boolean),
+      needText: String(payload.needText || prev?.needText || '').trim(),
+      assessmentScore: Number(payload.assessmentScore ?? prev?.assessmentScore ?? 0),
+      assessmentLabel: String(payload.assessmentLabel || prev?.assessmentLabel || '').trim(),
+      assessmentDetail: String(payload.assessmentDetail || prev?.assessmentDetail || '').trim(),
+      assessmentGaps: Array.isArray(payload.assessmentGaps)
+        ? payload.assessmentGaps
+        : Array.isArray(prev?.assessmentGaps)
+          ? prev.assessmentGaps
+          : [],
+      assessmentAnswers:
+        payload.assessmentAnswers && typeof payload.assessmentAnswers === 'object'
+          ? payload.assessmentAnswers
+          : prev?.assessmentAnswers && typeof prev.assessmentAnswers === 'object'
+            ? prev.assessmentAnswers
+            : {},
       categoryId: String(payload.categoryId || prev?.categoryId || ''),
       categoryName: String(payload.categoryName || prev?.categoryName || ''),
       status,

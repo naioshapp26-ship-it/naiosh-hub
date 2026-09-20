@@ -902,14 +902,14 @@
     const compact = opts.compact !== false && opts.score == null;
     return `<article class="sp-card${compact ? ' is-compact' : ''}" data-id="${esc(p.id)}">
       <div class="sp-card-top">
-        <button type="button" class="sp-card-icon sp-card-icon-btn" data-sp-register="${esc(p.id)}" title="ابدأ مشروعك" aria-label="ابدأ مشروعك ${esc(p.title)}">
+        <button type="button" class="sp-card-icon sp-card-icon-btn" data-sp-select="${esc(p.id)}" title="اختر هذا المشروع" aria-label="اختر المشروع ${esc(p.title)}">
           <i class="fas ${esc(
             data.categories.find((c) => c.id === p.categoryId)?.icon || 'fa-lightbulb'
           )}"></i>
         </button>
         <div>
           <h3>
-            <button type="button" class="sp-card-title-btn" data-sp-register="${esc(p.id)}" title="ابدأ مشروعك">
+            <button type="button" class="sp-card-title-btn" data-sp-select="${esc(p.id)}" title="اختر هذا المشروع">
               ${esc(p.title)}
             </button>
           </h3>
@@ -926,9 +926,8 @@
       ${reasons}
       ${compact ? '' : detailRows(p)}
       <div class="sp-card-actions">
-        ${compact ? `<button type="button" class="btn btn-secondary" data-sp-expand="${esc(p.id)}"><i class="fas fa-chevron-down"></i> التفاصيل</button>` : ''}
-        <button type="button" class="btn btn-primary" data-sp-register="${esc(p.id)}"><i class="fas fa-play"></i> ابدأ مشروعك</button>
-        <button type="button" class="btn btn-secondary" data-sp-open="${esc(p.id)}"><i class="fas fa-flask"></i> اختبر المشروع</button>
+        ${compact ? `<button type="button" class="btn btn-secondary" data-sp-expand="${esc(p.id)}"><i class="fas fa-chevron-down"></i> التفاصيل</button>` : `<button type="button" class="btn btn-secondary" data-sp-expand="${esc(p.id)}"><i class="fas fa-eye"></i> التفاصيل</button>`}
+        <button type="button" class="btn btn-primary" data-sp-select="${esc(p.id)}"><i class="fas fa-check"></i> اختر هذا المشروع</button>
       </div>
       ${compact ? `<div class="sp-card-details" hidden>${detailRows(p)}</div>` : ''}
     </article>`;
@@ -1232,16 +1231,18 @@
   const fillIntroDraft = () => {
     if (!introForm) return;
     const draft = readIntroDraft();
-    if (draft.project) introForm.project.value = draft.project;
-    if (draft.role) introForm.role.value = draft.role;
-    if (draft.need) introForm.need.value = draft.need;
+    if (draft.project && introForm.project) introForm.project.value = draft.project;
+    if (draft.role && introForm.role) introForm.role.value = draft.role;
+    if (draft.need && introForm.need) introForm.need.value = draft.need;
   };
 
   const introAnswersFromForm = () => {
+    if (!introForm) return null;
     const fd = new FormData(introForm);
     const project = String(fd.get('project') || '').trim();
     const role = String(fd.get('role') || '').trim();
     const need = String(fd.get('need') || '').trim();
+    if (!project && !role && !need) return null;
     return {
       project,
       role,
@@ -1304,13 +1305,17 @@
   };
 
   const runIntroMatch = ({ scrollToResults = true } = {}) => {
-    if (!introForm) return;
+    if (!introForm) {
+      document.getElementById('sp-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return toast('اختر مشروعًا من القائمة أولًا');
+    }
     if (!introForm.checkValidity()) {
       introForm.reportValidity();
       setIntroStep('match');
       return toast('أكمل مشروعك ودورك وما تحتاجه من نايوش');
     }
     const answers = introAnswersFromForm();
+    if (!answers) return;
     writeIntroDraft({ project: answers.project, role: answers.role, need: answers.need, at: Date.now() });
     const ranked = data.projects
       .map((raw) => scoreProject(raw, answers))
@@ -1539,6 +1544,21 @@
         : '<i class="fas fa-chevron-down"></i> التفاصيل';
       return;
     }
+    const selectBtn = e.target.closest('[data-sp-select]');
+    if (selectBtn) {
+      const id = selectBtn.getAttribute('data-sp-select');
+      const raw = data.projects.find((x) => x.id === id);
+      if (!raw) return toast('المشروع غير موجود');
+      const p = enrich(raw);
+      selectedProject = { id: p.id, title: p.title, categoryId: p.categoryId };
+      paintSelectedProject();
+      journeyMark('ideaChosen', true);
+      journeyMark('selectedProjectId', p.id);
+      try {
+        window.HubSideProjectsFlow?.selectProject?.(p);
+      } catch (_) {}
+      return;
+    }
     const regBtn = e.target.closest('[data-sp-register]');
     if (regBtn) {
       const id = regBtn.getAttribute('data-sp-register');
@@ -1566,4 +1586,31 @@
       toast('تم حذف طلب التسجيل');
     }
   });
+
+  window.HubSideProjectsApi = {
+    setSelected: (project) => {
+      if (!project) return;
+      selectedProject = {
+        id: project.id,
+        title: project.title,
+        categoryId: project.categoryId,
+      };
+      paintSelectedProject();
+    },
+    openRegister: (project, draftPayload = null) => {
+      if (draftPayload && regApi?.saveDraft) {
+        const draft = regApi.saveDraft({
+          ...draftPayload,
+          projectId: project?.id || draftPayload.projectId,
+          projectName: project?.title || draftPayload.projectName,
+        });
+        if (draft?.ok) openRegModal(project, draft.record);
+        else openRegModal(project);
+        return;
+      }
+      openRegModal(project);
+    },
+    openProject: (id) => openProject(id),
+    enrich: (p) => enrich(p),
+  };
 })();

@@ -5,7 +5,8 @@
   'use strict';
 
   const DATA_URL = 'js/hub-side-projects-data.json?v=1';
-  const APP_URL = 'js/hub-side-projects.js?v=12';
+  const APP_URL = 'js/hub-side-projects.js?v=15';
+  const FLOW_URL = 'js/hub-side-projects-flow.js?v=1';
 
   const root = document.querySelector('[data-side-projects-page]');
   if (!root) return;
@@ -43,6 +44,7 @@
         window.HubSideProjectsData = await res.json();
       }
       await loadScript(APP_URL);
+      await loadScript(FLOW_URL);
       markLoading(false);
     } catch (err) {
       console.error(err);
