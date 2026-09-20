@@ -5,8 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>نايوش هوب | Naiosh Hub 360</title>
   <meta name="description" content="Naiosh Hub 360 — غرفة العمليات المركزية لإمبراطورية نايوش الدولية." />
-  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <meta name="theme-color" content="#d70000" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="نايوش هوب" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/hub-icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/hub-icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <script>
+    /* Early capture — same pattern as NAIS (__NAIS_DEFERRED_PROMPT__ / nais:beforeinstallprompt) */
+    window.__HUB_DEFERRED_PROMPT__ = null;
+    window.addEventListener('beforeinstallprompt', function (event) {
+      event.preventDefault();
+      window.__HUB_DEFERRED_PROMPT__ = event;
+      console.info('beforeinstallprompt fired');
+      window.dispatchEvent(new CustomEvent('hub:beforeinstallprompt', { detail: event }));
+    });
+    window.addEventListener('appinstalled', function () {
+      window.__HUB_DEFERRED_PROMPT__ = null;
+      console.info('appinstalled fired');
+    });
+  </script>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -26,6 +47,7 @@
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
   <link rel="stylesheet" href="css/hub-service-requests.css?v=1" />
   <link rel="stylesheet" href="css/hub-home-engage.css?v=1" />
+  <link rel="stylesheet" href="css/hub-pwa.css?v=1" />
 </head>
 <body class="homepage">
   <div class="announcement-bar" id="announcement-bar" role="status" aria-live="polite">
@@ -571,5 +593,6 @@
   <script src="js/hub-universal-search.js?v=11" defer></script>
   <script src="js/hub-universal-search-ui.js?v=11" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
+  <script src="js/hub-pwa.js?v=1" defer></script>
 </body>
 </html>

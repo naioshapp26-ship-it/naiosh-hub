@@ -1,0 +1,91 @@
+/* زر تثبيت تطبيق نايوش هوب — متناسق مع أزرار الهيدر الحالية */
+
+.hub-pwa-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.hub-pwa-install-btn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #d70000, #8a000c) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 6px 14px rgba(120, 0, 14, 0.28) !important;
+  cursor: pointer;
+  font-family: 'Cairo', 'Tajawal', sans-serif !important;
+  font-weight: 800 !important;
+}
+
+.hub-pwa-install-btn:hover,
+.hub-pwa-install-btn:focus-visible {
+  filter: brightness(1.08);
+}
+
+.hub-pwa-installed-badge {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 118, 110, 0.92) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  cursor: default;
+  user-select: none;
+  opacity: 0.92;
+  font-family: 'Cairo', 'Tajawal', sans-serif !important;
+  font-weight: 800 !important;
+  pointer-events: none;
+}
+
+.hub-pwa-status {
+  margin: 0;
+  padding: 8px clamp(12px, 1.6vw, 28px);
+  text-align: center;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(90deg, #8a000c, #d70000 45%, #8a000c);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.hub-pwa-status[hidden],
+.hub-pwa-install-btn[hidden],
+.hub-pwa-installed-badge[hidden],
+.hub-pwa-hero-btn[hidden] {
+  display: none !important;
+}
+
+.hub-pwa-hero-btn {
+  background: linear-gradient(135deg, #d70000, #8a000c) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  cursor: pointer;
+}
+
+.hub-pwa-hero-btn:hover,
+.hub-pwa-hero-btn:focus-visible {
+  filter: brightness(1.08);
+}
+
+@media (max-width: 900px) {
+  .hub-pwa-install-btn span,
+  .hub-pwa-installed-badge span {
+    /* keep full Arabic label; allow wrap only if needed */
+    white-space: nowrap;
+  }
+
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .hub-pwa-actions {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .hub-pwa-install-btn,
+  body.homepage .top-nav.is-mobile-nav-ready.is-mobile-nav-open .hub-pwa-installed-badge {
+    width: 100%;
+    justify-content: center;
+  }
+}
