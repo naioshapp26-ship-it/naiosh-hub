@@ -839,6 +839,9 @@ body.homepage [data-side-projects-page] .sp-load-more.btn-secondary:hover,
   border-radius: 14px;
   background: #fff7f8;
 }
+.sp-selected-project[hidden] {
+  display: none !important;
+}
 .sp-selected-label {
   font-size: 12px;
   font-weight: 800;
@@ -1329,6 +1332,24 @@ body.sp-success-open { overflow: hidden; }
   border: 1px dashed #e0b8bf;
   background: #fffafb;
 }
+.sp-flow-selected__empty[hidden],
+.sp-flow-selected__card[hidden],
+.sp-flow-grid[hidden],
+[data-sp-flow-role-other-wrap][hidden],
+[data-sp-flow-need-other-wrap][hidden],
+.sp-flow-review[hidden],
+.sp-flow-assess__result[hidden],
+.sp-flow-msg[hidden] {
+  display: none !important;
+}
+.sp-card.is-selected {
+  border-color: #d70000 !important;
+  box-shadow: 0 0 0 2px rgba(215, 0, 0, 0.18);
+}
+.sp-card.is-selected [data-sp-select] {
+  background: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+}
 .sp-flow-selected__empty {
   justify-items: center;
   text-align: center;
@@ -1427,6 +1448,16 @@ body.sp-success-open { overflow: hidden; }
   flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
+}
+.sp-flow-actions [data-sp-flow-start]:not(.is-ready) {
+  opacity: 0.72;
+  background: #8a8a8a !important;
+  border-color: #8a8a8a !important;
+}
+.sp-flow-actions [data-sp-flow-start].is-ready {
+  opacity: 1;
+  background: #d70000 !important;
+  border-color: #d70000 !important;
 }
 .sp-flow-msg {
   margin: 0;

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
-  <link rel="stylesheet" href="css/hub-side-projects.css?v=15" />
+  <link rel="stylesheet" href="css/hub-side-projects.css?v=16" />
   <link rel="stylesheet" href="css/hub-sector-engine.css?v=1" />
 </head>
 <body class="homepage">
@@ -135,8 +135,7 @@
             <option value="شريك">شريك</option>
             <option value="منفذ">منفذ</option>
             <option value="مسوق">مسوق</option>
-            <option value="مقدم خدمة">مقدم خدمة</option>
-            <option value="مستقل">مستقل</option>
+            <option value="مستشار">مستشار</option>
             <option value="عضو فريق">عضو فريق</option>
             <option value="__other__">دور آخر</option>
           </select>
@@ -155,8 +154,8 @@
             <label><input type="checkbox" value="خطة تنفيذ" /> خطة تنفيذ</label>
             <label><input type="checkbox" value="تسويق" /> تسويق</label>
             <label><input type="checkbox" value="متابعة" /> متابعة</label>
-            <label><input type="checkbox" value="مساهمة" /> مساهمة</label>
-            <label><input type="checkbox" value="خدمات تشغيلية" /> خدمات تشغيلية</label>
+            <label><input type="checkbox" value="تنفيذ" /> تنفيذ</label>
+            <label><input type="checkbox" value="تمويل / مساهمة" /> تمويل / مساهمة</label>
             <label><input type="checkbox" value="__other__" data-sp-flow-need-other-toggle /> احتياج آخر</label>
           </div>
           <label class="sp-field" data-sp-flow-need-other-wrap hidden>
@@ -182,7 +181,7 @@
 
         <div class="sp-flow-actions">
           <button type="button" class="btn btn-secondary" data-sp-flow-edit>تعديل</button>
-          <button type="button" class="btn btn-primary" data-sp-flow-start disabled>
+          <button type="button" class="btn btn-primary" data-sp-flow-start>
             <i class="fas fa-play"></i> ابدأ المشروع
           </button>
         </div>
@@ -458,13 +457,13 @@
   <div class="sp-success-modal" id="sp-success-modal" hidden data-sp-success-modal>
     <div class="sp-success-modal__backdrop" data-sp-success-close aria-hidden="true"></div>
     <div class="sp-success-modal__panel" role="dialog" aria-modal="true" aria-labelledby="sp-success-title">
-      <h2 id="sp-success-title"><i class="fas fa-circle-check"></i> تم إرسال مشروعك بنجاح</h2>
+      <h2 id="sp-success-title"><i class="fas fa-circle-check"></i> تم بدء مشروعك بنجاح</h2>
       <div class="sp-success-body" data-sp-success-body></div>
-      <p class="sp-hint">سيتم إشعارك عند حدوث أي تحديث على مشروعك.</p>
+      <p class="sp-hint">يمكنك متابعة المشروع من «مشروعي» في أي وقت.</p>
       <div class="sp-success-actions">
-        <a class="btn btn-primary" href="#sp-my-projects" data-sp-success-close>متابعة المشروع</a>
-        <a class="btn btn-secondary" href="#sp-my-projects" data-sp-success-close>مشاريعي</a>
-        <button type="button" class="btn btn-secondary" data-sp-success-close>العودة إلى المشاريع الجانبية</button>
+        <a class="btn btn-primary" href="#sp-my-projects" data-sp-success-close>الانتقال إلى مشروعي</a>
+        <a class="btn btn-secondary" href="#sp-opened" data-sp-success-close>عرض تفاصيل المشروع</a>
+        <button type="button" class="btn btn-secondary" data-sp-success-close>العودة إلى المشاريع</button>
       </div>
     </div>
   </div>
@@ -502,7 +501,7 @@
   <div class="sp-toast" id="sp-toast" role="status" aria-live="polite"></div>
 
   <script src="js/hub-store.js" defer></script>
-  <script src="js/hub-side-project-registrations.js?v=3" defer></script>
+  <script src="js/hub-side-project-registrations.js?v=4" defer></script>
   <script src="js/hub-sp-project-context.js?v=1" defer></script>
   <script src="js/hub-sector-library.js?v=1" defer></script>
   <script src="js/hub-universal-opportunity-engine.js?v=2" defer></script>
@@ -513,7 +512,7 @@
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js?v=4" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
-  <script src="js/hub-side-projects-journey.js?v=2" defer></script>
-  <script src="js/hub-side-projects-boot.js?v=4" defer></script>
+  <script src="js/hub-side-projects-journey.js?v=3" defer></script>
+  <script src="js/hub-side-projects-boot.js?v=5" defer></script>
 </body>
 </html>

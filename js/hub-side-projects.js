@@ -315,6 +315,7 @@
   const progressForStatus = (status) => {
     const map = {
       مسودة: 20,
+      'بدأ المشروع': 45,
       جديد: 40,
       'قيد المتابعة': 55,
       'يحتاج تعديل': 50,
@@ -330,6 +331,7 @@
     if (r.status === 'مسودة') return { label: 'متابعة المسودة', action: 'resume', id: r.id };
     if (r.status === 'يحتاج تعديل') return { label: 'تعديل وإعادة الإرسال', action: 'revise', id: r.id };
     if (r.status === 'مقبول') return { label: 'اختبر المشروع', action: 'test', id: r.projectId };
+    if (r.status === 'بدأ المشروع') return { label: 'عرض التفاصيل', action: 'details', id: r.id };
     return { label: 'عرض التفاصيل', action: 'details', id: r.id };
   };
 
@@ -338,7 +340,7 @@
     const list = readRegistrations();
     if (!list.length) {
       myListEl.innerHTML =
-        '<p class="sp-empty">لا مشاريع بعد — اختر فكرة من القائمة ثم اضغط «ابدأ مشروعك».</p>';
+        '<p class="sp-empty">لا مشاريع بعد — اختر مشروعًا من الكتالوج ثم أكمل رحلة البدء.</p>';
       return;
     }
     myListEl.innerHTML = list
@@ -346,15 +348,18 @@
         const note = regApi?.latestAdminNote?.(r);
         const next = nextActionFor(r);
         const pct = progressForStatus(r.status);
+        const ref = r.refCode || r.id;
         return `<article class="sp-my-card" data-id="${esc(r.id)}">
           <div class="sp-my-card__main">
             <div class="sp-my-card__top">
               <h3>${esc(r.projectName)}</h3>
               <span class="sp-status-pill">${esc(r.status || 'جديد')}</span>
             </div>
-            <p class="sp-my-meta">رقم الطلب: <strong dir="ltr">${esc(r.id)}</strong></p>
-            <p class="sp-my-meta">النوع / القطاع: ${esc(r.categoryName || '—')} · صاحب المشروع: ${esc(r.ownerName || '—')}</p>
-            <p class="sp-my-meta">تاريخ الإنشاء: ${esc(new Date(r.createdAt).toLocaleString('en-US'))} · آخر تحديث: ${esc(new Date(r.updatedAt || r.createdAt).toLocaleString('en-US'))}</p>
+            <p class="sp-my-meta">رقم المشروع: <strong dir="ltr">${esc(ref)}</strong></p>
+            <p class="sp-my-meta">النوع / القطاع: ${esc(r.categoryName || '—')} · الدور: ${esc(r.role || '—')}</p>
+            <p class="sp-my-meta">الاحتياج: ${esc((Array.isArray(r.needs) ? r.needs.join(' · ') : r.needText) || '—')}</p>
+            <p class="sp-my-meta">الجاهزية: ${esc(r.assessmentLabel || '—')}${r.assessmentScore ? ` (${Number(r.assessmentScore)}%)` : ''}</p>
+            <p class="sp-my-meta">تاريخ البدء: ${esc(new Date(r.startedAt || r.createdAt).toLocaleString('en-US'))}</p>
             <div class="sp-progress"><span style="width:${pct}%"></span></div>
             <small>نسبة التقدم: ${pct}%</small>
             ${
@@ -1404,6 +1409,34 @@
   paintSelectedProject();
   fillIntroDraft();
   focusClientIntro();
+
+  // مزامنة المشروع المختار مع مصدر حالة الرحلة بعد التحميل
+  try {
+    const flowState = window.HubSideProjectsFlow?.getState?.();
+    if (flowState?.project?.id) {
+      selectedProject = {
+        id: flowState.project.id,
+        title: flowState.project.title,
+        categoryId: flowState.project.categoryId,
+      };
+      paintSelectedProject();
+    }
+  } catch (_) {}
+
+  window.addEventListener('hub-sp-journey-changed', () => {
+    try {
+      const flowState = window.HubSideProjectsFlow?.getState?.();
+      if (flowState?.project?.id) {
+        selectedProject = {
+          id: flowState.project.id,
+          title: flowState.project.title,
+          categoryId: flowState.project.categoryId,
+        };
+        paintSelectedProject();
+      }
+    } catch (_) {}
+  });
+  window.addEventListener('hub-sp-registrations-changed', paintRegistrations);
 
   introForm?.addEventListener('submit', (e) => {
     e.preventDefault();

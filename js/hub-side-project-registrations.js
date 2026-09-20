@@ -5,7 +5,17 @@
   'use strict';
 
   const KEY = 'naiosh_side_project_registrations_v1';
-  const STATUSES = ['مسودة', 'جديد', 'قيد المتابعة', 'يحتاج تعديل', 'تم التواصل', 'مقبول', 'مرفوض', 'مغلق'];
+  const STATUSES = [
+    'مسودة',
+    'بدأ المشروع',
+    'جديد',
+    'قيد المتابعة',
+    'يحتاج تعديل',
+    'تم التواصل',
+    'مقبول',
+    'مرفوض',
+    'مغلق',
+  ];
 
   const read = () => {
     try {
@@ -25,6 +35,17 @@
     return next;
   };
 
+  const nextRefCode = (list = []) => {
+    const year = new Date().getFullYear();
+    const prefix = `PRJ-${year}-`;
+    let max = 0;
+    (list || []).forEach((r) => {
+      const m = String(r.refCode || '').match(/^PRJ-(\d{4})-(\d+)$/);
+      if (m && Number(m[1]) === year) max = Math.max(max, Number(m[2]));
+    });
+    return `${prefix}${String(max + 1).padStart(5, '0')}`;
+  };
+
   const normalizeContact = (payload = {}) => {
     const phone = String(payload.phone || '').trim();
     const email = String(payload.email || '').trim();
@@ -34,22 +55,30 @@
 
   const buildRecord = (payload = {}, prev = null) => {
     const contact = normalizeContact(payload);
-    if (!contact.ok && payload.status !== 'مسودة') return { ok: false, error: contact.error };
+    const statusHint = STATUSES.includes(payload.status) ? payload.status : prev?.status || 'جديد';
+    const contactOptional = statusHint === 'مسودة' || statusHint === 'بدأ المشروع';
+    if (!contact.ok && !contactOptional) return { ok: false, error: contact.error };
     const ownerName = String(payload.ownerName || prev?.ownerName || '').trim();
     const projectName = String(payload.projectName || prev?.projectName || '').trim();
-    const asDraft = payload.status === 'مسودة';
+    const asDraft = statusHint === 'مسودة';
     if (!asDraft) {
       if (!ownerName) return { ok: false, error: 'يرجى إدخال اسم صاحب المشروع.' };
       if (!projectName) return { ok: false, error: 'يرجى إدخال اسم المشروع.' };
-      if (!contact.ok) return { ok: false, error: contact.error };
+      if (!contact.ok && !contactOptional) return { ok: false, error: contact.error };
     } else if (!projectName && !ownerName) {
       return { ok: false, error: 'أدخل على الأقل اسم المشروع أو اسم صاحب المشروع لحفظ المسودة.' };
     }
 
-    const status = STATUSES.includes(payload.status) ? payload.status : 'جديد';
+    const status = STATUSES.includes(payload.status) ? payload.status : statusHint || 'جديد';
     const now = new Date().toISOString();
+    const refCode =
+      payload.refCode ||
+      prev?.refCode ||
+      nextRefCode(read());
     const record = {
       id: payload.id || prev?.id || `reg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      refCode,
+      clientId: String(payload.clientId || prev?.clientId || payload.ownerId || prev?.ownerId || '').trim(),
       projectId: String(payload.projectId || prev?.projectId || ''),
       projectName: projectName || prev?.projectName || 'مسودة مشروع',
       ownerName: ownerName || prev?.ownerName || '',
@@ -92,6 +121,7 @@
           : prev?.assessmentAnswers && typeof prev.assessmentAnswers === 'object'
             ? prev.assessmentAnswers
             : {},
+      startedAt: status === 'بدأ المشروع' ? prev?.startedAt || payload.startedAt || now : prev?.startedAt || null,
       categoryId: String(payload.categoryId || prev?.categoryId || ''),
       categoryName: String(payload.categoryName || prev?.categoryName || ''),
       status,

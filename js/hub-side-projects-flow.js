@@ -1,5 +1,5 @@
 /**
- * رحلة بدء المشروع الجانبي:
+ * رحلة بدء المشروع الجانبي — مصدر حالة واحد.
  * اختر مشروعًا → الدور → الاحتياج → تقييم الجاهزية → ابدأ المشروع
  */
 (() => {
@@ -8,7 +8,7 @@
   const root = document.querySelector('[data-side-projects-page]');
   if (!root) return;
 
-  const FLOW_KEY = 'naiosh_sp_start_flow_v1';
+  const FLOW_KEY = 'naiosh_sp_start_flow_v2';
   const regApi = window.HubSideProjectRegistrations;
 
   const ASSESS_QS = [
@@ -22,12 +22,14 @@
     { id: 'when', q: 'متى تريد البدء؟', options: ['الآن', 'خلال أسبوع', 'خلال شهر'] },
   ];
 
+  /** مصدر الحالة الوحيد للرحلة */
   const state = {
     project: null,
     role: '',
     roleOther: '',
     needs: [],
     needOther: '',
+    assessDraft: {},
     assessment: null,
   };
 
@@ -69,33 +71,11 @@
     toast._t = setTimeout(() => t.classList.remove('show'), 2800);
   };
 
-  const save = () => {
-    try {
-      localStorage.setItem(
-        FLOW_KEY,
-        JSON.stringify({
-          projectId: state.project?.id || '',
-          projectTitle: state.project?.title || '',
-          categoryId: state.project?.categoryId || '',
-          categoryName: state.project?.categoryName || '',
-          mode: state.project?.mode || '',
-          role: state.role,
-          roleOther: state.roleOther,
-          needs: state.needs,
-          needOther: state.needOther,
-          assessment: state.assessment,
-          updatedAt: new Date().toISOString(),
-        })
-      );
-    } catch (_) {}
-  };
-
-  const setStep = (n) => {
-    els.steps?.querySelectorAll('[data-sp-flow-step]').forEach((li) => {
-      const i = Number(li.getAttribute('data-sp-flow-step'));
-      li.classList.toggle('is-current', i === n);
-      li.classList.toggle('is-done', i < n);
-    });
+  const showMsg = (html, isError = false) => {
+    if (!els.msg) return;
+    els.msg.hidden = false;
+    els.msg.classList.toggle('is-error', !!isError);
+    els.msg.innerHTML = html;
   };
 
   const resolvedRole = () => {
@@ -111,60 +91,142 @@
     return list;
   };
 
-  const paintAssessQs = () => {
-    if (!els.assessQs) return;
-    const title = state.project?.title || 'المشروع المختار';
-    if (els.assessLead) {
-      els.assessLead.textContent = `أجب عن جاهزيتك لمشروع «${title}».`;
+  const stepStatus = () => {
+    const hasProject = !!state.project?.id;
+    const hasRole = !!resolvedRole();
+    const hasNeeds = resolvedNeeds().length > 0;
+    const hasAssess = !!state.assessment;
+    const done = {
+      1: hasProject,
+      2: hasProject && hasRole,
+      3: hasProject && hasRole && hasNeeds,
+      4: hasProject && hasRole && hasNeeds && hasAssess,
+      5: false,
+    };
+    let current = 1;
+    if (!hasProject) current = 1;
+    else if (!hasRole) current = 2;
+    else if (!hasNeeds) current = 3;
+    else if (!hasAssess) current = 4;
+    else current = 5;
+    return { done, current, hasProject, hasRole, hasNeeds, hasAssess };
+  };
+
+  const setStepUi = () => {
+    const st = stepStatus();
+    els.steps?.querySelectorAll('[data-sp-flow-step]').forEach((li) => {
+      const i = Number(li.getAttribute('data-sp-flow-step'));
+      li.classList.toggle('is-current', i === st.current);
+      li.classList.toggle('is-done', !!st.done[i] && i !== st.current);
+      if (i < st.current) li.classList.add('is-done');
+      if (i === st.current) li.classList.remove('is-done');
+    });
+    if (els.startBtn) {
+      const ready = !!(st.hasProject && st.hasRole && st.hasNeeds && st.hasAssess);
+      els.startBtn.disabled = false;
+      els.startBtn.classList.toggle('is-ready', ready);
+      els.startBtn.setAttribute('aria-disabled', ready ? 'false' : 'true');
     }
-    els.assessQs.innerHTML = ASSESS_QS.map(
-      (item) => `<label class="sp-field">
+  };
+
+  const save = () => {
+    try {
+      localStorage.setItem(
+        FLOW_KEY,
+        JSON.stringify({
+          project: state.project,
+          role: state.role,
+          roleOther: state.roleOther,
+          needs: state.needs,
+          needOther: state.needOther,
+          assessDraft: state.assessDraft,
+          assessment: state.assessment,
+          updatedAt: new Date().toISOString(),
+        })
+      );
+    } catch (_) {}
+    try {
+      window.dispatchEvent(new CustomEvent('hub-sp-journey-changed'));
+    } catch (_) {}
+  };
+
+  const markCatalogSelection = () => {
+    const id = state.project?.id || '';
+    root.querySelectorAll('.sp-card[data-id]').forEach((card) => {
+      const match = card.getAttribute('data-id') === id;
+      card.classList.toggle('is-selected', match);
+      card.querySelectorAll('button.btn.btn-primary[data-sp-select]').forEach((btn) => {
+        btn.innerHTML = match
+          ? '<i class="fas fa-check"></i> تم اختيار المشروع'
+          : '<i class="fas fa-check"></i> اختر هذا المشروع';
+      });
+    });
+  };
+
+  const captureAssessDraft = () => {
+    const draft = { ...(state.assessDraft || {}) };
+    els.assessQs?.querySelectorAll('[data-sp-assess]').forEach((sel) => {
+      const id = sel.getAttribute('data-sp-assess');
+      if (id) draft[id] = sel.value;
+    });
+    state.assessDraft = draft;
+  };
+
+  const paintAssessQs = (force = false) => {
+    if (!els.assessQs || !state.project) return;
+    const title = state.project.title || 'المشروع المختار';
+    if (els.assessLead) els.assessLead.textContent = `أجب عن جاهزيتك لمشروع «${title}».`;
+
+    const existing = els.assessQs.querySelectorAll('[data-sp-assess]').length;
+    if (!force && existing === ASSESS_QS.length) {
+      // restore draft values only
+      ASSESS_QS.forEach((item) => {
+        const sel = els.assessQs.querySelector(`[data-sp-assess="${item.id}"]`);
+        if (sel && state.assessDraft?.[item.id]) sel.value = state.assessDraft[item.id];
+        if (sel && state.assessment?.answers?.[item.id]) sel.value = state.assessment.answers[item.id];
+      });
+      return;
+    }
+
+    els.assessQs.innerHTML = ASSESS_QS.map((item) => {
+      const current = state.assessDraft?.[item.id] || state.assessment?.answers?.[item.id] || '';
+      return `<label class="sp-field">
         <span>${esc(item.q)}</span>
         <select data-sp-assess="${esc(item.id)}" required>
           <option value="">— اختر —</option>
-          ${item.options.map((o) => `<option value="${esc(o)}">${esc(o)}</option>`).join('')}
+          ${item.options
+            .map((o) => `<option value="${esc(o)}"${o === current ? ' selected' : ''}>${esc(o)}</option>`)
+            .join('')}
         </select>
-      </label>`
-    ).join('');
+      </label>`;
+    }).join('');
   };
 
   const paintReview = () => {
-    if (!els.review || !els.reviewBody || !state.assessment) {
-      if (els.review) els.review.hidden = true;
+    if (!els.review || !els.reviewBody) return;
+    if (!state.assessment || !state.project) {
+      els.review.hidden = true;
       return;
     }
     els.review.hidden = false;
     const needs = resolvedNeeds().join(' · ') || '—';
     els.reviewBody.innerHTML = `
-      <div><dt>المشروع</dt><dd>${esc(state.project?.title || '—')}</dd></div>
-      <div><dt>نوع المشروع</dt><dd>${esc(state.project?.mode || state.project?.categoryName || '—')}</dd></div>
+      <div><dt>المشروع</dt><dd>${esc(state.project.title)}</dd></div>
+      <div><dt>نوع المشروع</dt><dd>${esc(state.project.mode || state.project.categoryName || '—')}</dd></div>
       <div><dt>دورك</dt><dd>${esc(resolvedRole() || '—')}</dd></div>
       <div><dt>ما تحتاجه من نايوش</dt><dd>${esc(needs)}</dd></div>
       <div><dt>نتيجة تقييم الجاهزية</dt><dd>${esc(state.assessment.label)} (${state.assessment.score}%)</dd></div>`;
   };
 
-  const syncStartEnabled = () => {
-    const ok =
-      !!state.project &&
-      !!resolvedRole() &&
-      resolvedNeeds().length > 0 &&
-      !!state.assessment;
-    if (els.startBtn) els.startBtn.disabled = !ok;
-    paintReview();
-    if (ok) setStep(5);
-    else if (state.assessment) setStep(4);
-    else if (resolvedRole() && resolvedNeeds().length) setStep(4);
-    else if (resolvedRole()) setStep(3);
-    else if (state.project) setStep(2);
-    else setStep(1);
-  };
-
   const paint = () => {
-    const has = !!state.project;
+    const has = !!(state.project && state.project.id);
+
+    // مصدر واحد: إما فارغ أو مختار — لا الاثنين معًا
     if (els.empty) els.empty.hidden = has;
     if (els.picked) els.picked.hidden = !has;
     if (els.fields) els.fields.hidden = !has;
-    if (els.name) els.name.textContent = state.project?.title || '—';
+
+    if (els.name) els.name.textContent = has ? state.project.title : '—';
     if (els.meta) {
       const bits = [
         state.project?.categoryName,
@@ -173,15 +235,19 @@
       ].filter(Boolean);
       els.meta.textContent = bits.join(' · ');
     }
+
     if (els.role) els.role.value = state.role || '';
     if (els.roleOtherWrap) els.roleOtherWrap.hidden = state.role !== '__other__';
     if (els.roleOther) els.roleOther.value = state.roleOther || '';
+
     els.needs?.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
       cb.checked = (state.needs || []).includes(cb.value);
     });
     if (els.needOtherWrap) els.needOtherWrap.hidden = !(state.needs || []).includes('__other__');
     if (els.needOther) els.needOther.value = state.needOther || '';
-    if (has) paintAssessQs();
+
+    if (has) paintAssessQs(false);
+
     if (state.assessment && els.assessResult) {
       els.assessResult.hidden = false;
       els.assessResult.innerHTML = `<strong>${esc(state.assessment.label)}</strong>
@@ -195,12 +261,16 @@
       els.assessResult.hidden = true;
       els.assessResult.innerHTML = '';
     }
-    syncStartEnabled();
+
+    paintReview();
+    setStepUi();
+    markCatalogSelection();
     save();
   };
 
   const selectProject = (project) => {
-    if (!project) return;
+    if (!project?.id) return;
+    const same = state.project?.id === project.id;
     state.project = {
       id: project.id,
       title: project.title,
@@ -209,9 +279,12 @@
       mode: project.mode || project.projectType || '',
       capital: project.capital || '',
     };
-    state.assessment = null;
+    if (!same) {
+      state.assessment = null;
+      state.assessDraft = {};
+      paintAssessQs(true);
+    }
     paint();
-    setStep(2);
     document.getElementById('sp-flow')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     toast(`تم اختيار المشروع: ${project.title}`);
     try {
@@ -222,20 +295,22 @@
   };
 
   const runAssessment = () => {
-    if (!state.project) return toast('اختر مشروعًا أولًا');
-    if (!resolvedRole()) return toast('حدد دورك في المشروع');
-    if (!resolvedNeeds().length) return toast('حدد ما تحتاجه من نايوش');
+    if (!state.project) return toast('يرجى اختيار مشروع أولًا');
+    if (!resolvedRole()) return toast('يرجى تحديد دورك في المشروع أولًا');
+    if (!resolvedNeeds().length) return toast('يرجى تحديد ما تحتاجه من نايوش أولًا');
 
+    captureAssessDraft();
     const answers = {};
     let missing = false;
     ASSESS_QS.forEach((item) => {
       const sel = els.assessQs?.querySelector(`[data-sp-assess="${item.id}"]`);
-      const v = String(sel?.value || '').trim();
+      const v = String(sel?.value || state.assessDraft?.[item.id] || '').trim();
       if (!v) missing = true;
       answers[item.id] = v;
     });
     if (missing) return toast('أكمل كل أسئلة تقييم الجاهزية');
 
+    state.assessDraft = { ...answers };
     let score = 0;
     const gaps = [];
     const scoreMap = {
@@ -270,7 +345,6 @@
 
     state.assessment = { score, label, detail, gaps, answers, at: new Date().toISOString() };
     paint();
-    setStep(5);
     toast(label);
     try {
       window.HubSideProjectsJourney?.mark?.('detailsDone', true);
@@ -278,24 +352,27 @@
   };
 
   const startProject = () => {
-    if (!state.project) return toast('اختر مشروعًا أولًا');
+    if (!state.project) return toast('يرجى اختيار مشروع أولًا');
     const role = resolvedRole();
     const needs = resolvedNeeds();
-    if (!role) return toast('حدد دورك');
-    if (!needs.length) return toast('حدد احتياجك من نايوش');
-    if (!state.assessment) return toast('أكمل تقييم الجاهزية أولًا');
+    if (!role) return toast('يرجى تحديد دورك في المشروع أولًا');
+    if (!needs.length) return toast('يرجى تحديد ما تحتاجه من نايوش أولًا');
+    if (!state.assessment) return toast('يرجى إكمال تقييم الجاهزية أولًا');
+    if (!regApi?.create) return toast('تعذر إنشاء المشروع — حدّث الصفحة وحاول مجددًا');
 
     const auth = window.HubStore?.getAuth?.() || null;
     const ownerName =
       auth?.name || auth?.displayName || auth?.userName || auth?.fullName || 'عميل نايوش';
     const phone = auth?.phone || auth?.mobile || '';
     const email = auth?.email || '';
+    const clientId = String(auth?.id || auth?.userId || auth?.uid || phone || email || 'guest').trim();
 
     const payload = {
       projectId: state.project.id,
       projectName: state.project.title,
       categoryId: state.project.categoryId,
       categoryName: state.project.categoryName,
+      clientId,
       ownerName,
       phone,
       email,
@@ -309,104 +386,112 @@
       assessmentGaps: state.assessment.gaps || [],
       assessmentAnswers: state.assessment.answers || {},
       commercialOrNotes: `الدور: ${role} | الاحتياج: ${needs.join(' · ')} | الجاهزية: ${state.assessment.label} (${state.assessment.score}%)`,
-      status: 'جديد',
+      status: 'بدأ المشروع',
+      startedAt: new Date().toISOString(),
     };
-
-    if (!regApi?.create) {
-      return toast('تعذر إنشاء المشروع — حدّث الصفحة وحاول مجددًا');
-    }
 
     const result = regApi.create(payload);
     if (!result?.ok) {
-      // إذا ناقص تواصل — افتح نموذج التسجيل مع البيانات المعبأة
-      try {
-        window.HubSideProjectsApi?.openRegister?.(state.project, {
-          ...payload,
-          status: 'مسودة',
-        });
-      } catch (_) {}
-      if (els.msg) {
-        els.msg.hidden = false;
-        els.msg.textContent =
-          result?.error ||
-          'أكمل بيانات التواصل (الجوال أو البريد) لإتمام بدء المشروع.';
-      }
-      return toast(result?.error || 'أكمل بيانات التواصل لإتمام البدء');
+      showMsg(result?.error || 'تعذر بدء المشروع. راجع البيانات وحاول مجددًا.', true);
+      return toast(result?.error || 'تعذر بدء المشروع');
     }
 
+    const rec = result.record;
+    const ref = rec.refCode || rec.id;
     try {
       window.HubSideProjectsJourney?.mark?.('started', true);
       window.HubSideProjectsApi?.openProject?.(state.project.id);
     } catch (_) {}
 
-    if (els.msg) {
-      els.msg.hidden = false;
-      els.msg.innerHTML = `تم بدء مشروعك بنجاح.<br/>رقم المشروع: <strong dir="ltr">${esc(result.record.id)}</strong><br/>الحالة: ${esc(result.record.status)} · الخطوة التالية: متابعة الطلب من «مشاريعي».`;
-    }
+    showMsg(
+      `تم بدء مشروعك بنجاح.<br/>رقم المشروع: <strong dir="ltr">${esc(ref)}</strong><br/>اسم المشروع: ${esc(
+        rec.projectName
+      )}<br/>الحالة: ${esc(rec.status)}`
+    );
     toast('تم بدء مشروعك بنجاح');
+
+    // شاشة نجاح النظام إن وُجدت
+    try {
+      const successModal = document.getElementById('sp-success-modal');
+      const successBody = document.querySelector('[data-sp-success-body]');
+      if (successModal && successBody) {
+        successBody.innerHTML = `
+          <ul class="sp-success-list">
+            <li><span>رقم المشروع</span><strong dir="ltr">${esc(ref)}</strong></li>
+            <li><span>اسم المشروع</span><strong>${esc(rec.projectName)}</strong></li>
+            <li><span>الحالة</span><strong>${esc(rec.status)}</strong></li>
+            <li><span>دورك</span><strong>${esc(role)}</strong></li>
+            <li><span>الجاهزية</span><strong>${esc(state.assessment.label)} (${state.assessment.score}%)</strong></li>
+          </ul>
+          <div class="sp-flow-actions" style="margin-top:12px">
+            <a class="btn btn-primary" href="#sp-my-projects">الانتقال إلى مشروعي</a>
+            <a class="btn btn-secondary" href="#sp-opened">عرض تفاصيل المشروع</a>
+            <a class="btn btn-secondary" href="#sp-catalog">العودة إلى المشاريع</a>
+          </div>`;
+        successModal.hidden = false;
+        document.body.classList.add('sp-success-open');
+      }
+    } catch (_) {}
+
     document.getElementById('sp-my-projects')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     try {
       window.dispatchEvent(new CustomEvent('hub-sp-registrations-changed'));
     } catch (_) {}
   };
 
-  // API for catalog selection
   window.HubSideProjectsFlow = {
     selectProject,
-    getState: () => ({ ...state, project: state.project ? { ...state.project } : null }),
+    getState: () => ({
+      project: state.project ? { ...state.project } : null,
+      role: resolvedRole(),
+      needs: resolvedNeeds(),
+      assessment: state.assessment,
+      step: stepStatus(),
+    }),
+    paint,
   };
 
-  // Events
   root.querySelector('[data-sp-flow-change]')?.addEventListener('click', () => {
     document.getElementById('sp-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+
   els.role?.addEventListener('change', () => {
     state.role = els.role.value;
-    state.assessment = null;
+    if (state.role !== '__other__') state.roleOther = '';
+    // لا تمسح التقييم إلا إذا تغيّر الدور جوهريًا بعد اكتماله
     paint();
   });
   els.roleOther?.addEventListener('input', () => {
     state.roleOther = els.roleOther.value;
-    syncStartEnabled();
+    setStepUi();
     save();
   });
   els.needs?.addEventListener('change', () => {
     state.needs = [...els.needs.querySelectorAll('input[type="checkbox"]:checked')].map((c) => c.value);
-    state.assessment = null;
     paint();
   });
   els.needOther?.addEventListener('input', () => {
     state.needOther = els.needOther.value;
-    syncStartEnabled();
+    setStepUi();
+    save();
+  });
+  els.assessQs?.addEventListener('change', () => {
+    captureAssessDraft();
     save();
   });
   root.querySelector('[data-sp-flow-assess-run]')?.addEventListener('click', runAssessment);
   root.querySelector('[data-sp-flow-edit]')?.addEventListener('click', () => {
-    state.assessment = null;
-    paint();
-    setStep(2);
     els.role?.focus();
+    document.getElementById('sp-flow')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   els.startBtn?.addEventListener('click', startProject);
 
-  root.querySelector('[data-sp-open-howto]')?.addEventListener('click', () => {
-    const modal = document.getElementById('sp-howto-modal');
-    const body = document.querySelector('[data-sp-howto-list]');
-    if (body) {
-      body.innerHTML = `
-        <li>اختر مشروعًا من القائمة.</li>
-        <li>حدد دورك وما تحتاجه من نايوش.</li>
-        <li>أكمل تقييم الجاهزية.</li>
-        <li>راجع البيانات ثم اضغط «ابدأ المشروع».</li>
-      `;
-    }
-    if (modal) modal.hidden = false;
-  });
-
-  // Restore
+  // Restore from single source
   try {
-    const saved = JSON.parse(localStorage.getItem(FLOW_KEY) || '{}');
-    if (saved?.projectId && window.HubSideProjectsData?.projects) {
+    const saved = JSON.parse(localStorage.getItem(FLOW_KEY) || localStorage.getItem('naiosh_sp_start_flow_v1') || '{}');
+    if (saved?.project?.id) {
+      state.project = saved.project;
+    } else if (saved?.projectId && window.HubSideProjectsData?.projects) {
       const p = window.HubSideProjectsData.projects.find((x) => x.id === saved.projectId);
       if (p) {
         const cat = window.HubSideProjectsData.categories?.find((c) => c.id === p.categoryId);
@@ -418,14 +503,20 @@
           mode: p.mode || saved.mode || '',
           capital: p.capital || '',
         };
-        state.role = saved.role || '';
-        state.roleOther = saved.roleOther || '';
-        state.needs = Array.isArray(saved.needs) ? saved.needs : [];
-        state.needOther = saved.needOther || '';
-        state.assessment = saved.assessment || null;
       }
     }
+    state.role = saved.role || '';
+    state.roleOther = saved.roleOther || '';
+    state.needs = Array.isArray(saved.needs) ? saved.needs : [];
+    state.needOther = saved.needOther || '';
+    state.assessDraft = saved.assessDraft || saved.assessment?.answers || {};
+    state.assessment = saved.assessment || null;
   } catch (_) {}
 
   paint();
+
+  // Remarque selection after catalog re-renders
+  const mo = new MutationObserver(() => markCatalogSelection());
+  const catalog = root.querySelector('[data-sp-catalog]');
+  if (catalog) mo.observe(catalog, { childList: true, subtree: true });
 })();

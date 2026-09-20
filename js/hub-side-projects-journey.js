@@ -112,27 +112,43 @@
     const j = readJourney();
     const flow = (() => {
       try {
-        return JSON.parse(localStorage.getItem('naiosh_sp_start_flow_v1') || '{}') || {};
+        const raw =
+          localStorage.getItem('naiosh_sp_start_flow_v2') ||
+          localStorage.getItem('naiosh_sp_start_flow_v1') ||
+          '{}';
+        return JSON.parse(raw) || {};
       } catch {
         return {};
       }
     })();
+    const live = (() => {
+      try {
+        return window.HubSideProjectsFlow?.getState?.() || null;
+      } catch {
+        return null;
+      }
+    })();
     const regs = regApi?.read?.() || [];
-    const hasSubmitted = regs.some((r) => r.status && r.status !== 'مسودة');
-    const done = {
-      idea: !!j.ideaChosen || !!j.selectedProjectId || !!flow.projectId,
-      role: !!flow.role && flow.role !== '__other__' ? true : !!(flow.role === '__other__' && flow.roleOther),
-      need: Array.isArray(flow.needs) && flow.needs.length > 0,
-      assess: !!flow.assessment,
-      start: hasSubmitted || !!j.started,
-    };
-    // fix role done check
-    done.role = !!(
-      flow.role &&
-      (flow.role !== '__other__' || String(flow.roleOther || '').trim())
+    const hasStarted = regs.some(
+      (r) => r.status === 'بدأ المشروع' || (r.status && r.status !== 'مسودة' && r.refCode)
     );
+    const hasProject = !!(live?.project?.id || flow.project?.id || flow.projectId || j.selectedProjectId || j.ideaChosen);
+    const roleVal = live?.role || (flow.role === '__other__' ? flow.roleOther : flow.role) || '';
+    const needsList = live?.needs || flow.needs || [];
+    const hasNeeds = Array.isArray(needsList)
+      ? needsList.some((n) => n && n !== '__other__') ||
+        (needsList.includes('__other__') && String(flow.needOther || live?.needOther || '').trim())
+      : false;
+    const hasAssess = !!(live?.assessment || flow.assessment);
+    const done = {
+      idea: hasProject,
+      role: !!String(roleVal || '').trim(),
+      need: !!hasNeeds,
+      assess: hasAssess,
+      start: hasStarted || !!j.started,
+    };
     const completed = STEPS.filter((s) => done[s.id]).length;
-    let current = STEPS.find((s) => !done[s.id]) || STEPS[STEPS.length - 1];
+    const current = STEPS.find((s) => !done[s.id]) || STEPS[STEPS.length - 1];
     return { done, completed, total: STEPS.length, current };
   };
 
