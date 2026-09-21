@@ -84,16 +84,9 @@
     justify-self: stretch !important;
   }
 
-  body.homepage .hero-offer-shortcuts {
-    gap: 8px !important;
-    margin: 0 0 10px !important;
-    padding-inline: 0 !important;
-  }
-
+  body.homepage .hero-offer-shortcuts,
   body.homepage .hero-offer-chip {
-    max-width: calc(50% - 4px) !important;
-    padding: 6px 10px !important;
-    font-size: 11px !important;
+    display: none !important;
   }
 
   body.homepage .hero-content h1,
@@ -264,7 +257,18 @@
     margin-bottom: 10px;
   }
 
+  body.homepage .hero-service-actions-compact {
+    gap: 6px;
+  }
+
   body.homepage .hero-service-actions .hero-service-consult,
+  body.homepage .hero-service-actions .hero-service-cost,
+  body.homepage .hero-service-actions .hero-service-solutions {
+    min-height: 38px;
+    font-size: 11.5px;
+    padding: 7px 6px;
+  }
+
   body.homepage .hero-service-actions .hero-service-suggest,
   body.homepage .hero-service-actions .hero-service-complaint {
     min-height: 44px;
@@ -447,14 +451,9 @@
 }
 
 @media (max-width: 480px) {
-  /* Keep 2-col CTAs; only collapse below ~340px */
+  body.homepage .hero-offer-shortcuts,
   body.homepage .hero-offer-chip {
-    max-width: 100% !important;
-    flex: 1 1 calc(50% - 6px) !important;
-  }
-
-  body.homepage .hero-offer-shortcuts {
-    flex-wrap: wrap !important;
+    display: none !important;
   }
 
   body.homepage .hero-stats .stat strong {

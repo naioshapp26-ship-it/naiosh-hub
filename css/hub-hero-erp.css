@@ -86,66 +86,10 @@ body.homepage .hero-inner.container {
   overflow: visible !important;
 }
 
-/* اختصارات صغيرة داخل محتوى الهيرو — فوق العنوان مباشرة */
-body.homepage .hero-offer-shortcuts {
-  position: static !important;
-  inset: auto !important;
-  top: auto !important;
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 6px 10px !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  margin: 0 0 10px !important;
-  padding: 0 !important;
-  pointer-events: auto !important;
-  /* LTR حتى يبقى «خفض التكاليف» يسار العنوان و«حلول نايوش» يمينه كما في الصورة */
-  direction: ltr !important;
-  z-index: 1 !important;
-}
-
+/* اختصارات البرامج نُقلت إلى .hero-service-actions — أخفِ أي بقايا */
+body.homepage .hero-offer-shortcuts,
 body.homepage .hero-offer-chip {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 5px !important;
-  max-width: calc(50% - 5px) !important;
-  min-height: 0 !important;
-  padding: 4px 9px !important;
-  border-radius: 999px !important;
-  border: 1px solid rgba(255, 255, 255, 0.28) !important;
-  background: rgba(0, 0, 0, 0.42) !important;
-  color: #fff !important;
-  font-family: 'Cairo', 'Tajawal', sans-serif !important;
-  font-size: 11px !important;
-  font-weight: 800 !important;
-  line-height: 1.2 !important;
-  text-decoration: none !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  backdrop-filter: blur(6px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22) !important;
-  direction: rtl !important;
-}
-
-body.homepage .hero-offer-chip i {
-  font-size: 10px !important;
-  opacity: 0.95 !important;
-  flex-shrink: 0 !important;
-}
-
-body.homepage .hero-offer-chip span {
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-body.homepage .hero-offer-chip:hover,
-body.homepage .hero-offer-chip:focus-visible {
-  background: rgba(215, 0, 0, 0.88) !important;
-  border-color: rgba(255, 255, 255, 0.55) !important;
-  color: #fff !important;
+  display: none !important;
 }
 
 body.homepage .hero-content {
@@ -606,21 +550,9 @@ body.homepage .hub-ops-path {
     direction: rtl !important;
   }
 
-  body.homepage .hero-offer-shortcuts {
-    position: static !important;
-    inset: auto !important;
-    top: auto !important;
-    justify-content: space-between !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-    margin: 0 0 8px !important;
-    direction: ltr !important;
-  }
-
+  body.homepage .hero-offer-shortcuts,
   body.homepage .hero-offer-chip {
-    max-width: none !important;
-    font-size: 11px !important;
-    padding: 5px 10px !important;
+    display: none !important;
   }
 
   body.homepage .hero-media-stack {
