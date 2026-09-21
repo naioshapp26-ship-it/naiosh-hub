@@ -1,5 +1,5 @@
 (() => {
-  const MOBILE_BREAKPOINT = 740;
+  const MOBILE_BREAKPOINT = 900;
 
   const syncMenuState = (header, isOpen) => {
     header.classList.toggle('is-mobile-nav-open', isOpen);

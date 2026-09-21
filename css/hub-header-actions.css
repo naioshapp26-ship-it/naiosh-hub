@@ -789,8 +789,8 @@ body.homepage .hub-feature-hero .hub-feature-purpose p {
   }
 }
 
-/* ===== موبايل: منيو هامبرغر بعرض كامل ومتناسق ===== */
-@media (max-width: 740px) {
+/* ===== موبايل/تابلت: منيو هامبرغر بعرض كامل ومتناسق ===== */
+@media (max-width: 900px) {
   body.homepage .top-nav .container.inner,
   body.homepage .top-nav .inner {
     flex-wrap: wrap !important;
