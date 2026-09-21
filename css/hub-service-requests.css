@@ -1,37 +1,79 @@
 /* أزرار الخدمة فوق بنر الهيرو + صفحات النماذج */
 
 body.homepage .hero-service-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   width: 100%;
   margin: 0 0 12px;
   z-index: 5;
+  direction: rtl !important;
 }
 
-body.homepage .hero-service-actions .hero-service-consult {
-  grid-column: 1 / -1;
+/* صف مضغوط: استشارة · خفض التكاليف · حلول نايوش (RTL: الاستشارة يمينًا) */
+body.homepage .hero-service-actions-compact {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 8px;
+  width: 100%;
+  direction: rtl !important;
+}
+
+body.homepage .hero-service-actions-alerts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  direction: rtl !important;
+}
+
+body.homepage .hero-service-actions .hero-service-consult,
+body.homepage .hero-service-actions .hero-service-cost,
+body.homepage .hero-service-actions .hero-service-solutions {
+  flex: 1 1 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.92);
+  gap: 6px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.88);
   background: #0b0b0b;
   color: #fff;
   font-family: 'Cairo', 'Tajawal', sans-serif;
-  font-size: 15px;
-  font-weight: 900;
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
   text-decoration: none;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+  box-sizing: border-box;
+  transition: background-color 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+}
+
+body.homepage .hero-service-actions .hero-service-consult i,
+body.homepage .hero-service-actions .hero-service-cost i,
+body.homepage .hero-service-actions .hero-service-solutions i {
+  font-size: 12px;
+  flex-shrink: 0;
+  opacity: 0.95;
 }
 
 body.homepage .hero-service-actions .hero-service-consult:hover,
-body.homepage .hero-service-actions .hero-service-consult:focus-visible {
+body.homepage .hero-service-actions .hero-service-cost:hover,
+body.homepage .hero-service-actions .hero-service-solutions:hover,
+body.homepage .hero-service-actions .hero-service-consult:focus-visible,
+body.homepage .hero-service-actions .hero-service-cost:focus-visible,
+body.homepage .hero-service-actions .hero-service-solutions:focus-visible {
   background: #1a1a1a;
+  border-color: #fff;
   color: #fff;
+  outline: none;
 }
 
 body.homepage .hero-service-actions .hero-service-suggest,
@@ -194,6 +236,16 @@ body.homepage .hero-service-actions .hero-service-complaint:focus-visible {
   font-weight: 600;
 }
 
+@media (max-width: 900px) {
+  body.homepage .hero-service-actions .hero-service-consult,
+  body.homepage .hero-service-actions .hero-service-cost,
+  body.homepage .hero-service-actions .hero-service-solutions {
+    font-size: 12px;
+    padding: 8px 8px;
+    gap: 5px;
+  }
+}
+
 @media (max-width: 700px) {
   .hub-service-grid-2,
   .hub-attach-grid {
@@ -204,10 +256,38 @@ body.homepage .hero-service-actions .hero-service-complaint:focus-visible {
     gap: 8px;
   }
 
+  body.homepage .hero-service-actions-compact {
+    gap: 6px;
+  }
+
+  body.homepage .hero-service-actions .hero-service-consult,
+  body.homepage .hero-service-actions .hero-service-cost,
+  body.homepage .hero-service-actions .hero-service-solutions {
+    font-size: 11.5px;
+    min-height: 38px;
+    padding: 7px 6px;
+    border-radius: 9px;
+    white-space: normal;
+  }
+
   body.homepage .hero-service-actions .hero-service-suggest,
-  body.homepage .hero-service-actions .hero-service-complaint,
-  body.homepage .hero-service-actions .hero-service-consult {
+  body.homepage .hero-service-actions .hero-service-complaint {
     font-size: 14px;
     min-height: 46px;
+  }
+}
+
+/* شاشات ضيقة جدًا: لفّ الصف بدل تصغير خط مفرط أو سكرول أفقي */
+@media (max-width: 380px) {
+  body.homepage .hero-service-actions-compact {
+    flex-wrap: wrap;
+  }
+
+  body.homepage .hero-service-actions .hero-service-consult,
+  body.homepage .hero-service-actions .hero-service-cost,
+  body.homepage .hero-service-actions .hero-service-solutions {
+    flex: 1 1 calc(50% - 4px);
+    font-size: 12px;
+    white-space: nowrap;
   }
 }
