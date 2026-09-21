@@ -7,6 +7,7 @@ body.homepage .hero-service-actions {
   width: 100%;
   margin: 0 0 12px;
   z-index: 5;
+  direction: rtl !important;
 }
 
 /* صف مضغوط: استشارة · خفض التكاليف · حلول نايوش (RTL: الاستشارة يمينًا) */
@@ -17,6 +18,7 @@ body.homepage .hero-service-actions-compact {
   justify-content: stretch;
   gap: 8px;
   width: 100%;
+  direction: rtl !important;
 }
 
 body.homepage .hero-service-actions-alerts {
@@ -24,6 +26,7 @@ body.homepage .hero-service-actions-alerts {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   width: 100%;
+  direction: rtl !important;
 }
 
 body.homepage .hero-service-actions .hero-service-consult,
