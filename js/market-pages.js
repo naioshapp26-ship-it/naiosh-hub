@@ -500,7 +500,13 @@
       const site = window.HubReadySites?.siteForProduct?.(p);
       return Boolean(site && window.HubReadySites?.isLiveSite?.(site));
     });
-    const cats = data.SHOP_CATEGORIES || [{ id: 'الكل', name: 'كل المنتجات', icon: 'fa-border-all' }];
+    const catsApi = () => window.HubProductCategories;
+    const shopCats = () => {
+      const fromApi = catsApi()?.listForShop?.({ includeInactive: catsApi()?.canManage?.() });
+      if (fromApi?.length) return fromApi;
+      return data.SHOP_CATEGORIES || [{ id: 'الكل', name: 'كل المنتجات', icon: 'fa-border-all' }];
+    };
+    let cats = shopCats();
     const strip = document.getElementById('shop-cat-strip');
     const side = document.getElementById('shop-side-list');
     const grid = document.getElementById('shop-grid');
@@ -509,13 +515,93 @@
     const form = document.getElementById('products-search-form');
     const viewGrid = document.getElementById('view-grid');
     const viewList = document.getElementById('view-list');
+    const addBtn = document.getElementById('shop-cat-add-btn');
+    const modal = document.getElementById('shop-cat-modal');
+    const replaceModal = document.getElementById('shop-cat-replace-modal');
     if (!grid) return;
 
     const preferred = window.HubStore?.getSettings?.()?.shopDefaultCategory;
     let active = cats.some((c) => c.id === preferred) ? preferred : 'الكل';
     let view = 'grid';
+    let openMenuId = '';
 
-    const countOf = (id) => (id === 'الكل' ? products.length : products.filter((p) => p.category === id).length);
+    const countOf = (id) => {
+      if (catsApi()?.countProducts) {
+        if (id === 'الكل') return products.length;
+        return products.filter((p) => p.category === id).length;
+      }
+      return id === 'الكل' ? products.length : products.filter((p) => p.category === id).length;
+    };
+
+    const syncAddVisibility = () => {
+      const show = Boolean(catsApi()?.canManage?.());
+      if (addBtn) addBtn.hidden = !show;
+    };
+
+    const openModal = (mode, cat = null) => {
+      if (!modal) return;
+      const title = document.getElementById('shop-cat-modal-title');
+      const editId = document.getElementById('shop-cat-edit-id');
+      const name = document.getElementById('shop-cat-name');
+      const desc = document.getElementById('shop-cat-desc');
+      const icon = document.getElementById('shop-cat-icon');
+      const err = document.getElementById('shop-cat-form-error');
+      if (title) title.textContent = mode === 'edit' ? 'تعديل التصنيف' : 'إضافة تصنيف جديد';
+      if (editId) editId.value = cat?.id || '';
+      if (name) name.value = cat?.name || '';
+      if (desc) desc.value = cat?.description || '';
+      if (icon) icon.value = cat?.icon || 'fa-tag';
+      const status = cat?.status === 'inactive' ? 'inactive' : 'active';
+      modal.querySelectorAll('input[name="shop-cat-status"]').forEach((r) => {
+        r.checked = r.value === status;
+      });
+      if (err) {
+        err.hidden = true;
+        err.textContent = '';
+      }
+      modal.hidden = false;
+      modal.setAttribute('aria-hidden', 'false');
+      name?.focus();
+    };
+
+    const closeModal = () => {
+      if (!modal) return;
+      modal.hidden = true;
+      modal.setAttribute('aria-hidden', 'true');
+    };
+
+    const openReplaceModal = (cat, productCount) => {
+      if (!replaceModal) return;
+      const from = document.getElementById('shop-cat-replace-from');
+      const to = document.getElementById('shop-cat-replace-to');
+      const msg = document.getElementById('shop-cat-replace-msg');
+      if (from) from.value = cat.id;
+      if (msg) {
+        msg.textContent = `هذا التصنيف مرتبط بـ ${productCount} منتجات. اختر تصنيفًا بديلًا لنقل المنتجات إليه قبل الحذف.`;
+      }
+      if (to) {
+        to.innerHTML = cats
+          .filter((c) => c.id !== 'الكل' && c.id !== cat.id && c.status !== 'inactive')
+          .map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`)
+          .join('');
+      }
+      replaceModal.hidden = false;
+      replaceModal.setAttribute('aria-hidden', 'false');
+    };
+
+    const closeReplaceModal = () => {
+      if (!replaceModal) return;
+      replaceModal.hidden = true;
+      replaceModal.setAttribute('aria-hidden', 'true');
+    };
+
+    const setDrawer = (open) => {
+      document.body.classList.toggle('shop-filters-open', open);
+      const btn = document.getElementById('shop-filters-open');
+      const backdrop = document.getElementById('shop-filters-backdrop');
+      if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (backdrop) backdrop.hidden = !open;
+    };
 
     const isLiveLaunch = (code) => Boolean(code && window.HubLiveSystems?.isLive?.(code));
 
@@ -561,8 +647,11 @@
     };
 
     const paintChrome = () => {
+      cats = shopCats();
+      syncAddVisibility();
       if (strip) {
         strip.innerHTML = cats
+          .filter((c) => c.status !== 'inactive')
           .map(
             (c) => `<button type="button" class="shop-cat-chip${c.id === active ? ' is-active' : ''}" data-cat="${esc(c.id)}">
               <span class="thumb"><i class="fas ${esc(c.icon || 'fa-cube')}"></i></span>
@@ -572,14 +661,34 @@
           .join('');
       }
       if (side) {
+        const manage = Boolean(catsApi()?.canManage?.());
         side.innerHTML = cats
           .map((c) => {
             const n = countOf(c.id);
-            return `<label class="shop-side-item">
-              <input type="radio" name="shop-cat" value="${esc(c.id)}" ${c.id === active ? 'checked' : ''} />
-              <span>${esc(c.name)}</span>
-              <small>(${n})</small>
-            </label>`;
+            const inactive = c.status === 'inactive';
+            const menu =
+              manage && c.id !== 'الكل'
+                ? `<div class="shop-cat-menu">
+                    <button type="button" class="shop-cat-menu-btn" data-cat-menu="${esc(c.id)}" aria-label="إجراءات التصنيف" aria-expanded="${
+                      openMenuId === c.id ? 'true' : 'false'
+                    }"><i class="fas fa-ellipsis-vertical"></i></button>
+                    <div class="shop-cat-menu-panel" ${openMenuId === c.id ? '' : 'hidden'}>
+                      <button type="button" data-cat-edit="${esc(c.id)}"><i class="fas fa-pen"></i> تعديل التصنيف</button>
+                      <button type="button" data-cat-toggle="${esc(c.id)}"><i class="fas fa-power-off"></i> ${
+                        inactive ? 'تفعيل التصنيف' : 'إيقاف التصنيف'
+                      }</button>
+                      <button type="button" data-cat-delete="${esc(c.id)}" class="is-danger"><i class="fas fa-trash"></i> حذف التصنيف</button>
+                    </div>
+                  </div>`
+                : '';
+            return `<div class="shop-side-item-row${inactive ? ' is-inactive' : ''}">
+              <label class="shop-side-item">
+                <input type="radio" name="shop-cat" value="${esc(c.id)}" ${c.id === active ? 'checked' : ''} />
+                <span>${esc(c.name)}${inactive ? ' · متوقف' : ''}</span>
+                <small>(${n})</small>
+              </label>
+              ${menu}
+            </div>`;
           })
           .join('');
       }
@@ -694,7 +803,155 @@
       const input = e.target.closest('input[name="shop-cat"]');
       if (!input) return;
       setCategory(input.value, { scroll: true });
+      setDrawer(false);
     });
+
+    side?.addEventListener('click', async (e) => {
+      const menuBtn = e.target.closest('[data-cat-menu]');
+      if (menuBtn) {
+        e.preventDefault();
+        const id = menuBtn.getAttribute('data-cat-menu');
+        openMenuId = openMenuId === id ? '' : id;
+        paintChrome();
+        return;
+      }
+      const editBtn = e.target.closest('[data-cat-edit]');
+      if (editBtn) {
+        e.preventDefault();
+        openMenuId = '';
+        const cat = catsApi()?.find?.(editBtn.getAttribute('data-cat-edit'));
+        if (cat) openModal('edit', cat);
+        paintChrome();
+        return;
+      }
+      const toggleBtn = e.target.closest('[data-cat-toggle]');
+      if (toggleBtn) {
+        e.preventDefault();
+        openMenuId = '';
+        try {
+          await catsApi().toggleStatus(toggleBtn.getAttribute('data-cat-toggle'));
+          toast('تم تحديث حالة التصنيف');
+          paintChrome();
+          paint();
+        } catch (err) {
+          toast(err.message || 'تعذر تحديث الحالة');
+        }
+        return;
+      }
+      const delBtn = e.target.closest('[data-cat-delete]');
+      if (delBtn) {
+        e.preventDefault();
+        openMenuId = '';
+        const id = delBtn.getAttribute('data-cat-delete');
+        const cat = catsApi()?.find?.(id);
+        if (!cat) return;
+        const n = countOf(id);
+        if (n > 0) {
+          openReplaceModal(cat, n);
+          paintChrome();
+          return;
+        }
+        if (!window.confirm(`حذف التصنيف «${cat.name}»؟`)) {
+          paintChrome();
+          return;
+        }
+        try {
+          await catsApi().remove(id);
+          if (active === id) active = 'الكل';
+          toast('تم حذف التصنيف');
+          paintChrome();
+          paint();
+        } catch (err) {
+          toast(err.message || 'تعذر الحذف');
+        }
+      }
+    });
+
+    addBtn?.addEventListener('click', () => openModal('create'));
+    modal?.addEventListener('click', (e) => {
+      if (e.target.closest('[data-cat-modal-close]')) closeModal();
+    });
+    replaceModal?.addEventListener('click', (e) => {
+      if (e.target.closest('[data-replace-close]')) closeReplaceModal();
+    });
+
+    document.getElementById('shop-cat-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById('shop-cat-form-error');
+      const editId = document.getElementById('shop-cat-edit-id')?.value || '';
+      const name = document.getElementById('shop-cat-name')?.value || '';
+      const description = document.getElementById('shop-cat-desc')?.value || '';
+      const icon = document.getElementById('shop-cat-icon')?.value || 'fa-tag';
+      const status =
+        modal?.querySelector('input[name="shop-cat-status"]:checked')?.value === 'inactive' ? 'inactive' : 'active';
+      if (errEl) {
+        errEl.hidden = true;
+        errEl.textContent = '';
+      }
+      if (!String(name).trim()) {
+        if (errEl) {
+          errEl.hidden = false;
+          errEl.textContent = 'اسم التصنيف مطلوب.';
+        }
+        return;
+      }
+      try {
+        if (editId) {
+          await catsApi().update(editId, { name, description, icon, status });
+          toast('تم تحديث التصنيف');
+        } else {
+          await catsApi().create({ name, description, icon, status });
+          toast('تم حفظ التصنيف');
+        }
+        closeModal();
+        paintChrome();
+        paint();
+      } catch (err) {
+        if (errEl) {
+          errEl.hidden = false;
+          errEl.textContent = err.message || 'تعذر الحفظ';
+        } else {
+          toast(err.message || 'تعذر الحفظ');
+        }
+      }
+    });
+
+    document.getElementById('shop-cat-replace-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fromId = document.getElementById('shop-cat-replace-from')?.value;
+      const toId = document.getElementById('shop-cat-replace-to')?.value;
+      if (!fromId || !toId) return;
+      try {
+        await catsApi().remove(fromId, { replacementId: toId });
+        if (active === fromId) active = toId;
+        closeReplaceModal();
+        toast('تم نقل المنتجات وحذف التصنيف');
+        paintChrome();
+        paint();
+      } catch (err) {
+        toast(err.message || 'تعذر الحذف');
+      }
+    });
+
+    document.getElementById('shop-filters-open')?.addEventListener('click', () => setDrawer(true));
+    document.getElementById('shop-filters-close')?.addEventListener('click', () => setDrawer(false));
+    document.getElementById('shop-filters-backdrop')?.addEventListener('click', () => setDrawer(false));
+
+    catsApi()?.subscribe?.(() => {
+      cats = shopCats();
+      if (!cats.some((c) => c.id === active)) active = 'الكل';
+      paintChrome();
+      paint();
+    });
+
+    // initial async refresh then paint
+    Promise.resolve(catsApi()?.refresh?.())
+      .catch(() => null)
+      .finally(() => {
+        cats = shopCats();
+        paintChrome();
+        paint();
+      });
 
     form?.addEventListener('submit', (e) => {
       e.preventDefault();

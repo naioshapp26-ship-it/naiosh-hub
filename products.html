@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
   <link rel="stylesheet" href="css/hub-row-actions.css" />
   <link rel="stylesheet" href="css/hub-marketplace.css" />
-  <link rel="stylesheet" href="css/hub-shop.css?v=scroll1" />
+  <link rel="stylesheet" href="css/hub-shop.css?v=cats1" />
   <link rel="stylesheet" href="css/hub-purchase.css?v=1" />
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
 </head>
@@ -58,7 +58,19 @@
     <nav class="shop-cat-strip" id="shop-cat-strip" aria-label="تصنيفات المنتجات"></nav>
 
     <div class="shop-layout">
-      <aside class="shop-sidebar" aria-label="قائمة التصنيفات والهيكل">
+      <button type="button" class="shop-filters-open" id="shop-filters-open" aria-controls="shop-sidebar" aria-expanded="false">
+        <i class="fas fa-sliders" aria-hidden="true"></i>
+        التصنيفات والفلاتر
+      </button>
+
+      <aside class="shop-sidebar" id="shop-sidebar" aria-label="قائمة التصنيفات والهيكل">
+        <div class="shop-sidebar-sheet-head">
+          <strong>التصنيفات والفلاتر</strong>
+          <button type="button" class="shop-filters-close" id="shop-filters-close" aria-label="إغلاق">
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+
         <button type="button" class="shop-side-back" id="shop-side-back" aria-label="رجوع">
           <i class="fas fa-arrow-right" aria-hidden="true"></i>
           <span>رجوع</span>
@@ -72,10 +84,15 @@
           <a href="office.html"><i class="fas fa-briefcase"></i> المكاتب الإلكترونية</a>
         </nav>
 
-        <div class="shop-side-classify">
-          <h2>إضافة تصنيف</h2>
-          <p class="shop-side-kicker">التصنيفات</p>
-          <div class="shop-side-list" id="shop-side-list"></div>
+        <div class="shop-side-classify" id="shop-side-classify">
+          <div class="shop-side-classify-head">
+            <h2>التصنيفات</h2>
+            <button type="button" class="shop-cat-add-btn" id="shop-cat-add-btn" hidden>
+              <i class="fas fa-plus" aria-hidden="true"></i>
+              إضافة تصنيف جديد
+            </button>
+          </div>
+          <div class="shop-side-list" id="shop-side-list" role="listbox" aria-label="قائمة التصنيفات"></div>
         </div>
 
         <nav class="shop-side-nav" aria-label="قطاعات نايوش">
@@ -83,6 +100,7 @@
           <div class="shop-sectors-list" id="shop-sectors-list"></div>
         </nav>
       </aside>
+      <div class="shop-filters-backdrop" id="shop-filters-backdrop" hidden></div>
 
       <section class="shop-content" id="shop-results" aria-label="قائمة المنتجات">
         <div class="shop-main-head">
@@ -97,6 +115,73 @@
     </div>
   </main>
 
+  <div class="shop-cat-modal" id="shop-cat-modal" hidden aria-hidden="true">
+    <div class="shop-cat-modal-backdrop" data-cat-modal-close></div>
+    <div class="shop-cat-modal-panel" role="dialog" aria-modal="true" aria-labelledby="shop-cat-modal-title">
+      <header class="shop-cat-modal-head">
+        <h3 id="shop-cat-modal-title">إضافة تصنيف جديد</h3>
+        <button type="button" class="shop-cat-modal-x" data-cat-modal-close aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
+      </header>
+      <form id="shop-cat-form" class="shop-cat-form" novalidate>
+        <input type="hidden" id="shop-cat-edit-id" value="" />
+        <label>
+          <span>اسم التصنيف <em>*</em></span>
+          <input id="shop-cat-name" name="name" type="text" required maxlength="80" placeholder="مثال: حلول سحابية" autocomplete="off" />
+        </label>
+        <label>
+          <span>وصف مختصر للتصنيف</span>
+          <textarea id="shop-cat-desc" name="description" rows="2" maxlength="240" placeholder="اختياري"></textarea>
+        </label>
+        <label>
+          <span>أيقونة التصنيف</span>
+          <select id="shop-cat-icon" name="icon">
+            <option value="fa-tag">وسم</option>
+            <option value="fa-cube">مكعب</option>
+            <option value="fa-sitemap">هيكل</option>
+            <option value="fa-graduation-cap">تعليم</option>
+            <option value="fa-chart-line">تحليل</option>
+            <option value="fa-dumbbell">رياضة</option>
+            <option value="fa-gavel">قانون</option>
+            <option value="fa-lightbulb">أفكار</option>
+            <option value="fa-store">متجر</option>
+          </select>
+        </label>
+        <fieldset class="shop-cat-status">
+          <legend>حالة التصنيف</legend>
+          <label><input type="radio" name="shop-cat-status" value="active" checked /> نشط</label>
+          <label><input type="radio" name="shop-cat-status" value="inactive" /> غير نشط</label>
+        </fieldset>
+        <p class="shop-cat-form-error" id="shop-cat-form-error" hidden></p>
+        <div class="shop-cat-form-actions">
+          <button type="button" class="shop-cat-btn-cancel" data-cat-modal-close>إلغاء</button>
+          <button type="submit" class="shop-cat-btn-save" id="shop-cat-save-btn">حفظ التصنيف</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="shop-cat-modal" id="shop-cat-replace-modal" hidden aria-hidden="true">
+    <div class="shop-cat-modal-backdrop" data-replace-close></div>
+    <div class="shop-cat-modal-panel" role="dialog" aria-modal="true" aria-labelledby="shop-cat-replace-title">
+      <header class="shop-cat-modal-head">
+        <h3 id="shop-cat-replace-title">نقل المنتجات قبل الحذف</h3>
+        <button type="button" class="shop-cat-modal-x" data-replace-close aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
+      </header>
+      <form id="shop-cat-replace-form" class="shop-cat-form">
+        <input type="hidden" id="shop-cat-replace-from" value="" />
+        <p class="shop-cat-replace-msg" id="shop-cat-replace-msg"></p>
+        <label>
+          <span>التصنيف البديل</span>
+          <select id="shop-cat-replace-to" required></select>
+        </label>
+        <div class="shop-cat-form-actions">
+          <button type="button" class="shop-cat-btn-cancel" data-replace-close>إلغاء</button>
+          <button type="submit" class="shop-cat-btn-save">نقل وحذف</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="js/empire-blueprint.js"></script>
   <script src="js/sovereign-platforms.js"></script>
   <script src="js/hub-marketplace-data.js?v=slide4"></script>
@@ -108,11 +193,12 @@
   <script src="js/hub-purchase.js?v=1"></script>
   <script src="js/hub-store.js"></script>
   <script src="js/hub-auth.js"></script>
+  <script src="js/hub-product-categories.js?v=1"></script>
   <script src="js/hub-launcher.js"></script>
   <script src="js/hub-cart.js"></script>
   <script src="js/hub-row-actions.js"></script>
   <script src="js/hub-currency.js"></script>
-  <script src="js/market-pages.js?v=purchase1"></script>
+  <script src="js/market-pages.js?v=cats1"></script>
   <script src="js/hub-ops-path.js?v=slide4"></script>
   <script src="js/mobile-nav.js"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>

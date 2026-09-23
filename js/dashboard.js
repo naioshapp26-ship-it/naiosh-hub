@@ -784,14 +784,18 @@
 
   const renderStorePanel = () => {
     const store = HubStore.get().empire.salesStore || { items: [], orders: [] };
-    const cats = (window.HubMarketplaceData?.SHOP_CATEGORIES || []).filter((c) => c.id !== 'الكل');
+    const cats = window.HubProductCategories?.optionsForForms?.() ||
+      (window.HubMarketplaceData?.SHOP_CATEGORIES || []).filter((c) => c.id !== 'الكل').map((c) => ({ value: c.id, label: c.name })) ||
+      (window.HubMarketplaceData?.SHOP_CATEGORIES || []).filter((c) => c.id !== 'الكل');
+    // normalize to {id,name} for select
+    const catRows = cats.map((c) => (c.value != null ? { id: c.value, name: c.label } : c));
     const mpLinked = store.items.reduce((n, i) => n + (i.marketplaces?.length || 0), 0);
     return `
       <div class="toolbar">
         ${pageActs('store', 'رفع على المتجر')}
         <div class="field"><label>الاسم</label><input id="store-title" placeholder="منتج أو خدمة" /></div>
         <div class="field"><label>التصنيف</label>
-          <select id="store-cat">${cats.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select>
+          <select id="store-cat">${catRows.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select>
         </div>
         <div class="field"><label>النوع</label>
           <select id="store-kind"><option value="منتج">منتج</option><option value="خدمة">خدمة</option></select>

@@ -486,8 +486,13 @@
     { id: 'shein', storeId: 'STORE-SHEIN', name: 'Shein', nameAr: 'شي إن', icon: 'fas fa-shirt', color: '#111111', featured: true, websiteUrl: 'https://www.shein.com', domains: ['shein.'], placeholder: 'https://www.shein.com/...' },
   ];
 
-  const storeCategoryOptions = () =>
-    SHOP_CATEGORIES.filter((c) => c.id !== 'الكل').map((c) => ({ value: c.id, label: c.name }));
+  const storeCategoryOptions = () => {
+    if (window.HubProductCategories?.optionsForForms) {
+      const opts = window.HubProductCategories.optionsForForms();
+      if (opts?.length) return opts;
+    }
+    return SHOP_CATEGORIES.filter((c) => c.id !== 'الكل').map((c) => ({ value: c.id, label: c.name }));
+  };
 
   const marketplaceOptions = () =>
     MARKETPLACE_CONNECTORS.map((m) => ({ value: m.id, label: `${m.nameAr} (${m.name})` }));

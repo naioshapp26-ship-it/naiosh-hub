@@ -16,6 +16,7 @@ const hubSession = require('./lib/hub-session');
 const hubClientPortal = require('./lib/hub-client-portal');
 const hubPoshaOps = require('./lib/hub-posha-ops');
 const hubPoshaOs = require('./lib/hub-posha-os');
+const productCategories = require('./lib/hub-product-categories');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -55,8 +56,8 @@ function sendJson(res, status, payload) {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-File-Name, X-File-Type',
+    'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Hub-Token, X-Hub-User-Role, X-Hub-User-Name, X-File-Name, X-File-Type',
   });
 }
 
@@ -251,6 +252,102 @@ async function handleHubApi(req, res, pathname) {
   if (pathname === '/api/hub/apps' && req.method === 'GET') {
     sendJson(res, 200, { ok: true, apps: hubRuntime.listApps(), synced: hubRuntime.getSynced() });
     return true;
+  }
+
+  // —— تصنيفات المنتجات (مصدر مركزي) ——
+  if (pathname === '/api/hub/product-categories' && req.method === 'GET') {
+    let includeInactive = String(new URL(req.url, 'http://local').searchParams.get('includeInactive') || '') === '1';
+    let isStaff = false;
+    try {
+      hubSession.requireStaff(req);
+      isStaff = true;
+    } catch {
+      includeInactive = false;
+    }
+    const data = productCategories.list({ includeInactive: includeInactive && isStaff });
+    sendJson(res, 200, {
+      ok: true,
+      canManage: isStaff,
+      count: data.items.length,
+      all: data.all,
+      items: isStaff ? data.items : data.items.filter((c) => c.status !== 'inactive'),
+      shop: data.shop,
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/product-categories' && req.method === 'POST') {
+    try {
+      hubSession.requireStaff(req);
+    } catch (err) {
+      sendJson(res, err.status || 403, { ok: false, error: err.message || 'Forbidden' });
+      return true;
+    }
+    const body = await readBody(req);
+    try {
+      const item = productCategories.create(body || {});
+      sendJson(res, 201, { ok: true, item });
+    } catch (err) {
+      sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر إنشاء التصنيف' });
+    }
+    return true;
+  }
+
+  const catMatch = pathname.match(/^\/api\/hub\/product-categories\/([^/]+)(?:\/(delete))?$/);
+  if (catMatch) {
+    const catId = decodeURIComponent(catMatch[1]);
+    const isDeletePath = catMatch[2] === 'delete' || req.method === 'DELETE';
+
+    if (req.method === 'PATCH' || (req.method === 'POST' && !isDeletePath && pathname.endsWith('/update'))) {
+      try {
+        hubSession.requireStaff(req);
+      } catch (err) {
+        sendJson(res, err.status || 403, { ok: false, error: err.message || 'Forbidden' });
+        return true;
+      }
+      const body = await readBody(req);
+      try {
+        const result = productCategories.update(catId, body || {});
+        sendJson(res, 200, { ok: true, ...result });
+      } catch (err) {
+        sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحديث التصنيف' });
+      }
+      return true;
+    }
+
+    if (isDeletePath && (req.method === 'DELETE' || req.method === 'POST')) {
+      try {
+        hubSession.requireStaff(req);
+      } catch (err) {
+        sendJson(res, err.status || 403, { ok: false, error: err.message || 'Forbidden' });
+        return true;
+      }
+      const body = await readBody(req).catch(() => ({}));
+      const productCount = Number(body?.productCount || 0);
+      const replacementId = body?.replacementId || body?.replacementCategoryId || '';
+      if (productCount > 0 && !replacementId) {
+        sendJson(res, 409, {
+          ok: false,
+          error: `هذا التصنيف مرتبط بـ ${productCount} منتجات. اختر تصنيفًا بديلًا لنقل المنتجات إليه قبل الحذف.`,
+          needsReplacement: true,
+          productCount,
+        });
+        return true;
+      }
+      try {
+        const result = productCategories.remove(catId, { replacementId });
+        sendJson(res, 200, {
+          ok: true,
+          deleted: result.deleted,
+          replacement: result.replacement,
+          reassignFrom: result.deleted?.id,
+          reassignTo: result.replacement?.id || null,
+        });
+      } catch (err) {
+        sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر حذف التصنيف' });
+      }
+      return true;
+    }
   }
 
   if (pathname.startsWith('/api/hub/synced/') && req.method === 'GET') {

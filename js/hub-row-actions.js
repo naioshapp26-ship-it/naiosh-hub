@@ -865,6 +865,7 @@
     if (Array.isArray(field.options)) return field.options;
     if (field.optionsFrom === 'storeCategories') {
       return (
+        window.HubProductCategories?.optionsForForms?.() ||
         window.HubMarketplaceData?.storeCategoryOptions?.() ||
         (window.HubMarketplaceData?.SHOP_CATEGORIES || [])
           .filter((c) => c.id !== 'الكل')
