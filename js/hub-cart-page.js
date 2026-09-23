@@ -1,5 +1,5 @@
 /**
- * صفحة السلة
+ * صفحة السلة — ربط حقيقي مع Checkout
  */
 (() => {
   'use strict';
@@ -9,12 +9,15 @@
 
   const list = root.querySelector('[data-cart-list]');
   const summary = root.querySelector('[data-cart-summary]');
-  const money = (n) => (window.HubCurrency?.format ? window.HubCurrency.format(n) : `${Number(n) || 0}$`);
+  const money = (n) =>
+    window.HubPurchase?.formatUsd?.(n) ||
+    (window.HubCurrency?.format ? window.HubCurrency.format(n) : `${Number(n) || 0}$`);
 
   const paint = () => {
     const items = window.HubCart.read();
     if (!items.length) {
-      list.innerHTML = '<p class="hub-feature-section-lead">السلة فارغة — أضف منتجات داخلية من المتجر. للمنتجات الخارجية استخدم «الانتقال إلى المتجر» على بطاقة المنتج.</p>';
+      list.innerHTML =
+        '<p class="hub-feature-section-lead">السلة فارغة — أضف منتجات من <a href="products.html">صفحة المنتجات</a>.</p>';
       summary.innerHTML = '';
       return;
     }
@@ -25,7 +28,7 @@
             <span class="hub-feature-icon"><i class="fas fa-box"></i></span>
             <h3>${i.title}</h3>
           </div>
-          <p>${money(i.price)} · نقاط: ${i.points || 0}</p>
+          <p>${money(i.price)} · الكمية: ${i.qty}</p>
           <div class="hub-feature-actions">
             <button type="button" class="btn btn-secondary" data-qty="-1">−</button>
             <strong>${i.qty}</strong>
@@ -39,9 +42,9 @@
       <h3>الإجمالي: ${money(window.HubCart.total())}</h3>
       <p>${window.HubCart.count()} عنصر</p>
       <div class="hub-feature-actions">
-        <button type="button" class="btn btn-primary" data-checkout>إتمام الشراء داخل نايوش</button>
-        <a class="btn btn-secondary" href="store.html">متابعة التسوق</a>
-        <a class="btn btn-secondary" href="office.html">مكتبي</a>
+        <a class="btn btn-primary" href="checkout.html?source=cart">إتمام الشراء</a>
+        <a class="btn btn-secondary" href="products.html">متابعة التسوق</a>
+        <a class="btn btn-secondary" href="my-orders.html">طلباتي</a>
       </div>
     </div>`;
   };
@@ -58,14 +61,6 @@
     paint();
   });
 
-  summary?.addEventListener('click', (e) => {
-    if (!e.target.closest('[data-checkout]')) return;
-    const res = window.HubCart.checkout();
-    if (!res.ok) return alert(res.error || 'تعذّر الإتمام');
-    alert('تم الشراء — يمكنك فتح النظام من مكتبي أو الأنظمة.');
-    paint();
-    location.href = 'office.html';
-  });
-
+  window.addEventListener('hub:cart-changed', paint);
   paint();
 })();

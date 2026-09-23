@@ -836,7 +836,7 @@
           </table></div>
         </article>
         <article class="card">
-          <h3><span class="title-left"><i class="fas fa-receipt icon"></i> الطلبات</span></h3>
+          <h3><span class="title-left"><i class="fas fa-receipt icon"></i> الطلبات (متجر محلي)</span></h3>
           <div class="table-wrap"><table class="data">
             <thead><tr><th>المنتج</th><th>المشتري</th><th>المبلغ ($)</th><th>الوقت</th></tr></thead>
             <tbody>
@@ -854,6 +854,11 @@
           </table></div>
         </article>
       </div>
+      <article class="card hub-admin-orders-wrap" style="margin-top:12px">
+        <h3><span class="title-left"><i class="fas fa-bag-shopping icon"></i> طلبات شراء المنتجات (Checkout)</span></h3>
+        <p class="muted" style="margin:0 0 8px">الطلبات القادمة من «اشترِ الآن» والسلة — مصدر الملف على الخادم.</p>
+        <div id="hub-product-orders-admin"><div class="empty">جاري تحميل الطلبات…</div></div>
+      </article>
     `;
   };
 
@@ -1104,6 +1109,102 @@
     settings: renderSettings,
   };
 
+  const PRODUCT_ORDER_STATUS_LABELS = {
+    received: 'تم استلام الطلب',
+    payment_confirmed: 'تم تأكيد الدفع',
+    under_review: 'قيد المراجعة',
+    confirmed: 'تم التأكيد',
+    in_progress: 'قيد التنفيذ',
+    completed: 'مكتمل',
+    cancelled: 'ملغي',
+  };
+
+  const authHeadersJson = () => {
+    const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+    const token = window.HubAuth?.getToken?.() || '';
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+      headers['X-Hub-Token'] = token;
+    }
+    return headers;
+  };
+
+  const loadProductOrdersAdmin = async () => {
+    const mount = document.getElementById('hub-product-orders-admin');
+    if (!mount) return;
+    try {
+      const res = await fetch('/api/hub/product-orders', { headers: authHeadersJson(), cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        mount.innerHTML = `<div class="empty">${esc(data.error || 'تعذر تحميل طلبات المنتجات')}</div>`;
+        return;
+      }
+      const orders = data.orders || [];
+      const labels = data.statusLabels || PRODUCT_ORDER_STATUS_LABELS;
+      if (!orders.length) {
+        mount.innerHTML = '<div class="empty">لا توجد طلبات شراء منتجات بعد</div>';
+        return;
+      }
+      const statusOpts = Object.keys(labels)
+        .map((k) => `<option value="${esc(k)}">${esc(labels[k])}</option>`)
+        .join('');
+      mount.innerHTML = `<div class="table-wrap"><table class="data">
+        <thead><tr>
+          <th>رقم الطلب</th><th>العميل</th><th>المنتج</th><th>Product ID</th>
+          <th>السعر</th><th>الإجمالي</th><th>الدفع</th><th>الحالة</th><th>التاريخ</th><th>إجراءات</th>
+        </tr></thead>
+        <tbody>
+          ${orders
+            .map((o) => {
+              const pay =
+                (data.paymentLabels && data.paymentLabels[o.paymentStatus]) || o.paymentStatus;
+              return `<tr data-pord="${esc(o.id)}">
+                <td><strong>${esc(o.number)}</strong></td>
+                <td>${esc(o.customerName)}<br><small>${esc(o.customerEmail)}</small><br><small>ID: ${esc(o.customerId)}</small></td>
+                <td>${esc(o.productName)}</td>
+                <td><code>${esc(o.productId)}</code></td>
+                <td>${money(o.unitPrice)}</td>
+                <td>${money(o.total)}</td>
+                <td>${esc(pay)}</td>
+                <td>${esc(labels[o.orderStatus] || o.orderStatus)}</td>
+                <td>${fmtTime(o.createdAt)}</td>
+                <td>
+                  <select data-pord-status="${esc(o.id)}" style="max-width:140px">${statusOpts.replace(
+                    `value="${o.orderStatus}"`,
+                    `value="${o.orderStatus}" selected`
+                  )}</select>
+                  <button type="button" class="btn btn-sm btn-primary" data-action="pord-set-status" data-id="${esc(o.id)}">تطبيق</button>
+                  <button type="button" class="btn btn-sm btn-dark" data-action="pord-confirm" data-id="${esc(o.id)}">تأكيد</button>
+                  <button type="button" class="btn btn-sm" data-action="pord-progress" data-id="${esc(o.id)}">تجهيز</button>
+                  <button type="button" class="btn btn-sm btn-primary" data-action="pord-complete" data-id="${esc(o.id)}">إكمال</button>
+                  <button type="button" class="btn btn-sm btn-ghost" data-action="pord-cancel" data-id="${esc(o.id)}">إلغاء</button>
+                </td>
+              </tr>`;
+            })
+            .join('')}
+        </tbody>
+      </table></div>`;
+      // mark selected options correctly
+      mount.querySelectorAll('[data-pord-status]').forEach((sel) => {
+        const row = orders.find((o) => o.id === sel.getAttribute('data-pord-status'));
+        if (row) sel.value = row.orderStatus;
+      });
+    } catch (err) {
+      mount.innerHTML = `<div class="empty">${esc(err.message || 'تعذر تحميل الطلبات')}</div>`;
+    }
+  };
+
+  const updateProductOrderStatus = async (id, status) => {
+    const res = await fetch(`/api/hub/product-orders/${encodeURIComponent(id)}/status`, {
+      method: 'POST',
+      headers: authHeadersJson(),
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || 'تعذر تحديث الحالة');
+    return data.order;
+  };
+
   const render = () => {
     root.innerHTML = `<section class="panel active">${renderers[current]()}</section>`;
     if (current === 'posha-clients' && window.HubPoshaClients?.mount) {
@@ -1117,6 +1218,9 @@
     if (current === 'content-articles' && window.HubArticlesAdmin?.mount) {
       const mount = document.getElementById('articles-admin-mount');
       if (mount) window.HubArticlesAdmin.mount(mount);
+    }
+    if (current === 'store') {
+      loadProductOrdersAdmin();
     }
     if (current === 'settings' && window.HubSettingsCenter?.bind) {
       window.HubSettingsCenter.bind(root, {
@@ -1502,6 +1606,50 @@
         if (!HubStore.placeStoreOrder(id, user.name || 'مشغّل هوب')) return toast('تعذّر البيع');
         toast('تم تسجيل عملية البيع');
         break;
+      case 'pord-set-status': {
+        const sel = root.querySelector(`[data-pord-status="${id}"]`);
+        const status = sel?.value;
+        if (!status) return toast('اختر حالة');
+        updateProductOrderStatus(id, status)
+          .then(() => {
+            toast('تم تحديث حالة الطلب');
+            loadProductOrdersAdmin();
+          })
+          .catch((err) => toast(err.message || 'تعذر التحديث'));
+        return;
+      }
+      case 'pord-confirm':
+        updateProductOrderStatus(id, 'confirmed')
+          .then(() => {
+            toast('تم تأكيد الطلب');
+            loadProductOrdersAdmin();
+          })
+          .catch((err) => toast(err.message || 'تعذر التأكيد'));
+        return;
+      case 'pord-progress':
+        updateProductOrderStatus(id, 'in_progress')
+          .then(() => {
+            toast('قيد التجهيز');
+            loadProductOrdersAdmin();
+          })
+          .catch((err) => toast(err.message || 'تعذر التحديث'));
+        return;
+      case 'pord-complete':
+        updateProductOrderStatus(id, 'completed')
+          .then(() => {
+            toast('اكتمل الطلب');
+            loadProductOrdersAdmin();
+          })
+          .catch((err) => toast(err.message || 'تعذر الإكمال'));
+        return;
+      case 'pord-cancel':
+        updateProductOrderStatus(id, 'cancelled')
+          .then(() => {
+            toast('أُلغي الطلب');
+            loadProductOrdersAdmin();
+          })
+          .catch((err) => toast(err.message || 'تعذر الإلغاء'));
+        return;
       case 'add-ad': {
         const title = $('#ad-title')?.value.trim();
         if (!title) return toast('عنوان الإعلان مطلوب');

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>إتمام الشراء | نايوش هوب 360</title>
+  <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/hub-theme.css" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
+  <link rel="stylesheet" href="css/hub-purchase.css?v=1" />
+  <link rel="stylesheet" href="css/hub-checkout.css?v=1" />
+</head>
+<body class="homepage hub-checkout-page">
+  <header class="top-nav">
+    <div class="container inner">
+      <div class="nav-main">
+        <a class="brand" href="index.html"><img src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
+        <nav class="nav-links">
+          <a href="products.html">المنتجات</a>
+          <a href="cart.html">السلة</a>
+          <a class="active" href="checkout.html">إتمام الشراء</a>
+          <a href="my-orders.html">طلباتي</a>
+        </nav>
+      </div>
+      <div class="auth-actions">
+        <a href="login.html" class="auth-btn">دخول</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container hub-checkout" id="hub-checkout-root" data-hub-checkout>
+    <div class="hub-checkout-alert" id="co-alert" hidden role="alert"></div>
+
+    <header class="hub-checkout-head">
+      <h1 id="co-title">إتمام شراء المنتج</h1>
+      <p id="co-subtitle">رحلة شراء واضحة داخل نايوش — من المنتج حتى تأكيد الطلب.</p>
+    </header>
+
+    <ol class="hub-checkout-stepper" id="co-stepper" aria-label="خطوات الشراء">
+      <li data-step="1" class="is-current"><span class="num">1</span><span class="lbl">المنتج</span></li>
+      <li data-step="2"><span class="num">2</span><span class="lbl">بيانات العميل</span></li>
+      <li data-step="3"><span class="num">3</span><span class="lbl">مراجعة الطلب</span></li>
+      <li data-step="4"><span class="num">4</span><span class="lbl">الدفع</span></li>
+      <li data-step="5"><span class="num">5</span><span class="lbl">التأكيد</span></li>
+    </ol>
+
+    <section class="hub-checkout-panel" id="co-step-1" data-panel="1">
+      <h2>اختيار المنتج</h2>
+      <div class="hub-co-product-card" id="co-product-summary">
+        <div class="hub-co-product-icon" id="co-product-icon"><i class="fas fa-cube"></i></div>
+        <div class="hub-co-product-body">
+          <p class="hub-co-kicker">المنتج</p>
+          <h3 id="co-product-name">…</h3>
+          <p class="hub-co-meta" id="co-product-meta"></p>
+          <p class="hub-co-desc" id="co-product-desc"></p>
+          <p class="hub-co-price" id="co-product-price"></p>
+          <p class="hub-co-status" id="co-product-status"></p>
+        </div>
+      </div>
+      <div class="hub-co-lines" id="co-lines" hidden></div>
+      <label class="hub-co-qty-wrap">الكمية
+        <input type="number" id="co-qty" min="1" max="99" value="1" />
+      </label>
+      <div class="hub-checkout-actions">
+        <a class="btn btn-secondary" href="products.html">العودة للمنتجات</a>
+        <button type="button" class="btn btn-primary" data-co-next>متابعة</button>
+      </div>
+    </section>
+
+    <section class="hub-checkout-panel" id="co-step-2" data-panel="2" hidden>
+      <h2>بيانات العميل</h2>
+      <p class="hub-co-lead" id="co-customer-lead">أدخل بياناتك لإكمال الطلب. الطلب مرتبط بحساب العميل.</p>
+      <div class="hub-co-login-gate" id="co-login-gate" hidden>
+        <p>يرجى تسجيل الدخول لإكمال الشراء.</p>
+        <a class="btn btn-primary" id="co-login-link" href="login.html">تسجيل الدخول / إنشاء حساب</a>
+      </div>
+      <form class="hub-co-form" id="co-customer-form">
+        <label>الاسم الكامل<input name="name" id="co-name" required autocomplete="name" /></label>
+        <label>البريد الإلكتروني<input name="email" id="co-email" type="email" required autocomplete="email" readonly /></label>
+        <label>رقم الهاتف<input name="phone" id="co-phone" type="tel" autocomplete="tel" /></label>
+        <label>الدولة<input name="country" id="co-country" autocomplete="country-name" /></label>
+        <label>اسم الشركة (اختياري)<input name="company" id="co-company" autocomplete="organization" /></label>
+      </form>
+      <div class="hub-checkout-actions">
+        <button type="button" class="btn btn-secondary" data-co-prev>السابق</button>
+        <button type="button" class="btn btn-primary" data-co-next>متابعة بيانات العميل</button>
+      </div>
+    </section>
+
+    <section class="hub-checkout-panel" id="co-step-3" data-panel="3" hidden>
+      <h2>مراجعة طلبك</h2>
+      <div class="hub-co-review" id="co-review"></div>
+      <label class="hub-co-terms">
+        <input type="checkbox" id="co-terms" />
+        <span>أوافق على <a href="terms.html" target="_blank" rel="noopener">شروط الشراء</a> و<a href="policies.html" target="_blank" rel="noopener">سياسة الاستخدام</a></span>
+      </label>
+      <div class="hub-checkout-actions">
+        <button type="button" class="btn btn-secondary" data-co-edit>تعديل البيانات</button>
+        <button type="button" class="btn btn-primary" data-co-next>متابعة إلى الدفع</button>
+      </div>
+    </section>
+
+    <section class="hub-checkout-panel" id="co-step-4" data-panel="4" hidden>
+      <h2>الدفع التجريبي</h2>
+      <div class="hub-co-pay-banner" role="note">
+        <i class="fas fa-flask" aria-hidden="true"></i>
+        <div>
+          <strong>هذه بيئة تجريبية، ولن يتم خصم مبلغ مالي حقيقي.</strong>
+          <p>لا تُطلب ولا تُخزَّن بيانات بطاقة ائتمانية في الوضع التجريبي.</p>
+        </div>
+      </div>
+      <div class="hub-co-totals" id="co-pay-total"></div>
+      <div class="hub-checkout-actions">
+        <button type="button" class="btn btn-secondary" data-co-prev>السابق</button>
+        <button type="button" class="btn btn-primary" id="co-pay-confirm" data-co-pay>
+          <i class="fas fa-shield-halved"></i> تأكيد الدفع التجريبي
+        </button>
+      </div>
+    </section>
+
+    <section class="hub-checkout-panel" id="co-step-5" data-panel="5" hidden>
+      <div class="hub-co-success" id="co-success">
+        <div class="hub-co-success-icon" aria-hidden="true">✓</div>
+        <h2>تم استلام طلبك بنجاح</h2>
+        <dl class="hub-co-success-dl" id="co-success-dl"></dl>
+        <div class="hub-checkout-actions hub-checkout-actions--wrap">
+          <a class="btn btn-primary" id="co-view-order" href="my-orders.html">عرض تفاصيل الطلب</a>
+          <a class="btn btn-secondary" href="my-orders.html">طلباتي</a>
+          <a class="btn btn-secondary" href="products.html">العودة إلى المنتجات</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/hub-marketplace-data.js?v=slide4"></script>
+  <script src="js/hub-purchase.js?v=1"></script>
+  <script src="js/hub-store.js"></script>
+  <script src="js/hub-auth.js"></script>
+  <script src="js/hub-cart.js"></script>
+  <script src="js/hub-currency.js"></script>
+  <script src="js/hub-upload-limits.js?v=1"></script>
+  <script src="js/hub-header-actions.js?v=18"></script>
+  <script src="js/hub-control-nav.js?v=3"></script>
+  <script src="js/hub-checkout.js?v=1"></script>
+  <script src="js/hub-global-back.js" defer></script>
+</body>
+</html>

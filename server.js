@@ -17,6 +17,7 @@ const hubClientPortal = require('./lib/hub-client-portal');
 const hubPoshaOps = require('./lib/hub-posha-ops');
 const hubPoshaOs = require('./lib/hub-posha-os');
 const productCategories = require('./lib/hub-product-categories');
+const productOrders = require('./lib/hub-product-orders');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -252,6 +253,161 @@ async function handleHubApi(req, res, pathname) {
   if (pathname === '/api/hub/apps' && req.method === 'GET') {
     sendJson(res, 200, { ok: true, apps: hubRuntime.listApps(), synced: hubRuntime.getSynced() });
     return true;
+  }
+
+  // —— منتجات الكتالوج + طلبات الشراء (Checkout) ——
+  const productMatch = pathname.match(/^\/api\/hub\/products\/([^/]+)$/);
+  if (productMatch && req.method === 'GET') {
+    const product = productOrders.publicProduct(productOrders.findProduct(decodeURIComponent(productMatch[1])));
+    if (!product) {
+      sendJson(res, 404, { ok: false, error: 'تعذر تحميل بيانات المنتج. حاول مرة أخرى.' });
+      return true;
+    }
+    sendJson(res, 200, {
+      ok: true,
+      product,
+      statusLabels: productOrders.STATUS_LABELS,
+      paymentLabels: productOrders.PAYMENT_LABELS,
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/product-orders/meta' && req.method === 'GET') {
+    sendJson(res, 200, {
+      ok: true,
+      orderStatuses: productOrders.ORDER_STATUSES,
+      statusLabels: productOrders.STATUS_LABELS,
+      paymentLabels: productOrders.PAYMENT_LABELS,
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/product-orders' && req.method === 'GET') {
+    let session;
+    try {
+      session = hubSession.requireAuth(req);
+    } catch (err) {
+      sendJson(res, err.status || 401, { ok: false, error: err.message || 'يرجى تسجيل الدخول لإكمال الشراء.' });
+      return true;
+    }
+    const staff = hubSession.isStaffLane(session.lane);
+    const orders = productOrders.listOrders({ email: session.email, staff });
+    sendJson(res, 200, {
+      ok: true,
+      staff,
+      count: orders.length,
+      orders,
+      statusLabels: productOrders.STATUS_LABELS,
+      paymentLabels: productOrders.PAYMENT_LABELS,
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/product-orders' && req.method === 'POST') {
+    let session;
+    try {
+      session = hubSession.requireAuth(req);
+    } catch (err) {
+      sendJson(res, err.status || 401, { ok: false, error: 'يرجى تسجيل الدخول لإكمال الشراء.' });
+      return true;
+    }
+    const body = await readBody(req);
+    try {
+      const customer = {
+        id: session.userId || session.id || session.email,
+        email: session.email,
+        name: body?.customer?.name || body?.customerName || session.name || session.fullName || session.email,
+        phone: body?.customer?.phone || body?.customerPhone || session.phone || '',
+        country: body?.customer?.country || body?.customerCountry || session.country || '',
+        company: body?.customer?.company || body?.customerCompany || '',
+      };
+      const lines = Array.isArray(body?.items) && body.items.length
+        ? body.items
+        : [{ productId: body?.productId, qty: body?.qty || 1, clientPrice: body?.clientPrice }];
+      const created = [];
+      const baseKey = String(body?.idempotencyKey || '').trim();
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i] || {};
+        const result = productOrders.createOrder({
+          productId: line.productId || body?.productId,
+          qty: line.qty || 1,
+          customer,
+          paymentMode: body?.paymentMode === 'demo' ? 'demo' : 'demo',
+          source: body?.source === 'cart' ? 'cart' : 'buy_now',
+          idempotencyKey: baseKey ? `${baseKey}:${i}:${line.productId || body?.productId}` : undefined,
+          clientPrice: line.clientPrice != null ? line.clientPrice : body?.clientPrice,
+        });
+        created.push(result);
+      }
+      sendJson(res, 201, {
+        ok: true,
+        duplicate: created.every((c) => c.duplicate),
+        order: created[0]?.order || null,
+        orders: created.map((c) => c.order),
+        statusLabels: productOrders.STATUS_LABELS,
+        paymentLabels: productOrders.PAYMENT_LABELS,
+      });
+    } catch (err) {
+      sendJson(res, err.status || 400, {
+        ok: false,
+        error: err.message || 'تعذر إنشاء الطلب.',
+        code: err.code || undefined,
+        officialPrice: err.officialPrice,
+      });
+    }
+    return true;
+  }
+
+  const orderMatch = pathname.match(/^\/api\/hub\/product-orders\/([^/]+)(?:\/(status))?$/);
+  if (orderMatch) {
+    const orderId = decodeURIComponent(orderMatch[1]);
+    const isStatus = orderMatch[2] === 'status';
+
+    if (req.method === 'GET' && !isStatus) {
+      let session;
+      try {
+        session = hubSession.requireAuth(req);
+      } catch (err) {
+        sendJson(res, err.status || 401, { ok: false, error: err.message || 'Unauthorized' });
+        return true;
+      }
+      try {
+        const order = productOrders.getOrder(orderId);
+        productOrders.assertCanView(order, session);
+        sendJson(res, 200, {
+          ok: true,
+          order,
+          statusLabels: productOrders.STATUS_LABELS,
+          paymentLabels: productOrders.PAYMENT_LABELS,
+        });
+      } catch (err) {
+        sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحميل الطلب' });
+      }
+      return true;
+    }
+
+    if (isStatus && (req.method === 'PATCH' || req.method === 'POST')) {
+      let session;
+      try {
+        session = hubSession.requireStaff(req);
+      } catch (err) {
+        sendJson(res, err.status || 403, { ok: false, error: err.message || 'Forbidden' });
+        return true;
+      }
+      const body = await readBody(req);
+      try {
+        const order = productOrders.updateOrderStatus(orderId, body?.status || body?.orderStatus, session);
+        sendJson(res, 200, {
+          ok: true,
+          order,
+          statusLabels: productOrders.STATUS_LABELS,
+          paymentLabels: productOrders.PAYMENT_LABELS,
+        });
+      } catch (err) {
+        sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحديث الحالة' });
+      }
+      return true;
+    }
   }
 
   // —— تصنيفات المنتجات (مصدر مركزي) ——

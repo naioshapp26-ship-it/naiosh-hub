@@ -722,7 +722,7 @@
               const avail = P?.availabilityLabel?.(p) || 'متاح';
               const site = purchaseType === 'INTERNAL' ? window.HubReadySites?.siteForProduct?.(p) : null;
               const openUrl = site ? siteHref(p) : 'store.html';
-              const buyUrl = `store.html?buy=${encodeURIComponent(p.storeItemId || p.sku || p.id)}`;
+              const buyUrl = `checkout.html?product=${encodeURIComponent(p.id || p.sku)}`;
               const media =
                 site?.face || site?.logo
                   ? `<div class="shop-card-media has-face">${
@@ -739,12 +739,12 @@
                 purchaseType === 'EXTERNAL'
                   ? P.cardActionsHtml(linkedStore || p, { detailsHref: buyUrl })
                   : `<button type="button" class="primary" data-cart-product="${esc(p.id || p.sku)}"><i class="fas fa-basket-shopping"></i> أضف للسلة</button>
-                    <a class="primary" href="${esc(buyUrl)}"><i class="fas fa-cart-shopping"></i> اشترِ الآن</a>
+                    <a class="primary" href="${esc(buyUrl)}" data-buy-now="${esc(p.id || p.sku)}"><i class="fas fa-cart-shopping"></i> اشترِ الآن</a>
                     ${
                       site
-                        ? `<a href="${esc(openUrl)}" ${
+                        ? `<a href="${esc(openUrl)}" data-enter-site="${esc(p.id || p.sku)}" data-platform-code="${esc(p.platformCode || '')}" ${
                             isLiveLaunch(site?.launchCode)
-                              ? `data-launch-code="${esc(site.launchCode)}" data-launch-mode="hub" target="_blank" rel="noopener noreferrer"`
+                              ? `data-launch-code="${esc(site.launchCode)}" data-launch-mode="hub"`
                               : ''
                           }><i class="fas fa-arrow-up-left"></i> ادخل الموقع</a>`
                         : ''
@@ -1013,9 +1013,43 @@
         }
         return;
       }
+      const enterBtn = e.target.closest('[data-enter-site]');
+      if (enterBtn) {
+        e.preventDefault();
+        const platformCode = enterBtn.getAttribute('data-platform-code') || '';
+        const productKey = enterBtn.getAttribute('data-enter-site');
+        const p = products.find((x) => String(x.id) === productKey || String(x.sku) === productKey);
+        const code = String(platformCode || p?.platformCode || '').toUpperCase();
+        if (code && window.HubAuth?.canAccessSystem) {
+          const access = window.HubAuth.canAccessSystem(code, 'read');
+          if (!access?.ok) {
+            toast('هذا المنتج يتطلب شراءً أو اشتراكًا قبل الدخول الكامل. استخدم «اشترِ الآن».');
+            return;
+          }
+        } else if (!window.HubAuth?.isLoggedIn?.()) {
+          toast('يرجى تسجيل الدخول أو شراء المنتج قبل الدخول.');
+          return;
+        }
+        const launchCode = enterBtn.getAttribute('data-launch-code');
+        if (launchCode && window.HubLauncher?.launch) {
+          window.HubLauncher.launch(launchCode, { mode: 'hub' });
+          return;
+        }
+        const href = enterBtn.getAttribute('href');
+        if (href) window.open(href, '_blank', 'noopener,noreferrer');
+        return;
+      }
       const launch = e.target.closest('[data-launch-code]');
       if (!launch || !window.HubLauncher?.launch) return;
       e.preventDefault();
+      const platformCode = launch.getAttribute('data-platform-code') || '';
+      if (platformCode && window.HubAuth?.canAccessSystem) {
+        const access = window.HubAuth.canAccessSystem(platformCode, 'read');
+        if (!access?.ok) {
+          toast('هذا المنتج يتطلب شراءً أو اشتراكًا قبل الدخول الكامل. استخدم «اشترِ الآن».');
+          return;
+        }
+      }
       window.HubLauncher.launch(launch.dataset.launchCode, { mode: 'hub' });
     });
 
