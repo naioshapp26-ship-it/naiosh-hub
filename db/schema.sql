@@ -306,6 +306,19 @@ CREATE INDEX IF NOT EXISTS idx_hub_wallet_ledger_created ON hub_wallet_ledger(cr
 CREATE INDEX IF NOT EXISTS idx_hub_notifications_created ON hub_notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_hub_system_sync_code ON hub_system_sync(code, created_at DESC);
 
+CREATE TABLE IF NOT EXISTS hub_product_categories (
+  id TEXT PRIMARY KEY,
+  name_ar TEXT NOT NULL UNIQUE,
+  description TEXT NOT NULL DEFAULT '',
+  icon TEXT NOT NULL DEFAULT 'fa-tag',
+  status TEXT NOT NULL DEFAULT 'active',
+  is_system BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_hub_product_categories_status ON hub_product_categories(status);
+
 -- Idempotent column upgrades for store marketplace linking
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS brand TEXT;
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS item_kind TEXT DEFAULT 'منتج';
