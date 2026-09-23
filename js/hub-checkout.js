@@ -181,23 +181,32 @@
 
   const paintCustomer = () => {
     const user = window.HubAuth?.getUser?.();
-    const loggedIn = window.HubAuth?.isLoggedIn?.();
+    const loggedIn = Boolean(window.HubAuth?.isLoggedIn?.());
     const gate = document.getElementById('co-login-gate');
     const form = document.getElementById('co-customer-form');
     const loginLink = document.getElementById('co-login-link');
+    const emailInput = document.getElementById('co-email');
+    const next = `${location.pathname}${location.search}`;
     if (loginLink) {
-      const next = encodeURIComponent(`${location.pathname}${location.search}`);
-      loginLink.href = `login.html?next=${next}`;
+      loginLink.href = `login.html?next=${encodeURIComponent(next)}`;
     }
     if (!loggedIn) {
-      gate.hidden = false;
-      form.hidden = true;
-      document.getElementById('co-customer-lead').textContent =
-        'يرجى تسجيل الدخول لإكمال الشراء. نظام الطلبات يعتمد على حساب العميل.';
+      if (gate) gate.hidden = false;
+      if (form) form.hidden = true;
+      if (emailInput) {
+        emailInput.readOnly = false;
+        emailInput.value = '';
+      }
+      const lead = document.getElementById('co-customer-lead');
+      if (lead) {
+        lead.textContent =
+          'يرجى تسجيل الدخول لإكمال الشراء. نظام الطلبات يعتمد على حساب العميل.';
+      }
+      showError('يرجى تسجيل الدخول لإكمال الشراء.');
       return false;
     }
-    gate.hidden = true;
-    form.hidden = false;
+    if (gate) gate.hidden = true;
+    if (form) form.hidden = false;
     state.customer = {
       name: state.customer.name || user?.name || user?.fullName || '',
       email: user?.email || state.customer.email || '',
@@ -206,10 +215,13 @@
       company: state.customer.company || user?.company || '',
     };
     document.getElementById('co-name').value = state.customer.name;
-    document.getElementById('co-email').value = state.customer.email;
+    emailInput.value = state.customer.email;
+    // البريد من الحساب فقط — يُقفل إن وُجد، ويُفتح للكتابة إن كان فارغًا بالخطأ
+    emailInput.readOnly = Boolean(state.customer.email && state.customer.email.includes('@'));
     document.getElementById('co-phone').value = state.customer.phone;
     document.getElementById('co-country').value = state.customer.country;
     document.getElementById('co-company').value = state.customer.company;
+    showError('');
     return true;
   };
 
@@ -406,6 +418,15 @@
       }
       if (!state.products.length || state.products.some((p) => !p.available)) {
         showError('هذا المنتج غير متاح للشراء حاليًا.');
+        return;
+      }
+      if (!window.HubAuth?.isLoggedIn?.()) {
+        const next = encodeURIComponent(`${location.pathname}${location.search}`);
+        showError('يرجى تسجيل الدخول لإكمال الشراء.');
+        setStep(2);
+        paintCustomer();
+        const loginLink = document.getElementById('co-login-link');
+        if (loginLink) loginLink.href = `login.html?next=${next}`;
         return;
       }
       setStep(2);

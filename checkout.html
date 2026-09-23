@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
   <link rel="stylesheet" href="css/hub-purchase.css?v=1" />
-  <link rel="stylesheet" href="css/hub-checkout.css?v=1" />
+  <link rel="stylesheet" href="css/hub-checkout.css?v=2" />
 </head>
 <body class="homepage hub-checkout-page">
   <header class="top-nav">
@@ -80,7 +80,7 @@
       </div>
       <form class="hub-co-form" id="co-customer-form">
         <label>الاسم الكامل<input name="name" id="co-name" required autocomplete="name" /></label>
-        <label>البريد الإلكتروني<input name="email" id="co-email" type="email" required autocomplete="email" readonly /></label>
+        <label>البريد الإلكتروني<input name="email" id="co-email" type="email" required autocomplete="email" inputmode="email" dir="ltr" /></label>
         <label>رقم الهاتف<input name="phone" id="co-phone" type="tel" autocomplete="tel" /></label>
         <label>الدولة<input name="country" id="co-country" autocomplete="country-name" /></label>
         <label>اسم الشركة (اختياري)<input name="company" id="co-company" autocomplete="organization" /></label>
@@ -145,7 +145,7 @@
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
   <script src="js/hub-control-nav.js?v=3"></script>
-  <script src="js/hub-checkout.js?v=2"></script>
+  <script src="js/hub-checkout.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
 </body>
 </html>
