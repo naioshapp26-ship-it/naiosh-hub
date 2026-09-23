@@ -546,7 +546,7 @@
       </div>
       <div class="toolbar" style="gap:8px;margin:8px 0">
         <input data-sm-change="userQ" placeholder="بحث مستخدم..." value="${esc(ui.userQ)}" />
-        <select data-sm-change="userRole"><option value="">كل الأدوار</option>${['Admin', 'Manager', 'Operator'].map((r) => `<option ${ui.userRole === r ? 'selected' : ''}>${r}</option>`).join('')}</select>
+        <select data-sm-change="userRole"><option value="">كل الأدوار</option>${[['Admin','مدير'],['Manager','مدير قسم'],['Operator','مشغّل']].map(([v,l]) => `<option value="${v}" ${ui.userRole === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
         <select data-sm-change="userStatus"><option value="">كل الحالات</option>${['Active', 'Inactive'].map((r) => `<option ${ui.userStatus === r ? 'selected' : ''}>${r}</option>`).join('')}</select>
       </div>
       <div class="table-wrap"><table class="data">

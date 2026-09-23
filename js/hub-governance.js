@@ -5,6 +5,9 @@
 (() => {
   'use strict';
 
+  const stLabel = (s) => window.HubI18n?.display?.(s) || s;
+  const sysLabel = (s) => window.HubI18n?.system?.(s) || s;
+
   const PAGE_SIZES = [10, 25, 50, 100];
   const TABS = [
     { id: 'dashboard', label: 'لوحة الحوكمة', icon: 'fa-gauge' },
@@ -371,7 +374,7 @@
               <td>${esc(p.governanceRole || '—')}</td>
               <td>${esc(p.manager || '—')}</td>
               <td><button type="button" class="gov-name-link" data-action="gov-profile" data-id="${esc(p.id)}" data-dtab="compliance">${p.complianceScore ?? 0}%</button> ${bar(p.complianceScore)}</td>
-              <td><span class="badge ${p.status === 'Active' ? 'badge-black' : 'badge-gray'}">${esc(p.status)}</span></td>
+              <td><span class="badge ${p.status === 'Active' ? 'badge-black' : 'badge-gray'}">${esc(stLabel(p.status))}</span></td>
               <td>
                 <div class="gov-actions">
                   <button type="button" class="btn btn-sm btn-ghost" data-action="gov-profile" data-id="${esc(p.id)}" title="عرض الملف">عرض الملف</button>
@@ -441,7 +444,7 @@
           ? policies
               .map((pol) => {
                 const a = (pol.assignments || []).find((x) => x.personId === p.id);
-                return `<div class="gov-mini-row"><strong>${esc(pol.title)}</strong><span>${esc(a?.status || '—')} · ${esc(pol.code)}</span>
+                return `<div class="gov-mini-row"><strong>${esc(pol.title)}</strong><span>${esc(stLabel(a?.status || '—'))} · ${esc(pol.code)}</span>
                   ${a && a.status !== 'Acknowledged' ? `<button type="button" class="btn btn-sm btn-primary" data-action="gov-ack" data-pid="${esc(pol.id)}" data-uid="${esc(p.id)}">إقرار</button>` : ''}
                 </div>`;
               })
@@ -454,7 +457,7 @@
           ${(g.complianceRequirements || [])
             .map(
               (c) =>
-                `<div class="gov-mini-row"><strong>${esc(c.name)}</strong><span>${c.currentScore}% / هدف ${c.target}% · ${esc(c.status)}</span>
+                `<div class="gov-mini-row"><strong>${esc(c.name)}</strong><span>${c.currentScore}% / هدف ${c.target}% · ${esc(stLabel(c.status))}</span>
                 <button type="button" class="btn btn-sm btn-ghost" data-action="gov-comp-detail" data-id="${esc(c.id)}">التفاصيل</button></div>`
             )
             .join('')}`;
@@ -473,7 +476,7 @@
           ${contracts
             .map(
               (c) =>
-                `<div class="gov-mini-row"><strong>${esc(c.id)}</strong> · ${esc(c.type)} · ${esc(c.startDate)} → ${esc(c.endDate)} · ${esc(c.status)} · Owner: ${esc(c.owner)}</div>`
+                `<div class="gov-mini-row"><strong>${esc(c.id)}</strong> · ${esc(c.type)} · ${esc(c.startDate)} → ${esc(c.endDate)} · ${esc(stLabel(c.status))} · المسؤول: ${esc(c.owner)}</div>`
             )
             .join('') || '<div class="empty">لا عقود</div>'}`;
         break;
@@ -486,21 +489,21 @@
                   <strong>${esc(r.type)} · ${esc(r.value)}</strong>
                   <div>السبب: ${esc(r.reason)}</div>
                   <div class="muted">المصدر: ${esc(sourceLabel(r.source))} · طلبها: ${esc(r.requestedBy)} · اعتمدها: ${esc(r.approvedBy || '—')} · منحها: ${esc(r.grantedBy || '—')}</div>
-                  <div class="muted">${fmtTime(r.at)} · ${esc(r.status)}</div>
+                  <div class="muted">${fmtTime(r.at)} · ${esc(stLabel(r.status))}</div>
                 </div>`
             )
             .join('') || '<div class="empty">لا مكافآت</div>'}`;
         break;
       case 'decisions':
         body = (g.decisions || [])
-          .map((d) => `<div class="gov-mini-row"><strong>${esc(d.title)}</strong><span>${esc(d.status)} · ${esc(d.committee)}</span></div>`)
+          .map((d) => `<div class="gov-mini-row"><strong>${esc(d.title)}</strong><span>${esc(stLabel(d.status))} · ${esc(d.committee)}</span></div>`)
           .join('') || '<div class="empty">لا قرارات</div>';
         break;
       case 'approvals':
-        body = approvals.map((a) => `<div class="gov-mini-row"><strong>${esc(a.type)}</strong> · ${esc(a.relatedEntity)} · ${esc(a.status)}</div>`).join('') || '<div class="empty">لا مهام</div>';
+        body = approvals.map((a) => `<div class="gov-mini-row"><strong>${esc(a.type)}</strong> · ${esc(a.relatedEntity)} · ${esc(stLabel(a.status))}</div>`).join('') || '<div class="empty">لا مهام</div>';
         break;
       case 'violations':
-        body = violations.map((v) => `<div class="gov-mini-row"><strong>${esc(v.type)}</strong> · ${esc(v.description)} · ${esc(v.status)}</div>`).join('') || '<div class="empty">لا مخالفات</div>';
+        body = violations.map((v) => `<div class="gov-mini-row"><strong>${esc(v.type)}</strong> · ${esc(v.description)} · ${esc(stLabel(v.status))}</div>`).join('') || '<div class="empty">لا مخالفات</div>';
         break;
       case 'docs':
         body = docs.map((d) => `<div class="gov-mini-row"><strong>${esc(d.name)}</strong> · ${esc(d.type)} · v${esc(d.version)}</div>`).join('') || '<div class="empty">لا مستندات</div>';
@@ -555,7 +558,7 @@
           ${avatar(p)}
           <div>
             <h2 style="margin:0">ملف الحوكمة 360 · ${esc(p.name)}</h2>
-            <div class="muted">${esc(p.id)} · ${esc(p.employeeId)} · ${esc(p.title)} · <span class="badge badge-black">${esc(p.status)}</span></div>
+            <div class="muted">${esc(p.id)} · ${esc(p.employeeId)} · ${esc(p.title)} · <span class="badge badge-black">${esc(stLabel(p.status))}</span></div>
           </div>
         </div>
         <button type="button" class="btn btn-sm btn-ghost" data-action="gov-drawer-close">✕</button>
@@ -595,7 +598,7 @@
               <td>${esc(p.appliesTo?.label || p.scope || '—')}</td>
               <td>${esc(p.effectiveDate || '—')}</td>
               <td>${asg.length ? `${ack}/${asg.length}` : '—'}</td>
-              <td><span class="badge badge-outline">${esc(p.status)}</span></td>
+              <td><span class="badge badge-outline">${esc(stLabel(p.status))}</span></td>
               <td>${!/active/i.test(String(p.status)) ? `<button class="btn btn-sm btn-primary" data-action="gov-activate-policy" data-id="${esc(p.id)}">تفعيل</button>` : `<button class="btn btn-sm btn-ghost" data-action="gov-policy-detail" data-id="${esc(p.id)}">عرض الأشخاص</button>`}</td>
             </tr>`;
           })
@@ -622,7 +625,7 @@
             <td>${esc(c.evidenceRequired)}</td>
             <td>${c.target}%</td>
             <td><button type="button" class="gov-name-link" data-action="gov-comp-detail" data-id="${esc(c.id)}">${c.currentScore}%</button> ${bar(c.currentScore)}</td>
-            <td>${esc(c.status)}</td>
+            <td>${esc(stLabel(c.status))}</td>
             <td><button type="button" class="btn btn-sm btn-ghost" data-action="gov-comp-detail" data-id="${esc(c.id)}">ما الدليل؟</button></td>
           </tr>`
           )
@@ -649,7 +652,7 @@
             <td>${s.currentValue ?? s.description ?? '—'} ${typeof s.currentValue === 'number' ? bar(s.currentValue) : ''}</td>
             <td>${esc(s.dataSource || '—')}</td>
             <td>${esc(s.owner || '—')}</td>
-            <td>${esc(s.status || '—')}</td>
+            <td>${esc(stLabel(s.status || '—'))}</td>
             <td><button type="button" class="btn btn-sm btn-ghost" data-action="gov-qs-detail" data-id="${esc(s.id)}">من أين النتيجة؟</button></td>
           </tr>`
           )
@@ -676,7 +679,7 @@
             <td>${esc(c.value)}</td>
             <td>${esc(c.startDate)} → ${esc(c.endDate)}</td>
             <td>${esc(c.owner)}</td>
-            <td>${esc(c.status)}</td>
+            <td>${esc(stLabel(c.status))}</td>
           </tr>`
           )
           .join('')}</tbody>
@@ -702,7 +705,7 @@
             <td>${esc(r.requestedBy || '—')}</td>
             <td>${esc(r.approvedBy || '—')}</td>
             <td>${esc(r.grantedBy || '—')}</td>
-            <td>${esc(r.status || '—')}</td>
+            <td>${esc(stLabel(r.status || '—'))}</td>
             <td>${fmtTime(r.at || r.createdAt)}</td>
           </tr>`
           )
@@ -724,7 +727,7 @@
           .map(
             (b) => `<div class="gov-org-node">
             <strong>${esc(b.name)}</strong>
-            <div class="muted">${esc(b.address)} · ${esc(b.manager)} · ${esc(b.status)}</div>
+            <div class="muted">${esc(b.address)} · ${esc(b.manager)} · ${esc(stLabel(b.status))}</div>
             <div style="margin-right:12px">${(g.departments || [])
               .filter((d) => d.branchId === b.id)
               .map(
@@ -778,7 +781,7 @@
             <td>${esc(a.requestedBy)}</td>
             <td>${esc(a.assignedTo)}</td>
             <td>${fmtTime(a.deadline)}</td>
-            <td>${esc(a.status)}</td>
+            <td>${esc(stLabel(a.status))}</td>
             <td>${
               a.status === 'Pending'
                 ? `<button class="btn btn-sm btn-primary" data-action="gov-apr" data-id="${esc(a.id)}" data-decision="approve">اعتماد</button>
@@ -795,7 +798,7 @@
   const renderDecisions = (g) => `<div class="grid-2">
       <article class="card">
         <div class="toolbar"><h3 style="margin:0">القرارات</h3><button type="button" class="btn btn-primary" data-action="gov-modal" data-modal="decision">+ إنشاء قرار</button></div>
-        ${(g.decisions || []).map((d) => `<div class="gov-mini-row"><strong>${esc(d.title)}</strong><span>${esc(d.status)} · ${esc(d.owner)}</span></div>`).join('') || '<div class="empty">لا قرارات</div>'}
+        ${(g.decisions || []).map((d) => `<div class="gov-mini-row"><strong>${esc(d.title)}</strong><span>${esc(stLabel(d.status))} · ${esc(d.owner)}</span></div>`).join('') || '<div class="empty">لا قرارات</div>'}
       </article>
       <article class="card">
         <div class="toolbar"><h3 style="margin:0">اللجان</h3><button type="button" class="btn btn-primary" data-action="gov-modal" data-modal="committee">+ إضافة لجنة</button></div>
@@ -806,7 +809,7 @@
   const renderViolations = (g) => `<div class="grid-2">
       <article class="card">
         <div class="toolbar"><h3 style="margin:0">المخالفات</h3><button type="button" class="btn btn-primary" data-action="gov-modal" data-modal="violation">+ تسجيل مخالفة</button></div>
-        ${(g.violations || []).map((v) => `<div class="gov-mini-row"><strong>${esc(v.person || v.type)}</strong><span>${esc(v.description)} · ${esc(v.status)}</span></div>`).join('') || '<div class="empty">لا مخالفات</div>'}
+        ${(g.violations || []).map((v) => `<div class="gov-mini-row"><strong>${esc(v.person || v.type)}</strong><span>${esc(v.description)} · ${esc(stLabel(v.status))}</span></div>`).join('') || '<div class="empty">لا مخالفات</div>'}
       </article>
       <article class="card">
         <div class="toolbar"><h3 style="margin:0">المخاطر</h3><button type="button" class="btn btn-dark" data-action="gov-modal" data-modal="risk">+ إضافة خطر</button></div>
@@ -877,7 +880,7 @@
          <tbody>${asg
            .map(
              (a) =>
-               `<tr><td><button type="button" class="gov-name-link" data-action="gov-profile" data-id="${esc(a.personId)}">${esc(a.person)}</button></td><td>${esc(a.status)}</td>
+               `<tr><td><button type="button" class="gov-name-link" data-action="gov-profile" data-id="${esc(a.personId)}">${esc(a.person)}</button></td><td>${esc(stLabel(a.status))}</td>
                <td>${a.status !== 'Acknowledged' ? `<button class="btn btn-sm btn-primary" data-action="gov-ack" data-pid="${esc(p.id)}" data-uid="${esc(a.personId)}">إقرار</button>` : '—'}</td></tr>`
            )
            .join('')}</tbody></table></div>`,
@@ -889,11 +892,11 @@
       if (!c) return '';
       return modalShell(
         c.name,
-        `<p>Score: <strong>${c.currentScore}%</strong> · Target: ${c.target}%</p>
+        `<p>Score: <strong>${c.currentScore}%</strong> · الهدف: ${c.target}%</p>
          <p>طريقة القياس: <strong>${esc(c.measurement || '—')}</strong></p>
          <p>ما الدليل على الالتزام؟ <strong>${esc(c.evidenceRequired)}</strong></p>
-         <p>Owner: ${esc(c.owner)} · Reviewer: ${esc(c.reviewer)} · Approver: ${esc(c.approver)}</p>
-         ${(c.evidence || []).map((e) => `<div class="gov-mini-row">${esc(e.name)} · ${esc(e.uploadedBy)} · ${esc(e.status)}</div>`).join('') || '<div class="empty">لا أدلة مرفوعة</div>'}`,
+         <p>المسؤول: ${esc(c.owner)} · Reviewer: ${esc(c.reviewer)} · Approver: ${esc(c.approver)}</p>
+         ${(c.evidence || []).map((e) => `<div class="gov-mini-row">${esc(e.name)} · ${esc(e.uploadedBy)} · ${esc(stLabel(e.status))}</div>`).join('') || '<div class="empty">لا أدلة مرفوعة</div>'}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إغلاق</button>`
       );
     }
@@ -902,10 +905,10 @@
       if (!s) return '';
       return modalShell(
         s.name,
-        `<p>Current: <strong>${s.currentValue}</strong> · Target: ${s.target} · Status: ${esc(s.status)}</p>
+        `<p>الحالي: <strong>${s.currentValue}</strong> · الهدف: ${s.target} · الحالة: ${esc(stLabel(s.status))}</p>
          <p>من أين نحصل على نتيجة هذا المعيار؟ <strong>${esc(s.dataSource || '—')}</strong></p>
          <p>طريقة الحساب: <strong>${esc(s.calculation || '—')}</strong></p>
-         <p>Owner: ${esc(s.owner)} · Reviewer: ${esc(s.reviewer)} · Frequency: ${esc(s.frequency)}</p>
+         <p>المسؤول: ${esc(s.owner)} · Reviewer: ${esc(s.reviewer)} · Frequency: ${esc(s.frequency)}</p>
          <h4>History</h4>
          ${(s.history || []).map((h) => `<div class="gov-mini-row">${fmtTime(h.at)} · ${h.value}</div>`).join('') || '<div class="empty">لا تاريخ</div>'}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إغلاق</button>`
@@ -928,8 +931,8 @@
          ${field('المكتب', 'gov-p-office', '')}
          ${field('الفرع', 'gov-p-branch', 'الفرع الرئيسي')}
          ${field('القسم', 'gov-p-dept', 'إدارة العمليات')}
-         ${field('المنصة', 'gov-p-plat', 'Core Platform')}
-         ${field('الدور', 'gov-p-role', 'Employee')}`,
+         ${field('المنصة', 'gov-p-plat', 'المنصة الأساسية')}
+         ${field('الدور', 'gov-p-role', 'موظف')}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إلغاء</button>
          <button type="button" class="btn btn-primary" data-action="gov-save-person">حفظ</button>`
       );

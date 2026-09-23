@@ -28,7 +28,7 @@
   };
 
   const MODULES = ['المهام', 'القوى العاملة', 'القياس', 'أمن المعلومات', 'الحوكمة', 'حوكمة البيانات', 'العملاء', 'المبيعات', 'الأنظمة', 'التكامل'];
-  const SOURCE_TYPES = ['يدوي', 'AI Analysis', 'Rule Engine', 'Anomaly', 'Prediction', 'Recommendation', 'External System'];
+  const SOURCE_TYPES = ['يدوي', 'تحليل ذكي', 'محرك القواعد', 'شذوذ', 'تنبؤ', 'توصية', 'نظام خارجي'];
 
   const CR_TABS = [
     { id: 'overview', label: 'نظرة عامة', icon: 'fa-gauge' },
@@ -68,7 +68,7 @@
   const confTip = (n) =>
     `title="درجة ثقة التحليل بناءً على جودة البيانات والنموذج · ${n}% — اضغط للتفاصيل"`;
 
-  const statusBadge = (st) => Kit().badge(STATUS_AR[st] || st, STATUS_BADGE[st] || 'badge-outline');
+  const statusBadge = (st) => Kit().badge(STATUS_AR[st] || window.HubI18n?.display?.(st) || st, STATUS_BADGE[st] || 'badge-outline');
 
   const needsItems = (c) => {
     const items = [];
@@ -264,7 +264,7 @@
     if (tab === 'overview') {
       body = `
         <div class="kpi-grid">
-          <article class="kpi"><span>Status</span><strong>${statusBadge(d.status)}</strong></article>
+          <article class="kpi"><span>الحالة</span><strong>${statusBadge(d.status)}</strong></article>
           <article class="kpi"><span>Impact</span><strong>${K.esc(d.impact)}</strong></article>
           <article class="kpi"><span>Confidence</span><strong ${confTip(d.confidence)}>${d.confidence}%</strong></article>
           <article class="kpi"><span>Priority</span><strong>${K.esc(d.priority)}</strong></article>

@@ -92,7 +92,8 @@
   }
 
   function statusLabel(s) {
-    return STATUS_AR[String(s || '').toLowerCase()] || s || '—';
+    var key = String(s || '');
+    return (window.HubI18n && window.HubI18n.display && window.HubI18n.display(key)) || STATUS_AR[key.toLowerCase()] || STATUS_AR[key] || s || '—';
   }
 
   function statusMod(s) {
@@ -105,13 +106,14 @@
   function money(n, cur) {
     var v = Number(n);
     if (!isFinite(v)) return '—';
-    return v.toLocaleString('ar-SA') + (cur === 'USD' ? ' $' : ' ر.س');
+    return v.toLocaleString('en-US') + (cur === 'USD' ? ' $' : ' ر.س');
   }
 
   function fmtDate(iso) {
     if (!iso) return '—';
     try {
-      return new Date(iso).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+      if (window.HubFormat && window.HubFormat.formatDate) return window.HubFormat.formatDate(iso);
+      return new Date(iso).toLocaleDateString('en-GB');
     } catch (e) {
       return String(iso).slice(0, 10);
     }

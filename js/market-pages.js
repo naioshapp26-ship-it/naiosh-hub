@@ -458,7 +458,7 @@
       .filter((e) => e.status !== 'archived')
       .map(
         (e) => `<article class="market-card">
-          <span class="badge-soft">${esc(e.status)}</span>
+          <span class="badge-soft">${esc(window.HubI18n?.display?.(e.status) || e.status)}</span>
           <h3>${esc(e.name)}</h3>
           <p>${esc(e.description)}</p>
           <div class="meta">${esc(e.date)} · ${esc(e.time)} · ${esc(e.duration)}</div>

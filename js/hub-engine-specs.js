@@ -13,7 +13,7 @@
     { key: 'screen', label: 'الشاشة' },
     { key: 'data', label: 'البيانات' },
     { key: 'ops', label: 'العمليات' },
-    { key: 'workflow', label: 'Workflow' },
+    { key: 'workflow', label: 'مسار العمل' },
     { key: 'integrations', label: 'التكاملات' },
     { key: 'ai', label: 'الذكاء الاصطناعي' },
     { key: 'training', label: 'التدريب' },
@@ -26,7 +26,7 @@
     {
       n: 1,
       titleAr: 'معمارية المؤسسة',
-      title: 'Enterprise Architecture',
+      title: 'معمارية المؤسسة',
       purpose: 'ترسم شكل المنظومة: الكيانات والعلاقات والأدوار قبل البناء.',
       audience: 'المعماريون والإدارة العليا',
       where: 'التخطيط والحوكمة',
@@ -35,83 +35,83 @@
     {
       n: 2,
       titleAr: 'المنصة الأساسية',
-      title: 'Core Platform',
+      title: 'المنصة الأساسية',
       purpose: 'الهوية والصلاحيات وسجل التطبيقات وسير العمل المشترك.',
       audience: 'فريق المنصة والأمن',
       where: 'كل أنظمة هوب',
-      items: ['Identity', 'Permission', 'Organization', 'App Registry', 'Notification', 'Workflow', 'Audit'],
+      items: ['الهوية', 'الصلاحيات', 'الهيكل التنظيمي', 'سجل التطبيقات', 'الإشعارات', 'سير العمل', 'التدقيق'],
     },
     {
       n: 3,
       titleAr: 'طبقة البيانات',
-      title: 'Data Layer',
+      title: 'طبقة البيانات',
       purpose: 'تخزين المستخدمين والمعرفة والمعاملات بشكل منظم.',
       audience: 'مهندسو البيانات والتشغيل',
       where: 'التقارير والبحث والتكامل',
-      items: ['Users', 'Orgs', 'Knowledge', 'Workflows', 'Courses', 'Skills', 'Transactions'],
+      items: ['المستخدمون', 'المؤسسات', 'المعرفة', 'مسارات العمل', 'الدورات', 'المهارات', 'المعاملات'],
     },
     {
       n: 4,
       titleAr: 'التكامل وواجهات الربط',
-      title: 'API / Integration',
+      title: 'التكامل وواجهات الربط',
       purpose: 'ربط الأنظمة ومزامنة البيانات باستيراد وتصدير آمن.',
       audience: 'فرق التكامل',
       where: 'بين هوب والأنظمة الخارجية',
-      items: ['Integration Layer', 'مزامنة الأنظمة', 'استيراد/تصدير'],
+      items: ['طبقة التكامل', 'مزامنة الأنظمة', 'استيراد/تصدير'],
     },
     {
       n: 5,
       titleAr: 'واجهات هوب',
-      title: 'HUB UI',
+      title: 'واجهات هوب',
       purpose: 'الشاشات التي يستخدمها العميل يوميًا: لوحة، تطبيقات، خدمات.',
       audience: 'كل المستخدمين',
       where: 'المتصفح وتطبيقات هوب',
-      items: ['Dashboard', 'Applications', 'Services', 'Learning', 'Wallet', 'Knowledge'],
+      items: ['لوحة التحكم', 'التطبيقات', 'الخدمات', 'التعلّم', 'المحفظة', 'المعرفة'],
     },
     {
       n: 6,
       titleAr: 'مركز المعلومات',
-      title: 'Knowledge Engine',
+      title: 'مركز المعلومات',
       purpose: 'البحث والإصدارات والاعتماد للمحتوى المعرفي والسياسات.',
       audience: 'العملاء والإدارة',
       where: 'مركز معلومات نايوش هوب',
-      items: ['Knowledge Engine', 'Search', 'Version', 'Approval', 'AI Retrieval'],
+      items: ['محرك المعرفة', 'البحث', 'الإصدارات', 'الاعتماد', 'استرجاع ذكي'],
     },
     {
       n: 7,
       titleAr: 'التشغيل',
-      title: 'Operations',
+      title: 'التشغيل',
       purpose: 'تحويل الإجراءات إلى مسارات تنفيذ ومتابعة.',
       audience: 'التشغيل ومدراء الوحدات',
       where: 'غرفة العمليات والأدلة',
-      items: ['Workflow Engine', 'تحويل الإجراءات'],
+      items: ['محرك سير العمل', 'تحويل الإجراءات'],
     },
     {
       n: 8,
       titleAr: 'التعلّم',
-      title: 'Learning',
+      title: 'التعلّم',
       purpose: 'تقييم وتدريب وشهادات مربوطة بالمهارة.',
       audience: 'المتدربون والمدربون',
       where: 'الأكاديمية والمسارات',
-      items: ['Learning', 'Assessment', 'Skill', 'Certificate', 'Adaptive'],
+      items: ['التعلّم', 'التقييم', 'المهارة', 'الشهادة', 'تكيّف'],
     },
     {
       n: 9,
       titleAr: 'الذكاء الاصطناعي',
-      title: 'AI',
+      title: 'الذكاء الاصطناعي',
       purpose: 'مساعد واقتراحات ودعم قرار فوق معرفة معتمدة.',
       audience: 'كل المستخدمين',
       where: 'اسأل نايوش واللوحات',
-      items: ['Assistant', 'Search', 'Recommendations', 'Analytics', 'Decision Support'],
+      items: ['المساعد', 'البحث', 'التوصيات', 'التحليلات', 'دعم القرار'],
     },
     {
       n: 10,
       titleAr: 'القياس والقيادة',
-      title: 'Measurement / Leadership',
+      title: 'القياس والقيادة',
       purpose: 'مؤشرات الأداء والمخاطر وخطط التحسين.',
       audience: 'الإدارة العليا',
       where: 'لوحات القيادة',
-      items: ['KPI Engine', 'استخدام', 'جودة', 'تكلفة', 'رضا'],
+      items: ['محرك مؤشرات الأداء', 'استخدام', 'جودة', 'تكلفة', 'رضا'],
     },
   ];
 
@@ -331,10 +331,10 @@
       <article class="spec-phase">
         <strong>المرحلة ${p.n}</strong>
         <h3>${p.titleAr || p.title}</h3>
-        <div class="spec-en">${p.title}</div>
+        
         <p class="spec-purpose"><b>ما وظيفته؟</b> ${p.purpose || '—'}</p>
         <p class="spec-purpose"><b>أين يُستخدم؟</b> ${p.where || '—'} · <b>من يحتاجه؟</b> ${p.audience || '—'}</p>
-        <ul>${p.items.map((i) => `<li>${i}</li>`).join('')}</ul>
+        <ul>${p.items.map((i) => `<li>${window.HubI18n?.display?.(i) || i}</li>`).join('')}</ul>
         <button type="button" class="info-btn sm" data-spec-phase-more="${p.n}">عرض التفاصيل</button>
       </article>`
     ).join('');
@@ -411,7 +411,7 @@
       const n = Number(btn.getAttribute('data-spec-phase-more'));
       const phase = PHASES.find((p) => p.n === n);
       if (!phase) return;
-      alert(`${phase.titleAr}\n(${phase.title})\n\n${phase.purpose}\n\n${(phase.items || []).join(' · ')}`);
+      alert(`${phase.titleAr}\n\n${phase.purpose}\n\n${(phase.items || []).join(' · ')}`);
     });
   };
 
