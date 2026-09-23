@@ -18,6 +18,96 @@
   let tab = params.get('tab') || 'panel';
   let user = localStorage.getItem('naiosh_system_ops_user') || 'مالك تجريبي';
   let systemCode = window.HubSystemOps.read().activeSystem || 'ERP';
+  let activeCap = '';
+
+  /** كل مربع → تبويب + قسم مستهدف داخل الصفحة (بدون تكرار محتوى) */
+  const CAP_TARGETS = {
+    'subdomain-center': { external: 'rent-admin.html' },
+    'subdomain-grant': { external: 'rent-admin.html' },
+    'facility-ops': { tab: 'tenant', section: 'sysops-tenant-launch' },
+    'exec-ops': { tab: 'tenant', section: 'sysops-tenant-launch' },
+    'grant-structure': { tab: 'grants', section: 'sysops-grants-policy' },
+    'grant-structure-2': { tab: 'grants', section: 'sysops-grants-structures' },
+    'rent-platform': { tab: 'grants', section: 'sysops-grants-policy' },
+    'roles-perms': { tab: 'access', section: 'sysops-access-roles' },
+    membership: { tab: 'access', section: 'sysops-access-membership' },
+    'account-login': { tab: 'access', section: 'sysops-access-roles' },
+    'sidebar-access': { tab: 'panel', section: 'sysops-panel-control' },
+    'control-panel': { tab: 'panel', section: 'sysops-panel-control' },
+    'role-panel': { tab: 'panel', section: 'sysops-panel-control' },
+    'info-center': { tab: 'panel', section: 'sysops-panel-control' },
+    'show-products': { tab: 'catalog', section: 'sysops-catalog-products' },
+    'show-services': { tab: 'catalog', section: 'sysops-catalog-services' },
+    packages: { tab: 'catalog', section: 'sysops-catalog-packages' },
+    'ads-pages': { tab: 'catalog', section: 'sysops-catalog-products' },
+    'system-blog': { tab: 'blog', section: 'sysops-blog-workflow' },
+    'create-page': { tab: 'pages', section: 'sysops-pages-create' },
+    'tenant-system-icon': { tab: 'tenant', section: 'sysops-tenant-launch' },
+    erpi: { tab: 'erpi', section: 'sysops-erpi-modules' },
+    legal: { tab: 'law', section: 'sysops-law-modules' },
+    'tenant-control': { tab: 'assets', section: 'sysops-assets-control' },
+    'cost-org': { tab: 'assets', section: 'sysops-assets-cost' },
+  };
+
+  const headerOffset = () => {
+    const nav = document.querySelector('.top-nav');
+    return Math.ceil((nav?.getBoundingClientRect().height || 72) + 12);
+  };
+
+  const syncUrl = ({ push = false } = {}) => {
+    const url = new URL(location.href);
+    url.searchParams.set('tab', tab);
+    if (activeCap && CAP_TARGETS[activeCap]?.section) {
+      url.hash = CAP_TARGETS[activeCap].section;
+    } else if (url.hash && url.hash.startsWith('#sysops-')) {
+      /* keep existing deep section if still valid for tab */
+    } else {
+      url.hash = '';
+    }
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    if (push) history.pushState({ tab, cap: activeCap }, '', next);
+    else history.replaceState({ tab, cap: activeCap }, '', next);
+  };
+
+  const highlightSection = (el) => {
+    if (!el) return;
+    el.classList.remove('is-flash');
+    // reflow to restart animation
+    void el.offsetWidth;
+    el.classList.add('is-flash');
+    clearTimeout(highlightSection._t);
+    highlightSection._t = setTimeout(() => el.classList.remove('is-flash'), 1600);
+  };
+
+  const scrollToTarget = (sectionId) => {
+    const preferReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const target =
+      (sectionId && root.querySelector(`#${CSS.escape(sectionId)}, [data-sysops-section="${sectionId}"]`)) ||
+      root.querySelector('[data-ops-main] .sysops-section') ||
+      root.querySelector('[data-ops-main]');
+    if (!target) return;
+    const desired = () => Math.max(0, target.getBoundingClientRect().top + window.scrollY - headerOffset());
+    window.scrollTo({
+      top: desired(),
+      behavior: preferReduced ? 'auto' : 'smooth',
+    });
+    highlightSection(target.closest?.('.sysops-section') || target);
+    // تأكيد الوصول بعد انتهاء الـ smooth (خصوصًا الأقسام السفلية القصيرة)
+    clearTimeout(scrollToTarget._t);
+    scrollToTarget._t = setTimeout(() => {
+      const y = desired();
+      if (Math.abs(window.scrollY - y) > 48) {
+        window.scrollTo({ top: y, behavior: 'auto' });
+      }
+      highlightSection(target.closest?.('.sysops-section') || target);
+    }, preferReduced ? 0 : 420);
+  };
+
+  const afterPaintScroll = (sectionId) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => scrollToTarget(sectionId));
+    });
+  };
 
   const toast = (msg) => {
     let el = document.getElementById('sysops-toast');
@@ -78,16 +168,19 @@
   const paintCaps = () => {
     const box = root.querySelector('[data-ops-caps]');
     if (!box) return;
-    box.innerHTML = window.HubSystemOpsSpec.CAPABILITIES.map(
-      (c) => `<article class="sysops-cap" data-cap="${esc(c.id)}">
-        <i class="fas ${esc(c.icon)}"></i>
+    box.innerHTML = window.HubSystemOpsSpec.CAPABILITIES.map((c) => {
+      const target = CAP_TARGETS[c.id];
+      const sectionId = target?.section || '';
+      const active = activeCap === c.id ? ' is-active' : '';
+      return `<article class="sysops-cap${active}" data-cap="${esc(c.id)}" data-cap-section="${esc(sectionId)}" role="button" tabindex="0" aria-pressed="${activeCap === c.id ? 'true' : 'false'}">
+        <i class="fas ${esc(c.icon)}" aria-hidden="true"></i>
         <div><strong>${esc(c.label)}</strong><small>${esc(c.group)}</small></div>
-      </article>`
-    ).join('');
+      </article>`;
+    }).join('');
   };
 
-  const section = (title, body) =>
-    `<section class="sysops-section"><h2>${esc(title)}</h2>${body}</section>`;
+  const section = (title, body, id = '') =>
+    `<section class="sysops-section"${id ? ` id="${esc(id)}" data-sysops-section="${esc(id)}"` : ''}><h2>${esc(title)}</h2>${body}</section>`;
 
   const listRows = (rows, render) =>
     rows.length ? `<div class="sysops-list">${rows.map(render).join('')}</div>` : '<p class="sysops-empty">لا توجد عناصر بعد.</p>';
@@ -118,11 +211,13 @@
             <a class="btn btn-secondary" href="packages.html">باقات الاشتراك</a>
             <a class="btn btn-secondary" href="products.html">منتجات نايوش</a>
             <a class="btn btn-secondary" href="login.html">إنشاء حساب / دخول</a>
-          </div>`
+          </div>`,
+          'sysops-panel-control'
         ) +
         section(
           'سجل التشغيل',
-          listRows(state.opsLog.slice(0, 12), (l) => `<article><strong>${esc(l.action)}</strong><span>${esc(l.detail)}</span><small>${esc(l.at)}</small></article>`)
+          listRows(state.opsLog.slice(0, 12), (l) => `<article><strong>${esc(l.action)}</strong><span>${esc(l.detail)}</span><small>${esc(l.at)}</small></article>`),
+          'sysops-panel-log'
         );
       return;
     }
@@ -136,7 +231,8 @@
             <a class="btn btn-primary" href="register.html"><i class="fas fa-user-plus"></i> سجل معنا (للمستأجر)</a>
             <a class="btn btn-secondary" href="rent-admin.html"><i class="fas fa-user-shield"></i> موافقة السوبر أدمن</a>
             <a class="btn btn-secondary" href="dashboard.html#roles-permissions"><i class="fas fa-shield-alt"></i> إدارة فريق العمل والصلاحيات</a>
-          </div>`
+          </div>`,
+          'sysops-grants-policy'
         ) +
         section(
           'الدومينات الممنوحة بعد الموافقة',
@@ -144,11 +240,13 @@
             state.subdomains.slice(0, 20),
             (r) =>
               `<article><strong>${esc(r.grantId || '')} · ${esc(r.host)}</strong><span>${esc(r.tenantName)} · ${esc(r.systemCode)} · ${esc(r.branchOrHq || '—')} · ${esc(r.incubator || '—')} · ${esc(r.platformName || '—')}</span></article>`
-          )
+          ),
+          'sysops-grants-domains'
         ) +
         section(
           'هياكل ممنوحة (فرع · حاضنة · منصة · مكتب)',
-          listRows(state.structures.slice(0, 20), (r) => `<article><strong>${esc(r.grantId || '')} · ${esc(r.nameAr)}</strong><span>${esc(r.type)} · ${esc(r.tenantName)} · ${esc(r.systemCode)}</span></article>`)
+          listRows(state.structures.slice(0, 20), (r) => `<article><strong>${esc(r.grantId || '')} · ${esc(r.nameAr)}</strong><span>${esc(r.type)} · ${esc(r.tenantName)} · ${esc(r.systemCode)}</span></article>`),
+          'sysops-grants-structures'
         );
       return;
     }
@@ -162,7 +260,8 @@
             <a class="btn btn-primary" href="dashboard.html#roles-permissions"><i class="fas fa-shield-alt"></i> فتح إدارة فريق العمل والصلاحيات</a>
             <a class="btn btn-secondary" href="dashboard.html#identity">مصفوفة الصلاحيات (هوية نايوش)</a>
             <a class="btn btn-secondary" href="dashboard.html#roles-permissions">المستخدمون وتعيين الأدوار</a>
-          </div>`
+          </div>`,
+          'sysops-access-roles'
         ) +
         section(
           'تعيين سريع داخل غرفة التشغيل',
@@ -174,7 +273,8 @@
             <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
             <button class="btn btn-primary">تعيين الدور</button>
           </form>
-          ${listRows(state.roleAssignments.slice(0, 30), (r) => `<article><strong>${esc(r.user)}</strong><span>${esc(r.roleName)} · ${esc(r.systemCode)} · ${esc((r.perms || []).join(' · '))}</span></article>`)}`
+          ${listRows(state.roleAssignments.slice(0, 30), (r) => `<article><strong>${esc(r.user)}</strong><span>${esc(r.roleName)} · ${esc(r.systemCode)} · ${esc((r.perms || []).join(' · '))}</span></article>`)}`,
+          'sysops-access-assign'
         ) +
         section(
           'تسجيل العضويات ومنح الصلاحيات وشهادات العضوية',
@@ -187,7 +287,8 @@
           </form>
           ${listRows(state.memberships.slice(0, 15), (m) => `<article><strong>${esc(m.name)}</strong><span>${esc(m.plan)} · ${esc(m.systemCode)} · ${esc(m.status)}</span></article>`)}
           <h3>الشهادات</h3>
-          ${listRows(state.certificates.slice(0, 15), (c) => `<article><strong>${esc(c.title)}</strong><span>${esc(c.systemCode)}</span></article>`)}`
+          ${listRows(state.certificates.slice(0, 15), (c) => `<article><strong>${esc(c.title)}</strong><span>${esc(c.systemCode)}</span></article>`)}`,
+          'sysops-access-membership'
         );
       return;
     }
@@ -199,7 +300,8 @@
           `<div class="sysops-chips">${window.HubSystemOpsSpec.NAIOSH_PRODUCTS.map((p) => `<span>${esc(p)}</span>`).join('')}
             <a class="btn btn-secondary" href="products.html">فتح المنتجات</a>
             <a class="btn btn-secondary" href="apps.html">فتح الأنظمة</a>
-          </div>`
+          </div>`,
+          'sysops-catalog-products'
         ) +
         section(
           'خدمات نايوش',
@@ -207,13 +309,15 @@
             <a class="btn btn-secondary" href="branches.html">الفروع</a>
             <a class="btn btn-secondary" href="incubators.html">الحاضنات</a>
             <a class="btn btn-secondary" href="packages.html">الاشتراكات</a>
-          </div>`
+          </div>`,
+          'sysops-catalog-services'
         ) +
         section(
           'باقات الاشتراكات · الأسعار',
           `<a class="btn btn-primary" href="packages.html">فتح الباقات والأسعار</a>
            <a class="btn btn-secondary" href="membership.html">العضوية</a>
-           <a class="btn btn-secondary" href="store.html">المتجر</a>`
+           <a class="btn btn-secondary" href="store.html">المتجر</a>`,
+          'sysops-catalog-packages'
         );
       return;
     }
@@ -247,7 +351,8 @@
             <a class="btn btn-primary" href="blog.html#submit" target="_blank" rel="noopener">فتح رحلة إرسال المقال</a>
             <a class="btn btn-secondary" href="dashboard.html#content-articles">صندوق المقالات الواردة</a>
             <a class="btn btn-secondary" href="blog.html" target="_blank" rel="noopener">المدونة العامة</a>
-          </div>`
+          </div>`,
+          'sysops-blog-workflow'
         ) +
         section(
           'المقالات الواردة (معاينة)',
@@ -258,7 +363,8 @@
                   `<article><strong>${esc(a.title)}</strong><span>${esc(a.authorName)} · ${esc(a.category)}</span>
                     <small>${esc(a.id)} · ${esc(a.statusAr)} · ${esc((a.submittedAt || '').slice(0, 10))}</small></article>`
               )
-            : '<p class="sysops-note">لا مقالات واردة بعد — ستظهر هنا عند إرسال مقال من صفحة المدونة.</p>'
+            : '<p class="sysops-note">لا مقالات واردة بعد — ستظهر هنا عند إرسال مقال من صفحة المدونة.</p>',
+          'sysops-blog-incoming'
         ) +
         section(
           'نشر سريع داخلي (إدارة فقط — يتجاوز رحلة العميل)',
@@ -271,7 +377,8 @@
             <input type="file" name="attachments" multiple />
           </label>
           <button class="btn btn-primary" type="submit">نشر داخلي على المدونة</button>
-        </form>`
+        </form>`,
+          'sysops-blog-publish'
         ) +
         section(
           'المنشورات المنشورة',
@@ -281,7 +388,8 @@
               `<article><strong>${esc(p.title)}</strong><span>${esc(p.body)}</span><small>${esc(p.systemCode)} · ${esc(
                 (p.at || '').slice(0, 10)
               )}</small>${attachHtml(p)}</article>`
-          )
+          ),
+          'sysops-blog-posts'
         );
       return;
     }
@@ -296,7 +404,8 @@
           <button class="btn btn-primary">إنشاء على النظام وهوب</button>
         </form>
         ${listRows(state.pages.slice(0, 20), (p) => `<article><strong>${esc(p.title)}</strong><span>${esc(p.kind)} · ${esc(p.systemCode)}</span>
-          <div class="sysops-inline"><a href="${esc(p.hubUrl)}">على هوب</a> · <a href="${esc(p.systemUrl)}">على النظام</a></div></article>`)}`
+          <div class="sysops-inline"><a href="${esc(p.hubUrl)}">على هوب</a> · <a href="${esc(p.systemUrl)}">على النظام</a></div></article>`)}`,
+        'sysops-pages-create'
       );
       return;
     }
@@ -308,7 +417,8 @@
         <div class="sysops-modules">${window.HubSystemOpsSpec.ERPI_MODULES.map((m) => {
           const on = !!state.erpiActive[m];
           return `<button type="button" class="sysops-mod ${on ? 'is-on' : ''}" data-erpi="${esc(m)}">${esc(m)}</button>`;
-        }).join('')}</div>`
+        }).join('')}</div>`,
+        'sysops-erpi-modules'
       );
       return;
     }
@@ -320,14 +430,16 @@
           `<div class="sysops-modules">${window.HubSystemOpsSpec.LAW_MODULES.map((m) => {
             const on = !!state.lawActive[m];
             return `<button type="button" class="sysops-mod ${on ? 'is-on' : ''}" data-law="${esc(m)}">${esc(m)}</button>`;
-          }).join('')}</div>`
+          }).join('')}</div>`,
+          'sysops-law-modules'
         ) +
         section(
           'التصنيف القانوني التشغيلي',
           `<div class="sysops-modules sysops-modules--dense">${window.HubSystemOpsSpec.LAW_TAXONOMY.map((m) => {
             const on = !!state.lawTaxonomyActive[m];
             return `<button type="button" class="sysops-mod ${on ? 'is-on' : ''}" data-law-tax="${esc(m)}">${esc(m)}</button>`;
-          }).join('')}</div>`
+          }).join('')}</div>`,
+          'sysops-law-taxonomy'
         );
       return;
     }
@@ -343,7 +455,8 @@
             <input name="value" type="number" placeholder="قيمة" value="0" />
             <button class="btn btn-primary">تسجيل تحت السيطرة</button>
           </form>
-          ${listRows(state.assets.slice(0, 30), (a) => `<article><strong>${esc(a.nameAr)}</strong><span>${esc(a.tenantName)} · ${esc(a.kind)} · ${Number(a.value).toLocaleString('en-US')}</span></article>`)}`
+          ${listRows(state.assets.slice(0, 30), (a) => `<article><strong>${esc(a.nameAr)}</strong><span>${esc(a.tenantName)} · ${esc(a.kind)} · ${Number(a.value).toLocaleString('en-US')}</span></article>`)}`,
+          'sysops-assets-control'
         ) +
         section(
           'منظمة متكاملة لخفض التكاليف',
@@ -352,7 +465,8 @@
             <input name="saving" type="number" placeholder="الوفر المتوقع" value="1000" />
             <button class="btn btn-primary">تسجيل إجراء</button>
           </form>
-          ${listRows(state.costActions.slice(0, 20), (c) => `<article><strong>${esc(c.title)}</strong><span>وفر ${Number(c.saving).toLocaleString('en-US')}</span></article>`)}`
+          ${listRows(state.costActions.slice(0, 20), (c) => `<article><strong>${esc(c.title)}</strong><span>وفر ${Number(c.saving).toLocaleString('en-US')}</span></article>`)}`,
+          'sysops-assets-cost'
         );
       return;
     }
@@ -376,21 +490,49 @@
           <a class="btn btn-secondary" href="platforms.html">المنصات</a>
           <a class="btn btn-secondary" href="branches.html">الفروع</a>
           <a class="btn btn-secondary" href="incubators.html">الحاضنات</a>
-        </div>`
+        </div>`,
+        'sysops-tenant-launch'
       );
       return;
     }
 
-    host.innerHTML = section('لوحة التشغيل', '<p>اختر قسمًا من المنيو الجانبي.</p>');
+    host.innerHTML = section('لوحة التشغيل', '<p>اختر قسمًا من المنيو الجانبي.</p>', 'sysops-fallback');
   };
 
-  const paint = () => {
+  const paint = ({ scroll = false, sectionId = '' } = {}) => {
     paintKpis();
     paintSidebar();
     paintCaps();
     paintPanel();
     const title = root.querySelector('[data-ops-title]');
     if (title) title.textContent = `آلية تشغيل الأنظمة · ${systemCode}`;
+    if (scroll) afterPaintScroll(sectionId || CAP_TARGETS[activeCap]?.section || '');
+  };
+
+  const openCapability = (capId, { push = true } = {}) => {
+    const target = CAP_TARGETS[capId];
+    if (!target) {
+      tab = 'panel';
+      activeCap = capId;
+      syncUrl({ push });
+      paint({ scroll: true, sectionId: '' });
+      return;
+    }
+    if (target.external) {
+      window.location.href = target.external;
+      return;
+    }
+    activeCap = capId;
+    tab = target.tab || 'panel';
+    syncUrl({ push });
+    paint({ scroll: true, sectionId: target.section || '' });
+  };
+
+  const resolveCapFromHash = () => {
+    const hash = String(location.hash || '').replace(/^#/, '');
+    if (!hash) return '';
+    const hit = Object.entries(CAP_TARGETS).find(([, t]) => t.section === hash);
+    return hit ? hit[0] : '';
   };
 
   root.addEventListener('click', (e) => {
@@ -398,8 +540,10 @@
     if (tabLink) {
       e.preventDefault();
       tab = tabLink.dataset.tabLink || 'panel';
-      history.replaceState({}, '', `system-ops.html?tab=${encodeURIComponent(tab)}`);
-      paint();
+      activeCap =
+        Object.entries(CAP_TARGETS).find(([, t]) => t.tab === tab && t.section)?.[0] || '';
+      syncUrl({ push: true });
+      paint({ scroll: true, sectionId: CAP_TARGETS[activeCap]?.section || '' });
       return;
     }
     const openTenant = e.target.closest('[data-open-tenant]');
@@ -418,7 +562,7 @@
       const on = !window.HubSystemOps.read().erpiActive[name];
       window.HubSystemOps.toggleErpi(name, on);
       toast(on ? `تم تفعيل: ${name}` : `تم إيقاف: ${name}`);
-      paint();
+      paint({ scroll: false });
       return;
     }
     const law = e.target.closest('[data-law]');
@@ -427,7 +571,7 @@
       const on = !window.HubSystemOps.read().lawActive[name];
       window.HubSystemOps.toggleLaw(name, on);
       toast(on ? `تم تفعيل: ${name}` : `تم إيقاف: ${name}`);
-      paint();
+      paint({ scroll: false });
       return;
     }
     const tax = e.target.closest('[data-law-tax]');
@@ -436,58 +580,64 @@
       const on = !window.HubSystemOps.read().lawTaxonomyActive[name];
       window.HubSystemOps.toggleLawTaxonomy(name, on);
       toast(on ? `تم تفعيل: ${name}` : `تم إيقاف: ${name}`);
-      paint();
+      paint({ scroll: false });
       return;
     }
     const cap = e.target.closest('[data-cap]');
     if (cap) {
-      if (cap.dataset.cap === 'subdomain-center' || cap.dataset.cap === 'subdomain-grant') {
-        window.location.href = 'rent-admin.html';
-        return;
-      }
-      const map = {
-        'subdomain-center': 'grants',
-        'subdomain-grant': 'grants',
-        'grant-structure': 'grants',
-        'grant-structure-2': 'grants',
-        'rent-platform': 'grants',
-        'roles-perms': 'access',
-        membership: 'access',
-        'account-login': 'access',
-        'sidebar-access': 'panel',
-        'control-panel': 'panel',
-        'role-panel': 'panel',
-        'show-products': 'catalog',
-        'show-services': 'catalog',
-        packages: 'catalog',
-        'ads-pages': 'catalog',
-        'system-blog': 'blog',
-        'info-center': 'panel',
-        'create-page': 'pages',
-        'tenant-system-icon': 'tenant',
-        'facility-ops': 'tenant',
-        'exec-ops': 'tenant',
-        erpi: 'erpi',
-        legal: 'law',
-        'tenant-control': 'assets',
-        'cost-org': 'assets',
-      };
-      tab = map[cap.dataset.cap] || 'panel';
-      history.replaceState({}, '', `system-ops.html?tab=${encodeURIComponent(tab)}`);
-      paint();
+      e.preventDefault();
+      openCapability(cap.dataset.cap, { push: true });
     }
+  });
+
+  root.addEventListener('keydown', (e) => {
+    const cap = e.target.closest('[data-cap]');
+    if (!cap) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openCapability(cap.dataset.cap, { push: true });
+    }
+  });
+
+  const applyLocationState = ({ scroll = true, push = false } = {}) => {
+    const q = new URLSearchParams(location.search);
+    tab = q.get('tab') || tab || 'panel';
+    const fromHash = resolveCapFromHash();
+    if (fromHash) {
+      activeCap = fromHash;
+      if (CAP_TARGETS[fromHash]?.tab) tab = CAP_TARGETS[fromHash].tab;
+    } else if (!activeCap || CAP_TARGETS[activeCap]?.tab !== tab) {
+      activeCap =
+        Object.entries(CAP_TARGETS).find(([, t]) => t.tab === tab && t.section)?.[0] || '';
+    }
+    syncUrl({ push });
+    paint({
+      scroll,
+      sectionId: CAP_TARGETS[activeCap]?.section || String(location.hash || '').replace(/^#/, ''),
+    });
+  };
+
+  window.addEventListener('popstate', () => applyLocationState({ scroll: true, push: false }));
+  window.addEventListener('hashchange', () => {
+    const fromHash = resolveCapFromHash();
+    if (!fromHash) return;
+    if (fromHash === activeCap && CAP_TARGETS[fromHash]?.tab === tab) {
+      afterPaintScroll(CAP_TARGETS[fromHash].section);
+      return;
+    }
+    openCapability(fromHash, { push: false });
   });
 
   root.addEventListener('change', (e) => {
     if (e.target.matches('[data-system-select]')) {
       systemCode = e.target.value;
       window.HubSystemOps.setActiveSystem(systemCode);
-      paint();
+      paint({ scroll: false });
     }
     if (e.target.matches('[data-user-input]')) {
       user = e.target.value.trim() || user;
       localStorage.setItem('naiosh_system_ops_user', user);
-      paint();
+      paint({ scroll: false });
     }
   });
 
@@ -594,8 +744,24 @@
       toast('تم تسجيل إجراء خفض التكلفة');
     }
     form.reset();
-    paint();
+    paint({ scroll: false });
   });
 
-  paint();
+  // Boot: honor ?tab= and #section without breaking query params
+  {
+    const fromHash = resolveCapFromHash();
+    if (fromHash) {
+      activeCap = fromHash;
+      tab = CAP_TARGETS[fromHash]?.tab || tab;
+    } else if (tab) {
+      activeCap =
+        Object.entries(CAP_TARGETS).find(([, t]) => t.tab === tab && t.section)?.[0] || '';
+    }
+    const shouldScroll = Boolean(fromHash || (params.get('tab') && params.get('tab') !== 'panel'));
+    paint({
+      scroll: shouldScroll,
+      sectionId: CAP_TARGETS[activeCap]?.section || String(location.hash || '').replace(/^#/, ''),
+    });
+    syncUrl({ push: false });
+  }
 })();

@@ -79,11 +79,39 @@
   border-radius: 14px;
   padding: 12px;
   cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.12s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sysops-cap:hover {
   border-color: #f0b4b4;
   box-shadow: 0 8px 18px rgba(215, 0, 0, 0.08);
+}
+
+.sysops-cap:focus-visible {
+  outline: 2px solid #d70000;
+  outline-offset: 2px;
+}
+
+.sysops-cap:active {
+  transform: scale(0.985);
+}
+
+.sysops-cap.is-active {
+  border-color: #d70000;
+  background: rgba(215, 0, 0, 0.05);
+  box-shadow: 0 0 0 2px rgba(215, 0, 0, 0.15);
+}
+
+.sysops-cap.is-active::after {
+  content: '✓';
+  margin-inline-start: auto;
+  color: #d70000;
+  font-weight: 900;
+  font-size: 14px;
+  line-height: 1;
+  padding-top: 2px;
 }
 
 .sysops-cap i {
@@ -108,12 +136,34 @@
   border-radius: 18px;
   padding: 16px;
   margin-bottom: 14px;
+  scroll-margin-top: 96px;
+}
+
+.sysops-section.is-flash {
+  animation: sysops-section-flash 1.4s ease;
+}
+
+@keyframes sysops-section-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(215, 0, 0, 0.35);
+    border-color: #d70000;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    border-color: #e8eaf0;
+  }
 }
 
 .sysops-section h2,
 .sysops-section h3 {
   margin: 0 0 12px;
   font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  .sysops-section {
+    scroll-margin-top: 80px;
+  }
 }
 
 .sysops-form,
