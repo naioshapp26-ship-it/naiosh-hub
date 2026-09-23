@@ -16,7 +16,9 @@
   ];
   const CLASSIFICATIONS = ['عام', 'داخلي', 'سري', 'سري للغاية'];
   const ASSET_TYPES = ['Table', 'View', 'File', 'API', 'Stream', 'Document', 'Dataset', 'Report', 'Other'];
+  const ASSET_TYPE_AR = { Table: 'جدول', View: 'عرض', File: 'ملف', API: 'واجهة برمجة', Stream: 'بث', Document: 'مستند', Dataset: 'مجموعة بيانات', Report: 'تقرير', Other: 'أخرى' };
   const SENSITIVITY_LEVELS = ['Operational', 'Personal Data', 'Financial', 'HR', 'Customer', 'Credentials', 'Public'];
+  const SENSITIVITY_AR = { Operational: 'تشغيلي', 'Personal Data': 'بيانات شخصية', Financial: 'مالي', HR: 'موارد بشرية', Customer: 'عميل', Credentials: 'بيانات اعتماد', Public: 'عام' };
   const SOURCE_TYPES = [
     'SQL Database',
     'Oracle',

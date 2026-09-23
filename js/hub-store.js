@@ -1897,7 +1897,7 @@ const HubStore = (() => {
   const defaultSettings = () => ({
     orgNameAr: 'نايوش هوب',
     orgNameEn: 'NAIOSH HUB',
-    orgTagline: '360 · Imperial',
+    orgTagline: '360 · الإصدار الإمبراطوري',
     timezone: 'Asia/Riyadh',
     locale: 'ar',
     dateFormat: 'ar-EG',
@@ -2042,7 +2042,7 @@ const HubStore = (() => {
     },
     settings: defaultSettings(),
     feed: [
-      { id: uid('f'), type: 'architecture', text: 'تم تحميل دستور المعمارية الإمبراطورية — Core Platform أولوية قصوى', at: nowIso() },
+      { id: uid('f'), type: 'architecture', text: 'تم تحميل دستور المعمارية الإمبراطورية — المنصة الأساسية أولوية قصوى', at: nowIso() },
       { id: uid('f'), type: 'decision', text: 'إعادة توزيع 6 مهام ذات أولوية عالية', at: nowIso() },
       { id: uid('f'), type: 'alert', text: 'انخفاض إنتاجية فريق التكامل 12%', at: nowIso() },
       { id: uid('f'), type: 'compliance', text: 'سياسة الجودة Q-17 فُعّلت على 3 أنظمة', at: nowIso() },

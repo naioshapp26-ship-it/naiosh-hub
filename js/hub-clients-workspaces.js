@@ -50,7 +50,7 @@
         <div class="field"><label>البريد *</label><input id="cl-email" type="email" value="${K.esc(item.email || '')}" /></div>
         <div class="field"><label>رقم العميل</label><input id="cl-clientId" value="${K.esc(item.clientId || '')}" /></div>
         <div class="field"><label>الحالة</label>
-          <select id="cl-status">${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${item.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+          <select id="cl-status">${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${item.status === s ? 'selected' : ''}>${window.HubI18n?.status?.(s) || s}</option>`).join('')}</select>
         </div>
         <div class="field"><label>الشركة</label><input id="cl-company" value="${K.esc(item.company || '')}" /></div>
         <div class="field"><label>الدولة</label><input id="cl-country" value="${K.esc(item.country || '')}" /></div>

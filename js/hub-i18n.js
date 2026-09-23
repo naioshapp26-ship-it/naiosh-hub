@@ -9,7 +9,10 @@
     active: 'نشط',
     inactive: 'غير نشط',
     pending: 'قيد الانتظار',
-    pending_review: 'بانتظار المراجعة',
+    pending_review: 'قيد المراجعة',
+    pending_approval: 'بانتظار الاعتماد',
+    under_review: 'قيد المراجعة',
+    under_setup: 'قيد الإعداد',
     approved: 'تمت الموافقة',
     rejected: 'مرفوض',
     archived: 'مؤرشف',
@@ -27,9 +30,50 @@
     running: 'قيد التشغيل',
     success: 'نجاح',
     failed: 'فشل',
+    failure: 'فشل',
+    error: 'خطأ',
     queued: 'في الانتظار',
     expired: 'منتهي',
     paused: 'متوقف',
+    building: 'قيد الإنشاء',
+    planned: 'مخطط',
+    ready: 'جاهز',
+    todo: 'للتنفيذ',
+    in_progress: 'قيد التنفيذ',
+    blocked: 'معطّل',
+    done: 'مكتمل',
+    deferred: 'مؤجّل',
+    stopped: 'متوقف',
+    beta: 'تجريبي',
+    scheduled: 'مجدول',
+    review: 'مراجعة',
+    online: 'متصل',
+    offline: 'غير متصل',
+    degraded: 'متدهور',
+    connected: 'متصل',
+    disconnected: 'غير متصل',
+    partial: 'جزئي',
+    warning: 'تحذير',
+    critical: 'حرج',
+    investigating: 'قيد التحقيق',
+    acknowledged: 'تم الإقرار',
+    overdue: 'متأخر',
+    sent: 'مُرسل',
+    executed: 'منفّذ',
+    paid: 'مدفوع',
+    unpaid: 'غير مدفوع',
+    refunded: 'مسترجع',
+    resolved: 'تم الحل',
+    waiting_customer: 'بانتظار رد العميل',
+    waiting_for_client: 'بانتظار رد العميل',
+    awaiting_payment: 'بانتظار الدفع',
+    needs_revision: 'يحتاج مراجعة',
+    needs_changes: 'يحتاج تعديلات',
+    action_needed: 'يحتاج إجراء',
+    read: 'مقروء',
+    live: 'مباشر',
+    integrate: 'يحتاج تكامل',
+    reengineer: 'يحتاج إعادة هندسة',
   };
 
   const ROLES = {
@@ -44,9 +88,18 @@
     staff: 'موظف',
     customer: 'عميل',
     client: 'عميل',
+    client_user: 'عميل',
     visitor: 'زائر',
     guest: 'ضيف',
     supervisor: 'مشرف',
+    operator: 'مشغّل',
+    country_agent: 'وكيل دولة',
+    branch_manager: 'مدير فرع',
+    incubator_manager: 'مدير حاضنة',
+    platform_manager: 'مدير منصة',
+    digital_office: 'مستخدم مكتب إلكتروني',
+    trainer: 'مدرب',
+    trainee: 'متدرب',
   };
 
   const COMMON = {
@@ -65,6 +118,8 @@
     confirm: 'تأكيد',
     back: 'رجوع',
     close: 'إغلاق',
+    next: 'التالي',
+    previous: 'السابق',
     actions: 'الإجراءات',
     status: 'الحالة',
     name: 'الاسم',
@@ -81,6 +136,10 @@
     success: 'تمت العملية بنجاح',
     error: 'حدث خطأ',
     errorGeneric: 'حدث خطأ أثناء تنفيذ العملية',
+    errorNetwork: 'تعذر تحميل البيانات، يرجى المحاولة مرة أخرى.',
+    errorUnauthorized: 'يجب تسجيل الدخول للمتابعة.',
+    errorForbidden: 'ليس لديك صلاحية لتنفيذ هذا الإجراء.',
+    errorServer: 'حدث خطأ في الخادم، يرجى المحاولة لاحقًا.',
     noData: 'لا توجد بيانات',
     noResults: 'لا توجد نتائج',
     accessDenied: 'ليس لديك صلاحية للوصول',
@@ -101,10 +160,187 @@
     employeeNo: 'رقم الموظف',
     clientId: 'رقم العميل',
     naioshId: 'رقم نايوش',
+    details: 'التفاصيل',
+    settings: 'الإعدادات',
+    dashboard: 'لوحة التحكم',
+    submit: 'إرسال',
+    upload: 'رفع',
+    download: 'تنزيل',
+    export: 'تصدير',
+    import: 'استيراد',
+    print: 'طباعة',
+    refresh: 'تحديث',
+    apply: 'تطبيق',
+    continue: 'متابعة',
+    finish: 'إنهاء',
+    owner: 'المسؤول',
+    date: 'التاريخ',
+    time: 'الوقت',
+  };
+
+  /** مسميات معمارية / أنظمة — للعرض فقط */
+  const SYSTEM = {
+    'Core Layer': 'الطبقة الأساسية',
+    'Business Layer': 'طبقة الأعمال',
+    'Collaboration Layer': 'طبقة التعاون',
+    'Governance Layer': 'طبقة الحوكمة',
+    'Knowledge Layer': 'طبقة المعرفة',
+    'Learning Ecosystem': 'منظومة التعلم',
+    'Core Platform': 'المنصة الأساسية',
+    'Integration Layer': 'طبقة الربط',
+    'Governance Center': 'مركز الحوكمة',
+    'Incubator Management': 'إدارة الحاضنات',
+    'Platform & Digital Offices': 'المنصات والمكاتب الرقمية',
+    'Marketing Network': 'شبكة التسويق',
+    'Events Studio': 'استوديو الفعاليات',
+    'CRM & Customer Success': 'إدارة علاقات العملاء ونجاحهم',
+    'Points Economy': 'اقتصاد النقاط',
+    'Knowledge Bank': 'بنك المعرفة',
+    'AI Services': 'خدمات الذكاء الاصطناعي',
+    'Analytics & BI': 'التحليلات وذكاء الأعمال',
+    'Security Layer': 'طبقة الأمن',
+    'Mobile Super App': 'التطبيق الموحد',
+    'Identity & SSO': 'الهوية والدخول الموحد',
+    'Identity & Access': 'الهوية والصلاحيات',
+    'Organization Hierarchy': 'التسلسل التنظيمي',
+    'Organization Engine': 'محرك الهيكل التنظيمي',
+    'Role Matrix Engine': 'محرك مصفوفة الصلاحيات',
+    'Unified Dashboard': 'لوحة التحكم الموحدة',
+    'API Gateway': 'بوابة واجهات البرمجة (API)',
+    'Event Bus': 'ناقل الأحداث',
+    Connectors: 'الموصلات',
+    Notifications: 'الإشعارات',
+    Audit: 'التدقيق',
+    Settings: 'الإعدادات',
+    'Single Sign-On': 'الدخول الموحد (SSO)',
+    IAM: 'إدارة الهوية والصلاحيات (IAM)',
+    'Multi-Tenant Engine': 'محرك تعدد المستأجرين',
+    'Organization Hierarchy': 'التسلسل التنظيمي',
+    'Notification Center': 'مركز الإشعارات',
+    'Audit & Activity Log': 'سجل العمليات والنشاط',
+    'Settings & Configuration': 'الإعدادات والتهيئة',
+    'Language & Localization': 'اللغة والتعريب',
+    'Global Structure Engine': 'محرك الهيكل المؤسسي العالمي',
+    'Global Command Center': 'مركز التحكم العالمي',
+    'System Marketplace': 'سوق الأنظمة التشغيلية',
+    'Marketing Studio': 'استوديو التسويق',
+    'Network Marketing Engine': 'محرك التسويق الشبكي',
+    'Global Knowledge Center': 'مركز المعرفة العالمي',
+    'NAIOSH AI Core': 'الذكاء الاصطناعي المركزي لنايوش',
+    'CRM & Service Center': 'مركز خدمة العملاء',
+    'Governance & Analytics': 'التحليلات والحوكمة',
+    'Data Dictionary': 'قاموس البيانات',
+    'Permission Matrix': 'مصفوفة الصلاحيات',
+    'System Integration Map': 'خريطة تكامل الأنظمة',
+    'User Journey Maps': 'خرائط رحلة المستخدم',
+    'API Architecture': 'معمارية واجهات البرمجة (API)',
+    'Branch & Incubator Model': 'نموذج الفروع والحاضنات',
+    'Wallet Model': 'نموذج المحفظة',
+    'AI Architecture': 'معمارية الذكاء الاصطناعي',
+    'Central Digital Hub': 'المنصة الرقمية المركزية',
+    'Global Digital Hub': 'المنصة الرقمية العالمية',
+    Governance: 'الحوكمة',
+    'Core Operations': 'التشغيل المؤسسي',
+    'Specialized Engines': 'المحركات المتخصصة',
+    'Integration Hub': 'مركز التكامل',
+    'Data & Knowledge': 'البيانات والمعرفة',
+    'Marketing & CRM': 'التسويق وعلاقات العملاء',
+    'AI Intelligence': 'الذكاء الاصطناعي',
+    'Command Center': 'مركز القيادة',
+    'Architecture Core': 'نواة المعمارية',
+    'Common Operating Components': 'المكوّنات التشغيلية المشتركة',
+    'HUB 360 Core': 'نواة هوب 360',
+    'Data & Knowledge Hub': 'مركز البيانات والمعرفة',
+    'AI Gateway': 'بوابة الذكاء الاصطناعي',
+    'AI Assistant': 'المساعد الذكي',
+    'AI Analyst': 'المحلل الذكي',
+    'AI Advisor': 'المستشار الذكي',
+    'AI Predictor': 'نظام التنبؤ',
+    'AI Orchestrator': 'منسّق العمليات الذكي',
+    Content: 'المحتوى',
+    Campaigns: 'الحملات',
+    Affiliate: 'التسويق بالعمولة',
+    Certificates: 'الشهادات',
+    'AI Tutor': 'المدرّب الذكي',
+    Dashboards: 'لوحات التحكم',
+    'Data Lake': 'بحيرة البيانات',
+    ETL: 'استخراج وتحويل وتحميل البيانات (ETL)',
+    Gateway: 'البوابة',
+    'Document AI': 'ذكاء المستندات',
+    Predictive: 'تنبؤي',
+    KPI: 'مؤشرات الأداء (KPI)',
+    Compliance: 'الامتثال',
+    Risk: 'المخاطر',
+    'Executive Reports': 'التقارير التنفيذية',
+    LMS: 'نظام إدارة التعلم (LMS)',
+    LXP: 'منصة تجربة التعلم (LXP)',
+    OAuth2: 'بروتوكول التفويض (OAuth2)',
+    MFA: 'المصادقة الثنائية (MFA)',
+    SIEM: 'نظام مراقبة الأمن (SIEM)',
+    SSO: 'الدخول الموحد (SSO)',
+    Employee: 'موظف',
+    Owner: 'المسؤول',
+    Admin: 'مدير',
+    Manager: 'مدير',
+    Operator: 'مشغّل',
+    Manual: 'يدوي',
+    Import: 'استيراد',
+    Integration: 'تكامل',
+    Template: 'قالب',
+    'HR System': 'نظام الموارد البشرية',
+    'Workforce Module': 'وحدة القوى العاملة',
+    Create: 'إنشاء',
+    Update: 'تحديث',
+    Export: 'تصدير',
+    Internal: 'داخلي',
+    External: 'خارجي',
+    Custom: 'مخصص',
+    Staff: 'موظف',
+    Academy: 'الأكاديمية',
+    Success: 'نجاح',
+    Failed: 'فشل',
+    Error: 'خطأ',
+    Queued: 'في الانتظار',
+    Running: 'قيد التشغيل',
+    Cancelled: 'ملغي',
+    Connected: 'متصل',
+    'Internal Module': 'وحدة داخلية',
+    File: 'ملف',
+    Warehouse: 'مستودع',
+    Table: 'جدول',
+    View: 'عرض',
+    Stream: 'بث',
+    Document: 'مستند',
+    Dataset: 'مجموعة بيانات',
+    Report: 'تقرير',
+    Other: 'أخرى',
+    Operational: 'تشغيلي',
+    'Personal Data': 'بيانات شخصية',
+    Financial: 'مالي',
+    HR: 'موارد بشرية',
+    Customer: 'عميل',
+    Credentials: 'بيانات اعتماد',
+    Public: 'عام',
+    Restricted: 'مقيّد',
+    Master: 'أساسي',
+    Derived: 'مشتق',
+    New: 'جديد',
+    Closed: 'مغلق',
+    'AI Analysis': 'تحليل ذكي',
+    'Rule Engine': 'محرك القواعد',
+    Anomaly: 'شذوذ',
+    Prediction: 'تنبؤ',
+    Recommendation: 'توصية',
+    'External System': 'نظام خارجي',
+    'Tier 1 — Core': 'المستوى 1 — أساسي',
+    'Tier 2 — Strategic': 'المستوى 2 — استراتيجي',
+    'Tier 3 — Specialized': 'المستوى 3 — متخصص',
+    'Tier 4 — Support': 'المستوى 4 — دعم',
+    ENTERPRISE: 'مؤسسي',
+    'ENTERPRISE WORKSPACE': 'مساحة عمل مؤسسية',
   };
 
   const LABELS = {
-    // Site settings — orders
     'Request ID Format': 'صيغة رقم الطلب',
     'Require Admin Approval': 'يتطلب موافقة الإدارة',
     'Default Request Status': 'الحالة الافتراضية للطلب',
@@ -115,7 +351,6 @@
     'Default Department': 'القسم الافتراضي',
     'Request Notifications': 'إشعارات الطلبات',
     'Customer Request Routing': 'توجيه طلبات العملاء',
-    // general
     'Site Logo': 'شعار الموقع',
     Favicon: 'أيقونة المتصفح',
     Timezone: 'المنطقة الزمنية',
@@ -123,7 +358,6 @@
     'Support Email': 'بريد الدعم',
     'Support Phone': 'هاتف الدعم',
     'Maintenance Mode': 'وضع الصيانة',
-    // payment
     'Default Currency': 'العملة الافتراضية',
     'Payment Methods': 'طرق الدفع',
     'Tax Settings': 'إعدادات الضريبة',
@@ -132,7 +366,6 @@
     'Refund Rules (days)': 'مهلة الاسترداد (أيام)',
     'Payment Notifications': 'إشعارات الدفع',
     'Payment Status Rules': 'قواعد حالة الدفع',
-    // shipping
     'Enable Shipping': 'تفعيل الشحن',
     'Shipping Methods': 'طرق الشحن',
     'Shipping Regions': 'مناطق الشحن',
@@ -140,7 +373,6 @@
     'Free Shipping Rules (min USD)': 'حد الشحن المجاني (بالدولار)',
     'Estimated Delivery Time': 'وقت التوصيل المتوقع',
     'Tracking Settings': 'إعدادات التتبع',
-    // ads
     'Enable Advertisements': 'تفعيل الإعلانات',
     'Allowed Ad Types': 'أنواع الإعلانات المسموحة',
     'Maximum Image Size (MB)': 'الحد الأقصى لحجم الصورة (ميجابايت)',
@@ -150,7 +382,6 @@
     'Ad Placements': 'مواضع الإعلان',
     'CTA Types': 'أنواع الدعوة للإجراء',
     'Auto Expiration': 'انتهاء تلقائي',
-    // content
     'Enable Articles': 'تفعيل المقالات',
     'Require Article Approval': 'يتطلب موافقة على المقال',
     'Article Categories': 'تصنيفات المقالات',
@@ -158,7 +389,6 @@
     'Maximum Attachment Size (MB)': 'الحد الأقصى للمرفق (ميجابايت)',
     'Publishing Workflow': 'مسار النشر',
     'Moderation Settings': 'إعدادات الإشراف',
-    // notifications
     'In-App Notifications': 'إشعارات داخل التطبيق',
     'Email Notifications': 'إشعارات البريد',
     'SMS Notifications': 'إشعارات الرسائل النصية',
@@ -170,22 +400,19 @@
     'Article Approved': 'تمت الموافقة على المقال',
     'Advertisement Approved': 'تمت الموافقة على الإعلان',
     'Product Approved': 'تمت الموافقة على المنتج',
-    // integrations
     APIs: 'واجهات البرمجة (API)',
     Webhooks: 'خطافات الويب',
     'External Systems': 'الأنظمة الخارجية',
     'Connection Status': 'حالة الاتصال',
     'Last Sync': 'آخر مزامنة',
     'Sync Settings (minutes)': 'فترة المزامنة (دقائق)',
-    // security
     'Session Timeout (min)': 'انتهاء الجلسة (دقائق)',
     'Password Policy (min length)': 'سياسة كلمة المرور (الحد الأدنى للطول)',
-    MFA: 'المصادقة الثنائية',
+    MFA: 'المصادقة الثنائية (MFA)',
     'Login Attempts': 'محاولات تسجيل الدخول',
     'Account Lockout (min)': 'قفل الحساب (دقائق)',
     'IP Restrictions': 'قيود عناوين IP',
     'Audit Logging': 'تسجيل التدقيق',
-    // seo
     'Site Title': 'عنوان الموقع',
     'Meta Description': 'الوصف التعريفي',
     Keywords: 'الكلمات المفتاحية',
@@ -193,8 +420,7 @@
     'Canonical URLs (base)': 'الرابط الأساسي المعتمد',
     'Search Engine Indexing': 'فهرسة محركات البحث',
     Sitemap: 'خريطة الموقع',
-    'Robots Settings': 'إعدادات Robots',
-    // store
+    'Robots Settings': 'إعدادات الفهرسة',
     'Require Product URL': 'يتطلب رابط المنتج',
     'Allow External Stores': 'السماح بالمتاجر الخارجية',
     'Allow Customer To Add Product': 'السماح للعميل بإضافة منتج',
@@ -216,7 +442,6 @@
     Disabled: 'معطّل',
     Grid: 'شبكة',
     List: 'قائمة',
-    // audit
     'Transaction ID': 'رقم العملية',
     Section: 'القسم',
     Action: 'الإجراء',
@@ -226,7 +451,6 @@
     Role: 'الدور',
     Date: 'التاريخ',
     Time: 'الوقت',
-    // permissions
     'View Site Settings': 'عرض إعدادات الموقع',
     'Manage Site Settings': 'إدارة إعدادات الموقع',
     'Manage Stores': 'إدارة المتاجر',
@@ -245,6 +469,27 @@
     'Manage Security Settings': 'إدارة إعدادات الأمان',
     'Manage SEO Settings': 'إدارة إعدادات تحسين البحث',
     'View Audit Log': 'عرض سجل التغييرات',
+    Status: 'الحالة',
+    Type: 'النوع',
+    Name: 'الاسم',
+    Details: 'التفاصيل',
+    Actions: 'الإجراءات',
+    Settings: 'الإعدادات',
+    Dashboard: 'لوحة التحكم',
+    Loading: 'جارٍ التحميل...',
+    'No Data': 'لا توجد بيانات',
+    'No data found': 'لا توجد بيانات',
+    'Access denied': 'ليس لديك صلاحية للوصول',
+    'Something went wrong': 'حدث خطأ غير متوقع',
+    'Save Changes': 'حفظ التغييرات',
+    'View All': 'عرض الكل',
+    'No Results': 'لا توجد نتائج',
+    'Created By': 'أنشأه',
+    'Last Updated': 'آخر تحديث',
+    'Session Timeout': 'انتهاء الجلسة',
+    'Password Policy': 'سياسة كلمة المرور',
+    Current: 'الحالي',
+    Target: 'الهدف',
   };
 
   const BRAND_ALLOW = new Set([
@@ -255,6 +500,8 @@
     'NAIOSHAI HUB',
     'NAIOSHAI HUB 360',
     'HUB 360',
+    'NAIOSH ID',
+    'NAIOSHAI ID',
     'Google',
     'USD',
     'ERP',
@@ -265,47 +512,104 @@
     'IP',
     'URL',
     'ID',
+    'SSO',
+    'NAIS',
+    'FIT',
+    'LAW',
+    'LMS',
+    'LXP',
+    'KPI',
+    'MFA',
   ]);
 
   const normalizeKey = (k) => String(k || '').trim();
+
+  const statusKey = (code) =>
+    String(code || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[\s\-]+/g, '_');
 
   const t = (key, fallback) => {
     const k = normalizeKey(key);
     if (!k) return fallback || '';
     if (COMMON[k] != null) return COMMON[k];
     if (COMMON[k.toLowerCase()] != null) return COMMON[k.toLowerCase()];
-    if (STATUS[k.toLowerCase()] != null) return STATUS[k.toLowerCase()];
-    if (ROLES[k.toLowerCase()] != null) return ROLES[k.toLowerCase()];
+    if (STATUS[statusKey(k)] != null) return STATUS[statusKey(k)];
+    if (ROLES[statusKey(k)] != null) return ROLES[statusKey(k)];
+    if (SYSTEM[k] != null) return SYSTEM[k];
     if (LABELS[k] != null) return LABELS[k];
     if (fallback != null) return fallback;
     return k;
   };
 
   const status = (code, fallback) => {
-    const k = String(code || '').toLowerCase();
-    return STATUS[k] || fallback || t(code, String(code || '—'));
+    const raw = normalizeKey(code);
+    if (!raw) return fallback || '—';
+    const k = statusKey(raw);
+    if (STATUS[k] != null) return STATUS[k];
+    // Title Case / phrases like "Pending Approval"
+    if (SYSTEM[raw] != null) return SYSTEM[raw];
+    if (LABELS[raw] != null) return LABELS[raw];
+    return fallback != null ? fallback : raw;
   };
 
   const role = (code, fallback) => {
-    const k = String(code || '')
-      .toLowerCase()
-      .replace(/\s+/g, '_');
+    const k = statusKey(code);
     return ROLES[k] || fallback || t(code, String(code || '—'));
   };
 
-  const label = (englishLabel, arabicFallback) => LABELS[normalizeKey(englishLabel)] || arabicFallback || englishLabel;
+  const label = (englishLabel, arabicFallback) =>
+    LABELS[normalizeKey(englishLabel)] || SYSTEM[normalizeKey(englishLabel)] || arabicFallback || englishLabel;
+
+  const system = (englishName, arabicFallback) => {
+    const k = normalizeKey(englishName);
+    if (!k) return arabicFallback || '';
+    if (SYSTEM[k] != null) return SYSTEM[k];
+    if (BRAND_ALLOW.has(k)) return k;
+    if (STATUS[statusKey(k)] != null) return STATUS[statusKey(k)];
+    return arabicFallback != null ? arabicFallback : k;
+  };
 
   const isAllowedBrand = (s) => BRAND_ALLOW.has(String(s || '').trim());
+
+  const userError = (err) => {
+    const msg = String(err?.message || err || '').toLowerCase();
+    if (/failed to fetch|network|offline|timeout/.test(msg)) return COMMON.errorNetwork;
+    if (/unauthorized|401/.test(msg)) return COMMON.errorUnauthorized;
+    if (/forbidden|403/.test(msg)) return COMMON.errorForbidden;
+    if (/500|internal server/.test(msg)) return COMMON.errorServer;
+    if (/invalid request|bad request|400/.test(msg)) return COMMON.invalid;
+    return COMMON.errorGeneric;
+  };
+
+  const display = (value, fallback) => {
+    const raw = normalizeKey(value);
+    if (!raw) return fallback || '—';
+    if (isAllowedBrand(raw)) return raw;
+    const sk = statusKey(raw);
+    if (STATUS[sk] != null) return STATUS[sk];
+    if (ROLES[sk] != null) return ROLES[sk];
+    if (SYSTEM[raw] != null) return SYSTEM[raw];
+    if (LABELS[raw] != null) return LABELS[raw];
+    if (COMMON[sk] != null) return COMMON[sk];
+    if (fallback != null) return fallback;
+    return raw;
+  };
 
   window.HubI18n = {
     t,
     status,
     role,
     label,
+    system,
+    display,
+    userError,
     STATUS,
     ROLES,
     COMMON,
     LABELS,
+    SYSTEM,
     isAllowedBrand,
     BRAND_ALLOW,
   };

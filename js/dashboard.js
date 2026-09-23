@@ -193,8 +193,12 @@
       عاجل: 'badge-red',
       متوسط: 'badge-gray',
     };
-    return `<span class="badge ${map[status] || 'badge-outline'}">${esc(status)}</span>`;
+    const label = window.HubI18n?.status?.(status) || status;
+    return `<span class="badge ${map[status] || 'badge-outline'}">${esc(label)}</span>`;
   };
+
+  const sysLabel = (v) => window.HubI18n?.system?.(v) || v;
+  const brandKeep = (v) => (window.HubI18n?.isAllowedBrand?.(v) ? v : sysLabel(v));
 
   const bar = (pct) => `<div class="bar"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>`;
 
@@ -249,7 +253,7 @@
     const brandSpan = document.querySelector('.sidebar-brand span');
     const brandImg = document.querySelector('.sidebar-brand img');
     if (brandStrong) brandStrong.textContent = s.orgNameEn || 'NAIOSH HUB';
-    if (brandSpan) brandSpan.textContent = s.orgTagline || '360 · Imperial';
+    if (brandSpan) brandSpan.textContent = s.orgTagline || '360 · الإصدار الإمبراطوري';
     if (brandImg && s.logoMain) brandImg.src = s.logoMain;
 
     const rootStyle = document.documentElement.style;
@@ -384,9 +388,12 @@
 
     const tl = HubStore.get().timeline;
     const p0 = HubStore.get().empire?.priorities?.[0];
+    const phaseName = p0
+      ? `${p0.order}: ${esc(sysLabel(p0.axis))} — ${p0.progress}%`
+      : `${esc(sysLabel(tl.phase1.name))} — ${tl.phase1.progress}%`;
     $('#sidebar-phase').innerHTML = `
       <strong>أول 6 أشهر</strong>
-      <div>${p0 ? `P${p0.order}: ${esc(p0.axis)} · ${p0.progress}%` : `${esc(tl.phase1.name)} · ${tl.phase1.progress}%`}</div>
+      <div>${phaseName}</div>
       ${bar(p0 ? p0.progress : tl.phase1.progress)}
     `;
   };
@@ -458,21 +465,20 @@
           .map(
             (l) => `<article class="phase-card">
               <h4>${esc(l.nameAr)}</h4>
-              <small>${esc(l.name)}</small>
-              <ul>${l.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>
+              <ul>${l.items.map((i) => `<li>${esc(sysLabel(i))}</li>`).join('')}</ul>
             </article>`
           )
           .join('')}
       </div>
-      <h3 class="section-label">Core Platform — لا نظام قبل اكتمالها</h3>
+      <h3 class="section-label">المنصة الأساسية — لا يكتمل تشغيل النظام قبل اكتمالها</h3>
       <div class="table-wrap"><table class="data">
         <thead><tr><th>المكوّن</th><th>الوصف</th><th>الحالة</th><th>التقدم</th><th></th></tr></thead>
         <tbody>
           ${e.coreModules
             .map(
               (m) => `<tr>
-                <td><strong>${esc(m.name)}</strong></td>
-                <td>${esc(m.nameAr)}</td>
+                <td><strong>${esc(window.HubI18n?.isAllowedBrand?.(m.name) ? m.name : m.nameAr || sysLabel(m.name))}</strong></td>
+                <td>${esc(m.nameAr || sysLabel(m.name))}</td>
                 <td>${badgeStatus(m.status)}</td>
                 <td style="min-width:120px">${bar(m.progress)} <small>${m.progress}%</small></td>
                 <td><button class="btn btn-sm btn-primary" data-action="advance-core" data-id="${m.id}">تقدّم</button></td>
@@ -489,7 +495,7 @@
             .map(
               (p) => `<tr>
                 <td>${p.order}</td>
-                <td><strong>${esc(p.axis)}</strong></td>
+                <td><strong>${esc(sysLabel(p.axis))}</strong></td>
                 <td>${esc(p.note)}</td>
                 <td>${badgeStatus(p.status)}</td>
                 <td style="min-width:120px">${bar(p.progress)} <small>${p.progress}%</small></td>
@@ -507,7 +513,7 @@
             return `<article class="axis-card">
               <div class="axis-num">0${a.priority}</div>
               <h4>${esc(a.nameAr)}</h4>
-              <small>${esc(a.name)}</small>
+              ${window.HubI18n?.isAllowedBrand?.(a.name) ? `<small>${esc(a.name)}</small>` : ''}
               <div>${bar(st?.progress || 0)}</div>
               <ul>${a.components.slice(0, 4).map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
               ${badgeStatus(st?.status || 'planned')}
@@ -521,7 +527,7 @@
           <ul class="stack-tree">
             ${bp.stackTree
               .map(
-                (n) => `<li><strong>${esc(n.nameAr)}</strong> <span>${esc(n.name)}</span><em>${n.children.join(' · ')}</em></li>`
+                (n) => `<li><strong>${esc(n.nameAr)}</strong><em>${n.children.map((c) => esc(sysLabel(c))).join(' · ')}</em></li>`
               )
               .join('')}
           </ul>
@@ -531,10 +537,10 @@
           <div class="table-wrap"><table class="data">
             <thead><tr><th>الوثيقة</th><th>الحالة</th></tr></thead>
             <tbody>
-              ${e.docs.map((d) => `<tr><td>${esc(d.name)}</td><td>${badgeStatus(d.status)}</td></tr>`).join('')}
+              ${e.docs.map((d) => `<tr><td>${esc(sysLabel(d.name))}</td><td>${badgeStatus(d.status)}</td></tr>`).join('')}
             </tbody>
           </table></div>
-          <p class="muted" style="margin-top:10px">لا تسويق ولا ذكاء اصطناعي قبل اكتمال الأساسات (Core → Identity → Hierarchy → Roles → Dashboard → Gateway).</p>
+          <p class="muted" style="margin-top:10px">لا تسويق ولا ذكاء اصطناعي قبل اكتمال الأساسات: المنصة الأساسية ← الهوية ← الهيكل ← الأدوار ← لوحة التحكم ← بوابة الربط.</p>
         </article>
       </div>
     `;
@@ -1502,7 +1508,7 @@
         break;
       case 'advance-core':
         HubStore.advanceCoreModule(id);
-        toast('تقدّم مكوّن Core Platform');
+        toast('تقدّم مكوّن في المنصة الأساسية');
         break;
       case 'advance-priority':
         HubStore.advancePriority(id);

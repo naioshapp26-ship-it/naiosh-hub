@@ -15,25 +15,29 @@
   const fmtTime = (iso) => {
     if (!iso) return '—';
     try {
-      return new Date(iso).toLocaleString('ar-EG', {
+      if (window.HubFormat?.formatDateTime) return window.HubFormat.formatDateTime(iso);
+      return new Date(iso).toLocaleString('en-GB', {
         hour: '2-digit',
         minute: '2-digit',
-        day: 'numeric',
-        month: 'short',
+        day: '2-digit',
+        month: '2-digit',
         year: 'numeric',
+        hour12: false,
       });
     } catch {
       return String(iso);
     }
   };
 
+  const badge = (text, cls = 'badge-outline') => {
+    const shown = window.HubI18n?.display?.(text) || text;
+    return `<span class="badge ${cls}">${esc(shown || '—')}</span>`;
+  };
+
   const bar = (pct) => {
     const n = Math.max(0, Math.min(100, Number(pct) || 0));
     return `<div class="bar" aria-hidden="true"><i style="width:${n}%"></i></div>`;
   };
-
-  const badge = (text, cls = 'badge-outline') =>
-    `<span class="badge ${cls}">${esc(text || '—')}</span>`;
 
   const actorName = (user) => user?.name || user?.email || user?.displayName || 'مشغّل هوب';
 
@@ -56,10 +60,10 @@
     return el.type === 'checkbox' ? !!el.checked : String(el.value || '').trim();
   };
 
-  const renderHeader = ({ prefix, title, subtitle, icon, actionsHtml = '', badgeText = 'ENTERPRISE WORKSPACE' }) => `
+  const renderHeader = ({ prefix, title, subtitle, icon, actionsHtml = '', badgeText = 'مساحة عمل مؤسسية' }) => `
     <div class="hub-ws-hero">
       <div class="hub-ws-hero-main">
-        <div class="hub-ws-kicker"><i class="fas ${esc(icon || 'fa-layer-group')}"></i> NAIOSH HUB · ${esc(badgeText)}</div>
+        <div class="hub-ws-kicker"><i class="fas ${esc(icon || 'fa-layer-group')}"></i> NAIOSH HUB · ${esc(window.HubI18n?.system?.(badgeText) || badgeText)}</div>
         <h2 class="hub-ws-title">${esc(title)}</h2>
         <p class="hub-ws-sub">${esc(subtitle || '')}</p>
       </div>

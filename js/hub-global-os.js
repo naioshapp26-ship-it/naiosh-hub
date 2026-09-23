@@ -50,9 +50,15 @@
   const writeEvents = (list) => localStorage.setItem(EVENT_KEY, JSON.stringify(list.slice(0, 80)));
 
   const tierLabel = (t) =>
-    ({ 1: 'Tier 1 — Core', 2: 'Tier 2 — Strategic', 3: 'Tier 3 — Specialized', 4: 'Tier 4 — Support' }[t] || `Tier ${t}`);
+    ({
+      1: 'المستوى 1 — أساسي',
+      2: 'المستوى 2 — استراتيجي',
+      3: 'المستوى 3 — متخصص',
+      4: 'المستوى 4 — دعم',
+    }[t] || `المستوى ${t}`);
 
   const statusLabel = (s) =>
+    window.HubI18n?.status?.(s) ||
     ({ ready: 'جاهز للإطلاق', integrate: 'يحتاج تكامل', reengineer: 'يحتاج إعادة هندسة' }[s] || s);
 
   const paintStats = () => {
@@ -63,7 +69,7 @@
     el.innerHTML = `
       <article><strong>${data.systems.length}</strong><span>نظام في السجل</span></article>
       <article><strong>${data.layers.length}</strong><span>طبقة معمارية</span></article>
-      <article><strong>${core}</strong><span>محرك Core</span></article>
+      <article><strong>${core}</strong><span>محرك أساسي</span></article>
       <article><strong>${ready}</strong><span>جاهز / مرتفع الجاهزية</span></article>
       <article><strong>${data.coreServices.length}</strong><span>مكوّن مشترك</span></article>
       <article><strong>${data.events.length}</strong><span>حدث موحّد</span></article>`;
@@ -76,8 +82,7 @@
       .map(
         (l) => `<article class="gos-card">
         <span class="gos-n">${l.n}</span>
-        <h3>${esc(l.en)}</h3>
-        <strong>${esc(l.ar)}</strong>
+        <h3>${esc(l.ar)}</h3>
         <p>${esc(l.desc)}</p>
       </article>`
       )
@@ -126,11 +131,11 @@
             <span class="gos-score">${s.readiness}/100</span>
           </header>
           <h3>${esc(s.nameAr)}</h3>
-          <small>${esc(s.nameEn)} · ${esc(s.domain)}</small>
+          <small>${esc(s.domain)}</small>
           <p>${esc(s.goal)}</p>
           <div class="gos-meta">
             <span>${esc(statusLabel(s.status))}</span>
-            <span>${esc(ints || 'hub')}</span>
+            <span>${esc(ints || 'مرتبط بالهوب')}</span>
           </div>
           <div class="gos-actions">
             <a class="btn btn-primary" href="${esc(s.href)}">فتح</a>
@@ -274,7 +279,7 @@
     });
     writeEvents(list);
     paintEventLog();
-    toast(`Event: ${def.code}`);
+    toast(`حدث: ${def.code}`);
   };
 
   const paintAi = () => {
@@ -284,7 +289,7 @@
       .map(
         (a) => `<article class="gos-card">
         <span class="gos-n">${a.n}</span>
-        <h3>${esc(a.title)}</h3>
+        <h3>${esc(a.ar || a.title)}</h3>
         <strong>${esc(a.ar)}</strong>
         <p>${esc(a.desc)}</p>
       </article>`
@@ -294,9 +299,9 @@
     const hitl = root.querySelector('[data-gos-hitl]');
     if (hitl) {
       hitl.innerHTML = `
-        <article class="gos-hitl green"><strong>Green</strong><p>AI ينفّذ تلقائيًا ضمن حدود آمنة.</p></article>
-        <article class="gos-hitl yellow"><strong>Yellow</strong><p>AI يقترح والموظف يعتمد.</p></article>
-        <article class="gos-hitl red"><strong>Red</strong><p>موافقة بشرية متعددة — مالية · عقود · صلاحيات · قانون.</p></article>`;
+        <article class="gos-hitl green"><strong>أخضر</strong><p>الذكاء الاصطناعي ينفّذ تلقائيًا ضمن حدود آمنة.</p></article>
+        <article class="gos-hitl yellow"><strong>أصفر</strong><p>الذكاء الاصطناعي يقترح والموظف يعتمد.</p></article>
+        <article class="gos-hitl red"><strong>أحمر</strong><p>موافقة بشرية متعددة — مالية · عقود · صلاحيات · قانون.</p></article>`;
     }
   };
 
@@ -306,11 +311,11 @@
     el.innerHTML = data.dataDictionary
       .map(
         (d) => `<article class="gos-card">
-        <h3>${esc(d.entity)}</h3>
-        <p><strong>Master Source:</strong> ${esc(d.owner)}</p>
-        <p><strong>النوع:</strong> ${esc(d.type)}</p>
-        <p><strong>تعديل:</strong> ${esc(d.writers.join(' · '))}</p>
-        <p><strong>قراءة:</strong> ${esc(d.readers.join(' · '))}</p>
+        <h3>${esc(window.HubI18n?.display?.(d.entity) || d.entity)}</h3>
+        <p><strong>المصدر الأساسي:</strong> ${esc(window.HubI18n?.display?.(d.owner) || d.owner)}</p>
+        <p><strong>النوع:</strong> ${esc(window.HubI18n?.display?.(d.type) || d.type)}</p>
+        <p><strong>تعديل:</strong> ${esc(d.writers.map((w) => window.HubI18n?.display?.(w) || w).join(' · '))}</p>
+        <p><strong>قراءة:</strong> ${esc(d.readers.map((r) => window.HubI18n?.display?.(r) || r).join(' · '))}</p>
       </article>`
       )
       .join('');

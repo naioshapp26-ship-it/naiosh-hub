@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.join(__dirname, '..');
-const SKIP_DIRS = new Set(['node_modules', '.git', '_ops-docs', 'assets', 'uploads', 'data', 'scripts']);
+const SKIP_DIRS = new Set(['node_modules', '.git', '_ops-docs', 'assets', 'uploads', 'data', 'scripts', 'docs']);
 const EXT = new Set(['.js', '.html']);
 
 const UI_PHRASES = [
@@ -45,6 +45,18 @@ const UI_PHRASES = [
   'Password Policy',
   'Manage Site Settings',
   'View Site Settings',
+  'Core Layer',
+  'Business Layer',
+  'Collaboration Layer',
+  'Governance Layer',
+  'Knowledge Layer',
+  'Learning Ecosystem',
+  'Core Platform',
+  'ENTERPRISE WORKSPACE',
+  'Tier 1 — Core',
+  'Failed to fetch',
+  'Network Error',
+  'Internal Server Error',
 ];
 
 function walk(dir, out = []) {
@@ -63,20 +75,23 @@ const files = walk(root);
 for (const file of files) {
   const rel = path.relative(root, file).replace(/\\/g, '/');
   if (rel === 'js/hub-i18n.js') continue; // dictionary keys
+  if (rel === 'js/empire-blueprint.js') {
+    // name keys are internal; display uses nameAr — still flag if rendered dual
+  }
   const text = fs.readFileSync(file, 'utf8');
   for (const phrase of UI_PHRASES) {
-    // match as quoted UI string or HTML text node-ish
     const patterns = [
       new RegExp(`['"\`]${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"\`]`, 'g'),
       new RegExp(`>(\\s*)${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*)<`, 'g'),
-      new RegExp(`<span[^>]*>${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}<`, 'g'),
-      new RegExp(`<th[^>]*>${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}<`, 'g'),
-      new RegExp(`<b[^>]*>${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:?<`, 'g'),
       new RegExp(`placeholder=["']${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["']`, 'g'),
     ];
     for (const re of patterns) {
       let m;
       while ((m = re.exec(text))) {
+        // skip dictionary / comment / internal name: fields in blueprint data
+        const ctx = text.slice(Math.max(0, m.index - 40), m.index + phrase.length + 40);
+        if (/name:\s*['"`]/.test(ctx) && /empire-blueprint|hub-i18n|SYSTEM\s*=/.test(rel)) continue;
+        if (rel.includes('empire-blueprint') && /name:\s*/.test(ctx)) continue;
         hits.push({ file: rel, phrase, at: m.index });
       }
     }
