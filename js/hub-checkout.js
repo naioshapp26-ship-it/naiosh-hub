@@ -36,8 +36,10 @@
       headers.Authorization = `Bearer ${token}`;
       headers['X-Hub-Token'] = token;
     }
-    if (user.role) headers['X-Hub-User-Role'] = user.role;
-    if (user.name || user.fullName) headers['X-Hub-User-Name'] = user.name || user.fullName;
+    // Role only — never put Arabic names in HTTP headers (must be ISO-8859-1)
+    if (user.role && /^[\x00-\x7F]+$/.test(String(user.role))) {
+      headers['X-Hub-User-Role'] = String(user.role);
+    }
     return headers;
   };
 

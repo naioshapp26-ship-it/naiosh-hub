@@ -1126,6 +1126,10 @@
       headers.Authorization = `Bearer ${token}`;
       headers['X-Hub-Token'] = token;
     }
+    const role = window.HubAuth?.getUser?.()?.role;
+    if (role && /^[\x00-\x7F]+$/.test(String(role))) {
+      headers['X-Hub-User-Role'] = String(role);
+    }
     return headers;
   };
 
