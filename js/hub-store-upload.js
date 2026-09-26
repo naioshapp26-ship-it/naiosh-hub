@@ -14,9 +14,11 @@
     { id: 'review', label: '5. المراجعة' }
   ];
 
+  var HUB_HOME_URL = 'https://www.naioshai.com/';
+
   var state = {
     step: 0,
-    purchaseType: '', // INTERNAL | EXTERNAL
+    purchaseType: 'INTERNAL', // INTERNAL | EXTERNAL — داخل نايوش افتراضيًا
     storeId: '',
     customStoreName: '',
     customStoreWebsite: '',
@@ -209,12 +211,20 @@
       '<article class="su-store-card' +
       (internalSelected ? ' is-selected' : '') +
       '" data-place="INTERNAL">' +
+      '<a class="su-store-brand-link" href="' +
+      esc(HUB_HOME_URL) +
+      '" target="_blank" rel="noopener noreferrer" data-su-open title="فتح موقع نايوش هوب">' +
       '<div class="su-store-logo" style="background:#d70000"><i class="fas fa-store" aria-hidden="true"></i></div>' +
-      '<div class="su-store-name">داخل NAIOSh</div>' +
+      '<div class="su-store-name">داخل NAIOSH</div>' +
+      '</a>' +
       '<div class="su-store-actions">' +
       '<button type="button" class="btn btn-primary" data-su-place="INTERNAL">' +
       (internalSelected ? 'محدد ✓' : 'اختيار') +
-      '</button></div></article>';
+      '</button>' +
+      '<a class="btn btn-outline" href="' +
+      esc(HUB_HOME_URL) +
+      '" target="_blank" rel="noopener noreferrer" data-su-open>فتح موقع نايوش هوب ↗</a>' +
+      '</div></article>';
 
     cards += list
       .map(function (s) {
@@ -499,7 +509,7 @@
   function resetState() {
     state = {
       step: 0,
-      purchaseType: '',
+      purchaseType: 'INTERNAL',
       storeId: '',
       customStoreName: '',
       customStoreWebsite: '',

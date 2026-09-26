@@ -169,6 +169,26 @@
   color: #111;
 }
 
+.su-store-brand-link {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+}
+
+.su-store-brand-link:hover .su-store-name,
+.su-store-brand-link:focus-visible .su-store-name {
+  color: #d70000;
+}
+
+.su-store-brand-link:focus-visible {
+  outline: 2px solid #d70000;
+  outline-offset: 2px;
+}
+
 .su-store-actions {
   display: grid;
   gap: 6px;
