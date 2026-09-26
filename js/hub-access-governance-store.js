@@ -347,10 +347,55 @@
     { id: uid('scp'), code: 'HUB-GLOBAL', type: 'HUB-GLOBAL', nameAr: 'نطاق هوب المركزي', nameEn: 'Hub Global', entityRef: 'HUB', status: 'active' },
     { id: uid('scp'), code: 'BRANCH-ALEX', type: 'BRANCH', nameAr: 'فرع الإسكندرية', nameEn: 'Alexandria Branch', entityRef: 'BRANCH:ALEX', status: 'active' },
     { id: uid('scp'), code: 'BRANCH-CAIRO', type: 'BRANCH', nameAr: 'فرع القاهرة', nameEn: 'Cairo Branch', entityRef: 'BRANCH:CAIRO', status: 'active' },
+    { id: uid('scp'), code: 'BRANCH-RIYADH', type: 'BRANCH', nameAr: 'فرع الرياض', nameEn: 'Riyadh Branch', entityRef: 'BRANCH:RIYADH', status: 'active' },
+    { id: uid('scp'), code: 'ORG-ALOFOQ', type: 'ORGANIZATION', nameAr: 'مؤسسة الأفق', nameEn: 'Alofoq Organization', entityRef: 'ORG:ALOFOQ', status: 'active' },
     { id: uid('scp'), code: 'SYS-ERP', type: 'SYSTEM', nameAr: 'نظام ERP', nameEn: 'ERP System', entityRef: 'ERP', status: 'active' },
     { id: uid('scp'), code: 'SYS-CRM', type: 'SYSTEM', nameAr: 'نظام CRM', nameEn: 'CRM System', entityRef: 'CRM', status: 'active' },
     { id: uid('scp'), code: 'PLATFORM-POSHA', type: 'PLATFORM', nameAr: 'منصة بوشا', nameEn: 'POSHA Platform', entityRef: 'POSHA', status: 'active' },
   ];
+
+  /** أنواع علاقة المستخدم بالمنظومة — منفصلة عن الدور/الصلاحية */
+  const USER_KINDS = {
+    INTERNAL: { code: 'INTERNAL', labelAr: 'موظف', needsEmployee: true, needsOrg: false },
+    CUSTOMER: { code: 'CUSTOMER', labelAr: 'عميل', needsEmployee: false, needsOrg: false },
+    ORG_EMPLOYEE: { code: 'ORG_EMPLOYEE', labelAr: 'موظف مؤسسة', needsEmployee: true, needsOrg: true },
+    ORG_MANAGER: { code: 'ORG_MANAGER', labelAr: 'مدير مؤسسة', needsEmployee: true, needsOrg: true },
+    BRANCH_EMPLOYEE: { code: 'BRANCH_EMPLOYEE', labelAr: 'موظف فرع', needsEmployee: true, needsOrg: true },
+    MEMBER: { code: 'MEMBER', labelAr: 'عضو', needsEmployee: false, needsOrg: true },
+  };
+
+  const AFFILIATION_KEYS = [
+    'userKind',
+    'orgId',
+    'orgName',
+    'branchId',
+    'branchName',
+    'department',
+    'jobTitle',
+    'clientNo',
+    'phone',
+    'country',
+    'nationality',
+    'clientStatus',
+  ];
+
+  const applyAffiliation = (row, spec = {}) => {
+    if (!row || !spec) return row;
+    AFFILIATION_KEYS.forEach((k) => {
+      if (spec[k] !== undefined) row[k] = spec[k];
+    });
+    if (spec.userKind) {
+      const kind = USER_KINDS[spec.userKind] || USER_KINDS.INTERNAL;
+      if (kind.needsEmployee || spec.isEmployee || spec.userType === 'STAFF') {
+        row.userType = 'STAFF';
+        row.isEmployee = true;
+      } else if (spec.userKind === 'CUSTOMER' && !row.employeeNo) {
+        row.userType = 'CUSTOMER';
+        row.isEmployee = false;
+      }
+    }
+    return row;
+  };
 
   const seedSodRules = () => [
     {
@@ -670,6 +715,296 @@
     return state;
   };
 
+  const pushGrantIfMissing = (state, grant) => {
+    if (!state.grants) state.grants = [];
+    const exists = state.grants.some((g) => g.grantId === grant.grantId || (g.naioshId === grant.naioshId && g.roleCode === grant.roleCode && g.system === grant.system && String(g.status).toUpperCase() === 'ACTIVE'));
+    if (exists) return;
+    state.grants.push(grant);
+  };
+
+  const ensureIdentityRegistry = (state) => {
+    if (!Array.isArray(state.identities)) state.identities = [];
+    if (!Array.isArray(state.scopes)) state.scopes = seedScopes();
+    else {
+      seedScopes().forEach((s) => {
+        if (!state.scopes.some((x) => x.code === s.code)) state.scopes.push(s);
+      });
+    }
+
+    const ensureIdentity = (spec) => {
+      let row = state.identities.find((i) => i.naioshId === spec.naioshId || (spec.email && i.email === spec.email));
+      if (!row) {
+        row = {
+          id: uid('id'),
+          naioshId: spec.naioshId,
+          employeeNo: spec.employeeNo || null,
+          name: spec.name,
+          email: spec.email,
+          userType: spec.userType || (spec.employeeNo || spec.userKind === 'INTERNAL' || spec.userKind === 'ORG_EMPLOYEE' || spec.userKind === 'ORG_MANAGER' || spec.userKind === 'BRANCH_EMPLOYEE' ? 'STAFF' : 'CUSTOMER'),
+          isEmployee: !!(spec.employeeNo || spec.isEmployee || ['INTERNAL', 'ORG_EMPLOYEE', 'ORG_MANAGER', 'BRANCH_EMPLOYEE'].includes(spec.userKind)),
+          verificationStatus: 'VERIFIED',
+          status: spec.status || 'active',
+          positions: spec.positions || [],
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+          registrySeed: true,
+        };
+        applyAffiliation(row, spec);
+        state.identities.push(row);
+      } else {
+        if (spec.employeeNo && !row.employeeNo) row.employeeNo = spec.employeeNo;
+        applyAffiliation(row, {
+          userKind: row.userKind || spec.userKind,
+          orgId: row.orgId || spec.orgId,
+          orgName: row.orgName || spec.orgName,
+          branchId: row.branchId || spec.branchId,
+          branchName: row.branchName || spec.branchName,
+          department: row.department || spec.department,
+          jobTitle: row.jobTitle || spec.jobTitle,
+          clientNo: row.clientNo || spec.clientNo,
+          phone: row.phone || spec.phone,
+          country: row.country || spec.country,
+          nationality: row.nationality || spec.nationality,
+          clientStatus: row.clientStatus || spec.clientStatus,
+        });
+        if (spec.forceAffil) applyAffiliation(row, spec);
+        row.updatedAt = nowIso();
+      }
+      if (spec.grant) {
+        pushGrantIfMissing(state, {
+          id: uid('grant'),
+          grantId: spec.grant.grantId,
+          identityId: row.id,
+          naioshId: row.naioshId,
+          employeeNo: row.employeeNo || null,
+          positionCode: spec.grant.positionCode || null,
+          roleCode: spec.grant.roleCode,
+          system: spec.grant.system || 'HUB',
+          scopeCode: spec.grant.scopeCode || 'HUB-GLOBAL',
+          permissions: spec.grant.permissions || [],
+          authorityCodes: spec.grant.authorityCodes || [],
+          purpose: spec.grant.purpose || 'سجل الهويات',
+          grantedBy: 'SUPER_ADMIN',
+          approvedBy: 'SUPER_ADMIN',
+          startDate: nowIso(),
+          expiryDate: null,
+          reviewDate: null,
+          riskLevel: spec.grant.riskLevel || 'medium',
+          status: 'ACTIVE',
+          evidence: { registrySeed: true },
+          governanceLevel: spec.grant.governanceLevel || 'HUB',
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+        });
+      }
+      return row;
+    };
+
+    // إثراء الحسابات الأساسية بجهة نايوش
+    const leader = state.identities.find((i) => i.naioshId === 'NAI-LEADER-001');
+    if (leader) {
+      applyAffiliation(leader, {
+        userKind: leader.userKind || 'INTERNAL',
+        orgId: leader.orgId || 'ORG-NAIOSH',
+        orgName: leader.orgName || 'نايوش',
+        branchName: leader.branchName || 'المقر الرئيسي',
+        department: leader.department || 'الإدارة العليا',
+        jobTitle: leader.jobTitle || 'القائد الأعلى',
+        country: leader.country || 'السعودية',
+      });
+    }
+    const malika = state.identities.find((i) => i.naioshId === 'NAI-MALIKA-001');
+    if (malika) {
+      applyAffiliation(malika, {
+        userKind: malika.userKind || 'INTERNAL',
+        orgId: malika.orgId || 'ORG-NAIOSH',
+        orgName: malika.orgName || 'نايوش',
+        branchName: malika.branchName || 'المقر الرئيسي',
+        department: malika.department || 'التشغيل',
+        jobTitle: malika.jobTitle || 'مهندسة تشغيل',
+        country: malika.country || 'السعودية',
+      });
+    }
+    const alex = state.identities.find((i) => i.naioshId === 'NAI-USER-0025');
+    if (alex) {
+      applyAffiliation(alex, {
+        userKind: alex.userKind || 'BRANCH_EMPLOYEE',
+        orgId: alex.orgId || 'ORG-NAIOSH',
+        orgName: alex.orgName || 'نايوش',
+        branchId: alex.branchId || 'BRANCH-ALEX',
+        branchName: alex.branchName || 'الإسكندرية',
+        department: alex.department || 'التشغيل',
+        jobTitle: alex.jobTitle || 'مدير فرع',
+        country: alex.country || 'مصر',
+      });
+    }
+
+    // خمسة أشخاص اختباريون — سجل مركزي حقيقي
+    ensureIdentity({
+      naioshId: 'NAI-INT-AHMED',
+      employeeNo: 'EMP-0010',
+      name: 'أحمد الداخلي',
+      email: 'ahmed.internal@naiosh.example',
+      userKind: 'INTERNAL',
+      orgId: 'ORG-NAIOSH',
+      orgName: 'نايوش',
+      branchName: 'المقر الرئيسي',
+      department: 'الموارد البشرية',
+      jobTitle: 'أخصائي موارد بشرية',
+      phone: '0500001010',
+      country: 'السعودية',
+      positions: ['HUB_EMPLOYEE_POS'],
+      grant: {
+        grantId: 'GRANT-REG-INT-AHMED',
+        roleCode: 'HUB_EMPLOYEE',
+        positionCode: 'HUB_EMPLOYEE_POS',
+        system: 'HUB',
+        scopeCode: 'HUB-GLOBAL',
+        permissions: ['users.view', 'customer_requests.view', 'customer_requests.create'],
+        purpose: 'موظف داخلي في نايوش',
+      },
+    });
+
+    ensureIdentity({
+      naioshId: 'NAI-CUS-SARA',
+      name: 'سارة العميل',
+      email: 'sara.customer@example.com',
+      userKind: 'CUSTOMER',
+      userType: 'CUSTOMER',
+      isEmployee: false,
+      clientNo: 'CL-2001',
+      clientStatus: 'نشط',
+      phone: '0500002001',
+      country: 'السعودية',
+      positions: ['CUSTOMER_POS'],
+      grant: {
+        grantId: 'GRANT-REG-CUS-SARA',
+        roleCode: 'PLATFORM_CUSTOMER',
+        positionCode: 'CUSTOMER_POS',
+        system: 'POSHA',
+        scopeCode: 'PLATFORM-POSHA',
+        permissions: ['customer_requests.view', 'customer_requests.create', 'customer_requests.submit'],
+        purpose: 'عميل فقط بدون صفة موظف',
+        governanceLevel: 'SYSTEM',
+      },
+    });
+
+    ensureIdentity({
+      naioshId: 'NAI-ORG-KHALED',
+      employeeNo: 'EMP-0012',
+      name: 'خالد الأفق',
+      email: 'khaled@alofoq.example',
+      userKind: 'ORG_EMPLOYEE',
+      orgId: 'CL-1001',
+      orgName: 'مؤسسة الأفق',
+      branchId: 'BRANCH-RIYADH',
+      branchName: 'الرياض',
+      department: 'المالية',
+      jobTitle: 'محاسب',
+      phone: '0500003012',
+      country: 'السعودية',
+      positions: ['HUB_EMPLOYEE_POS'],
+      grant: {
+        grantId: 'GRANT-REG-ORG-KHALED',
+        roleCode: 'HUB_EMPLOYEE',
+        positionCode: 'HUB_EMPLOYEE_POS',
+        system: 'ERP',
+        scopeCode: 'ORG-ALOFOQ',
+        permissions: ['users.view', 'customer_requests.view', 'finance_approvals.view'],
+        purpose: 'موظف في مؤسسة الأفق',
+        governanceLevel: 'SYSTEM',
+      },
+    });
+
+    ensureIdentity({
+      naioshId: 'NAI-ORG-LAYLA',
+      employeeNo: 'EMP-0013',
+      name: 'ليلى مديرة الأفق',
+      email: 'layla@alofoq.example',
+      userKind: 'ORG_MANAGER',
+      orgId: 'CL-1001',
+      orgName: 'مؤسسة الأفق',
+      branchId: 'BRANCH-RIYADH',
+      branchName: 'الرياض',
+      department: 'الإدارة',
+      jobTitle: 'مديرة مؤسسة',
+      phone: '0500003013',
+      country: 'السعودية',
+      positions: ['BRANCH_MANAGER_POS'],
+      grant: {
+        grantId: 'GRANT-REG-ORG-LAYLA',
+        roleCode: 'BRANCH_MANAGER',
+        positionCode: 'BRANCH_MANAGER_POS',
+        system: 'ERP',
+        scopeCode: 'ORG-ALOFOQ',
+        permissions: ['customer_requests.view', 'customer_requests.approve', 'finance_approvals.approve', 'users.view', 'workflow.execute', 'sales.view', 'sales.approve'],
+        purpose: 'مدير مؤسسة الأفق',
+        governanceLevel: 'SYSTEM',
+        riskLevel: 'high',
+      },
+    });
+
+    // عميل ثم عُيّن موظفًا — يحتفظ برقم العميل + رقم الموظف
+    ensureIdentity({
+      naioshId: 'NAI-HYB-YOUSEF',
+      employeeNo: 'EMP-0014',
+      name: 'يوسف المزدوج',
+      email: 'yousef.hybrid@example.com',
+      userKind: 'INTERNAL',
+      userType: 'STAFF',
+      isEmployee: true,
+      clientNo: 'CL-2005',
+      clientStatus: 'نشط',
+      orgId: 'ORG-NAIOSH',
+      orgName: 'نايوش',
+      branchName: 'المقر الرئيسي',
+      department: 'التشغيل',
+      jobTitle: 'منسق تشغيل',
+      phone: '0500004014',
+      country: 'السعودية',
+      positions: ['HUB_EMPLOYEE_POS', 'CUSTOMER_POS'],
+      grant: {
+        grantId: 'GRANT-REG-HYB-YOUSEF-STAFF',
+        roleCode: 'HUB_EMPLOYEE',
+        positionCode: 'HUB_EMPLOYEE_POS',
+        system: 'HUB',
+        scopeCode: 'HUB-GLOBAL',
+        permissions: ['users.view', 'customer_requests.view', 'customer_requests.create'],
+        purpose: 'تعيين لاحق كموظف مع الإبقاء على صفة العميل',
+      },
+    });
+    const hyb = state.identities.find((i) => i.naioshId === 'NAI-HYB-YOUSEF');
+    if (hyb) {
+      pushGrantIfMissing(state, {
+        id: uid('grant'),
+        grantId: 'GRANT-REG-HYB-YOUSEF-CUS',
+        identityId: hyb.id,
+        naioshId: hyb.naioshId,
+        employeeNo: hyb.employeeNo,
+        positionCode: 'CUSTOMER_POS',
+        roleCode: 'PLATFORM_CUSTOMER',
+        system: 'POSHA',
+        scopeCode: 'PLATFORM-POSHA',
+        permissions: ['customer_requests.view', 'customer_requests.create', 'customer_requests.submit'],
+        authorityCodes: [],
+        purpose: 'صفة عميل سابقة محفوظة',
+        grantedBy: 'SUPER_ADMIN',
+        approvedBy: 'SUPER_ADMIN',
+        startDate: nowIso(),
+        expiryDate: null,
+        reviewDate: null,
+        riskLevel: 'low',
+        status: 'ACTIVE',
+        evidence: { registrySeed: true, preservedCustomer: true },
+        governanceLevel: 'SYSTEM',
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      });
+    }
+
+    return state;
+  };
+
   const ensureDemoIfEmpty = (state) => {
     const ensureUser = (spec) => {
       const existing = (state.identities || []).find((i) => i.email === spec.email || i.naioshId === spec.naioshId);
@@ -677,6 +1012,7 @@
         if (spec.employeeNo && !existing.employeeNo) existing.employeeNo = spec.employeeNo;
         existing.userType = 'STAFF';
         existing.isEmployee = true;
+        applyAffiliation(existing, spec);
         return existing;
       }
       const row = {
@@ -693,6 +1029,7 @@
         createdAt: nowIso(),
         updatedAt: nowIso(),
       };
+      applyAffiliation(row, spec);
       state.identities.push(row);
       return row;
     };
@@ -702,6 +1039,12 @@
       name: 'المهندسة مليكة',
       email: 'malika@naiosh.com',
       positions: [],
+      userKind: 'INTERNAL',
+      orgId: 'ORG-NAIOSH',
+      orgName: 'نايوش',
+      branchName: 'المقر الرئيسي',
+      department: 'التشغيل',
+      jobTitle: 'مهندسة تشغيل',
     });
     ensureUser({
       naioshId: 'NAI-LEADER-001',
@@ -709,81 +1052,92 @@
       name: 'القائد الأعلى',
       email: 'leader@naiosh.com',
       positions: ['EMP_SUPREME_LEADER'],
+      userKind: 'INTERNAL',
+      orgId: 'ORG-NAIOSH',
+      orgName: 'نايوش',
+      branchName: 'المقر الرئيسي',
+      department: 'الإدارة العليا',
+      jobTitle: 'القائد الأعلى',
     });
-    if (state.identities.length > 2 && state.grants.length) {
-      ensureEmployeeNumbers(state);
-      return state;
+    if (!(state.identities.some((i) => i.naioshId === 'NAI-USER-0025')) && !(state.identities.length > 2 && state.grants.length)) {
+      const id = uid('id');
+      const naioshId = 'NAI-USER-0025';
+      const alexRow = {
+        id,
+        naioshId,
+        employeeNo: 'EMP-0002',
+        name: 'مدير فرع الإسكندرية',
+        email: 'branch.alex@naiosh.example',
+        userType: 'STAFF',
+        isEmployee: true,
+        verificationStatus: 'VERIFIED',
+        status: 'active',
+        positions: ['BRANCH_MANAGER_POS'],
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      };
+      applyAffiliation(alexRow, {
+        userKind: 'BRANCH_EMPLOYEE',
+        orgId: 'ORG-NAIOSH',
+        orgName: 'نايوش',
+        branchId: 'BRANCH-ALEX',
+        branchName: 'الإسكندرية',
+        department: 'التشغيل',
+        jobTitle: 'مدير فرع',
+      });
+      state.identities.push(alexRow);
+      state.grants.push({
+        id: uid('grant'),
+        grantId: 'GRANT-DEMO-ALEX',
+        identityId: id,
+        naioshId,
+        employeeNo: 'EMP-0002',
+        positionCode: 'BRANCH_MANAGER_POS',
+        roleCode: 'BRANCH_MANAGER',
+        system: 'ERP',
+        scopeCode: 'BRANCH-ALEX',
+        permissions: ['customer_requests.view', 'customer_requests.approve', 'finance_approvals.approve', 'users.view', 'workflow.execute'],
+        authorityCodes: ['FIN_APPROVE_25K'],
+        purpose: 'تشغيل فرع الإسكندرية',
+        grantedBy: 'SUPER_ADMIN',
+        approvedBy: 'SUPER_ADMIN',
+        startDate: nowIso(),
+        expiryDate: null,
+        reviewDate: null,
+        riskLevel: 'high',
+        status: 'ACTIVE',
+        evidence: { seed: true },
+        governanceLevel: 'SYSTEM',
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      });
+      state.grants.push({
+        id: uid('grant'),
+        grantId: 'GRANT-DEMO-HUB-VIEW',
+        identityId: id,
+        naioshId,
+        employeeNo: 'EMP-0002',
+        positionCode: 'BRANCH_MANAGER_POS',
+        roleCode: 'REPORT_VIEWER',
+        system: 'HUB',
+        scopeCode: 'HUB-GLOBAL',
+        permissions: ['users.view', 'audit.view', 'customer_requests.view'],
+        authorityCodes: [],
+        purpose: 'عرض تقارير هوب فقط',
+        grantedBy: 'HUB_ADMIN',
+        approvedBy: 'HUB_ADMIN',
+        startDate: nowIso(),
+        expiryDate: null,
+        reviewDate: null,
+        riskLevel: 'low',
+        status: 'ACTIVE',
+        evidence: { seed: true },
+        governanceLevel: 'HUB',
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      });
     }
-    if (state.identities.some((i) => i.naioshId === 'NAI-USER-0025')) {
-      ensureEmployeeNumbers(state);
-      return state;
-    }
-    const id = uid('id');
-    const naioshId = 'NAI-USER-0025';
-    state.identities.push({
-      id,
-      naioshId,
-      employeeNo: 'EMP-0002',
-      name: 'مدير فرع الإسكندرية',
-      email: 'branch.alex@naiosh.example',
-      userType: 'STAFF',
-      isEmployee: true,
-      verificationStatus: 'VERIFIED',
-      status: 'active',
-      positions: ['BRANCH_MANAGER_POS'],
-      createdAt: nowIso(),
-      updatedAt: nowIso(),
-    });
-    state.grants.push({
-      id: uid('grant'),
-      grantId: 'GRANT-DEMO-ALEX',
-      identityId: id,
-      naioshId,
-      employeeNo: 'EMP-0002',
-      positionCode: 'BRANCH_MANAGER_POS',
-      roleCode: 'BRANCH_MANAGER',
-      system: 'ERP',
-      scopeCode: 'BRANCH-ALEX',
-      permissions: ['customer_requests.view', 'customer_requests.approve', 'finance_approvals.approve', 'users.view', 'workflow.execute'],
-      authorityCodes: ['FIN_APPROVE_25K'],
-      purpose: 'تشغيل فرع الإسكندرية',
-      grantedBy: 'SUPER_ADMIN',
-      approvedBy: 'SUPER_ADMIN',
-      startDate: nowIso(),
-      expiryDate: null,
-      reviewDate: null,
-      riskLevel: 'high',
-      status: 'ACTIVE',
-      evidence: { seed: true },
-      governanceLevel: 'SYSTEM',
-      createdAt: nowIso(),
-      updatedAt: nowIso(),
-    });
-    state.grants.push({
-      id: uid('grant'),
-      grantId: 'GRANT-DEMO-HUB-VIEW',
-      identityId: id,
-      naioshId,
-      employeeNo: 'EMP-0002',
-      positionCode: 'BRANCH_MANAGER_POS',
-      roleCode: 'REPORT_VIEWER',
-      system: 'HUB',
-      scopeCode: 'HUB-GLOBAL',
-      permissions: ['users.view', 'audit.view', 'customer_requests.view'],
-      authorityCodes: [],
-      purpose: 'عرض تقارير هوب فقط',
-      grantedBy: 'HUB_ADMIN',
-      approvedBy: 'HUB_ADMIN',
-      startDate: nowIso(),
-      expiryDate: null,
-      reviewDate: null,
-      riskLevel: 'low',
-      status: 'ACTIVE',
-      evidence: { seed: true },
-      governanceLevel: 'HUB',
-      createdAt: nowIso(),
-      updatedAt: nowIso(),
-    });
+    ensureIdentityRegistry(state);
     ensureEmployeeNumbers(state);
     return state;
   };
@@ -817,6 +1171,13 @@
     seedPos.forEach((p) => {
       if (!havePos.has(p.code)) state.positions.push(p);
     });
+    if (!Array.isArray(state.scopes)) state.scopes = seedScopes();
+    else {
+      const haveScp = new Set(state.scopes.map((s) => s.code));
+      seedScopes().forEach((s) => {
+        if (!haveScp.has(s.code)) state.scopes.push(s);
+      });
+    }
   };
 
   const save = (state) => {
@@ -874,6 +1235,8 @@
     ACTION_SET,
     LEGACY_ROLE_MAP,
     COMPONENT_STATUS,
+    USER_KINDS,
+    AFFILIATION_KEYS,
     get,
     save,
     update,
@@ -884,5 +1247,7 @@
     mergeSystemsState,
     emptyBag,
     migrateFromLegacy,
+    applyAffiliation,
+    ensureIdentityRegistry,
   };
 })();
