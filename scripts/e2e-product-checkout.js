@@ -68,7 +68,7 @@ async function main() {
   assert.ok(market.includes('data-buy-now'), 'Buy Now marker present');
 
   const ops = fs.readFileSync(path.join(root, 'js/hub-ops-path.js'), 'utf8');
-  assert.ok(ops.includes("if (key === 'products') return"), 'instant-entry banner skipped on products');
+  assert.ok(/intentionally empty|DISABLED/i.test(ops), 'generic ops-path guide disabled');
 
   assert.ok(fs.existsSync(path.join(root, 'checkout.html')), 'checkout.html exists');
   assert.ok(fs.existsSync(path.join(root, 'my-orders.html')), 'my-orders.html exists');

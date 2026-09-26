@@ -77,14 +77,13 @@ assert(productsPage.includes('href="platforms.html"'), 'platforms link');
 assert(productsPage.includes('href="office.html"'), 'electronic offices link');
 assert(productsPage.includes('hub-marketplace-data.js?v=slide4'), 'products page cache-busts marketplace data');
 assert(productsPage.includes('hub-ready-sites.js?v=slide4'), 'products page cache-busts ready sites');
-assert(!productsPage.includes('hub-ops-path.js') || true, 'ops path may still load');
+assert(!productsPage.includes('hub-ops-path.js'), 'products page does not load ops-path strip');
 assert(productsPage.includes('id="shop-results"'), 'product results have a scroll target');
 assert(productsPage.includes('id="shop-sectors-list"'), 'sectors list mount');
 assert(productsPage.includes('id="shop-side-back"'), 'sidebar back button');
 
 const ops = read('js/hub-ops-path.js');
-assert(ops.includes("if (key === 'products') return"), 'products page skips instant-entry banner');
-assert(ops.includes('دخول فوري مجاني.. دون الحاجة إلى بطاقة ائتمانية'), 'legacy headline kept in config (unused on products)');
+assert(/intentionally empty|DISABLED/i.test(ops), 'ops-path guide is disabled at source');
 
 const market = read('js/market-pages.js');
 assert(market.includes('revealShopResults'), 'category clicks scroll down to the result heading');
