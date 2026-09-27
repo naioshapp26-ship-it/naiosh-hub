@@ -190,12 +190,12 @@
 }
 
 .idn-table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 1100px;
   font-size: 0.9rem;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .idn-table th,
@@ -204,13 +204,11 @@
   border-bottom: 1px solid #f3f4f6;
   text-align: start;
   vertical-align: middle;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .idn-table th {
   background: #f9fafb;
-  white-space: nowrap;
   position: sticky;
   top: 0;
   z-index: 2;
@@ -219,23 +217,44 @@
 }
 
 .idn-registry {
-  min-width: 1280px;
+  min-width: 1400px;
 }
 
-.idn-registry .col-user { width: 9%; }
-.idn-registry .col-nai { width: 10%; }
+.idn-registry .col-user,
+.idn-registry .col-org,
+.idn-registry .col-mail,
+.idn-registry .col-role,
+.idn-registry .col-job {
+  white-space: normal;
+  min-width: 110px;
+  max-width: 180px;
+}
+
+.idn-registry .col-nai,
 .idn-registry .col-cli,
-.idn-registry .col-emp { width: 7%; }
-.idn-registry .col-mail { width: 11%; }
-.idn-registry .col-kind { width: 7%; }
-.idn-registry .col-org { width: 9%; }
+.idn-registry .col-emp {
+  min-width: 120px;
+}
+
+.idn-registry .col-kind,
 .idn-registry .col-branch,
 .idn-registry .col-dept,
-.idn-registry .col-job { width: 6%; }
-.idn-registry .col-role { width: 8%; }
-.idn-registry .col-status { width: 5%; }
-.idn-registry .col-login { width: 8%; }
-.idn-registry .col-acts { width: 8%; }
+.idn-registry .col-status {
+  min-width: 90px;
+}
+
+.idn-registry .col-acts {
+  min-width: 110px;
+  position: sticky;
+  inset-inline-start: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.idn-registry th.col-acts {
+  background: #f9fafb;
+  z-index: 3;
+}
 
 .idn-registry-wrap {
   max-height: min(70vh, 720px);
