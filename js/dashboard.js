@@ -782,83 +782,313 @@
     `;
   };
 
+  const storeUi = {
+    q: '',
+    category: '',
+    kind: '',
+    status: '',
+  };
+
+  const storeStatusBadge = (status) => {
+    const s = String(status || 'active').toLowerCase();
+    if (s.includes('pending') || s.includes('مراجعة') || s.includes('انتظار')) {
+      return `<span class="hss-badge is-warn">${esc(status || 'بانتظار المراجعة')}</span>`;
+    }
+    if (s.includes('archive') || s.includes('inactive') || s.includes('وقف') || s.includes('معطّل')) {
+      return `<span class="hss-badge is-muted">${esc(status || 'موقوف')}</span>`;
+    }
+    return `<span class="hss-badge is-ok">${esc(status === 'active' || !status ? 'نشط' : status)}</span>`;
+  };
+
+  const filterStoreItems = (items) => {
+    const q = String(storeUi.q || '')
+      .trim()
+      .toLowerCase();
+    return (items || []).filter((i) => {
+      if (storeUi.category && String(i.category || '') !== storeUi.category) return false;
+      if (storeUi.kind && String(i.itemKind || 'منتج') !== storeUi.kind) return false;
+      if (storeUi.status) {
+        const st = String(i.status || 'active').toLowerCase();
+        if (storeUi.status === 'active' && !(st === 'active' || st.includes('نشط') || st.includes('متوفر'))) return false;
+        if (storeUi.status === 'pending' && !(st.includes('pending') || st.includes('انتظار') || st.includes('مراجعة'))) return false;
+        if (storeUi.status === 'inactive' && !(st.includes('inactive') || st.includes('archive') || st.includes('وقف'))) return false;
+      }
+      if (!q) return true;
+      const hay = [i.title, i.name, i.sku, i.brand, i.category, i.itemKind, i.platformCode, i.desc]
+        .map((x) => String(x || '').toLowerCase())
+        .join(' ');
+      return hay.includes(q);
+    });
+  };
+
+  const renderStoreProductRow = (i) => {
+    const markets = (i.marketplaces || [])
+      .map((m) => m.nameAr || m.name)
+      .filter(Boolean)
+      .join(' · ');
+    const metaBits = [
+      i.party1Name ? `طرف ١: ${i.party1Name}${i.party1Phone ? ` · ${i.party1Phone}` : ''}` : '',
+      i.party2Name ? `طرف ٢: ${i.party2Name}${i.party2Phone ? ` · ${i.party2Phone}` : ''}` : '',
+      [i.branch, i.incubator, i.platform || i.platformCode, i.office].filter(Boolean).join(' · '),
+      [i.docName, i.imageName, i.videoName].filter(Boolean).join(' · '),
+    ].filter(Boolean);
+    return `<tr data-store-item="${esc(i.id)}">
+      <td class="col-product" data-label="المنتج">
+        <div class="hss-stack">
+          <strong title="${esc(i.title)}">${esc(i.title)}</strong>
+          <small>${esc(i.brand || 'أكاديمية نايوش')}</small>
+          <span class="hss-sub hss-id" title="${esc(i.sku || i.id)}">${esc(i.sku || i.id)}</span>
+        </div>
+      </td>
+      <td class="col-cat" data-label="التصنيف">
+        <div class="hss-stack">
+          <strong>${esc(i.itemKind || 'منتج')}</strong>
+          <small>${esc(i.category || '—')}</small>
+        </div>
+      </td>
+      <td class="col-price" data-label="السعر">
+        <div class="hss-stack">
+          <strong>${money(i.price)}</strong>
+          <small>${Number(i.points) || 0} نقطة</small>
+        </div>
+      </td>
+      <td class="col-stock" data-label="التوفر">
+        <div class="hss-stack">
+          <strong>${Number(i.stock) || 0}</strong>
+          ${storeStatusBadge(i.status)}
+        </div>
+      </td>
+      <td class="col-markets" data-label="الأسواق">
+        <span class="hss-stack"><small title="${esc(markets || '')}">${esc(markets || 'داخل نايوش')}</small></span>
+      </td>
+      <td class="col-meta" data-label="التفاصيل">
+        <div class="hss-stack">
+          ${
+            metaBits.length
+              ? metaBits.map((b) => `<small title="${esc(b)}">${esc(b)}</small>`).join('')
+              : '<small class="hss-muted">—</small>'
+          }
+        </div>
+      </td>
+      <td class="col-acts" data-label="الإجراءات">
+        <div class="hss-actions">
+          <button type="button" class="btn btn-sm btn-primary" data-action="buy-store-item" data-id="${esc(i.id)}">بيع</button>
+          ${rowActs('store', i.id)}
+        </div>
+      </td>
+    </tr>`;
+  };
+
+  const renderStoreProductCard = (i) => {
+    const markets = (i.marketplaces || [])
+      .map((m) => m.nameAr || m.name)
+      .filter(Boolean)
+      .join(' · ');
+    return `<article class="hss-card" data-store-item="${esc(i.id)}">
+      <header class="hss-card-head">
+        <div class="hss-stack">
+          <strong>${esc(i.title)}</strong>
+          <small>${esc(i.brand || '')} · <span class="hss-id">${esc(i.sku || i.id)}</span></small>
+        </div>
+        ${storeStatusBadge(i.status)}
+      </header>
+      <dl>
+        <div><dt>النوع / التصنيف</dt><dd>${esc(i.itemKind || 'منتج')} · ${esc(i.category || '—')}</dd></div>
+        <div><dt>السعر</dt><dd>${money(i.price)} · ${Number(i.points) || 0} نقطة</dd></div>
+        <div><dt>المخزون</dt><dd>${Number(i.stock) || 0}</dd></div>
+        <div><dt>الأسواق</dt><dd>${esc(markets || 'داخل نايوش')}</dd></div>
+      </dl>
+      <div class="hss-actions">
+        <button type="button" class="btn btn-sm btn-primary" data-action="buy-store-item" data-id="${esc(i.id)}">بيع</button>
+        ${rowActs('store', i.id)}
+      </div>
+    </article>`;
+  };
+
   const renderStorePanel = () => {
     const store = HubStore.get().empire.salesStore || { items: [], orders: [] };
-    const cats = window.HubProductCategories?.optionsForForms?.() ||
-      (window.HubMarketplaceData?.SHOP_CATEGORIES || []).filter((c) => c.id !== 'الكل').map((c) => ({ value: c.id, label: c.name })) ||
+    const cats =
+      window.HubProductCategories?.optionsForForms?.() ||
+      (window.HubMarketplaceData?.SHOP_CATEGORIES || [])
+        .filter((c) => c.id !== 'الكل')
+        .map((c) => ({ value: c.id, label: c.name })) ||
       (window.HubMarketplaceData?.SHOP_CATEGORIES || []).filter((c) => c.id !== 'الكل');
-    // normalize to {id,name} for select
     const catRows = cats.map((c) => (c.value != null ? { id: c.value, name: c.label } : c));
+    const items = filterStoreItems(store.items);
     const mpLinked = store.items.reduce((n, i) => n + (i.marketplaces?.length || 0), 0);
+    const stockTotal = store.items.reduce((s, i) => s + (Number(i.stock) || 0), 0);
+    const localOrders = store.orders || [];
+
     return `
-      <div class="toolbar">
-        ${pageActs('store', 'رفع على المتجر')}
-        <div class="field"><label>الاسم</label><input id="store-title" placeholder="منتج أو خدمة" /></div>
-        <div class="field"><label>التصنيف</label>
-          <select id="store-cat">${catRows.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select>
+      <div class="hub-sales-store" data-hub-sales-store>
+        <div class="hss-toolbar">
+          <div class="field grow">
+            <label>بحث</label>
+            <input id="store-q" type="search" value="${esc(storeUi.q)}" placeholder="اسم المنتج · الكود · التصنيف · العلامة" />
+          </div>
+          <div class="field">
+            <label>التصنيف</label>
+            <select id="store-f-cat">
+              <option value="">الكل</option>
+              ${catRows.map((c) => `<option value="${esc(c.id)}" ${storeUi.category === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label>النوع</label>
+            <select id="store-f-kind">
+              <option value="">الكل</option>
+              <option value="منتج" ${storeUi.kind === 'منتج' ? 'selected' : ''}>منتج</option>
+              <option value="خدمة" ${storeUi.kind === 'خدمة' ? 'selected' : ''}>خدمة</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>الحالة</label>
+            <select id="store-f-status">
+              <option value="">الكل</option>
+              <option value="active" ${storeUi.status === 'active' ? 'selected' : ''}>نشط</option>
+              <option value="pending" ${storeUi.status === 'pending' ? 'selected' : ''}>بانتظار المراجعة</option>
+              <option value="inactive" ${storeUi.status === 'inactive' ? 'selected' : ''}>موقوف</option>
+            </select>
+          </div>
+          <div class="hss-toolbar-actions">
+            <button type="button" class="btn btn-ghost btn-sm" data-action="store-apply-filters">تصفية</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-action="store-clear-filters">مسح</button>
+            ${pageActs('store', 'إضافة منتج')}
+            <a class="btn btn-ghost btn-sm" href="store.html#upload" target="_blank">رفع على المتجر</a>
+            <a class="btn btn-dark btn-sm" href="store.html" target="_blank">فتح المتجر</a>
+          </div>
         </div>
-        <div class="field"><label>النوع</label>
-          <select id="store-kind"><option value="منتج">منتج</option><option value="خدمة">خدمة</option></select>
+
+        <div class="hss-kpis kpi-grid">
+          <article class="kpi"><span>منتجات / خدمات</span><strong>${store.items.length}</strong><small>في المتجر</small></article>
+          <article class="kpi"><span>طلبات المتجر</span><strong>${localOrders.length}</strong><small>محلية مكتملة</small></article>
+          <article class="kpi"><span>مخزون</span><strong>${stockTotal}</strong><small>وحدة</small></article>
+          <article class="kpi"><span>روابط أسواق</span><strong>${mpLinked}</strong><small>Amazon · Noon…</small></article>
         </div>
-        <div class="field"><label>السعر ($)</label><input id="store-price" type="number" value="500" /></div>
-        <div class="field"><label>النقاط</label><input id="store-points" type="number" value="50" /></div>
-        <div class="field"><label>منصة</label><input id="store-platform" placeholder="ACADEMY" value="ACADEMY" /></div>
-        <button class="btn btn-primary" data-action="add-store-item"><i class="fas fa-cloud-arrow-up"></i> رفع</button>
-        <a class="btn btn-ghost" href="store.html" target="_blank">فتح المتجر</a>
+
+        <section class="hss-section hss-academy">
+          <div class="hss-section-head">
+            <div>
+              <h3><i class="fas fa-graduation-cap icon"></i> أكاديمية نايوش</h3>
+              <p>المتجر الموحّد — منتجات وخدمات الأكاديمية بعرض الصفحة بالكامل.</p>
+            </div>
+            <button type="button" class="btn btn-primary" data-hub-act="add" data-entity="store"><i class="fas fa-plus"></i> إضافة منتج</button>
+          </div>
+
+          <div class="hss-add-panel" id="store-quick-add">
+            <div class="field"><label>اسم المنتج / الخدمة</label><input id="store-title" placeholder="مثال: باقة تشغيل منصة" /></div>
+            <div class="field"><label>التصنيف</label>
+              <select id="store-cat">${catRows.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select>
+            </div>
+            <div class="field"><label>النوع</label>
+              <select id="store-kind"><option value="منتج">منتج</option><option value="خدمة">خدمة</option></select>
+            </div>
+            <div class="field"><label>السعر ($)</label><input id="store-price" type="number" min="0" step="1" value="500" /></div>
+            <div class="field"><label>النقاط</label><input id="store-points" type="number" min="0" value="50" /></div>
+            <div class="field"><label>المنصة</label><input id="store-platform" placeholder="ACADEMY" value="ACADEMY" /></div>
+            <button type="button" class="btn btn-primary" data-action="add-store-item"><i class="fas fa-cloud-arrow-up"></i> حفظ المنتج</button>
+          </div>
+
+          ${
+            items.length
+              ? `<div class="hss-table-wrap">
+                  <table class="hss-table hss-products-table">
+                    <colgroup>
+                      <col class="col-product" /><col class="col-cat" /><col class="col-price" /><col class="col-stock" />
+                      <col class="col-markets" /><col class="col-meta" /><col class="col-acts" />
+                    </colgroup>
+                    <thead><tr>
+                      <th class="col-product">المنتج</th>
+                      <th class="col-cat">التصنيف</th>
+                      <th class="col-price">السعر</th>
+                      <th class="col-stock">التوفر</th>
+                      <th class="col-markets">الأسواق</th>
+                      <th class="col-meta">التفاصيل</th>
+                      <th class="col-acts">الإجراءات</th>
+                    </tr></thead>
+                    <tbody>${items.map(renderStoreProductRow).join('')}</tbody>
+                  </table>
+                </div>
+                <div class="hss-cards">${items.map(renderStoreProductCard).join('')}</div>
+                <p class="hss-muted" style="margin:8px 0 0">عرض ${items.length} من ${store.items.length} منتج/خدمة</p>`
+              : `<div class="hss-empty">
+                  <p>${store.items.length ? 'لا توجد نتائج مطابقة للفلاتر الحالية.' : 'لا توجد منتجات حاليًا'}</p>
+                  ${
+                    store.items.length
+                      ? `<button type="button" class="btn btn-ghost" data-action="store-clear-filters">مسح الفلاتر</button>`
+                      : `<button type="button" class="btn btn-primary" data-action="add-store-item"><i class="fas fa-plus"></i> + إضافة منتج</button>`
+                  }
+                </div>`
+          }
+        </section>
+
+        <section class="hss-section hss-orders">
+          <div class="hss-section-head">
+            <div>
+              <h3><i class="fas fa-receipt icon"></i> الطلبات</h3>
+              <p>طلبات البيع المحلي من المتجر، ثم طلبات الشراء عبر Checkout — كلاهما بعرض الصفحة بالكامل.</p>
+            </div>
+          </div>
+
+          <h4 style="margin:0 0 8px;font-size:15px;font-weight:900">طلبات المتجر المحلي</h4>
+          ${
+            localOrders.length
+              ? `<div class="hss-table-wrap">
+                  <table class="hss-table hss-orders-table">
+                    <thead><tr>
+                      <th class="col-o-product">المنتج</th>
+                      <th class="col-o-buyer">المشتري</th>
+                      <th class="col-o-amount">المبلغ</th>
+                      <th class="col-o-points">النقاط</th>
+                      <th class="col-o-status">الحالة</th>
+                      <th class="col-o-time">الوقت</th>
+                      <th class="col-o-id">المعرّف</th>
+                    </tr></thead>
+                    <tbody>
+                      ${localOrders
+                        .map(
+                          (o) => `<tr>
+                            <td class="col-o-product" data-label="المنتج"><div class="hss-stack"><strong>${esc(o.title)}</strong></div></td>
+                            <td class="col-o-buyer" data-label="المشتري">${esc(o.buyer)}</td>
+                            <td class="col-o-amount" data-label="المبلغ">${money(o.amount)}</td>
+                            <td class="col-o-points" data-label="النقاط">${Number(o.points) || 0}</td>
+                            <td class="col-o-status" data-label="الحالة">${storeStatusBadge(o.status || 'مكتمل')}</td>
+                            <td class="col-o-time" data-label="الوقت">${fmtTime(o.at)}</td>
+                            <td class="col-o-id" data-label="المعرّف"><code class="hss-id">${esc(o.id)}</code></td>
+                          </tr>`
+                        )
+                        .join('')}
+                    </tbody>
+                  </table>
+                </div>
+                <div class="hss-cards">
+                  ${localOrders
+                    .map(
+                      (o) => `<article class="hss-card">
+                        <header class="hss-card-head">
+                          <strong>${esc(o.title)}</strong>
+                          ${storeStatusBadge(o.status || 'مكتمل')}
+                        </header>
+                        <dl>
+                          <div><dt>المشتري</dt><dd>${esc(o.buyer)}</dd></div>
+                          <div><dt>المبلغ</dt><dd>${money(o.amount)}</dd></div>
+                          <div><dt>النقاط</dt><dd>${Number(o.points) || 0}</dd></div>
+                          <div><dt>الوقت</dt><dd>${fmtTime(o.at)}</dd></div>
+                        </dl>
+                      </article>`
+                    )
+                    .join('')}
+                </div>`
+              : `<div class="hss-empty"><p>لا توجد طلبات حاليًا</p></div>`
+          }
+
+          <div class="hss-checkout-wrap">
+            <h4><i class="fas fa-bag-shopping"></i> طلبات شراء المنتجات (Checkout)</h4>
+            <p class="hss-muted" style="margin:0 0 8px">الطلبات القادمة من «اشترِ الآن» والسلة — مصدر الملف على الخادم.</p>
+            <div id="hub-product-orders-admin"><div class="empty">جاري تحميل الطلبات…</div></div>
+          </div>
+        </section>
       </div>
-      <div class="kpi-grid">
-        <article class="kpi"><span>منتجات / خدمات</span><strong>${store.items.length}</strong><small>في المتجر</small></article>
-        <article class="kpi"><span>طلبات</span><strong>${store.orders.length}</strong><small>مكتملة</small></article>
-        <article class="kpi"><span>مخزون</span><strong>${store.items.reduce((s, i) => s + (i.stock || 0), 0)}</strong><small>وحدة</small></article>
-        <article class="kpi"><span>روابط أسواق</span><strong>${mpLinked}</strong><small>Amazon · Noon…</small></article>
-      </div>
-      <div class="grid-2" style="margin-top:12px">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-bag-shopping icon"></i> المتجر الموحّد (نفس أكاديمية نايوش)</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>الاسم</th><th>النوع</th><th>التصنيف</th><th>السعر ($)</th><th>أسواق</th><th>مخزون</th>${metaHead()}<th></th></tr></thead>
-            <tbody>
-              ${store.items
-                .map(
-                  (i) => `<tr>
-                    <td><strong>${esc(i.title)}</strong><br><small>${esc(i.brand || i.platformCode || '')}</small></td>
-                    <td>${esc(i.itemKind || 'منتج')}</td>
-                    <td>${esc(i.category)}</td>
-                    <td>${money(i.price)}</td>
-                    <td>${(i.marketplaces || []).map((m) => m.nameAr || m.name).join(' · ') || '—'}</td>
-                    <td>${i.stock}</td>
-                    ${metaCells(i)}
-                    <td><button class="btn btn-sm btn-primary" data-action="buy-store-item" data-id="${i.id}">بيع</button>${rowActs('store', i.id)}</td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-receipt icon"></i> الطلبات (متجر محلي)</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>المنتج</th><th>المشتري</th><th>المبلغ ($)</th><th>الوقت</th></tr></thead>
-            <tbody>
-              ${store.orders
-                .map(
-                  (o) => `<tr>
-                    <td>${esc(o.title)}</td>
-                    <td>${esc(o.buyer)}</td>
-                    <td>${money(o.amount)}</td>
-                    <td>${fmtTime(o.at)}</td>
-                  </tr>`
-                )
-                .join('')}
-            </tbody>
-          </table></div>
-        </article>
-      </div>
-      <article class="card hub-admin-orders-wrap" style="margin-top:12px">
-        <h3><span class="title-left"><i class="fas fa-bag-shopping icon"></i> طلبات شراء المنتجات (Checkout)</span></h3>
-        <p class="muted" style="margin:0 0 8px">الطلبات القادمة من «اشترِ الآن» والسلة — مصدر الملف على الخادم.</p>
-        <div id="hub-product-orders-admin"><div class="empty">جاري تحميل الطلبات…</div></div>
-      </article>
     `;
   };
 
@@ -1136,26 +1366,37 @@
   const loadProductOrdersAdmin = async () => {
     const mount = document.getElementById('hub-product-orders-admin');
     if (!mount) return;
+    mount.innerHTML = '<div class="empty">جاري تحميل الطلبات…</div>';
     try {
       const res = await fetch('/api/hub/product-orders', { headers: authHeadersJson(), cache: 'no-store' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
-        mount.innerHTML = `<div class="empty">${esc(data.error || 'تعذر تحميل طلبات المنتجات')}</div>`;
+        mount.innerHTML = `<div class="hss-empty">
+          <p>${esc(data.error || 'تعذر تحميل بيانات المتجر. حاول مرة أخرى.')}</p>
+          <button type="button" class="btn btn-primary btn-sm" data-action="store-reload-orders">إعادة المحاولة</button>
+        </div>`;
+        console.error('[hub-store] product-orders load failed', data.error || res.status);
         return;
       }
       const orders = data.orders || [];
       const labels = data.statusLabels || PRODUCT_ORDER_STATUS_LABELS;
       if (!orders.length) {
-        mount.innerHTML = '<div class="empty">لا توجد طلبات شراء منتجات بعد</div>';
+        mount.innerHTML = '<div class="hss-empty"><p>لا توجد طلبات شراء منتجات بعد</p></div>';
         return;
       }
       const statusOpts = Object.keys(labels)
         .map((k) => `<option value="${esc(k)}">${esc(labels[k])}</option>`)
         .join('');
-      mount.innerHTML = `<div class="table-wrap"><table class="data">
+      mount.innerHTML = `<div class="hss-table-wrap"><table class="hss-table">
         <thead><tr>
-          <th>رقم الطلب</th><th>العميل</th><th>المنتج</th><th>Product ID</th>
-          <th>السعر</th><th>الإجمالي</th><th>الدفع</th><th>الحالة</th><th>التاريخ</th><th>إجراءات</th>
+          <th style="width:12%">رقم الطلب</th>
+          <th style="width:18%">العميل</th>
+          <th style="width:18%">المنتج</th>
+          <th style="width:10%">المبلغ</th>
+          <th style="width:10%">الدفع</th>
+          <th style="width:10%">الحالة</th>
+          <th style="width:10%">التاريخ</th>
+          <th style="width:12%">الإجراءات</th>
         </tr></thead>
         <tbody>
           ${orders
@@ -1163,38 +1404,38 @@
               const pay =
                 (data.paymentLabels && data.paymentLabels[o.paymentStatus]) || o.paymentStatus;
               return `<tr data-pord="${esc(o.id)}">
-                <td><strong>${esc(o.number)}</strong></td>
-                <td>${esc(o.customerName)}<br><small>${esc(o.customerEmail)}</small><br><small>ID: ${esc(o.customerId)}</small></td>
-                <td>${esc(o.productName)}</td>
-                <td><code>${esc(o.productId)}</code></td>
-                <td>${money(o.unitPrice)}</td>
-                <td>${money(o.total)}</td>
+                <td><div class="hss-stack"><strong>${esc(o.number)}</strong><span class="hss-sub hss-id">${esc(o.id)}</span></div></td>
+                <td><div class="hss-stack"><strong>${esc(o.customerName)}</strong><small>${esc(o.customerEmail)}</small></div></td>
+                <td><div class="hss-stack"><strong title="${esc(o.productName)}">${esc(o.productName)}</strong><span class="hss-sub hss-id">${esc(o.productId)}</span></div></td>
+                <td><div class="hss-stack"><strong>${money(o.total)}</strong><small>${money(o.unitPrice)} / وحدة</small></div></td>
                 <td>${esc(pay)}</td>
                 <td>${esc(labels[o.orderStatus] || o.orderStatus)}</td>
                 <td>${fmtTime(o.createdAt)}</td>
                 <td>
-                  <select data-pord-status="${esc(o.id)}" style="max-width:140px">${statusOpts.replace(
-                    `value="${o.orderStatus}"`,
-                    `value="${o.orderStatus}" selected`
-                  )}</select>
-                  <button type="button" class="btn btn-sm btn-primary" data-action="pord-set-status" data-id="${esc(o.id)}">تطبيق</button>
-                  <button type="button" class="btn btn-sm btn-dark" data-action="pord-confirm" data-id="${esc(o.id)}">تأكيد</button>
-                  <button type="button" class="btn btn-sm" data-action="pord-progress" data-id="${esc(o.id)}">تجهيز</button>
-                  <button type="button" class="btn btn-sm btn-primary" data-action="pord-complete" data-id="${esc(o.id)}">إكمال</button>
-                  <button type="button" class="btn btn-sm btn-ghost" data-action="pord-cancel" data-id="${esc(o.id)}">إلغاء</button>
+                  <div class="hss-pord-acts hss-actions">
+                    <select data-pord-status="${esc(o.id)}">${statusOpts}</select>
+                    <button type="button" class="btn btn-sm btn-primary" data-action="pord-set-status" data-id="${esc(o.id)}">تطبيق</button>
+                    <button type="button" class="btn btn-sm btn-dark" data-action="pord-confirm" data-id="${esc(o.id)}">تأكيد</button>
+                    <button type="button" class="btn btn-sm" data-action="pord-progress" data-id="${esc(o.id)}">تجهيز</button>
+                    <button type="button" class="btn btn-sm btn-primary" data-action="pord-complete" data-id="${esc(o.id)}">إكمال</button>
+                    <button type="button" class="btn btn-sm btn-ghost" data-action="pord-cancel" data-id="${esc(o.id)}">إلغاء</button>
+                  </div>
                 </td>
               </tr>`;
             })
             .join('')}
         </tbody>
       </table></div>`;
-      // mark selected options correctly
       mount.querySelectorAll('[data-pord-status]').forEach((sel) => {
         const row = orders.find((o) => o.id === sel.getAttribute('data-pord-status'));
         if (row) sel.value = row.orderStatus;
       });
     } catch (err) {
-      mount.innerHTML = `<div class="empty">${esc(err.message || 'تعذر تحميل الطلبات')}</div>`;
+      mount.innerHTML = `<div class="hss-empty">
+        <p>${esc(err.message || 'تعذر تحميل بيانات المتجر. حاول مرة أخرى.')}</p>
+        <button type="button" class="btn btn-primary btn-sm" data-action="store-reload-orders">إعادة المحاولة</button>
+      </div>`;
+      console.error('[hub-store] product-orders exception', err);
     }
   };
 
@@ -1592,7 +1833,7 @@
       case 'add-store-item': {
         const title = $('#store-title')?.value.trim();
         if (!title) return toast('اسم المنتج أو الخدمة مطلوب');
-        HubStore.addStoreItem({
+        const created = HubStore.addStoreItem({
           title,
           price: $('#store-price')?.value,
           points: $('#store-points')?.value,
@@ -1603,9 +1844,27 @@
           desc: 'مرفوع من غرفة العمليات — متجر موحّد مع الأكاديمية',
           mirrorToCatalog: true,
         });
-        toast('تم الرفع على المتجر');
+        if (!created) return toast('تعذّر حفظ المنتج');
+        toast(`تم حفظ المنتج: ${created.title}`);
         break;
       }
+      case 'store-apply-filters': {
+        storeUi.q = $('#store-q')?.value || '';
+        storeUi.category = $('#store-f-cat')?.value || '';
+        storeUi.kind = $('#store-f-kind')?.value || '';
+        storeUi.status = $('#store-f-status')?.value || '';
+        break;
+      }
+      case 'store-clear-filters': {
+        storeUi.q = '';
+        storeUi.category = '';
+        storeUi.kind = '';
+        storeUi.status = '';
+        break;
+      }
+      case 'store-reload-orders':
+        loadProductOrdersAdmin();
+        return;
       case 'buy-store-item':
         if (!HubStore.placeStoreOrder(id, user.name || 'مشغّل هوب')) return toast('تعذّر البيع');
         toast('تم تسجيل عملية البيع');

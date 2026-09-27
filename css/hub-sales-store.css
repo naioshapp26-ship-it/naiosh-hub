@@ -1,0 +1,380 @@
+/* متجر المبيعات — تخطيط رأسي بعرض كامل */
+
+.hub-sales-store {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.hub-sales-store .hss-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.hub-sales-store .hss-toolbar .field {
+  flex: 1 1 140px;
+  min-width: 120px;
+  max-width: 220px;
+}
+
+.hub-sales-store .hss-toolbar .field.grow {
+  flex: 2 1 220px;
+  max-width: none;
+}
+
+.hub-sales-store .hss-toolbar label {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted, #5a5a5a);
+  margin-bottom: 4px;
+}
+
+.hub-sales-store .hss-toolbar input,
+.hub-sales-store .hss-toolbar select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border, #e8e0e2);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  background: #fff;
+}
+
+.hub-sales-store .hss-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+.hub-sales-store .hss-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.hub-sales-store .hss-section {
+  width: 100%;
+  max-width: none;
+  background: #fff;
+  border: 1px solid var(--border, #e8e0e2);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+}
+
+.hub-sales-store .hss-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.hub-sales-store .hss-section-head h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hub-sales-store .hss-section-head p {
+  margin: 0;
+  color: var(--muted, #5a5a5a);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.hub-sales-store .hss-add-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) auto;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #faf7f8;
+  border: 1px dashed #e8d0d4;
+  border-radius: 12px;
+}
+
+.hub-sales-store .hss-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  border: 1px solid #eef0f4;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.hub-sales-store .hss-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 14px;
+}
+
+.hub-sales-store .hss-table th,
+.hub-sales-store .hss-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #eef0f4;
+  text-align: right;
+  vertical-align: top;
+  overflow: hidden;
+}
+
+.hub-sales-store .hss-table th {
+  background: #fafbfc;
+  font-weight: 800;
+  font-size: 12px;
+  color: #344054;
+  white-space: nowrap;
+}
+
+.hub-sales-store .hss-table .col-product { width: 22%; }
+.hub-sales-store .hss-table .col-cat { width: 12%; }
+.hub-sales-store .hss-table .col-price { width: 10%; }
+.hub-sales-store .hss-table .col-stock { width: 10%; }
+.hub-sales-store .hss-table .col-markets { width: 14%; }
+.hub-sales-store .hss-table .col-meta { width: 16%; }
+.hub-sales-store .hss-table .col-acts { width: 16%; }
+
+.hub-sales-store .hss-table .col-acts {
+  overflow: visible;
+}
+
+.hub-sales-store .hss-stack {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hub-sales-store .hss-stack strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-sales-store .hss-stack small,
+.hub-sales-store .hss-stack .hss-sub {
+  display: block;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-sales-store .hss-id {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hub-sales-store .hss-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  background: #f2f4f7;
+  color: #344054;
+}
+
+.hub-sales-store .hss-badge.is-ok {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.hub-sales-store .hss-badge.is-warn {
+  background: #fffaeb;
+  color: #b54708;
+}
+
+.hub-sales-store .hss-badge.is-muted {
+  background: #f2f4f7;
+  color: #667085;
+}
+
+.hub-sales-store .hss-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.hub-sales-store .hss-actions .btn-sm,
+.hub-sales-store .hss-actions .hub-act {
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.hub-sales-store .hss-orders-table .col-o-product { width: 24%; }
+.hub-sales-store .hss-orders-table .col-o-buyer { width: 18%; }
+.hub-sales-store .hss-orders-table .col-o-amount { width: 12%; }
+.hub-sales-store .hss-orders-table .col-o-points { width: 10%; }
+.hub-sales-store .hss-orders-table .col-o-status { width: 12%; }
+.hub-sales-store .hss-orders-table .col-o-time { width: 14%; }
+.hub-sales-store .hss-orders-table .col-o-id { width: 10%; }
+
+.hub-sales-store .hss-checkout-wrap {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #eef0f4;
+}
+
+.hub-sales-store .hss-checkout-wrap h4 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.hub-sales-store .hss-empty {
+  text-align: center;
+  padding: 28px 16px;
+  color: #667085;
+}
+
+.hub-sales-store .hss-empty .btn {
+  margin-top: 10px;
+}
+
+.hub-sales-store .hss-cards {
+  display: none;
+}
+
+.hub-sales-store .hss-muted {
+  color: #667085;
+  font-size: 12px;
+}
+
+/* Checkout admin table inside store */
+.hub-sales-store #hub-product-orders-admin .table-wrap {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+.hub-sales-store #hub-product-orders-admin table.data {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.hub-sales-store #hub-product-orders-admin table.data th,
+.hub-sales-store #hub-product-orders-admin table.data td {
+  font-size: 13px;
+  padding: 8px 6px;
+  vertical-align: top;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hub-sales-store #hub-product-orders-admin .hss-pord-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.hub-sales-store #hub-product-orders-admin .hss-pord-acts select {
+  max-width: 120px;
+  min-height: 30px;
+}
+
+@media (max-width: 1100px) {
+  .hub-sales-store .hss-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hub-sales-store .hss-table .col-meta {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .hub-sales-store .hss-table-wrap {
+    display: none;
+  }
+
+  .hub-sales-store .hss-cards {
+    display: grid;
+    gap: 10px;
+  }
+
+  .hub-sales-store .hss-card {
+    border: 1px solid #e8eaee;
+    border-radius: 12px;
+    padding: 12px;
+    background: #fff;
+    display: grid;
+    gap: 8px;
+  }
+
+  .hub-sales-store .hss-card-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .hub-sales-store .hss-card dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .hub-sales-store .hss-card dt {
+    font-size: 11px;
+    font-weight: 800;
+    color: #667085;
+  }
+
+  .hub-sales-store .hss-card dd {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .hub-sales-store .hss-kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hub-sales-store .hss-add-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-sales-store #hub-product-orders-admin .table-wrap {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .hub-sales-store .hss-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-sales-store .hss-card dl {
+    grid-template-columns: 1fr;
+  }
+}
