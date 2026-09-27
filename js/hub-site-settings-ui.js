@@ -702,7 +702,7 @@
             <label class="ss-field"><span>الوصف</span><textarea id="ss-edit-desc" rows="3">${esc(s.description || '')}</textarea></label>
             <label class="ss-field"><span>الحالة</span>
               <select id="ss-edit-status">
-                <option value="active" ${(s.status || 'active') === 'active' ? 'selected' : ''}>Active</option>
+                <option value="active" ${(s.status || 'active') === 'active' ? 'selected' : ''}>نشط</option>
                 <option value="disabled" ${s.status === 'disabled' ? 'selected' : ''}>معطّل</option>
               </select>
             </label>
@@ -771,8 +771,8 @@
       </div>`;
     } else if (step === 3) {
       body = `<div class="ss-fields">
-        <label class="ss-field"><span>Status</span>
-          <select id="ss-w-status"><option value="active">Active</option><option value="disabled">معطّل</option></select>
+        <label class="ss-field"><span>الحالة</span>
+          <select id="ss-w-status"><option value="active">نشط</option><option value="disabled">متوقف</option></select>
         </label>
         <label class="ss-field"><span>العملة الافتراضية</span><input value="USD" readonly /></label>
         <label class="ss-field"><span>يتطلب رابط المنتج</span>

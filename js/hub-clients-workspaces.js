@@ -121,7 +121,7 @@
       { key: 'active', label: 'نشط', value: (bag.clients || []).filter((c) => c.status === 'active').length, tab: 'list' },
       { key: 'pending', label: 'معلّق', value: (bag.clients || []).filter((c) => c.status === 'pending').length, tab: 'list' },
       { key: 'suspended', label: 'موقوف', value: (bag.clients || []).filter((c) => c.status === 'suspended').length, tab: 'list' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, tab: 'list' },
+      { key: 'needs', label: 'يتطلب إجراء', value: needs.length, tab: 'list' },
     ];
 
     let body = '';
@@ -383,7 +383,7 @@
       { key: 'new', label: 'جديد', value: counts.byStatus?.['جديد'] || 0, tab: 'inbox' },
       { key: 'follow', label: 'متابعة', value: counts.byStatus?.['قيد المتابعة'] || 0, tab: 'inbox' },
       { key: 'contacted', label: 'تم التواصل', value: counts.byStatus?.['تم التواصل'] || 0, tab: 'inbox' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, tab: 'inbox' },
+      { key: 'needs', label: 'يتطلب إجراء', value: needs.length, tab: 'inbox' },
     ];
 
     let body = '';
@@ -597,7 +597,7 @@
       { key: 'pending', label: 'بانتظار', value: pending.length, tab: 'pending' },
       { key: 'active', label: 'مفعّل', value: grants.filter((g) => g.status === 'active').length, tab: 'all' },
       { key: 'rejected', label: 'مرفوض', value: grants.filter((g) => g.status === 'rejected').length, tab: 'all' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, tab: 'pending' },
+      { key: 'needs', label: 'يتطلب إجراء', value: needs.length, tab: 'pending' },
     ];
     const statusAr = { pending: 'بانتظار', provisioning: 'تجهيز', active: 'مفعّل', rejected: 'مرفوض' };
     const rows = rnUi.tab === 'pending' ? pending : grants;

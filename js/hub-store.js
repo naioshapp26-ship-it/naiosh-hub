@@ -33,10 +33,16 @@ const HubStore = (() => {
       coreModules,
       axes,
       priorities,
-      docs: (bp?.preCodeDocs || []).map((name, i) => ({
-        name,
-        status: i < 3 ? 'ready' : i < 6 ? 'draft' : 'todo',
-      })),
+      docs: (bp?.preCodeDocs || []).map((doc, i) => {
+        const name = typeof doc === 'string' ? doc : doc.name;
+        const nameAr = typeof doc === 'string' ? doc : doc.nameAr || doc.name;
+        return {
+          id: typeof doc === 'object' ? doc.id : undefined,
+          name,
+          nameAr,
+          status: i < 3 ? 'ready' : i < 6 ? 'draft' : 'todo',
+        };
+      }),
       identity: {
         totalUsers: 12840,
         ssoDomains: [
@@ -2084,7 +2090,7 @@ const HubStore = (() => {
       ],
       anomalies: [
         { id: uid('a'), source: 'موظف · سارة أحمد', signal: 'نشاط خارج ساعات العمل المعتمدة', score: 81, status: 'open' },
-        { id: uid('a'), source: 'نظام · Naiosh Fit', signal: 'قفزات غير طبيعية في الطلبات', score: 67, status: 'investigating' },
+        { id: uid('a'), source: 'نظام · نايوش فيت', signal: 'قفزات غير طبيعية في الطلبات', score: 67, status: 'investigating' },
       ],
       knowledgeGraph: [
         { from: 'العقل المركزي', to: 'الحوكمة', rel: 'يصدر أوامر' },
@@ -2131,7 +2137,7 @@ const HubStore = (() => {
         { id: uid('sys'), name: 'ERP', health: 91, status: 'degraded', lastSync: nowIso() },
         { id: uid('sys'), name: 'POSHA', health: 88, status: 'degraded', lastSync: nowIso() },
         { id: uid('sys'), name: 'Naiosh Academy', health: 98, status: 'online', lastSync: nowIso() },
-        { id: uid('sys'), name: 'Naiosh Fit', health: 96, status: 'online', lastSync: nowIso() },
+        { id: uid('sys'), name: 'نايوش فيت', health: 96, status: 'online', lastSync: nowIso() },
         { id: uid('sys'), name: 'Workspace', health: 99, status: 'online', lastSync: nowIso() },
       ],
       clients: [
@@ -2590,7 +2596,7 @@ const HubStore = (() => {
             id: uid('mi'),
             name: 'صحة الأنظمة',
             formula: 'avg(systems.health)',
-            source: 'Systems Registry',
+            source: 'سجل الأنظمة',
             value: 0,
             owner: 'التكامل',
             status: 'active',
@@ -4054,7 +4060,7 @@ const HubStore = (() => {
     g.policies.unshift(item);
     pushGovAudit({
       user: actor,
-      action: 'Policy Created',
+      action: 'تم إنشاء سياسة',
       entityType: 'policy',
       entityId: item.id,
       entityLabel: item.title,
@@ -4397,7 +4403,7 @@ const HubStore = (() => {
         source: 'Manual',
       });
     }
-    pushGovAudit({ user: actor, action: 'Contract Created', entityType: 'contract', entityId: item.id, entityLabel: item.name });
+    pushGovAudit({ user: actor, action: 'تم إنشاء عقد', entityType: 'contract', entityId: item.id, entityLabel: item.name });
     recomputeGovKpis(g);
     save();
     return item;
@@ -4455,7 +4461,7 @@ const HubStore = (() => {
     }
     pushGovAudit({
       user: actor,
-      action: type === 'reward' ? 'Reward Requested' : 'Violation/Penalty',
+      action: type === 'reward' ? 'طلب مكافأة' : 'مخالفة / جزاء',
       entityType: 'reward',
       entityId: item.id,
       entityLabel: target,

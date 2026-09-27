@@ -354,7 +354,7 @@
 
     return (
       '<div class="sac" id="settings-admin-center" data-dirty="0">' +
-      '<header class="sac-hero"><div><div class="empire-banner-kicker"><i class="fas fa-sliders"></i> SYSTEM SETTINGS</div><h2>إعدادات النظام</h2><p>تحكم في هوية المنصة، المظهر، المحتوى المرئي، اللغة، والإعدادات العامة من مكان واحد.</p></div><div class="sac-hero-actions"><button type="button" class="btn btn-primary" data-action="save-settings"><i class="fas fa-floppy-disk"></i> حفظ التغييرات</button><button type="button" class="btn btn-ghost" data-action="export-settings"><i class="fas fa-download"></i> تصدير</button></div></header>' +
+      '<header class="sac-hero"><div><div class="empire-banner-kicker"><i class="fas fa-sliders"></i> إعدادات النظام</div><h2>إعدادات النظام</h2><p>تحكم في هوية المنصة، المظهر، المحتوى المرئي، اللغة، والإعدادات العامة من مكان واحد.</p></div><div class="sac-hero-actions"><button type="button" class="btn btn-primary" data-action="save-settings"><i class="fas fa-floppy-disk"></i> حفظ التغييرات</button><button type="button" class="btn btn-ghost" data-action="export-settings"><i class="fas fa-download"></i> تصدير</button></div></header>' +
       '<div class="sac-dirty hidden" id="sac-dirty-bar" role="status"><strong>لديك تغييرات غير محفوظة</strong><div><button type="button" class="btn btn-primary" data-action="save-settings">حفظ التغييرات</button><button type="button" class="btn btn-ghost" data-action="discard-settings">تجاهل التغييرات</button></div></div>' +
       '<div class="sac-summary"><article><span>المنشأة</span><strong data-sum-org>' +
       esc(s.orgNameAr) +

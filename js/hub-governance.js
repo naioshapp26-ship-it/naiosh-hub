@@ -5,6 +5,7 @@
 (() => {
   'use strict';
 
+  const stAr = (s) => window.HubI18n?.status?.(s) || s || '—';
   const PAGE_SIZES = [10, 25, 50, 100];
   const TABS = [
     { id: 'dashboard', label: 'لوحة الحوكمة', icon: 'fa-gauge' },
@@ -473,7 +474,7 @@
           ${contracts
             .map(
               (c) =>
-                `<div class="gov-mini-row"><strong>${esc(c.id)}</strong> · ${esc(c.type)} · ${esc(c.startDate)} → ${esc(c.endDate)} · ${esc(c.status)} · Owner: ${esc(c.owner)}</div>`
+                `<div class="gov-mini-row"><strong>${esc(c.id)}</strong> · ${esc(c.type)} · ${esc(c.startDate)} → ${esc(c.endDate)} · ${esc(window.HubI18n?.status?.(c.status) || c.status)} · المسؤول: ${esc(c.owner)}</div>`
             )
             .join('') || '<div class="empty">لا عقود</div>'}`;
         break;
@@ -535,10 +536,10 @@
             ${field('المصدر', '', sourceLabel(p.source), { readonly: true })}
             ${field('طريقة الإضافة', '', p.creationMethod, { readonly: true })}
             ${field('أنشئ بواسطة', '', p.createdBy, { readonly: true })}
-            ${field('Created At', '', fmtTime(p.createdAt), { readonly: true })}
-            ${field('Last Synced', '', fmtTime(p.lastSynced), { readonly: true })}
-            ${field('Last Modified By', '', p.lastModifiedBy, { readonly: true })}
-            ${field('External ID', '', p.externalId || '—', { readonly: true })}
+            ${field('تاريخ الإنشاء', '', fmtTime(p.createdAt), { readonly: true })}
+            ${field('آخر مزامنة', '', fmtTime(p.lastSynced), { readonly: true })}
+            ${field('آخر تعديل بواسطة', '', p.lastModifiedBy, { readonly: true })}
+            ${field('المعرّف الخارجي', '', p.externalId || '—', { readonly: true })}
           </div>
         </article>`;
     }
@@ -889,11 +890,11 @@
       if (!c) return '';
       return modalShell(
         c.name,
-        `<p>Score: <strong>${c.currentScore}%</strong> · Target: ${c.target}%</p>
+        `<p>النتيجة: <strong>${c.currentScore}%</strong> · الهدف: ${c.target}%</p>
          <p>طريقة القياس: <strong>${esc(c.measurement || '—')}</strong></p>
          <p>ما الدليل على الالتزام؟ <strong>${esc(c.evidenceRequired)}</strong></p>
-         <p>Owner: ${esc(c.owner)} · Reviewer: ${esc(c.reviewer)} · Approver: ${esc(c.approver)}</p>
-         ${(c.evidence || []).map((e) => `<div class="gov-mini-row">${esc(e.name)} · ${esc(e.uploadedBy)} · ${esc(e.status)}</div>`).join('') || '<div class="empty">لا أدلة مرفوعة</div>'}`,
+         <p>المسؤول: ${esc(c.owner)} · المراجع: ${esc(c.reviewer)} · المعتمد: ${esc(c.approver)}</p>
+         ${(c.evidence || []).map((e) => `<div class="gov-mini-row">${esc(e.name)} · ${esc(e.uploadedBy)} · ${esc(window.HubI18n?.status?.(e.status) || e.status)}</div>`).join('') || '<div class="empty">لا أدلة مرفوعة</div>'}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إغلاق</button>`
       );
     }
@@ -902,11 +903,11 @@
       if (!s) return '';
       return modalShell(
         s.name,
-        `<p>Current: <strong>${s.currentValue}</strong> · Target: ${s.target} · Status: ${esc(s.status)}</p>
+        `<p>الحالي: <strong>${s.currentValue}</strong> · الهدف: ${s.target} · الحالة: ${esc(window.HubI18n?.status?.(s.status) || s.status)}</p>
          <p>من أين نحصل على نتيجة هذا المعيار؟ <strong>${esc(s.dataSource || '—')}</strong></p>
          <p>طريقة الحساب: <strong>${esc(s.calculation || '—')}</strong></p>
-         <p>Owner: ${esc(s.owner)} · Reviewer: ${esc(s.reviewer)} · Frequency: ${esc(s.frequency)}</p>
-         <h4>History</h4>
+         <p>المسؤول: ${esc(s.owner)} · المراجع: ${esc(s.reviewer)} · التكرار: ${esc(s.frequency)}</p>
+         <h4>السجل</h4>
          ${(s.history || []).map((h) => `<div class="gov-mini-row">${fmtTime(h.at)} · ${h.value}</div>`).join('') || '<div class="empty">لا تاريخ</div>'}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إغلاق</button>`
       );
@@ -928,8 +929,8 @@
          ${field('المكتب', 'gov-p-office', '')}
          ${field('الفرع', 'gov-p-branch', 'الفرع الرئيسي')}
          ${field('القسم', 'gov-p-dept', 'إدارة العمليات')}
-         ${field('المنصة', 'gov-p-plat', 'Core Platform')}
-         ${field('الدور', 'gov-p-role', 'Employee')}`,
+         ${field('المنصة', 'gov-p-plat', 'النواة المشتركة')}
+         ${field('الدور', 'gov-p-role', 'موظف')}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إلغاء</button>
          <button type="button" class="btn btn-primary" data-action="gov-save-person">حفظ</button>`
       );
@@ -940,8 +941,8 @@
         `<p class="muted">* الحقول المشار إليها مطلوبة</p>
          ${field('اسم السياسة *', 'gov-pol-title', '', { required: true, help: 'الاسم الظاهر للمستخدمين' })}
          ${field('الوصف', 'gov-pol-desc', '', { type: 'textarea' })}
-         ${field('الفئة', 'gov-pol-cat', 'Security')}
-         ${field('المالك', 'gov-pol-owner', 'Security Manager')}
+         ${field('الفئة', 'gov-pol-cat', 'الأمن')}
+         ${field('المالك', 'gov-pol-owner', 'مدير الأمن')}
          ${field('على من تطبق هذه السياسة؟', 'gov-pol-applies', 'تقنية المعلومات', { help: 'فرع / إدارة / قسم / منصة / Role / أشخاص' })}
          <label class="field" style="flex-direction:row;gap:8px;align-items:center"><input type="checkbox" id="gov-pol-ack" checked /> تتطلب إقراراً</label>
          ${field('موعد الإقرار', 'gov-pol-deadline', '2026-09-30', { type: 'date' })}`,
@@ -953,13 +954,13 @@
       return modalShell(
         'إضافة معيار امتثال',
         `${field('اسم المعيار *', 'gov-c-name', '', { required: true })}
-         ${field('Framework', 'gov-c-fw', '', { type: 'select', optionsHtml: (g.frameworks || []).map((f) => `<option>${esc(f)}</option>`).join('') })}
+         ${field('الإطار', 'gov-c-fw', '', { type: 'select', optionsHtml: (g.frameworks || []).map((f) => `<option>${esc(f)}</option>`).join('') })}
          ${field('الوصف', 'gov-c-desc', '', { type: 'textarea' })}
-         ${field('من يجب أن يمتثل؟', 'gov-c-applies', 'All Employees')}
-         ${field('ما الدليل على الالتزام؟', 'gov-c-ev', 'Training Certificate')}
-         ${field('Target %', 'gov-c-target', '100', { type: 'number' })}
+         ${field('من يجب أن يمتثل؟', 'gov-c-applies', 'جميع الموظفين')}
+         ${field('ما الدليل على الالتزام؟', 'gov-c-ev', 'شهادة تدريب')}
+         ${field('الهدف %', 'gov-c-target', '100', { type: 'number' })}
          ${field('طريقة القياس', 'gov-c-meas', 'Completed / Assigned × 100')}
-         ${field('Owner', 'gov-c-owner', 'Compliance Officer')}`,
+         ${field('المسؤول', 'gov-c-owner', 'مسؤول الامتثال')}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إلغاء</button>
          <button type="button" class="btn btn-primary" data-action="gov-save-compliance">حفظ</button>`
       );
@@ -970,11 +971,11 @@
         `${field('اسم المعيار *', 'gov-q-name', '', { required: true })}
          ${field('الوصف', 'gov-q-desc', '', { type: 'textarea' })}
          ${field('يطبق على', 'gov-q-applies', 'إدارة العمليات')}
-         ${field('Target', 'gov-q-target', '95', { type: 'number' })}
-         ${field('من أين نحصل على نتيجة هذا المعيار؟', 'gov-q-src', 'Tasks Module', { help: 'Manual / System / API / Survey / Audit / Tasks...' })}
+         ${field('الهدف', 'gov-q-target', '95', { type: 'number' })}
+         ${field('من أين نحصل على نتيجة هذا المعيار؟', 'gov-q-src', 'وحدة المهام', { help: 'Manual / System / API / Survey / Audit / Tasks...' })}
          ${field('طريقة الحساب', 'gov-q-calc', 'Completed On Time / Total Completed × 100')}
-         ${field('Owner', 'gov-q-owner', 'Operations Manager')}
-         ${field('Reviewer', 'gov-q-rev', 'Quality Manager')}`,
+         ${field('المسؤول', 'gov-q-owner', 'مدير العمليات')}
+         ${field('المراجع', 'gov-q-rev', 'مدير الجودة')}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إلغاء</button>
          <button type="button" class="btn btn-primary" data-action="gov-save-quality">حفظ</button>`
       );
@@ -985,11 +986,11 @@
         `${field('اسم العقد *', 'gov-ct-name', '', { required: true })}
          <label class="field"><span>مرتبط بشخص</span><select id="gov-ct-person"><option value="">—</option>${peopleOpts}</select></label>
          ${field('الطرف الثاني', 'gov-ct-p2', '')}
-         ${field('نوع العقد', 'gov-ct-type', 'Employment')}
+         ${field('نوع العقد', 'gov-ct-type', 'توظيف')}
          ${field('القيمة', 'gov-ct-val', '0', { type: 'number' })}
          ${field('البداية', 'gov-ct-start', '2026-01-01', { type: 'date' })}
          ${field('النهاية', 'gov-ct-end', '2026-12-31', { type: 'date' })}
-         ${field('Owner', 'gov-ct-owner', 'HR')}`,
+         ${field('المسؤول', 'gov-ct-owner', 'الموارد البشرية')}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إلغاء</button>
          <button type="button" class="btn btn-primary" data-action="gov-save-contract">حفظ وإرسال للاعتماد</button>`
       );
@@ -1001,7 +1002,7 @@
          ${field('النوع', 'gov-r-type', 'نقاط')}
          ${field('القيمة *', 'gov-r-val', '500', { type: 'number' })}
          ${field('السبب *', 'gov-r-reason', '', { type: 'textarea' })}
-         ${field('المصدر', 'gov-r-src', 'Quality', { help: 'Manual / Manager / Performance / Quality / Compliance / Automation' })}`,
+         ${field('المصدر', 'gov-r-src', 'الجودة', { help: 'Manual / Manager / Performance / Quality / Compliance / Automation' })}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إلغاء</button>
          <button type="button" class="btn btn-primary" data-action="gov-save-reward">إرسال للاعتماد</button>`
       );
@@ -1031,10 +1032,10 @@
       return modalShell(
         'تسجيل مخالفة',
         `<label class="field"><span>الشخص</span><select id="gov-v-person">${peopleOpts}</select></label>
-         ${field('النوع', 'gov-v-type', 'Policy Overdue')}
+         ${field('النوع', 'gov-v-type', 'سياسة متأخرة')}
          ${field('الوصف *', 'gov-v-desc', '', { type: 'textarea' })}
          ${field('السياسة المرتبطة', 'gov-v-pol', 'POL-01')}
-         ${field('الخطورة', 'gov-v-sev', 'Medium')}`,
+         ${field('الخطورة', 'gov-v-sev', 'متوسط')}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إلغاء</button>
          <button type="button" class="btn btn-primary" data-action="gov-save-violation">حفظ</button>`
       );
@@ -1043,7 +1044,7 @@
       return modalShell(
         'إضافة خطر',
         `${field('العنوان *', 'gov-rk-title', '', { required: true })}
-         ${field('الفئة', 'gov-rk-cat', 'Governance')}
+         ${field('الفئة', 'gov-rk-cat', 'حوكمة')}
          ${field('احتمال 1-5', 'gov-rk-l', '3', { type: 'number' })}
          ${field('أثر 1-5', 'gov-rk-i', '3', { type: 'number' })}
          ${field('المعالجة', 'gov-rk-mit', '', { type: 'textarea' })}`,
@@ -1055,7 +1056,7 @@
       return modalShell(
         'إضافة دليل/مستند',
         `${field('اسم المستند *', 'gov-doc-name', '', { required: true })}
-         ${field('النوع', 'gov-doc-type', 'Evidence')}
+         ${field('النوع', 'gov-doc-type', 'دليل')}
          ${field('مرتبط بـ', 'gov-doc-rel', '')}`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إلغاء</button>
          <button type="button" class="btn btn-primary" data-action="gov-save-document">حفظ</button>`

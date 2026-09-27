@@ -2,15 +2,16 @@
  * NAIOSH HUB 360 — Empire Architecture Blueprint (Source of Truth)
  * Combined from Imperial Architecture (Ans.1) + Global Digital Hub (Ans.2)
  * This is NOT a brochure — it drives modules, roles, priorities, and dashboards.
+ * الحقول name / axisKey داخلية؛ المعروض للمستخدم عبر nameAr / axisAr / items بالعربية.
  */
 const EmpireBlueprint = (() => {
   const philosophy = {
     title: 'NAIOSH HUB 360',
     subtitle: 'نظام التشغيل العالمي لإمبراطورية نايوش',
     verdict:
-      'لا يُبنى كموقع إلكتروني، بل كمنصة تشغيل مركزية (Central Digital Hub / Global Digital Hub) تربط الدومينات والأنظمة والفروع والحاضنات والمنصات والمكاتب الإلكترونية في بيئة واحدة قابلة للتوسع لأي دولة دون إعادة بناء الأساس.',
+      'لا يُبنى كموقع إلكتروني، بل كمنصة تشغيل مركزية (محور رقمي مركزي / محور رقمي عالمي) تربط الدومينات والأنظمة والفروع والحاضنات والمنصات والمكاتب الإلكترونية في بيئة واحدة قابلة للتوسع لأي دولة دون إعادة بناء الأساس.',
     capitalMetaphor:
-      'العاصمة الرقمية لإمبراطورية نايوش — والدومينات المتخصصة (ERP، NAIS، FIT، LAW…) مدن مرتبطة بها عبر هوية ومحرك تشغيل موحّدين.',
+      'العاصمة الرقمية لإمبراطورية نايوش — والدومينات المتخصصة (إي آر بي، نايس، فيت، لو…) مدن مرتبطة بها عبر هوية ومحرك تشغيل موحّدين.',
   };
 
   /** Answer 2 — 5 architectural layers */
@@ -18,7 +19,7 @@ const EmpireBlueprint = (() => {
     {
       id: 'core',
       name: 'Core Layer',
-      nameAr: 'الطبقة النووية',
+      nameAr: 'الطبقة الأساسية',
       items: ['الهوية والصلاحيات', 'الذكاء الاصطناعي', 'المحفظة والنقاط'],
     },
     {
@@ -37,7 +38,7 @@ const EmpireBlueprint = (() => {
       id: 'knowledge',
       name: 'Knowledge Layer',
       nameAr: 'طبقة المعرفة',
-      items: ['المعرفة العالمية', 'التدريب', 'Learning Ecosystem'],
+      items: ['المعرفة العالمية', 'التدريب', 'منظومة التعلّم'],
     },
     {
       id: 'governance',
@@ -49,21 +50,96 @@ const EmpireBlueprint = (() => {
 
   /** Answer 1 — full stack tree */
   const stackTree = [
-    { id: 'core-platform', name: 'Core Platform', nameAr: 'النواة المشتركة', children: ['Identity & Access', 'Organization Engine', 'Notifications', 'Audit', 'Settings'] },
-    { id: 'integration', name: 'Integration Layer', nameAr: 'الربط المؤسسي', children: ['API Gateway', 'Event Bus', 'Connectors'] },
-    { id: 'governance-center', name: 'Governance Center', nameAr: 'مركز الحوكمة', children: ['KPI', 'Compliance', 'Risk', 'Executive Reports'] },
-    { id: 'incubator-mgmt', name: 'Incubator Management', nameAr: 'إدارة الحاضنات', children: ['100 حاضنة', 'منصات', 'مكاتب', 'عقود'] },
-    { id: 'platform-offices', name: 'Platform & Digital Offices', nameAr: 'المنصات والمكاتب', children: ['هيكل', 'مهام', 'وثائق', 'توقيع'] },
-    { id: 'learning', name: 'Learning Ecosystem', nameAr: 'التعليم الذكي', children: ['LMS', 'LXP', 'AI Tutor', 'Certificates'] },
-    { id: 'marketing', name: 'Marketing Network', nameAr: 'التسويق الشبكي', children: ['Content', 'Campaigns', 'Affiliate'] },
-    { id: 'events', name: 'Events Studio', nameAr: 'استديو الفعاليات', children: ['بث', 'تذاكر', 'أرشيف'] },
-    { id: 'crm', name: 'CRM & Customer Success', nameAr: 'خدمة العملاء', children: ['تذاكر', 'معرفة', 'AI Chat'] },
-    { id: 'points', name: 'Points Economy', nameAr: 'اقتصاد النقاط', children: ['محفظة', 'استهلاك', 'فواتير'] },
-    { id: 'knowledge', name: 'Knowledge Bank', nameAr: 'بنك المعرفة', children: ['كتب', 'حقائب', 'خبراء'] },
-    { id: 'ai', name: 'AI Services', nameAr: 'خدمات الذكاء', children: ['Gateway', 'Document AI', 'Predictive'] },
-    { id: 'analytics', name: 'Analytics & BI', nameAr: 'التحليلات', children: ['Data Lake', 'ETL', 'Dashboards'] },
-    { id: 'security', name: 'Security Layer', nameAr: 'الأمن', children: ['OAuth2', 'MFA', 'SIEM'] },
-    { id: 'mobile', name: 'Mobile Super App', nameAr: 'التطبيق الموحد', children: ['SSO', 'محفظة', 'إشعارات'] },
+    {
+      id: 'core-platform',
+      name: 'Core Platform',
+      nameAr: 'النواة المشتركة',
+      children: ['الهوية والوصول', 'محرك التنظيم', 'الإشعارات', 'التدقيق', 'الإعدادات'],
+    },
+    {
+      id: 'integration',
+      name: 'Integration Layer',
+      nameAr: 'الربط المؤسسي',
+      children: ['بوابة واجهات البرمجة', 'ناقل الأحداث', 'الموصّلات'],
+    },
+    {
+      id: 'governance-center',
+      name: 'Governance Center',
+      nameAr: 'مركز الحوكمة',
+      children: ['مؤشرات الأداء', 'الامتثال', 'المخاطر', 'تقارير القيادة'],
+    },
+    {
+      id: 'incubator-mgmt',
+      name: 'Incubator Management',
+      nameAr: 'إدارة الحاضنات',
+      children: ['100 حاضنة', 'منصات', 'مكاتب', 'عقود'],
+    },
+    {
+      id: 'platform-offices',
+      name: 'Platform & Digital Offices',
+      nameAr: 'المنصات والمكاتب',
+      children: ['هيكل', 'مهام', 'وثائق', 'توقيع'],
+    },
+    {
+      id: 'learning',
+      name: 'Learning Ecosystem',
+      nameAr: 'منظومة التعلّم',
+      children: ['نظام إدارة التعلّم', 'منصة تجربة التعلّم', 'المعلّم الذكي', 'الشهادات'],
+    },
+    {
+      id: 'marketing',
+      name: 'Marketing Network',
+      nameAr: 'التسويق الشبكي',
+      children: ['المحتوى', 'الحملات', 'التسويق بالعمولة'],
+    },
+    {
+      id: 'events',
+      name: 'Events Studio',
+      nameAr: 'استديو الفعاليات',
+      children: ['بث', 'تذاكر', 'أرشيف'],
+    },
+    {
+      id: 'crm',
+      name: 'CRM & Customer Success',
+      nameAr: 'خدمة العملاء (CRM)',
+      children: ['تذاكر', 'معرفة', 'محادثة ذكية'],
+    },
+    {
+      id: 'points',
+      name: 'Points Economy',
+      nameAr: 'اقتصاد النقاط',
+      children: ['محفظة', 'استهلاك', 'فواتير'],
+    },
+    {
+      id: 'knowledge',
+      name: 'Knowledge Bank',
+      nameAr: 'بنك المعرفة',
+      children: ['كتب', 'حقائب', 'خبراء'],
+    },
+    {
+      id: 'ai',
+      name: 'AI Services',
+      nameAr: 'خدمات الذكاء',
+      children: ['البوابة', 'ذكاء المستندات', 'التنبؤ'],
+    },
+    {
+      id: 'analytics',
+      name: 'Analytics & BI',
+      nameAr: 'التحليلات',
+      children: ['بحيرة البيانات', 'استخراج وتحويل وتحميل', 'لوحات المؤشرات'],
+    },
+    {
+      id: 'security',
+      name: 'Security Layer',
+      nameAr: 'الأمن',
+      children: ['مصادقة OAuth2', 'المصادقة الثنائية', 'مراقبة الأمن'],
+    },
+    {
+      id: 'mobile',
+      name: 'Mobile Super App',
+      nameAr: 'التطبيق الموحد',
+      children: ['تسجيل الدخول الموحد', 'محفظة', 'إشعارات'],
+    },
   ];
 
   /** Answer 2 — 12 primary axes */
@@ -151,22 +227,72 @@ const EmpireBlueprint = (() => {
       priority: 12,
       name: 'Governance & Analytics',
       nameAr: 'مركز التحليلات والحوكمة',
-      components: ['KPI', 'الامتثال', 'المخاطر', 'جودة التشغيل', 'نشاط الفروع والحاضنات'],
+      components: ['مؤشرات الأداء', 'الامتثال', 'المخاطر', 'جودة التشغيل', 'نشاط الفروع والحاضنات'],
     },
   ];
 
   /** Answer 1 — Core Platform must be complete first */
   const corePlatform = [
-    { id: 'naiosh-id', name: 'NAIOSH ID', nameAr: 'هوية نايوش' },
-    { id: 'sso', name: 'Single Sign-On', nameAr: 'دخول موحد لكل الدومينات' },
-    { id: 'iam', name: 'IAM', nameAr: 'إدارة المستخدمين والصلاحيات والأدوار' },
-    { id: 'role-matrix', name: 'Role Matrix Engine', nameAr: 'مصفوفة الصلاحيات الديناميكية' },
-    { id: 'multi-tenant', name: 'Multi-Tenant Engine', nameAr: 'دعم الفروع والوكلاء والدول' },
-    { id: 'org-hierarchy', name: 'Organization Hierarchy', nameAr: 'دولة ← فرع ← حاضنة ← منصة ← مكتب' },
-    { id: 'notifications', name: 'Notification Center', nameAr: 'بريد · SMS · واتساب · Push' },
-    { id: 'audit', name: 'Audit & Activity Log', nameAr: 'سجل كامل لكل العمليات' },
-    { id: 'settings', name: 'Settings & Configuration', nameAr: 'إعدادات مركزية' },
-    { id: 'i18n', name: 'Language & Localization', nameAr: 'عربية · إنجليزية · تعدد لغوي' },
+    {
+      id: 'naiosh-id',
+      name: 'NAIOSH ID',
+      nameAr: 'هوية نايوش',
+      descAr: 'الهوية الرقمية الموحدة لكل مستخدمي هوب',
+    },
+    {
+      id: 'sso',
+      name: 'Single Sign-On',
+      nameAr: 'تسجيل الدخول الموحد',
+      descAr: 'دخول موحّد لكل الدومينات والأنظمة',
+    },
+    {
+      id: 'iam',
+      name: 'IAM',
+      nameAr: 'إدارة الهوية والصلاحيات',
+      descAr: 'إدارة المستخدمين والصلاحيات والأدوار',
+    },
+    {
+      id: 'role-matrix',
+      name: 'Role Matrix Engine',
+      nameAr: 'محرك مصفوفة القواعد',
+      descAr: 'مصفوفة الصلاحيات الديناميكية حسب الدور والنظام',
+    },
+    {
+      id: 'multi-tenant',
+      name: 'Multi-Tenant Engine',
+      nameAr: 'محرك تعدد المستأجرين',
+      descAr: 'دعم الفروع والوكلاء والدول',
+    },
+    {
+      id: 'org-hierarchy',
+      name: 'Organization Hierarchy',
+      nameAr: 'الهيكل التنظيمي',
+      descAr: 'دولة ← فرع ← حاضنة ← منصة ← مكتب',
+    },
+    {
+      id: 'notifications',
+      name: 'Notification Center',
+      nameAr: 'مركز الإشعارات',
+      descAr: 'بريد · رسائل نصية · واتساب · إشعارات فورية',
+    },
+    {
+      id: 'audit',
+      name: 'Audit & Activity Log',
+      nameAr: 'سجل التدقيق والنشاط',
+      descAr: 'سجل كامل لكل العمليات',
+    },
+    {
+      id: 'settings',
+      name: 'Settings & Configuration',
+      nameAr: 'الإعدادات والتكوين',
+      descAr: 'إعدادات مركزية للمنصة',
+    },
+    {
+      id: 'i18n',
+      name: 'Language & Localization',
+      nameAr: 'اللغة والتعريب',
+      descAr: 'واجهة عربية مع دعم تعدد لغوي عند الحاجة',
+    },
   ];
 
   const dashboardsByRole = [
@@ -180,29 +306,29 @@ const EmpireBlueprint = (() => {
     { role: 'trainee', nameAr: 'متدرب / طالب', scope: 'التعلم والاختبارات والشهادات' },
   ];
 
-  /** First 6 months — Answer 1 priorities (do NOT start marketing/AI before foundations) */
+  /** First 6 months — Answer 1 priorities */
   const sixMonthPriorities = [
-    { order: 1, axis: 'Core Platform', note: 'النواة المشتركة — لا نظام قبل اكتمالها' },
-    { order: 2, axis: 'Identity & SSO', note: 'NAIOSH ID + دخول موحد' },
-    { order: 3, axis: 'Organization Hierarchy', note: 'دولة ← فرع ← حاضنة ← منصة ← مكتب' },
-    { order: 4, axis: 'Role Matrix Engine', note: 'صلاحيات ديناميكية' },
-    { order: 5, axis: 'Unified Dashboard', note: 'بوابة ديناميكية حسب الدور' },
-    { order: 6, axis: 'API Gateway', note: 'منع الجزر المنفصلة' },
-    { order: 7, axis: 'Incubator Management', note: '100 حاضنة' },
-    { order: 8, axis: 'Platform & Digital Offices', note: 'بيئات العمل الرقمية' },
-    { order: 9, axis: 'Points Economy', note: 'نقاط لا اشتراكات' },
-    { order: 10, axis: 'Governance Center', note: 'رقابة مركزية للقائد' },
+    { order: 1, axisKey: 'Core Platform', axis: 'النواة المشتركة', note: 'النواة المشتركة — لا نظام قبل اكتمالها' },
+    { order: 2, axisKey: 'Identity & SSO', axis: 'الهوية وتسجيل الدخول الموحد', note: 'هوية نايوش + دخول موحد' },
+    { order: 3, axisKey: 'Organization Hierarchy', axis: 'الهيكل التنظيمي', note: 'دولة ← فرع ← حاضنة ← منصة ← مكتب' },
+    { order: 4, axisKey: 'Role Matrix Engine', axis: 'محرك مصفوفة القواعد', note: 'صلاحيات ديناميكية' },
+    { order: 5, axisKey: 'Unified Dashboard', axis: 'لوحة التحكم الموحدة', note: 'بوابة ديناميكية حسب الدور' },
+    { order: 6, axisKey: 'API Gateway', axis: 'بوابة واجهات البرمجة', note: 'منع الجزر المنفصلة' },
+    { order: 7, axisKey: 'Incubator Management', axis: 'إدارة الحاضنات', note: '100 حاضنة' },
+    { order: 8, axisKey: 'Platform & Digital Offices', axis: 'المنصات والمكاتب الرقمية', note: 'بيئات العمل الرقمية' },
+    { order: 9, axisKey: 'Points Economy', axis: 'اقتصاد النقاط', note: 'نقاط لا اشتراكات' },
+    { order: 10, axisKey: 'Governance Center', axis: 'مركز الحوكمة', note: 'رقابة مركزية للقائد' },
   ];
 
   const preCodeDocs = [
-    'Data Dictionary',
-    'Permission Matrix',
-    'System Integration Map',
-    'User Journey Maps',
-    'API Architecture',
-    'Branch & Incubator Model',
-    'Wallet Model',
-    'AI Architecture',
+    { id: 'data-dictionary', name: 'Data Dictionary', nameAr: 'قاموس البيانات' },
+    { id: 'permission-matrix', name: 'Permission Matrix', nameAr: 'مصفوفة الصلاحيات' },
+    { id: 'integration-map', name: 'System Integration Map', nameAr: 'خريطة تكامل الأنظمة' },
+    { id: 'user-journeys', name: 'User Journey Maps', nameAr: 'خرائط رحلة المستخدم' },
+    { id: 'api-architecture', name: 'API Architecture', nameAr: 'معمارية واجهات البرمجة (API)' },
+    { id: 'branch-incubator', name: 'Branch & Incubator Model', nameAr: 'نموذج الفروع والحاضنات' },
+    { id: 'wallet-model', name: 'Wallet Model', nameAr: 'نموذج المحفظة' },
+    { id: 'ai-architecture', name: 'AI Architecture', nameAr: 'معمارية الذكاء الاصطناعي' },
   ];
 
   const orgChain = ['دولة', 'فرع', 'حاضنة', 'منصة', 'مكتب إلكتروني'];

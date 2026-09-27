@@ -37,16 +37,16 @@
   ];
 
   const TITLES = {
-    overview: ['مركز التحكم العالمي', 'KPIs قابلة للنقر · Needs Action · مصدر · سجل عمليات'],
+    overview: ['مركز التحكم العالمي', 'KPIs قابلة للنقر · يتطلب إجراء · مصدر · سجل عمليات'],
     operating: ['آلية تشغيل نايوش هوب', 'اشتراكات · مكاتب · خدمات موحّدة · نشاط · تدقيق'],
     core: ['العقل المركزي — Central Intelligence', 'قرارات · توصيات · رؤى · تنبؤات · شذوذ · قواعد · تنفيذ · موافقات'],
-    tasks: ['إدارة المهام', 'CRUD · مصدر · تدقيق · لوحة حالات · Needs Action'],
+    tasks: ['إدارة المهام', 'إدارة كاملة · مصدر · تدقيق · لوحة حالات · يتطلب إجراء'],
     measurement: ['القياس الموحّد', 'درجات · مؤشرات بصيغة · إعادة حساب موثّقة'],
     reports: ['مركز التقارير', 'توليد · عرض · تصدير JSON · جدول · تدقيق'],
     integration: ['التكامل والبوابة', 'موصلات · مزامنة · API · فحص بوابة · تدقيق'],
     'posha-clients': ['عملاء هوب', 'إدارة العملاء والطلبات والدعم والتنبيهات من مكان واحد'],
     'site-settings': ['إعدادات الموقع', 'إدارة إعدادات المنصة والمتاجر والطلبات والدفع والإعلانات والتكاملات والأمان من مكان واحد'],
-    'clients-mgmt': ['إدارة العملاء', 'Clients 360 · CRUD · مصدر · ملاحظات داخلية · تدقيق'],
+    'clients-mgmt': ['إدارة العملاء', 'Clients 360 · إدارة كاملة · مصدر · ملاحظات داخلية · تدقيق'],
     'roles-permissions': ['إدارة فريق العمل والصلاحيات', 'عيّن المسؤولين عن إدارة نايوش هوب وأنظمتها، وحدد لكل شخص مكان عمله ودوره والصلاحيات المسموح بها.'],
     notifications: ['مركز إشعارات نايوش هوب', 'مصدر واضح · سبب · إجراء · طلب مرتبط'],
     'side-project-regs': ['طلبات تسجيل المشاريع', 'Inbox · متابعة · تواصل · تدقيق'],
@@ -161,6 +161,7 @@
     const map = {
       executed: 'badge-black',
       pending: 'badge-red',
+      waiting: 'badge-red',
       active: 'badge-black',
       draft: 'badge-gray',
       online: 'badge-black',
@@ -188,6 +189,13 @@
       paused: 'badge-gray',
       scheduled: 'badge-red',
       review: 'badge-red',
+      failed: 'badge-red',
+      passed: 'badge-black',
+      success: 'badge-black',
+      completed: 'badge-black',
+      inactive: 'badge-gray',
+      enabled: 'badge-black',
+      disabled: 'badge-gray',
       قادمة: 'badge-black',
       منتهية: 'badge-gray',
       مسودة: 'badge-red',
@@ -196,7 +204,9 @@
       عاجل: 'badge-red',
       متوسط: 'badge-gray',
     };
-    return `<span class="badge ${map[status] || 'badge-outline'}">${esc(status)}</span>`;
+    const key = String(status || '').toLowerCase().replace(/\s+/g, '_');
+    const label = window.HubI18n?.status?.(status) || status;
+    return `<span class="badge ${map[key] || map[status] || 'badge-outline'}">${esc(label)}</span>`;
   };
 
   const bar = (pct) => `<div class="bar"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>`;
@@ -447,7 +457,31 @@
   const renderBlueprint = () => {
     const bp = window.EmpireBlueprint;
     const e = HubStore.get().empire;
+    const i18n = window.HubI18n;
     if (!bp) return `<article class="card"><p>تعذّر تحميل دستور المعمارية.</p></article>`;
+    const layerTitle = (l) => i18n?.displayName?.(l) || l.nameAr || l.name;
+    const moduleTitle = (m) => {
+      const fromBp = bp.corePlatform?.find((x) => x.id === m.id);
+      return (
+        i18n?.label?.(m.name, m.nameAr || fromBp?.nameAr) ||
+        m.nameAr ||
+        fromBp?.nameAr ||
+        m.name
+      );
+    };
+    const moduleDesc = (m) => {
+      const fromBp = bp.corePlatform?.find((x) => x.id === m.id);
+      return m.descAr || fromBp?.descAr || m.nameAr || '';
+    };
+    const axisTitle = (a) => i18n?.displayName?.(a) || a.nameAr || a.name;
+    const priorityAxis = (p) => {
+      if (p.axis && i18n?.hasArabic?.(p.axis)) return p.axis;
+      return i18n?.label?.(p.axisKey || p.axis, p.axis) || p.axis;
+    };
+    const docTitle = (d) => {
+      if (d.nameAr && i18n?.hasArabic?.(d.nameAr)) return d.nameAr;
+      return i18n?.label?.(d.name, d.nameAr || d.name) || d.nameAr || d.name;
+    };
     return `
       <article class="card empire-verdict">
         <h3><span class="title-left"><i class="fas fa-crown icon"></i> ${esc(bp.philosophy.title)}</span></h3>
@@ -460,25 +494,24 @@
         ${bp.fiveLayers
           .map(
             (l) => `<article class="phase-card">
-              <h4>${esc(l.nameAr)}</h4>
-              <small>${esc(l.name)}</small>
-              <ul>${l.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>
+              <h4>${esc(layerTitle(l))}</h4>
+              <ul>${l.items.map((i) => `<li>${esc(i18n?.label?.(i, i) || i)}</li>`).join('')}</ul>
             </article>`
           )
           .join('')}
       </div>
-      <h3 class="section-label">Core Platform — لا نظام قبل اكتمالها</h3>
+      <h3 class="section-label">النواة المشتركة — لا نظام قبل اكتمالها</h3>
       <div class="table-wrap"><table class="data">
         <thead><tr><th>المكوّن</th><th>الوصف</th><th>الحالة</th><th>التقدم</th><th></th></tr></thead>
         <tbody>
           ${e.coreModules
             .map(
               (m) => `<tr>
-                <td><strong>${esc(m.name)}</strong></td>
-                <td>${esc(m.nameAr)}</td>
+                <td><strong>${esc(moduleTitle(m))}</strong></td>
+                <td>${esc(moduleDesc(m))}</td>
                 <td>${badgeStatus(m.status)}</td>
                 <td style="min-width:120px">${bar(m.progress)} <small>${m.progress}%</small></td>
-                <td><button class="btn btn-sm btn-primary" data-action="advance-core" data-id="${m.id}">تقدّم</button></td>
+                <td><button class="btn btn-sm btn-primary" data-action="advance-core" data-id="${m.id}" title="تقدّم">تقدّم</button></td>
               </tr>`
             )
             .join('')}
@@ -492,11 +525,11 @@
             .map(
               (p) => `<tr>
                 <td>${p.order}</td>
-                <td><strong>${esc(p.axis)}</strong></td>
+                <td><strong>${esc(priorityAxis(p))}</strong></td>
                 <td>${esc(p.note)}</td>
                 <td>${badgeStatus(p.status)}</td>
                 <td style="min-width:120px">${bar(p.progress)} <small>${p.progress}%</small></td>
-                <td><button class="btn btn-sm btn-dark" data-action="advance-priority" data-id="${p.order}">دفع</button></td>
+                <td><button class="btn btn-sm btn-dark" data-action="advance-priority" data-id="${p.order}" title="دفع">دفع</button></td>
               </tr>`
             )
             .join('')}
@@ -509,8 +542,7 @@
             const st = e.axes.find((x) => x.id === a.id);
             return `<article class="axis-card">
               <div class="axis-num">0${a.priority}</div>
-              <h4>${esc(a.nameAr)}</h4>
-              <small>${esc(a.name)}</small>
+              <h4>${esc(axisTitle(a))}</h4>
               <div>${bar(st?.progress || 0)}</div>
               <ul>${a.components.slice(0, 4).map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
               ${badgeStatus(st?.status || 'planned')}
@@ -524,7 +556,8 @@
           <ul class="stack-tree">
             ${bp.stackTree
               .map(
-                (n) => `<li><strong>${esc(n.nameAr)}</strong> <span>${esc(n.name)}</span><em>${n.children.join(' · ')}</em></li>`
+                (n) =>
+                  `<li><strong>${esc(i18n?.displayName?.(n) || n.nameAr)}</strong><em>${n.children.map((c) => i18n?.label?.(c, c) || c).join(' · ')}</em></li>`
               )
               .join('')}
           </ul>
@@ -534,10 +567,10 @@
           <div class="table-wrap"><table class="data">
             <thead><tr><th>الوثيقة</th><th>الحالة</th></tr></thead>
             <tbody>
-              ${e.docs.map((d) => `<tr><td>${esc(d.name)}</td><td>${badgeStatus(d.status)}</td></tr>`).join('')}
+              ${e.docs.map((d) => `<tr><td>${esc(docTitle(d))}</td><td>${badgeStatus(d.status)}</td></tr>`).join('')}
             </tbody>
           </table></div>
-          <p class="muted" style="margin-top:10px">لا تسويق ولا ذكاء اصطناعي قبل اكتمال الأساسات (Core → Identity → Hierarchy → Roles → Dashboard → Gateway).</p>
+          <p class="muted" style="margin-top:10px">لا تسويق ولا ذكاء اصطناعي قبل اكتمال الأساسات (النواة ← الهوية ← الهيكل ← الأدوار ← لوحة التحكم ← بوابة الربط).</p>
         </article>
       </div>
     `;

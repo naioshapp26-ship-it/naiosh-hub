@@ -56,7 +56,7 @@
     return el.type === 'checkbox' ? !!el.checked : String(el.value || '').trim();
   };
 
-  const renderHeader = ({ prefix, title, subtitle, icon, actionsHtml = '', badgeText = 'ENTERPRISE WORKSPACE' }) => `
+  const renderHeader = ({ prefix, title, subtitle, icon, actionsHtml = '', badgeText = 'مساحة عمل المؤسسة' }) => `
     <div class="hub-ws-hero">
       <div class="hub-ws-hero-main">
         <div class="hub-ws-kicker"><i class="fas ${esc(icon || 'fa-layer-group')}"></i> NAIOSH HUB · ${esc(badgeText)}</div>
@@ -98,13 +98,13 @@
   const renderNeeds = (prefix, items) => {
     if (!items?.length) {
       return `<article class="card hub-ws-needs is-clear">
-        <h3><span class="title-left"><i class="fas fa-circle-check icon"></i> Needs Action</span>
+        <h3><span class="title-left"><i class="fas fa-circle-check icon"></i> يتطلب إجراء</span>
           <span class="badge badge-black">واضح</span></h3>
         <p class="empty" style="text-align:right;margin:0">لا عناصر تحتاج إجراء الآن — غرفة العمليات مستقرة.</p>
       </article>`;
     }
     return `<article class="card hub-ws-needs is-alert">
-      <h3><span class="title-left"><i class="fas fa-bolt icon"></i> Needs Action · ${items.length}</span>
+      <h3><span class="title-left"><i class="fas fa-bolt icon"></i> يتطلب إجراء · ${items.length}</span>
         <span class="badge badge-red">يتطلب تدخل</span></h3>
       <ul class="hub-ws-needs-list">
         ${items

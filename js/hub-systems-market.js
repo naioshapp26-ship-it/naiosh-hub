@@ -142,7 +142,7 @@
     return true;
   };
 
-  const statusLabel = (s) => STATUS_AR[s] || STATUS_AR[String(s)] || s || '—';
+  const statusLabel = (s) => window.HubI18n?.status?.(s) || STATUS_AR[s] || STATUS_AR[String(s)] || s || '—';
   const statusBadge = (s) => {
     const n = String(s);
     const map = { Active: 'badge-black', Draft: 'badge-outline', Suspended: 'badge-red', Archived: 'badge-gray' };

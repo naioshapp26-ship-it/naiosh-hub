@@ -61,7 +61,7 @@
       { key: 'core', label: 'جاهزية Core', value: `${k.coreReadyPct}%`, hint: 'Core', tab: 'layers' },
       { key: 'usage', label: 'استخدام الأنظمة', value: `${cmd.systemsUsagePct || 0}%`, hint: 'Usage', tab: 'pulse' },
       { key: 'health', label: 'صحة الأنظمة', value: `${k.systemsHealth}%`, hint: 'Health', tab: 'layers' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, hint: 'إجراء مطلوب', tab: 'board' },
+      { key: 'needs', label: 'يتطلب إجراء', value: needs.length, hint: 'إجراء مطلوب', tab: 'board' },
     ];
 
     let body = '';
@@ -104,7 +104,7 @@
             <ul class="feed">
               <li><b>الفروع/الحاضنات/المنصات</b> · Organization</li>
               <li><b>الخزينة</b> · Wallet</li>
-              <li><b>صحة الأنظمة</b> · Systems Registry</li>
+              <li><b>صحة الأنظمة</b> · سجل الأنظمة</li>
               <li><b>جاهزية Core</b> · Blueprint</li>
             </ul>
           </article>
@@ -177,7 +177,7 @@
       ${K.renderHeader({
         prefix: 'ov',
         title: 'مركز التحكم العالمي',
-        subtitle: 'غرفة قيادة واحدة — مؤشرات قابلة للنقر · Needs Action · مصدر كل رقم واضح',
+        subtitle: 'غرفة قيادة واحدة — مؤشرات قابلة للنقر · يتطلب إجراء · مصدر كل رقم واضح',
         icon: 'fa-satellite-dish',
         actionsHtml: `
           <button type="button" class="btn btn-primary btn-sm" data-action="ov-refresh"><i class="fas fa-rotate"></i> تحديث</button>
@@ -190,7 +190,7 @@
         title: 'كيف تستخدم مركز التحكم',
         dismissed: !!ws.settings?.helpDismissed,
         open: ovUi.helpOpen,
-        bodyHtml: `<p>اضغط أي KPI للانتقال للتبويب المناسب. Needs Action يجمع الاختناقات والشذوذ. كل تحديث يُسجَّل في سجل العمليات مع المصدر.</p>`,
+        bodyHtml: `<p>اضغط أي KPI للانتقال للتبويب المناسب. يتطلب إجراء يجمع الاختناقات والشذوذ. كل تحديث يُسجَّل في سجل العمليات مع المصدر.</p>`,
       })}
     </div>`;
   };
@@ -263,7 +263,7 @@
       { key: 'services', label: 'خدمات موحّدة', value: services.length, hint: `${systemCount} نظام`, tab: 'services', icon: 'fa-layer-group' },
       { key: 'activity', label: 'سجل النشاط', value: activity.length, hint: 'أحداث تشغيل', tab: 'activity', icon: 'fa-timeline' },
       { key: 'systems', label: 'أنظمة مربوطة', value: systemCount, hint: 'خريطة الخدمات', tab: 'services', icon: 'fa-cubes' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, hint: needs.length ? 'يتطلب تدخل' : 'مستقر', tab: 'overview', icon: 'fa-bolt' },
+      { key: 'needs', label: 'يتطلب إجراء', value: needs.length, hint: needs.length ? 'يتطلب تدخل' : 'مستقر', tab: 'overview', icon: 'fa-bolt' },
     ];
 
     let body = '';
@@ -606,7 +606,7 @@
       { key: 'todo', label: 'معلّقة', value: todo, tab: 'list' },
       { key: 'blocked', label: 'مختنق', value: blocked, tab: 'list' },
       { key: 'done', label: 'مكتملة', value: done, tab: 'list' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, tab: 'list' },
+      { key: 'needs', label: 'يتطلب إجراء', value: needs.length, tab: 'list' },
     ];
 
     let body = '';
@@ -695,7 +695,7 @@
       ${K.renderHeader({
         prefix: 'tk',
         title: 'إدارة المهام',
-        subtitle: 'CRUD كامل · مصدر · تدقيق · Needs Action · بدون أزرار ميتة',
+        subtitle: 'إدارة كاملة · مصدر · تدقيق · يتطلب إجراء · بدون أزرار ميتة',
         icon: 'fa-clipboard-list',
         actionsHtml: `
           <button type="button" class="btn btn-primary btn-sm" data-action="tk-create"><i class="fas fa-plus"></i> جديد</button>
@@ -840,7 +840,7 @@
     const kpis = [
       { key: 'avg', label: 'متوسط الدرجات', value: Math.round((m.scores || []).reduce((a, b) => a + (b.score || 0), 0) / Math.max(1, (m.scores || []).length)), tab: 'scores' },
       { key: 'inds', label: 'المؤشرات', value: (m.indicators || []).length, tab: 'indicators' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, tab: 'scores' },
+      { key: 'needs', label: 'يتطلب إجراء', value: needs.length, tab: 'scores' },
     ];
 
     let body = '';
@@ -1072,7 +1072,7 @@
     const kpis = [
       { key: 'count', label: 'تقارير جاهزة', value: (r.generated || []).length, tab: 'generated' },
       { key: 'sched', label: 'جداول', value: (r.schedule || []).length, tab: 'schedule' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, tab: 'generated' },
+      { key: 'needs', label: 'يتطلب إجراء', value: needs.length, tab: 'generated' },
     ];
 
     let body = '';
@@ -1266,7 +1266,7 @@
       { key: 'rps', label: 'الطلبات/ث', value: i.gateway?.rps ?? 0, tab: 'gateway' },
       { key: 'latency', label: 'الكمون', value: `${i.gateway?.latencyMs ?? 0}ms`, tab: 'gateway' },
       { key: 'errors', label: 'الأخطاء', value: `${i.gateway?.errors ?? 0}%`, tab: 'gateway' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, tab: 'connectors' },
+      { key: 'needs', label: 'يتطلب إجراء', value: needs.length, tab: 'connectors' },
     ];
 
     let body = '';
@@ -1532,7 +1532,7 @@
       { key: 'decision', label: 'Decision', value: `${health.decision || 0}%`, tab: 'engines' },
       { key: 'predictive', label: 'Predictive', value: `${health.predictive || 0}%`, tab: 'engines' },
       { key: 'pending', label: 'قرارات معلّقة', value: (s.decisions || []).filter((d) => d.status === 'pending').length, tab: 'decisions' },
-      { key: 'needs', label: 'Needs Action', value: needs.length, tab: 'decisions' },
+      { key: 'needs', label: 'يتطلب إجراء', value: needs.length, tab: 'decisions' },
     ];
 
     let body = '';
