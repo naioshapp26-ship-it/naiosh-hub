@@ -2046,6 +2046,28 @@ const HubStore = (() => {
     return changed;
   };
 
+  const migratePrioritiesArabic = () => {
+    const list = state?.empire?.priorities;
+    if (!Array.isArray(list) || !list.length) return false;
+    let changed = false;
+    const bp = window.EmpireBlueprint?.sixMonthPriorities || [];
+    list.forEach((p) => {
+      if (!p) return;
+      const fromBp = bp.find((x) => Number(x.order) === Number(p.order) || x.axisKey === p.axisKey);
+      if (fromBp?.axis && (!p.axis || !/[\u0600-\u06FF]/.test(String(p.axis)))) {
+        p.axis = fromBp.axis;
+        changed = true;
+      } else if (p.axisKey && window.HubI18n?.label) {
+        const mapped = window.HubI18n.label(p.axis || p.axisKey);
+        if (mapped && mapped !== p.axis && /[\u0600-\u06FF]/.test(mapped)) {
+          p.axis = mapped;
+          changed = true;
+        }
+      }
+    });
+    return changed;
+  };
+
   const hydrateSettings = () => {
     if (!state) return false;
     const next = coerceSettings(state.settings || {});
@@ -3450,6 +3472,7 @@ const HubStore = (() => {
         if (hydrateOperating()) save();
         if (hydrateSettings()) save();
         if (migrateFeedArabic()) save();
+        if (migratePrioritiesArabic()) save();
         return state;
       }
     } catch (_) {}

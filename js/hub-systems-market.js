@@ -143,6 +143,8 @@
   };
 
   const statusLabel = (s) => window.HubI18n?.status?.(s) || STATUS_AR[s] || STATUS_AR[String(s)] || s || '—';
+  const planLabel = (p) => window.HubI18n?.plan?.(p) || p || '—';
+  const systemLabel = (c) => window.HubI18n?.system?.(c) || c || '—';
   const statusBadge = (s) => {
     const n = String(s);
     const map = { Active: 'badge-black', Draft: 'badge-outline', Suspended: 'badge-red', Archived: 'badge-gray' };
@@ -336,7 +338,13 @@
 
   const renderHeader = (m, user) => {
     const role = permLevel(user);
-    const roleLabel = { admin: 'System Admin', manager: 'System Manager', operator: 'Operator', auditor: 'Auditor', viewer: 'عرض' }[role];
+    const roleLabel = {
+      admin: window.HubI18n?.label?.('System Admin') || 'مسؤول النظام',
+      manager: window.HubI18n?.label?.('System Manager') || 'مدير النظام',
+      operator: window.HubI18n?.label?.('Operator') || 'مشغّل',
+      auditor: window.HubI18n?.label?.('Auditor') || 'مدقق',
+      viewer: 'عرض',
+    }[role];
     return `<div class="toolbar sm-header" style="flex-wrap:wrap;gap:8px">
       <div style="display:flex;flex-wrap:wrap;gap:8px;flex:1">
         ${can(user, 'edit') ? `<button type="button" class="btn btn-primary" data-action="sm-add" title="إضافة نظام"><i class="fas fa-plus"></i> إضافة نظام</button>` : ''}
@@ -397,18 +405,23 @@
     const plans = unique(list.map((s) => s.plan));
     const sources = unique(list.map((s) => s.source));
     const f = ui.filters;
-    const opt = (arr, cur) =>
-      `<option value="">الكل</option>${arr.map((x) => `<option value="${esc(x)}" ${cur === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}`;
+    const opt = (arr, cur, mapFn) =>
+      `<option value="">الكل</option>${arr
+        .map((x) => {
+          const label = mapFn ? mapFn(x) : x;
+          return `<option value="${esc(x)}" ${cur === x ? 'selected' : ''}>${esc(label)}</option>`;
+        })
+        .join('')}`;
     return `<div class="card sm-filters" style="padding:12px;margin:12px 0">
       <div class="toolbar" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
         <label class="field" style="flex:1;min-width:220px"><span>ابحث باسم النظام، الشركة، الكود...</span>
           <input id="sm-q" type="search" value="${esc(f.q)}" data-sm-change="q" placeholder="🔍 بحث" />
         </label>
-        <label class="field"><span>الحالة</span><select data-sm-change="status">${opt(STATUSES, f.status)}</select></label>
+        <label class="field"><span>الحالة</span><select data-sm-change="status">${opt(STATUSES, f.status, statusLabel)}</select></label>
         <label class="field"><span>الفئة</span><select data-sm-change="category">${opt(cats, f.category)}</select></label>
         <label class="field"><span>الشركة</span><select data-sm-change="company">${opt(companies, f.company)}</select></label>
-        <label class="field"><span>الخطة</span><select data-sm-change="plan">${opt(plans, f.plan)}</select></label>
-        <label class="field"><span>مصدر النظام</span><select data-sm-change="source">${opt(sources, f.source)}</select></label>
+        <label class="field"><span>الخطة</span><select data-sm-change="plan">${opt(plans, f.plan, planLabel)}</select></label>
+        <label class="field"><span>مصدر النظام</span><select data-sm-change="source">${opt(sources, f.source, sourceLabel)}</select></label>
         <button type="button" class="btn btn-ghost" data-action="sm-clear-filters">مسح الفلاتر</button>
       </div>
     </div>`;
@@ -450,7 +463,7 @@
         <td><code>${esc(s.code)}</code></td>
         <td>${esc(s.companyName || '—')}</td>
         <td>${esc(s.category || '—')}</td>
-        <td>${esc(s.plan || '—')}</td>
+        <td>${esc(planLabel(s.plan))}</td>
         <td>${s.userCount || (s.users || []).length || 0} / ${s.seatsAllowed || '—'}</td>
         <td>${statusBadge(s.status)}</td>
         <td>${fmtTime(s.updatedAt)}</td>
@@ -629,7 +642,7 @@
         <div><div class="muted">EN</div><strong>${esc(sys.companyNameEn)}</strong></div>
         <div><div class="muted">الهاتف</div><strong>${esc(sys.companyPhone)}</strong></div>
         <div><div class="muted">البريد</div><strong>${esc(sys.companyEmail)}</strong></div>
-        <div><div class="muted">الخطة</div><strong>${esc(sys.plan)}</strong></div>
+        <div><div class="muted">الخطة</div><strong>${esc(planLabel(sys.plan))}</strong></div>
         <div><div class="muted">الاشتراك</div><strong>${esc(sys.subscriptionStatus)}</strong></div>
       </div>`;
     } else if (ui.viewTab === 'users') body = renderUsersTable(sys, can(user, 'edit'));
@@ -644,7 +657,7 @@
       body = `<div class="kpis" style="margin-bottom:12px">
         <article class="kpi"><span class="kpi-label">الحالة</span><strong>${statusBadge(sys.status)}</strong></article>
         <article class="kpi"><span class="kpi-label">المستخدمون</span><strong>${sys.userCount || 0}/${sys.seatsAllowed || '—'}</strong></article>
-        <article class="kpi"><span class="kpi-label">الخطة</span><strong>${esc(sys.plan)}</strong></article>
+        <article class="kpi"><span class="kpi-label">الخطة</span><strong>${esc(planLabel(sys.plan))}</strong></article>
         <article class="kpi"><span class="kpi-label">آخر مزامنة</span><strong>${fmtTime(sys.lastSync)}</strong></article>
       </div>
       <p>${esc(sys.description || '')}</p>
@@ -704,11 +717,11 @@
     </div>
     <div class="card sm-section"><h4>بيانات الاشتراك</h4>
       <div class="sm-form-grid">
-        ${field('الخطة', 'sm-e-plan', d.plan, { type: 'select', optionsHtml: (m.plans || []).map((p) => `<option ${d.plan === p ? 'selected' : ''}>${esc(p)}</option>`).join('') })}
+        ${field('الخطة', 'sm-e-plan', d.plan, { type: 'select', optionsHtml: (m.plans || []).map((p) => `<option value="${esc(p)}" ${d.plan === p ? 'selected' : ''}>${esc(planLabel(p))}</option>`).join('') })}
         ${field('تاريخ البداية', 'sm-e-sstart', d.subscriptionStart, { type: 'date' })}
         ${field('تاريخ الانتهاء', 'sm-e-send', d.subscriptionEnd, { type: 'date' })}
         ${field('عدد المستخدمين المسموح', 'sm-e-seats', d.seatsAllowed, { type: 'number' })}
-        ${field('حالة الاشتراك', 'sm-e-sstatus', d.subscriptionStatus, { type: 'select', optionsHtml: ['Active', 'Paused', 'Expired'].map((p) => `<option ${d.subscriptionStatus === p ? 'selected' : ''}>${p}</option>`).join('') })}
+        ${field('حالة الاشتراك', 'sm-e-sstatus', d.subscriptionStatus, { type: 'select', optionsHtml: ['Active', 'Paused', 'Expired'].map((p) => `<option value="${p}" ${d.subscriptionStatus === p ? 'selected' : ''}>${esc(statusLabel(p))}</option>`).join('') })}
         <div class="sm-readonly"><span class="muted">عدد المستخدمين الحالي</span><strong>${sysById(m, ui.systemId)?.userCount || 0}</strong></div>
       </div>
     </div>`;
@@ -786,7 +799,7 @@
         ${field('الهاتف', 'sm-w-phone', w.companyPhone)}
         ${field('البريد', 'sm-w-email', w.companyEmail)}`;
     } else if (step === 2) {
-      body = `${field('الخطة', 'sm-w-plan', w.plan || 'Professional', { type: 'select', optionsHtml: (m.plans || []).map((p) => `<option ${w.plan === p ? 'selected' : ''}>${esc(p)}</option>`).join('') })}
+      body = `${field('الخطة', 'sm-w-plan', w.plan || 'Professional', { type: 'select', optionsHtml: (m.plans || []).map((p) => `<option value="${esc(p)}" ${w.plan === p ? 'selected' : ''}>${esc(planLabel(p))}</option>`).join('') })}
         ${field('المقاعد', 'sm-w-seats', w.seatsAllowed || 25, { type: 'number' })}
         ${field('الحالة', 'sm-w-status', w.status || 'Active', { type: 'select', optionsHtml: STATUSES.map((s) => `<option value="${s}" ${w.status === s ? 'selected' : ''}>${esc(statusLabel(s))}</option>`).join('') })}`;
     } else if (step === 3) {
@@ -799,7 +812,7 @@
         <h4>راجع بيانات النظام</h4>
         <p>اسم النظام: <strong>${esc(w.name)}</strong></p>
         <p>الشركة: <strong>${esc(w.companyName)}</strong></p>
-        <p>الخطة: <strong>${esc(w.plan || 'Professional')}</strong></p>
+        <p>الخطة: <strong>${esc(planLabel(w.plan || 'Professional'))}</strong></p>
         <p>المستخدمون: <strong>${esc(w.userCount || 1)}</strong></p>
         <p>الحالة: <strong>${esc(statusLabel(w.status || 'Active'))}</strong></p>
       </div>`;

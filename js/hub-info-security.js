@@ -310,12 +310,12 @@
 
   const renderKpis = (sec, user) => {
     const kpis = [
-      { key: 'score', label: 'درجة الأمان', value: `${sec.score ?? '—'}%`, hint: 'Security Score', prev: sec.prevScore },
-      { key: 'mfa', label: 'نسبة تطبيق MFA', value: `${sec.mfaCoverage ?? '—'}%`, hint: 'Multi-factor', prev: sec.prevMfaCoverage },
-      { key: 'open', label: 'الحوادث المفتوحة', value: sec.openIncidents ?? 0, hint: 'Open incidents', prev: null },
-      { key: 'controls', label: 'الضوابط الأمنية النشطة', value: sec.activeControls ?? 0, hint: 'Active controls', prev: null },
-      { key: 'critical', label: 'المخاطر الحرجة', value: sec.criticalRisks ?? 0, hint: 'Critical risks', prev: null },
-      { key: 'closed', label: 'المغلقة هذا الشهر', value: sec.closedThisMonth ?? 0, hint: 'Closed this month', prev: sec.prevClosedThisMonth },
+      { key: 'score', label: 'درجة الأمان', value: `${sec.score ?? '—'}%`, hint: 'درجة الأمان', prev: sec.prevScore },
+      { key: 'mfa', label: 'نسبة تطبيق المصادقة الثنائية', value: `${sec.mfaCoverage ?? '—'}%`, hint: 'المصادقة الثنائية', prev: sec.prevMfaCoverage },
+      { key: 'open', label: 'الحوادث المفتوحة', value: sec.openIncidents ?? 0, hint: 'الحوادث المفتوحة', prev: null },
+      { key: 'controls', label: 'الضوابط الأمنية النشطة', value: sec.activeControls ?? 0, hint: 'الضوابط النشطة', prev: null },
+      { key: 'critical', label: 'المخاطر الحرجة', value: sec.criticalRisks ?? 0, hint: 'المخاطر الحرجة', prev: null },
+      { key: 'closed', label: 'المغلقة هذا الشهر', value: sec.closedThisMonth ?? 0, hint: 'المغلقة هذا الشهر', prev: sec.prevClosedThisMonth },
     ];
     return `<div class="kpi-grid" data-sec-kpis>
       ${kpis
@@ -797,7 +797,7 @@
       { type: 'mfa', title: 'تقرير MFA', desc: 'تغطية المصادقة متعددة العوامل' },
       { type: 'by-dept', title: 'الحوادث حسب الإدارة', desc: 'توزيع الحوادث على الإدارات' },
       { type: 'full', title: 'التقرير الشهري للإدارة', desc: 'تقرير شامل للقيادة' },
-      { type: 'executive', title: 'Executive Security Summary', desc: 'ملخص تنفيذي للحالة الأمنية' },
+      { type: 'executive', title: window.HubI18n?.label?.('Executive Security Summary') || 'الملخص التنفيذي للأمن', desc: 'ملخص تنفيذي للحالة الأمنية' },
     ];
     const body = ui.report ? buildReportBody(sec, ui.report.type) : '';
     return `

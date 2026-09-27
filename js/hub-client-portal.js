@@ -274,7 +274,7 @@
     return '<article class="cp-sys">' +
       '<div class="cp-sys-top">' +
         '<img src="' + esc(logo) + '" alt="" />' +
-        '<div><strong>' + esc(sys.name) + '</strong><small>' + esc(sys.plan || '—') + '</small></div>' +
+        '<div><strong>' + esc(sys.name) + '</strong><small>' + esc((window.HubI18n&&window.HubI18n.plan?window.HubI18n.plan(sys.plan):null)||sys.plan||'—') + '</small></div>' +
         '<span class="cp-badge-status ' + statusMod(sys.status) + '">' + esc(statusLabel(sys.status)) + '</span>' +
       '</div>' +
       '<p style="margin:0;color:var(--cp-muted);font-size:13px;font-weight:700">' + esc(sys.description || '') + '</p>' +
@@ -367,7 +367,7 @@
     if (renewals.length || unpaid.length) {
       billHtml = '<section class="cp-card"><div class="cp-card-head"><h3>الفوترة القادمة</h3></div><div class="cp-list">';
       renewals.forEach(function (r) {
-        billHtml += '<div class="cp-row"><div><strong>تجديد: ' + esc(r.systemName) + '</strong><small>' + esc(r.plan) + '</small></div><span>' + esc(fmtDate(r.renewsAt)) + '</span></div>';
+        billHtml += '<div class="cp-row"><div><strong>تجديد: ' + esc(r.systemName) + '</strong><small>' + esc((window.HubI18n&&window.HubI18n.plan?window.HubI18n.plan(r.plan):null)||r.plan) + '</small></div><span>' + esc(fmtDate(r.renewsAt)) + '</span></div>';
       });
       unpaid.forEach(function (inv) {
         billHtml += '<div class="cp-row"><div><strong>فاتورة ' + esc(inv.number) + '</strong><small>' + esc(statusLabel(inv.status)) + '</small></div><span>' + money(inv.amount, inv.currency) + '</span></div>';
@@ -418,7 +418,7 @@
     return '<section class="cp-card"><div class="cp-card-head"><h3>اشتراكاتي</h3></div><div class="cp-sys-grid">' + list.map(function (s) {
       var canRenew = ['EXPIRING', 'EXPIRED', 'expiring', 'expired', 'active', 'ACTIVE'].indexOf(String(s.status || '')) >= 0;
       return '<article class="cp-sys"><strong>' + esc(s.systemName) + '</strong>' +
-        '<div>الباقة: <strong>' + esc(s.plan) + '</strong></div>' +
+        '<div>الباقة: <strong>' + esc((window.HubI18n&&window.HubI18n.plan?window.HubI18n.plan(s.plan):null)||s.plan) + '</strong></div>' +
         '<div class="cp-actions"><span class="cp-badge-status ' + statusMod(s.status) + '">' + esc(statusLabel(s.status)) + '</span><span style="font-weight:800">' + money(s.price) + '</span></div>' +
         '<small style="font-weight:800;color:var(--cp-muted)">البداية: ' + esc(fmtDate(s.startedAt)) + ' · التجديد: ' + esc(fmtDate(s.renewsAt)) + '</small>' +
         '<small style="font-weight:800;color:var(--cp-muted)">التجديد التلقائي: ' + (s.autoRenew ? 'مفعّل' : 'غير مفعّل') + '</small>' +

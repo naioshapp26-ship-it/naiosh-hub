@@ -12,6 +12,8 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
 
+  const L = (k, fb) => window.HubI18n?.label?.(k, fb) || fb || k;
+
   const fmt = (iso) => {
     if (!iso) return '—';
     try {
@@ -44,7 +46,7 @@
     const rows = articleRows();
     const k = CR()?.kpis?.() || {};
     return `<div class="card" style="padding:14px">
-      <p class="muted">نفس سجلات <strong>طلبات العملاء</strong> — مفلترة على نوع المقال. Request ID مشترك.</p>
+      <p class="muted">نفس سجلات <strong>طلبات العملاء</strong> — مفلترة على نوع المقال. رقم الطلب مشترك.</p>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px">
         <span class="chip">مقالات في الصندوق: ${k.articles || rows.length}</span>
         <span class="chip">بانتظار المراجعة: ${k.pendingReview || 0}</span>
@@ -52,7 +54,7 @@
       </div>
       <div class="table-wrap"><table class="data" style="width:100%">
         <thead><tr>
-          <th>Request ID</th><th>Article ID</th><th>العنوان</th><th>الكاتب</th><th>الحالة</th><th>تاريخ</th><th>الإجراءات</th>
+          <th>${esc(L('Request ID', 'رقم الطلب'))}</th><th>${esc(L('Article ID', 'رقم المقال'))}</th><th>العنوان</th><th>الكاتب</th><th>الحالة</th><th>تاريخ</th><th>الإجراءات</th>
         </tr></thead>
         <tbody>
           ${
@@ -63,7 +65,7 @@
               <td><code>${esc(r.referenceId || '—')}</code></td>
               <td>${esc(r.articleSnapshot?.title || r.title)}</td>
               <td>${esc(r.customerName || '—')}</td>
-              <td>${esc((CR().STATUS_AR || {})[r.status] || r.status)}</td>
+              <td>${esc((CR().STATUS_AR || {})[r.status] || window.HubI18n?.status?.(r.status) || r.status)}</td>
               <td>${fmt(r.createdAt)}</td>
               <td>
                 <button type="button" class="btn btn-primary btn-sm" data-aopen="${esc(r.id)}">عرض</button>
@@ -76,7 +78,7 @@
             </tr>`
               )
               .join('') ||
-            '<tr><td colspan="7">لا مقالات واردة — عند إرسال مقال من blog.html يظهر هنا وداخل طلبات العملاء معاً.</td></tr>'
+            '<tr><td colspan="7">لا مقالات واردة — عند إرسال مقال من صفحة المدونة يظهر هنا وداخل طلبات العملاء معاً.</td></tr>'
           }
         </tbody>
       </table></div>
@@ -91,12 +93,12 @@
     return `<div class="card" style="padding:16px">
       <button type="button" class="btn btn-ghost btn-sm" data-aback>← رجوع</button>
       <h3>${esc(r.id)} · ${esc(snap.title || r.title)}</h3>
-      <p><code>${esc(r.referenceId)}</code> · ${esc((CR().STATUS_AR || {})[r.status] || r.status)}</p>
+      <p><code>${esc(r.referenceId)}</code> · ${esc((CR().STATUS_AR || {})[r.status] || window.HubI18n?.status?.(r.status) || r.status)}</p>
       <ul class="feed">
         <li><b>الكاتب:</b> ${esc(r.customerName)}</li>
         <li><b>التصنيف:</b> ${esc(snap.category || '—')}</li>
         <li><b>الملخص:</b> ${esc(snap.summary || r.description || '—')}</li>
-        <li><b>المصدر:</b> ${esc(r.sourceModule)} · ${esc(r.sourcePage)}</li>
+        <li><b>المصدر:</b> ${esc(window.HubI18n?.label?.(r.sourceModule) || r.sourceModule)} · ${esc(r.sourcePage)}</li>
       </ul>
       ${snap.body ? `<div style="white-space:pre-wrap;background:#f9fafb;padding:12px;border-radius:10px">${esc(snap.body)}</div>` : ''}
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
@@ -158,7 +160,7 @@
     root.innerHTML = `<div class="art-admin" id="art-admin">
       <div style="margin-bottom:12px">
         <h2 style="margin:0"><i class="fas fa-newspaper"></i> المقالات الواردة</h2>
-        <p style="margin:6px 0 0;color:#6b7280;font-weight:600">عرض متخصص من نفس Customer Requests Registry</p>
+        <p style="margin:6px 0 0;color:#6b7280;font-weight:600">عرض متخصص من نفس ${esc(L('Customer Requests Registry', 'سجل طلبات العملاء'))}</p>
       </div>
       <div id="art-admin-body"></div>
     </div>`;

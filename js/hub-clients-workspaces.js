@@ -50,12 +50,12 @@
         <div class="field"><label>البريد *</label><input id="cl-email" type="email" value="${K.esc(item.email || '')}" /></div>
         <div class="field"><label>رقم العميل</label><input id="cl-clientId" value="${K.esc(item.clientId || '')}" /></div>
         <div class="field"><label>الحالة</label>
-          <select id="cl-status">${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${item.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+          <select id="cl-status">${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${item.status === s ? 'selected' : ''}>${K.esc(window.HubI18n?.status?.(s) || s)}</option>`).join('')}</select>
         </div>
         <div class="field"><label>الشركة</label><input id="cl-company" value="${K.esc(item.company || '')}" /></div>
         <div class="field"><label>الدولة</label><input id="cl-country" value="${K.esc(item.country || '')}" /></div>
         <div class="field"><label>المصدر</label>
-          <select id="cl-source">${['إدخال يدوي', 'System Generated', 'Integration', 'POSHA', 'Register'].map((s) => `<option ${ (item.source || 'إدخال يدوي') === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+          <select id="cl-source">${['إدخال يدوي', 'System Generated', 'Integration', 'POSHA', 'Register'].map((s) => `<option value="${K.esc(s)}" ${(item.source || 'إدخال يدوي') === s ? 'selected' : ''}>${K.esc(window.HubI18n?.label?.(s) || s)}</option>`).join('')}</select>
         </div>
       </div>`;
   };
@@ -75,7 +75,7 @@
         <article class="kpi"><span>المحفظة</span><strong>${c.wallet?.total ?? c.walletTotal ?? 0}</strong></article>
         <article class="kpi"><span>تذاكر</span><strong>${(c.tickets || []).length}</strong></article>
       </div>
-      <p class="muted">${K.esc(c.company || '—')} · ${K.esc(c.country || '—')} · مصدر: ${K.esc(c.source || '—')}</p>
+      <p class="muted">${K.esc(c.company || '—')} · ${K.esc(c.country || '—')} · مصدر: ${K.esc(window.HubI18n?.label?.(c.source) || c.source || '—')}</p>
       <div class="toolbar">
         <button type="button" class="btn btn-sm btn-dark" data-action="cl-status" data-id="${c.id}" data-status="active">تفعيل</button>
         <button type="button" class="btn btn-sm btn-ghost" data-action="cl-status" data-id="${c.id}" data-status="suspended">تعطيل</button>
@@ -87,7 +87,7 @@
           <input id="cl-sys-name" placeholder="الاسم" />
           <button type="button" class="btn btn-primary btn-sm" data-action="cl-assign-sys" data-id="${c.id}">تعيين</button>
         </div>
-        <ul class="feed">${(c.systems || []).map((s) => `<li><b>${K.esc(s.name || s.code)}</b> · ${K.esc(s.plan)} · ${K.esc(s.status)}</li>`).join('') || '<li>لا أنظمة</li>'}</ul>`;
+        <ul class="feed">${(c.systems || []).map((s) => `<li><b>${K.esc(window.HubI18n?.system?.(s.code||s.name)||s.name||s.code)}</b> · ${K.esc(window.HubI18n?.plan?.(s.plan)||s.plan)} · ${K.esc(window.HubI18n?.status?.(s.status)||s.status)}</li>`).join('') || '<li>لا أنظمة</li>'}</ul>`;
     } else if (tab === 'orders') {
       body = `<ul class="feed">${(c.orders || []).map((o) => `<li><b>${K.esc(o.number)}</b> ${K.esc(o.service)} · ${K.esc(o.status)}</li>`).join('') || '<li>لا طلبات</li>'}</ul>`;
     } else if (tab === 'wallet') {
@@ -196,7 +196,7 @@
         title: 'دليل إدارة العملاء',
         dismissed: !!bag.settings?.helpDismissed,
         open: clUi.helpOpen,
-        bodyHtml: `<p>أنشئ عميلاً، افتح ملف 360، عيّن نظامًا، وأضف ملاحظات داخلية. كل إجراء يُسجَّل في Audit مع المصدر.</p>`,
+        bodyHtml: `<p>أنشئ عميلاً، افتح ملف 360، عيّن نظامًا، وأضف ملاحظات داخلية. كل إجراء يُسجَّل في سجل التدقيق مع المصدر.</p>`,
       })}
       ${modal}${drawer}
     </div>`;
@@ -444,7 +444,7 @@
       ${K.renderHeader({
         prefix: 'sp',
         title: 'طلبات تسجيل المشاريع',
-        subtitle: 'Inbox · متابعة · تواصل · تدقيق',
+        subtitle: 'صندوق الوارد · متابعة · تواصل · تدقيق',
         icon: 'fa-inbox',
         actionsHtml: `<button type="button" class="btn btn-ghost btn-sm" data-action="sp-help-open"><i class="fas fa-circle-question"></i></button>`,
       })}
@@ -455,7 +455,7 @@
         title: 'دليل طلبات المشاريع',
         dismissed: !!meta.settings?.helpDismissed,
         open: spUi.helpOpen,
-        bodyHtml: `<p>حدّث الحالة، سجّل «تم التواصل»، وافتح التفاصيل. كل تغيير يُوثَّق في Audit وفي ملاحظات الطلب.</p>`,
+        bodyHtml: `<p>حدّث الحالة، سجّل «تم التواصل»، وافتح التفاصيل. كل تغيير يُوثَّق في سجل التدقيق وفي ملاحظات الطلب.</p>`,
       })}
       ${drawer}
     </div>`;

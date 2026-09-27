@@ -446,6 +446,178 @@
     Pending: 'قيد الانتظار',
     Passed: 'ناجح',
     Failed: 'فشل',
+    boot: 'تشغيل',
+    auth: 'مصادقة',
+    system: 'النظام',
+    grant: 'منح',
+    revoke: 'إلغاء',
+    subscription: 'اشتراك',
+    plan: 'الخطة',
+    office: 'المكتب',
+    employee: 'موظف',
+    customer: 'عميل',
+    branch: 'فرع',
+    platform: 'منصة',
+    read: 'قراءة',
+    write: 'كتابة',
+    admin: 'إدارة',
+    'OPERATING CONTROL': 'غرفة التشغيل',
+    'Unified Dashboard': 'لوحة التحكم الموحدة',
+    // Remaining crawl fixes — display-layer only
+    'System Generated': 'مولّد تلقائياً',
+    Integration: 'تكامل',
+    Register: 'تسجيل',
+    Inbox: 'صندوق الوارد',
+    'Workflow Runs': 'تشغيلات سير العمل',
+    'Customer Requests Registry': 'سجل طلبات العملاء',
+    'Customer Requests': 'طلبات العملاء',
+    'Request ID': 'رقم الطلب',
+    'Article ID': 'رقم المقال',
+    'Hub Launch': 'تشغيل عبر هوب',
+    burn: 'استهلاك',
+    topup: 'شحن',
+    transfer: 'تحويل',
+    'Central Intelligence': 'العقل المركزي',
+    'Central Intelligence & Decision Center': 'مركز العقل المركزي واتخاذ القرار',
+    'Central Intelligence Engine': 'محرك العقل المركزي',
+    Preview: 'المعاينة',
+    'Execution ID': 'معرّف التنفيذ',
+    'Decision ID': 'معرّف القرار',
+    Decision: 'القرار',
+    'Executed By': 'نفّذه',
+    Started: 'البدء',
+    Completed: 'الاكتمال',
+    Affected: 'المتأثر',
+    Result: 'النتيجة',
+    Actions: 'الإجراءات',
+    'Open incidents': 'الحوادث المفتوحة',
+    'Active controls': 'الضوابط النشطة',
+    'Critical risks': 'المخاطر الحرجة',
+    'Executive Security Summary': 'الملخص التنفيذي للأمن',
+    'CRM Production DB': 'قاعدة بيانات إنتاج إدارة العملاء',
+    'Test Connection': 'اختبار الاتصال',
+    'Scan Source': 'فحص المصدر',
+    'ERP Finance API': 'واجهة مالية لتخطيط الموارد',
+    'Wallet Transactions Warehouse': 'مستودع معاملات المحفظة',
+    'Wallet Transactions': 'معاملات المحفظة',
+    'Data Warehouse': 'مستودع البيانات',
+    'Ads Studio CSV Drop': 'إسقاط ملفات استوديو الإعلانات',
+    'Excel / CSV': 'إكسل / جداول',
+    'Ads Studio': 'استوديو الإعلانات',
+    Integrations: 'التكاملات',
+    'CRM → Hub Catalog': 'إدارة العملاء → كتالوج هوب',
+    'Database Sync': 'مزامنة قاعدة البيانات',
+    'Hub → BI Warehouse': 'هوب → مستودع ذكاء الأعمال',
+    'Ads Drop Zone': 'منطقة إسقاط الإعلانات',
+    'Authentication Error — Access Key expired': 'خطأ مصادقة — انتهت صلاحية مفتاح الوصول',
+    'schema v2': 'مخطط الإصدار 2',
+    Pagination: 'ترقيم الصفحات',
+    'HR Admin': 'مسؤول الموارد البشرية',
+    'HR Manager': 'مدير الموارد البشرية',
+    'Connections — HR System': 'الاتصالات — نظام الموارد البشرية',
+    'HR System': 'نظام الموارد البشرية',
+    'Sync Now': 'مزامنة الآن',
+    'View Logs': 'عرض السجلات',
+    Configure: 'تهيئة',
+    'System Admin': 'مسؤول النظام',
+    'System Manager': 'مدير النظام',
+    Operator: 'مشغّل',
+    Auditor: 'مدقق',
+    'Measurement Engine': 'محرك القياس',
+    'domain aggregate': 'تجميع المجال',
+    Source: 'المصدر',
+    Formula: 'الصيغة',
+    'Internal Systems': 'الأنظمة الداخلية',
+    'External Systems': 'الأنظمة الخارجية',
+    'AI Connector': 'موصل الذكاء الاصطناعي',
+    'Client Connector': 'موصل العملاء',
+    internal: 'داخلي',
+    external: 'خارجي',
+    ai: 'ذكاء اصطناعي',
+    client: 'عميل',
+    Method: 'الطريقة',
+    Path: 'المسار',
+    Calls: 'الاستدعاءات',
+    Inbound: 'وارد',
+    Outbound: 'صادر',
+    ETL: 'استخراج وتحويل وتحميل',
+    File: 'ملف',
+    Connected: 'متصل',
+    Success: 'نجاح',
+    Failed: 'فشل',
+    Waiting: 'قيد الانتظار',
+    Sync: 'مزامنة',
+    Logs: 'السجلات',
+    Wallets: 'المحافظ',
+    Pricing: 'التسعير',
+    Ledger: 'السجل',
+    'Excel Import': 'استيراد إكسل',
+    Achievement: 'إنجاز',
+    Campaign: 'حملة',
+    'Points System': 'نظام النقاط',
+    Badge: 'شارة',
+    Upstream: 'المنبع',
+    Consumers: 'المستهلكون',
+    Production: 'إنتاج',
+    Staging: 'تجريبي',
+    'SQL Database': 'قاعدة بيانات SQL',
+    'Cloud Storage': 'تخزين سحابي',
+    'Manual Entry': 'إدخال يدوي',
+    Other: 'أخرى',
+    Table: 'جدول',
+    Stream: 'تدفق',
+    Document: 'مستند',
+    Dataset: 'مجموعة بيانات',
+    'Side Projects': 'المشاريع الجانبية',
+    'Rent Admin': 'موافقات الإيجار',
+    'POSHA Ops': 'عمليات بوشا',
+    Governance: 'الحوكمة',
+  };
+
+  /** خطط الاشتراك — القيمة الداخلية تبقى إنجليزية */
+  const PLANS = {
+    standard: 'قياسية',
+    professional: 'احترافية',
+    enterprise: 'مؤسسية',
+    free: 'مجانية',
+    trial: 'تجريبية',
+    basic: 'أساسية',
+    Standard: 'قياسية',
+    Professional: 'احترافية',
+    Enterprise: 'مؤسسية',
+    Basic: 'أساسية',
+    Free: 'مجانية',
+    Trial: 'تجريبية',
+  };
+
+  /** أسماء أنظمة للعرض (الكود يبقى داخليًا) */
+  const SYSTEMS = {
+    ERP: 'تخطيط موارد المؤسسة (ERP)',
+    LAW: 'نظام القانون (LAW)',
+    FIT: 'اللياقة والصحة (FIT)',
+    NAIS: 'تحليلات ذكاء نايوش (NAIS)',
+    ACADEMY: 'أكاديمية نايوش (ACADEMY)',
+    SMARTX: 'منصة الفيديو سمارتكس (SMARTX)',
+    EDUSMARTX: 'التعلّم عبر سمارتكس (EDUSMARTX)',
+    EDUNAIOSH: 'منصة التعلّم نايوش (EDUNAIOSH)',
+    LMS: 'نظام إدارة التعلّم (LMS)',
+    CRM: 'إدارة علاقات العملاء (CRM)',
+    POSHA: 'بوشا (POSHA)',
+    HUB: 'نايوش هوب (HUB)',
+  };
+
+  /** أنواع سجل النشاط */
+  const ACTIVITY_KINDS = {
+    boot: 'تشغيل',
+    auth: 'مصادقة',
+    system: 'النظام',
+    grant: 'منح',
+    revoke: 'إلغاء',
+    report: 'تقرير',
+    decision: 'قرار',
+    alert: 'تنبيه',
+    compliance: 'امتثال',
+    architecture: 'معمارية',
   };
 
   const BRAND_ALLOW = new Set([
@@ -478,6 +650,11 @@
     'LMS',
     'LXP',
     'ETL',
+    'ACADEMY',
+    'SMARTX',
+    'EDUSMARTX',
+    'EDUNAIOSH',
+    'POSHA',
   ]);
 
   const normalizeKey = (k) => String(k || '').trim();
@@ -491,7 +668,11 @@
     if (COMMON[k.toLowerCase()] != null) return COMMON[k.toLowerCase()];
     if (STATUS[k.toLowerCase()] != null) return STATUS[k.toLowerCase()];
     if (ROLES[k.toLowerCase()] != null) return ROLES[k.toLowerCase()];
+    if (PLANS[k.toLowerCase()] != null) return PLANS[k.toLowerCase()];
+    if (ACTIVITY_KINDS[k.toLowerCase()] != null) return ACTIVITY_KINDS[k.toLowerCase()];
+    if (SYSTEMS[k.toUpperCase()] != null) return SYSTEMS[k.toUpperCase()];
     if (LABELS[k] != null) return LABELS[k];
+    if (LABELS[k.toLowerCase()] != null) return LABELS[k.toLowerCase()];
     if (fallback != null) return fallback;
     return k;
   };
@@ -501,7 +682,7 @@
     if (!raw) return fallback || '—';
     if (hasArabic(raw)) return raw;
     const k = raw.toLowerCase().replace(/\s+/g, '_');
-    return STATUS[k] || STATUS[raw.toLowerCase()] || fallback || LABELS[raw] || raw;
+    return STATUS[k] || STATUS[raw.toLowerCase()] || fallback || LABELS[raw] || LABELS[k] || raw;
   };
 
   const role = (code, fallback) => {
@@ -511,10 +692,42 @@
     return ROLES[k] || fallback || t(code, String(code || '—'));
   };
 
+  const plan = (code, fallback) => {
+    const raw = String(code || '').trim();
+    if (!raw) return fallback || '—';
+    if (hasArabic(raw)) return raw;
+    return PLANS[raw.toLowerCase()] || fallback || raw;
+  };
+
+  const system = (code, fallback) => {
+    const raw = String(code || '').trim();
+    if (!raw) return fallback || '—';
+    if (hasArabic(raw) && !/^[A-Z0-9_-]+$/i.test(raw)) return raw;
+    const fromLauncher = typeof window !== 'undefined' ? window.HubLauncher?.SYSTEM_META?.[raw.toUpperCase()]?.nameAr : null;
+    return SYSTEMS[raw.toUpperCase()] || fromLauncher || fallback || raw;
+  };
+
+  const activityKind = (code, fallback) => {
+    const raw = String(code || '').trim();
+    if (!raw) return fallback || '—';
+    if (hasArabic(raw)) return raw;
+    return ACTIVITY_KINDS[raw.toLowerCase()] || t(raw, fallback || raw);
+  };
+
+  const permission = (code, fallback) => {
+    const raw = String(code || '').trim();
+    if (!raw) return fallback || '—';
+    if (hasArabic(raw)) return raw;
+    return LABELS[raw] || LABELS[raw.toLowerCase()] || COMMON[raw.toLowerCase()] || fallback || raw;
+  };
+
   const label = (englishLabel, arabicFallback) => {
     const k = normalizeKey(englishLabel);
     if (!k) return arabicFallback || '';
-    if (hasArabic(k)) return k;
+    if (hasArabic(k) && !/^[A-Za-z]/.test(k)) return k;
+    if (hasArabic(k) && LABELS[k] == null && PLANS[k.toLowerCase()] == null && SYSTEMS[k.toUpperCase()] == null) return k;
+    const mapped = t(k, null);
+    if (mapped && mapped !== k) return mapped;
     if (LABELS[k] != null) return LABELS[k];
     if (BRAND_ALLOW.has(k)) return k;
     return arabicFallback || k;
@@ -526,7 +739,7 @@
     if (typeof item === 'string') return label(item, opts.fallback);
     const ar = item.nameAr || item.titleAr || item.labelAr || item.title || '';
     if (ar && hasArabic(ar) && !opts.preferMapped) return ar;
-    const en = item.name || item.title || item.label || item.axis || '';
+    const en = item.name || item.title || item.label || item.axis || item.axisKey || '';
     const mapped = label(en, ar || opts.fallback);
     if (mapped) return mapped;
     return ar || en || opts.fallback || '—';
@@ -541,13 +754,12 @@
     if (hasArabic(s)) return false;
     if (BRAND_ALLOW.has(s)) return false;
     if (/@/.test(s) || /^https?:/i.test(s) || /^\d+(\.\d+)?%?$/.test(s)) return false;
-    // قاموس الواجهة أولًا (قبل استثناء الأكواد القصيرة مثل Save)
-    if (LABELS[s] != null || STATUS[s.toLowerCase()] != null || COMMON[s.toLowerCase()] != null) return true;
-    if (/^(Save|Cancel|Delete|Edit|Add|Search|Filter|Status|Loading|Waiting|Pending|Failed|Passed|Active|Inactive)$/i.test(s))
+    if (LABELS[s] != null || LABELS[s.toLowerCase()] != null || STATUS[s.toLowerCase()] != null || COMMON[s.toLowerCase()] != null)
       return true;
-    // أكواد تقنية قصيرة بلا مسافات
+    if (PLANS[s.toLowerCase()] != null || ACTIVITY_KINDS[s.toLowerCase()] != null) return true;
+    if (/^(Save|Cancel|Delete|Edit|Add|Search|Filter|Status|Loading|Waiting|Pending|Failed|Passed|Active|Inactive|Close|View|Open|Back|Next|Previous|Submit|Reset|Update|Create|Remove|Confirm|Yes|No|Ok|Layer|System|Systems|building|planned|ready|draft|published|standard|enterprise|professional|auth|boot)$/i.test(s))
+      return true;
     if (/^[A-Z0-9._-]{2,}$/i.test(s) && !/\s/.test(s) && s.length <= 12) return false;
-    // عبارات إنجليزية متعددة الكلمات
     if (/^[A-Za-z][A-Za-z0-9+&/.-]*(?:\s+[A-Za-z][A-Za-z0-9+&/.-]*)+$/.test(s)) return true;
     return false;
   };
@@ -556,6 +768,10 @@
     t,
     status,
     role,
+    plan,
+    system,
+    activityKind,
+    permission,
     label,
     displayName,
     looksLikeUiEnglish,
@@ -564,6 +780,9 @@
     ROLES,
     COMMON,
     LABELS,
+    PLANS,
+    SYSTEMS,
+    ACTIVITY_KINDS,
     isAllowedBrand,
     BRAND_ALLOW,
   };

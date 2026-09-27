@@ -700,7 +700,7 @@
         </table></div></article>`;
     } else if (ui.tab === 'executions') {
       body = `<article class="card"><div class="table-wrap"><table class="data">
-        <thead><tr><th>Execution ID</th><th>Decision ID</th><th>Decision</th><th>Executed By</th><th>Started</th><th>Completed</th><th>Affected</th><th>Status</th><th>Result</th><th>Actions</th></tr></thead>
+        <thead><tr><th>معرّف التنفيذ</th><th>معرّف القرار</th><th>القرار</th><th>نفّذه</th><th>البدء</th><th>الاكتمال</th><th>المتأثر</th><th>الحالة</th><th>النتيجة</th><th>الإجراءات</th></tr></thead>
         <tbody>${(c.executions || [])
           .map(
             (e) => `<tr>
@@ -792,10 +792,10 @@
     return `<div class="hub-ops-ws hub-operating-ws hub-ci-ws">
       ${K.renderHeader({
         prefix: 'cr',
-        title: 'العقل المركزي — Central Intelligence & Decision Center',
+        title: 'العقل المركزي — مركز اتخاذ القرار',
         subtitle: 'رؤية → توصية → قرار → موافقة → تنفيذ → أثر → سجل',
         icon: 'fa-brain',
-        badgeText: 'CENTRAL INTELLIGENCE',
+        badgeText: 'العقل المركزي',
         actionsHtml: headerActions(),
       })}
       ${explainCard()}
@@ -811,10 +811,10 @@
           <li>افتح التوصية.</li>
           <li>راجع البيانات التي أدت إليها.</li>
           <li>حوّل التوصية إلى قرار.</li>
-          <li>راجع Preview قبل التنفيذ.</li>
+          <li>راجع المعاينة قبل التنفيذ.</li>
           <li>أرسل القرار للاعتماد.</li>
           <li>نفّذ القرار بعد الاعتماد.</li>
-          <li>تابع Execution ID والنتيجة والأثر.</li>
+          <li>تابع معرّف التنفيذ والنتيجة والأثر.</li>
         </ol>`,
       })}
       ${wizardHtml()}

@@ -62,7 +62,7 @@
   const renderHeader = ({ prefix, title, subtitle, icon, actionsHtml = '', badgeText = 'مساحة عمل المؤسسة' }) => `
     <div class="hub-ws-hero">
       <div class="hub-ws-hero-main">
-        <div class="hub-ws-kicker"><i class="fas ${esc(icon || 'fa-layer-group')}"></i> NAIOSH HUB · ${esc(badgeText)}</div>
+        <div class="hub-ws-kicker"><i class="fas ${esc(icon || 'fa-layer-group')}"></i> NAIOSH HUB · ${esc(window.HubI18n?.label?.(badgeText) || badgeText)}</div>
         <h2 class="hub-ws-title">${esc(title)}</h2>
         <p class="hub-ws-sub">${esc(subtitle || '')}</p>
       </div>
@@ -181,7 +181,7 @@
                 .map(
                   (a) => `<tr>
                     <td>${esc(fmt(a.at))}</td>
-                    <td>${esc(a.action || a.kind || '—')}</td>
+                    <td>${esc(window.HubI18n?.label?.(a.action || a.kind) || a.action || a.kind || '—')}</td>
                     <td>${esc(a.detail || a.text || '—')}</td>
                     <td>${esc(a.by || '—')}</td>
                     <td>${esc(a.source || '—')}</td>
@@ -193,7 +193,7 @@
       </tbody>
     </table></div>`;
 
-  const sourceBadge = (src) => badge(src || 'إدخال يدوي', 'badge-outline');
+  const sourceBadge = (src) => badge(window.HubI18n?.label?.(src) || src || 'إدخال يدوي', 'badge-outline');
 
   window.HubWsKit = {
     esc,

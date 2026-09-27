@@ -39,18 +39,18 @@
   const TITLES = {
     overview: ['مركز التحكم العالمي', 'مؤشرات قابلة للنقر · يتطلب إجراء · مصدر · سجل عمليات'],
     operating: ['آلية تشغيل نايوش هوب', 'اشتراكات · مكاتب · خدمات موحّدة · نشاط · تدقيق'],
-    core: ['العقل المركزي — Central Intelligence', 'قرارات · توصيات · رؤى · تنبؤات · شذوذ · قواعد · تنفيذ · موافقات'],
+    core: ['العقل المركزي', 'قرارات · توصيات · رؤى · تنبؤات · شذوذ · قواعد · تنفيذ · موافقات'],
     tasks: ['إدارة المهام', 'إدارة كاملة · مصدر · تدقيق · لوحة حالات · يتطلب إجراء'],
     measurement: ['القياس الموحّد', 'درجات · مؤشرات بصيغة · إعادة حساب موثّقة'],
     reports: ['مركز التقارير', 'توليد · عرض · تصدير JSON · جدول · تدقيق'],
-    integration: ['التكامل والبوابة', 'موصلات · مزامنة · API · فحص بوابة · تدقيق'],
+    integration: ['التكامل والبوابة', 'موصلات · مزامنة · بوابة واجهات · فحص · تدقيق'],
     'posha-clients': ['عملاء هوب', 'إدارة العملاء والطلبات والدعم والتنبيهات من مكان واحد'],
     'site-settings': ['إعدادات الموقع', 'إدارة إعدادات المنصة والمتاجر والطلبات والدفع والإعلانات والتكاملات والأمان من مكان واحد'],
     'clients-mgmt': ['إدارة العملاء', 'العملاء 360 · إدارة كاملة · مصدر · ملاحظات داخلية · تدقيق'],
     'roles-permissions': ['إدارة فريق العمل والصلاحيات', 'عيّن المسؤولين عن إدارة نايوش هوب وأنظمتها، وحدد لكل شخص مكان عمله ودوره والصلاحيات المسموح بها.'],
     notifications: ['مركز إشعارات نايوش هوب', 'مصدر واضح · سبب · إجراء · طلب مرتبط'],
-    'side-project-regs': ['طلبات تسجيل المشاريع', 'Inbox · متابعة · تواصل · تدقيق'],
-    'content-articles': ['المقالات الواردة', 'مراجعة · اعتماد · نشر · Workflow Runs'],
+    'side-project-regs': ['طلبات تسجيل المشاريع', 'صندوق الوارد · متابعة · تواصل · تدقيق'],
+    'content-articles': ['المقالات الواردة', 'مراجعة · اعتماد · نشر · تشغيلات سير العمل'],
     'search-admin': [
       'إدارة محرك البحث',
       'لوحة التحكم لنفس محرك البحث الشامل في صفحة البحث العامة — مصدر حقيقة موحّد للفهرس والنوايا والقوائم السريعة.',
@@ -71,7 +71,7 @@
     'info-security': ['أمن المعلومات', 'حماية · إدارة · حوادث · مخاطر · ضوابط · تقارير'],
     'data-governance': ['حوكمة البيانات', 'كتالوج · مصادر · جودة · رحلة البيانات · سياسات · اعتمادات'],
     'systems-automation': ['أتمتة الأنظمة', 'إنشاء · تشغيل · قوالب · سجل عمليات · اتصالات'],
-    workforce: ['القوى العاملة', 'موظفين أولاً · بحث وفلاتر · Pagination · ملف موظف · مكافآت واعتماد · مزامنة HR'],
+    workforce: ['القوى العاملة', 'موظفين أولاً · بحث وفلاتر · ترقيم الصفحات · ملف موظف · مكافآت واعتماد · مزامنة الموارد البشرية'],
     systems: ['سوق الأنظمة التشغيلية', 'إضافة · تعديل فعلي · مستخدمون · اشتراك · تكاملات · سجل تغييرات'],
     settings: ['إعدادات النظام', 'مركز التحكم في إعدادات المنصة: عامة · مستخدمون · متجر · طلبات · أمان · سجل التغييرات'],
   };
@@ -397,10 +397,14 @@
 
     const tl = HubStore.get().timeline;
     const p0 = HubStore.get().empire?.priorities?.[0];
+    const phaseAxis = p0
+      ? window.HubI18n?.displayName?.(p0) || window.HubI18n?.label?.(p0.axis || p0.axisKey) || p0.axis || p0.axisKey
+      : tl.phase1.name;
+    const phaseProgress = p0 ? p0.progress : tl.phase1.progress;
     $('#sidebar-phase').innerHTML = `
       <strong>أول 6 أشهر</strong>
-      <div>${p0 ? `P${p0.order}: ${esc(p0.axis)} · ${p0.progress}%` : `${esc(tl.phase1.name)} · ${tl.phase1.progress}%`}</div>
-      ${bar(p0 ? p0.progress : tl.phase1.progress)}
+      <div>${p0 ? `أولوية ${p0.order}: ${esc(phaseAxis)} · ${phaseProgress}%` : `${esc(phaseAxis)} · ${phaseProgress}%`}</div>
+      ${bar(phaseProgress)}
     `;
   };
 
@@ -797,7 +801,7 @@
         <div class="field"><label>رمز النظام</label><input id="app-code" placeholder="LAW" /></div>
         <div class="field"><label>الاسم بالعربي</label><input id="app-name" placeholder="نظام جديد لنايوش" /></div>
         <div class="field"><label>التصنيف</label><input id="app-cat" placeholder="أنظمة نايوش" /></div>
-        <div class="field"><label>رابط التشغيل المباشر</label><input id="app-url" placeholder="systems/erp.html" /></div>
+        <div class="field"><label>رابط التشغيل المباشر</label><input id="app-url" placeholder="مثال: نظام تخطيط الموارد" /></div>
         <button class="btn btn-primary" data-action="register-app"><i class="fas fa-plus"></i> تسجيل سريع</button>
         <a class="btn btn-ghost" href="apps.html" target="_blank">فتح السجل العام</a>
       </div>
@@ -809,7 +813,7 @@
       </div>
       <article class="card" style="margin-top:12px">
         <h3><span class="title-left"><i class="fas fa-cubes icon"></i> اضغط النظام → انتقال مباشر إليه</span>
-          <span class="badge badge-red">Hub Launch</span>
+          <span class="badge badge-red">${esc(window.HubI18n?.label?.('Hub Launch') || 'تشغيل عبر هوب')}</span>
         </h3>
         <div class="table-wrap"><table class="data">
           <thead><tr><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>الصحة</th><th>آخر مزامنة</th><th>الحالة</th><th>تشغيل</th>${metaHead()}<th></th></tr></thead>
@@ -1266,9 +1270,9 @@
     return `
       <div class="kpi-grid">
         <article class="kpi"><span>خزينة الإمبراطورية</span><strong>${w.treasury.toLocaleString('en-US')}</strong><small>نقطة</small></article>
-        <article class="kpi"><span>محافظ نشطة</span><strong>${w.wallets.length}</strong><small>Wallets</small></article>
-        <article class="kpi"><span>خدمات مسعّرة</span><strong>${w.pricing.length}</strong><small>Pricing</small></article>
-        <article class="kpi"><span>حركات السجل</span><strong>${w.ledger.length}</strong><small>Ledger</small></article>
+        <article class="kpi"><span>محافظ نشطة</span><strong>${w.wallets.length}</strong><small>${esc(window.HubI18n?.label?.('Wallets') || 'المحافظ')}</small></article>
+        <article class="kpi"><span>خدمات مسعّرة</span><strong>${w.pricing.length}</strong><small>${esc(window.HubI18n?.label?.('Pricing') || 'التسعير')}</small></article>
+        <article class="kpi"><span>حركات السجل</span><strong>${w.ledger.length}</strong><small>${esc(window.HubI18n?.label?.('Ledger') || 'السجل')}</small></article>
       </div>
       <div class="toolbar">
         <div class="field"><label>المحفظة</label>
@@ -1300,7 +1304,7 @@
           <ul class="feed">
             ${w.ledger
               .slice(0, 8)
-              .map((l) => `<li><b>${esc(l.type)}:</b> ${esc(l.party)} · ${l.amount} — ${esc(l.note)}<small>${fmtTime(l.at)}</small></li>`)
+              .map((l) => `<li><b>${esc(window.HubI18n?.label?.(l.type) || l.type)}:</b> ${esc(l.party)} · ${l.amount} — ${esc(l.note)}<small>${fmtTime(l.at)}</small></li>`)
               .join('')}
           </ul>
         </article>

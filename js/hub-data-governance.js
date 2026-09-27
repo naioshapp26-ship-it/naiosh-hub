@@ -34,6 +34,8 @@
     'Manual Entry',
     'Other',
   ];
+  const L = (k, fb) => window.HubI18n?.label?.(k, fb) || fb || k;
+  const disp = (v) => (v == null || v === '' ? '—' : L(v, String(v)));
   const SOURCE_STATUSES = [
     { v: 'connected', l: 'متصل' },
     { v: 'degraded', l: 'متدهور' },
@@ -256,13 +258,13 @@
       .forEach((a) => items.push({ kind: 'unclassified', id: a.id, text: `أصل غير مصنّف: ${a.name}`, tab: 'catalog', filter: 'unclassified' }));
     activeSources(dg)
       .filter((s) => s.status === 'failed' || s.status === 'disconnected')
-      .forEach((s) => items.push({ kind: 'source', id: s.id, text: `مشكلة مصدر: ${s.name} (${sourceStatusLabel(s.status)})`, tab: 'sources' }));
+      .forEach((s) => items.push({ kind: 'source', id: s.id, text: `مشكلة مصدر: ${disp(s.name)} (${sourceStatusLabel(s.status)})`, tab: 'sources' }));
     openIssues(dg).forEach((q) =>
       items.push({ kind: 'quality', id: q.id, text: `مشكلة جودة: ${q.rule || q.dataset} (${q.severity})`, tab: 'quality' })
     );
     activeAssets(dg)
       .filter((a) => !a.owner || !a.steward)
-      .forEach((a) => items.push({ kind: 'owner', id: a.id, text: `مالك/ steward ناقص: ${a.name}`, tab: 'catalog', filter: 'missing_owner' }));
+      .forEach((a) => items.push({ kind: 'owner', id: a.id, text: `مالك/مسؤول بيانات ناقص: ${a.name}`, tab: 'catalog', filter: 'missing_owner' }));
     (dg.approvals || [])
       .filter((a) => a.status === 'pending')
       .forEach((a) => items.push({ kind: 'approval', id: a.id, text: `اعتماد معلّق: ${a.entityLabel}`, tab: 'approvals' }));
@@ -415,7 +417,7 @@
       <label class="field">النوع<select data-dg-change="assetType"><option value="">الكل</option>${ASSET_TYPES.map((t) => `<option value="${esc(t)}" ${ui.filters.assetType === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
       <label class="field">الحالة<select data-dg-change="assetStatus"><option value="">الكل</option>${ASSET_STATUSES.map((s) => `<option value="${esc(s.v)}" ${ui.filters.assetStatus === s.v ? 'selected' : ''}>${esc(s.l)}</option>`).join('')}</select></label>
       <label class="field">التصنيف<select data-dg-change="assetClassification"><option value="">الكل</option>${CLASSIFICATIONS.map((c) => `<option value="${esc(c)}" ${ui.filters.assetClassification === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
-      <label class="field">المصدر<select data-dg-change="assetSource"><option value="">الكل</option>${sources.map((s) => `<option value="${esc(s.id)}" ${ui.filters.assetSource === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
+      <label class="field">المصدر<select data-dg-change="assetSource"><option value="">الكل</option>${sources.map((s) => `<option value="${esc(s.id)}" ${ui.filters.assetSource === s.id ? 'selected' : ''}>${esc(disp(s.name))}</option>`).join('')}</select></label>
       <label class="field">المالك<select data-dg-change="assetOwner"><option value="">الكل</option>${owners.map((o) => `<option value="${esc(o)}" ${ui.filters.assetOwner === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label>
       <label class="field">النظام<select data-dg-change="assetSystem"><option value="">الكل</option>${systems.map((s) => `<option value="${esc(s)}" ${ui.filters.assetSystem === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
       <label class="field">ترتيب<select data-dg-change="sort"><option value="updated_desc" ${ui.sort === 'updated_desc' ? 'selected' : ''}>الأحدث</option><option value="updated_asc" ${ui.sort === 'updated_asc' ? 'selected' : ''}>الأقدم</option><option value="name_asc" ${ui.sort === 'name_asc' ? 'selected' : ''}>الاسم</option><option value="quality_desc" ${ui.sort === 'quality_desc' ? 'selected' : ''}>الجودة</option></select></label>
@@ -440,7 +442,7 @@
                     if (can(user, 'archive_asset')) acts.push(`<button type="button" class="btn btn-sm btn-ghost" data-action="dg-confirm" data-kind="archive_asset" data-id="${esc(a.id)}">أرشفة</button>`);
                     return `<tr>
                     <td>${esc(a.id)}</td><td><strong>${esc(a.name)}</strong></td><td>${esc(a.type)}</td>
-                    <td>${esc(a.sourceName || '—')}</td><td>${esc(a.system || '—')}</td>
+                    <td>${esc(disp(a.sourceName) || '—')}</td><td>${esc(window.HubI18n?.system?.(a.system) || disp(a.system) || '—')}</td>
                     <td>${esc(a.owner || '—')}</td><td>${esc(a.steward || '—')}</td>
                     <td>${a.classification ? badge(a.classification, 'classification') : '—'}</td>
                     <td>${esc(a.sensitivity || '—')}</td><td>${a.quality ?? '—'}%</td><td>${badge(statusLabel(a.status))}</td>
@@ -487,10 +489,10 @@
               ? rows
                   .map((s) => {
                     const acts = [];
-                    if (can(user, 'test_source')) acts.push(`<button type="button" class="btn btn-sm btn-dark" data-action="dg-test-source" data-id="${esc(s.id)}">Test Connection</button>`);
-                    if (can(user, 'scan_source')) acts.push(`<button type="button" class="btn btn-sm btn-primary" data-action="dg-scan-source" data-id="${esc(s.id)}">Scan Source</button>`);
+                    if (can(user, 'test_source')) acts.push(`<button type="button" class="btn btn-sm btn-dark" data-action="dg-test-source" data-id="${esc(s.id)}">${esc(L('Test Connection', 'اختبار الاتصال'))}</button>`);
+                    if (can(user, 'scan_source')) acts.push(`<button type="button" class="btn btn-sm btn-primary" data-action="dg-scan-source" data-id="${esc(s.id)}">${esc(L('Scan Source', 'فحص المصدر'))}</button>`);
                     if (can(user, 'edit_source')) acts.push(`<button type="button" class="btn btn-sm btn-ghost" data-action="dg-modal" data-modal="source_edit" data-id="${esc(s.id)}">تعديل</button>`);
-                    return `<tr><td>${esc(s.id)}</td><td><strong>${esc(s.name)}</strong></td><td>${esc(s.type)}</td><td>${esc(s.system || '—')}</td>
+                    return `<tr><td>${esc(s.id)}</td><td><strong>${esc(disp(s.name))}</strong></td><td>${esc(disp(s.type))}</td><td>${esc(window.HubI18n?.system?.(s.system) || disp(s.system) || '—')}</td>
                     <td>${badge(sourceStatusLabel(s.status))}</td><td>${esc(fmtTime(s.lastSync))}</td><td>${s.assetsCount ?? 0}</td><td>${acts.join(' ') || '—'}</td></tr>`;
                   })
                   .join('')
@@ -499,14 +501,14 @@
         </tbody>
       </table></div>
       <article class="card" style="margin-top:12px">
-        <h3><span class="title-left"><i class="fas fa-link icon"></i> التكاملات (Integrations)</span></h3>
+        <h3><span class="title-left"><i class="fas fa-link icon"></i> التكاملات</span></h3>
         <div class="table-wrap"><table class="data">
           <thead><tr><th>الاسم</th><th>النوع</th><th>الاتجاه</th><th>الحالة</th><th>آخر مزامنة</th><th>سجلات</th><th>خطأ</th></tr></thead>
           <tbody>
             ${(dg.integrations || [])
               .map(
-                (i) => `<tr><td>${esc(i.name)}</td><td>${esc(i.type)}</td><td>${esc(i.direction)}</td>
-                <td>${badge(i.status)}</td><td>${esc(fmtTime(i.lastSync))}</td><td>${i.records ?? 0}</td><td><small>${esc(i.lastError || '—')}</small></td></tr>`
+                (i) => `<tr><td>${esc(disp(i.name))}</td><td>${esc(disp(i.type))}</td><td>${esc(disp(i.direction))}</td>
+                <td>${badge(window.HubI18n?.status?.(i.status) || i.status)}</td><td>${esc(fmtTime(i.lastSync))}</td><td>${i.records ?? 0}</td><td><small>${esc(i.lastError ? disp(i.lastError) : '—')}</small></td></tr>`
               )
               .join('') || '<tr><td colspan="7" class="empty">لا تكاملات.</td></tr>'}
           </tbody>
@@ -518,17 +520,17 @@
     const ln = asset.lineage || { upstream: [], node: {}, downstream: [] };
     const nodeBtn = (n, type) =>
       n?.name
-        ? `<button type="button" class="btn btn-sm btn-ghost" data-action="dg-lineage-node" data-name="${esc(n.name)}" title="${esc(type)}">${esc(n.name)}</button>`
+        ? `<button type="button" class="btn btn-sm btn-ghost" data-action="dg-lineage-node" data-name="${esc(n.name)}" title="${esc(L(type, type))}">${esc(disp(n.name))}</button>`
         : '';
     const up = (ln.upstream || []).map((n) => nodeBtn(n, 'upstream')).join(' ');
     const down = (ln.downstream || []).map((n) => nodeBtn(n, 'downstream')).join(' ');
     const mid = nodeBtn(ln.node || { name: asset.name }, 'asset');
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px">
-      <div><span class="badge badge-outline">Upstream</span><div style="margin-top:8px">${up || '<span class="empty">—</span>'}</div></div>
+      <div><span class="badge badge-outline">${esc(L('Upstream', 'المنبع'))}</span><div style="margin-top:8px">${up || '<span class="empty">—</span>'}</div></div>
       <div style="font-size:1.4rem">↓</div>
       <div>${mid}</div>
       <div style="font-size:1.4rem">↓</div>
-      <div><span class="badge badge-outline">Consumers</span><div style="margin-top:8px">${down || '<span class="empty">—</span>'}</div></div>
+      <div><span class="badge badge-outline">${esc(L('Consumers', 'المستهلكون'))}</span><div style="margin-top:8px">${down || '<span class="empty">—</span>'}</div></div>
     </div>`;
   };
 
@@ -726,7 +728,7 @@
     }
     if (type === 'sources' || type === 'full') {
       lines.push('<h3>المصادر</h3><ul>');
-      activeSources(dg).forEach((s) => lines.push(`<li>${esc(s.name)}: ${esc(sourceStatusLabel(s.status))}</li>`));
+      activeSources(dg).forEach((s) => lines.push(`<li>${esc(disp(s.name))}: ${esc(sourceStatusLabel(s.status))}</li>`));
       lines.push('</ul>');
     }
     if (type === 'classification' || type === 'full') {
@@ -892,7 +894,7 @@
           .join('') || '<tr><td colspan="5" class="empty">لا حقول.</td></tr>'}
       </tbody></table></div>`;
     } else if (tab === 'source') {
-      body = `<p>المصدر: <strong>${esc(asset.sourceName || '—')}</strong> (${esc(asset.sourceId || '')})</p>
+      body = `<p>المصدر: <strong>${esc(disp(asset.sourceName) || '—')}</strong> (<code data-tech>${esc(asset.sourceId || '')}</code>)</p>
         <p>النظام: ${esc(asset.system || '—')} · DB: ${esc(asset.database || '—')} · Schema: ${esc(asset.schema || '—')} · Table: ${esc(asset.tableName || '—')}</p>
         <h4>SOURCE → … → CONSUMERS</h4>${renderLineageChain(asset)}`;
     } else if (tab === 'lineage') {
@@ -961,7 +963,7 @@
           ${formField('النوع *', 'dg-w-type', '', 'select', ASSET_TYPES.map((t) => `<option value="${esc(t)}" ${w.type === t ? 'selected' : ''}>${esc(t)}</option>`).join(''))}
           ${formField('الوصف *', 'dg-w-desc', w.description || '', 'textarea')}`;
       case 1:
-        return `${formField('المصدر', 'dg-w-source', '', 'select', `<option value=""></option>${sources.map((s) => `<option value="${esc(s.id)}" data-name="${esc(s.name)}" ${w.sourceId === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}`)}
+        return `${formField('المصدر', 'dg-w-source', '', 'select', `<option value=""></option>${sources.map((s) => `<option value="${esc(s.id)}" data-name="${esc(s.name)}" ${w.sourceId === s.id ? 'selected' : ''}>${esc(disp(s.name))}</option>`).join('')}`)}
           ${formField('النظام', 'dg-w-system', w.system || '')}
           ${formField('قاعدة البيانات', 'dg-w-db', w.database || '')}
           ${formField('Schema', 'dg-w-schema', w.schema || '')}
@@ -982,7 +984,7 @@
           ${formField('تعريف الحقول', 'dg-w-fields', w.fieldsRaw || '', 'textarea')}`;
       default:
         return `<h4>مراجعة قبل الحفظ</h4>
-          <ul><li>الاسم: ${esc(w.name || '—')}</li><li>النوع: ${esc(w.type || '—')}</li><li>المصدر: ${esc(w.sourceName || w.sourceId || '—')}</li>
+          <ul><li>الاسم: ${esc(w.name || '—')}</li><li>النوع: ${esc(disp(w.type) || '—')}</li><li>المصدر: ${esc(disp(w.sourceName) || w.sourceId || '—')}</li>
           <li>المالك: ${esc(w.owner || '—')}</li><li>التصنيف: ${esc(w.classification || '—')}</li></ul>`;
     }
   };
@@ -1004,7 +1006,7 @@
       const s = ui.modal === 'source_edit' ? sourceById(dg, ui.sourceEditId) : null;
       title = s ? 'تعديل مصدر' : 'إضافة مصدر بيانات';
       body = `${formField('الاسم *', 'dg-src-name', s?.name || '')}
-        ${formField('النوع', 'dg-src-type', '', 'select', SOURCE_TYPES.map((t) => `<option value="${esc(t)}" ${s?.type === t ? 'selected' : ''}>${esc(t)}</option>`).join(''))}
+        ${formField('النوع', 'dg-src-type', '', 'select', SOURCE_TYPES.map((t) => `<option value="${esc(t)}" ${s?.type === t ? 'selected' : ''}>${esc(disp(t))}</option>`).join(''))}
         ${formField('النظام', 'dg-src-system', s?.system || '')}
         ${formField('Host', 'dg-src-host', s?.host || '')}
         ${formField('Port', 'dg-src-port', s?.port ?? '', 'number')}
