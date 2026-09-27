@@ -193,7 +193,7 @@
                     <i class="fas fa-arrow-up-right-from-square"></i> افتح إعدادات الصفحة الرئيسية
                 </a>
                 <a href="packages.html" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-full font-bold flex items-center gap-1 transition-colors">
-                    <i class="fas fa-credit-card"></i> إعدادات الدفع (Stripe/PayPal/Paymob)
+                    <i class="fas fa-credit-card"></i> إعدادات بوابات الدفع
                 </a>
             </div>
             <div class="flex border-b border-slate-100 overflow-x-auto" id="mainTabBar">
@@ -462,7 +462,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-2">رقم المستخدم أو المكتب أو entity_id</label>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">رقم المستخدم أو المكتب أو معرّف الكيان</label>
                             <div class="flex gap-2">
                                 <input type="text" id="officeIdInput" placeholder="مثال: 97 أو OFF636298" onblur="loadOfficePageAccess()"
                                     class="w-full p-3 rounded-lg border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
@@ -470,7 +470,7 @@
                                     <i class="fas fa-search"></i>
                                 </button>
                             </div>
-                            <p class="text-xs text-slate-500 mt-1">يمكنك إدخال: رقم المستخدم (97) أو رقم المكتب أو entity_id/كود المكتب مثل OFF636298</p>
+                            <p class="text-xs text-slate-500 mt-1">يمكنك إدخال: رقم المستخدم (97) أو رقم المكتب أو معرّف الكيان / كود المكتب مثل OFF636298</p>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-2">صفحات المكتب</label>
@@ -519,7 +519,7 @@
                     </div>
 
                     <div class="mb-6">
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">رقم المستأجر أو اسمه أو entity_id أو الإيميل أو الرابط</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">رقم المستأجر أو اسمه أو معرّف الكيان أو الإيميل أو الرابط</label>
                         <div class="flex gap-2 max-w-xl">
                             <input type="text" id="tenantIdInput" placeholder="مثال: moka.naiosherp.com أو TEN000123" onblur="loadTenantPageAccess()"
                                 class="w-full p-3 rounded-lg border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500">
@@ -527,7 +527,7 @@
                                 <i class="fas fa-search"></i>
                             </button>
                         </div>
-                        <p class="text-xs text-slate-500 mt-1">يمكنك إدخال: رقم المستأجر أو entity_id مثل TEN000123 أو الإيميل أو اسم/رابط المستأجر مثل moka.naiosherp.com</p>
+                        <p class="text-xs text-slate-500 mt-1">يمكنك إدخال: رقم المستأجر أو معرّف الكيان مثل TEN000123 أو الإيميل أو اسم/رابط المستأجر مثل moka.naiosherp.com</p>
                     </div>
 
                     <div id="tenantInfoDisplay" class="hidden bg-sky-50 border border-sky-100 rounded-xl p-6 mb-6">
@@ -537,7 +537,7 @@
                         <div class="grid grid-cols-2 gap-4 text-sm">
                             <div><span class="text-sky-500 block text-xs">اسم المستأجر</span> <span id="displayTenantName" class="font-medium text-slate-700">-</span></div>
                             <div><span class="text-sky-500 block text-xs">الرابط / النطاق الفرعي</span> <span id="displayTenantSubdomain" class="font-medium text-slate-700">-</span></div>
-                            <div><span class="text-sky-500 block text-xs">entity_id</span> <span id="displayTenantEntityId" class="font-medium text-slate-700">-</span></div>
+                            <div><span class="text-sky-500 block text-xs">معرّف الكيان</span> <span id="displayTenantEntityId" class="font-medium text-slate-700">-</span></div>
                             <div class="col-span-2 border-t border-sky-100 pt-3 mt-1">
                                 <span class="text-sky-500 block text-xs">الأنظمة والصفحات المحددة</span>
                                 <span id="displayTenantPages" class="font-bold text-brand-600 text-lg">-</span>
@@ -632,25 +632,25 @@
                 <div class="max-w-4xl mx-auto space-y-8">
                     <div class="text-center">
                         <h2 class="text-2xl font-bold text-slate-800 mb-2">إدارة الصفحة الرئيسية</h2>
-                        <p class="text-slate-500">تحكم فوري في الألوان والشعار وصورة Hero بدون تعديل الكود</p>
+                        <p class="text-slate-500">تحكم فوري في الألوان والشعار وصورة الواجهة الرئيسية بدون تعديل الكود</p>
                     </div>
 
                     <section class="bg-slate-50 border border-slate-200 rounded-xl p-5">
                         <h3 class="font-bold text-slate-800 mb-4">ألوان الثيم</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <label class="text-sm font-semibold text-slate-700">Primary Color
+                            <label class="text-sm font-semibold text-slate-700">اللون الأساسي
                                 <input id="hpPrimaryColor" type="color" class="mt-2 w-full h-11 rounded-lg border border-slate-200 cursor-pointer" />
                             </label>
-                            <label class="text-sm font-semibold text-slate-700">Secondary Color
+                            <label class="text-sm font-semibold text-slate-700">اللون الثانوي
                                 <input id="hpSecondaryColor" type="color" class="mt-2 w-full h-11 rounded-lg border border-slate-200 cursor-pointer" />
                             </label>
-                            <label class="text-sm font-semibold text-slate-700">Button Color
+                            <label class="text-sm font-semibold text-slate-700">لون الأزرار
                                 <input id="hpButtonColor" type="color" class="mt-2 w-full h-11 rounded-lg border border-slate-200 cursor-pointer" />
                             </label>
-                            <label class="text-sm font-semibold text-slate-700">Header Background
+                            <label class="text-sm font-semibold text-slate-700">خلفية الترويسة
                                 <input id="hpHeaderBgColor" type="color" class="mt-2 w-full h-11 rounded-lg border border-slate-200 cursor-pointer" />
                             </label>
-                            <label class="text-sm font-semibold text-slate-700">Text Color
+                            <label class="text-sm font-semibold text-slate-700">لون النص
                                 <input id="hpTextColor" type="color" class="mt-2 w-full h-11 rounded-lg border border-slate-200 cursor-pointer" />
                             </label>
                         </div>
@@ -659,13 +659,13 @@
                     <section class="bg-slate-50 border border-slate-200 rounded-xl p-5">
                         <h3 class="font-bold text-slate-800 mb-4">ألوان الخطوط</h3>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <label class="text-sm font-semibold text-slate-700">Heading Color
+                            <label class="text-sm font-semibold text-slate-700">لون العناوين
                                 <input id="hpHeadingColor" type="color" class="mt-2 w-full h-11 rounded-lg border border-slate-200 cursor-pointer" />
                             </label>
-                            <label class="text-sm font-semibold text-slate-700">Paragraph Color
+                            <label class="text-sm font-semibold text-slate-700">لون الفقرات
                                 <input id="hpParagraphColor" type="color" class="mt-2 w-full h-11 rounded-lg border border-slate-200 cursor-pointer" />
                             </label>
-                            <label class="text-sm font-semibold text-slate-700">Link Color
+                            <label class="text-sm font-semibold text-slate-700">لون الروابط
                                 <input id="hpLinkColor" type="color" class="mt-2 w-full h-11 rounded-lg border border-slate-200 cursor-pointer" />
                             </label>
                         </div>
@@ -688,13 +688,13 @@
                     </section>
 
                     <section class="bg-slate-50 border border-slate-200 rounded-xl p-5">
-                        <h3 class="font-bold text-slate-800 mb-1 flex items-center gap-2"><i class="fas fa-photo-film text-brand-600"></i> إدارة وسائط Hero</h3>
-                        <p class="text-xs text-slate-500 mb-4">رفع الفيديو يعمل مباشرة. للحفظ الدائم على Railway يُفضّل إضافة Cloudinary أو Volume على <code>/data/uploads</code>. الحد الموحّد: 150 ميجابايت.</p>
+                        <h3 class="font-bold text-slate-800 mb-1 flex items-center gap-2"><i class="fas fa-photo-film text-brand-600"></i> إدارة وسائط الواجهة الرئيسية</h3>
+                        <p class="text-xs text-slate-500 mb-4">رفع الفيديو يعمل مباشرة. للحفظ الدائم يُفضّل إضافة تخزين سحابي أو مجلد دائم على <code>/data/uploads</code>. الحد الموحّد: 150 ميجابايت.</p>
 
                         <!-- رفع صورة -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-4">
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-semibold text-slate-700 mb-2"><i class="fas fa-image text-blue-500 ml-1"></i> رفع صورة Hero (يُحفظ في التخزين المحلي)</label>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2"><i class="fas fa-image text-blue-500 ml-1"></i> رفع صورة الواجهة الرئيسية (يُحفظ في التخزين المحلي)</label>
                                 <input id="hpHeroFile" type="file" accept="image/*" class="w-full p-3 rounded-lg border border-slate-200 bg-white" />
                                 <input id="hpHeroImageCaption" type="text" maxlength="200" placeholder="عنوان / وصف الصورة (اختياري)" class="mt-2 w-full p-2.5 rounded-lg border border-slate-200 bg-white text-sm" />
                             </div>
@@ -706,9 +706,9 @@
                         <!-- رفع فيديو -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-6">
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-semibold text-slate-700 mb-2"><i class="fas fa-video text-purple-500 ml-1"></i> رفع فيديو Hero (يُحفظ في التخزين المحلي)</label>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2"><i class="fas fa-video text-purple-500 ml-1"></i> رفع فيديو الواجهة الرئيسية (يُحفظ في التخزين المحلي)</label>
                                 <input id="hpHeroVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" class="w-full p-3 rounded-lg border border-slate-200 bg-white" />
-                                <p class="text-xs text-slate-500 mt-1">MP4 أو WEBM — الحد الأقصى 150 ميجابايت. يُفضّل H.264 للتوافق مع كل المتصفحات.</p>
+                                <p class="text-xs text-slate-500 mt-1">صيغ فيديو شائعة — الحد الأقصى 150 ميجابايت. يُفضّل ترميزًا متوافقًا مع كل المتصفحات.</p>
                                 <input id="hpHeroVideoCaption" type="text" maxlength="200" placeholder="عنوان / وصف الفيديو (اختياري)" class="mt-2 w-full p-2.5 rounded-lg border border-slate-200 bg-white text-sm" />
                             </div>
                             <button onclick="uploadHomepageHeroVideo()" class="bg-slate-700 hover:bg-slate-800 text-white px-5 py-3 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
@@ -754,7 +754,7 @@
                                 <select id="hpHeroActiveVideoIndex" class="mt-2 w-full p-3 rounded-lg border border-slate-200 bg-white"></select>
                             </label>
                             <div>
-                                <img id="hpHeroPreview" src="/newhome/booking-workspace.svg" alt="معاينة صورة Hero" class="w-full h-32 rounded-xl border border-slate-200 object-cover bg-slate-200" />
+                                <img id="hpHeroPreview" src="/newhome/booking-workspace.svg" alt="معاينة صورة الواجهة الرئيسية" class="w-full h-32 rounded-xl border border-slate-200 object-cover bg-slate-200" />
                             </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
@@ -1375,7 +1375,7 @@
         async function saveOfficePageAccess() {
             const officeId = document.getElementById('officeIdInput').value.trim();
             if (!officeId) {
-                alert('يرجى إدخال رقم المستخدم أو المكتب أو entity_id');
+                alert('يرجى إدخال رقم المستخدم أو المكتب أو معرّف الكيان');
                 return;
             }
 
@@ -1986,7 +1986,7 @@
                     <td class="py-3 px-4 text-slate-600">${user.email || '-'}</td>
                     <td class="py-3 px-4 text-slate-600">${accountTypeLabels[user.tenant_type] || user.tenant_type || '-'}</td>
                     <td class="py-3 px-4 text-slate-600">
-                        <div>${user.entity_name || '-'} <span class="text-xs text-slate-400">(${user.entity_id || 'N/A'})</span></div>
+                        <div>${user.entity_name || '-'} <span class="text-xs text-slate-400">(${user.entity_id || 'غير متوفر'})</span></div>
                         ${user.tenant_login_url ? `<a href="${user.tenant_login_url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 mt-1 text-xs text-blue-600 hover:text-blue-800" dir="ltr"><i class="fas fa-up-right-from-square text-[10px]"></i>${user.tenant_login_url}</a>` : ''}
                     </td>
                     <td class="py-3 px-4 text-slate-600">${user.current_role_name || user.requested_role_code || '—'}</td>
@@ -2593,7 +2593,7 @@
             const input = document.getElementById('hpHeroFile');
             const file = input?.files?.[0];
             if (!file) {
-                alert('يرجى اختيار صورة Hero أولاً');
+                alert('يرجى اختيار صورة الواجهة الرئيسية أولاً');
                 return;
             }
             try {
@@ -2611,7 +2611,7 @@
                 });
                 const result = await response.json();
                 if (!result.success) {
-                    alert(result.message || 'تعذر رفع صورة Hero');
+                    alert(result.message || 'تعذر رفع صورة الواجهة الرئيسية');
                     return;
                 }
                 if (result.heroImageUrl) {
@@ -2620,11 +2620,11 @@
                 input.value = '';
                 const captionInput = document.getElementById('hpHeroImageCaption');
                 if (captionInput) captionInput.value = '';
-                showToast('تم رفع صورة Hero بنجاح وحفظها في قاعدة البيانات', 'success');
+                showToast('تم رفع صورة الواجهة الرئيسية بنجاح وحفظها في قاعدة البيانات', 'success');
                 await loadHomepageSettings();
             } catch (error) {
                 console.error(error);
-                alert(error.message || 'خطأ في رفع صورة Hero');
+                alert(error.message || 'خطأ في رفع صورة الواجهة الرئيسية');
             }
         }
 
@@ -2678,7 +2678,7 @@
             const input = document.getElementById('hpHeroVideoFile');
             const file = input?.files?.[0];
             if (!file) {
-                alert('يرجى اختيار فيديو Hero أولاً');
+                alert('يرجى اختيار فيديو الواجهة الرئيسية أولاً');
                 return;
             }
             try {
@@ -2704,7 +2704,7 @@
                     return;
                 }
                 if (!result.success) {
-                    alert(result.message || 'تعذر رفع فيديو Hero');
+                    alert(result.message || 'تعذر رفع فيديو الواجهة الرئيسية');
                     return;
                 }
                 input.value = '';
@@ -2713,12 +2713,12 @@
                 if (result.warning) {
                     showToast(result.warning, 'info');
                 } else {
-                    showToast('تم رفع فيديو Hero بنجاح وحفظه في قاعدة البيانات', 'success');
+                    showToast('تم رفع فيديو الواجهة الرئيسية بنجاح وحفظه في قاعدة البيانات', 'success');
                 }
                 await loadHomepageSettings();
             } catch (error) {
                 console.error(error);
-                alert(error.message || 'خطأ في رفع فيديو Hero');
+                alert(error.message || 'خطأ في رفع فيديو الواجهة الرئيسية');
             }
         }
 
@@ -2846,8 +2846,8 @@
                       document.getElementById('displayUserName').textContent = user.name || 'غير متوفر';
                       document.getElementById('displayUserEmail').textContent = user.email || 'غير متوفر';
                        document.getElementById('displayUserEntity').textContent = user.tenant_login_url
-                           ? `${user.entity_name || 'غير متوفر'} (${user.entity_id || 'N/A'}) — ${user.tenant_login_url}`
-                           : `${user.entity_name || 'غير متوفر'} (${user.entity_id || 'N/A'})`;
+                           ? `${user.entity_name || 'غير متوفر'} (${user.entity_id || 'غير متوفر'}) — ${user.tenant_login_url}`
+                           : `${user.entity_name || 'غير متوفر'} (${user.entity_id || 'غير متوفر'})`;
                       document.getElementById('displayUserStatus').textContent = user.is_active ? '✅ نشط' : '❌ غير نشط';
                       document.getElementById('displayUserTenantType').textContent = accountTypeLabels[user.tenant_type] || user.tenant_type || 'غير متوفر';
                       document.getElementById('displayUserRequestedTitle').textContent = user.job_title || user.requested_role_code || 'غير متوفر';

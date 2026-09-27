@@ -142,12 +142,12 @@
     }),
     pack('finance', 'المالية والمصرفية', 'Finance & Banking', 'fa-coins', {
       subSectors: ['محاسبة مصغّرة', 'تثقيف مالي', 'تحصيل'],
-      skills: ['محاسبة أساسية', 'Excel', 'امتثال'],
+      skills: ['محاسبة أساسية', 'إكسل', 'امتثال'],
       opportunityTemplates: [
         {
           id: 'micro-bookkeeping',
           titleAr: 'مسك دفاتر للمنشآت المتناهية',
-          skills: ['محاسبة أساسية', 'Excel'],
+          skills: ['محاسبة أساسية', 'إكسل'],
           resources: ['برنامج محاسبة بسيط'],
           risk: 'منخفض',
           capital: 'منخفض جدًا',

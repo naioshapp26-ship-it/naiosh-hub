@@ -18,13 +18,19 @@ const PANELS = [
   'tasks','measurement','reports','integration','settings'
 ];
 
-const STANDALONE = ['index.html','login.html','search.html','operating.html','client.html','store.html','products.html','apps.html'];
+const STANDALONE = [
+  'index.html','login.html','search.html','operating.html','client.html','store.html','products.html','apps.html',
+  'branches.html','incubators.html','platforms.html','register.html','roles-permissions.html','search-admin.html',
+  'side-projects.html','system-ops.html','rent-admin.html','checkout.html','cart.html','blog.html','services.html',
+  'policies.html','membership.html','posha.html','ops-catalog-admin.html','global-os.html'
+];
 
 const BRAND = new Set([
   'NAIOSH','NAIOSHAI','NAIOSH HUB','NAIOSH HUB 360','HUB','HUB 360','CRM','ERP','API','SMS','URL','ID',
   'SEO','IP','KPI','KPIs','SSO','MFA','LMS','LXP','ETL','USD','AI','OTP','QR','PDF','JSON','OAuth2',
   'SIEM','UTC','EMP','NAI','LAW','FIT','NAIS','ACADEMY','SMARTX','EDUSMARTX','EDUNAIOSH','POSHA','HTTP','HTTPS',
-  'Amazon','Noon','GET','POST','PUT','PATCH','DELETE','HQ','BR','INC','PLT'
+  'Amazon','Noon','GET','POST','PUT','PATCH','DELETE','HQ','BR','INC','PLT',
+  'ChatGPT','Canva','Stripe','PayPal','Paymob','ERPI','RBAC','ABAC'
 ]);
 
 (async () => {
@@ -187,9 +193,16 @@ const BRAND = new Set([
 
   fs.writeFileSync(OUT, JSON.stringify(report, null, 2));
   const failPanels = report.panels.filter((p) => p.count > 0);
+  const failStandalone = report.standalone.filter((s) => s.count > 0);
   console.log('\nSUMMARY failPanels', failPanels.length, failPanels.map((p) => p.panel + ':' + p.count).join(','));
+  console.log('SUMMARY failStandalone', failStandalone.length, failStandalone.map((s) => s.file + ':' + s.count).join(','));
   console.log('refresh', report.refreshOperating);
   console.log('relogin', report.reloginOperating);
   await browser.close();
-  process.exit(failPanels.length || report.refreshOperating.length || report.reloginOperating.length ? 1 : 0);
+  const bad =
+    failPanels.length ||
+    failStandalone.length ||
+    report.refreshOperating.length ||
+    report.reloginOperating.length;
+  process.exit(bad ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

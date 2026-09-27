@@ -295,7 +295,7 @@
     }
     return '<div class="pos-grid-2">' +
       col('NAIOSH HUB 360', map.hub) +
-      col('POSHA Company OS', map.posha) +
+      col('بوشا — نظام تشغيل الشركة', map.posha) +
       col('Client Portal', map.clientPortal) +
       '</div>';
   }

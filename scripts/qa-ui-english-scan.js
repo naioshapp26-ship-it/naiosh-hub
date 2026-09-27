@@ -95,6 +95,13 @@ for (const file of files) {
     for (const re of patterns) {
       let m;
       while ((m = re.exec(text))) {
+        const ctx = text.slice(Math.max(0, m.index - 60), Math.min(text.length, m.index + phrase.length + 80));
+        // keys passed to HubI18n / display mappers are not raw UI
+        if (/HubI18n|\.label\s*\(|LABELS\[|\bdisp\s*\(|\bL\s*\(/.test(ctx)) continue;
+        // internal seed / audit action values kept in English by design
+        if (/source:\s*|creationMethod:|action:\s*|newValue:\s*|type:\s*/.test(ctx) && /\.js$/.test(rel)) continue;
+        // option value lists mapped at render time via HubI18n.label
+        if (/\[[^\]]*'System Generated'[^\]]*\]/.test(ctx) || /map\(\(s\)\s*=>/.test(text.slice(Math.max(0, m.index - 120), m.index + 200))) continue;
         hits.push({ file: rel, phrase, at: m.index });
       }
     }
