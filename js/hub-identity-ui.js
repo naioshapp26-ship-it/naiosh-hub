@@ -74,6 +74,7 @@
     addStep: 1,
     addDraft: null,
     menuId: null,
+    menuPos: null,
     editMode: false,
   };
 
@@ -394,15 +395,11 @@
     }`;
   };
 
-  const actionsMenu = (i) => {
-    const open = ui.menuId === i.naioshId;
-    return `<div class="idn-act-menu ${open ? 'is-open' : ''}">
-      <button type="button" class="btn btn-ghost btn-sm idn-act-trigger" data-action="idn-menu-toggle" data-id="${esc(i.naioshId)}" aria-label="الإجراءات">⋮</button>
-      <div class="idn-act-dropdown" ${open ? '' : 'hidden'}>
+  const actionsMenuItems = (i) => `
         <button type="button" data-action="idn-detail" data-id="${esc(i.naioshId)}">عرض التفاصيل</button>
         <button type="button" data-action="idn-edit-open" data-id="${esc(i.naioshId)}">تعديل</button>
         <button type="button" data-action="idn-affil-open" data-id="${esc(i.naioshId)}">إدارة الارتباط</button>
-        <a href="#roles-permissions">إدارة الدور والصلاحيات</a>
+        <a href="#roles-permissions" data-action="idn-menu-close">إدارة الدور والصلاحيات</a>
         ${
           i.status === 'suspended'
             ? `<button type="button" data-action="idn-reactivate" data-id="${esc(i.naioshId)}">إعادة التفعيل</button>`
@@ -411,8 +408,28 @@
               : ''
         }
         ${i.status !== 'archived' ? `<button type="button" data-action="idn-archive" data-id="${esc(i.naioshId)}">أرشفة</button>` : ''}
-      </div>
+  `;
+
+  const actionsMenu = (i) => {
+    const open = ui.menuId === i.naioshId;
+    return `<div class="idn-act-menu ${open ? 'is-open' : ''}">
+      <button type="button" class="btn btn-ghost btn-sm idn-act-trigger" data-action="idn-menu-toggle" data-id="${esc(i.naioshId)}" aria-label="الإجراءات" aria-expanded="${open ? 'true' : 'false'}">⋮</button>
     </div>`;
+  };
+
+  /** قائمة عائمة خارج overflow الجدول حتى تظهر دائمًا */
+  const renderFloatingActions = () => {
+    if (!ui.menuId) return '';
+    const i = eng()?.findIdentity?.(ui.menuId) || identities().find((x) => x.naioshId === ui.menuId);
+    if (!i) return '';
+    const pos = ui.menuPos || { top: 120, left: 24 };
+    const top = Math.max(8, Number(pos.top) || 120);
+    const left = Math.max(8, Math.min(Number(pos.left) || 24, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 230));
+    return `<div class="idn-act-backdrop" data-action="idn-menu-close" aria-hidden="true"></div>
+      <div class="idn-act-float" role="menu" style="top:${top}px;left:${left}px">
+        <header class="idn-act-float-h">${esc(i.name || 'الإجراءات')}</header>
+        ${actionsMenuItems(i)}
+      </div>`;
   };
 
   const renderCompoundRow = (i) => {
@@ -503,7 +520,8 @@
     </div>
     ${filtersBar(mode)}
     <p class="idn-muted idn-count">عرض ${rows.length} من ${identities().length} هوية</p>
-    ${renderUsersTable(rows)}`;
+    ${renderUsersTable(rows)}
+    ${renderFloatingActions()}`;
   };
 
   const field = (label, value, ltr = false) => {
@@ -997,7 +1015,49 @@
       return true;
     }
     if (action === 'idn-menu-toggle') {
-      ui.menuId = ui.menuId === btn.dataset.id ? null : btn.dataset.id;
+      const id = btn.dataset.id;
+      if (ui.menuId === id) {
+        ui.menuId = null;
+        ui.menuPos = null;
+      } else {
+        ui.menuId = id;
+        try {
+          let el = btn;
+          let r = el.getBoundingClientRect?.();
+          // تجنّب أزرار البطاقات المخفية على سطح المكتب (أبعادها صفر)
+          if (!r || (!r.width && !r.height)) {
+            const nodes = document.querySelectorAll(`[data-action="idn-menu-toggle"][data-id="${CSS.escape ? CSS.escape(id) : id}"]`);
+            for (const cand of nodes) {
+              const cr = cand.getBoundingClientRect();
+              if (cr.width > 0 && cr.height > 0) {
+                el = cand;
+                r = cr;
+                break;
+              }
+            }
+          }
+          if (r && r.width > 0 && r.height > 0) {
+            const menuW = 220;
+            const menuH = 320;
+            const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+            const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+            let left = r.right + 8;
+            if (left + menuW > vw - 8) left = Math.max(8, r.left - menuW - 8);
+            let top = r.bottom + 6;
+            if (top + menuH > vh - 8) top = Math.max(8, r.top - menuH - 6);
+            ui.menuPos = { top, left };
+          } else {
+            ui.menuPos = { top: 160, left: 48 };
+          }
+        } catch {
+          ui.menuPos = { top: 160, left: 48 };
+        }
+      }
+      return true;
+    }
+    if (action === 'idn-menu-close') {
+      ui.menuId = null;
+      ui.menuPos = null;
       return true;
     }
     if (action === 'idn-detail') {

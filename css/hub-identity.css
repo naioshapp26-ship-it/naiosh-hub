@@ -414,42 +414,70 @@
   display: inline-block;
 }
 
-.idn-act-dropdown {
-  position: absolute;
-  inset-inline-end: 0;
-  top: calc(100% + 4px);
-  min-width: 200px;
+.idn-act-trigger {
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 4px 10px !important;
+  min-width: 36px;
+}
+
+.idn-act-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 11990;
+  background: transparent;
+}
+
+.idn-act-float {
+  position: fixed;
+  z-index: 12000;
+  min-width: 220px;
+  max-width: min(280px, calc(100vw - 16px));
   background: #fff;
   border: 1px solid var(--idn-border);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
-  z-index: 5;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
   display: flex;
   flex-direction: column;
   padding: 6px;
+  direction: rtl;
 }
 
-.idn-act-dropdown[hidden] {
-  display: none;
+.idn-act-float-h {
+  padding: 8px 10px 6px;
+  font-size: 0.78rem;
+  color: var(--idn-muted);
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.idn-act-dropdown button,
-.idn-act-dropdown a {
+.idn-act-float button,
+.idn-act-float a {
   border: 0;
   background: transparent;
   text-align: start;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 8px;
   font: inherit;
   color: inherit;
   text-decoration: none;
   cursor: pointer;
+  display: block;
+  width: 100%;
 }
 
-.idn-act-dropdown button:hover,
-.idn-act-dropdown a:hover {
+.idn-act-float button:hover,
+.idn-act-float a:hover {
   background: #fef2f2;
   color: var(--idn-red);
+}
+
+/* القائمة القديمة داخل الخلية لم تعد تُستخدم — إبقاء آمن */
+.idn-act-dropdown {
+  display: none !important;
 }
 
 .idn-filters select {
