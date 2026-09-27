@@ -130,17 +130,26 @@
   };
 
   const renderStore = () => {
-    const rawItems = store?.get?.().empire?.salesStore?.items || data.STORE_ITEMS;
-    const items = (rawItems || []).filter(
-      (i) => !window.HubReadySites?.isExcluded?.(i.title) && !window.HubReadySites?.isExcluded?.(i.brand)
-    );
     const root = document.getElementById('market-grid');
     const tabs = document.getElementById('market-tabs');
+    const banner = document.getElementById('naiosh-channel-banner');
+    const section = document.getElementById('naiosh-products');
     if (!root) return;
     const shopCats = data.SHOP_CATEGORIES || data.STORE_CATEGORIES.map((c) => ({ id: c, name: c, icon: 'fa-tag' }));
     const preferredStore = window.HubStore?.getSettings?.()?.shopDefaultCategory;
     let active = shopCats.some((c) => c.id === preferredStore) ? preferredStore : 'الكل';
+    /** قناة البيع: null = الكل، INTERNAL = منتجات داخل نايوش (ليس تصنيف «نايوش») */
+    let channelFilter = null;
     const connectors = data.MARKETPLACE_CONNECTORS || [];
+
+    const loadItems = () => {
+      const rawItems = store?.get?.().empire?.salesStore?.items || data.STORE_ITEMS;
+      return (rawItems || []).filter(
+        (i) => !window.HubReadySites?.isExcluded?.(i.title) && !window.HubReadySites?.isExcluded?.(i.brand)
+      );
+    };
+
+    const isInternal = (i) => (window.HubPurchase?.resolvePurchaseType?.(i) || 'INTERNAL') === 'INTERNAL';
 
     const mpBadges = (item) => {
       const links = item.marketplaces || [];
@@ -161,10 +170,37 @@
         .join('')}</div>`;
     };
 
+    const paintBanner = () => {
+      if (!banner) return;
+      if (channelFilter !== 'INTERNAL') {
+        banner.hidden = true;
+        banner.innerHTML = '';
+        return;
+      }
+      banner.hidden = false;
+      banner.innerHTML = `
+        <div class="naiosh-channel-banner-inner">
+          <span><i class="fas fa-store"></i> عرض منتجات <strong>داخل نايوش</strong> فقط (قناة البيع الداخلية — مستقلة عن تصنيف «نايوش»).</span>
+          <button type="button" class="btn-mini" data-clear-channel-filter>عرض كل المنتجات</button>
+        </div>`;
+    };
+
     const paint = () => {
-      const list = (active === 'الكل' ? items : items.filter((i) => i.category === active)).filter(
-        (i) => i.status !== 'archived' && i.status !== 'pending_review'
-      );
+      const items = loadItems();
+      let list = active === 'الكل' ? items.slice() : items.filter((i) => i.category === active);
+      list = list.filter((i) => {
+        const st = String(i.status || 'active').toLowerCase();
+        if (st === 'archived' || st.includes('archive') || st === 'inactive') return false;
+        // عند فلتر داخل نايوش: أظهر النشط + بانتظار المراجعة (حتى يظهر المنتج بعد الحفظ مباشرة)
+        if (channelFilter === 'INTERNAL') {
+          if (!isInternal(i)) return false;
+          return true;
+        }
+        return st !== 'pending_review';
+      });
+
+      paintBanner();
+
       root.innerHTML = list.length
         ? list
             .map((i) => {
@@ -174,6 +210,9 @@
               const storeName = P?.storeLabel?.(i) || 'NAIOSh';
               const avail = P?.availabilityLabel?.(i) || 'متاح';
               const site = purchaseType === 'INTERNAL' ? window.HubReadySites?.siteForProduct?.(i) : null;
+              const pending =
+                String(i.status || '').toLowerCase().includes('pending') ||
+                String(i.status || '').includes('مراجعة');
               const media =
                 site?.face || site?.logo
                   ? `<div class="card-media has-face">${
@@ -192,6 +231,7 @@
               return `<article class="market-card" data-purchase-type="${esc(purchaseType)}" data-item-id="${esc(i.id)}">
             ${media}
             <span class="badge-soft">${esc(i.badge || i.itemKind || i.category)}</span>
+            ${pending ? '<span class="badge-soft is-warn">بانتظار المراجعة</span>' : ''}
             <h3>${esc(i.title)}</h3>
             <div class="hub-purchase-meta">
               <span>المتجر: ${esc(storeName)}</span>
@@ -223,7 +263,46 @@
           </article>`;
             })
             .join('')
-        : `<div class="shop-empty" style="grid-column:1/-1">لا توجد عناصر في هذا التصنيف — ارفع منتجًا أو خدمة من النموذج أعلاه.</div>`;
+        : channelFilter === 'INTERNAL'
+          ? `<div class="shop-empty" style="grid-column:1/-1">لا توجد منتجات متاحة داخل نايوش حاليًا.</div>`
+          : `<div class="shop-empty" style="grid-column:1/-1">لا توجد عناصر في هذا التصنيف — ارفع منتجًا أو خدمة من النموذج أعلاه.</div>`;
+
+      const allItems = loadItems();
+      const mpCount = allItems.reduce((n, i) => n + (i.marketplaces?.length || 0), 0);
+      setStat('stat-items', allItems.length);
+      setStat('stat-orders', store?.get?.().empire?.salesStore?.orders?.length || 0);
+      setStat('stat-cats', shopCats.length - 1);
+      setStat('stat-mp', mpCount);
+    };
+
+    const showNaioshInternalProducts = ({ scroll = true } = {}) => {
+      channelFilter = 'INTERNAL';
+      active = 'الكل';
+      if (tabs) {
+        tabs.querySelectorAll('.market-tab').forEach((t) => t.classList.toggle('is-active', t.dataset.cat === 'الكل'));
+      }
+      paint();
+      try {
+        const url = new URL(window.location.href);
+        url.hash = 'naiosh-products';
+        url.searchParams.set('channel', 'internal');
+        history.replaceState(null, '', url.pathname + url.search + url.hash);
+      } catch (_) {
+        try {
+          history.replaceState(null, '', '#naiosh-products');
+        } catch (e2) {}
+      }
+      if (scroll) scrollToResults(section || root);
+    };
+
+    const clearChannelFilter = () => {
+      channelFilter = null;
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('channel');
+        history.replaceState(null, '', url.pathname + url.search + (url.hash || ''));
+      } catch (_) {}
+      paint();
     };
 
     if (tabs) {
@@ -239,7 +318,15 @@
         active = btn.dataset.cat;
         tabs.querySelectorAll('.market-tab').forEach((t) => t.classList.toggle('is-active', t.dataset.cat === active));
         paint();
-        scrollToResults(root);
+        scrollToResults(section || root);
+      };
+    }
+
+    if (banner) {
+      banner.onclick = (e) => {
+        if (e.target.closest('[data-clear-channel-filter]')) {
+          clearChannelFilter();
+        }
       };
     }
 
@@ -248,6 +335,7 @@
       if (externalBtn && window.HubPurchase?.confirmExternalOpen) {
         e.preventDefault();
         const id = externalBtn.getAttribute('data-external-buy');
+        const items = loadItems();
         const item = items.find((x) => String(x.id) === String(id)) || {
           id,
           purchaseType: 'EXTERNAL',
@@ -267,6 +355,7 @@
       }
       const cartBtn = e.target.closest('[data-cart]');
       if (cartBtn && window.HubCart?.add) {
+        const items = loadItems();
         const item = items.find((x) => String(x.id) === String(cartBtn.dataset.cart));
         if (item && window.HubPurchase?.resolvePurchaseType?.(item) === 'EXTERNAL') {
           toast('هذا المنتج يُشترى من متجر خارجي — استخدم زر الانتقال إلى المتجر.');
@@ -280,6 +369,7 @@
       }
       const btn = e.target.closest('[data-buy]');
       if (!btn) return;
+      const items = loadItems();
       const buyItem = items.find((x) => String(x.id) === String(btn.dataset.buy));
       if (buyItem && window.HubPurchase?.resolvePurchaseType?.(buyItem) === 'EXTERNAL') {
         window.HubPurchase.confirmExternalOpen(buyItem);
@@ -310,12 +400,21 @@
       setStat('stat-items', store.get().empire.salesStore.items.length);
     };
 
-    const mpCount = items.reduce((n, i) => n + (i.marketplaces?.length || 0), 0);
-    setStat('stat-items', items.length);
-    setStat('stat-orders', store?.get?.().empire?.salesStore?.orders?.length || 0);
-    setStat('stat-cats', shopCats.length - 1);
-    setStat('stat-mp', mpCount);
+    // استعادة فلتر القناة من الرابط إن وُجد
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('channel') === 'internal' || window.location.hash === '#naiosh-products') {
+        channelFilter = params.get('channel') === 'internal' ? 'INTERNAL' : channelFilter;
+        if (params.get('channel') === 'internal') channelFilter = 'INTERNAL';
+      }
+    } catch (_) {}
+
     paint();
+
+    window.HubMarketPages = window.HubMarketPages || {};
+    window.HubMarketPages.refreshStore = () => paint();
+    window.HubMarketPages.showNaioshInternalProducts = showNaioshInternalProducts;
+    window.HubMarketPages.clearChannelFilter = clearChannelFilter;
   };
 
   const renderAds = () => {

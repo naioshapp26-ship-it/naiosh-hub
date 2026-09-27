@@ -14,7 +14,8 @@
     { id: 'review', label: '5. المراجعة' }
   ];
 
-  var HUB_HOME_URL = 'https://www.naioshai.com/';
+  var HUB_HOME_URL = 'https://www.naioshai.com/'; // روابط خارجية للمتاجر فقط — لا يُستخدم لبطاقة داخل نايوش
+  var NAIOSH_PRODUCTS_HASH = '#naiosh-products';
 
   var state = {
     step: 0,
@@ -211,19 +212,15 @@
       '<article class="su-store-card' +
       (internalSelected ? ' is-selected' : '') +
       '" data-place="INTERNAL">' +
-      '<a class="su-store-brand-link" href="' +
-      esc(HUB_HOME_URL) +
-      '" target="_blank" rel="noopener noreferrer" data-su-open title="فتح موقع نايوش هوب">' +
+      '<div class="su-store-brand-link" role="img" aria-label="داخل NAIOSH">' +
       '<div class="su-store-logo" style="background:#d70000"><i class="fas fa-store" aria-hidden="true"></i></div>' +
       '<div class="su-store-name">داخل NAIOSH</div>' +
-      '</a>' +
+      '</div>' +
       '<div class="su-store-actions">' +
       '<button type="button" class="btn btn-primary" data-su-place="INTERNAL">' +
       (internalSelected ? 'محدد ✓' : 'اختيار') +
       '</button>' +
-      '<a class="btn btn-outline" href="' +
-      esc(HUB_HOME_URL) +
-      '" target="_blank" rel="noopener noreferrer" data-su-open>فتح موقع نايوش هوب ↗</a>' +
+      '<button type="button" class="btn btn-outline" data-su-view-naiosh-products title="عرض المنتجات المباعة داخل نايوش">دخول متجر نايوش</button>' +
       '</div></article>';
 
     cards += list
@@ -656,6 +653,14 @@
     try { localStorage.removeItem('naiosh_store_upload_draft_v1'); } catch (e2) {}
     toast('تم إرسال المنتج بنجاح', 'success');
     renderShell();
+    try {
+      if (window.HubMarketPages && typeof window.HubMarketPages.refreshStore === 'function') {
+        window.HubMarketPages.refreshStore();
+      }
+      if ((state.purchaseType || 'INTERNAL') === 'INTERNAL' && window.HubMarketPages?.showNaioshInternalProducts) {
+        // لا ننتقل تلقائيًا بعد الحفظ — يبقى النموذج؛ التحديث فقط لقائمة المنتجات
+      }
+    } catch (e3) {}
   }
 
   function openHelp() {
@@ -872,6 +877,25 @@
         state.storeId = '';
         state.productUrl = '';
         renderShell();
+      });
+    });
+
+    root.querySelectorAll('[data-su-view-naiosh-products]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        // لا تغادر الصفحة ولا تفتح Home — انتقل لقسم المنتجات داخل نفس المتجر
+        if (window.HubMarketPages && typeof window.HubMarketPages.showNaioshInternalProducts === 'function') {
+          window.HubMarketPages.showNaioshInternalProducts({ scroll: true });
+        } else {
+          var section = document.getElementById('naiosh-products');
+          if (section) {
+            try {
+              history.replaceState(null, '', NAIOSH_PRODUCTS_HASH);
+            } catch (err) {}
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
       });
     });
 
