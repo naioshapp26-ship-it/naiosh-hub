@@ -174,10 +174,13 @@
 
 /* جدول فريق العمل — بدون تمرير أفقي على سطح المكتب */
 .hto-table-wrap--team {
-  overflow-x: visible;
+  overflow-x: hidden;
+  overflow-y: visible;
   border: 1px solid #eef0f4;
   border-radius: 12px;
   background: #fff;
+  width: 100%;
+  max-width: 100%;
 }
 
 .hto-table {
@@ -205,6 +208,11 @@
 .hto-table td:last-child {
   white-space: nowrap;
   width: 1%;
+}
+
+.hto-table-team td:last-child {
+  white-space: normal;
+  width: auto;
 }
 
 .hto-user-link {
@@ -272,19 +280,22 @@
 
 .hto-actions-row {
   width: 100%;
+  max-width: 100%;
   justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .hto-actions-row .hto-btn-sm {
-  min-height: 30px;
-  padding: 4px 8px;
-  font-size: 12px;
+  min-height: 28px;
+  padding: 3px 7px;
+  font-size: 11px;
 }
 
 .hto-btn-icon {
-  min-width: 30px;
-  padding-inline: 6px;
-  font-size: 16px;
+  min-width: 28px;
+  padding-inline: 5px;
+  font-size: 15px;
   line-height: 1;
 }
 
@@ -674,40 +685,40 @@
 .hto-table-team td {
   overflow: hidden;
   vertical-align: top;
-  padding: 10px 8px;
+  padding: 8px 6px;
 }
 
 .hto-table-team th {
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .hto-table-team td.col-act,
 .hto-table-team th.col-act {
-  overflow: visible;
-  white-space: nowrap;
+  overflow: hidden;
+  white-space: normal;
 }
 
 .hto-table-team col.col-emp,
-.hto-table-team .col-emp { width: 15%; }
+.hto-table-team .col-emp { width: 14%; }
 .hto-table-team col.col-eno,
-.hto-table-team .col-eno { width: 8%; }
+.hto-table-team .col-eno { width: 7%; }
 .hto-table-team col.col-nid,
-.hto-table-team .col-nid { width: 11%; }
+.hto-table-team .col-nid { width: 10%; }
 .hto-table-team col.col-pos,
-.hto-table-team .col-pos { width: 9%; }
+.hto-table-team .col-pos { width: 8%; }
 .hto-table-team col.col-sys,
-.hto-table-team .col-sys { width: 11%; }
+.hto-table-team .col-sys { width: 10%; }
 .hto-table-team col.col-role,
-.hto-table-team .col-role { width: 9%; }
+.hto-table-team .col-role { width: 8%; }
 .hto-table-team col.col-perm,
-.hto-table-team .col-perm { width: 10%; }
+.hto-table-team .col-perm { width: 9%; }
 .hto-table-team col.col-st,
-.hto-table-team .col-st { width: 6%; }
+.hto-table-team .col-st { width: 5%; }
 .hto-table-team col.col-upd,
-.hto-table-team .col-upd { width: 8%; }
+.hto-table-team .col-upd { width: 7%; }
 .hto-table-team col.col-act,
-.hto-table-team .col-act { width: 13%; }
+.hto-table-team .col-act { width: 22%; }
 
 .hto-table-team .hto-chip {
   max-width: 100%;
@@ -747,25 +758,25 @@
   }
 
   .hto-table-team col.col-emp,
-  .hto-table-team .col-emp { width: 14%; }
+  .hto-table-team .col-emp { width: 13%; }
   .hto-table-team col.col-eno,
-  .hto-table-team .col-eno { width: 8%; }
+  .hto-table-team .col-eno { width: 7%; }
   .hto-table-team col.col-nid,
-  .hto-table-team .col-nid { width: 11%; }
+  .hto-table-team .col-nid { width: 10%; }
   .hto-table-team col.col-pos,
-  .hto-table-team .col-pos { width: 8%; }
+  .hto-table-team .col-pos { width: 7%; }
   .hto-table-team col.col-sys,
-  .hto-table-team .col-sys { width: 10%; }
+  .hto-table-team .col-sys { width: 9%; }
   .hto-table-team col.col-role,
   .hto-table-team .col-role { width: 8%; }
   .hto-table-team col.col-perm,
-  .hto-table-team .col-perm { width: 11%; }
+  .hto-table-team .col-perm { width: 9%; }
   .hto-table-team col.col-st,
-  .hto-table-team .col-st { width: 6%; }
+  .hto-table-team .col-st { width: 5%; }
   .hto-table-team col.col-upd,
-  .hto-table-team .col-upd { width: 8%; }
+  .hto-table-team .col-upd { width: 7%; }
   .hto-table-team col.col-act,
-  .hto-table-team .col-act { width: 16%; }
+  .hto-table-team .col-act { width: 25%; }
 
   .hto-perm-cell .hto-btn {
     padding: 3px 6px;

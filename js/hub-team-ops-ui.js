@@ -540,7 +540,7 @@
                       <td class="col-perm" data-label="الصلاحيات">
                         ${
                           g
-                            ? `<div class="hto-perm-cell"><span>${perms.length} صلاحيات</span><button type="button" class="hto-btn hto-btn-sm" data-action="hto-perms" data-id="${esc(u.naioshId)}">عرض الصلاحيات</button></div>`
+                            ? `<div class="hto-perm-cell"><span>${perms.length} صلاحيات</span><button type="button" class="hto-btn hto-btn-sm" data-action="hto-perms" data-id="${esc(u.naioshId)}">عرض</button></div>`
                             : `<span class="hto-muted">لا توجد صلاحيات</span>`
                         }
                       </td>
