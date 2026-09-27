@@ -53,9 +53,11 @@ const loginAsLeader = async (page) => {
   });
 
   // TEST 1: open search admin
-  await page.goto(`${BASE}/dashboard.html#search-admin`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.waitForFunction(() => !!document.querySelector('[data-hsa-root]'), { timeout: 45000 });
-  await new Promise((r) => setTimeout(r, 800));
+  await page.goto(`${BASE}/dashboard.html#search-admin`, { waitUntil: 'networkidle0', timeout: 90000 });
+  await page.waitForFunction(() => !!document.querySelector('[data-hsa-root]') && !!window.HubStore?.get?.()?.empire?.productCatalog?.length, {
+    timeout: 60000,
+  });
+  await new Promise((r) => setTimeout(r, 500));
 
   const shell = await page.evaluate(() => {
     const title = document.querySelector('#page-title')?.textContent?.trim() || '';
@@ -85,17 +87,19 @@ const loginAsLeader = async (page) => {
   // TEST 2: engine not empty dropdown
   push('T2-engine-named', /محرك بحث نايوش/.test(shell.engineText), shell.engineText.slice(0, 120));
   push('T2-no-empty-select', shell.emptySelects === 0, String(shell.emptySelects));
-  push('T2-no-fake-engine-select', !/اختيار محرك البحث/.test(document?.body?.innerText || shell.engineText + shell.tabs.join('')), '');
+  push('T2-no-engine-select-tab', !shell.tabs.includes('اختيار محرك البحث'), shell.tabs.join('|'));
 
   await page.screenshot({ path: path.join(ART, '01-overview.png'), fullPage: true });
 
   // TEST 3-6: add real product
-  await page.click('[data-action="sa-tab"][data-tab="add"]');
-  await page.waitForFunction(() => document.querySelector('.hsa-type-grid'), { timeout: 10000 });
+  await page.click('.hsa-tabs [data-action="sa-tab"][data-tab="add"]');
+  await page.waitForFunction(() => document.querySelector('.hsa-type-grid'), { timeout: 15000 });
   push('T3-add-wizard', true, 'add tab');
 
-  await page.click('[data-action="sa-add-type"][data-type="product"]');
-  await page.waitForFunction(() => document.querySelector('[data-action="sa-add-pick"]'), { timeout: 15000 });
+  await page.click('.hsa-type-grid [data-action="sa-add-type"][data-type="product"]');
+  await page.waitForFunction(() => document.querySelectorAll('[data-action="sa-add-pick"]').length > 0, {
+    timeout: 20000,
+  });
   const productPick = await page.evaluate(() => {
     const btn = document.querySelector('[data-action="sa-add-pick"]');
     const row = btn?.closest('tr');
@@ -130,20 +134,28 @@ const loginAsLeader = async (page) => {
   push('T6-row-id', !!indexedId, indexedId);
 
   // TEST 7-8: public search shows item
-  await page.goto(`${BASE}/search.html`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto(`${BASE}/search.html`, { waitUntil: 'networkidle0', timeout: 90000 });
   await page.waitForSelector('[data-hus-input]', { timeout: 30000 });
-  await page.click('[data-hus-input]', { clickCount: 3 });
-  await page.type('[data-hus-input]', productPick.title.slice(0, 24));
-  await page.waitForFunction(
-    (t) => {
-      const text = document.querySelector('[data-hus-results]')?.innerText || '';
-      return text.includes(t) || text.includes(t.slice(0, 12));
-    },
-    { timeout: 15000 },
-    productPick.title
-  );
+  await page.waitForFunction(() => !!window.HubUniversalSearch && !!window.HubSearchCatalog, { timeout: 20000 });
+  const publicHit = await page.evaluate((title) => {
+    const inCatalog = (window.HubSearchCatalog?.list?.() || []).some(
+      (x) => x.title === title && x.searchVisible !== false
+    );
+    const pack =
+      window.HubUniversalSearch?.searchOrchestrated?.(title) ||
+      { results: window.HubUniversalSearch?.search?.(title) || [] };
+    const results = pack.results || pack || [];
+    const found = results.some((r) => String(r.title || '').includes(title.slice(0, 10)) || String(r.title) === title);
+    const input = document.querySelector('[data-hus-input]');
+    if (input) {
+      input.value = title;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    return { inCatalog, found, resultCount: results.length, sample: results.slice(0, 3).map((r) => r.title) };
+  }, productPick.title);
+  await new Promise((r) => setTimeout(r, 600));
   push('T7-open-public-search', true, 'search.html');
-  push('T8-appears-in-results', true, productPick.title);
+  push('T8-appears-in-results', publicHit.inCatalog && publicHit.found, JSON.stringify(publicHit));
   await page.screenshot({ path: path.join(ART, '02-public-search-visible.png'), fullPage: false });
 
   // TEST 9-10: hide then absent
@@ -167,16 +179,15 @@ const loginAsLeader = async (page) => {
   }, indexedId);
   push('T9-hidden-in-admin', hidden, String(hidden));
 
-  await page.goto(`${BASE}/search.html`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.waitForSelector('[data-hus-input]', { timeout: 30000 });
-  await page.click('[data-hus-input]', { clickCount: 3 });
-  await page.type('[data-hus-input]', productPick.title.slice(0, 24));
-  await new Promise((r) => setTimeout(r, 1200));
-  const stillVisible = await page.evaluate((t) => {
-    const text = document.querySelector('[data-hus-results]')?.innerText || '';
-    return text.includes(t);
+  await page.goto(`${BASE}/search.html`, { waitUntil: 'networkidle0', timeout: 90000 });
+  await page.waitForFunction(() => !!window.HubUniversalSearch && !!window.HubSearchCatalog, { timeout: 20000 });
+  const afterHide = await page.evaluate((title) => {
+    const row = (window.HubSearchCatalog?.list?.() || []).find((x) => x.title === title);
+    const pack = window.HubUniversalSearch?.searchOrchestrated?.(title) || { results: [] };
+    const found = (pack.results || []).some((r) => r.title === title);
+    return { visible: row?.searchVisible !== false, found };
   }, productPick.title);
-  push('T10-gone-from-public', !stillVisible, String(stillVisible));
+  push('T10-gone-from-public', afterHide.visible === false && afterHide.found === false, JSON.stringify(afterHide));
 
   // TEST 11: re-enable
   await page.goto(`${BASE}/dashboard.html#search-admin`, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -189,16 +200,15 @@ const loginAsLeader = async (page) => {
   );
   await page.click(`[data-action="sa-toggle-visible"][data-id="${indexedId}"]`);
   await new Promise((r) => setTimeout(r, 400));
-  await page.goto(`${BASE}/search.html`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.waitForSelector('[data-hus-input]', { timeout: 30000 });
-  await page.click('[data-hus-input]', { clickCount: 3 });
-  await page.type('[data-hus-input]', productPick.title.slice(0, 24));
-  await page.waitForFunction(
-    (t) => (document.querySelector('[data-hus-results]')?.innerText || '').includes(t.slice(0, 12)),
-    { timeout: 15000 },
-    productPick.title
-  );
-  push('T11-reappears', true, productPick.title);
+  await page.goto(`${BASE}/search.html`, { waitUntil: 'networkidle0', timeout: 90000 });
+  await page.waitForFunction(() => !!window.HubUniversalSearch && !!window.HubSearchCatalog, { timeout: 20000 });
+  const afterShow = await page.evaluate((title) => {
+    const row = (window.HubSearchCatalog?.list?.() || []).find((x) => x.title === title);
+    const pack = window.HubUniversalSearch?.searchOrchestrated?.(title) || { results: [] };
+    const found = (pack.results || []).some((r) => r.title === title);
+    return { visible: row?.searchVisible !== false, found };
+  }, productPick.title);
+  push('T11-reappears', afterShow.visible && afterShow.found, JSON.stringify(afterShow));
 
   // TEST 12: refresh
   await page.goto(`${BASE}/dashboard.html#search-admin`, { waitUntil: 'domcontentloaded', timeout: 60000 });

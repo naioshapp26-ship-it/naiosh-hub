@@ -1,0 +1,138 @@
+{
+  "ok": false,
+  "failed": 3,
+  "total": 26,
+  "tests": [
+    {
+      "n": "desktop-1366-rtl",
+      "ok": true,
+      "d": "rtl"
+    },
+    {
+      "n": "desktop-1366-table-visible",
+      "ok": true,
+      "d": "{\"tableVisible\":true}"
+    },
+    {
+      "n": "desktop-1366-no-hscroll",
+      "ok": true,
+      "d": "scroll=1018 client=1018 overflow=false clipped=false"
+    },
+    {
+      "n": "desktop-1366-all-cols",
+      "ok": true,
+      "d": "الموظف|رقم الموظف|رقم نايوش|مكان العمل|النظام|الدور|الصلاحيات|الحالة|آخر تعديل|الإجراءات"
+    },
+    {
+      "n": "desktop-1366-actions-visible",
+      "ok": false,
+      "d": "clipped=false"
+    },
+    {
+      "n": "desktop-1366-full-width",
+      "ok": true,
+      "d": "main=1086 panel=1050 waste=36"
+    },
+    {
+      "n": "desktop-1366-cards-hidden",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "desktop-1440-rtl",
+      "ok": true,
+      "d": "rtl"
+    },
+    {
+      "n": "desktop-1440-table-visible",
+      "ok": true,
+      "d": "{\"tableVisible\":true}"
+    },
+    {
+      "n": "desktop-1440-no-hscroll",
+      "ok": true,
+      "d": "scroll=1092 client=1092 overflow=false clipped=false"
+    },
+    {
+      "n": "desktop-1440-all-cols",
+      "ok": true,
+      "d": "الموظف|رقم الموظف|رقم نايوش|مكان العمل|النظام|الدور|الصلاحيات|الحالة|آخر تعديل|الإجراءات"
+    },
+    {
+      "n": "desktop-1440-actions-visible",
+      "ok": false,
+      "d": "clipped=false"
+    },
+    {
+      "n": "desktop-1440-full-width",
+      "ok": true,
+      "d": "main=1160 panel=1124 waste=36"
+    },
+    {
+      "n": "desktop-1440-cards-hidden",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "desktop-1920-rtl",
+      "ok": true,
+      "d": "rtl"
+    },
+    {
+      "n": "desktop-1920-table-visible",
+      "ok": true,
+      "d": "{\"tableVisible\":true}"
+    },
+    {
+      "n": "desktop-1920-no-hscroll",
+      "ok": true,
+      "d": "scroll=1572 client=1572 overflow=false clipped=false"
+    },
+    {
+      "n": "desktop-1920-all-cols",
+      "ok": true,
+      "d": "الموظف|رقم الموظف|رقم نايوش|مكان العمل|النظام|الدور|الصلاحيات|الحالة|آخر تعديل|الإجراءات"
+    },
+    {
+      "n": "desktop-1920-actions-visible",
+      "ok": false,
+      "d": "clipped=false"
+    },
+    {
+      "n": "desktop-1920-full-width",
+      "ok": true,
+      "d": "main=1640 panel=1604 waste=36"
+    },
+    {
+      "n": "desktop-1920-cards-hidden",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "tablet-900-rtl",
+      "ok": true,
+      "d": "rtl"
+    },
+    {
+      "n": "tablet-900-layout-ok",
+      "ok": true,
+      "d": "{\"tableVisible\":false,\"cardsVisible\":true,\"hasHScroll\":false,\"contentOverflow\":false,\"actionsClipped\":false,\"scrollW\":0,\"clientW\":0,\"actionsVisible\":false,\"ths\":[\"الموظف\",\"رقم الموظف\",\"رقم نايوش\",\"مكان العمل\",\"النظام\",\"الدور\",\"الصلاحيات\",\"الحالة\",\"آخر تعديل\",\"الإجراءات\"],\"rootW\":876,\"mainW\":900,\"panelW\":876,\"wasted\":24,\"dir\":\"rtl\",\"rowCount\":7,\"cardCount\":7}"
+    },
+    {
+      "n": "mobile-390-rtl",
+      "ok": true,
+      "d": "rtl"
+    },
+    {
+      "n": "mobile-390-cards-visible",
+      "ok": true,
+      "d": "{\"tableVisible\":false,\"cardsVisible\":true,\"hasHScroll\":false,\"contentOverflow\":false,\"actionsClipped\":false,\"scrollW\":0,\"clientW\":0,\"actionsVisible\":false,\"ths\":[\"الموظف\",\"رقم الموظف\",\"رقم نايوش\",\"مكان العمل\",\"النظام\",\"الدور\",\"الصلاحيات\",\"الحالة\",\"آخر تعديل\",\"الإجراءات\"],\"rootW\":366,\"mainW\":390,\"panelW\":366,\"wasted\":24,\"dir\":\"rtl\",\"rowCount\":7,\"cardCount\":7}"
+    },
+    {
+      "n": "mobile-390-table-hidden",
+      "ok": true,
+      "d": ""
+    }
+  ],
+  "art": "/workspace/.tmp/team-layout"
+}

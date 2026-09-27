@@ -809,7 +809,7 @@
     document.querySelectorAll('.hsa-float-menu').forEach((el) => el.remove());
   };
 
-  const syncSource = (sourceId, actor, toast) => {
+  const syncSource = async (sourceId, actor, toast) => {
     const typeMeta = ADDABLE_TYPES.find((t) => t.id === sourceId);
     if (!typeMeta || typeMeta.mode !== 'pick') {
       toast?.('هذا المصدر يُدار يدويًا عبر إضافة صفحة أو رابط');
@@ -839,6 +839,11 @@
       );
       n += 1;
     });
+    if (n) {
+      try {
+        await cat()?.pushRemote?.();
+      } catch (_) {}
+    }
     return n;
   };
 
@@ -915,6 +920,9 @@
       if (!row) return true;
       const nextVisible = row.searchVisible === false;
       cat()?.setSearchVisible?.(btn.dataset.id, nextVisible, actor);
+      try {
+        cat()?.pushRemote?.();
+      } catch (_) {}
       toast?.(nextVisible ? 'تم تفعيل الظهور في محرك البحث' : 'تم إيقاف الظهور في محرك البحث');
       return true;
     }
@@ -1038,6 +1046,9 @@
         toast?.(res.error);
         return true;
       }
+      try {
+        cat()?.pushRemote?.();
+      } catch (_) {}
       ui.lastMessage =
         payload.searchVisible === false
           ? 'تمت إضافة المحتوى وهو متوقف عن الظهور — يمكنك تفعيله لاحقًا.'
@@ -1064,8 +1075,10 @@
       return true;
     }
     if (action === 'sa-source-sync') {
-      const n = syncSource(btn.dataset.source, actor, toast);
-      toast?.(n ? `تمت مزامنة ${n} عنصرًا إلى محرك البحث` : 'لا عناصر للمزامنة');
+      Promise.resolve(syncSource(btn.dataset.source, actor, toast)).then((n) => {
+        toast?.(n ? `تمت مزامنة ${n} عنصرًا إلى محرك البحث` : 'لا عناصر للمزامنة');
+        if (typeof window.__hubSaRerender === 'function') window.__hubSaRerender();
+      });
       return true;
     }
     if (action === 'sa-source-reindex') {

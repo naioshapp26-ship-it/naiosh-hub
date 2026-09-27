@@ -1,0 +1,128 @@
+{
+  "ok": true,
+  "failed": 0,
+  "total": 24,
+  "tests": [
+    {
+      "n": "layout-root",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "layout-academy",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "layout-orders",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "layout-no-side-by-side",
+      "ok": true,
+      "d": "{\"hasRoot\":true,\"hasAcademy\":true,\"hasOrders\":true,\"noGrid2\":true,\"stacked\":true,\"ths\":[\"المنتج\",\"التصنيف\",\"السعر\",\"التوفر\",\"الأسواق\",\"التفاصيل\",\"الإجراءات\"],\"hScroll\":false,\"contentOverflow\":false,\"waste\":36,\"academyW\":1124,\"mainW\":1160,\"itemCount\":44,\"kpiProducts\":\"44\",\"flatMetaHeaders\":false}"
+    },
+    {
+      "n": "layout-full-width",
+      "ok": true,
+      "d": "waste=36 academy=1124 main=1160"
+    },
+    {
+      "n": "layout-no-hscroll",
+      "ok": true,
+      "d": "overflow=false"
+    },
+    {
+      "n": "layout-no-flat-meta-cols",
+      "ok": true,
+      "d": "المنتج|التصنيف|السعر|التوفر|الأسواق|التفاصيل|الإجراءات"
+    },
+    {
+      "n": "layout-has-product-cols",
+      "ok": true,
+      "d": "المنتج|التصنيف|السعر|التوفر|الأسواق|التفاصيل|الإجراءات"
+    },
+    {
+      "n": "add-visible-immediately",
+      "ok": true,
+      "d": "{\"visible\":true,\"kpi\":\"45\",\"persisted\":true,\"count\":45}"
+    },
+    {
+      "n": "add-persisted-hubstore",
+      "ok": true,
+      "d": "{\"visible\":true,\"kpi\":\"45\",\"persisted\":true,\"count\":45}"
+    },
+    {
+      "n": "refresh-keeps-product",
+      "ok": true,
+      "d": "{\"visible\":true,\"kpi\":\"45\"}"
+    },
+    {
+      "n": "navigation-keeps-product",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "edit-by-id",
+      "ok": true,
+      "d": "{\"ok\":true,\"id\":\"st-muj5l3v7-y6hoy\"}"
+    },
+    {
+      "n": "edit-visible-in-table",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "buy-creates-order",
+      "ok": true,
+      "d": "{\"ok\":true,\"orderId\":\"ord-muj5l6bu-oeb6j\",\"title\":\"منتج اختبار واجهة 320358 EDITED\"}"
+    },
+    {
+      "n": "order-visible-in-section",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "logout-login-keeps-product",
+      "ok": true,
+      "d": "{\"visible\":true,\"persisted\":true,\"orderKept\":true,\"kpi\":\"45\",\"itemLen\":45}"
+    },
+    {
+      "n": "logout-login-keeps-order",
+      "ok": true,
+      "d": "{\"visible\":true,\"persisted\":true,\"orderKept\":true,\"kpi\":\"45\",\"itemLen\":45}"
+    },
+    {
+      "n": "kpi-matches-source",
+      "ok": true,
+      "d": "{\"visible\":true,\"persisted\":true,\"orderKept\":true,\"kpi\":\"45\",\"itemLen\":45}"
+    },
+    {
+      "n": "search-filter-works",
+      "ok": true,
+      "d": "{\"n\":1,\"has\":true}"
+    },
+    {
+      "n": "mobile-cards",
+      "ok": true,
+      "d": "{\"tableHidden\":true,\"cardsVisible\":true,\"cardCount\":1,\"stacked\":true}"
+    },
+    {
+      "n": "mobile-orders-below",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "naiosh-card-openable",
+      "ok": true,
+      "d": "{\"hasOpen\":true,\"href\":\"https://www.naioshai.com/\",\"hasCard\":true,\"selectBtn\":true}"
+    },
+    {
+      "n": "naiosh-card-selectable",
+      "ok": true,
+      "d": "{\"hasOpen\":true,\"href\":\"https://www.naioshai.com/\",\"hasCard\":true,\"selectBtn\":true}"
+    }
+  ],
+  "art": "/workspace/.tmp/sales-store"
+}

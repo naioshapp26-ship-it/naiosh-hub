@@ -396,8 +396,34 @@
       if (!res.ok) return { ok: false, skipped: true };
       const data = await res.json();
       if (!data?.ok || !Array.isArray(data.items)) return { ok: false };
-      saveLocal(data.items);
-      return { ok: true, count: data.items.length };
+      const remote = data.items;
+      const local = readLocal();
+      // لا تستبدل فهرسًا محليًا غير فارغ بقائمة خادم فارغة
+      if (!remote.length && local.length) {
+        return { ok: true, skipped: true, reason: 'keep-local', count: local.length };
+      }
+      if (!remote.length && !local.length) {
+        return { ok: true, count: 0 };
+      }
+      // دمج: العناصر المحلية أحدث إن تطابق id
+      const map = new Map();
+      remote.forEach((x) => {
+        if (x?.id) map.set(String(x.id), x);
+      });
+      local.forEach((x) => {
+        if (!x?.id) return;
+        const prev = map.get(String(x.id));
+        if (!prev) {
+          map.set(String(x.id), x);
+          return;
+        }
+        const remoteAt = Date.parse(prev.updatedAt || prev.indexedAt || 0) || 0;
+        const localAt = Date.parse(x.updatedAt || x.indexedAt || 0) || 0;
+        if (localAt >= remoteAt) map.set(String(x.id), x);
+      });
+      const merged = [...map.values()];
+      saveLocal(merged);
+      return { ok: true, count: merged.length };
     } catch {
       return { ok: false, skipped: true };
     }
