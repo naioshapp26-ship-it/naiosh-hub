@@ -177,16 +177,11 @@
   text-decoration: none;
   color: inherit;
   border-radius: 10px;
+  cursor: default;
 }
 
-.su-store-brand-link:hover .su-store-name,
-.su-store-brand-link:focus-visible .su-store-name {
-  color: #d70000;
-}
-
-.su-store-brand-link:focus-visible {
-  outline: 2px solid #d70000;
-  outline-offset: 2px;
+.su-store-brand-link:hover .su-store-name {
+  color: inherit;
 }
 
 .su-store-actions {

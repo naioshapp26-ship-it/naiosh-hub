@@ -552,3 +552,44 @@
   .market-hero p { font-size: 14px; }
   .market-toast { bottom: 72px; }
 }
+
+/* قسم منتجات داخل نايوش */
+.naiosh-products-section {
+  width: 100%;
+  scroll-margin-top: 88px;
+}
+
+.naiosh-channel-banner {
+  margin: 0 0 12px;
+}
+
+.naiosh-channel-banner-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(215, 0, 0, 0.22);
+  background: #fff5f5;
+  color: #3a0a0f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.naiosh-channel-banner-inner .btn-mini {
+  border: 1px solid #d70000;
+  background: #fff;
+  color: #d70000;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.market-card .badge-soft.is-warn {
+  background: #fffaeb;
+  color: #b54708;
+}
