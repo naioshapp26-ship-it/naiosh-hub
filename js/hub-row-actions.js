@@ -654,7 +654,7 @@
             ${extraFields}
           </div>
         </div>
-        ${commonMetaFormHtml(item)}`,
+        ${entity === 'branches' ? '' : commonMetaFormHtml(item)}`,
       foot: `
         <button type="button" class="hub-erp-btn ghost" data-hub-modal-close>إلغاء</button>
         <button type="button" class="hub-erp-btn blue" id="hub-edit-save" data-entity="${esc(entity)}" data-id="${esc(id)}"><i class="fas fa-check"></i> حفظ التعديل</button>`,
@@ -662,7 +662,7 @@
     document.getElementById('hub-edit-save')?.addEventListener('click', async () => {
       const title = document.getElementById('hub-edit-title')?.value.trim();
       if (!title) return toast('العنوان مطلوب');
-      const meta = await collectCommonMeta(item);
+      const meta = entity === 'branches' ? {} : await collectCommonMeta(item);
       if (meta.error) return toast(meta.error);
       const patch = { title, ...meta };
       if (entity === 'employees') {
@@ -1485,7 +1485,7 @@
           : ''
       }
       ${form.includeMarketplaces ? marketplaceFormHtml() : ''}
-      ${entity === 'store' || entity === 'products' ? '' : commonMetaFormHtml()}`,
+      ${entity === 'store' || entity === 'products' || entity === 'branches' ? '' : commonMetaFormHtml()}`,
       foot: isPublishable
         ? `
         <button type="button" class="hub-erp-btn ghost" data-hub-modal-close title="إلغاء"><i class="fas fa-xmark"></i> إلغاء</button>
@@ -1568,13 +1568,19 @@
         values.mp_custom_name = document.getElementById('hub-add-mp_custom_name')?.value.trim() || '';
         values.mp_url_custom = document.getElementById('hub-add-mp_url_custom')?.value.trim() || '';
       }
-      const meta = await collectCommonMeta();
+      const meta = entity === 'branches' ? {} : await collectCommonMeta();
       if (meta.error) return toast(meta.error);
       Object.assign(values, meta);
       const ok = form.save(values);
       if (!ok) return toast('تعذّرت الإضافة');
       closeModal();
-      toast(entity === 'store' ? 'تم رفع المنتج/الخدمة على المتجر' : 'تمت الإضافة مع بيانات الأطراف والهيكل');
+      toast(
+        entity === 'store'
+          ? 'تم رفع المنتج/الخدمة على المتجر'
+          : entity === 'branches'
+            ? 'تم حفظ الفرع'
+            : 'تمت الإضافة مع بيانات الأطراف والهيكل'
+      );
       afterChange(entity, 'add');
     });
 

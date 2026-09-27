@@ -59,22 +59,26 @@ const loginAsLeader = async (page) => {
   await page.waitForFunction(() => !!document.querySelector('[data-branches-admin], .branches-admin'), {
     timeout: 45000,
   });
+  await page.waitForFunction(
+    () => !!document.querySelector('#sidebar-nav a[data-panel="organization"]'),
+    { timeout: 15000 }
+  );
   await new Promise((r) => setTimeout(r, 600));
 
   const labels = await page.evaluate(() => {
-    const nav = [...document.querySelectorAll('[data-nav]')].map((el) => ({
-      key: el.dataset.nav,
+    const side = document.querySelector('#sidebar-nav');
+    const nav = [...(side?.querySelectorAll('a[data-panel]') || [])].map((el) => ({
+      key: el.getAttribute('data-panel') || el.dataset.panel,
       label: el.textContent.replace(/\s+/g, ' ').trim(),
     }));
     const orgNav = nav.find((n) => n.key === 'organization');
     const incNav = nav.find((n) => n.key === 'incubators');
     return {
       title: document.querySelector('#page-title')?.textContent.trim() || '',
-      subtitle: document.querySelector('#page-sub, .page-sub, .page-lead, #page-desc')?.textContent?.trim() ||
-        document.querySelector('.page-head p, .content-head p, header p')?.textContent?.trim() ||
-        '',
+      subtitle: document.querySelector('#page-sub')?.textContent?.trim() || '',
       orgNav: orgNav?.label || '',
       incNav: incNav?.label || '',
+      navCount: nav.length,
       hasChain: !!document.querySelector('.chain-row'),
       hasCountriesCard: [...document.querySelectorAll('h3')].some((h) => /الدول/.test(h.textContent)),
       hasPlatformsCard: [...document.querySelectorAll('h3')].some((h) => /المنصات السيادية/.test(h.textContent)),
@@ -87,19 +91,10 @@ const loginAsLeader = async (page) => {
     };
   });
 
-  // subtitle may live in #page-sub — probe more selectively
-  const pageMeta = await page.evaluate(() => {
-    const sub =
-      document.querySelector('#page-sub')?.textContent?.trim() ||
-      document.querySelector('[data-page-sub]')?.textContent?.trim() ||
-      '';
-    return { sub, bodyHasDesc: /إدارة فروع نايوش حسب الدول/.test(document.body.innerText) };
-  });
-
-  push('nav-label-branches', /الفروع/.test(labels.orgNav), labels.orgNav);
+  push('nav-label-branches', /الفروع/.test(labels.orgNav), `${labels.orgNav}|count=${labels.navCount}`);
   push('nav-incubators-kept', /الحاضنات/.test(labels.incNav), labels.incNav);
   push('title-manage-branches', labels.title === 'إدارة الفروع', labels.title);
-  push('desc-present', pageMeta.bodyHasDesc || /إدارة فروع نايوش/.test(pageMeta.sub), pageMeta.sub);
+  push('desc-present', /إدارة فروع نايوش حسب الدول/.test(labels.subtitle), labels.subtitle);
   push('no-hierarchy-chain', !labels.hasChain, String(labels.hasChain));
   push('no-countries-admin-card', !labels.hasCountriesCard, String(labels.hasCountriesCard));
   push('no-platforms-admin-card', !labels.hasPlatformsCard, String(labels.hasPlatformsCard));
