@@ -1023,10 +1023,23 @@
       });
       if (Store().applyAffiliation) Store().applyAffiliation(identity, { userKind: identity.userKind, userType: identity.userType, isEmployee: identity.isEmployee });
       // ترقية لموظف دون مسح صفة العميل
-      if (patch.asEmployee || patch.promoteToEmployee) {
+      if (patch.asEmployee || patch.promoteToEmployee || patch.alsoEmployee) {
         assignEmployeeNo(state, identity, patch.employeeNo || null);
         assertEmployeeHasNumber(identity);
-        if (!identity.userKind || identity.userKind === 'CUSTOMER') identity.userKind = 'INTERNAL';
+        if (!identity.userKind || identity.userKind === 'CUSTOMER') identity.userKind = patch.userKind || 'INTERNAL';
+      }
+      if (patch.alsoCustomer || patch.keepClient) {
+        if (!identity.clientNo) identity.clientNo = patch.clientNo || nextClientNo(state);
+        identity.clientStatus = identity.clientStatus || patch.clientStatus || 'نشط';
+      }
+      if (patch.roleCode) {
+        const existing = (state.grants || []).find((g) => g.identityId === identity.id && String(g.status).toUpperCase() === 'ACTIVE');
+        if (existing) {
+          existing.roleCode = patch.roleCode;
+          const role = (state.roles || []).find((r) => r.code === patch.roleCode);
+          if (role?.permissions) existing.permissions = role.permissions.slice();
+          existing.updatedAt = Store().nowIso();
+        }
       }
       // رقم الموظف ثابت — لا يُعدَّل من تحديث الملف الشخصي إلا عند التعيين لأول مرة أعلاه
       identity.updatedAt = Store().nowIso();
@@ -1188,11 +1201,21 @@
       if (findIdentity(state, payload.email) || (payload.naioshId && findIdentity(state, payload.naioshId))) {
         throw new Error('يوجد حساب بنفس البريد أو رقم نايوش');
       }
-      const asEmployee = !!kind.needsEmployee || payload.userType === 'STAFF';
-      const asCustomer = payload.userKind === 'CUSTOMER' || !!payload.keepClient || !!payload.clientNo;
+      const asEmployee = !!kind.needsEmployee || payload.userType === 'STAFF' || !!payload.alsoEmployee;
+      const asCustomer =
+        payload.userKind === 'CUSTOMER' ||
+        payload.userKind === 'MEMBER' ||
+        !!payload.keepClient ||
+        !!payload.alsoCustomer ||
+        !!payload.clientNo;
       const identity = {
         id: Store().uid('id'),
-        naioshId: payload.naioshId || `NAI-${Date.now().toString(36).toUpperCase()}`,
+        naioshId:
+          payload.naioshId ||
+          `NAI-${String(payload.email || payload.name || 'USER')
+            .replace(/[^a-zA-Z0-9]/g, '')
+            .slice(0, 8)
+            .toUpperCase() || 'USER'}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
         employeeNo: null,
         name: String(payload.name).trim(),
         email: String(payload.email).trim().toLowerCase(),
@@ -1211,8 +1234,9 @@
         clientNo: null,
         clientStatus: '',
         verificationStatus: 'VERIFIED',
-        status: 'active',
+        status: payload.status || 'active',
         positions: payload.positions || [],
+        dataSource: payload.dataSource || 'user-created',
         createdAt: Store().nowIso(),
         updatedAt: Store().nowIso(),
       };
@@ -1293,24 +1317,94 @@
     return [...map.values()].sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar'));
   };
 
+  /** شجرة مؤسسة ← فروع ← أقسام مرتبطة بالمصدر الحقيقي + سجلات الهوية */
+  const listOrgStructure = () => {
+    const tree = new Map();
+    const ensure = (orgId, orgName) => {
+      const key = String(orgId || orgName || '').trim();
+      if (!key) return null;
+      if (!tree.has(key)) tree.set(key, { id: orgId || key, name: orgName || key, branches: new Map() });
+      const node = tree.get(key);
+      if (orgName && (!node.name || node.name === key)) node.name = orgName;
+      return node;
+    };
+    const addBranch = (org, branchName, dept) => {
+      if (!org || !branchName) return;
+      if (!org.branches.has(branchName)) org.branches.set(branchName, new Set());
+      if (dept) org.branches.get(branchName).add(dept);
+    };
+
+    const naiosh = ensure('ORG-NAIOSH', 'نايوش');
+    ['المقر الرئيسي', 'الإسكندرية', 'الرياض', 'جدة'].forEach((b) => addBranch(naiosh, b));
+    ['الإدارة العليا', 'التشغيل', 'الموارد البشرية', 'المالية', 'التقنية', 'المبيعات'].forEach((d) => {
+      addBranch(naiosh, 'المقر الرئيسي', d);
+      addBranch(naiosh, 'الرياض', d);
+    });
+    addBranch(naiosh, 'الإسكندرية', 'التشغيل');
+    addBranch(naiosh, 'الإسكندرية', 'المبيعات');
+
+    try {
+      const clients = window.HubStore?.clientsBag?.()?.clients || [];
+      clients.forEach((c) => {
+        const org = ensure(c.clientId || c.id, c.company || c.name);
+        const defaultBranches = c.company === 'مؤسسة الأفق' || c.clientId === 'CL-1001' ? ['الرياض', 'جدة'] : ['المقر الرئيسي', 'الرياض'];
+        defaultBranches.forEach((b) => {
+          addBranch(org, b, 'الإدارة');
+          addBranch(org, b, 'المالية');
+          addBranch(org, b, 'الموارد البشرية');
+          addBranch(org, b, 'التشغيل');
+          addBranch(org, b, 'المبيعات');
+        });
+      });
+    } catch (_) {}
+
+    try {
+      (Store().get()?.identities || []).forEach((i) => {
+        if (!i.orgName && !i.orgId) return;
+        const org = ensure(i.orgId || i.orgName, i.orgName);
+        addBranch(org, i.branchName, i.department);
+      });
+    } catch (_) {}
+
+    try {
+      (window.HubBranchesData?.BRANCHES || []).slice(0, 8).forEach((b) => {
+        addBranch(naiosh, b.nameAr === 'المقر الرئيسي' ? 'المقر الرئيسي' : b.nameAr);
+      });
+    } catch (_) {}
+
+    return [...tree.values()]
+      .map((o) => ({
+        id: o.id,
+        name: o.name,
+        branches: [...o.branches.entries()].map(([name, depts]) => ({
+          name,
+          departments: [...depts].sort((a, b) => a.localeCompare(b, 'ar')),
+        })).sort((a, b) => a.name.localeCompare(b.name, 'ar')),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  };
+
   const listAffiliationOptions = () => {
     const state = Store().get();
     const orgs = listOrganizations();
+    const structure = listOrgStructure();
     const branches = new Set();
     const departments = new Set();
-    const jobTitles = new Set();
+    const jobTitles = new Set(['محاسب', 'مديرة مؤسسة', 'أخصائي موارد بشرية', 'منسق تشغيل', 'مهندسة تشغيل', 'موظف فرع', 'مدير فرع']);
+    structure.forEach((o) => {
+      o.branches.forEach((b) => {
+        branches.add(b.name);
+        b.departments.forEach((d) => departments.add(d));
+      });
+    });
     (state.identities || []).forEach((i) => {
       if (i.branchName) branches.add(i.branchName);
       if (i.department) departments.add(i.department);
       if (i.jobTitle) jobTitles.add(i.jobTitle);
     });
-    (state.scopes || [])
-      .filter((s) => s.type === 'BRANCH')
-      .forEach((s) => branches.add(s.nameAr.replace(/^فرع\s+/, '') || s.nameAr));
-    ['الرياض', 'جدة', 'الإسكندرية', 'القاهرة', 'المقر الرئيسي'].forEach((b) => branches.add(b));
-    ['المالية', 'الموارد البشرية', 'التشغيل', 'الإدارة', 'التقنية', 'المبيعات'].forEach((d) => departments.add(d));
     return {
       orgs,
+      structure,
       branches: [...branches].sort((a, b) => a.localeCompare(b, 'ar')),
       departments: [...departments].sort((a, b) => a.localeCompare(b, 'ar')),
       jobTitles: [...jobTitles].sort((a, b) => a.localeCompare(b, 'ar')),
@@ -1650,6 +1744,7 @@
     registerEmployee,
     createUserIdentity,
     listOrganizations,
+    listOrgStructure,
     listAffiliationOptions,
     nextClientNo: () => nextClientNo(Store().get()),
     ensureEmployeeNumbers,

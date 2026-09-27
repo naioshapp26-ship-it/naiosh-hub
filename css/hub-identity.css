@@ -183,19 +183,19 @@
 }
 
 .idn-table-wrap {
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid var(--idn-border);
   border-radius: 12px;
   background: #fff;
 }
 
 .idn-table {
-  width: max-content;
-  min-width: 100%;
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.9rem;
-  table-layout: auto;
+  table-layout: fixed;
 }
 
 .idn-table th,
@@ -203,8 +203,7 @@
   padding: 10px 12px;
   border-bottom: 1px solid #f3f4f6;
   text-align: start;
-  vertical-align: middle;
-  white-space: nowrap;
+  vertical-align: top;
 }
 
 .idn-table th {
@@ -214,50 +213,149 @@
   z-index: 2;
   font-weight: 700;
   box-shadow: 0 1px 0 var(--idn-border);
+  white-space: nowrap;
 }
+
+/* جدول مركّب — بدون تمرير أفقي على سطح المكتب */
+.idn-compound {
+  min-width: 0 !important;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.idn-compound th,
+.idn-compound td {
+  white-space: normal;
+  overflow: hidden;
+}
+
+.idn-compound .col-user { width: 18%; }
+.idn-compound .col-ids { width: 22%; }
+.idn-compound .col-kind { width: 10%; }
+.idn-compound .col-org { width: 14%; }
+.idn-compound .col-job { width: 12%; }
+.idn-compound .col-role { width: 12%; }
+.idn-compound .col-status { width: 7%; }
+.idn-compound .col-acts { width: 5%; }
 
 .idn-registry {
-  min-width: 1400px;
-}
-
-.idn-registry .col-user,
-.idn-registry .col-org,
-.idn-registry .col-mail,
-.idn-registry .col-role,
-.idn-registry .col-job {
-  white-space: normal;
-  min-width: 110px;
-  max-width: 180px;
-}
-
-.idn-registry .col-nai,
-.idn-registry .col-cli,
-.idn-registry .col-emp {
-  min-width: 120px;
-}
-
-.idn-registry .col-kind,
-.idn-registry .col-branch,
-.idn-registry .col-dept,
-.idn-registry .col-status {
-  min-width: 90px;
-}
-
-.idn-registry .col-acts {
-  min-width: 110px;
-  position: sticky;
-  inset-inline-start: 0;
-  background: #fff;
-  z-index: 1;
-}
-
-.idn-registry th.col-acts {
-  background: #f9fafb;
-  z-index: 3;
+  min-width: 0;
 }
 
 .idn-registry-wrap {
   max-height: min(70vh, 720px);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.idn-cell-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.idn-name {
+  font-size: 0.92rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.idn-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--idn-muted);
+  font-size: 0.8rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idn-ids {
+  gap: 6px;
+}
+
+.idn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.78rem;
+}
+
+.idn-chip-k {
+  color: var(--idn-muted);
+  font-size: 0.7rem;
+}
+
+.idn-chip code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+  background: transparent;
+  padding: 0;
+  font-size: 0.78rem;
+}
+
+.idn-seed {
+  display: inline-block;
+  margin-inline-start: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.idn-kind {
+  display: inline-block;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.idn-auto-note,
+.idn-auto-box {
+  background: #f8fafc;
+  border: 1px solid var(--idn-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 8px 0;
+}
+
+.idn-auto-box h4 {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+}
+
+.idn-ids-step {
+  display: grid;
+  gap: 10px;
+}
+
+.idn-check {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.idn-check input {
+  width: auto !important;
+  margin: 0 !important;
+}
+
+.idn-act-trigger {
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 4px 10px !important;
+  min-width: 36px;
 }
 
 .idn-id {
@@ -615,8 +713,15 @@
 }
 
 @media (min-width: 721px) and (max-width: 1100px) {
-  .idn-registry {
-    min-width: 1100px;
+  .idn-compound {
     font-size: 0.84rem;
+  }
+
+  .idn-compound .col-job {
+    width: 10%;
+  }
+
+  .idn-chip code {
+    max-width: 100px;
   }
 }

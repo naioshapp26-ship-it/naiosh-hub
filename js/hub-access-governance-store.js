@@ -745,9 +745,10 @@
           verificationStatus: 'VERIFIED',
           status: spec.status || 'active',
           positions: spec.positions || [],
+          dataSource: 'registry-seed',
+          registrySeed: true,
           createdAt: nowIso(),
           updatedAt: nowIso(),
-          registrySeed: true,
         };
         applyAffiliation(row, spec);
         state.identities.push(row);
