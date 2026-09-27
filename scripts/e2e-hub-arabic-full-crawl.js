@@ -62,11 +62,11 @@ const BRAND = new Set([
           if (/^[A-Z0-9]+ · [a-z0-9.-]+$/i.test(t) || /^[a-z0-9.-]+\.(com|app|io|net|org)\b/i.test(t)) return false;
         }
         if (/[\u0600-\u06FF]/.test(t)) {
-          const latin = t.match(/[A-Za-z][A-Za-z0-9+&.\/_-]*/g) || [];
+          const latin = t.match(/[A-Za-z][A-Za-z0-9+&.\/_.-]*/g) || [];
           return latin.some((w) => {
             if (brand.has(w) || brand.has(w.toUpperCase())) return false;
             if (/^[A-Z]{2,12}$/.test(w)) return false;
-            if (/^(Hub|hub|v\d+|ms)$/i.test(w)) return false;
+            if (/^(Hub|hub|v\d+|ms|hub360)$/i.test(w)) return false;
             if (/\.(com|app|io|net|org)$/i.test(w)) return false;
             if (/^\/api\//i.test(w)) return false;
             // system display like "تخطيط ... (ERP)" — ERP in parens allowed

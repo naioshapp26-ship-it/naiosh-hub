@@ -755,7 +755,14 @@
     if (!raw) return fallback || '—';
     if (hasArabic(raw) && !/^[A-Z0-9_-]+$/i.test(raw)) return raw;
     const fromLauncher = typeof window !== 'undefined' ? window.HubLauncher?.SYSTEM_META?.[raw.toUpperCase()]?.nameAr : null;
-    return SYSTEMS[raw.toUpperCase()] || fromLauncher || fallback || raw;
+    return (
+      SYSTEMS[raw.toUpperCase()] ||
+      fromLauncher ||
+      LABELS[raw] ||
+      LABELS[raw.toLowerCase()] ||
+      fallback ||
+      raw
+    );
   };
 
   const activityKind = (code, fallback) => {
