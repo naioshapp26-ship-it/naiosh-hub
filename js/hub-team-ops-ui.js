@@ -360,10 +360,25 @@
 
   const placeOpenMenu = () => {
     clearFloat();
-    const open = document.querySelector('.hto-more.is-open');
-    if (!open || !ui.openMenu) return;
-    const btn = open.querySelector('[data-action="hto-menu"]');
-    const src = open.querySelector('.hto-more-menu');
+    if (!ui.openMenu) return;
+    const opens = [...document.querySelectorAll('.hto-more.is-open')];
+    let open = null;
+    let btn = null;
+    for (const el of opens) {
+      const candidate = el.querySelector('[data-action="hto-menu"]');
+      if (!candidate) continue;
+      const r = candidate.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        open = el;
+        btn = candidate;
+        break;
+      }
+    }
+    if (!open || !btn) {
+      open = opens[0];
+      btn = open?.querySelector('[data-action="hto-menu"]') || null;
+    }
+    const src = open?.querySelector('.hto-more-menu');
     if (!btn || !src) return;
     const float = document.createElement('div');
     float.className = 'hto-float-menu';
@@ -406,21 +421,34 @@
     }
   };
 
+  const fmtParts = (iso) => {
+    if (!iso) return { date: '—', time: '' };
+    try {
+      const d = new Date(iso);
+      return {
+        date: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', numberingSystem: 'latn' }),
+        time: d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', numberingSystem: 'latn' }),
+      };
+    } catch {
+      return { date: String(iso), time: '' };
+    }
+  };
+
   const rowActions = (u, g) => {
     const open = ui.openMenu === u.naioshId;
     if (!g) {
-      return `<div class="hto-actions">
+      return `<div class="hto-actions hto-actions-row">
         <button type="button" class="hto-btn hto-btn-sm hto-btn-primary" data-action="hto-wizard-open" data-user="${esc(u.naioshId)}">تعيين</button>
         <button type="button" class="hto-btn hto-btn-sm" data-action="hto-view" data-id="${esc(u.naioshId)}">عرض</button>
         <button type="button" class="hto-btn hto-btn-sm" data-action="hto-edit-grant" data-id="${esc(u.naioshId)}" data-gid="">تعديل</button>
       </div>`;
     }
-    return `<div class="hto-actions">
+    return `<div class="hto-actions hto-actions-row">
       <button type="button" class="hto-btn hto-btn-sm" data-action="hto-view" data-id="${esc(u.naioshId)}">عرض</button>
       <button type="button" class="hto-btn hto-btn-sm" data-action="hto-edit-grant" data-id="${esc(u.naioshId)}" data-gid="${esc(g?.grantId || '')}">تعديل</button>
       <button type="button" class="hto-btn hto-btn-sm" data-action="hto-perms" data-id="${esc(u.naioshId)}">الصلاحيات</button>
       <div class="hto-more ${open ? 'is-open' : ''}">
-        <button type="button" class="hto-btn hto-btn-sm" data-action="hto-menu" data-id="${esc(u.naioshId)}" title="المزيد" aria-label="المزيد">⋮</button>
+        <button type="button" class="hto-btn hto-btn-sm hto-btn-icon" data-action="hto-menu" data-id="${esc(u.naioshId)}" title="المزيد" aria-label="المزيد">⋮</button>
         <div class="hto-more-menu">
           <button type="button" data-action="hto-edit-grant" data-id="${esc(u.naioshId)}" data-gid="${esc(g?.grantId || '')}">تغيير التعيين</button>
           ${
@@ -443,7 +471,7 @@
     const pageRows = rows.slice(start, start + ui.pageSize);
     const sysOpts = systems();
     return `
-      <section class="hto-panel">
+      <section class="hto-panel hto-panel-team">
         <div class="hto-panel-head">
           <div>
             <h3>فريق إدارة نايوش</h3>
@@ -451,54 +479,111 @@
           </div>
           <button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-employee">+ إضافة موظف</button>
         </div>
-        <div class="hto-toolbar">
-          <input type="search" id="hto-q" value="${esc(ui.q)}" placeholder="ابحث بالاسم أو رقم الموظف أو رقم نايوش أو البريد" />
-          <select id="hto-f-sys"><option value="">النظام: الكل</option>${sysOpts.map((s) => `<option value="${esc(s.code)}" ${ui.filters.system === s.code ? 'selected' : ''}>${esc(s.nameAr)}</option>`).join('')}</select>
-          <select id="hto-f-role"><option value="">الدور: الكل</option>${allRoles().map((r) => `<option value="${esc(r.code)}" ${ui.filters.role === r.code ? 'selected' : ''}>${esc(r.nameAr)}</option>`).join('')}</select>
+        <div class="hto-toolbar hto-toolbar-team">
+          <input type="search" id="hto-q" value="${esc(ui.q)}" placeholder="بحث بالاسم / رقم الموظف / رقم نايوش" />
+          <select id="hto-f-sys"><option value="">النظام</option>${sysOpts.map((s) => `<option value="${esc(s.code)}" ${ui.filters.system === s.code ? 'selected' : ''}>${esc(s.nameAr)}</option>`).join('')}</select>
+          <select id="hto-f-role"><option value="">الدور</option>${allRoles().map((r) => `<option value="${esc(r.code)}" ${ui.filters.role === r.code ? 'selected' : ''}>${esc(r.nameAr)}</option>`).join('')}</select>
           <select id="hto-f-status">
-            <option value="">الحالة: الكل</option>
+            <option value="">الحالة</option>
             <option value="active" ${ui.filters.status === 'active' ? 'selected' : ''}>نشط</option>
             <option value="suspended" ${ui.filters.status === 'suspended' ? 'selected' : ''}>موقوف</option>
           </select>
-          <button type="button" class="hto-btn" data-action="hto-apply">تطبيق</button>
-          <button type="button" class="hto-btn" data-action="hto-clear">مسح</button>
+          <button type="button" class="hto-btn" data-action="hto-apply">تصفية</button>
+          <button type="button" class="hto-btn" data-action="hto-clear">مسح الفلاتر</button>
         </div>
         ${
           pageRows.length
-            ? `<div class="hto-table-wrap"><table class="hto-table hto-table-team">
+            ? `<div class="hto-table-wrap hto-table-wrap--team">
+                <table class="hto-table hto-table-team">
+                <colgroup>
+                  <col class="col-emp" /><col class="col-eno" /><col class="col-nid" /><col class="col-pos" /><col class="col-sys" />
+                  <col class="col-role" /><col class="col-perm" /><col class="col-st" /><col class="col-upd" /><col class="col-act" />
+                </colgroup>
                 <thead><tr>
-                  <th>الموظف</th><th>رقم الموظف</th><th>رقم نايوش</th><th>مكان العمل</th><th>النظام</th><th>الدور</th><th>الصلاحيات</th><th>الحالة</th><th>آخر تعديل</th><th>الإجراءات</th>
+                  <th class="col-emp">الموظف</th>
+                  <th class="col-eno">رقم الموظف</th>
+                  <th class="col-nid">رقم نايوش</th>
+                  <th class="col-pos">مكان العمل</th>
+                  <th class="col-sys">النظام</th>
+                  <th class="col-role">الدور</th>
+                  <th class="col-perm">الصلاحيات</th>
+                  <th class="col-st">الحالة</th>
+                  <th class="col-upd">آخر تعديل</th>
+                  <th class="col-act">الإجراءات</th>
                 </tr></thead>
                 <tbody>${pageRows
                   .map((u) => {
                     const g = primaryGrant(u);
                     const perms = g?.permissions || [];
-                    return `<tr>
-                      <td data-label="الموظف">
+                    const when = fmtParts(u.updatedAt || g?.updatedAt);
+                    const posLabel = g?.positionCode
+                      ? allPositions().find((p) => p.code === g.positionCode)?.nameAr || g.positionCode
+                      : '—';
+                    return `<tr class="hto-team-row">
+                      <td class="col-emp" data-label="الموظف">
                         <button type="button" class="hto-user-link" data-action="hto-view" data-id="${esc(u.naioshId)}">
-                          <span class="hto-avatar">${esc((u.name || '?').slice(0, 1))}</span>
-                          <span><strong>${esc(u.name)}</strong><small>${esc(u.email || '')}</small></span>
+                          <span class="hto-avatar" aria-hidden="true">${esc((u.name || '?').slice(0, 1))}</span>
+                          <span class="hto-user-meta"><strong>${esc(u.name)}</strong><small>${esc(u.email || '')}</small></span>
                         </button>
                       </td>
-                      <td data-label="رقم الموظف" class="hto-nowrap">
+                      <td class="col-eno" data-label="رقم الموظف">
                         ${
                           u.employeeNo
-                            ? `<button type="button" class="hto-emp-link" data-action="hto-view" data-id="${esc(u.naioshId)}" title="فتح ملف الموظف"><code class="hto-emp">${esc(u.employeeNo)}</code></button>`
+                            ? `<button type="button" class="hto-emp-link" data-action="hto-view" data-id="${esc(u.naioshId)}" title="فتح ملف الموظف"><code class="hto-emp hto-id">${esc(u.employeeNo)}</code></button>`
                             : '—'
                         }
                       </td>
-                      <td data-label="رقم نايوش" class="hto-nowrap"><code>${esc(u.naioshId)}</code></td>
-                      <td data-label="مكان العمل">${esc(g?.positionCode ? allPositions().find((p) => p.code === g.positionCode)?.nameAr || g.positionCode : '—')}</td>
-                      <td data-label="النظام">${esc(g ? labelSys(g.system) : '—')}</td>
-                      <td data-label="الدور"><span class="hto-chip">${esc(g ? labelRole(g.roleCode) : 'بدون تعيين')}</span></td>
-                      <td data-label="الصلاحيات">${g ? `${perms.length} صلاحيات` : 'لا توجد صلاحيات'}</td>
-                      <td data-label="الحالة">${statusBadge(u.status)}</td>
-                      <td data-label="آخر تعديل" class="hto-nowrap">${fmt(u.updatedAt || g?.updatedAt)}</td>
-                      <td data-label="الإجراءات">${rowActions(u, g)}</td>
+                      <td class="col-nid" data-label="رقم نايوش"><code class="hto-id">${esc(u.naioshId)}</code></td>
+                      <td class="col-pos" data-label="مكان العمل"><span class="hto-cell-text">${esc(posLabel)}</span></td>
+                      <td class="col-sys" data-label="النظام"><span class="hto-cell-text">${esc(g ? labelSys(g.system) : '—')}</span></td>
+                      <td class="col-role" data-label="الدور"><span class="hto-chip">${esc(g ? labelRole(g.roleCode) : 'بدون تعيين')}</span></td>
+                      <td class="col-perm" data-label="الصلاحيات">
+                        ${
+                          g
+                            ? `<div class="hto-perm-cell"><span>${perms.length} صلاحيات</span><button type="button" class="hto-btn hto-btn-sm" data-action="hto-perms" data-id="${esc(u.naioshId)}">عرض</button></div>`
+                            : `<span class="hto-muted">لا توجد صلاحيات</span>`
+                        }
+                      </td>
+                      <td class="col-st" data-label="الحالة">${statusBadge(u.status)}</td>
+                      <td class="col-upd" data-label="آخر تعديل">
+                        <div class="hto-datetime" dir="ltr"><span>${esc(when.date)}</span>${when.time ? `<small>${esc(when.time)}</small>` : ''}</div>
+                      </td>
+                      <td class="col-act" data-label="الإجراءات">${rowActions(u, g)}</td>
                     </tr>`;
                   })
                   .join('')}</tbody>
               </table></div>
+              <div class="hto-team-cards">
+                ${pageRows
+                  .map((u) => {
+                    const g = primaryGrant(u);
+                    const perms = g?.permissions || [];
+                    const when = fmtParts(u.updatedAt || g?.updatedAt);
+                    const posLabel = g?.positionCode
+                      ? allPositions().find((p) => p.code === g.positionCode)?.nameAr || g.positionCode
+                      : '—';
+                    return `<article class="hto-staff-card">
+                      <header class="hto-staff-card-head">
+                        <button type="button" class="hto-user-link" data-action="hto-view" data-id="${esc(u.naioshId)}">
+                          <span class="hto-avatar">${esc((u.name || '?').slice(0, 1))}</span>
+                          <span class="hto-user-meta"><strong>${esc(u.name)}</strong><small>${esc(u.email || '')}</small></span>
+                        </button>
+                        ${statusBadge(u.status)}
+                      </header>
+                      <dl class="hto-staff-dl">
+                        <div><dt>رقم الموظف</dt><dd><code class="hto-emp hto-id">${esc(u.employeeNo || '—')}</code></dd></div>
+                        <div><dt>رقم نايوش</dt><dd><code class="hto-id">${esc(u.naioshId)}</code></dd></div>
+                        <div><dt>مكان العمل</dt><dd>${esc(posLabel)}</dd></div>
+                        <div><dt>النظام</dt><dd>${esc(g ? labelSys(g.system) : '—')}</dd></div>
+                        <div><dt>الدور</dt><dd>${esc(g ? labelRole(g.roleCode) : 'بدون تعيين')}</dd></div>
+                        <div><dt>الصلاحيات</dt><dd>${g ? `${perms.length} صلاحيات` : 'لا توجد صلاحيات'}</dd></div>
+                        <div><dt>آخر تعديل</dt><dd dir="ltr">${esc(when.date)}${when.time ? ` · ${esc(when.time)}` : ''}</dd></div>
+                      </dl>
+                      <footer class="hto-staff-card-actions">${rowActions(u, g)}</footer>
+                    </article>`;
+                  })
+                  .join('')}
+              </div>
               <div class="hto-pager">
                 <span>عرض ${start + 1}–${Math.min(start + ui.pageSize, rows.length)} من ${rows.length}</span>
                 <div class="hto-actions">
@@ -1117,9 +1202,7 @@
           ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-role">+ إضافة دور</button>`
           : ui.tab === 'permissions'
             ? `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-perm">+ إضافة صلاحية</button>`
-            : ui.tab === 'audit'
-              ? ''
-              : `<button type="button" class="hto-btn hto-btn-primary" data-action="hto-add-employee">+ إضافة موظف</button>`;
+            : '';
 
     const counts = {
       systems: systems().length,
