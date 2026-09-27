@@ -1022,24 +1022,35 @@
       } else {
         ui.menuId = id;
         try {
-          const r = btn.getBoundingClientRect?.();
-          if (r) {
+          let el = btn;
+          let r = el.getBoundingClientRect?.();
+          // تجنّب أزرار البطاقات المخفية على سطح المكتب (أبعادها صفر)
+          if (!r || (!r.width && !r.height)) {
+            const nodes = document.querySelectorAll(`[data-action="idn-menu-toggle"][data-id="${CSS.escape ? CSS.escape(id) : id}"]`);
+            for (const cand of nodes) {
+              const cr = cand.getBoundingClientRect();
+              if (cr.width > 0 && cr.height > 0) {
+                el = cand;
+                r = cr;
+                break;
+              }
+            }
+          }
+          if (r && r.width > 0 && r.height > 0) {
             const menuW = 220;
-            let left = r.right - menuW;
-            if (left < 8) left = 8;
-            if (typeof window !== 'undefined' && left + menuW > window.innerWidth - 8) {
-              left = Math.max(8, window.innerWidth - menuW - 8);
-            }
+            const menuH = 320;
+            const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+            const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+            let left = r.right + 8;
+            if (left + menuW > vw - 8) left = Math.max(8, r.left - menuW - 8);
             let top = r.bottom + 6;
-            if (typeof window !== 'undefined' && top + 280 > window.innerHeight) {
-              top = Math.max(8, r.top - 280);
-            }
+            if (top + menuH > vh - 8) top = Math.max(8, r.top - menuH - 6);
             ui.menuPos = { top, left };
           } else {
-            ui.menuPos = { top: 140, left: 24 };
+            ui.menuPos = { top: 160, left: 48 };
           }
         } catch {
-          ui.menuPos = { top: 140, left: 24 };
+          ui.menuPos = { top: 160, left: 48 };
         }
       }
       return true;
