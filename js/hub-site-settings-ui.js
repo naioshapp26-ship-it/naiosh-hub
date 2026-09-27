@@ -225,7 +225,14 @@
             }</td>
             <td><span class="chip ss-status-${esc(s.status || 'active')}">${esc(statusLabel(s.status))}</span></td>
             <td>${count}</td>
-            <td>${esc(s.createdBy || s.created_by || '—')}</td>
+            <td>${esc(
+              (() => {
+                const by = s.createdBy || s.created_by || '—';
+                if (by === 'system' || by === 'System') return 'النظام';
+                if (by === 'admin' || by === 'Admin') return 'مسؤول';
+                return by;
+              })()
+            )}</td>
             <td>${esc((s.updatedAt || s.updated_at || s.createdAt || '').slice(0, 10) || '—')}</td>
             <td class="ss-actions">${storeActionsHtml(s)}</td>
           </tr>`;
@@ -676,7 +683,14 @@
             <li><b>الرابط:</b> ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(url)}</a>` : '—'}</li>
             <li><b>الحالة:</b> ${esc(statusLabel(s.status))}</li>
             <li><b>المنتجات:</b> ${reg()?.productCount?.(s.storeId) || 0}</li>
-            <li><b>أنشئ بواسطة:</b> ${esc(s.createdBy || '—')}</li>
+            <li><b>أنشئ بواسطة:</b> ${esc(
+              (() => {
+                const by = s.createdBy || '—';
+                if (by === 'system' || by === 'System') return 'النظام';
+                if (by === 'admin' || by === 'Admin') return 'مسؤول';
+                return by;
+              })()
+            )}</li>
             <li><b>Created At:</b> ${fmt(s.createdAt)}</li>
             <li><b>آخر تحديث:</b> ${fmt(s.updatedAt || s.createdAt)}</li>
           </ul>

@@ -269,7 +269,7 @@
     if (!row) return '';
     return `<div class="hsa-modal"><div class="hsa-modal-card">
       <header><h3>معاينة نتيجة البحث</h3><button type="button" class="hsa-btn" data-action="sa-preview-close">إغلاق</button></header>
-      <p class="hsa-lead">هكذا يظهر العنصر في search.html:</p>
+      <p class="hsa-lead">هكذا يظهر العنصر في صفحة البحث:</p>
       <article class="hsa-preview-hit">
         <div>
           <strong>${esc(row.title)}</strong>
@@ -306,7 +306,7 @@
           <div>
             <p class="hsa-kicker">لوحة إدارة محرك البحث الشامل</p>
             <h3>${esc(eng.nameAr)}</h3>
-            <p class="hsa-lead">هذه الصفحة تدير نفس الفهرس الذي تقرأه <strong>search.html</strong> — مصدر حقيقة واحد.</p>
+            <p class="hsa-lead">هذه الصفحة تدير نفس الفهرس الذي تقرأه <strong>صفحة البحث العامة</strong> — مصدر حقيقة واحد.</p>
             <p class="hsa-muted">الفروع · الحاضنات · المنصات · الأنظمة · الخدمات · مركز المعلومات · نوايا البحث · القوائم السريعة</p>
           </div>
           <div class="hsa-engine-actions">
@@ -318,11 +318,11 @@
         <div class="hsa-diff-grid">
           <article>
             <h4><i class="fas fa-database"></i> مصدر الحقيقة</h4>
-            <p>HubUniversalSearch.collectCatalog ← البيانات الحيّة + إعدادات الظهور (HubSearchConfig) + محتوى مخصص (HubSearchCatalog).</p>
+            <p>الفهرس الحي ← البيانات الحيّة + إعدادات الظهور + المحتوى المخصص).</p>
           </article>
           <article>
             <h4><i class="fas fa-eye-slash"></i> إخفاء بلا حذف</h4>
-            <p>إيقاف الظهور يخفي العنصر من search.html دون حذف الفرع/الخدمة/النظام الأصلي.</p>
+            <p>إيقاف الظهور يخفي العنصر من صفحة البحث دون حذف الفرع/الخدمة/النظام الأصلي.</p>
           </article>
         </div>
         <h3 style="margin-top:16px">عيّنة من الفهرس الحي (الظاهرة للمستخدم)</h3>
@@ -350,7 +350,7 @@
     const sources = [...new Set(liveCatalog(true).map((r) => r.sourceLabel || r.source).filter(Boolean))];
     return `
       <section class="hsa-panel">
-        <p class="hsa-lead">كل صف هنا عنصر من نفس فهرس search.html (بما في ذلك المخفي).</p>
+        <p class="hsa-lead">كل صف هنا عنصر من نفس فهرس صفحة البحث (بما في ذلك المخفي).</p>
         <div class="hsa-toolbar">
           <input type="search" id="hsa-q" value="${esc(ui.q)}" placeholder="ابحث بالعنوان أو المصدر..." title="بحث" />
           <select id="hsa-f-type" title="النوع">
@@ -448,7 +448,7 @@
       stepBody = `
         <p class="hsa-lead">${
           isService
-            ? 'اختر خدمة موجودة لإعادة إظهارها، أو أضف خدمة جديدة إلى كتالوج الخدمات (نفس مصدر search.html).'
+            ? 'اختر خدمة موجودة لإعادة إظهارها، أو أضف خدمة جديدة إلى كتالوج الخدمات (نفس مصدر صفحة البحث).'
             : `اختر ${esc(typeMeta.label)} من المصدر الحي.`
         }</p>
         ${
@@ -501,7 +501,7 @@
         <p class="hsa-lead">حالة الظهور في محرك البحث الشامل.</p>
         <label class="hsa-check">
           <input type="checkbox" id="hsa-f-visible" ${ui.addForm.searchVisible !== false ? 'checked' : ''} />
-          يظهر في search.html فور الحفظ
+          يظهر في صفحة البحث فور الحفظ
         </label>`;
     } else if (ui.addStep === 4 || ui.addStep === 5) {
       const title = ui.addForm.title || pick?.title || '';
@@ -537,7 +537,7 @@
             ui.addStep === 5
               ? `<button type="button" class="hsa-btn hsa-btn-primary" data-action="sa-tab" data-tab="indexed">عرض الفهرس</button>
                  <button type="button" class="hsa-btn" data-action="sa-add-reset">إضافة أخرى</button>
-                 <a class="hsa-btn" href="search.html?q=${encodeURIComponent(ui.addForm.title || pick?.title || '')}" target="_blank" rel="noopener">فتح search.html</a>`
+                 <a class="hsa-btn" href="search.html?q=${encodeURIComponent(ui.addForm.title || pick?.title || '')}" target="_blank" rel="noopener">فتح صفحة البحث</a>`
               : ''
           }
         </div>
@@ -549,7 +549,7 @@
     return `
       <section class="hsa-panel">
         <h3>مصادر محرك البحث الشامل</h3>
-        <p class="hsa-lead">هذه المصادر تغذي search.html مباشرة — العدّاد «مفهرس ظاهر» = ما يراه المستخدم.</p>
+        <p class="hsa-lead">هذه المصادر تغذي صفحة البحث مباشرة — العدّاد «مفهرس ظاهر» = ما يراه المستخدم.</p>
         <div class="hsa-table-wrap"><table class="hsa-table">
           <thead><tr><th>المصدر</th><th>النوع</th><th>في الفهرس</th><th>ظاهر</th><th>الحالة</th><th></th></tr></thead>
           <tbody>${sources
@@ -576,7 +576,7 @@
           <button type="button" class="hsa-btn hsa-btn-primary" data-action="sa-intent-new">+ إضافة نية بحث</button>
         </div>
         <h3>نوايا البحث — «ماذا تبحث اليوم؟»</h3>
-        <p class="hsa-lead">أي تعديل هنا يظهر فورًا في search.html (نفس HubSearchIntents + HubSearchConfig).</p>
+        <p class="hsa-lead">أي تعديل هنا يظهر فورًا في صفحة البحث (نفس إعدادات النوايا والظهور).</p>
         ${
           ui.intentEditId === 'new' || (ui.intentEditId && ui.intentEditId.startsWith('edit:'))
             ? `<div class="hsa-form-grid" style="margin:12px 0;padding:12px;border:1px solid var(--border, #ddd);border-radius:8px">
@@ -620,7 +620,7 @@
     return `
       <section class="hsa-panel">
         <h3>القوائم السريعة</h3>
-        <p class="hsa-lead">تظهر في search.html تحت «قوائم سريعة» — الإظهار/الترتيب/العنوان من هنا.</p>
+        <p class="hsa-lead">تظهر في صفحة البحث تحت «قوائم سريعة» — الإظهار/الترتيب/العنوان من هنا.</p>
         <div class="hsa-table-wrap"><table class="hsa-table">
           <thead><tr><th>العنوان</th><th>النوع</th><th>الترتيب</th><th>الحد الأقصى</th><th>الظهور</th><th></th></tr></thead>
           <tbody>${lists
@@ -717,11 +717,11 @@
         <header class="hsa-hero">
           <div>
             <h2>إدارة محرك البحث</h2>
-            <p>لوحة التحكم لنفس «محرك البحث الشامل» في search.html — مصدر حقيقة موحّد.</p>
+            <p>لوحة التحكم لنفس «محرك البحث الشامل» في صفحة البحث — مصدر حقيقة موحّد.</p>
           </div>
           <div class="hsa-hero-actions">
             <button type="button" class="hsa-btn hsa-btn-primary" data-action="sa-tab" data-tab="add">+ إضافة إلى محرك البحث</button>
-            <a class="hsa-btn" href="search.html" target="_blank" rel="noopener">فتح search.html</a>
+            <a class="hsa-btn" href="search.html" target="_blank" rel="noopener">فتح صفحة البحث</a>
           </div>
         </header>
         ${ui.tab !== 'overview' ? renderLiveStats() : ''}
@@ -1020,7 +1020,7 @@
       ui.addForm.title = savedTitle;
       syncPersist();
       ui.lastMessage = visible
-        ? `تمت الإضافة/التفعيل — العنصر جزء من فهرس search.html (${savedTitle}).`
+        ? `تمت الإضافة/التفعيل — العنصر جزء من فهرس صفحة البحث (${savedTitle}).`
         : 'تم الحفظ مع إيقاف الظهور — يمكنك تفعيله لاحقًا.';
       ui.addStep = 5;
       toast?.(ui.lastMessage);

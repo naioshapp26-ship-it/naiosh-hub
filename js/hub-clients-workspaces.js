@@ -184,7 +184,7 @@
       ${K.renderHeader({
         prefix: 'cl',
         title: 'إدارة العملاء',
-        subtitle: 'Clients 360 · أنظمة · طلبات · محفظة · ملاحظات داخلية · تدقيق',
+        subtitle: 'العملاء 360 · أنظمة · طلبات · محفظة · ملاحظات داخلية · تدقيق',
         icon: 'fa-user-tie',
         actionsHtml: `<button type="button" class="btn btn-primary btn-sm" data-action="cl-create"><i class="fas fa-plus"></i> جديد</button>
           <button type="button" class="btn btn-ghost btn-sm" data-action="cl-help-open"><i class="fas fa-circle-question"></i></button>`,

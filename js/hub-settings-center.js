@@ -33,7 +33,7 @@
     if (!iso) return 'لم يُحفظ بعد';
     if (window.HubFormat && window.HubFormat.formatDateTime) return window.HubFormat.formatDateTime(iso);
     try {
-      return new Date(iso).toLocaleString('en-GB', { numberingSystem: 'latn' });
+      return new Date(iso).toLocaleString('ar-EG');
     } catch (e) {
       return String(iso);
     }
@@ -369,11 +369,19 @@
       '"></i><i style="background:' +
       esc(s.accentColor) +
       '"></i></strong><small>أساسي / ثانوي / تمييز</small></article><article><span>اللغة</span><strong>' +
-      esc(s.locale === 'en' ? 'English' : 'العربية') +
+      esc(s.locale === 'en' ? 'الإنجليزية' : 'العربية') +
       '</strong><small>' +
       esc(s.currency) +
       ' · ' +
-      esc(s.timezone) +
+      esc(
+        ({
+          'Asia/Riyadh': 'الرياض',
+          'Asia/Dubai': 'دبي',
+          'Africa/Cairo': 'القاهرة',
+          'Asia/Kuwait': 'الكويت',
+          UTC: 'التوقيت العالمي',
+        })[s.timezone] || s.timezone
+      ) +
       '</small></article><article><span>آخر حفظ</span><strong style="font-size:14px">' +
       esc(fmtSaved(s.updatedAt)) +
       '</strong><small>' +
@@ -476,7 +484,7 @@
             value: s.locale,
             options: [
               { value: 'ar', label: 'العربية' },
-              { value: 'en', label: 'English' },
+              { value: 'en', label: 'الإنجليزية' },
             ],
           }) +
           field({
@@ -502,8 +510,8 @@
             options: [
               { value: 'ar-EG', label: 'عربي (يوم شهر)' },
               { value: 'ar-SA', label: 'عربي — السعودية' },
-              { value: 'en-GB', label: 'English (DD/MM)' },
-              { value: 'en-US', label: 'English (US)' },
+              { value: 'en-GB', label: 'الإنجليزية (يوم/شهر)' },
+              { value: 'en-US', label: 'الإنجليزية (أمريكي)' },
             ],
           }) +
           field({
@@ -538,7 +546,7 @@
         toggle('notifyInApp', 'إشعارات داخل هوب', 'إن أُوقفت لن تُضاف تنبيهات جديدة إلى مركز الإشعارات.', !!s.notifyInApp) +
           toggle('notifyEmail', 'إشعارات البريد (سياسة)', 'تُحفظ كسياسة للنظام — الإرسال الفعلي عند ربط البريد.', !!s.notifyEmail) +
           toggle('notifySecurity', 'تنبيهات الأمن', 'حوادث حرجة وتصنيفات أمنية.', !!s.notifySecurity) +
-          toggle('notifyOps', 'تنبيهات التشغيل', 'فئة ops في مركز الإشعارات.', !!s.notifyOps)
+          toggle('notifyOps', 'تنبيهات التشغيل', 'فئة التشغيل في مركز الإشعارات.', !!s.notifyOps)
       ) +
       section(
         'ai',
@@ -592,9 +600,9 @@
             type: 'select',
             value: s.defaultGrantPlan,
             options: [
-              { value: 'standard', label: 'standard' },
-              { value: 'professional', label: 'professional' },
-              { value: 'enterprise', label: 'enterprise' },
+              { value: 'standard', label: 'قياسي' },
+              { value: 'professional', label: 'احترافي' },
+              { value: 'enterprise', label: 'مؤسسي' },
             ],
           }) +
           field({
@@ -708,9 +716,23 @@
     try {
       perms = (window.HubAccessGovStore?.get?.()?.permissions || []).slice(0, 60);
     } catch (_) {}
+    var RESOURCE_AR = {
+      access_governance: 'حوكمة الوصول',
+      roles: 'الأدوار',
+      positions: 'المناصب',
+      users: 'المستخدمون',
+      customer_requests: 'طلبات العملاء',
+      policies: 'السياسات',
+      finance_approvals: 'موافقات مالية',
+      systems: 'الأنظمة',
+      audit: 'التدقيق',
+      delegations: 'التفويضات',
+    };
     var permRows = perms.length
       ? perms
           .map(function (p) {
+            var res = p.resource || '—';
+            var resLabel = RESOURCE_AR[res] || window.HubI18n?.label?.(res) || res;
             return (
               '<tr data-search="صلاحية ' +
               esc(p.nameAr || p.code) +
@@ -718,8 +740,10 @@
               esc(p.nameAr || p.code) +
               '</td><td dir="ltr"><code>' +
               esc(p.code) +
-              '</code></td><td>' +
-              esc(p.resource || '—') +
+              '</code></td><td title="' +
+              esc(res) +
+              '">' +
+              esc(resLabel) +
               '</td><td>' +
               esc(p.status === 'active' ? 'نشطة' : p.status || '—') +
               '</td></tr>'
@@ -809,7 +833,7 @@
         'fa-id-badge',
         'فريق العمل',
         'أرقام الموظفين والتعيين الافتراضي.',
-        'EMP وTeam Ops',
+        'EMP وعمليات الفريق',
         '<div class="sac-field" data-search="رقم موظف بادئة"><label>بادئة رقم الموظف</label><p class="sac-help">ثابتة لحماية الأرقام القديمة — لا يمكن تغييرها لكسر التسلسل.</p><input type="text" value="' +
           esc(empPrefix) +
           '" disabled dir="ltr" /></div>' +
@@ -824,7 +848,7 @@
         'fa-key',
         'الصلاحيات',
         'كتالوج الصلاحيات المتاحة في الحوكمة.',
-        'Access Governance',
+        'حوكمة الوصول',
         '<div class="table-wrap"><table class="data-table"><thead><tr><th>الاسم</th><th>الرمز</th><th>المورد</th><th>الحالة</th></tr></thead><tbody>' +
           permRows +
           '</tbody></table></div>',
@@ -835,7 +859,7 @@
         'fa-users',
         'العملاء',
         'عزل بيانات العميل وصفحة العميل.',
-        'CUSTOMER ≠ EMPLOYEE',
+        'عميل ≠ موظف',
         '<p class="sac-help" data-search="عزل عملاء">كل عميل يرى بياناته فقط. الدخول الإداري يتطلب تعيين موظف رسميًا برقم EMP وصلاحيات.</p>' +
           '<div class="settings-links"><a class="btn btn-ghost" href="#clients-mgmt"><i class="fas fa-users"></i> إدارة العملاء</a><a class="btn btn-ghost" href="client.html"><i class="fas fa-id-card"></i> صفحة العميل</a></div>',
         'customers'
@@ -845,7 +869,7 @@
         'fa-store',
         'إعدادات المتجر',
         'المتاجر من السجل المركزي — إضافة وتعديل وإيقاف تنعكس على الواجهة.',
-        'HubStoresRegistry',
+        'سجل المتاجر',
         '<div class="settings-actions" style="margin-bottom:12px"><button type="button" class="btn btn-primary" data-action="sac-store-add"><i class="fas fa-plus"></i> إضافة متجر</button></div>' +
           '<div class="table-wrap"><table class="data-table"><thead><tr><th>اسم المتجر</th><th>الشعار</th><th>الرابط</th><th>الحالة</th><th>المنتجات</th><th>آخر تعديل</th><th>إجراءات</th></tr></thead><tbody>' +
           storeRows +
@@ -858,7 +882,7 @@
         'الطلبات',
         'حالات الطلب والمراجعة والإشعارات المرتبطة.',
         'طلبات العملاء',
-        '<p class="sac-help" data-search="طلبات">إدارة أنواع الطلبات والمراجعة تتم عبر صلاحيات customer_requests.* في فريق العمل.</p>' +
+        '<p class="sac-help" data-search="طلبات">إدارة أنواع الطلبات والمراجعة تتم عبر صلاحيات طلبات العملاء في فريق العمل.</p>' +
           '<div class="settings-links"><a class="btn btn-ghost" href="#customer-requests"><i class="fas fa-inbox"></i> طلبات العملاء</a></div>',
         'orders'
       ) +
@@ -876,7 +900,7 @@
         'fa-magnifying-glass',
         'محرك البحث',
         'مصادر الفهرسة وحالة البحث.',
-        'search-admin',
+        'إدارة البحث',
         toggle('searchIndexEnabled', 'تفعيل فهرسة البحث', '', s.searchIndexEnabled !== false, 'بحث') +
           '<div class="settings-links"><a class="btn btn-ghost" href="search-admin.html"><i class="fas fa-magnifying-glass"></i> إدارة محرك البحث</a></div>',
         'search'
@@ -886,7 +910,7 @@
         'fa-cubes',
         'الأنظمة',
         'أنظمة NAIOSH HUB 360 من الكتالوج الحي.',
-        'HubOps / AccessGov',
+        'التشغيل / حوكمة الوصول',
         '<div class="table-wrap"><table class="data-table"><thead><tr><th>النظام</th><th>الرمز</th><th>الحالة</th><th>المستوى</th></tr></thead><tbody>' +
           (sysRows || '<tr><td colspan="4">لا أنظمة.</td></tr>') +
           '</tbody></table></div>',
@@ -897,7 +921,7 @@
         'fa-clock-rotate-left',
         'سجل التغييرات',
         'من عدّل ماذا — بالقيمة السابقة والجديدة.',
-        'settingsChangeLog',
+        'سجل تغييرات الإعدادات',
         '<div class="table-wrap"><table class="data-table"><thead><tr><th>المنفّذ</th><th>رقم الموظف</th><th>العنصر</th><th>السابق</th><th>الجديد</th><th>التاريخ</th></tr></thead><tbody>' +
           changeRows +
           '</tbody></table></div>',

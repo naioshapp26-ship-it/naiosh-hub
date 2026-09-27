@@ -32,8 +32,11 @@
     return `<div class="bar" aria-hidden="true"><i style="width:${n}%"></i></div>`;
   };
 
-  const badge = (text, cls = 'badge-outline') =>
-    `<span class="badge ${cls}">${esc(text || '—')}</span>`;
+  const badge = (text, cls = 'badge-outline') => {
+    const raw = text == null || text === '' ? '—' : String(text);
+    const shown = window.HubI18n?.status?.(raw) || window.HubI18n?.label?.(raw) || raw;
+    return `<span class="badge ${cls}">${esc(shown)}</span>`;
+  };
 
   const actorName = (user) => user?.name || user?.email || user?.displayName || 'مشغّل هوب';
 

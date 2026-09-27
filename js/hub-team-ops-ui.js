@@ -244,7 +244,7 @@
     if (!iso) return '—';
     if (window.HubFormat?.formatDateTime) return window.HubFormat.formatDateTime(iso);
     try {
-      return new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short', numberingSystem: 'latn' });
+      return new Date(iso).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
     } catch {
       return String(iso);
     }
@@ -424,10 +424,16 @@
   const fmtParts = (iso) => {
     if (!iso) return { date: '—', time: '' };
     try {
+      if (window.HubFormat?.formatDate && window.HubFormat?.formatTime) {
+        return {
+          date: window.HubFormat.formatDate(iso),
+          time: window.HubFormat.formatTime(iso),
+        };
+      }
       const d = new Date(iso);
       return {
-        date: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', numberingSystem: 'latn' }),
-        time: d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', numberingSystem: 'latn' }),
+        date: d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }),
+        time: d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
       };
     } catch {
       return { date: String(iso), time: '' };

@@ -1907,7 +1907,7 @@ const HubStore = (() => {
   const defaultSettings = () => ({
     orgNameAr: 'نايوش هوب',
     orgNameEn: 'NAIOSH HUB',
-    orgTagline: '360 · Imperial',
+    orgTagline: '360 · إمبراطوري',
     timezone: 'Asia/Riyadh',
     locale: 'ar',
     dateFormat: 'ar-EG',
@@ -2019,6 +2019,8 @@ const HubStore = (() => {
     if (!out.timezone) out.timezone = d.timezone;
     if (!out.dateFormat) out.dateFormat = d.dateFormat;
     if (!out.shopDefaultCategory) out.shopDefaultCategory = 'الكل';
+    // تعريب شعار الواجهة المخزّن سابقًا دون كسر المفتاح
+    if (/Imperial/i.test(String(out.orgTagline || ''))) out.orgTagline = d.orgTagline;
     ['primaryColor', 'secondaryColor', 'accentColor', 'bgColor', 'textColor', 'surfaceColor'].forEach((k) => {
       if (!HEX_RE.test(out[k] || '')) out[k] = d[k];
     });
@@ -2030,6 +2032,18 @@ const HubStore = (() => {
       out.settingsChangeLog = [];
     }
     return out;
+  };
+
+  const migrateFeedArabic = () => {
+    if (!state?.feed?.length) return false;
+    let changed = false;
+    state.feed.forEach((f) => {
+      if (f && typeof f.text === 'string' && /Core Platform/i.test(f.text)) {
+        f.text = f.text.replace(/Core Platform/gi, 'النواة المشتركة');
+        changed = true;
+      }
+    });
+    return changed;
   };
 
   const hydrateSettings = () => {
@@ -2052,7 +2066,7 @@ const HubStore = (() => {
     },
     settings: defaultSettings(),
     feed: [
-      { id: uid('f'), type: 'architecture', text: 'تم تحميل دستور المعمارية الإمبراطورية — Core Platform أولوية قصوى', at: nowIso() },
+      { id: uid('f'), type: 'architecture', text: 'تم تحميل دستور المعمارية الإمبراطورية — النواة المشتركة أولوية قصوى', at: nowIso() },
       { id: uid('f'), type: 'decision', text: 'إعادة توزيع 6 مهام ذات أولوية عالية', at: nowIso() },
       { id: uid('f'), type: 'alert', text: 'انخفاض إنتاجية فريق التكامل 12%', at: nowIso() },
       { id: uid('f'), type: 'compliance', text: 'سياسة الجودة Q-17 فُعّلت على 3 أنظمة', at: nowIso() },
@@ -3435,6 +3449,7 @@ const HubStore = (() => {
         if (hydrateLaunchFields()) save();
         if (hydrateOperating()) save();
         if (hydrateSettings()) save();
+        if (migrateFeedArabic()) save();
         return state;
       }
     } catch (_) {}

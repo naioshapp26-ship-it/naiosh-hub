@@ -314,14 +314,14 @@
           ${(g.approvals || [])
             .filter((a) => a.status === 'Pending')
             .slice(0, 5)
-            .map((a) => `<div class="gov-mini-row"><strong>${esc(a.type)}</strong> · ${esc(a.relatedEntity)}<span class="muted">${esc(a.assignedTo)}</span></div>`)
+            .map((a) => `<div class="gov-mini-row"><strong>${esc(window.HubI18n?.label?.(a.type) || a.type)}</strong> · ${esc(a.relatedEntity)}<span class="muted">${esc(a.assignedTo)}</span></div>`)
             .join('') || '<div class="empty">لا موافقات</div>'}
         </article>
         <article class="card">
           <h3>آخر العمليات</h3>
           ${(g.auditLog || [])
             .slice(0, 6)
-            .map((a) => `<div class="gov-mini-row"><strong>${esc(a.action)}</strong> · ${esc(a.entityLabel || '—')}<span class="muted">${fmtTime(a.at)}</span></div>`)
+            .map((a) => `<div class="gov-mini-row"><strong>${esc(window.HubI18n?.label?.(a.action) || a.action)}</strong> · ${esc(window.HubI18n?.label?.(a.entityLabel) || a.entityLabel || '—')}<span class="muted">${fmtTime(a.at)}</span></div>`)
             .join('')}
         </article>
       </div>`;
@@ -582,7 +582,7 @@
     return `<article class="card">
       <div class="toolbar"><h3 style="margin:0">السياسات</h3><button type="button" class="btn btn-primary" data-action="gov-modal" data-modal="policy">+ إنشاء سياسة</button></div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Policy ID</th><th>الاسم</th><th>الفئة</th><th>الإصدار</th><th>المالك</th><th>على من تطبق؟</th><th>السريان</th><th>الإقرار</th><th>الحالة</th><th></th></tr></thead>
+        <thead><tr><th>رمز السياسة</th><th>الاسم</th><th>الفئة</th><th>الإصدار</th><th>المالك</th><th>على من تطبق؟</th><th>السريان</th><th>الإقرار</th><th>الحالة</th><th></th></tr></thead>
         <tbody>${rows
           .map((p) => {
             const asg = p.assignments || [];

@@ -9,11 +9,14 @@
   const store = () => window.HubStore;
 
   const statusTaskLabel = (s) =>
-    ({ todo: 'معلّقة', in_progress: 'قيد التنفيذ', blocked: 'مختنق', done: 'مكتملة' }[s] || s);
+    ({ todo: 'معلّقة', in_progress: 'قيد التنفيذ', blocked: 'مختنق', done: 'مكتملة' }[s] || window.HubI18n?.status?.(s) || s);
   const statusTaskBadge = (s) => {
     const map = { todo: 'badge-gray', in_progress: 'badge-red', blocked: 'badge-red', done: 'badge-black' };
     return Kit().badge(statusTaskLabel(s), map[s] || 'badge-outline');
   };
+  const feedTypeAr = (t) =>
+    window.HubI18n?.label?.(t) ||
+    ({ architecture: 'معمارية', decision: 'قرار', alert: 'تنبيه', compliance: 'امتثال', report: 'تقرير' }[t] || t);
 
   const peopleNames = () =>
     (store()?.get?.()?.workforce?.employees || []).map((e) => e.name).filter(Boolean);
@@ -54,13 +57,13 @@
     const ws = cmd.ws || { auditLog: [], settings: {} };
 
     const kpis = [
-      { key: 'branches', label: 'الفروع', value: k.branches, hint: 'Branches', tab: 'board' },
-      { key: 'incubators', label: 'الحاضنات', value: k.incubators, hint: 'Incubators', tab: 'board' },
-      { key: 'platforms', label: 'المنصات', value: k.platforms, hint: 'Platforms', tab: 'board' },
-      { key: 'treasury', label: 'خزينة النقاط', value: Number(k.treasury).toLocaleString('en-US'), hint: 'Wallet', tab: 'board' },
-      { key: 'core', label: 'جاهزية Core', value: `${k.coreReadyPct}%`, hint: 'Core', tab: 'layers' },
-      { key: 'usage', label: 'استخدام الأنظمة', value: `${cmd.systemsUsagePct || 0}%`, hint: 'Usage', tab: 'pulse' },
-      { key: 'health', label: 'صحة الأنظمة', value: `${k.systemsHealth}%`, hint: 'Health', tab: 'layers' },
+      { key: 'branches', label: 'الفروع', value: k.branches, hint: 'فروع', tab: 'board' },
+      { key: 'incubators', label: 'الحاضنات', value: k.incubators, hint: 'حاضنات', tab: 'board' },
+      { key: 'platforms', label: 'المنصات', value: k.platforms, hint: 'منصات', tab: 'board' },
+      { key: 'treasury', label: 'خزينة النقاط', value: Number(k.treasury).toLocaleString('en-US'), hint: 'محفظة', tab: 'board' },
+      { key: 'core', label: 'جاهزية النواة', value: `${k.coreReadyPct}%`, hint: 'النواة', tab: 'layers' },
+      { key: 'usage', label: 'استخدام الأنظمة', value: `${cmd.systemsUsagePct || 0}%`, hint: 'الاستخدام', tab: 'pulse' },
+      { key: 'health', label: 'صحة الأنظمة', value: `${k.systemsHealth}%`, hint: 'الصحة', tab: 'layers' },
       { key: 'needs', label: 'يتطلب إجراء', value: needs.length, hint: 'إجراء مطلوب', tab: 'board' },
     ];
 
@@ -75,7 +78,7 @@
             <h3><span class="title-left"><i class="fas fa-satellite-dish icon"></i> غرفة القرار الآن</span></h3>
             <div class="hub-op-pulse">
               <div><span>صحة الأنظمة</span><strong>${k.systemsHealth || 0}%</strong>${K.bar(k.systemsHealth)}</div>
-              <div><span>جاهزية Core</span><strong>${k.coreReadyPct || 0}%</strong>${K.bar(k.coreReadyPct)}</div>
+              <div><span>جاهزية النواة</span><strong>${k.coreReadyPct || 0}%</strong>${K.bar(k.coreReadyPct)}</div>
               <div><span>استخدام الأنظمة</span><strong>${cmd.systemsUsagePct || 0}%</strong>${K.bar(cmd.systemsUsagePct)}</div>
             </div>
             <div class="toolbar" style="margin-top:10px;flex-wrap:wrap">
@@ -87,7 +90,7 @@
           <article class="card hub-op-panel">
             <h3><span class="title-left"><i class="fas fa-bolt icon"></i> اختناقات فورية</span></h3>
             <ul class="hub-op-mini-list">
-              ${blocked.map((t) => `<li><b>${K.esc(t.title)}</b><small>مهمة مختنقة · ${K.esc(t.assignee || '—')}</small>${K.badge('blocked', 'badge-red')}</li>`).join('') || '<li class="empty">لا مهام مختنقة</li>'}
+              ${blocked.map((t) => `<li><b>${K.esc(t.title)}</b><small>مهمة مختنقة · ${K.esc(t.assignee || '—')}</small>${statusTaskBadge(t.status)}</li>`).join('') || '<li class="empty">لا مهام مختنقة</li>'}
               ${openAnom.map((a) => `<li><b>${K.esc(a.signal)}</b><small>${K.esc(a.source)}</small>${K.badge(String(a.score), 'badge-red')}</li>`).join('')}
             </ul>
             <div class="toolbar" style="margin-top:8px;flex-wrap:wrap">
@@ -102,10 +105,10 @@
           <article class="card hub-op-panel">
             <h3><span class="title-left"><i class="fas fa-crosshairs icon"></i> مصادر المؤشرات</span></h3>
             <ul class="feed">
-              <li><b>الفروع/الحاضنات/المنصات</b> · Organization</li>
-              <li><b>الخزينة</b> · Wallet</li>
+              <li><b>الفروع/الحاضنات/المنصات</b> · الهيكل التنظيمي</li>
+              <li><b>الخزينة</b> · المحفظة</li>
               <li><b>صحة الأنظمة</b> · سجل الأنظمة</li>
-              <li><b>جاهزية Core</b> · Blueprint</li>
+              <li><b>جاهزية النواة</b> · دستور المعمارية</li>
             </ul>
           </article>
           <article class="card hub-op-panel">
@@ -123,7 +126,7 @@
               <button type="button" class="btn btn-sm btn-ghost" data-action="ov-tab" data-tab="pulse">المزيد</button></h3>
             <ul class="feed hub-op-feed">${(s.feed || [])
               .slice(0, 6)
-              .map((f) => `<li><b>${K.esc(f.type)}</b> — ${K.esc(f.text)} <small>${K.fmtTime(f.at)}</small></li>`)
+              .map((f) => `<li><b>${K.esc(feedTypeAr(f.type))}</b> — ${K.esc(f.text)} <small>${K.fmtTime(f.at)}</small></li>`)
               .join('') || '<li>لا أحداث</li>'}</ul>
           </article>
         </div>`;
@@ -136,7 +139,7 @@
             ? '<li>التدفق الحي موقوف من الإعدادات الداخلية.</li>'
             : (s.feed || [])
                 .slice(0, 15)
-                .map((f) => `<li><b>${K.esc(f.type)}:</b> ${K.esc(f.text)}<small>${K.fmtTime(f.at)}</small></li>`)
+                .map((f) => `<li><b>${K.esc(feedTypeAr(f.type))}:</b> ${K.esc(f.text)}<small>${K.fmtTime(f.at)}</small></li>`)
                 .join('') || '<li>لا أحداث بعد</li>'
         }</ul></article>`;
     } else if (ovUi.tab === 'phases') {

@@ -37,7 +37,7 @@
   ];
 
   const TITLES = {
-    overview: ['مركز التحكم العالمي', 'KPIs قابلة للنقر · يتطلب إجراء · مصدر · سجل عمليات'],
+    overview: ['مركز التحكم العالمي', 'مؤشرات قابلة للنقر · يتطلب إجراء · مصدر · سجل عمليات'],
     operating: ['آلية تشغيل نايوش هوب', 'اشتراكات · مكاتب · خدمات موحّدة · نشاط · تدقيق'],
     core: ['العقل المركزي — Central Intelligence', 'قرارات · توصيات · رؤى · تنبؤات · شذوذ · قواعد · تنفيذ · موافقات'],
     tasks: ['إدارة المهام', 'إدارة كاملة · مصدر · تدقيق · لوحة حالات · يتطلب إجراء'],
@@ -46,14 +46,14 @@
     integration: ['التكامل والبوابة', 'موصلات · مزامنة · API · فحص بوابة · تدقيق'],
     'posha-clients': ['عملاء هوب', 'إدارة العملاء والطلبات والدعم والتنبيهات من مكان واحد'],
     'site-settings': ['إعدادات الموقع', 'إدارة إعدادات المنصة والمتاجر والطلبات والدفع والإعلانات والتكاملات والأمان من مكان واحد'],
-    'clients-mgmt': ['إدارة العملاء', 'Clients 360 · إدارة كاملة · مصدر · ملاحظات داخلية · تدقيق'],
+    'clients-mgmt': ['إدارة العملاء', 'العملاء 360 · إدارة كاملة · مصدر · ملاحظات داخلية · تدقيق'],
     'roles-permissions': ['إدارة فريق العمل والصلاحيات', 'عيّن المسؤولين عن إدارة نايوش هوب وأنظمتها، وحدد لكل شخص مكان عمله ودوره والصلاحيات المسموح بها.'],
     notifications: ['مركز إشعارات نايوش هوب', 'مصدر واضح · سبب · إجراء · طلب مرتبط'],
     'side-project-regs': ['طلبات تسجيل المشاريع', 'Inbox · متابعة · تواصل · تدقيق'],
     'content-articles': ['المقالات الواردة', 'مراجعة · اعتماد · نشر · Workflow Runs'],
     'search-admin': [
       'إدارة محرك البحث',
-      'لوحة التحكم لنفس محرك البحث الشامل في search.html — مصدر حقيقة موحّد للفهرس والنوايا والقوائم السريعة.',
+      'لوحة التحكم لنفس محرك البحث الشامل في صفحة البحث العامة — مصدر حقيقة موحّد للفهرس والنوايا والقوائم السريعة.',
     ],
     'rent-admin': ['موافقات المدير الأعلى', 'مراجعة واعتماد العمليات الحساسة قبل التنفيذ'],
     blueprint: ['دستور المعمارية الإمبراطورية', 'هوب مركزي — طبقات · محاور · أول 6 أشهر'],
@@ -262,7 +262,7 @@
     const brandSpan = document.querySelector('.sidebar-brand span');
     const brandImg = document.querySelector('.sidebar-brand img');
     if (brandStrong) brandStrong.textContent = s.orgNameEn || 'NAIOSH HUB';
-    if (brandSpan) brandSpan.textContent = s.orgTagline || '360 · Imperial';
+    if (brandSpan) brandSpan.textContent = s.orgTagline || '360 · إمبراطوري';
     if (brandImg && s.logoMain) brandImg.src = s.logoMain;
 
     const rootStyle = document.documentElement.style;
@@ -1068,7 +1068,7 @@
           <article class="kpi"><span>منتجات / خدمات</span><strong>${store.items.length}</strong><small>في المتجر</small></article>
           <article class="kpi"><span>طلبات المتجر</span><strong>${localOrders.length}</strong><small>محلية مكتملة</small></article>
           <article class="kpi"><span>مخزون</span><strong>${stockTotal}</strong><small>وحدة</small></article>
-          <article class="kpi"><span>روابط أسواق</span><strong>${mpLinked}</strong><small>Amazon · Noon…</small></article>
+          <article class="kpi"><span>روابط أسواق</span><strong>${mpLinked}</strong><small>أمازون · نون…</small></article>
         </div>
 
         <section class="hss-section hss-academy">
@@ -1131,7 +1131,7 @@
           <div class="hss-section-head">
             <div>
               <h3><i class="fas fa-receipt icon"></i> الطلبات</h3>
-              <p>طلبات البيع المحلي من المتجر، ثم طلبات الشراء عبر Checkout — كلاهما بعرض الصفحة بالكامل.</p>
+              <p>طلبات البيع المحلي من المتجر، ثم طلبات الشراء عبر صفحة الدفع — كلاهما بعرض الصفحة بالكامل.</p>
             </div>
           </div>
 
@@ -1188,7 +1188,7 @@
           }
 
           <div class="hss-checkout-wrap">
-            <h4><i class="fas fa-bag-shopping"></i> طلبات شراء المنتجات (Checkout)</h4>
+            <h4><i class="fas fa-bag-shopping"></i> طلبات شراء المنتجات (الدفع)</h4>
             <p class="hss-muted" style="margin:0 0 8px">الطلبات القادمة من «اشترِ الآن» والسلة — مصدر الملف على الخادم.</p>
             <div id="hub-product-orders-admin"><div class="empty">جاري تحميل الطلبات…</div></div>
           </div>
@@ -1870,7 +1870,7 @@
         break;
       case 'advance-core':
         HubStore.advanceCoreModule(id);
-        toast('تقدّم مكوّن Core Platform');
+        toast('تقدّم مكوّن النواة المشتركة');
         break;
       case 'advance-priority':
         HubStore.advancePriority(id);
