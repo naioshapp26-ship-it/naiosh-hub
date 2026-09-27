@@ -91,6 +91,12 @@
     platform: { typeAr: 'منصة', pageTitle: 'المنصات', pageLead: 'محتوى مضاف ضمن تصنيف المنصات', icon: 'fa-layer-group', type: 'platform' },
     system: { typeAr: 'نظام', pageTitle: 'الأنظمة', pageLead: 'محتوى مضاف ضمن تصنيف الأنظمة', icon: 'fa-cube', type: 'system' },
     content: { typeAr: 'محتوى', pageTitle: 'المحتوى', pageLead: 'مقالات ومعلومات مضافة لمحرك البحث', icon: 'fa-file-lines', type: 'content' },
+    product: { typeAr: 'منتج', pageTitle: 'المنتجات', pageLead: 'منتجات مفهرسة في محرك البحث', icon: 'fa-box', type: 'product' },
+    event: { typeAr: 'فعالية', pageTitle: 'الفعاليات', pageLead: 'فعاليات مفهرسة في محرك البحث', icon: 'fa-calendar-days', type: 'event' },
+    service: { typeAr: 'خدمة', pageTitle: 'الخدمات', pageLead: 'خدمات مفهرسة في محرك البحث', icon: 'fa-handshake', type: 'service' },
+    store: { typeAr: 'متجر', pageTitle: 'المتجر', pageLead: 'عناصر المتجر المفهرسة', icon: 'fa-bag-shopping', type: 'store' },
+    page: { typeAr: 'صفحة', pageTitle: 'الصفحات', pageLead: 'صفحات وروابط داخلية', icon: 'fa-file', type: 'content' },
+    link: { typeAr: 'رابط خارجي', pageTitle: 'روابط خارجية', pageLead: 'روابط خارجية مفهرسة', icon: 'fa-link', type: 'content' },
     image: { typeAr: 'صورة', pageTitle: 'الصور', pageLead: 'معرض الصور المرفوعة لمحرك البحث', icon: 'fa-image', type: 'image' },
     file: { typeAr: 'ملف', pageTitle: 'الملفات', pageLead: 'الملفات والمستندات المرفوعة لمحرك البحث', icon: 'fa-paperclip', type: 'file' },
     video: { typeAr: 'فيديو', pageTitle: 'الفيديو', pageLead: 'مقاطع الفيديو المرفوعة لمحرك البحث', icon: 'fa-video', type: 'video' },
@@ -334,15 +340,32 @@
 
   const stats = () => {
     const rows = list();
+    const indexedAt = rows
+      .map((x) => x.indexedAt || x.updatedAt || '')
+      .filter(Boolean)
+      .sort()
+      .reverse()[0] || '';
     return {
       total: rows.length,
       published: rows.filter((x) => x.status !== 'draft' && x.searchVisible !== false).length,
+      active: rows.filter((x) => x.status !== 'draft' && x.searchVisible !== false && x.indexStatus !== 'failed').length,
       pending: rows.filter((x) => x.indexStatus === 'pending').length,
       failed: rows.filter((x) => x.indexStatus === 'failed').length,
       hidden: rows.filter((x) => x.searchVisible === false).length,
       sources: new Set(rows.map((x) => x.sourceLabel || x.sourceType || x.section)).size,
+      lastIndexedAt: indexedAt,
     };
   };
+
+  /** محرك البحث الوحيد المدعوم حالياً في هوب */
+  const ENGINES = [
+    {
+      id: 'naiosh',
+      nameAr: 'محرك بحث نايوش',
+      description: 'محرك البحث الشامل في واجهة المستخدم (search.html) — يبحث في الفهرس الإداري + الفروع والحاضنات والمنصات والأنظمة.',
+    },
+  ];
+  const DEFAULT_ENGINE = ENGINES[0];
 
   const upsertFromSource = (payload = {}, actor = 'نظام') => {
     const id = payload.id || `src-${payload.sourceType || 'item'}-${payload.sourceId || Date.now()}`;
@@ -400,6 +423,8 @@
     SETTINGS_KEY,
     AUDIT_KEY,
     EMPTY_Q_KEY,
+    ENGINES,
+    DEFAULT_ENGINE,
     get MAX_FILE_BYTES() {
       return MAX_FILE_BYTES();
     },

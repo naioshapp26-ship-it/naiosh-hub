@@ -397,7 +397,158 @@
   line-height: 1.7;
 }
 
+.hsa-stat { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.hsa-stat:hover { border-color: #c41e3a; box-shadow: 0 0 0 2px rgba(196,30,58,.12); }
+
+.hsa-engine-card {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid #e8eaee;
+  border-radius: 14px;
+  background: #fff;
+  margin-bottom: 14px;
+}
+.hsa-engine-card--compact { margin-bottom: 12px; }
+.hsa-engine-card h3 { margin: 4px 0 8px; font-size: 20px; font-weight: 900; }
+.hsa-kicker { margin: 0; font-size: 12px; font-weight: 800; color: #c41e3a; }
+.hsa-engine-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.hsa-diff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.hsa-diff-grid article {
+  padding: 14px;
+  border: 1px solid #e8eaee;
+  border-radius: 12px;
+  background: #fafbfc;
+}
+.hsa-diff-grid h4 { margin: 0 0 6px; font-size: 15px; }
+.hsa-diff-grid p { margin: 0; color: #475467; font-size: 13px; line-height: 1.6; }
+
+.hsa-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.hsa-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 800;
+}
+.hsa-type-card i { font-size: 22px; color: #c41e3a; }
+.hsa-type-card.is-on, .hsa-type-card:hover { border-color: #c41e3a; background: #fff5f5; }
+
+.hsa-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+.hsa-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  font-size: 12px;
+  font-weight: 700;
+  color: #667085;
+}
+.hsa-steps li span {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #d0d5dd;
+  color: #101828;
+  font-weight: 900;
+}
+.hsa-steps li.is-on { background: #fff0f0; color: #c41e3a; }
+.hsa-steps li.is-on span { background: #c41e3a; color: #fff; }
+.hsa-steps li.is-done span { background: #12b76a; color: #fff; }
+
+.hsa-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.hsa-form-grid label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+}
+.hsa-form-grid input,
+.hsa-form-grid textarea,
+.hsa-form-grid select {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  font: inherit;
+}
+.hsa-wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.hsa-empty-box {
+  padding: 28px 18px;
+  text-align: center;
+  border: 1px dashed #d0d5dd;
+  border-radius: 14px;
+  background: #fcfcfd;
+}
+.hsa-empty-box p { margin: 0 0 12px; font-weight: 700; color: #475467; }
+.hsa-recent { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.hsa-recent li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #e8eaee;
+  border-radius: 10px;
+  background: #fff;
+}
+.hsa-recent li span { color: #667085; font-size: 12px; flex: 1; }
+.hsa-success {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #ecfdf3;
+  color: #027a48;
+  font-weight: 800;
+}
+.hsa-btn-danger { color: #b42318; border-color: #fecdca; }
+.hsa-btn-danger:hover { background: #fef3f2; }
+.hsa-link-cell { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hsa-pager { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.hsa-muted { color: #667085; font-size: 12px; }
+
 @media (max-width: 768px) {
   .hnc-actions, .hsa-actions { flex-wrap: wrap; }
   .hnc-ellipsis, .hsa-ellipsis { max-width: 160px; }
+  .hsa-table-wrap { overflow-x: auto; }
 }
+

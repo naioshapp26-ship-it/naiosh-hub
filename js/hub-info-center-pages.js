@@ -127,6 +127,7 @@
     PAGES,
     HREFS,
     SHARED_KEYWORDS,
+    list: () => PAGES.slice(),
     toSearchItems,
     toChecklistItems,
   };
