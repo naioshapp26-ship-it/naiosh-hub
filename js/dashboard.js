@@ -1831,6 +1831,15 @@
       }
       return;
     }
+    const idnChangeEl = e.target.closest(
+      '[data-action-change],[data-idn-q],[data-idn-type],[data-idn-org],[data-idn-branch],[data-idn-department],[data-idn-role],[data-idn-status],[data-cascade],[data-f]'
+    );
+    if (idnChangeEl && window.HubIdentityUI?.handleChange) {
+      if (HubIdentityUI.handleChange(idnChangeEl)) {
+        render();
+      }
+      return;
+    }
     if (e.target.closest?.('[data-ha-q]') || e.target.matches?.('[data-ha-field="value"]')) {
       return;
     }
