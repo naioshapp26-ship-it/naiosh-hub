@@ -65,7 +65,7 @@
       <a href="info-center.html"><i class="fas fa-circle-info"></i> مركز المعلومات</a>
       <a href="services.html"><i class="fas fa-concierge-bell"></i> خدماتنا</a>
       <a href="side-projects.html#sp-client-intro"><i class="fas fa-lightbulb"></i> المشاريع الجانبية</a>
-      <a href="search-admin.html"><i class="fas fa-sliders"></i> إدارة محتوى البحث (أدمن)</a>
+      <a href="dashboard.html#search-admin"><i class="fas fa-sliders"></i> إدارة محرك البحث (أدمن)</a>
       <a href="search-content.html" data-hus-library-link><i class="fas fa-folder-open"></i> صفحات التصنيفات</a>
     </footer>`;
 
@@ -456,6 +456,11 @@
   const init = async () => {
     try {
       await window.HubSearchCatalog?.pullRemote?.();
+    } catch {
+      /* offline / no API */
+    }
+    try {
+      await window.HubSearchConfig?.pullRemote?.();
     } catch {
       /* offline / no API */
     }

@@ -29,7 +29,7 @@
     }
   };
 
-  const SUGGESTED_LISTS = [
+  const SUGGESTED_LISTS_DEFAULT = [
     {
       id: 'branches',
       type: 'branch',
@@ -67,9 +67,33 @@
     },
   ];
 
-  const collectCatalog = () => {
+  const suggestedLists = () => {
+    try {
+      if (window.HubSearchConfig?.visibleQuickLists) {
+        return window.HubSearchConfig.visibleQuickLists().map((q) => ({
+          id: q.id,
+          type: q.type,
+          label: q.label,
+          icon: q.icon,
+          lead: q.lead,
+          maxItems: q.maxItems || 0,
+        }));
+      }
+    } catch (_) {}
+    return SUGGESTED_LISTS_DEFAULT.slice();
+  };
+
+  const collectCatalog = (opts = {}) => {
+    const includeHidden = !!opts.includeHidden;
     const items = [];
     const ops = readOps();
+    const cfgHidden = (() => {
+      try {
+        return window.HubSearchConfig?.hiddenIds?.() || new Set();
+      } catch {
+        return new Set();
+      }
+    })();
 
     (window.HubBranchesData?.BRANCHES || []).forEach((br, idx) => {
       const num = Number(String(br.erpCode || '').replace(/\D/g, '')) || idx + 1;
@@ -85,6 +109,9 @@
         num,
         grantId,
         href: `branches.html#${encodeURIComponent(br.id)}`,
+        source: 'branches',
+        sourceLabel: 'الفروع',
+        originHref: `branches.html#${encodeURIComponent(br.id)}`,
         keywords: [br.nameAr, br.nameEn, br.code, br.erpCode, grantId, 'فرع', 'فروع', 'branch', String(num)]
           .filter(Boolean)
           .join(' '),
@@ -105,6 +132,9 @@
         num,
         grantId,
         href: `incubators.html#${encodeURIComponent(inc.id)}`,
+        source: 'incubators',
+        sourceLabel: 'الحاضنات',
+        originHref: `incubators.html#${encodeURIComponent(inc.id)}`,
         keywords: [inc.name, inc.sector, grantId, 'حاضنة', 'حاضنات', 'incubator', String(num)].join(' '),
       });
     });
@@ -125,6 +155,9 @@
         grantId,
         code: p.code,
         href: `platforms.html#${String(p.code).toLowerCase()}`,
+        source: 'platforms',
+        sourceLabel: 'المنصات',
+        originHref: `platforms.html#${String(p.code).toLowerCase()}`,
         keywords: [p.nameAr, p.name, p.code, p.role, p.desc, p.category, grantId, 'منصة', 'منصات', 'platform', String(num)]
           .filter(Boolean)
           .join(' '),
@@ -145,6 +178,9 @@
         num,
         grantId,
         href: `system-ops.html#grants`,
+        source: 'system-ops',
+        sourceLabel: 'تشغيل الأنظمة',
+        originHref: `system-ops.html#grants`,
         keywords: [
           sd.host,
           sd.slug,
@@ -186,6 +222,9 @@
         grantId,
         granted: true,
         href: `system-ops.html#grants`,
+        source: 'system-ops',
+        sourceLabel: 'المنح',
+        originHref: `system-ops.html#grants`,
         keywords: [st.nameAr, st.tenantName, st.systemCode, grantId, typeAr, 'منح', String(num)].filter(Boolean).join(' '),
       });
     });
@@ -207,6 +246,9 @@
         subtitle: app.category || (app.kind === 'studio' ? 'استوديو هوب' : 'نظام تشغيلي'),
         meta: app.code,
         href,
+        source: 'systems',
+        sourceLabel: 'الأنظمة',
+        originHref: href,
         keywords: [app.nameAr, app.name, app.code, app.category, app.kind, 'نظام', 'system', 'استوديو'].filter(Boolean).join(' '),
       });
     });
@@ -214,14 +256,28 @@
     const custom =
       window.HubStore?.getSettings?.()?.searchIndexEnabled === false
         ? []
-        : window.HubSearchCatalog?.toSearchItems?.() || [];
+        : window.HubSearchCatalog?.toSearchItems?.({ includeHidden }) || [];
     custom.forEach((c) => items.push(c));
 
     const infoPages = window.HubInfoCenterPages?.toSearchItems?.() || [];
-    infoPages.forEach((p) => items.push(p));
+    infoPages.forEach((p) =>
+      items.push({
+        ...p,
+        source: p.source || 'info-center',
+        sourceLabel: p.sourceLabel || 'مركز المعلومات',
+        originHref: p.href,
+      })
+    );
 
     const services = window.HubServicesCatalog?.toSearchItems?.() || [];
-    services.forEach((s) => items.push(s));
+    services.forEach((s) =>
+      items.push({
+        ...s,
+        source: s.source || 'services',
+        sourceLabel: s.sourceLabel || 'الخدمات',
+        originHref: s.href,
+      })
+    );
 
     items.push({
       id: 'hub-side-projects',
@@ -232,6 +288,9 @@
       subtitle: 'إبدأ التحدي مع نفسك اولا',
       meta: 'Side Projects · Opportunity',
       href: 'side-projects.html#sp-client-intro',
+      source: 'hub-pages',
+      sourceLabel: 'صفحات هوب',
+      originHref: 'side-projects.html#sp-client-intro',
       keywords:
         'مشاريع جانبية مشروع جانبي side projects قناتي تحدي نايوش دخل إضافي منزلي متنقل موسمي فرصة opportunity engine رأس مال قليل',
     });
@@ -245,6 +304,9 @@
       subtitle: 'صاحب المنصة يعبّئ الفرع والحاضنة والمنصة — السوبر أدمن يوافق فقط',
       meta: 'Register',
       href: 'register.html',
+      source: 'hub-pages',
+      sourceLabel: 'صفحات هوب',
+      originHref: 'register.html',
       keywords: 'سجل معنا تسجيل منصة فرع حاضنة دومين موافقة سوبر أدمن صاحب المنصة',
     });
 
@@ -257,10 +319,24 @@
       subtitle: 'قواعد منح الفروع والحاضنات والمنصات والمكاتب والأنظمة',
       meta: 'Instructions',
       href: 'systems-instructions.html',
+      source: 'hub-pages',
+      sourceLabel: 'صفحات هوب',
+      originHref: 'systems-instructions.html',
       keywords: 'تعليمات أنظمة منح فرع حاضنة منصة مكتب نظام',
     });
 
-    return items;
+    return items
+      .map((item) => {
+        const hiddenByConfig = cfgHidden.has(String(item.id));
+        const searchVisible =
+          item.searchVisible === false ? false : item.source === 'admin-catalog' ? item.searchVisible !== false : !hiddenByConfig;
+        return {
+          ...item,
+          searchVisible,
+          indexStatus: item.indexStatus || 'indexed',
+        };
+      })
+      .filter((item) => includeHidden || item.searchVisible !== false);
   };
 
   /**
@@ -354,6 +430,18 @@
   const stats = () => {
     const catalog = collectCatalog();
     const count = (type) => catalog.filter((i) => i.type === type).length;
+    let intentsCount = 0;
+    try {
+      if (window.HubSearchIntents?.activeIntents) {
+        intentsCount = window.HubSearchIntents.activeIntents().length;
+      } else if (window.HubSearchIntents?.PRIMARY_STARTERS) {
+        intentsCount = window.HubSearchIntents.PRIMARY_STARTERS.length;
+      } else {
+        intentsCount = window.HubSearchIntents?.INTENTS?.length || 0;
+      }
+    } catch (_) {
+      intentsCount = window.HubSearchIntents?.INTENTS?.length || 0;
+    }
     return {
       all: catalog.length,
       branch: count('branch'),
@@ -367,8 +455,12 @@
       image: count('image'),
       file: count('file'),
       video: count('video'),
+      product: count('product'),
+      event: count('event'),
+      store: count('store'),
       custom: catalog.filter((i) => i.source === 'admin-catalog').length,
-      intents: window.HubSearchIntents?.INTENTS?.length || 0,
+      intents: intentsCount,
+      hidden: collectCatalog({ includeHidden: true }).filter((i) => i.searchVisible === false).length,
     };
   };
 
@@ -377,7 +469,9 @@
     searchOrchestrated: searchWithAnalytics,
     stats,
     collectCatalog,
-    suggestedLists: SUGGESTED_LISTS,
+    get suggestedLists() {
+      return suggestedLists();
+    },
     esc,
     norm,
   };

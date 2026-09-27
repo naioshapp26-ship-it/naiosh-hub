@@ -341,19 +341,43 @@
     },
   ];
 
-  const PRIMARY_STARTERS = INTENTS.filter((i) => i.group === 'primary' || i.group === 'discovery').map((i) => ({
-    intentId: i.id,
-    label: i.label,
-    icon: i.icon,
-    starter: i.starters[0],
-  }));
+  const BASE_INTENTS = INTENTS;
 
-  const byId = (id) => INTENTS.find((i) => i.id === id) || null;
+  const allIntents = () => {
+    try {
+      if (window.HubSearchConfig?.resolvedIntents) {
+        return window.HubSearchConfig.resolvedIntents(BASE_INTENTS);
+      }
+    } catch (_) {}
+    return BASE_INTENTS.slice();
+  };
+
+  const activeIntents = () => {
+    try {
+      if (window.HubSearchConfig?.activeIntents) {
+        return window.HubSearchConfig.activeIntents(BASE_INTENTS);
+      }
+    } catch (_) {}
+    return BASE_INTENTS.slice();
+  };
+
+  const primaryStarters = () =>
+    activeIntents()
+      .filter((i) => i.group === 'primary' || i.group === 'discovery' || i.custom)
+      .map((i) => ({
+        intentId: i.id,
+        label: i.label,
+        icon: i.icon,
+        starter: (i.starters && i.starters[0]) || i.label,
+      }));
+
+  const byId = (id) => allIntents().find((i) => i.id === id) || null;
 
   const detectIntent = (rawQuery) => {
     const q = String(rawQuery || '').trim();
     if (!q) return null;
     const n = q.toLowerCase();
+    const pool = activeIntents();
 
     // إشارات سياقية قوية تتقدّم على البداية العامة «أريد»
     if (/سلام|مخاطر|iso\s*45001|طوارئ|سلامة/.test(n)) return byId('SAFETY_SEEK');
@@ -372,7 +396,7 @@
     // أطول بداية مطابقة (تجاهل البدايات القصيرة جدًا مثل «أريد» وحدها إلا إذا كان النص قصيرًا)
     let best = null;
     let bestLen = 0;
-    INTENTS.forEach((intent) => {
+    pool.forEach((intent) => {
       (intent.starters || []).forEach((s) => {
         const sn = String(s).toLowerCase().replace(/\.\.\.$/, '').trim();
         if (sn.length < 5 && n.length > sn.length + 2) return;
@@ -448,12 +472,19 @@
   };
 
   window.HubSearchIntents = {
-    INTENTS,
-    PRIMARY_STARTERS,
+    get INTENTS() {
+      return allIntents();
+    },
+    BASE_INTENTS,
+    get PRIMARY_STARTERS() {
+      return primaryStarters();
+    },
     DEST,
     byId,
     detectIntent,
     destinationCards,
     scoreAgainstIntent,
+    allIntents,
+    activeIntents,
   };
 })();

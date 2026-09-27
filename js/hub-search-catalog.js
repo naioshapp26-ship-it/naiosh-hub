@@ -296,9 +296,15 @@
   const viewUrl = (id) => `search-content.html?id=${encodeURIComponent(id)}`;
   const sectionPageUrl = (section) => `search-content.html?type=${encodeURIComponent(section || 'content')}`;
 
-  const toSearchItems = () =>
-    list()
-      .filter((x) => x.status !== 'draft' && x.searchVisible !== false && x.indexStatus !== 'failed')
+  const toSearchItems = (opts = {}) => {
+    const includeHidden = !!opts.includeHidden;
+    return list()
+      .filter((x) => {
+        if (x.status === 'draft') return false;
+        if (x.indexStatus === 'failed') return false;
+        if (!includeHidden && x.searchVisible === false) return false;
+        return true;
+      })
       .map((x) => {
         const section = normalizeSection(x.section, x.kind);
         const sectionMeta = SECTION_META[section] || SECTION_META.content;
@@ -317,6 +323,7 @@
           mediaMime: x.mediaMime || '',
           pageTitle: pageName,
           section,
+          searchVisible: x.searchVisible !== false,
           keywords: [
             x.title,
             pageName,
@@ -335,8 +342,13 @@
             .join(' '),
           source: 'admin-catalog',
           sourceLabel: x.sourceLabel || sectionMeta.pageTitle,
+          sourceType: x.sourceType || section,
+          sourceId: x.sourceId || '',
+          indexStatus: x.indexStatus || 'indexed',
+          updatedAt: x.updatedAt || x.indexedAt || '',
         };
       });
+  };
 
   const stats = () => {
     const rows = list();
@@ -400,9 +412,15 @@
       const local = readLocal();
       // لا تستبدل فهرسًا محليًا غير فارغ بقائمة خادم فارغة
       if (!remote.length && local.length) {
+        try {
+          await window.HubSearchConfig?.pullRemote?.();
+        } catch (_) {}
         return { ok: true, skipped: true, reason: 'keep-local', count: local.length };
       }
       if (!remote.length && !local.length) {
+        try {
+          await window.HubSearchConfig?.pullRemote?.();
+        } catch (_) {}
         return { ok: true, count: 0 };
       }
       // دمج: العناصر المحلية أحدث إن تطابق id
@@ -423,6 +441,14 @@
       });
       const merged = [...map.values()];
       saveLocal(merged);
+      if (data.config && window.HubSearchConfig?.save) {
+        try {
+          const localCfg = window.HubSearchConfig.read?.() || {};
+          const remoteAt = Date.parse(data.config.updatedAt || 0) || 0;
+          const localAt = Date.parse(localCfg.updatedAt || 0) || 0;
+          if (remoteAt >= localAt) window.HubSearchConfig.save(data.config);
+        } catch (_) {}
+      }
       return { ok: true, count: merged.length };
     } catch {
       return { ok: false, skipped: true };
@@ -431,10 +457,14 @@
 
   const pushRemote = async () => {
     try {
+      const body = { items: list() };
+      try {
+        if (window.HubSearchConfig?.read) body.config = window.HubSearchConfig.read();
+      } catch (_) {}
       const res = await fetch('/api/hub/search-catalog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: list() }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) return { ok: false };
       const data = await res.json();

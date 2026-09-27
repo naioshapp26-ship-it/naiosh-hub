@@ -525,30 +525,47 @@ async function handleHubApi(req, res, pathname) {
     ensureCatalogFile();
     try {
       const raw = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
-      return Array.isArray(raw?.items) ? raw.items : Array.isArray(raw) ? raw : [];
+      const items = Array.isArray(raw?.items) ? raw.items : Array.isArray(raw) ? raw : [];
+      const config = raw?.config && typeof raw.config === 'object' ? raw.config : null;
+      return { items, config };
     } catch {
-      return [];
+      return { items: [], config: null };
     }
   };
-  const writeCatalogFile = (items) => {
+  const writeCatalogFile = (items, config) => {
     ensureCatalogFile();
+    let prevConfig = null;
+    try {
+      const prev = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
+      prevConfig = prev?.config || null;
+    } catch (_) {}
     fs.writeFileSync(
       catalogPath,
-      JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), items }, null, 2),
+      JSON.stringify(
+        {
+          version: 1,
+          updatedAt: new Date().toISOString(),
+          items,
+          config: config && typeof config === 'object' ? config : prevConfig,
+        },
+        null,
+        2
+      ),
       'utf8'
     );
   };
 
   if (pathname === '/api/hub/search-catalog' && req.method === 'GET') {
-    const items = readCatalogFile();
-    sendJson(res, 200, { ok: true, count: items.length, items });
+    const { items, config } = readCatalogFile();
+    sendJson(res, 200, { ok: true, count: items.length, items, config });
     return true;
   }
 
   if (pathname === '/api/hub/search-catalog' && req.method === 'POST') {
     const body = await readBody(req);
     const items = Array.isArray(body?.items) ? body.items : [];
-    writeCatalogFile(items);
+    const config = body?.config && typeof body.config === 'object' ? body.config : undefined;
+    writeCatalogFile(items, config);
     sendJson(res, 200, { ok: true, count: items.length });
     return true;
   }
