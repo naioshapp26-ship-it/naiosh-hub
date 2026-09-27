@@ -20,6 +20,10 @@
     'انقطاع خدمة أمني',
     'أخرى',
   ];
+  const INC_TYPE_LABEL = {
+    Malware: 'برمجيات خبيثة',
+    Ransomware: 'برامج الفدية',
+  };
   const INC_SOURCES = [
     'إدخال يدوي',
     'موظف / بلاغ داخلي',
@@ -31,6 +35,21 @@
     'Integration / API',
     'أخرى',
   ];
+  const INC_SOURCE_LABEL = {
+    Firewall: 'جدار الحماية',
+    'Email Security': 'أمن البريد',
+    'Integration / API': 'تكامل / واجهة برمجة',
+  };
+  const dispType = (t) => INC_TYPE_LABEL[t] || window.HubI18n?.label?.(t, t) || t;
+  const dispSource = (s) => INC_SOURCE_LABEL[s] || window.HubI18n?.label?.(s, s) || s;
+  const KPI_FOCUS_AR = {
+    score: 'درجة الأمان',
+    mfa: 'المصادقة الثنائية',
+    open: 'الحوادث المفتوحة',
+    controls: 'الضوابط النشطة',
+    critical: 'المخاطر الحرجة',
+    closed: 'المغلقة هذا الشهر',
+  };
   const CTRL_STATUSES = [
     { v: 'implemented', l: 'مُطبّق' },
     { v: 'partial', l: 'جزئي' },
@@ -175,7 +194,7 @@
 
   const sourceBadge = (src) => {
     const s = src || '—';
-    return `<span class="badge ${badgeClass('source', s)}">${esc(s)}</span>`;
+    return `<span class="badge ${badgeClass('source', s)}">${esc(dispSource(s))}</span>`;
   };
 
   const slaState = (inc) => {
@@ -401,7 +420,7 @@
       .slice(0, 5);
 
     return `
-      ${ui.kpiFocus ? `<p class="empty" style="margin:8px 0">تركيز KPI: <strong>${esc(ui.kpiFocus)}</strong> — <button type="button" class="btn btn-sm btn-ghost" data-action="sec-kpi-clear">إزالة التركيز</button></p>` : ''}
+      ${ui.kpiFocus ? `<p class="empty" style="margin:8px 0">تركيز المؤشر: <strong>${esc(KPI_FOCUS_AR[ui.kpiFocus] || ui.kpiFocus)}</strong> — <button type="button" class="btn btn-sm btn-ghost" data-action="sec-kpi-clear">إزالة التركيز</button></p>` : ''}
       <div class="grid-2" style="margin-top:12px">
         <article class="card">
           <h3><span class="title-left"><i class="fas fa-bolt icon"></i> إجراء مطلوب الآن</span></h3>
@@ -506,7 +525,7 @@
       <label class="field">نوع الحادث
         <select data-sec-change="incidentType">
           <option value="">الكل</option>
-          ${INC_TYPES.map((s) => `<option value="${esc(s)}" ${ui.filters.incidentType === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
+          ${INC_TYPES.map((s) => `<option value="${esc(s)}" ${ui.filters.incidentType === s ? 'selected' : ''}>${esc(dispType(s))}</option>`).join('')}
         </select>
       </label>
       <label class="field">المسؤول
@@ -518,7 +537,7 @@
       <label class="field">المصدر
         <select data-sec-change="incidentSource">
           <option value="">الكل</option>
-          ${INC_SOURCES.map((s) => `<option value="${esc(s)}" ${ui.filters.incidentSource === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
+          ${INC_SOURCES.map((s) => `<option value="${esc(s)}" ${ui.filters.incidentSource === s ? 'selected' : ''}>${esc(dispSource(s))}</option>`).join('')}
         </select>
       </label>
       <label class="field">الإدارة
@@ -568,7 +587,7 @@
                     return `<tr>
                     <td>${esc(i.id)}</td>
                     <td><strong>${esc(i.title)}</strong>${i.sensitiveData ? ' 🔒' : ''}</td>
-                    <td>${esc(i.type)}</td>
+                    <td>${esc(dispType(i.type))}</td>
                     <td>${badge(i.severity, 'severity')}</td>
                     <td>${badge(i.status)}</td>
                     <td>${sourceBadge(i.source)}</td>
@@ -939,7 +958,7 @@
       body = `<dl style="display:grid;grid-template-columns:120px 1fr;gap:8px">
         <dt>المعرّف</dt><dd>${esc(inc.id)}</dd>
         <dt>العنوان</dt><dd>${esc(inc.title)}</dd>
-        <dt>النوع</dt><dd>${esc(inc.type)}</dd>
+        <dt>النوع</dt><dd>${esc(dispType(inc.type))}</dd>
         <dt>الخطورة</dt><dd>${badge(inc.severity, 'severity')}</dd>
         <dt>الحالة</dt><dd>${badge(inc.status)}</dd>
         <dt>القسم</dt><dd>${esc(inc.department || '—')}</dd>
@@ -1036,16 +1055,16 @@
       title = 'تسجيل حادث أمني';
       body = `
         ${formField('العنوان *', 'sec-inc-title', ui.incidentForm?.title || '')}
-        ${formField('النوع *', 'sec-inc-type', '', 'select', INC_TYPES.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join(''))}
+        ${formField('النوع *', 'sec-inc-type', '', 'select', INC_TYPES.map((t) => `<option value="${esc(t)}">${esc(dispType(t))}</option>`).join(''))}
         ${formField('تاريخ الاكتشاف *', 'sec-inc-date', new Date().toISOString().slice(0, 10), 'date')}
         ${formField('وقت الاكتشاف *', 'sec-inc-time', '09:00', 'time')}
         ${formField('الخطورة *', 'sec-inc-severity', '', 'select', INC_SEVERITIES.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join(''))}
         ${formField('النظام / الإدارة المتأثرة *', 'sec-inc-dept', '', 'select', `<option value=""></option>${depts.map((d) => `<option value="${esc(d)}">${esc(d)}</option>`).join('')}`)}
         ${formField('المسؤول', 'sec-inc-owner', '', 'select', `<option value=""></option>${people.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}`)}
-        ${formField('مصدر الحادث', 'sec-inc-source', '', 'select', INC_SOURCES.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join(''))}
+        ${formField('مصدر الحادث', 'sec-inc-source', '', 'select', INC_SOURCES.map((s) => `<option value="${esc(s)}">${esc(dispSource(s))}</option>`).join(''))}
         ${formField('وصف تفصيلي *', 'sec-inc-desc', '', 'textarea')}
         ${formField('الإجراءات الأولية المتخذة', 'sec-inc-init', '', 'textarea')}
-        ${formField('وسوم / Tags', 'sec-inc-tags', '')}
+        ${formField('وسوم', 'sec-inc-tags', '')}
         ${formField('مرفق (اسم ملف)', 'sec-inc-file', '')}
         <label class="field"><input type="checkbox" id="sec-inc-sensitive" /> هل يحتوي الحادث على بيانات حساسة؟</label>
       `;
@@ -1070,7 +1089,7 @@
       body = `
         ${formField('اسم الضابط *', 'sec-ctrl-name', c?.name || '')}
         ${formField('التصنيف', 'sec-ctrl-cat', c?.category || 'متوسطة')}
-        ${formField('الإطار', 'sec-ctrl-fw', '', 'select', CTRL_FRAMEWORKS.map((f) => `<option ${c?.framework === f ? 'selected' : ''} value="${esc(f)}">${esc(f)}</option>`).join(''))}
+        ${formField('الإطار', 'sec-ctrl-fw', '', 'select', CTRL_FRAMEWORKS.map((f) => `<option ${c?.framework === f ? 'selected' : ''} value="${esc(f)}">${esc(window.HubI18n?.label?.(f, f) || f)}</option>`).join(''))}
         ${formField('نسبة الامتثال %', 'sec-ctrl-compliance', c?.compliance ?? 0, 'number')}
         ${formField('الحالة', 'sec-ctrl-status', '', 'select', CTRL_STATUSES.map((s) => `<option ${c?.status === s.v ? 'selected' : ''} value="${esc(s.v)}">${esc(s.l)}</option>`).join(''))}
         ${formField('المالك', 'sec-ctrl-owner', c?.owner || '', 'select', `<option value=""></option>${people.map((p) => `<option ${c?.owner === p ? 'selected' : ''} value="${esc(p)}">${esc(p)}</option>`).join('')}`)}

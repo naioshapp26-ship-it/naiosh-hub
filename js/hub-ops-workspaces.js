@@ -1618,7 +1618,7 @@
                 (o) => `<div style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">
                   <b>${K.esc(o.target)}</b> · ${K.badge(o.gain, 'badge-red')}
                   <div style="margin-top:6px;font-size:13px;color:var(--muted)">${K.esc(o.suggestion)}</div>
-                  <small>Source: Optimization Engine</small>
+                  <small>المصدر: محرك التحسين</small>
                 </div>`
               )
               .join('') || '<p class="empty">لا اقتراحات</p>'}
@@ -1686,7 +1686,7 @@
                 <b>${K.esc(ins.title)}</b>${K.badge(ins.status, ins.status === 'closed' ? 'badge-black' : 'badge-red')}
               </div>
               <p style="margin:6px 0;font-size:13px">${K.esc(ins.rationale)}</p>
-              <small>Source: ${K.esc(ins.source)} · Confidence: ${ins.confidence}% · ${K.fmtTime(ins.at)}</small>
+              <small>المصدر: ${K.esc(ins.source)} · الثقة: ${ins.confidence}% · ${K.fmtTime(ins.at)}</small>
               ${ins.status !== 'closed' ? `<div class="toolbar"><button type="button" class="btn btn-sm btn-dark" data-action="cr-ins-close" data-id="${ins.id}">إغلاق</button></div>` : ''}
             </div>`
           )
