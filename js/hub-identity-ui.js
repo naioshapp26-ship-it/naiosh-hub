@@ -1,6 +1,6 @@
 /**
- * هوية نايوش — مركز إدارة الهوية (مربوط بـ HubAccessGov + فريق العمل)
- * لا يكرر نظام الصلاحيات؛ يفتح #roles-permissions للمصدر المعتمد.
+ * هوية نايوش — السجل المركزي للمستخدمين والهويات
+ * مصدر الحقيقة: HubAccessGovStore / HubAccessGov (+ ربط العملاء من HubStore)
  */
 (() => {
   'use strict';
@@ -31,19 +31,27 @@
   };
 
   const nowIso = () => new Date().toISOString();
-  const ag = () => window.HubAccessGovStore?.get?.() || { identities: [], grants: [], roles: [], permissions: [], systems: [], managedSystems: [], audit: [] };
+  const ag = () => window.HubAccessGovStore?.get?.() || { identities: [], grants: [], roles: [], permissions: [], systems: [], managedSystems: [], audit: [], scopes: [] };
   const eng = () => window.HubAccessGov;
+  const kinds = () => window.HubAccessGovStore?.USER_KINDS || {};
 
   const ui = {
-    view: 'home', // home | users | sso | mfa | accounts | matrix | detail
+    view: 'home',
     q: '',
     type: '',
     status: '',
+    org: '',
+    branch: '',
+    department: '',
+    role: '',
     openId: null,
     matrixEmp: '',
     matrixSystem: '',
     modal: null,
     note: '',
+    addStep: 1,
+    addDraft: null,
+    menuId: null,
   };
 
   const loadJson = (key, fallback) => {
@@ -125,35 +133,66 @@
   const saveSso = (s) => saveJson(SSO_KEY, s);
 
   const clientNoOf = (id) => {
+    if (id?.clientNo) return id.clientNo;
     try {
-      const clients = window.HubStore?.get?.()?.clients || window.HubStore?.clientsBag?.()?.clients || [];
+      const clients = window.HubStore?.clientsBag?.()?.clients || window.HubStore?.get?.()?.clientsMgmt?.clients || [];
       const hit = clients.find((c) => c.email && id.email && String(c.email).toLowerCase() === String(id.email).toLowerCase());
-      return hit?.clientId || hit?.id || hit?.customerNo || '';
+      return hit?.clientId || hit?.customerNo || '';
     } catch {
       return '';
     }
   };
 
-  const accountTypeAr = (id) => {
-    if (id?.userType === 'STAFF' || id?.isEmployee) return id?.employeeNo ? 'موظف' : 'مستخدم موظّف';
-    if (id?.userType === 'CUSTOMER') return 'عميل';
+  const userKindAr = (id) => {
+    const code = id?.userKind;
+    if (code && kinds()[code]?.labelAr) return kinds()[code].labelAr;
+    if (id?.userType === 'CUSTOMER' && !id?.isEmployee && !id?.employeeNo) return 'عميل';
+    if (id?.userType === 'STAFF' || id?.isEmployee || id?.employeeNo) return 'موظف';
     return 'مستخدم';
+  };
+
+  const roleLabel = (code) => (ag().roles || []).find((r) => r.code === code)?.nameAr || code || '—';
+
+  const primaryRolesOf = (id) => {
+    const grants = (ag().grants || []).filter((g) => (g.naioshId === id.naioshId || g.identityId === id.id) && String(g.status).toUpperCase() === 'ACTIVE');
+    return [...new Set(grants.map((g) => g.roleCode).filter(Boolean))];
+  };
+
+  const primaryRoleAr = (id) => {
+    const roles = primaryRolesOf(id);
+    if (!roles.length) return '—';
+    return roles.map(roleLabel).join(' · ');
   };
 
   const statusAr = (s) =>
     ({ active: 'نشط', suspended: 'موقوف', archived: 'مؤرشف', revoked: 'ملغى' }[s] || s || '—');
 
+  const dash = (v) => {
+    const s = String(v ?? '').trim();
+    return s ? s : '—';
+  };
+
+  const copyBtn = (value, label) => {
+    if (!value) return '—';
+    return `<span class="idn-id" dir="ltr" title="${esc(label || value)}"><code>${esc(value)}</code><button type="button" class="idn-copy" data-action="idn-copy" data-copy="${esc(value)}" title="نسخ">⧉</button></span>`;
+  };
+
   const identities = () => (ag().identities || []).slice();
+
+  const affOpts = () => eng()?.listAffiliationOptions?.() || { orgs: [], branches: [], departments: [], roles: [], kinds: kinds() };
 
   const filteredIdentities = () => {
     let rows = identities();
-    if (ui.type === 'staff') rows = rows.filter((i) => i.userType === 'STAFF' || i.isEmployee);
-    if (ui.type === 'customer') rows = rows.filter((i) => i.userType === 'CUSTOMER' && !i.isEmployee);
+    if (ui.type) rows = rows.filter((i) => String(i.userKind || '') === ui.type || (ui.type === 'CUSTOMER' && i.userType === 'CUSTOMER' && !i.employeeNo));
     if (ui.status) rows = rows.filter((i) => String(i.status || 'active') === ui.status);
+    if (ui.org) rows = rows.filter((i) => String(i.orgName || '') === ui.org || String(i.orgId || '') === ui.org);
+    if (ui.branch) rows = rows.filter((i) => String(i.branchName || '') === ui.branch);
+    if (ui.department) rows = rows.filter((i) => String(i.department || '') === ui.department);
+    if (ui.role) rows = rows.filter((i) => primaryRolesOf(i).includes(ui.role));
     if (ui.q) {
       const q = ui.q.toLowerCase();
       rows = rows.filter((i) =>
-        [i.name, i.naioshId, i.employeeNo, i.email, clientNoOf(i)]
+        [i.name, i.naioshId, i.employeeNo, i.email, clientNoOf(i), i.orgName, i.branchName, i.department, i.jobTitle]
           .join(' ')
           .toLowerCase()
           .includes(q)
@@ -172,10 +211,12 @@
     });
     const sensitiveUnprotected = sensitive.filter((i) => !sec[i.naioshId]?.mfaEnabled).length;
     const requireMfa = !!(window.HubStore?.get?.()?.settings?.requireMfa || window.HubSiteSettings?.get?.()?.mfaRequired);
+    const withOrg = rows.filter((i) => i.orgName).length;
     return {
       users: rows.length,
-      staff: rows.filter((i) => i.userType === 'STAFF' || i.isEmployee).length,
-      customers: rows.filter((i) => i.userType === 'CUSTOMER' && !i.isEmployee).length,
+      staff: rows.filter((i) => i.userType === 'STAFF' || i.isEmployee || i.employeeNo).length,
+      customers: rows.filter((i) => !!clientNoOf(i)).length,
+      orgs: withOrg,
       mfaOn,
       mfaOff: Math.max(0, rows.length - mfaOn),
       ssoSystems: ssoStore().systems.filter((s) => s.ssoStatus === 'enabled').length,
@@ -202,7 +243,7 @@
       });
       if (d2?.decision === 'ALLOW') return true;
       const r = String(user.role || user.roleCode || '').toUpperCase();
-      return r === 'SUPER_ADMIN' || r === 'HUB_ADMIN' || r === 'SUPREME_LEADER' || r === 'ADMIN' || r === 'SUPREME_LEADER';
+      return r === 'SUPER_ADMIN' || r === 'HUB_ADMIN' || r === 'SUPREME_LEADER' || r === 'ADMIN';
     } catch {
       const r = String(user?.role || user?.roleCode || '').toUpperCase();
       return r === 'SUPER_ADMIN' || r === 'HUB_ADMIN' || r === 'ADMIN';
@@ -212,10 +253,10 @@
   const cards = (k) => [
     {
       id: 'users',
-      icon: 'fa-user-plus',
-      title: 'تسجيل المستخدمين',
-      desc: 'عرض وإدارة الحسابات المسجلة في هوية نايوش.',
-      stat: `${k.users} حساب`,
+      icon: 'fa-users',
+      title: 'المستخدمون والهويات',
+      desc: 'إدارة حسابات وهويات المستخدمين المرتبطين بنايوش والمؤسسات والفروع، ومعرفة جهة كل مستخدم ونوعه وحالة حسابه.',
+      stat: `${k.users} هوية`,
       status: 'جاهز',
     },
     {
@@ -238,8 +279,8 @@
       id: 'accounts',
       icon: 'fa-id-card',
       title: 'إدارة الحسابات',
-      desc: 'إدارة حالة وبيانات حسابات الهوية وربط العميل/الموظف.',
-      stat: `${k.staff} موظف · ${k.customers} عميل`,
+      desc: 'إيقاف وإعادة تفعيل الوصول دون حذف الهويات المرتبطة.',
+      stat: `${k.staff} موظف · ${k.customers} بصفة عميل`,
       status: 'جاهز',
     },
     {
@@ -265,15 +306,15 @@
 
   const renderHome = (k) => `
     <div class="idn-kpis">
-      <article><span>الحسابات</span><strong>${k.users}</strong></article>
-      <article><span>موظفون</span><strong>${k.staff}</strong></article>
-      <article><span>تحقق ثنائي مفعّل</span><strong>${k.mfaOn}</strong></article>
-      <article><span>أنظمة الدخول الموحد</span><strong>${k.ssoSystems}</strong></article>
+      <article><span>الهويات</span><strong>${k.users}</strong></article>
+      <article><span>بصفة موظف</span><strong>${k.staff}</strong></article>
+      <article><span>بصفة عميل</span><strong>${k.customers}</strong></article>
+      <article><span>مرتبطون بمؤسسة</span><strong>${k.orgs}</strong></article>
       <article class="${k.sensitiveUnprotected ? 'is-warn' : ''}"><span>حسابات حساسة بلا تحقق</span><strong>${k.sensitiveUnprotected}</strong></article>
     </div>
     ${k.sensitiveUnprotected && k.requireMfa ? `<p class="idn-banner is-warn">السياسة تلزم التحقق الثنائي للحسابات الإدارية — يوجد ${k.sensitiveUnprotected} حسابًا غير محمي.</p>` : ''}
-    <h2 class="idn-section-title">مكونات الهوية</h2>
-    <p class="idn-section-sub">كل بطاقة تفتح إدارة فعلية. الصلاحيات تُدار من مصدر واحد فقط.</p>
+    <h2 class="idn-section-title">إدارة الهوية</h2>
+    <p class="idn-section-sub">هوية موحّدة — الحساب والصفة والارتباط المؤسسي من هنا؛ الأدوار والصلاحيات من المصدر المركزي.</p>
     <div class="idn-cards">
       ${cards(k)
         .map(
@@ -293,17 +334,52 @@
         )
         .join('')}
     </div>
-    <p class="idn-footnote">ملاحظة أمنية: تسجيل الدخول الموحد يثبت الهوية فقط؛ الوصول لكل نظام يخضع للصلاحيات الفعلية في الحوكمة. تحدي التحقق الثنائي عند تسجيل الدخول يعتمد على إعدادات الخادم — هنا تُدار حالة التفعيل والسياسة.</p>
+    <p class="idn-footnote">ملاحظة أمنية: تسجيل الدخول الموحد يثبت الهوية فقط؛ مستوى الوصول يُحدَّد من الحوكمة. إلغاء صفة موظف لا يحذف حساب العميل إن وُجد.</p>
   `;
 
-  const filtersBar = (extra = '') => `
-    <div class="idn-toolbar">
+  const kindOptions = () => {
+    const k = kinds();
+    return Object.values(k)
+      .map((x) => `<option value="${esc(x.code)}" ${ui.type === x.code ? 'selected' : ''}>${esc(x.labelAr)}</option>`)
+      .join('');
+  };
+
+  const filtersBar = (extra = '', mode = 'users') => {
+    const opts = affOpts();
+    const showAff = mode === 'users' || mode === 'accounts';
+    return `
+    <div class="idn-toolbar idn-toolbar-main">
       <button type="button" class="btn btn-ghost btn-sm" data-action="idn-view" data-view="home"><i class="fas fa-arrow-right"></i> العودة</button>
-      <input type="search" data-idn-q placeholder="بحث: الاسم · رقم نايوش · رقم موظف · رقم عميل · البريد" value="${esc(ui.q)}" />
+      ${
+        showAff
+          ? `<button type="button" class="btn btn-primary btn-sm" data-action="idn-add-open"><i class="fas fa-plus"></i> إضافة مستخدم</button>`
+          : ''
+      }
+      <input type="search" data-idn-q placeholder="بحث: الاسم · رقم نايوش · رقم عميل · رقم موظف · البريد" value="${esc(ui.q)}" />
+      ${extra}
+    </div>
+    ${
+      showAff
+        ? `<div class="idn-toolbar idn-filters">
       <select data-idn-type>
-        <option value="">كل الأنواع</option>
-        <option value="staff" ${ui.type === 'staff' ? 'selected' : ''}>موظف</option>
-        <option value="customer" ${ui.type === 'customer' ? 'selected' : ''}>عميل</option>
+        <option value="">كل أنواع المستخدم</option>
+        ${kindOptions()}
+      </select>
+      <select data-idn-org>
+        <option value="">كل المؤسسات</option>
+        ${(opts.orgs || []).map((o) => `<option value="${esc(o.name)}" ${ui.org === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}
+      </select>
+      <select data-idn-branch>
+        <option value="">كل الفروع</option>
+        ${(opts.branches || []).map((b) => `<option value="${esc(b)}" ${ui.branch === b ? 'selected' : ''}>${esc(b)}</option>`).join('')}
+      </select>
+      <select data-idn-department>
+        <option value="">كل الأقسام</option>
+        ${(opts.departments || []).map((d) => `<option value="${esc(d)}" ${ui.department === d ? 'selected' : ''}>${esc(d)}</option>`).join('')}
+      </select>
+      <select data-idn-role>
+        <option value="">كل الأدوار</option>
+        ${(opts.roles || []).map((r) => `<option value="${esc(r.code)}" ${ui.role === r.code ? 'selected' : ''}>${esc(r.nameAr)}</option>`).join('')}
       </select>
       <select data-idn-status>
         <option value="">كل الحالات</option>
@@ -312,116 +388,415 @@
         <option value="archived" ${ui.status === 'archived' ? 'selected' : ''}>مؤرشف</option>
       </select>
       <button type="button" class="btn btn-dark btn-sm" data-action="idn-filter">تصفية</button>
-      ${extra}
+      <button type="button" class="btn btn-ghost btn-sm" data-action="idn-filter-clear">مسح الفلاتر</button>
+    </div>`
+        : ''
+    }`;
+  };
+
+  const actionsMenu = (i, mode) => {
+    const open = ui.menuId === i.naioshId;
+    return `<div class="idn-act-menu ${open ? 'is-open' : ''}">
+      <button type="button" class="btn btn-primary btn-sm" data-action="idn-menu-toggle" data-id="${esc(i.naioshId)}">الإجراءات ▾</button>
+      <div class="idn-act-dropdown" ${open ? '' : 'hidden'}>
+        <button type="button" data-action="idn-detail" data-id="${esc(i.naioshId)}">عرض التفاصيل</button>
+        <button type="button" data-action="idn-edit-open" data-id="${esc(i.naioshId)}">تعديل</button>
+        <button type="button" data-action="idn-affil-open" data-id="${esc(i.naioshId)}">إدارة الارتباط</button>
+        <a href="#roles-permissions">إدارة الدور والصلاحيات</a>
+        ${
+          i.status === 'suspended'
+            ? `<button type="button" data-action="idn-reactivate" data-id="${esc(i.naioshId)}">إعادة التفعيل</button>`
+            : `<button type="button" data-action="idn-suspend" data-id="${esc(i.naioshId)}">إيقاف الوصول</button>`
+        }
+      </div>
     </div>`;
+  };
+
+  const renderUserRow = (i, mode) => {
+    const sec = secOf(i.naioshId);
+    const cNo = clientNoOf(i);
+    return `<tr data-naiosh="${esc(i.naioshId)}">
+      <td class="col-user" data-label="المستخدم">${esc(dash(i.name))}</td>
+      <td class="col-nai" data-label="رقم نايوش">${copyBtn(i.naioshId, 'رقم نايوش')}</td>
+      <td class="col-cli" data-label="رقم العميل">${cNo ? copyBtn(cNo, 'رقم العميل') : '—'}</td>
+      <td class="col-emp" data-label="رقم الموظف">${i.employeeNo ? copyBtn(i.employeeNo, 'رقم الموظف') : '—'}</td>
+      <td class="col-mail" data-label="البريد الإلكتروني" dir="ltr" title="${esc(i.email || '')}">${esc(dash(i.email))}</td>
+      <td class="col-kind" data-label="نوع المستخدم">${esc(userKindAr(i))}</td>
+      <td class="col-org" data-label="المؤسسة / الجهة">${esc(dash(i.orgName))}</td>
+      <td class="col-branch" data-label="الفرع">${esc(dash(i.branchName))}</td>
+      <td class="col-dept" data-label="القسم">${esc(dash(i.department))}</td>
+      <td class="col-job" data-label="المسمى الوظيفي">${esc(dash(i.jobTitle))}</td>
+      <td class="col-role" data-label="الدور" title="${esc(primaryRoleAr(i))}">${esc(primaryRoleAr(i))}</td>
+      <td class="col-status" data-label="الحالة"><span class="idn-status is-${esc(i.status || 'active')}">${esc(statusAr(i.status || 'active'))}</span></td>
+      <td class="col-login" data-label="آخر دخول">${esc(fmt(sec.lastLoginAt || i.updatedAt))}</td>
+      <td class="col-acts" data-label="الإجراءات">${actionsMenu(i, mode)}</td>
+    </tr>`;
+  };
+
+  const renderUserCards = (rows, mode) => {
+    if (!rows.length) return '';
+    return `<div class="idn-mobile-cards">${rows
+      .map((i) => {
+        const cNo = clientNoOf(i);
+        return `<article class="idn-mcard">
+          <header><strong>${esc(dash(i.name))}</strong><span class="idn-status is-${esc(i.status || 'active')}">${esc(statusAr(i.status || 'active'))}</span></header>
+          <dl>
+            <div><dt>رقم نايوش</dt><dd dir="ltr">${esc(dash(i.naioshId))}</dd></div>
+            <div><dt>رقم العميل</dt><dd dir="ltr">${esc(cNo || '—')}</dd></div>
+            <div><dt>رقم الموظف</dt><dd dir="ltr">${esc(i.employeeNo || '—')}</dd></div>
+            <div><dt>البريد</dt><dd dir="ltr">${esc(dash(i.email))}</dd></div>
+            <div><dt>النوع</dt><dd>${esc(userKindAr(i))}</dd></div>
+            <div><dt>المؤسسة</dt><dd>${esc(dash(i.orgName))}</dd></div>
+            <div><dt>الفرع</dt><dd>${esc(dash(i.branchName))}</dd></div>
+            <div><dt>القسم</dt><dd>${esc(dash(i.department))}</dd></div>
+            <div><dt>الدور</dt><dd>${esc(primaryRoleAr(i))}</dd></div>
+          </dl>
+          <footer>${actionsMenu(i, mode)}</footer>
+        </article>`;
+      })
+      .join('')}</div>`;
+  };
 
   const renderUsersTable = (rows, mode = 'users') => {
-    if (!rows.length) return `<div class="idn-empty"><p>لا توجد حسابات مطابقة.</p></div>`;
-    return `<div class="idn-table-wrap"><table class="idn-table">
+    if (!rows.length) return `<div class="idn-empty"><p>لا توجد هويات مطابقة.</p></div>`;
+    return `${renderUserCards(rows, mode)}
+    <div class="idn-table-wrap idn-registry-wrap"><table class="idn-table idn-registry">
       <thead><tr>
-        <th>اسم المستخدم</th><th>رقم نايوش</th><th>رقم العميل</th><th>رقم الموظف</th>
-        <th>البريد</th><th>نوع الحساب</th><th>تاريخ التسجيل</th><th>آخر دخول</th>
-        <th>الحالة</th><th>التحقق الثنائي</th><th>الإجراءات</th>
+        <th class="col-user">المستخدم</th>
+        <th class="col-nai">رقم نايوش</th>
+        <th class="col-cli">رقم العميل</th>
+        <th class="col-emp">رقم الموظف</th>
+        <th class="col-mail">البريد الإلكتروني</th>
+        <th class="col-kind">نوع المستخدم</th>
+        <th class="col-org">المؤسسة / الجهة</th>
+        <th class="col-branch">الفرع</th>
+        <th class="col-dept">القسم</th>
+        <th class="col-job">المسمى الوظيفي</th>
+        <th class="col-role">الدور</th>
+        <th class="col-status">الحالة</th>
+        <th class="col-login">آخر دخول</th>
+        <th class="col-acts">الإجراءات</th>
       </tr></thead>
-      <tbody>${rows
-        .map((i) => {
-          const sec = secOf(i.naioshId);
-          return `<tr>
-            <td>${esc(i.name || '—')}</td>
-            <td dir="ltr"><code>${esc(i.naioshId || '—')}</code></td>
-            <td dir="ltr">${esc(clientNoOf(i) || '—')}</td>
-            <td dir="ltr">${esc(i.employeeNo || '—')}</td>
-            <td dir="ltr">${esc(i.email || '—')}</td>
-            <td>${esc(accountTypeAr(i))}</td>
-            <td>${esc(fmt(i.createdAt))}</td>
-            <td>${esc(fmt(sec.lastLoginAt || i.updatedAt))}</td>
-            <td>${esc(statusAr(i.status || 'active'))}</td>
-            <td>${sec.mfaEnabled ? 'مفعّل' : 'غير مفعّل'}</td>
-            <td class="idn-acts">
-              <button type="button" class="btn btn-primary btn-sm" data-action="idn-detail" data-id="${esc(i.naioshId)}">عرض الحساب</button>
-              ${
-                mode === 'accounts'
-                  ? i.status === 'suspended'
-                    ? `<button type="button" class="btn btn-dark btn-sm" data-action="idn-reactivate" data-id="${esc(i.naioshId)}">إعادة تفعيل</button>`
-                    : `<button type="button" class="btn btn-ghost btn-sm" data-action="idn-suspend" data-id="${esc(i.naioshId)}">إيقاف</button>`
-                  : ''
-              }
-            </td>
-          </tr>`;
-        })
-        .join('')}</tbody></table></div>`;
+      <tbody>${rows.map((i) => renderUserRow(i, mode)).join('')}</tbody>
+    </table></div>`;
+  };
+
+  const renderUsersView = (mode = 'users') => {
+    const rows = filteredIdentities();
+    return `<div class="idn-users-head">
+      <div>
+        <h2 class="idn-section-title">${mode === 'accounts' ? 'إدارة الحسابات' : 'المستخدمون والهويات'}</h2>
+        <p class="idn-section-sub">إدارة حسابات وهويات المستخدمين المرتبطين بنايوش والمؤسسات والفروع، ومعرفة جهة كل مستخدم ونوعه وحالة حسابه.</p>
+      </div>
+    </div>
+    ${filtersBar('', mode)}
+    <p class="idn-muted idn-count">عرض ${rows.length} من ${identities().length} هوية</p>
+    ${renderUsersTable(rows, mode)}`;
   };
 
   const renderDetail = (id) => {
     const i = eng()?.findIdentity?.(id) || identities().find((x) => x.naioshId === id);
-    if (!i) return `<div class="idn-empty"><p>الحساب غير موجود.</p><button type="button" class="btn btn-ghost" data-action="idn-view" data-view="accounts">رجوع</button></div>`;
+    if (!i) return `<div class="idn-empty"><p>الهوية غير موجودة.</p><button type="button" class="btn btn-ghost" data-action="idn-view" data-view="users">رجوع</button></div>`;
     const sec = secOf(i.naioshId);
     const grants = (ag().grants || []).filter((g) => g.naioshId === i.naioshId || g.identityId === i.id);
     const active = grants.filter((g) => String(g.status).toUpperCase() === 'ACTIVE');
     const systems = [...new Set(active.map((g) => g.system).filter(Boolean))];
     const roles = [...new Set(active.map((g) => g.roleCode).filter(Boolean))];
     const perms = [...new Set(active.flatMap((g) => g.permissions || []))];
+    const cNo = clientNoOf(i);
     const audit = (ag().audit || ag().auditLog || [])
       .filter((a) => a.naioshId === i.naioshId || a.targetNaioshId === i.naioshId || a.employeeNo === i.employeeNo)
       .slice(0, 12);
+
+    const field = (label, value, ltr = false) => {
+      if (value == null || value === '') return '';
+      return `<li><span>${esc(label)}</span><strong ${ltr ? 'dir="ltr"' : ''}>${esc(value)}</strong></li>`;
+    };
+
     return `<div class="idn-detail">
       <div class="idn-toolbar">
-        <button type="button" class="btn btn-ghost btn-sm" data-action="idn-view" data-view="accounts"><i class="fas fa-arrow-right"></i> رجوع</button>
-        <a class="btn btn-dark btn-sm" href="#roles-permissions">إدارة فريق العمل والصلاحيات</a>
+        <button type="button" class="btn btn-ghost btn-sm" data-action="idn-view" data-view="users"><i class="fas fa-arrow-right"></i> رجوع</button>
+        <button type="button" class="btn btn-dark btn-sm" data-action="idn-edit-open" data-id="${esc(i.naioshId)}">تعديل</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-action="idn-affil-open" data-id="${esc(i.naioshId)}">إدارة الارتباط</button>
+        <a class="btn btn-ghost btn-sm" href="#roles-permissions">إدارة الدور والصلاحيات</a>
       </div>
-      <h2>${esc(i.name || 'حساب')}</h2>
-      <section class="idn-block"><h3>1) بيانات الهوية</h3>
+      <h2>ملف المستخدم</h2>
+      <p class="idn-sub">${esc(i.name || '')} · ${esc(userKindAr(i))} · ${esc(statusAr(i.status || 'active'))}</p>
+
+      <section class="idn-block"><h3>الهوية الأساسية</h3>
         <ul class="idn-dl">
-          <li><span>رقم نايوش</span><strong dir="ltr">${esc(i.naioshId)}</strong></li>
-          <li><span>البريد</span><strong dir="ltr">${esc(i.email || '—')}</strong></li>
-          <li><span>نوع الحساب</span><strong>${esc(accountTypeAr(i))}</strong></li>
-          <li><span>الحالة</span><strong>${esc(statusAr(i.status || 'active'))}</strong></li>
-          <li><span>تاريخ التسجيل</span><strong>${esc(fmt(i.createdAt))}</strong></li>
+          ${field('الاسم', i.name)}
+          ${field('رقم نايوش', i.naioshId, true)}
+          ${field('البريد', i.email, true)}
+          ${field('الهاتف', i.phone, true)}
+          ${field('الدولة', i.country)}
+          ${i.nationality ? field('الجنسية', i.nationality) : ''}
+          ${field('حالة الحساب', statusAr(i.status || 'active'))}
+          ${field('نوع المستخدم', userKindAr(i))}
         </ul>
       </section>
-      <section class="idn-block"><h3>2) بيانات العميل</h3>
-        <p>${clientNoOf(i) ? `رقم العميل: <code dir="ltr">${esc(clientNoOf(i))}</code>` : 'ليس عميلًا مرتبطًا في سجل العملاء، أو لم يُربط بريده بعد.'}</p>
+
+      <section class="idn-block"><h3>الارتباط المؤسسي</h3>
+        ${
+          i.orgName || i.branchName || i.department || i.jobTitle || i.employeeNo
+            ? `<ul class="idn-dl">
+          ${field('المؤسسة / الجهة', i.orgName)}
+          ${field('الفرع', i.branchName)}
+          ${field('القسم', i.department)}
+          ${field('المسمى', i.jobTitle)}
+          ${field('رقم الموظف', i.employeeNo, true)}
+        </ul>`
+            : '<p class="idn-muted">لا يوجد ارتباط مؤسسي مسجّل لهذه الهوية.</p>'
+        }
       </section>
-      <section class="idn-block"><h3>3) بيانات الموظف</h3>
-        <p>${i.employeeNo ? `رقم الموظف: <code dir="ltr">${esc(i.employeeNo)}</code> · الهوية الأساسية تبقى حتى مع تغيير الدور.` : 'ليس موظفًا رسميًا بعد (لا رقم موظف).'}</p>
+
+      <section class="idn-block"><h3>صفة العميل</h3>
+        ${
+          cNo
+            ? `<ul class="idn-dl">
+          ${field('رقم العميل', cNo, true)}
+          ${field('حالة العميل', i.clientStatus || 'نشط')}
+        </ul>`
+            : '<p class="idn-muted">ليست له صفة عميل في السجل الحالي.</p>'
+        }
       </section>
-      <section class="idn-block"><h3>4) الأنظمة المسموح بها</h3>
-        <p>${systems.length ? systems.map((s) => `<span class="idn-pill">${esc(s)}</span>`).join(' ') : 'لا أنظمة ممنوحة.'}</p>
-        <p class="idn-muted">إخفاء النظام من القائمة لا يكفي — الحوكمة تمنع الوصول إن لم توجد صلاحية.</p>
+
+      <section class="idn-block"><h3>الوصول والصلاحيات</h3>
+        <ul class="idn-dl">
+          <li><span>الدور</span><strong>${esc(roles.length ? roles.map(roleLabel).join(' · ') : '—')}</strong></li>
+          <li><span>الأنظمة المسموح بها</span><strong>${esc(systems.length ? systems.join(' · ') : '—')}</strong></li>
+          <li><span>حالة الوصول</span><strong>${esc(statusAr(i.status || 'active'))}</strong></li>
+        </ul>
+        <p class="idn-perms">${perms.length ? perms.map((p) => `<code>${esc(p)}</code>`).join(' ') : '<span class="idn-muted">لا صلاحيات مباشرة مسجّلة — راجع إدارة فريق العمل.</span>'}</p>
       </section>
-      <section class="idn-block"><h3>5) الأدوار</h3>
-        <p>${roles.length ? roles.map((r) => `<span class="idn-pill">${esc(r)}</span>`).join(' ') : '—'}</p>
-      </section>
-      <section class="idn-block"><h3>6) الصلاحيات</h3>
-        <p class="idn-perms">${perms.length ? perms.map((p) => `<code>${esc(p)}</code>`).join(' ') : '—'}</p>
-      </section>
-      <section class="idn-block"><h3>7) التحقق الثنائي</h3>
-        <p>${sec.mfaEnabled ? `مفعّل · الطريقة: ${esc(sec.mfaMethod || 'تطبيق/رمز')} · منذ ${esc(fmt(sec.mfaEnabledAt))}` : 'غير مفعّل'}</p>
-        <div class="idn-acts">
-          ${
-            sec.mfaEnabled
-              ? `<button type="button" class="btn btn-ghost btn-sm" data-action="idn-mfa-off" data-id="${esc(i.naioshId)}">إيقاف التحقق الثنائي</button>`
-              : `<button type="button" class="btn btn-primary btn-sm" data-action="idn-mfa-on" data-id="${esc(i.naioshId)}">تفعيل التحقق الثنائي</button>`
-          }
-        </div>
-      </section>
-      <section class="idn-block"><h3>8) سجل تسجيل الدخول</h3>
-        <p>آخر دخول مسجّل في الهوية: ${esc(fmt(sec.lastLoginAt || i.updatedAt))}</p>
-        <p class="idn-muted">سجل الجلسات التفصيلي يعتمد على خادم الجلسات إن وُجد — لا تُعرض أسرار أو رموز استرداد.</p>
-      </section>
-      <section class="idn-block"><h3>9) أنشطة أمنية</h3>
+
+      <section class="idn-block"><h3>النشاط</h3>
+        <ul class="idn-dl">
+          ${field('تاريخ إنشاء الحساب', fmt(i.createdAt))}
+          ${field('آخر دخول', fmt(sec.lastLoginAt || i.updatedAt))}
+          ${field('آخر تعديل', fmt(i.updatedAt))}
+        </ul>
         ${
           audit.length
             ? `<ul class="idn-feed">${audit.map((a) => `<li>${esc(fmt(a.at || a.createdAt))} · ${esc(a.action || a.type || 'حدث')} · ${esc(a.actor || a.by || '')}</li>`).join('')}</ul>`
-            : '<p class="idn-muted">لا أنشطة أمنية مسجّلة لهذا الحساب في سجل الحوكمة.</p>'
+            : ''
         }
       </section>
     </div>`;
   };
 
+  const blankDraft = () => ({
+    name: '',
+    email: '',
+    phone: '',
+    country: 'السعودية',
+    userKind: 'INTERNAL',
+    orgId: '',
+    orgName: '',
+    branchName: '',
+    department: '',
+    jobTitle: '',
+    roleCode: 'HUB_EMPLOYEE',
+    permissions: [],
+    systems: ['HUB'],
+  });
+
+  const renderAddWizard = () => {
+    const m = ui.modal;
+    if (!m || m.kind !== 'add-user') return '';
+    const d = ui.addDraft || blankDraft();
+    const step = ui.addStep || 1;
+    const opts = affOpts();
+    const kindList = Object.values(kinds());
+    const needsOrg = !!(kinds()[d.userKind]?.needsOrg);
+
+    let body = '';
+    if (step === 1) {
+      body = `<div class="idn-wizard-grid">
+        <label>الاسم<input data-f="name" value="${esc(d.name)}" required /></label>
+        <label>البريد الإلكتروني<input data-f="email" type="email" dir="ltr" value="${esc(d.email)}" required /></label>
+        <label>الهاتف<input data-f="phone" dir="ltr" value="${esc(d.phone)}" /></label>
+        <label>الدولة<input data-f="country" value="${esc(d.country)}" /></label>
+      </div>`;
+    } else if (step === 2) {
+      body = `<div class="idn-kind-grid">
+        ${kindList
+          .map(
+            (k) => `<label class="idn-kind-card ${d.userKind === k.code ? 'is-on' : ''}">
+            <input type="radio" name="userKind" data-f="userKind" value="${esc(k.code)}" ${d.userKind === k.code ? 'checked' : ''} />
+            <strong>${esc(k.labelAr)}</strong>
+          </label>`
+          )
+          .join('')}
+      </div>
+      <p class="idn-muted">نوع المستخدم يصف علاقته بالمنظومة — وهو مختلف عن الدور والصلاحيات.</p>`;
+    } else if (step === 3) {
+      body = needsOrg
+        ? `<div class="idn-wizard-grid">
+        <label>المؤسسة / الجهة
+          <select data-f="orgName">
+            <option value="">— اختر —</option>
+            ${(opts.orgs || []).map((o) => `<option value="${esc(o.name)}" data-org-id="${esc(o.id)}" ${d.orgName === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}
+          </select>
+        </label>
+        <label>الفرع
+          <select data-f="branchName">
+            <option value="">—</option>
+            ${(opts.branches || []).map((b) => `<option value="${esc(b)}" ${d.branchName === b ? 'selected' : ''}>${esc(b)}</option>`).join('')}
+          </select>
+        </label>
+        <label>القسم
+          <select data-f="department">
+            <option value="">—</option>
+            ${(opts.departments || []).map((x) => `<option value="${esc(x)}" ${d.department === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}
+          </select>
+        </label>
+        <label>المسمى الوظيفي<input data-f="jobTitle" value="${esc(d.jobTitle)}" list="idn-jobs" />
+          <datalist id="idn-jobs">${(opts.jobTitles || []).map((j) => `<option value="${esc(j)}"></option>`).join('')}</datalist>
+        </label>
+      </div>`
+        : `<div class="idn-wizard-grid">
+        <label>المؤسسة / الجهة (اختياري)
+          <select data-f="orgName">
+            <option value="">— بدون —</option>
+            ${(opts.orgs || []).map((o) => `<option value="${esc(o.name)}" ${d.orgName === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}
+          </select>
+        </label>
+        <label>الفرع (اختياري)
+          <select data-f="branchName">
+            <option value="">—</option>
+            ${(opts.branches || []).map((b) => `<option value="${esc(b)}" ${d.branchName === b ? 'selected' : ''}>${esc(b)}</option>`).join('')}
+          </select>
+        </label>
+        <label>القسم<input data-f="department" value="${esc(d.department)}" /></label>
+        <label>المسمى الوظيفي<input data-f="jobTitle" value="${esc(d.jobTitle)}" /></label>
+      </div>
+      <p class="idn-muted">للموظف الداخلي يمكن ربطه بنايوش أو ترك الارتباط فارغًا.</p>`;
+    } else if (step === 4) {
+      body = `<div class="idn-wizard-grid">
+        <label>الدور
+          <select data-f="roleCode">
+            ${(opts.roles || []).map((r) => `<option value="${esc(r.code)}" ${d.roleCode === r.code ? 'selected' : ''}>${esc(r.nameAr)}</option>`).join('')}
+          </select>
+        </label>
+        <label>الأنظمة المسموح بها
+          <select data-f="systems" multiple size="4">
+            ${(ag().systems || []).map((s) => {
+              const code = typeof s === 'string' ? s : s.code;
+              const name = typeof s === 'string' ? s : s.nameAr || s.code;
+              const sel = (d.systems || []).includes(code) ? 'selected' : '';
+              return `<option value="${esc(code)}" ${sel}>${esc(name)}</option>`;
+            }).join('')}
+          </select>
+        </label>
+      </div>
+      <p class="idn-muted">التعديل التفصيلي للصلاحيات يتم من «إدارة فريق العمل والصلاحيات» بعد الحفظ.</p>`;
+    } else {
+      const kLabel = kinds()[d.userKind]?.labelAr || d.userKind;
+      body = `<ul class="idn-dl idn-review">
+        <li><span>الاسم</span><strong>${esc(d.name)}</strong></li>
+        <li><span>البريد</span><strong dir="ltr">${esc(d.email)}</strong></li>
+        <li><span>الهاتف</span><strong dir="ltr">${esc(d.phone || '—')}</strong></li>
+        <li><span>الدولة</span><strong>${esc(d.country || '—')}</strong></li>
+        <li><span>نوع المستخدم</span><strong>${esc(kLabel)}</strong></li>
+        <li><span>المؤسسة</span><strong>${esc(d.orgName || '—')}</strong></li>
+        <li><span>الفرع</span><strong>${esc(d.branchName || '—')}</strong></li>
+        <li><span>القسم</span><strong>${esc(d.department || '—')}</strong></li>
+        <li><span>المسمى</span><strong>${esc(d.jobTitle || '—')}</strong></li>
+        <li><span>الدور</span><strong>${esc(roleLabel(d.roleCode))}</strong></li>
+      </ul>`;
+    }
+
+    const titles = ['الهوية', 'نوع المستخدم', 'الارتباط', 'الوصول', 'مراجعة وحفظ'];
+    return `<div class="idn-modal-backdrop" data-action="idn-modal-cancel">
+      <div class="idn-modal idn-modal-lg" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <header>
+          <h3>إضافة مستخدم · ${esc(titles[step - 1] || '')}</h3>
+          <button type="button" class="idn-modal-x" data-action="idn-modal-cancel">×</button>
+        </header>
+        <div class="idn-steps">${titles.map((t, i) => `<span class="${i + 1 === step ? 'is-on' : i + 1 < step ? 'is-done' : ''}">${i + 1}. ${esc(t)}</span>`).join('')}</div>
+        <div class="idn-modal-body">${body}${m.error ? `<p class="idn-error">${esc(m.error)}</p>` : ''}</div>
+        <footer>
+          <button type="button" class="btn btn-ghost" data-action="idn-modal-cancel">إلغاء</button>
+          ${step > 1 ? `<button type="button" class="btn btn-ghost" data-action="idn-add-prev">السابق</button>` : ''}
+          ${step < 5 ? `<button type="button" class="btn btn-primary" data-action="idn-add-next">التالي</button>` : `<button type="button" class="btn btn-primary" data-action="idn-add-save">حفظ</button>`}
+        </footer>
+      </div>
+    </div>`;
+  };
+
+  const renderEditModal = () => {
+    const m = ui.modal;
+    if (!m || (m.kind !== 'edit-user' && m.kind !== 'affil-user')) return '';
+    const i = eng()?.findIdentity?.(m.id);
+    if (!i) return '';
+    const opts = affOpts();
+    const isAffil = m.kind === 'affil-user';
+    return `<div class="idn-modal-backdrop" data-action="idn-modal-cancel">
+      <div class="idn-modal idn-modal-lg" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <header><h3>${isAffil ? 'إدارة الارتباط' : 'تعديل المستخدم'} — ${esc(i.name)}</h3>
+          <button type="button" class="idn-modal-x" data-action="idn-modal-cancel">×</button></header>
+        <div class="idn-modal-body">
+          ${
+            !isAffil
+              ? `<div class="idn-wizard-grid">
+            <label>الاسم<input data-f="name" value="${esc(i.name || '')}" /></label>
+            <label>البريد<input data-f="email" dir="ltr" value="${esc(i.email || '')}" /></label>
+            <label>الهاتف<input data-f="phone" dir="ltr" value="${esc(i.phone || '')}" /></label>
+            <label>الدولة<input data-f="country" value="${esc(i.country || '')}" /></label>
+            <label>نوع المستخدم
+              <select data-f="userKind">
+                ${Object.values(kinds())
+                  .map((k) => `<option value="${esc(k.code)}" ${i.userKind === k.code ? 'selected' : ''}>${esc(k.labelAr)}</option>`)
+                  .join('')}
+              </select>
+            </label>
+          </div>`
+              : ''
+          }
+          <div class="idn-wizard-grid">
+            <label>المؤسسة / الجهة
+              <select data-f="orgName">
+                <option value="">—</option>
+                ${(opts.orgs || []).map((o) => `<option value="${esc(o.name)}" ${i.orgName === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}
+              </select>
+            </label>
+            <label>الفرع
+              <select data-f="branchName">
+                <option value="">—</option>
+                ${(opts.branches || []).map((b) => `<option value="${esc(b)}" ${i.branchName === b ? 'selected' : ''}>${esc(b)}</option>`).join('')}
+              </select>
+            </label>
+            <label>القسم<input data-f="department" value="${esc(i.department || '')}" /></label>
+            <label>المسمى الوظيفي<input data-f="jobTitle" value="${esc(i.jobTitle || '')}" /></label>
+            ${
+              isAffil
+                ? `<label>الدور (عبر الحوكمة)
+              <select data-f="roleCode">
+                <option value="">— بدون تغيير —</option>
+                ${(opts.roles || []).map((r) => `<option value="${esc(r.code)}">${esc(r.nameAr)}</option>`).join('')}
+              </select>
+            </label>`
+                : ''
+            }
+          </div>
+          <p class="idn-muted">رقم نايوش: <code dir="ltr">${esc(i.naioshId)}</code>
+            ${i.employeeNo ? ` · رقم الموظف: <code dir="ltr">${esc(i.employeeNo)}</code>` : ''}
+            ${clientNoOf(i) ? ` · رقم العميل: <code dir="ltr">${esc(clientNoOf(i))}</code>` : ''}
+            — لا تُحذف صفة العميل عند تعديل الارتباط الوظيفي.</p>
+          ${m.error ? `<p class="idn-error">${esc(m.error)}</p>` : ''}
+        </div>
+        <footer>
+          <button type="button" class="btn btn-ghost" data-action="idn-modal-cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary" data-action="idn-edit-save">${isAffil ? 'حفظ الارتباط' : 'حفظ التعديل'}</button>
+        </footer>
+      </div>
+    </div>`;
+  };
+
   const renderSso = () => {
     const rows = ssoStore().systems || [];
-    return `${filtersBar(`<button type="button" class="btn btn-primary btn-sm" data-action="idn-sso-add"><i class="fas fa-plus"></i> إضافة نظام</button>`).replace('data-idn-type', 'data-idn-type hidden').replace('data-idn-status', 'data-idn-status hidden')}
+    return `${filtersBar(`<button type="button" class="btn btn-primary btn-sm" data-action="idn-sso-add"><i class="fas fa-plus"></i> إضافة نظام</button>`, 'sso')}
       <p class="idn-banner">تسجيل الدخول الموحد يتحقق من الهوية ثم يتحقق من صلاحية الوصول للنظام المطلوب — وجود هوية صالحة لا يعني دخول كل الأنظمة.</p>
       <div class="idn-table-wrap"><table class="idn-table">
         <thead><tr>
@@ -452,17 +827,17 @@
 
   const renderMfa = (k) => {
     const rows = filteredIdentities();
-    return `${filtersBar('')}
+    return `${filtersBar('', 'mfa')}
       <div class="idn-kpis">
         <article><span>مفعّل</span><strong>${k.mfaOn}</strong></article>
         <article><span>غير مفعّل</span><strong>${k.mfaOff}</strong></article>
         <article class="is-warn"><span>حسابات حساسة بلا حماية</span><strong>${k.sensitiveUnprotected}</strong></article>
         <article><span>سياسة الإلزام</span><strong>${k.requireMfa ? 'نعم' : 'لا'}</strong></article>
       </div>
-      <p class="idn-banner">لا تُعرض الرموز السرية أو بيانات الاسترداد. التفعيل هنا يسجّل حالة الحساب؛ تحدي الدخول الفعلي يعتمد على إعدادات الخادم عند تفعيل السياسة.</p>
+      <p class="idn-banner">لا تُعرض الرموز السرية أو بيانات الاسترداد.</p>
       <div class="idn-table-wrap"><table class="idn-table">
         <thead><tr>
-          <th>المستخدم</th><th>رقم نايوش</th><th>نوع الحساب</th><th>حالة التحقق</th>
+          <th>المستخدم</th><th>رقم نايوش</th><th>نوع المستخدم</th><th>حالة التحقق</th>
           <th>الطريقة</th><th>تاريخ التفعيل</th><th>آخر تحقق</th><th>الإجراءات</th>
         </tr></thead>
         <tbody>${rows
@@ -471,7 +846,7 @@
             return `<tr>
               <td>${esc(i.name)}</td>
               <td dir="ltr"><code>${esc(i.naioshId)}</code></td>
-              <td>${esc(accountTypeAr(i))}</td>
+              <td>${esc(userKindAr(i))}</td>
               <td>${sec.mfaEnabled ? 'مفعّل' : 'غير مفعّل'}</td>
               <td>${esc(sec.mfaMethod || '—')}</td>
               <td>${esc(fmt(sec.mfaEnabledAt))}</td>
@@ -511,8 +886,6 @@
       (g.permissions || []).forEach((p) => bySystem[sys].add(p));
     });
 
-    const roleLabel = (code) => (ag().roles || []).find((r) => r.code === code)?.nameAr || code || '—';
-
     return `<div class="idn-toolbar">
         <button type="button" class="btn btn-ghost btn-sm" data-action="idn-view" data-view="home"><i class="fas fa-arrow-right"></i> العودة</button>
         <select data-idn-matrix-emp>
@@ -528,7 +901,7 @@
       </div>
       ${
         emp
-          ? `<div class="idn-banner">الموظف: <b>${esc(emp.name)}</b> · رقم: <code dir="ltr">${esc(emp.employeeNo || '—')}</code> · الأدوار: ${esc(
+          ? `<div class="idn-banner">الموظف: <b>${esc(emp.name)}</b> · رقم: <code dir="ltr">${esc(emp.employeeNo || '—')}</code> · المؤسسة: ${esc(emp.orgName || '—')} · الأدوار: ${esc(
               [...new Set(grants.map((g) => roleLabel(g.roleCode)))].join(' · ') || '—'
             )}</div>`
           : ''
@@ -551,28 +924,17 @@
                     </tr>`;
                   })
                   .join('')
-              : `<tr><td colspan="${ACTION_COLS.length + 2}">لا صلاحيات مطابقة. امنح صلاحية من إدارة فريق العمل ثم أعد التحميل.</td></tr>`
+              : `<tr><td colspan="${ACTION_COLS.length + 2}">لا صلاحيات مطابقة.</td></tr>`
           }
         </tbody>
-      </table></div>
-      ${
-        emp
-          ? `<section class="idn-block"><h3>تمييز مصدر الصلاحية</h3>
-            <ul class="idn-feed">${grants
-              .map((g) => {
-                const inherited = (g.permissions || []).length ? 'موروثة من الدور / ممنوحة بالتعيين' : '—';
-                return `<li><b>${esc(g.system)}</b> · دور ${esc(roleLabel(g.roleCode))} · ${esc(inherited)} · ${(g.permissions || []).map((p) => `<code>${esc(p)}</code>`).join(' ')}</li>`;
-              })
-              .join('')}</ul>
-            <p class="idn-muted">الاستثناءات/السحب تظهر عند إلغاء التعيين من الإدارة المركزية (الحالة REVOKED).</p>
-          </section>`
-          : ''
-      }`;
+      </table></div>`;
   };
 
   const renderModal = () => {
     const m = ui.modal;
     if (!m) return '';
+    if (m.kind === 'add-user') return renderAddWizard();
+    if (m.kind === 'edit-user' || m.kind === 'affil-user') return renderEditModal();
     if (m.kind === 'sso-add') {
       const systems = window.HubOpsCatalog?.listSystems?.() || [];
       return `<div class="idn-modal-backdrop" data-action="idn-modal-cancel">
@@ -595,7 +957,7 @@
               </select>
             </label>
             <label>ملاحظات<textarea data-f="notes" rows="2"></textarea></label>
-            <p class="idn-muted">لا تُدخل مفاتيح أو أسرارًا في هذا النموذج. التكامل يستخدم تذاكر/جلسة هوب الحالية.</p>
+            <p class="idn-muted">لا تُدخل مفاتيح أو أسرارًا في هذا النموذج.</p>
             ${m.error ? `<p class="idn-error">${esc(m.error)}</p>` : ''}
           </div>
           <footer>
@@ -626,8 +988,8 @@
     const k = liveKpis();
     let body = '';
     if (ui.view === 'home') body = renderHome(k);
-    else if (ui.view === 'users') body = filtersBar('') + renderUsersTable(filteredIdentities(), 'users');
-    else if (ui.view === 'accounts') body = filtersBar('') + renderUsersTable(filteredIdentities(), 'accounts');
+    else if (ui.view === 'users') body = renderUsersView('users');
+    else if (ui.view === 'accounts') body = renderUsersView('accounts');
     else if (ui.view === 'sso') body = renderSso();
     else if (ui.view === 'mfa') body = renderMfa(k);
     else if (ui.view === 'matrix') body = renderMatrix();
@@ -639,9 +1001,10 @@
         <div>
           <p class="idn-kicker"><i class="fas fa-id-card"></i> هوية نايوش</p>
           <h1>إدارة الهوية</h1>
-          <p class="idn-sub">هوية موحّدة · حساب · صفة · موظف عند التعيين · ثم الأدوار والصلاحيات من المصدر المركزي.</p>
+          <p class="idn-sub">السجل المركزي للهويات والحسابات — من هو الشخص، تابع لأي جهة، وما صفته وحالة حسابه.</p>
         </div>
         <div class="idn-header-actions">
+          <button type="button" class="btn btn-primary btn-sm" data-action="idn-view" data-view="users">المستخدمون والهويات</button>
           <a class="btn btn-ghost btn-sm" href="#roles-permissions">فريق العمل والصلاحيات</a>
           <a class="btn btn-ghost btn-sm" href="#rent-admin">موافقات المدير الأعلى</a>
         </div>
@@ -653,9 +1016,35 @@
   };
 
   const readFilters = () => {
-    ui.q = document.querySelector('[data-idn-q]')?.value || ui.q;
-    ui.type = document.querySelector('[data-idn-type]')?.value || ui.type;
-    ui.status = document.querySelector('[data-idn-status]')?.value || ui.status;
+    ui.q = document.querySelector('[data-idn-q]')?.value ?? ui.q;
+    ui.type = document.querySelector('[data-idn-type]')?.value ?? ui.type;
+    ui.status = document.querySelector('[data-idn-status]')?.value ?? ui.status;
+    ui.org = document.querySelector('[data-idn-org]')?.value ?? ui.org;
+    ui.branch = document.querySelector('[data-idn-branch]')?.value ?? ui.branch;
+    ui.department = document.querySelector('[data-idn-department]')?.value ?? ui.department;
+    ui.role = document.querySelector('[data-idn-role]')?.value ?? ui.role;
+  };
+
+  const readDraftFields = () => {
+    const box = document.querySelector('.idn-modal');
+    if (!box) return ui.addDraft || blankDraft();
+    const d = { ...(ui.addDraft || blankDraft()) };
+    box.querySelectorAll('[data-f]').forEach((el) => {
+      const key = el.getAttribute('data-f');
+      if (el.tagName === 'SELECT' && el.multiple) {
+        d[key] = [...el.selectedOptions].map((o) => o.value);
+      } else if (el.type === 'radio') {
+        if (el.checked) d[key] = el.value;
+      } else {
+        d[key] = el.value;
+      }
+    });
+    const orgSel = box.querySelector('[data-f="orgName"]');
+    if (orgSel?.selectedOptions?.[0]) {
+      d.orgId = orgSel.selectedOptions[0].getAttribute('data-org-id') || d.orgId || '';
+    }
+    ui.addDraft = d;
+    return d;
   };
 
   const handle = (action, btn, ctx = {}) => {
@@ -669,15 +1058,158 @@
       ui.openId = null;
       ui.note = '';
       ui.modal = null;
+      ui.menuId = null;
       return true;
     }
     if (action === 'idn-filter') {
       readFilters();
+      ui.menuId = null;
+      return true;
+    }
+    if (action === 'idn-filter-clear') {
+      ui.q = '';
+      ui.type = '';
+      ui.status = '';
+      ui.org = '';
+      ui.branch = '';
+      ui.department = '';
+      ui.role = '';
+      return true;
+    }
+    if (action === 'idn-copy') {
+      const v = btn.dataset.copy || '';
+      if (v && navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(v).then(() => toast?.('تم النسخ')).catch(() => toast?.(v));
+      } else toast?.(v);
+      return true;
+    }
+    if (action === 'idn-menu-toggle') {
+      ui.menuId = ui.menuId === btn.dataset.id ? null : btn.dataset.id;
       return true;
     }
     if (action === 'idn-detail') {
       ui.openId = btn.dataset.id;
       ui.view = 'detail';
+      ui.menuId = null;
+      return true;
+    }
+    if (action === 'idn-add-open') {
+      ui.addStep = 1;
+      ui.addDraft = blankDraft();
+      ui.modal = { kind: 'add-user', error: '' };
+      ui.menuId = null;
+      return true;
+    }
+    if (action === 'idn-add-prev') {
+      readDraftFields();
+      ui.addStep = Math.max(1, (ui.addStep || 1) - 1);
+      ui.modal = { ...(ui.modal || { kind: 'add-user' }), error: '' };
+      return true;
+    }
+    if (action === 'idn-add-next') {
+      const d = readDraftFields();
+      const step = ui.addStep || 1;
+      if (step === 1 && (!d.name?.trim() || !d.email?.trim())) {
+        ui.modal = { kind: 'add-user', error: 'الاسم والبريد مطلوبان' };
+        return true;
+      }
+      if (step === 2 && !d.userKind) {
+        ui.modal = { kind: 'add-user', error: 'اختر نوع المستخدم' };
+        return true;
+      }
+      if (step === 3 && kinds()[d.userKind]?.needsOrg && !d.orgName) {
+        ui.modal = { kind: 'add-user', error: 'المؤسسة مطلوبة لهذا النوع' };
+        return true;
+      }
+      ui.addStep = Math.min(5, step + 1);
+      ui.modal = { kind: 'add-user', error: '' };
+      return true;
+    }
+    if (action === 'idn-add-save') {
+      const d = readDraftFields();
+      try {
+        const actor = user?.name || user?.email || 'مشغّل هوب';
+        if (d.orgName === 'نايوش' && !d.orgId) d.orgId = 'ORG-NAIOSH';
+        eng()?.createUserIdentity?.(
+          {
+            name: d.name,
+            email: d.email,
+            phone: d.phone,
+            country: d.country,
+            userKind: d.userKind,
+            orgId: d.orgId,
+            orgName: d.orgName,
+            branchName: d.branchName,
+            department: d.department,
+            jobTitle: d.jobTitle,
+            roleCode: d.roleCode,
+            systems: d.systems,
+            reason: 'إضافة من سجل الهويات',
+          },
+          actor
+        );
+        ui.modal = null;
+        ui.addDraft = null;
+        ui.view = 'users';
+        toast?.('تم حفظ الهوية في السجل المركزي');
+      } catch (e) {
+        ui.modal = { kind: 'add-user', error: e.message || 'تعذر الحفظ' };
+      }
+      return true;
+    }
+    if (action === 'idn-edit-open') {
+      ui.modal = { kind: 'edit-user', id: btn.dataset.id, error: '' };
+      ui.menuId = null;
+      return true;
+    }
+    if (action === 'idn-affil-open') {
+      ui.modal = { kind: 'affil-user', id: btn.dataset.id, error: '' };
+      ui.menuId = null;
+      return true;
+    }
+    if (action === 'idn-edit-save') {
+      const m = ui.modal;
+      const box = document.querySelector('.idn-modal');
+      if (!m || !box) return true;
+      const patch = {};
+      box.querySelectorAll('[data-f]').forEach((el) => {
+        const key = el.getAttribute('data-f');
+        if (key === 'roleCode') return;
+        if (el.tagName === 'SELECT' && el.multiple) patch[key] = [...el.selectedOptions].map((o) => o.value);
+        else patch[key] = el.value;
+      });
+      try {
+        const actor = user?.name || 'مشغّل هوب';
+        if (patch.orgName === 'نايوش') patch.orgId = 'ORG-NAIOSH';
+        else if (patch.orgName) {
+          const hit = (eng()?.listOrganizations?.() || []).find((o) => o.name === patch.orgName);
+          if (hit) patch.orgId = hit.id;
+        }
+        eng()?.updateIdentity?.(m.id, { ...patch, reason: m.kind === 'affil-user' ? 'تحديث الارتباط المؤسسي' : 'تعديل ملف المستخدم' }, actor);
+        const roleCode = box.querySelector('[data-f="roleCode"]')?.value;
+        if (roleCode && m.kind === 'affil-user') {
+          const id = eng()?.findIdentity?.(m.id);
+          const existing = (ag().grants || []).find((g) => g.naioshId === m.id && String(g.status).toUpperCase() === 'ACTIVE');
+          if (existing) {
+            eng()?.updateGrant?.(existing.id || existing.grantId, { roleCode, reason: 'تغيير الدور من إدارة الهوية' }, actor);
+          } else if (id) {
+            eng()?.createGrant?.(
+              {
+                naioshId: id.naioshId,
+                roleCode,
+                system: 'HUB',
+                scopeCode: 'HUB-GLOBAL',
+                purpose: 'تعيين دور من إدارة الهوية',
+              },
+              actor
+            );
+          }
+        }
+        ui.modal = null;
+        toast?.('تم حفظ التغييرات في السجل');
+      } catch (e) {
+        ui.modal = { ...m, error: e.message || 'تعذر الحفظ' };
+      }
       return true;
     }
     if (action === 'idn-matrix-apply') {
@@ -704,12 +1236,13 @@
     if (action === 'idn-suspend') {
       ui.modal = {
         kind: 'confirm',
-        title: 'إيقاف الحساب',
-        body: 'سيتم إيقاف وصول الحساب. إن كانت العملية حساسة قد تتطلب موافقة المدير الأعلى حسب السياسة.',
-        okLabel: 'إيقاف',
+        title: 'إيقاف الوصول',
+        body: 'سيتم إيقاف وصول الحساب دون حذف الهوية أو صفة العميل إن وُجدت.',
+        okLabel: 'إيقاف الوصول',
         next: 'suspend',
         id: btn.dataset.id,
       };
+      ui.menuId = null;
       return true;
     }
     if (action === 'idn-reactivate') {
@@ -719,6 +1252,7 @@
       } catch (e) {
         toast?.(e.message || 'تعذر التفعيل');
       }
+      ui.menuId = null;
       return true;
     }
     if (action === 'idn-sso-add') {
@@ -830,7 +1364,7 @@
         try {
           eng()?.suspendIdentity?.(m.id, user?.name || 'مشغّل هوب', 'إيقاف من هوية نايوش');
           ui.modal = null;
-          toast?.('تم إيقاف الحساب');
+          toast?.('تم إيقاف الوصول');
         } catch (e) {
           ui.modal = { ...m, error: e.message || 'تعذر الإيقاف' };
         }
@@ -843,5 +1377,5 @@
 
   const handleChange = () => false;
 
-  window.HubIdentityUI = { render, handle, handleChange, ui, liveKpis, secOf };
+  window.HubIdentityUI = { render, handle, handleChange, ui, liveKpis, secOf, userKindAr, clientNoOf, filteredIdentities };
 })();
