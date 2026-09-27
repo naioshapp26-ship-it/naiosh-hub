@@ -723,7 +723,7 @@
         { id: 'nameAr', label: 'اسم النظام', required: true },
         { id: 'code', label: 'رمز النظام', value: 'SYS', required: true },
         { id: 'category', label: 'التصنيف', value: 'أنظمة نايوش' },
-        { id: 'url', label: 'رابط التشغيل المباشر', value: 'systems/erp.html' },
+        { id: 'url', label: 'رابط التشغيل المباشر', value: '' },
       ],
       save: (v) =>
         window.HubStore.registerApp({

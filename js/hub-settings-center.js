@@ -600,9 +600,9 @@
             type: 'select',
             value: s.defaultGrantPlan,
             options: [
-              { value: 'standard', label: 'قياسي' },
-              { value: 'professional', label: 'احترافي' },
-              { value: 'enterprise', label: 'مؤسسي' },
+              { value: 'standard', label: 'قياسية' },
+              { value: 'professional', label: 'احترافية' },
+              { value: 'enterprise', label: 'مؤسسية' },
             ],
           }) +
           field({

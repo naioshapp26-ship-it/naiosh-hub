@@ -442,7 +442,7 @@
             </button>`
           ).join('')}
         </div>
-        <p class="hsa-muted">الكيانات الحيّة (فرع/خدمة/…) تُدار بالظهور دون نسخ. المحتوى المخصص يُضاف عبر HubSearchCatalog فقط.</p>`;
+        <p class="hsa-muted">الكيانات الحيّة (فرع/خدمة/…) تُدار بالظهور دون نسخ. المحتوى المخصص يُضاف عبر كتالوج البحث فقط.</p>`;
     } else if (ui.addStep === 2 && (typeMeta?.mode === 'pick' || typeMeta?.mode === 'pick-live' || typeMeta?.mode === 'service')) {
       const isService = typeMeta?.mode === 'service';
       stepBody = `
@@ -646,7 +646,7 @@
     const s = cat()?.defaultSettings?.() || {};
     return `<section class="hsa-panel">
       <h3>إعدادات الفهرسة التلقائية</h3>
-      <p class="hsa-lead">عند نشر محتوى معتمد يمكن إضافته تلقائيًا إلى فهرس المحرك (عبر HubSearchCatalog للمحتوى غير الحيّ).</p>
+      <p class="hsa-lead">عند نشر محتوى معتمد يمكن إضافته تلقائيًا إلى فهرس المحرك (عبر كتالوج البحث للمحتوى غير الحيّ).</p>
       ${[
         ['autoIndexArticles', 'المقالات'],
         ['autoIndexEvents', 'الفعاليات'],

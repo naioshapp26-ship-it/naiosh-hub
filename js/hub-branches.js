@@ -44,7 +44,7 @@
             <img class="branch-flag" alt="${esc(b.flagAlt || b.nameAr)}" src="${esc(b.flag)}" />
           </div>
           <div class="branch-content">
-            <h3 class="branch-title">${esc(b.nameAr)} <span>${esc(b.nameEn)}</span></h3>
+            <h3 class="branch-title">${esc(b.nameAr || b.name || b.code || '')}${b.code ? ` <span dir="ltr">${esc(b.code)}</span>` : ''}</h3>
             <p class="branch-hours"><i class="fas fa-clock"></i> ${esc(b.hours)}</p>
             <div class="branch-actions">
               <button type="button" class="branch-btn primary" data-branch-act="book" data-id="${esc(b.id)}" aria-label="احجز زيارة - ${esc(b.nameAr)}">احجز زيارة</button>

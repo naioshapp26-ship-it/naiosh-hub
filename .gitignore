@@ -9,3 +9,4 @@ data/hub-runtime.json
 data/
 
 .tmp/
+scripts/qa-ui-english-scan-report.json

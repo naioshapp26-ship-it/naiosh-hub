@@ -416,7 +416,7 @@
         ${
           latestReqs.length
             ? `<div class="table-wrap"><table class="data-table posha-table">
-                <thead><tr><th>Request ID</th><th>العميل</th><th>النوع</th><th>الحالة</th><th></th></tr></thead>
+                <thead><tr><th>رقم الطلب</th><th>العميل</th><th>النوع</th><th>الحالة</th><th></th></tr></thead>
                 <tbody>${latestReqs
                   .map(
                     (r) => `<tr>
@@ -624,7 +624,7 @@
           <input id="ps-code" placeholder="ERP" /><input id="ps-name" placeholder="اسم النظام" />
           <button class="btn btn-primary btn-sm" id="ps-act">تفعيل / تعيين</button>
         </div>
-        <ul class="feed">${(c.systems || []).map((s) => `<li><b>${esc(s.name || s.code)}</b> · ${esc(s.plan || '—')} · ${esc(s.status || '—')}</li>`).join('') || '<li>لا أنظمة</li>'}</ul>`;
+        <ul class="feed">${(c.systems || []).map((s) => `<li><b>${esc(window.HubI18n?.system?.(s.code||s.name)||s.name||s.code)}</b> · ${esc(window.HubI18n?.plan?.(s.plan)||s.plan||'—')} · ${esc(window.HubI18n?.status?.(s.status)||s.status||'—')}</li>`).join('') || '<li>لا أنظمة</li>'}</ul>`;
         document.getElementById('ps-act').onclick = async () => {
           try {
             await api(`/api/admin/posha/clients/${encodeURIComponent(c.email)}/activate-system`, {
@@ -643,7 +643,7 @@
           : (c.orders || []).map((o) => `<li><b>${esc(o.number)}</b> ${esc(o.service)} · ${esc(o.status)}</li>`).join('');
         body.innerHTML = `<ul class="feed">${rows || '<li>لا طلبات</li>'}</ul>`;
       } else if (tab === 'subscriptions') {
-        body.innerHTML = `<ul class="feed">${(c.subscriptions || []).map((s) => `<li><b>${esc(s.systemName)}</b> · ${esc(s.plan)} · ${esc(s.status)}</li>`).join('') || '<li>—</li>'}</ul>`;
+        body.innerHTML = `<ul class="feed">${(c.subscriptions || []).map((s) => `<li><b>${esc(window.HubI18n?.system?.(s.systemCode)||s.systemName)}</b> · ${esc(window.HubI18n?.plan?.(s.plan)||s.plan)} · ${esc(window.HubI18n?.status?.(s.status)||s.status)}</li>`).join('') || '<li>—</li>'}</ul>`;
       } else if (tab === 'invoices') {
         body.innerHTML = `<ul class="feed">${(c.invoices || []).map((i) => `<li><b>${esc(i.number)}</b> · ${num(i.amount)} · ${esc(i.status)}</li>`).join('') || '<li>—</li>'}</ul>`;
       } else if (tab === 'wallet') {
@@ -734,7 +734,7 @@
     const sourceHref = r.sourceUrl || (requestKind(r) === 'ad' ? 'ads.html' : requestKind(r) === 'article' ? 'blog.html' : '');
     return `<div class="posha-more-menu" role="menu">
       <button type="button" data-req-open="${esc(r.id)}" data-req-tab-pref="timeline">سجل الطلب</button>
-      <button type="button" data-req-copy-id="${esc(r.requestId || r.id)}">نسخ Request ID</button>
+      <button type="button" data-req-copy-id="${esc(r.requestId || r.id)}">نسخ رقم الطلب</button>
       <button type="button" data-open-posha="${esc(r.email || '')}">فتح العميل</button>
       ${sourceHref ? `<a href="${esc(sourceHref)}" target="_blank" rel="noopener">فتح المصدر</a>` : ''}
       ${canPerm('customer_requests.reject', 'CRM') || canPerm('customer_requests.reject', 'POSHA') ? `<button type="button" data-req-delete="${esc(r.id)}">حذف</button>` : ''}
@@ -931,8 +931,8 @@
     const approvedTab = state.tab === 'approved';
     return `<div class="table-wrap posha-req-table-wrap"><table class="data-table posha-table posha-req-table">
         <thead><tr>
-          <th>Request ID</th><th>نوع الطلب</th><th>العميل</th><th>العنوان / الموضوع</th>
-          <th>المصدر</th><th>Reference ID</th>
+          <th>رقم الطلب</th><th>نوع الطلب</th><th>العميل</th><th>العنوان / الموضوع</th>
+          <th>المصدر</th><th>رقم المرجع</th>
           <th>تاريخ الطلب</th>${approvedTab ? '<th>تاريخ الموافقة</th>' : ''}
           <th>الحالة</th><th>المسؤول</th><th>الإجراءات</th>
         </tr></thead>
@@ -1135,7 +1135,7 @@
         <article style="grid-column:1/-1">
           <h4>بيانات المقال المرتبطة</h4>
           <ul class="feed">
-            <li><b>Article ID:</b> <code>${esc(r.referenceId || snap.articleId || '—')}</code></li>
+            <li><b>رقم المقال:</b> <code>${esc(r.referenceId || snap.articleId || '—')}</code></li>
             <li><b>العنوان:</b> ${esc(snap.title || '—')}</li>
             <li><b>التصنيف:</b> ${esc(snap.category || '—')}</li>
             <li><b>الكاتب:</b> ${esc(snap.authorName || '—')}</li>
@@ -1315,9 +1315,9 @@
         const id = btn.getAttribute('data-req-copy-id') || '';
         try {
           await navigator.clipboard.writeText(id);
-          alert('تم نسخ Request ID');
+          alert('تم نسخ رقم الطلب');
         } catch (_) {
-          window.prompt('انسخ Request ID', id);
+          window.prompt('انسخ رقم الطلب', id);
         }
         state.moreId = null;
       };

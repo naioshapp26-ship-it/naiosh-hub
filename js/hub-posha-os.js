@@ -38,7 +38,15 @@
     events: ['مركز الأحداث', 'سجل الأحداث المركزية'],
     reports: ['التقارير', 'أرقام حقيقية من البيانات'],
     search: ['بحث شامل', 'عملاء · طلبات · تذاكر · فواتير'],
-    map: ['خريطة النظام', 'HUB → POSHA → Modules']
+    map: ['خريطة النظام', 'هوب → بوشا → الوحدات']
+  };
+
+  var ROLE_AR = {
+    supreme_leader: 'القائد الأعلى',
+    staff: 'موظف',
+    admin: 'مسؤول',
+    manager: 'مدير',
+    operator: 'مشغّل'
   };
 
   var state = { page: 'command', cache: {} };
@@ -58,14 +66,25 @@
   function authHeaders() {
     var t = window.HubAuth && HubAuth.getToken ? HubAuth.getToken() : '';
     var u = window.HubAuth && HubAuth.getUser ? HubAuth.getUser() : {};
+    // Encode non-ASCII so fetch RequestInit headers stay ISO-8859-1 safe
     return {
       Authorization: 'Bearer ' + t,
       'Content-Type': 'application/json',
       'X-Hub-Token': t,
-      'X-Hub-User-Role': u.role || '',
-      'X-Hub-User-Email': u.email || '',
-      'X-Hub-User-Name': u.name || ''
+      'X-Hub-User-Role': encodeURIComponent(u.role || ''),
+      'X-Hub-User-Email': encodeURIComponent(u.email || ''),
+      'X-Hub-User-Name': encodeURIComponent(u.name || '')
     };
+  }
+  function friendlyErr(e) {
+    var msg = String((e && e.message) || e || '');
+    if (/ISO-8859-1|non ISO|Failed to execute 'fetch'|Failed to read the 'headers'/i.test(msg)) {
+      return 'تعذر الاتصال بالخادم — تحقّق من الجلسة ثم أعد المحاولة';
+    }
+    if (/^HTTP\s*\d+/i.test(msg) || /Failed to fetch|NetworkError/i.test(msg)) {
+      return 'تعذر الاتصال بالخادم';
+    }
+    return msg || 'حدث خطأ';
   }
   async function api(path, opts) {
     var res = await fetch(path, Object.assign({ headers: authHeaders() }, opts || {}));
@@ -295,7 +314,7 @@
     }
     return '<div class="pos-grid-2">' +
       col('NAIOSH HUB 360', map.hub) +
-      col('POSHA Company OS', map.posha) +
+      col('بوشا — نظام تشغيل الشركة', map.posha) +
       col('Client Portal', map.clientPortal) +
       '</div>';
   }
@@ -324,7 +343,7 @@
       root.innerHTML = await loadPage();
       bindActions();
     } catch (e) {
-      root.innerHTML = '<p class="pos-err">' + esc(e.message) + '</p>';
+      root.innerHTML = '<p class="pos-err">' + esc(friendlyErr(e)) + '</p>';
     }
   }
 
@@ -338,7 +357,7 @@
           });
           toast('تم التعيين');
           render();
-        } catch (e) { toast(e.message); }
+        } catch (e) { toast(friendlyErr(e)); }
       };
     });
     document.querySelectorAll('[data-inbox-resolve]').forEach(function (btn) {
@@ -350,7 +369,7 @@
           });
           toast('تم حل العنصر');
           render();
-        } catch (e) { toast(e.message); }
+        } catch (e) { toast(friendlyErr(e)); }
       };
     });
     document.querySelectorAll('[data-nav-jump]').forEach(function (btn) {
@@ -365,7 +384,7 @@
           });
           toast('تم تحديث الطلب');
           render();
-        } catch (e) { toast(e.message); }
+        } catch (e) { toast(friendlyErr(e)); }
       };
     });
     document.querySelectorAll('[data-cmp]').forEach(function (btn) {
@@ -377,7 +396,7 @@
           });
           toast('تم تحديث الشكوى');
           render();
-        } catch (e) { toast(e.message); }
+        } catch (e) { toast(friendlyErr(e)); }
       };
     });
     document.querySelectorAll('[data-task-assign]').forEach(function (btn) {
@@ -389,7 +408,7 @@
           });
           toast('تم تعيين المهمة');
           render();
-        } catch (e) { toast(e.message); }
+        } catch (e) { toast(friendlyErr(e)); }
       };
     });
     document.querySelectorAll('[data-task-done]').forEach(function (btn) {
@@ -401,7 +420,7 @@
           });
           toast('اكتملت المهمة');
           render();
-        } catch (e) { toast(e.message); }
+        } catch (e) { toast(friendlyErr(e)); }
       };
     });
     document.querySelectorAll('[data-approve]').forEach(function (btn) {
@@ -413,7 +432,7 @@
           });
           toast('تم اعتماد العميل');
           render();
-        } catch (e) { toast(e.message); }
+        } catch (e) { toast(friendlyErr(e)); }
       };
     });
     var sweep = $('pos-run-sweep');
@@ -423,7 +442,7 @@
           var d = await api('/api/admin/posha/os/sweep', { method: 'POST', body: JSON.stringify({}) });
           toast('فحص: اشتراكات ' + ((d.subscriptions && d.subscriptions.changed) || 0) + ' · SLA ' + ((d.sla && d.sla.changed) || 0));
           render();
-        } catch (e) { toast(e.message); }
+        } catch (e) { toast(friendlyErr(e)); }
       };
     }
     var sbtn = $('pos-search-btn');
@@ -453,7 +472,7 @@
             return '<div class="pos-row"><div><strong>' + esc(i.number) + '</strong><small>' + esc(i.clientEmail) + '</small></div>' + badge(i.status) + '</div>';
           });
           $('pos-search-results').innerHTML = html;
-        } catch (e) { toast(e.message); }
+        } catch (e) { toast(friendlyErr(e)); }
       };
     }
   }
@@ -470,7 +489,9 @@
     }
     var u = HubAuth.getUser() || {};
     $('pos-user-name').textContent = u.name || u.email || '—';
-    $('pos-user-role').textContent = u.role || 'staff';
+    var roleKey = u.role || 'staff';
+    $('pos-user-role').textContent =
+      (window.HubI18n && HubI18n.role && HubI18n.role(roleKey)) || ROLE_AR[roleKey] || ROLE_AR.staff;
     buildNav();
     var hash = (location.hash || '#command').replace('#', '') || 'command';
     go(hash);

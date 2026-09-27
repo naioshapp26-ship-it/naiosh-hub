@@ -473,7 +473,7 @@
       <div class="art-table-wrap">
         <table class="art-table">
           <thead><tr>
-            <th>Article ID</th><th>العنوان</th><th>التصنيف</th><th>تاريخ الإرسال</th><th>الحالة</th><th>آخر تحديث</th><th>الإجراءات</th>
+            <th>رقم المقال</th><th>العنوان</th><th>التصنيف</th><th>تاريخ الإرسال</th><th>الحالة</th><th>آخر تحديث</th><th>الإجراءات</th>
           </tr></thead>
           <tbody>
             ${

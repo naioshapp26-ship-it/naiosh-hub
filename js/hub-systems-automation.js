@@ -334,7 +334,7 @@
     <header class="toolbar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center">
       <div>
         <h2 style="margin:0"><span class="title-left"><i class="fas fa-robot icon"></i> أتمتة الأنظمة</span></h2>
-        <small>تدفقات · جدولة · تشغيل · طابور — schema v${esc(String(sa.schemaVersion || 2))}</small>
+        <small>تدفقات · جدولة · تشغيل · طابور — مخطط الإصدار ${esc(String(sa.schemaVersion || 2))}</small>
       </div>
       <div style="margin-right:auto;display:flex;flex-wrap:wrap;gap:6px">
         ${can(user, 'create') ? `<button type="button" class="btn btn-primary" data-action="auto-tab" data-tab="create"><i class="fas fa-plus icon"></i> إنشاء أتمتة</button>` : ''}

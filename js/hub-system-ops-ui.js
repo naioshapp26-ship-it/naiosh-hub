@@ -285,7 +285,7 @@
             <select name="systemCode">${systems.map((c) => `<option>${c}</option>`).join('')}</select>
             <button class="btn btn-primary">تسجيل + إصدار شهادة</button>
           </form>
-          ${listRows(state.memberships.slice(0, 15), (m) => `<article><strong>${esc(m.name)}</strong><span>${esc(m.plan)} · ${esc(m.systemCode)} · ${esc(m.status)}</span></article>`)}
+          ${listRows(state.memberships.slice(0, 15), (m) => `<article><strong>${esc(m.name)}</strong><span>${esc(window.HubI18n?.plan?.(m.plan)||m.plan)} · ${esc(window.HubI18n?.system?.(m.systemCode)||m.systemCode)} · ${esc(window.HubI18n?.status?.(m.status)||m.status)}</span></article>`)}
           <h3>الشهادات</h3>
           ${listRows(state.certificates.slice(0, 15), (c) => `<article><strong>${esc(c.title)}</strong><span>${esc(c.systemCode)}</span></article>`)}`,
           'sysops-access-membership'

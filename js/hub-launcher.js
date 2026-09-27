@@ -65,16 +65,16 @@
   }
 
   const SYSTEM_META = {
-    ERP: { nameAr: 'نايوش إي آر بي', icon: 'fa-sitemap', domain: 'naiosherp.com', color: '#b91c1c' },
-    LAW: { nameAr: 'نايوش لو', icon: 'fa-gavel', domain: 'naioshlaw.com', color: '#1e3a5f' },
-    FIT: { nameAr: 'نايوش فيت', icon: 'fa-dumbbell', domain: 'naioshfit.com', color: '#0f766e' },
-    NAIS: { nameAr: 'نايس', icon: 'fa-chart-line', domain: 'naioshhub360.com', color: '#9f1239' },
-    ACADEMY: { nameAr: 'أكاديمية نايوش', icon: 'fa-chalkboard-user', domain: 'betacdmy-production.up.railway.app', color: '#7c2d12' },
-    SMARTX: { nameAr: 'سمارتكس', icon: 'fa-video', domain: 'smrttx.com', color: '#1d4ed8' },
-    EDUSMARTX: { nameAr: 'إيديو سمارتكس', icon: 'fa-graduation-cap', domain: 'edusmrttx.com', color: '#7c3aed' },
-    EDUNAIOSH: { nameAr: 'نايوش', icon: 'fa-book-open-reader', domain: 'edunaiosh.com', color: '#b91c1c' },
-    LMS: { nameAr: 'نظام التعلم', icon: 'fa-laptop-code', domain: 'edunaiosh.com', color: '#1d4ed8' },
-    CRM: { nameAr: 'إدارة علاقات العملاء', icon: 'fa-handshake', domain: 'naioshhub360.com', color: '#854d0e' },
+    ERP: { nameAr: 'تخطيط موارد المؤسسة (ERP)', icon: 'fa-sitemap', domain: 'naiosherp.com', color: '#b91c1c' },
+    LAW: { nameAr: 'نظام القانون (LAW)', icon: 'fa-gavel', domain: 'naioshlaw.com', color: '#1e3a5f' },
+    FIT: { nameAr: 'اللياقة والصحة (FIT)', icon: 'fa-dumbbell', domain: 'naioshfit.com', color: '#0f766e' },
+    NAIS: { nameAr: 'تحليلات ذكاء نايوش (NAIS)', icon: 'fa-chart-line', domain: 'naioshhub360.com', color: '#9f1239' },
+    ACADEMY: { nameAr: 'أكاديمية نايوش (ACADEMY)', icon: 'fa-chalkboard-user', domain: 'betacdmy-production.up.railway.app', color: '#7c2d12' },
+    SMARTX: { nameAr: 'منصة الفيديو سمارتكس (SMARTX)', icon: 'fa-video', domain: 'smrttx.com', color: '#1d4ed8' },
+    EDUSMARTX: { nameAr: 'التعلّم عبر سمارتكس (EDUSMARTX)', icon: 'fa-graduation-cap', domain: 'edusmrttx.com', color: '#7c3aed' },
+    EDUNAIOSH: { nameAr: 'منصة التعلّم نايوش (EDUNAIOSH)', icon: 'fa-book-open-reader', domain: 'edunaiosh.com', color: '#b91c1c' },
+    LMS: { nameAr: 'نظام إدارة التعلّم (LMS)', icon: 'fa-laptop-code', domain: 'edunaiosh.com', color: '#1d4ed8' },
+    CRM: { nameAr: 'إدارة علاقات العملاء (CRM)', icon: 'fa-handshake', domain: 'naioshhub360.com', color: '#854d0e' },
   };
 
   const isAbsolute = (u) => /^https?:\/\//i.test(String(u || ''));

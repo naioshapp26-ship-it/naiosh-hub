@@ -50,10 +50,37 @@
   const writeEvents = (list) => localStorage.setItem(EVENT_KEY, JSON.stringify(list.slice(0, 80)));
 
   const tierLabel = (t) =>
-    ({ 1: 'Tier 1 — Core', 2: 'Tier 2 — Strategic', 3: 'Tier 3 — Specialized', 4: 'Tier 4 — Support' }[t] || `Tier ${t}`);
+    ({ 1: 'المستوى 1 — النواة', 2: 'المستوى 2 — استراتيجي', 3: 'المستوى 3 — متخصص', 4: 'المستوى 4 — دعم' }[t] || `المستوى ${t}`);
 
   const statusLabel = (s) =>
     ({ ready: 'جاهز للإطلاق', integrate: 'يحتاج تكامل', reengineer: 'يحتاج إعادة هندسة' }[s] || s);
+
+  const domainLabel = (d) =>
+    ({
+      Core: 'النواة',
+      'ERP-Gov': 'حوكمة ERP',
+      'ERP-Finance': 'مالية ERP',
+      'ERP-Sales': 'مبيعات ERP',
+      'ERP-HR': 'موارد بشرية ERP',
+      'ERP-Supply': 'إمداد ERP',
+      ERP: 'ERP',
+      Growth: 'النمو',
+      Ops: 'التشغيل',
+      Specialized: 'متخصص',
+      Education: 'التعليم',
+    }[d] || window.HubI18n?.label?.(d, d) || d);
+
+  const integLabel = (k) =>
+    ({
+      hub: 'هوب',
+      erp: 'ERP',
+      crm: 'إدارة العملاء',
+      marketing: 'التسويق',
+      ai: 'ذكاء',
+      knowledge: 'معرفة',
+      data: 'بيانات',
+      workflow: 'مسار عمل',
+    }[k] || k);
 
   const paintStats = () => {
     const el = root.querySelector('[data-gos-stats]');
@@ -63,7 +90,7 @@
     el.innerHTML = `
       <article><strong>${data.systems.length}</strong><span>نظام في السجل</span></article>
       <article><strong>${data.layers.length}</strong><span>طبقة معمارية</span></article>
-      <article><strong>${core}</strong><span>محرك Core</span></article>
+      <article><strong>${core}</strong><span>محرك نواة</span></article>
       <article><strong>${ready}</strong><span>جاهز / مرتفع الجاهزية</span></article>
       <article><strong>${data.coreServices.length}</strong><span>مكوّن مشترك</span></article>
       <article><strong>${data.events.length}</strong><span>حدث موحّد</span></article>`;
@@ -76,8 +103,7 @@
       .map(
         (l) => `<article class="gos-card">
         <span class="gos-n">${l.n}</span>
-        <h3>${esc(l.en)}</h3>
-        <strong>${esc(l.ar)}</strong>
+        <h3>${esc(l.ar)}</h3>
         <p>${esc(l.desc)}</p>
       </article>`
       )
@@ -117,20 +143,20 @@
       .map((s) => {
         const ints = Object.entries(s.integrations || {})
           .filter(([, v]) => v)
-          .map(([k]) => k)
+          .map(([k]) => integLabel(k))
           .join(' · ');
         return `<article class="gos-sys" data-sys="${esc(s.code)}">
           <header>
-            <span class="gos-code">${esc(s.code)}</span>
+            <span class="gos-code" data-tech>${esc(s.code)}</span>
             <span class="gos-tier">${esc(tierLabel(s.tier))}</span>
             <span class="gos-score">${s.readiness}/100</span>
           </header>
           <h3>${esc(s.nameAr)}</h3>
-          <small>${esc(s.nameEn)} · ${esc(s.domain)}</small>
-          <p>${esc(s.goal)}</p>
+          <small>${esc(domainLabel(s.domain))}</small>
+          <p>${esc(window.HubI18n?.label?.(s.goal, s.goal) || s.goal)}</p>
           <div class="gos-meta">
             <span>${esc(statusLabel(s.status))}</span>
-            <span>${esc(ints || 'hub')}</span>
+            <span>${esc(ints || 'هوب')}</span>
           </div>
           <div class="gos-actions">
             <a class="btn btn-primary" href="${esc(s.href)}">فتح</a>
@@ -155,13 +181,13 @@
         <div><span>الهدف</span><strong>${esc(s.goal)}</strong></div>
         <div><span>المالك</span><strong>${esc(s.owner)}</strong></div>
         <div><span>التصنيف</span><strong>${esc(tierLabel(s.tier))}</strong></div>
-        <div><span>المجال</span><strong>${esc(s.domain)}</strong></div>
+        <div><span>المجال</span><strong>${esc(domainLabel(s.domain))}</strong></div>
         <div><span>الجاهزية</span><strong>${s.readiness}/100 — ${esc(statusLabel(s.status))}</strong></div>
-        <div><span>يعتمد على</span><strong>${esc((s.dependsOn || []).join(' · ') || '—')}</strong></div>
-        <div><span>يعتمد عليه</span><strong>${esc((s.dependents || []).slice(0, 12).join(' · ') || '—')}</strong></div>
+        <div><span>يعتمد على</span><strong data-tech>${esc((s.dependsOn || []).join(' · ') || '—')}</strong></div>
+        <div><span>يعتمد عليه</span><strong data-tech>${esc((s.dependents || []).slice(0, 12).join(' · ') || '—')}</strong></div>
         <div><span>التكاملات</span><strong>${esc(
           Object.entries(s.integrations || {})
-            .map(([k, v]) => `${k}:${v ? '✓' : '—'}`)
+            .map(([k, v]) => `${integLabel(k)}:${v ? '✓' : '—'}`)
             .join(' · ')
         )}</strong></div>
       </div>
@@ -191,7 +217,7 @@
     if (integ) {
       const keys = ['hub', 'erp', 'crm', 'marketing', 'ai', 'knowledge', 'data', 'workflow'];
       integ.innerHTML =
-        `<tr><th>النظام</th>${keys.map((k) => `<th>${esc(k)}</th>`).join('')}</tr>` +
+        `<tr><th>النظام</th>${keys.map((k) => `<th>${esc(integLabel(k))}</th>`).join('')}</tr>` +
         data.systems
           .map((s) => {
             const i = s.integrations || {};
@@ -236,9 +262,9 @@
     if (cat) {
       cat.innerHTML = data.events
         .map(
-          (e) => `<button type="button" class="gos-chip" data-gos-emit="${esc(e.code)}">
-          <strong>${esc(e.code)}</strong>
-          <span>${esc(e.systems.join(' → '))}</span>
+          (e) => `<button type="button" class="gos-chip" data-gos-emit="${esc(e.code)}" data-tech>
+          <strong data-tech>${esc(e.code)}</strong>
+          <span data-tech>${esc(e.systems.join(' → '))}</span>
         </button>`
         )
         .join('');
@@ -254,13 +280,13 @@
       ? list
           .map(
             (e) => `<li>
-            <strong>${esc(e.code)}</strong>
-            <span>${esc(e.targets?.join(' · ') || '')}</span>
-            <small>${esc(new Date(e.at).toLocaleString('en-US'))}</small>
+            <strong data-tech>${esc(e.code)}</strong>
+            <span data-tech>${esc(e.targets?.join(' · ') || '')}</span>
+            <small>${esc(new Date(e.at).toLocaleString('ar'))}</small>
           </li>`
           )
           .join('')
-      : '<li class="gos-empty">لا أحداث بعد — أطلق حدثًا من الكتالوج لتجربة Event Bus.</li>';
+      : '<li class="gos-empty">لا أحداث بعد — أطلق حدثًا من الكتالوج لتجربة ناقل الأحداث.</li>';
   };
 
   const emitEvent = (code) => {
@@ -274,7 +300,7 @@
     });
     writeEvents(list);
     paintEventLog();
-    toast(`Event: ${def.code}`);
+    toast(`حدث: ${def.code}`);
   };
 
   const paintAi = () => {
@@ -284,8 +310,7 @@
       .map(
         (a) => `<article class="gos-card">
         <span class="gos-n">${a.n}</span>
-        <h3>${esc(a.title)}</h3>
-        <strong>${esc(a.ar)}</strong>
+        <h3>${esc(a.ar)}</h3>
         <p>${esc(a.desc)}</p>
       </article>`
       )
@@ -294,9 +319,9 @@
     const hitl = root.querySelector('[data-gos-hitl]');
     if (hitl) {
       hitl.innerHTML = `
-        <article class="gos-hitl green"><strong>Green</strong><p>AI ينفّذ تلقائيًا ضمن حدود آمنة.</p></article>
-        <article class="gos-hitl yellow"><strong>Yellow</strong><p>AI يقترح والموظف يعتمد.</p></article>
-        <article class="gos-hitl red"><strong>Red</strong><p>موافقة بشرية متعددة — مالية · عقود · صلاحيات · قانون.</p></article>`;
+        <article class="gos-hitl green"><strong>أخضر</strong><p>الذكاء ينفّذ تلقائيًا ضمن حدود آمنة.</p></article>
+        <article class="gos-hitl yellow"><strong>أصفر</strong><p>الذكاء يقترح والموظف يعتمد.</p></article>
+        <article class="gos-hitl red"><strong>أحمر</strong><p>موافقة بشرية متعددة — مالية · عقود · صلاحيات · قانون.</p></article>`;
     }
   };
 
@@ -307,7 +332,7 @@
       .map(
         (d) => `<article class="gos-card">
         <h3>${esc(d.entity)}</h3>
-        <p><strong>Master Source:</strong> ${esc(d.owner)}</p>
+        <p><strong>مصدر الحقيقة:</strong> ${esc(d.owner)}</p>
         <p><strong>النوع:</strong> ${esc(d.type)}</p>
         <p><strong>تعديل:</strong> ${esc(d.writers.join(' · '))}</p>
         <p><strong>قراءة:</strong> ${esc(d.readers.join(' · '))}</p>

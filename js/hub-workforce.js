@@ -33,7 +33,7 @@
   const SOURCE_AR = {
     'HR System': 'نظام الموارد البشرية',
     Manual: 'إدخال يدوي',
-    'Excel Import': 'استيراد Excel',
+    'Excel Import': 'استيراد إكسل',
     API: 'API',
     Integration: 'تكامل',
     Performance: 'الأداء',
@@ -252,8 +252,8 @@
   const renderHeader = (wf, user) => {
     const role = permLevel(user);
     const roleLabel = {
-      hr_admin: 'HR Admin',
-      hr_manager: 'HR Manager',
+      hr_admin: window.HubI18n?.label?.('HR Admin') || 'مسؤول الموارد البشرية',
+      hr_manager: window.HubI18n?.label?.('HR Manager') || 'مدير الموارد البشرية',
       dept_manager: 'مدير إدارة',
       line_manager: 'مدير مباشر',
       auditor: 'مدقق · قراءة فقط',
@@ -623,12 +623,12 @@
   const renderSync = (wf, user) => {
     const conn = (wf.connections || [])[0];
     return `<article class="card">
-      <h3><span class="title-left"><i class="fas fa-plug icon"></i> Connections — HR System</span></h3>
+      <h3><span class="title-left"><i class="fas fa-plug icon"></i> ${esc(window.HubI18n?.label?.('Connections — HR System') || 'الاتصالات — نظام الموارد البشرية')}</span></h3>
       ${
         conn
           ? `<div class="grid-2">
         <div>
-          <div class="muted">النظام</div><strong>${esc(conn.system)}</strong>
+          <div class="muted">النظام</div><strong>${esc(window.HubI18n?.label?.(conn.system) || SOURCE_AR[conn.system] || conn.system)}</strong>
           <div class="muted" style="margin-top:8px">الحالة</div>${statusBadge(conn.status === 'Connected' ? 'active' : 'warning')}
           <div class="muted" style="margin-top:8px">آخر مزامنة</div>${fmtTime(conn.lastSync)}
           <div class="muted" style="margin-top:8px">المزامنة التالية</div>${fmtTime(conn.nextSync)}
@@ -636,13 +636,13 @@
           <div class="muted" style="margin-top:8px">أخطاء</div><strong>${conn.errors ?? 0}</strong>
         </div>
         <div class="toolbar" style="flex-direction:column;align-items:stretch">
-          <button type="button" class="btn btn-dark" data-action="wf-sync-test">Test Connection</button>
-          <button type="button" class="btn btn-primary" data-action="wf-sync-now">Sync Now</button>
-          <button type="button" class="btn btn-ghost" data-action="wf-tab" data-tab="audit">View Logs</button>
-          <button type="button" class="btn btn-ghost" data-action="wf-tab" data-tab="settings">Configure</button>
+          <button type="button" class="btn btn-dark" data-action="wf-sync-test">${esc(window.HubI18n?.label?.('Test Connection') || 'اختبار الاتصال')}</button>
+          <button type="button" class="btn btn-primary" data-action="wf-sync-now">${esc(window.HubI18n?.label?.('Sync Now') || 'مزامنة الآن')}</button>
+          <button type="button" class="btn btn-ghost" data-action="wf-tab" data-tab="audit">${esc(window.HubI18n?.label?.('View Logs') || 'عرض السجلات')}</button>
+          <button type="button" class="btn btn-ghost" data-action="wf-tab" data-tab="settings">${esc(window.HubI18n?.label?.('Configure') || 'تهيئة')}</button>
         </div>
       </div>`
-          : '<div class="empty">لا يوجد اتصال HR مُعرّف.</div>'
+          : '<div class="empty">لا يوجد اتصال موارد بشرية مُعرّف.</div>'
       }
     </article>`;
   };
@@ -1478,7 +1478,7 @@
       return true;
     }
     if (action === 'wf-sync-test') {
-      toast('الاتصال ناجح · HR System Connected');
+      toast('الاتصال ناجح · نظام الموارد البشرية متصل');
       return true;
     }
     if (action === 'wf-tick') {
