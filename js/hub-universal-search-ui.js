@@ -50,6 +50,10 @@
         <button type="button" data-hus-filter="knowledge">مركز المعلومات</button>
         <button type="button" data-hus-filter="service">خدمات</button>
         <button type="button" data-hus-filter="content">محتوى</button>
+        <button type="button" data-hus-filter="product">منتجات</button>
+        <button type="button" data-hus-filter="event">فعاليات</button>
+        <button type="button" data-hus-filter="service">خدمات</button>
+        <button type="button" data-hus-filter="store">متجر</button>
         <button type="button" data-hus-filter="image">صور</button>
         <button type="button" data-hus-filter="file">ملفات</button>
         <button type="button" data-hus-filter="video">فيديو</button>
