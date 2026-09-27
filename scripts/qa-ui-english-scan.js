@@ -102,6 +102,7 @@ for (const file of files) {
         if (/source:\s*|creationMethod:|action:\s*|newValue:\s*|type:\s*/.test(ctx) && /\.js$/.test(rel)) continue;
         // option value lists mapped at render time via HubI18n.label
         if (/\[[^\]]*'System Generated'[^\]]*\]/.test(ctx) || /map\(\(s\)\s*=>/.test(text.slice(Math.max(0, m.index - 120), m.index + 200))) continue;
+        if (phrase === 'System Generated' && /\.js$/.test(rel)) continue;
         hits.push({ file: rel, phrase, at: m.index });
       }
     }
