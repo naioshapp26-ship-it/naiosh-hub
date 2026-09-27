@@ -99,14 +99,33 @@
 
 .hub-sales-store .hss-add-panel {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) auto;
+  grid-template-columns: minmax(180px, 1.6fr) repeat(4, minmax(100px, 0.7fr)) minmax(110px, 0.8fr) auto;
   gap: 8px;
   align-items: end;
   margin-bottom: 12px;
-  padding: 12px;
+  padding: 10px 12px;
   background: #faf7f8;
   border: 1px dashed #e8d0d4;
   border-radius: 12px;
+}
+
+.hub-sales-store .hss-add-panel .field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #667085;
+  margin-bottom: 3px;
+}
+
+.hub-sales-store .hss-add-panel input,
+.hub-sales-store .hss-add-panel select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: inherit;
+  background: #fff;
 }
 
 .hub-sales-store .hss-table-wrap {
@@ -361,7 +380,7 @@
   }
 
   .hub-sales-store .hss-add-panel {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .hub-sales-store #hub-product-orders-admin .table-wrap {

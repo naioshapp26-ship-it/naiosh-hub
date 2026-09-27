@@ -1016,7 +1016,7 @@
                   ${
                     store.items.length
                       ? `<button type="button" class="btn btn-ghost" data-action="store-clear-filters">مسح الفلاتر</button>`
-                      : `<button type="button" class="btn btn-primary" data-action="add-store-item"><i class="fas fa-plus"></i> + إضافة منتج</button>`
+                      : `<button type="button" class="btn btn-primary" data-hub-act="add" data-entity="store"><i class="fas fa-plus"></i> + إضافة منتج</button>`
                   }
                 </div>`
           }
