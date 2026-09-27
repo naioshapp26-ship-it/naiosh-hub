@@ -728,6 +728,82 @@ table.data tr:hover td { background: #fafafa; }
 }
 .chain-arrow { color: var(--red); font-size: 12px; }
 
+/* —— إدارة الفروع: جدول بعرض الصفحة بدون أعمدة فارغة —— */
+.branches-admin { display: grid; gap: 14px; }
+.branches-admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+.branches-admin-toolbar .field { min-width: 160px; flex: 1 1 160px; }
+.branches-admin-kpis { margin: 0; }
+.branches-admin-card { margin: 0; }
+.branches-admin-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.branches-admin-table {
+  width: 100%;
+  table-layout: auto;
+}
+.branches-admin-table th,
+.branches-admin-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.branches-admin-table td:first-child,
+.branches-admin-table th:first-child {
+  white-space: normal;
+  min-width: 140px;
+}
+.branches-admin-sub {
+  display: block;
+  margin-top: 2px;
+  color: #666;
+  font-size: 11px;
+  font-weight: 600;
+}
+.branches-admin-inc-count {
+  display: inline-block;
+  min-width: 1.5em;
+  margin-inline-end: 6px;
+  font-weight: 800;
+}
+.branches-admin-acts {
+  width: 1%;
+  white-space: nowrap;
+}
+.branches-admin-filter-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.branches-admin-filter-banner span { flex: 1 1 auto; font-size: 13px; }
+
+@media (max-width: 900px) {
+  .branches-admin-table th:nth-child(4),
+  .branches-admin-table td:nth-child(4) {
+    /* manager can wrap on tablet */
+    white-space: normal;
+  }
+}
+@media (max-width: 640px) {
+  .branches-admin-toolbar .field { flex: 1 1 100%; }
+  .branches-admin-table th,
+  .branches-admin-table td {
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+  .branches-admin-acts .hub-act { width: 30px; height: 30px; }
+}
+
 @media (max-width: 1200px) {
   .axis-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

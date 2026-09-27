@@ -73,7 +73,11 @@ const HubStore = (() => {
             incubators: 3,
             manager: '—',
           })),
-        worldBranches: (window.HubBranchesData?.BRANCHES || []).map((b) => ({ ...b })),
+        worldBranches: (window.HubBranchesData?.BRANCHES || []).map((b) => ({
+          ...b,
+          country: b.code === 'HQ' ? 'عالمي' : b.country || b.nameAr,
+          manager: b.manager || b.assignee || '',
+        })),
         incubators: (window.HubIncubatorsData?.INCUBATORS || []).map((inc) => ({
           id: inc.id,
           name: inc.name,
@@ -4652,20 +4656,48 @@ const HubStore = (() => {
     if (!org.worldBranches) org.worldBranches = [];
     const nameAr = String(payload.nameAr || payload.name || '').trim();
     if (!nameAr) return null;
+    const country = String(payload.country || '').trim();
+    const code = String(payload.code || '').trim().toUpperCase() || 'XX';
+    const countries = org.countries || window.HubBranchesData?.COUNTRIES || [];
+    const countryHit =
+      countries.find((c) => (c.name || c.nameAr) === country) ||
+      countries.find((c) => String(c.code || '').toUpperCase() === code);
+    const flagKey = String(countryHit?.code || code || 'eg').toLowerCase();
     const item = {
       id: uid('br'),
       nameAr,
       nameEn: String(payload.nameEn || nameAr).trim(),
-      code: String(payload.code || 'XX').trim().toUpperCase(),
+      code,
+      country: country || countryHit?.name || countryHit?.nameAr || '',
       type: String(payload.type || 'مكاتب خاصة').trim(),
       hours: String(payload.hours || 'من 9:00 صباحًا إلى 6:00 مساءً').trim(),
-      flag: payload.flag || window.HubBranchesData?.FLAG?.eg || '',
-      flagAlt: `علم ${nameAr}`,
-      status: 'active',
-      assignee: '',
+      manager: String(payload.manager || payload.assignee || '').trim(),
+      flag: payload.flag || window.HubBranchesData?.FLAG?.[flagKey] || window.HubBranchesData?.FLAG?.eg || '',
+      flagAlt: payload.flagAlt || `علم ${country || nameAr}`,
+      status: String(payload.status || 'active').trim() || 'active',
+      assignee: String(payload.manager || payload.assignee || '').trim(),
       ...pickCommonMeta(payload),
     };
     org.worldBranches.unshift(item);
+    // keep summary list in sync without deleting prior architecture rows
+    if (!Array.isArray(org.branches)) org.branches = [];
+    org.branches.unshift({
+      id: item.id,
+      name: item.nameAr,
+      country: item.country || item.nameAr,
+      incubators: 0,
+      manager: item.manager || '—',
+    });
+    if (item.country && !(org.countries || []).some((c) => (c.name || c.nameAr) === item.country)) {
+      if (!org.countries) org.countries = [];
+      org.countries.push({
+        id: uid('co'),
+        name: item.country,
+        code: item.code,
+        branches: 1,
+        status: 'active',
+      });
+    }
     pushFeed('decision', `فرع جديد: ${item.nameAr}`);
     save();
     return item;

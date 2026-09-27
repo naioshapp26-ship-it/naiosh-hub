@@ -88,6 +88,9 @@
     scope: 'النطاق',
     role: 'الدور',
     hours: 'الساعات',
+    country: 'الدولة',
+    manager: 'مدير الفرع',
+    erpCode: 'كود ERP',
     productivity: 'الإنتاجية',
     score: 'الدرجة',
     warned: 'إنذار سابق',
@@ -478,14 +481,58 @@
   const openView = (entity, id) => {
     const item = window.HubStore?.getEntity?.(entity, id);
     if (!item) return toast('السجل غير موجود');
+    let extra = '';
+    if (entity === 'branches') {
+      const org = window.HubStore?.get?.()?.empire?.organization || {};
+      const all = org.incubators || [];
+      const linked = all.filter(
+        (i) =>
+          String(i.branchId || '') === String(item.id) ||
+          (item.code && String(i.branchCode || '').toUpperCase() === String(item.code).toUpperCase()) ||
+          (item.nameAr && (i.branch === item.nameAr || i.branchName === item.nameAr))
+      );
+      let count = linked.length;
+      if (!count) {
+        const pool = (org.worldBranches || []).filter((b) => String(b.code || '').toUpperCase() !== 'HQ');
+        const idx = pool.findIndex((b) => String(b.id) === String(item.id));
+        if (idx >= 0 && pool.length) count = all.filter((i) => Number(i.num || 0) % pool.length === idx).length;
+      }
+      extra = `
+        <div class="hub-form-block">
+          <h4><i class="fas fa-seedling"></i> علاقات الفرع</h4>
+          <p>الحاضنات التابعة لهذا الفرع: <strong>${count}</strong></p>
+          <p class="hub-form-hint">إدارة الحاضنات تتم من صفحة الحاضنات المستقلة — بدون تكرار داخل الفروع.</p>
+        </div>`;
+    }
     openModal({
       title: recordTitle(item),
       kicker: `معاينة · ${ENTITY_LABELS[entity] || 'سجل'}`,
-      body: detailsGrid(item),
+      body: `${detailsGrid(item)}${extra}`,
       foot: `
         <button type="button" class="hub-erp-btn ghost" data-hub-modal-close>إغلاق</button>
-        <button type="button" class="hub-erp-btn teal" data-hub-modal-go="assign" data-entity="${esc(entity)}" data-id="${esc(id)}"><i class="fas fa-user-check"></i> تعيين</button>
+        ${
+          entity === 'branches'
+            ? `<button type="button" class="hub-erp-btn teal" id="hub-branch-go-incubators" data-id="${esc(id)}"><i class="fas fa-seedling"></i> عرض الحاضنات</button>`
+            : `<button type="button" class="hub-erp-btn teal" data-hub-modal-go="assign" data-entity="${esc(entity)}" data-id="${esc(id)}"><i class="fas fa-user-check"></i> تعيين</button>`
+        }
         <button type="button" class="hub-erp-btn blue" data-hub-modal-go="edit" data-entity="${esc(entity)}" data-id="${esc(id)}"><i class="fas fa-pen"></i> تعديل</button>`,
+    });
+    document.getElementById('hub-branch-go-incubators')?.addEventListener('click', () => {
+      sessionStorage.setItem(
+        'hubIncubatorBranchFilter',
+        JSON.stringify({
+          id: item.id,
+          name: item.nameAr || item.name || '',
+          code: item.code || '',
+        })
+      );
+      closeModal();
+      if (typeof window.hubActivatePanel === 'function') window.hubActivatePanel('incubators');
+      else {
+        location.hash = 'incubators';
+        if (typeof window.hubRerender === 'function') window.hubRerender();
+      }
+      toast('تم فتح الحاضنات بفلتر الفرع');
     });
   };
 
@@ -526,6 +573,7 @@
     const item = window.HubStore?.getEntity?.(entity, id);
     if (!item) return toast('السجل غير موجود');
     const current = recordTitle(item);
+    const countryOpts = resolveFieldOptions({ optionsFrom: 'branchCountries' });
     const extraFields =
       entity === 'employees'
         ? `<label>الدور
@@ -554,7 +602,44 @@
             <label>موعد الانتهاء
               <input id="hub-edit-dueDate" type="date" value="${esc(item.dueDate || '')}" />
             </label>`
-          : '';
+          : entity === 'branches'
+            ? `<label>الدولة
+                <select id="hub-edit-country">
+                  <option value="">— اختر —</option>
+                  ${countryOpts
+                    .map((o) => {
+                      const val = typeof o === 'string' ? o : o.value;
+                      const lab = typeof o === 'string' ? o : o.label;
+                      const selected = String(val) === String(item.country || '') ? 'selected' : '';
+                      return `<option value="${esc(val)}" ${selected}>${esc(lab)}</option>`;
+                    })
+                    .join('')}
+                </select>
+              </label>
+              <label>كود الفرع
+                <input id="hub-edit-code" type="text" value="${esc(item.code || '')}" />
+              </label>
+              <label>مدير الفرع
+                <input id="hub-edit-manager" type="text" value="${esc(item.manager || item.assignee || '')}" />
+              </label>
+              <label>الحالة
+                <select id="hub-edit-status">
+                  ${[
+                    ['active', 'نشط'],
+                    ['inactive', 'متوقف'],
+                    ['planned', 'مخطط'],
+                  ]
+                    .map(
+                      ([v, lab]) =>
+                        `<option value="${esc(v)}" ${String(item.status || 'active') === v ? 'selected' : ''}>${esc(lab)}</option>`
+                    )
+                    .join('')}
+                </select>
+              </label>
+              <label class="full-span">ساعات العمل / الموقع
+                <input id="hub-edit-hours" type="text" value="${esc(item.hours || '')}" />
+              </label>`
+            : '';
     openModal({
       title: `تعديل · ${current}`,
       kicker: `نموذج تعديل ${ENTITY_LABELS[entity] || 'سجل'}`,
@@ -563,13 +648,13 @@
         <div class="hub-form-block">
           <h4><i class="fas fa-pen"></i> تعديل البيانات</h4>
           <div class="hub-form-grid">
-            <label class="${entity === 'tasks' ? 'full-span' : ''}">الاسم / العنوان
+            <label class="${entity === 'tasks' ? 'full-span' : ''}">${entity === 'branches' ? 'اسم الفرع' : 'الاسم / العنوان'}
               <input id="hub-edit-title" type="text" value="${esc(current)}" />
             </label>
             ${extraFields}
           </div>
         </div>
-        ${commonMetaFormHtml(item)}`,
+        ${entity === 'branches' ? '' : commonMetaFormHtml(item)}`,
       foot: `
         <button type="button" class="hub-erp-btn ghost" data-hub-modal-close>إلغاء</button>
         <button type="button" class="hub-erp-btn blue" id="hub-edit-save" data-entity="${esc(entity)}" data-id="${esc(id)}"><i class="fas fa-check"></i> حفظ التعديل</button>`,
@@ -577,7 +662,7 @@
     document.getElementById('hub-edit-save')?.addEventListener('click', async () => {
       const title = document.getElementById('hub-edit-title')?.value.trim();
       if (!title) return toast('العنوان مطلوب');
-      const meta = await collectCommonMeta(item);
+      const meta = entity === 'branches' ? {} : await collectCommonMeta(item);
       if (meta.error) return toast(meta.error);
       const patch = { title, ...meta };
       if (entity === 'employees') {
@@ -589,6 +674,14 @@
         patch.priority = document.getElementById('hub-edit-priority')?.value || item.priority || 'متوسط';
         patch.project = document.getElementById('hub-edit-project')?.value.trim() || item.project || '';
         patch.dueDate = document.getElementById('hub-edit-dueDate')?.value || '';
+      }
+      if (entity === 'branches') {
+        patch.country = document.getElementById('hub-edit-country')?.value.trim() || item.country || '';
+        patch.code = (document.getElementById('hub-edit-code')?.value.trim() || item.code || '').toUpperCase();
+        patch.manager = document.getElementById('hub-edit-manager')?.value.trim() || '';
+        patch.assignee = patch.manager;
+        patch.status = document.getElementById('hub-edit-status')?.value || item.status || 'active';
+        patch.hours = document.getElementById('hub-edit-hours')?.value.trim() || item.hours || '';
       }
       const ok = window.HubStore.entityAction(entity, id, 'edit', patch);
       if (!ok) return toast('تعذّر التعديل');
@@ -825,11 +918,30 @@
     branches: {
       title: 'إضافة فرع',
       fields: [
-        { id: 'nameAr', label: 'اسم الدولة / الفرع', required: true },
-        { id: 'nameEn', label: 'الاسم بالإنجليزية', value: '' },
-        { id: 'code', label: 'رمز الدولة', value: 'XX', required: true },
+        { id: 'nameAr', label: 'اسم الفرع', required: true },
+        {
+          id: 'country',
+          label: 'الدولة',
+          type: 'select',
+          required: true,
+          optionsFrom: 'branchCountries',
+        },
+        { id: 'code', label: 'كود الفرع', value: '', required: true },
+        { id: 'manager', label: 'مدير الفرع', value: '' },
+        {
+          id: 'status',
+          label: 'الحالة',
+          type: 'select',
+          value: 'active',
+          options: [
+            { value: 'active', label: 'نشط' },
+            { value: 'inactive', label: 'متوقف' },
+            { value: 'planned', label: 'مخطط' },
+          ],
+        },
         { id: 'type', label: 'نوع الفرع', value: 'مكاتب خاصة' },
-        { id: 'hours', label: 'ساعات العمل', value: 'من 9:00 صباحًا إلى 6:00 مساءً' },
+        { id: 'hours', label: 'ساعات العمل / الموقع', value: 'من 9:00 صباحًا إلى 6:00 مساءً' },
+        { id: 'nameEn', label: 'الاسم بالإنجليزية', value: '' },
       ],
       save: (v) => window.HubStore.addBranch(v),
     },
@@ -885,6 +997,26 @@
         value: l.id,
         label: `${l.nameAr} — ${l.adType}`,
       }));
+    }
+    if (field.optionsFrom === 'branchCountries') {
+      const fromStore = (window.HubStore?.get?.()?.empire?.organization?.countries || []).map((c) => ({
+        value: c.name || c.nameAr,
+        label: `${c.name || c.nameAr}${c.code ? ` (${c.code})` : ''}`,
+        code: c.code,
+      }));
+      const fromData = (window.HubBranchesData?.COUNTRIES || []).map((c) => ({
+        value: c.nameAr,
+        label: `${c.nameAr}${c.code ? ` (${c.code})` : ''}`,
+        code: c.code,
+      }));
+      const merged = [...fromStore, ...fromData];
+      const seen = new Set();
+      return merged.filter((o) => {
+        const key = String(o.value || '');
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     }
     return [];
   };
@@ -1353,7 +1485,7 @@
           : ''
       }
       ${form.includeMarketplaces ? marketplaceFormHtml() : ''}
-      ${entity === 'store' || entity === 'products' ? '' : commonMetaFormHtml()}`,
+      ${entity === 'store' || entity === 'products' || entity === 'branches' ? '' : commonMetaFormHtml()}`,
       foot: isPublishable
         ? `
         <button type="button" class="hub-erp-btn ghost" data-hub-modal-close title="إلغاء"><i class="fas fa-xmark"></i> إلغاء</button>
@@ -1369,6 +1501,25 @@
     if (catSel) {
       fillSubcategories(catSel.value);
       catSel.addEventListener('change', () => fillSubcategories(catSel.value));
+    }
+
+    // branch: country select → suggest country code when code empty
+    const countrySel = document.getElementById('hub-add-country');
+    const codeInput = document.getElementById('hub-add-code');
+    if (entity === 'branches' && countrySel && codeInput) {
+      const applyCountryCode = () => {
+        const opts = resolveFieldOptions({ optionsFrom: 'branchCountries' });
+        const hit = opts.find((o) => String(o.value) === String(countrySel.value));
+        if (hit?.code && (!codeInput.value || codeInput.dataset.auto === '1')) {
+          codeInput.value = String(hit.code).toUpperCase();
+          codeInput.dataset.auto = '1';
+        }
+      };
+      countrySel.addEventListener('change', applyCountryCode);
+      codeInput.addEventListener('input', () => {
+        codeInput.dataset.auto = '0';
+      });
+      applyCountryCode();
     }
 
     if (form.includeProjectPicker) wireProjectPicker();
@@ -1417,13 +1568,19 @@
         values.mp_custom_name = document.getElementById('hub-add-mp_custom_name')?.value.trim() || '';
         values.mp_url_custom = document.getElementById('hub-add-mp_url_custom')?.value.trim() || '';
       }
-      const meta = await collectCommonMeta();
+      const meta = entity === 'branches' ? {} : await collectCommonMeta();
       if (meta.error) return toast(meta.error);
       Object.assign(values, meta);
       const ok = form.save(values);
       if (!ok) return toast('تعذّرت الإضافة');
       closeModal();
-      toast(entity === 'store' ? 'تم رفع المنتج/الخدمة على المتجر' : 'تمت الإضافة مع بيانات الأطراف والهيكل');
+      toast(
+        entity === 'store'
+          ? 'تم رفع المنتج/الخدمة على المتجر'
+          : entity === 'branches'
+            ? 'تم حفظ الفرع'
+            : 'تمت الإضافة مع بيانات الأطراف والهيكل'
+      );
       afterChange(entity, 'add');
     });
 

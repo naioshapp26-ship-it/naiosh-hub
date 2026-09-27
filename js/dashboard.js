@@ -19,7 +19,7 @@
     { key: 'ads-studio', icon: 'fa-bullhorn', label: 'استوديو الحملات التسويقية', href: 'ads.html' },
     { key: 'events-studio', icon: 'fa-calendar-days', label: 'استوديو الفعاليات الذكي', href: 'events.html' },
     { key: 'identity', icon: 'fa-id-card', label: 'هوية نايوش' },
-    { key: 'organization', icon: 'fa-globe', label: 'الهيكل العالمي' },
+    { key: 'organization', icon: 'fa-code-branch', label: 'الفروع' },
     { key: 'incubators', icon: 'fa-building', label: 'الحاضنات' },
     { key: 'wallet', icon: 'fa-coins', label: 'محفظة النقاط' },
     { key: 'core', icon: 'fa-brain', label: 'العقل المركزي' },
@@ -61,7 +61,7 @@
     'ads-studio': ['استوديو الحملات التسويقية', 'نسخة ERP كاملة — حملات · تسجيل · مقاطع · نشر'],
     'events-studio': ['استوديو الفعاليات الذكي', 'نسخة ERP كاملة — فعاليات · بث · ورش · إدارة'],
     identity: ['هوية نايوش', 'إدارة الهوية · الدخول الموحد · التحقق الثنائي · ربط الصلاحيات المركزية'],
-    organization: ['محرك الهيكل المؤسسي', 'دولة ← فرع ← حاضنة ← منصة ← مكتب إلكتروني'],
+    organization: ['إدارة الفروع', 'إدارة فروع نايوش حسب الدول ومتابعة بيانات كل فرع.'],
     incubators: ['إدارة الحاضنات', '100 حاضنة قطاعية · منصات · مكاتب · أعضاء'],
     wallet: ['اقتصاد النقاط', 'شحن · استهلاك · تسعير · فواتير'],
     governance: ['الحوكمة المؤسسية 360', 'أشخاص · سياسات · امتثال · جودة · عقود · مكافآت · موافقات · تدقيق'],
@@ -547,58 +547,127 @@
     return '<div class="empty">تعذر تحميل وحدة هوية نايوش</div>';
   };
 
+  const branchCountryLabel = (branch, countries = []) => {
+    if (branch?.country) return branch.country;
+    const code = String(branch?.code || '').toUpperCase();
+    const hit = (countries || []).find((c) => String(c.code || '').toUpperCase() === code);
+    if (hit) return hit.name || hit.nameAr || code;
+    if (code === 'HQ') return 'عالمي';
+    return branch?.nameAr || branch?.name || '—';
+  };
+
+  const incubatorsForBranch = (branch, org) => {
+    const all = org?.incubators || [];
+    if (!branch) return [];
+    const linked = all.filter(
+      (i) =>
+        String(i.branchId || '') === String(branch.id) ||
+        (branch.code && String(i.branchCode || '').toUpperCase() === String(branch.code).toUpperCase()) ||
+        (branch.nameAr && (i.branch === branch.nameAr || i.branchName === branch.nameAr)) ||
+        (branch.name && (i.branch === branch.name || i.branchName === branch.name))
+    );
+    if (linked.length) return linked;
+    const pool = (org?.worldBranches || []).filter((b) => String(b.code || '').toUpperCase() !== 'HQ');
+    const idx = pool.findIndex((b) => String(b.id) === String(branch.id));
+    if (idx < 0 || !pool.length) return [];
+    return all.filter((i) => Number(i.num || 0) % pool.length === idx);
+  };
+
   const renderOrganization = () => {
     const org = HubStore.get().empire.organization;
+    const countries = org.countries || [];
+    const branches = org.worldBranches || [];
+    const countryFilter = sessionStorage.getItem('hubBranchesCountryFilter') || '';
+    const q = (sessionStorage.getItem('hubBranchesSearch') || '').trim().toLowerCase();
+    const filtered = branches.filter((b) => {
+      const country = branchCountryLabel(b, countries);
+      if (countryFilter && country !== countryFilter && String(b.code || '').toUpperCase() !== countryFilter.toUpperCase()) {
+        return false;
+      }
+      if (!q) return true;
+      const hay = [b.nameAr, b.nameEn, b.name, b.code, b.erpCode, country, b.manager, b.assignee]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+    const countryOptions = countries
+      .map((c) => c.name || c.nameAr)
+      .filter(Boolean)
+      .filter((v, i, arr) => arr.indexOf(v) === i);
     return `
-      <div class="toolbar">
-        <a class="btn btn-primary" href="branches.html" target="_blank"><i class="fas fa-code-branch"></i> فتح صفحة الفروع العالمية</a>
-        <a class="btn btn-primary" href="incubators.html" target="_blank"><i class="fas fa-seedling"></i> فتح صفحة الحاضنات</a>
-      </div>
-      <div class="chain-row">
-        ${org.chain.map((c, i) => `<span class="chain-node">${esc(c)}</span>${i < org.chain.length - 1 ? '<i class="fas fa-arrow-left chain-arrow"></i>' : ''}`).join('')}
-      </div>
-      <div class="grid-2">
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-flag icon"></i> الدول</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>الدولة</th><th>الكود</th><th>الفروع</th><th>الحالة</th></tr></thead>
-            <tbody>
-              ${org.countries
-                .map((c) => `<tr><td>${esc(c.name)}</td><td>${esc(c.code)}</td><td>${c.branches}</td><td>${badgeStatus(c.status)}</td></tr>`)
+      <div class="branches-admin" data-branches-admin>
+        <div class="toolbar branches-admin-toolbar">
+          ${pageActs('branches', 'إضافة فرع')}
+          <div class="field">
+            <label>بحث</label>
+            <input id="br-search" type="search" placeholder="اسم الفرع أو الكود…" value="${esc(sessionStorage.getItem('hubBranchesSearch') || '')}" />
+          </div>
+          <div class="field">
+            <label>الدولة</label>
+            <select id="br-country-filter">
+              <option value="">كل الدول</option>
+              ${countryOptions
+                .map(
+                  (name) =>
+                    `<option value="${esc(name)}" ${name === countryFilter ? 'selected' : ''}>${esc(name)}</option>`
+                )
                 .join('')}
-            </tbody>
-          </table></div>
-        </article>
-        <article class="card">
-          <h3><span class="title-left"><i class="fas fa-code-branch icon"></i> الفروع</span></h3>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>الفرع</th><th>الدولة</th><th>حاضنات</th><th>المدير</th></tr></thead>
-            <tbody>
-              ${org.branches
-                .map((b) => `<tr><td>${esc(b.name)}</td><td>${esc(b.country)}</td><td>${b.incubators}</td><td>${esc(b.manager)}</td></tr>`)
-                .join('')}
-            </tbody>
-          </table></div>
+            </select>
+          </div>
+          <button type="button" class="btn btn-ghost" data-action="branches-apply-filters"><i class="fas fa-filter"></i> تصفية</button>
+          <button type="button" class="btn btn-ghost" data-action="branches-clear-filters">مسح</button>
+        </div>
+        <div class="kpi-grid branches-admin-kpis">
+          <article class="kpi"><span>الفروع</span><strong>${branches.length}</strong><small>سجل دائم</small></article>
+          <article class="kpi"><span>المعروضة</span><strong>${filtered.length}</strong><small>بعد التصفية</small></article>
+          <article class="kpi"><span>الدول</span><strong>${countries.length}</strong><small>مرتبطة بالفروع</small></article>
+          <article class="kpi"><span>الحاضنات</span><strong>${(org.incubators || []).length}</strong><small>تُدار من صفحتها</small></article>
+        </div>
+        <article class="card branches-admin-card">
+          <h3><span class="title-left"><i class="fas fa-code-branch icon"></i> سجل الفروع</span></h3>
+          <div class="table-wrap branches-admin-table-wrap">
+            <table class="data branches-admin-table">
+              <thead>
+                <tr>
+                  <th>اسم الفرع</th>
+                  <th>الدولة</th>
+                  <th>كود الفرع</th>
+                  <th>مدير الفرع</th>
+                  <th>الحالة</th>
+                  <th>الحاضنات</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  filtered.length
+                    ? filtered
+                        .map((b) => {
+                          const country = branchCountryLabel(b, countries);
+                          const manager = b.manager || b.assignee || '—';
+                          const incCount = incubatorsForBranch(b, org).length;
+                          return `<tr data-branch-id="${esc(b.id)}">
+                            <td><strong>${esc(b.nameAr || b.name || '—')}</strong>${b.type ? `<small class="branches-admin-sub">${esc(b.type)}</small>` : ''}</td>
+                            <td>${esc(country)}</td>
+                            <td><code>${esc(b.code || b.erpCode || '—')}</code></td>
+                            <td>${esc(manager)}</td>
+                            <td>${badgeStatus(b.status || 'active')}</td>
+                            <td>
+                              <span class="branches-admin-inc-count">${incCount}</span>
+                              <button type="button" class="btn btn-ghost btn-sm" data-action="branch-view-incubators" data-id="${esc(b.id)}" data-name="${esc(b.nameAr || b.name || '')}" data-code="${esc(b.code || '')}" title="عرض الحاضنات">عرض الحاضنات</button>
+                            </td>
+                            <td class="branches-admin-acts">${rowActs('branches', b.id)}</td>
+                          </tr>`;
+                        })
+                        .join('')
+                    : `<tr><td colspan="7" class="empty">لا فروع مطابقة — استخدم «إضافة فرع» أو امسح التصفية</td></tr>`
+                }
+              </tbody>
+            </table>
+          </div>
         </article>
       </div>
-      <article class="card" style="margin-top:12px">
-        <h3><span class="title-left"><i class="fas fa-layer-group icon"></i> المنصات السيادية</span></h3>
-        <div class="table-wrap"><table class="data">
-          <thead><tr><th>الرقم</th><th>المنصة</th><th>الدور</th><th>الحالة</th></tr></thead>
-          <tbody>
-            ${org.platforms
-              .map(
-                (p, idx) => `<tr>
-                  <td><strong>منصة ${String(idx + 1).padStart(2, '0')}</strong></td>
-                  <td>${esc(p.nameAr || p.name)}</td>
-                  <td>${esc(p.role || p.incubator || '—')}</td>
-                  <td>${badgeStatus(p.status)}</td>
-                </tr>`
-              )
-              .join('')}
-          </tbody>
-        </table></div>
-      </article>
     `;
   };
 
@@ -1105,6 +1174,22 @@
 
   const renderIncubators = () => {
     const org = HubStore.get().empire.organization;
+    let filter = null;
+    try {
+      filter = JSON.parse(sessionStorage.getItem('hubIncubatorBranchFilter') || 'null');
+    } catch (_) {
+      filter = null;
+    }
+    const branch =
+      filter?.id && (org.worldBranches || []).find((b) => String(b.id) === String(filter.id));
+    const list = branch ? incubatorsForBranch(branch, org) : org.incubators || [];
+    const filterBanner = branch
+      ? `<div class="branches-admin-filter-banner">
+          <span><i class="fas fa-filter"></i> عرض الحاضنات المرتبطة بالفرع: <strong>${esc(branch.nameAr || branch.name || filter.name || '')}</strong></span>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="clear-incubator-branch-filter">إلغاء الفلتر</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="go-branches"><i class="fas fa-code-branch"></i> العودة للفروع</button>
+        </div>`
+      : '';
     return `
       <div class="toolbar">
         ${pageActs('incubators', 'إضافة حاضنة')}
@@ -1113,12 +1198,15 @@
         <div class="field"><label>القطاع</label><input id="inc-sector" placeholder="تعليم / صحة / قانون…" /></div>
         <button class="btn btn-primary" data-action="add-incubator"><i class="fas fa-plus"></i> إنشاء سريع</button>
       </div>
+      ${filterBanner}
       <div class="table-wrap"><table class="data">
         <thead><tr><th>الحاضنة</th><th>القطاع</th><th>منصات</th><th>مكاتب</th><th>أعضاء</th><th>الصحة</th>${metaHead()}<th>إجراءات</th></tr></thead>
         <tbody>
-          ${org.incubators
-            .map(
-              (i) => `<tr>
+          ${
+            list.length
+              ? list
+                  .map(
+                    (i) => `<tr>
                 <td><strong>${esc(i.name)}</strong></td>
                 <td>${esc(i.sector)}</td>
                 <td>${i.platforms}</td>
@@ -1128,8 +1216,10 @@
                 ${metaCells(i)}
                 <td>${rowActs('incubators', i.id)}</td>
               </tr>`
-            )
-            .join('')}
+                  )
+                  .join('')
+              : `<tr><td colspan="14" class="empty">لا حاضنات مطابقة لهذا الفرع</td></tr>`
+          }
         </tbody>
       </table></div>
     `;
@@ -1508,6 +1598,7 @@
     }
   };
   window.hubRerender = () => render();
+  window.hubActivatePanel = (key) => activate(key);
 
   // —— Event delegation
   root.addEventListener('click', (e) => {
@@ -1749,6 +1840,40 @@
         HubStore.advancePriority(id);
         toast('دُفعت أولوية التنفيذ');
         break;
+      case 'branches-apply-filters': {
+        sessionStorage.setItem('hubBranchesSearch', $('#br-search')?.value.trim() || '');
+        sessionStorage.setItem('hubBranchesCountryFilter', $('#br-country-filter')?.value || '');
+        break;
+      }
+      case 'branches-clear-filters': {
+        sessionStorage.removeItem('hubBranchesSearch');
+        sessionStorage.removeItem('hubBranchesCountryFilter');
+        break;
+      }
+      case 'branch-view-incubators': {
+        const org = HubStore.get().empire.organization;
+        const branch = (org.worldBranches || []).find((b) => String(b.id) === String(id));
+        sessionStorage.setItem(
+          'hubIncubatorBranchFilter',
+          JSON.stringify({
+            id: branch?.id || id,
+            name: branch?.nameAr || branch?.name || btn.dataset.name || '',
+            code: branch?.code || btn.dataset.code || '',
+          })
+        );
+        activate('incubators');
+        toast('تم فتح الحاضنات بفلتر الفرع');
+        return;
+      }
+      case 'clear-incubator-branch-filter': {
+        sessionStorage.removeItem('hubIncubatorBranchFilter');
+        break;
+      }
+      case 'go-branches': {
+        sessionStorage.removeItem('hubIncubatorBranchFilter');
+        activate('organization');
+        return;
+      }
       case 'add-incubator': {
         const name = $('#inc-name')?.value.trim();
         const sector = $('#inc-sector')?.value.trim();
