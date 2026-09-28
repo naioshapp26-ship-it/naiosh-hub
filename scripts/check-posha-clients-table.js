@@ -19,6 +19,13 @@ const checks = {
   cssCardsMobile: css.includes('.posha-clients-cards') && css.includes('@media (max-width: 900px)'),
   noRawStatusChip: !/chip\}">\$\{esc\(c\.status\)\}/.test(src) && !src.includes('<span class="chip">${esc(c.status)}</span>'),
   statusApi: fs.readFileSync(path.join(root, 'lib/hub-posha-ops.js'), 'utf8').includes("parts[5] === 'status'"),
+  hasCountryCol: src.includes('الدولة') && src.includes('c.country'),
+  hasCityCol: src.includes('المدينة') && src.includes('c.city'),
+  hasActivityCol: src.includes('نوع النشاط') && src.includes('c.activityType'),
+  hasClientTypeCol: src.includes('نوع العميل') && src.includes('c.clientType'),
+  hasDisplayVal: src.includes('displayVal'),
+  hasReqLink: src.includes('findClientForRequest'),
+  profileApi: fs.readFileSync(path.join(root, 'lib/hub-posha-ops.js'), 'utf8').includes("parts[5] === 'profile'"),
 };
 
 console.log(JSON.stringify(checks, null, 2));

@@ -575,7 +575,15 @@
         '<div class="cp-field"><label>البريد</label><input value="' + esc(p.email || '') + '" disabled></div>' +
         '<div class="cp-field"><label>الهاتف</label><input name="phone" value="' + esc(p.phone || '') + '"></div>' +
         '<div class="cp-field"><label>الشركة / المنظمة</label><input name="company" value="' + esc(p.company || '') + '"></div>' +
+        '<div class="cp-field"><label>نوع العميل</label><select name="clientType">' +
+          ['','فرد','مؤسسة','شركة','مكتب','منصة'].map(function (t) {
+            return '<option value="' + esc(t) + '"' + ((p.clientType || '') === t ? ' selected' : '') + '>' + esc(t || '— اختر —') + '</option>';
+          }).join('') +
+        '</select></div>' +
         '<div class="cp-field"><label>الدولة</label><input name="country" value="' + esc(p.country || '') + '"></div>' +
+        '<div class="cp-field"><label>المدينة</label><input name="city" value="' + esc(p.city || '') + '"></div>' +
+        '<div class="cp-field"><label>نوع النشاط</label><input name="activityType" value="' + esc(p.activityType || '') + '" placeholder="مثال: تعليم"></div>' +
+        '<div class="cp-field"><label>العنوان</label><input name="address" value="' + esc(p.address || '') + '"></div>' +
         '<div class="cp-field"><label>اللغة</label><select name="language"><option value="ar"' + (p.language !== 'en' ? ' selected' : '') + '>العربية</option><option value="en"' + (p.language === 'en' ? ' selected' : '') + '>English</option></select></div>' +
         '<button type="submit" class="cp-btn cp-btn-primary">حفظ التغييرات</button>' +
       '</form></section>';
@@ -867,6 +875,10 @@
                 phone: fd.get('phone'),
                 company: fd.get('company'),
                 country: fd.get('country'),
+                city: fd.get('city'),
+                address: fd.get('address'),
+                clientType: fd.get('clientType'),
+                activityType: fd.get('activityType'),
                 language: fd.get('language')
               }
             });

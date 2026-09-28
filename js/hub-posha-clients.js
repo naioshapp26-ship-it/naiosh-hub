@@ -165,6 +165,28 @@
     return n;
   }
 
+  function displayVal(v) {
+    const s = String(v == null ? '' : v).trim();
+    return s ? s : 'غير مسجل';
+  }
+
+  function findClientForRequest(r) {
+    if (!r) return null;
+    const email = String(r.email || r.customer?.email || '').toLowerCase();
+    const cid = String(r.clientId || r.client_id || r.customerId || '').trim();
+    return (
+      state.clients.find(
+        (c) =>
+          (email && String(c.email || '').toLowerCase() === email) ||
+          (cid && (c.clientId === cid || String(c.clientId || '').toUpperCase() === cid.toUpperCase()))
+      ) || null
+    );
+  }
+
+  function lastActivityIso(c) {
+    return c?.lastActivityAt || (Array.isArray(c?.activity) && c.activity[0]?.at) || c?.lastLoginAt || '';
+  }
+
   const state = {
     tab: 'overview',
     clients: [],
@@ -179,6 +201,10 @@
     statusFilter: '',
     systemFilter: '',
     requestsFilter: '',
+    clientTypeFilter: '',
+    countryFilter: '',
+    cityFilter: '',
+    activityTypeFilter: '',
     q: '',
     clientMenuEmail: null,
     reqView: 'active',
@@ -285,34 +311,47 @@
       .map((c) => {
         const sysN = Number(c.systemsCount || (c.systems || []).length || 0);
         const reqN = reqCountFor(c);
-        const alertN = alertsCountFor(c);
         const wallet = c.walletTotal;
         const login = fmtDateParts(c.lastLoginAt);
+        const activity = fmtDateParts(lastActivityIso(c));
         const menuOpen = state.clientMenuEmail === c.email;
         return `
         <tr class="posha-client-row" data-client-email="${esc(c.email)}">
-          <td class="posha-col-client" data-label="العميل">
+          <td class="posha-col-client" data-label="اسم العميل">
             <div class="posha-client-cell">
-              <strong class="posha-client-name">${esc(c.name || '—')}</strong>
-              <span class="posha-client-email">${esc(c.email || '—')}</span>
+              <button type="button" class="posha-link-btn posha-client-name" data-open-posha="${esc(c.email)}">${esc(displayVal(c.name))}</button>
+              <span class="posha-client-email">${esc(displayVal(c.email))}</span>
             </div>
           </td>
-          <td class="posha-col-id" data-label="رقم العميل"><code class="posha-client-id">${esc(c.clientId || '—')}</code></td>
-          <td class="posha-col-status" data-label="الحالة"><span class="posha-status-badge ${clientStatusClass(c.status)}">${esc(clientStatusAr(c.status))}</span></td>
+          <td class="posha-col-id" data-label="رقم العميل">
+            <button type="button" class="posha-link-btn" data-open-posha="${esc(c.email)}"><code class="posha-client-id">${esc(displayVal(c.clientId))}</code></button>
+          </td>
+          <td class="posha-col-naiosh" data-label="رقم نايوش"><code>${esc(displayVal(c.naioshId))}</code></td>
+          <td class="posha-col-ctype" data-label="نوع العميل">${esc(displayVal(c.clientType))}</td>
+          <td class="posha-col-country" data-label="الدولة">${esc(displayVal(c.country))}</td>
+          <td class="posha-col-city" data-label="المدينة">${esc(displayVal(c.city))}</td>
+          <td class="posha-col-activity" data-label="نوع النشاط">${esc(displayVal(c.activityType))}</td>
+          <td class="posha-col-company" data-label="المؤسسة">${esc(displayVal(c.company))}</td>
           <td class="posha-col-systems" data-label="الأنظمة">
             <button type="button" class="posha-link-btn" data-client-systems="${esc(c.email)}" title="عرض الأنظمة">${num(sysN)} ${sysN === 1 ? 'نظام' : 'أنظمة'}</button>
           </td>
           <td class="posha-col-reqs" data-label="الطلبات">
             <button type="button" class="posha-link-btn" data-client-goto-reqs="${esc(c.email)}" data-client-id="${esc(c.clientId || '')}">${num(reqN)} ${reqN === 1 ? 'طلب' : 'طلبات'}</button>
           </td>
-          <td class="posha-col-wallet" data-label="المحفظة">${wallet == null || wallet === '' ? '—' : num(wallet)}</td>
+          <td class="posha-col-wallet" data-label="المحفظة">${wallet == null || wallet === '' ? 'غير مسجل' : num(wallet)}</td>
           <td class="posha-col-login" data-label="آخر دخول">
             <div class="posha-datetime">
-              <span>${esc(login.date)}</span>
-              ${login.time ? `<span class="posha-time">${esc(login.time)}</span>` : ''}
+              <span>${esc(c.lastLoginAt ? login.date : 'غير مسجل')}</span>
+              ${c.lastLoginAt && login.time ? `<span class="posha-time">${esc(login.time)}</span>` : ''}
             </div>
           </td>
-          <td class="posha-col-alerts" data-label="التنبيهات">${alertN ? num(alertN) : '—'}</td>
+          <td class="posha-col-lastact" data-label="آخر نشاط">
+            <div class="posha-datetime">
+              <span>${esc(lastActivityIso(c) ? activity.date : 'غير مسجل')}</span>
+              ${lastActivityIso(c) && activity.time ? `<span class="posha-time">${esc(activity.time)}</span>` : ''}
+            </div>
+          </td>
+          <td class="posha-col-status" data-label="الحالة"><span class="posha-status-badge ${clientStatusClass(c.status)}">${esc(clientStatusAr(c.status))}</span></td>
           <td class="posha-col-actions" data-label="الإجراءات">
             <div class="posha-client-actions ${menuOpen ? 'is-open' : ''}">
               <button type="button" class="btn btn-primary btn-sm" data-open-posha="${esc(c.email)}">عرض</button>
@@ -333,18 +372,23 @@
         return `<article class="posha-client-card" data-client-email="${esc(c.email)}">
           <header>
             <div>
-              <strong class="posha-client-name">${esc(c.name || '—')}</strong>
-              <span class="posha-client-email">${esc(c.email || '—')}</span>
+              <button type="button" class="posha-link-btn posha-client-name" data-open-posha="${esc(c.email)}">${esc(displayVal(c.name))}</button>
+              <span class="posha-client-email">${esc(displayVal(c.email))}</span>
             </div>
             <span class="posha-status-badge ${clientStatusClass(c.status)}">${esc(clientStatusAr(c.status))}</span>
           </header>
           <dl class="posha-card-meta">
-            <div><dt>رقم العميل</dt><dd><code class="posha-client-id">${esc(c.clientId || '—')}</code></dd></div>
+            <div><dt>رقم العميل</dt><dd><button type="button" class="posha-link-btn" data-open-posha="${esc(c.email)}"><code class="posha-client-id">${esc(displayVal(c.clientId))}</code></button></dd></div>
+            <div><dt>رقم نايوش</dt><dd>${esc(displayVal(c.naioshId))}</dd></div>
+            <div><dt>نوع العميل</dt><dd>${esc(displayVal(c.clientType))}</dd></div>
+            <div><dt>الدولة</dt><dd>${esc(displayVal(c.country))}</dd></div>
+            <div><dt>المدينة</dt><dd>${esc(displayVal(c.city))}</dd></div>
+            <div><dt>نوع النشاط</dt><dd>${esc(displayVal(c.activityType))}</dd></div>
+            <div><dt>المؤسسة</dt><dd>${esc(displayVal(c.company))}</dd></div>
             <div><dt>الأنظمة</dt><dd><button type="button" class="posha-link-btn" data-client-systems="${esc(c.email)}">${num(sysN)}</button></dd></div>
             <div><dt>الطلبات</dt><dd><button type="button" class="posha-link-btn" data-client-goto-reqs="${esc(c.email)}" data-client-id="${esc(c.clientId || '')}">${num(reqN)}</button></dd></div>
-            <div><dt>المحفظة</dt><dd>${c.walletTotal == null ? '—' : num(c.walletTotal)}</dd></div>
-            <div><dt>آخر دخول</dt><dd>${esc(login.date)}${login.time ? ` - ${esc(login.time)}` : ''}</dd></div>
-            <div><dt>التنبيهات</dt><dd>${alertsCountFor(c) ? num(alertsCountFor(c)) : '—'}</dd></div>
+            <div><dt>المحفظة</dt><dd>${c.walletTotal == null ? 'غير مسجل' : num(c.walletTotal)}</dd></div>
+            <div><dt>آخر دخول</dt><dd>${esc(c.lastLoginAt ? `${login.date}${login.time ? ` - ${login.time}` : ''}` : 'غير مسجل')}</dd></div>
           </dl>
           <footer class="posha-client-actions ${menuOpen ? 'is-open' : ''}">
             <button type="button" class="btn btn-primary btn-sm" data-open-posha="${esc(c.email)}">عرض التفاصيل</button>
@@ -358,17 +402,23 @@
     return `
       <div class="posha-clients-block ${opts.compact ? 'is-compact' : ''}">
         <div class="posha-clients-table-wrap">
-          <table class="posha-clients-table" role="table">
+          <table class="posha-clients-table posha-clients-table--wide" role="table">
             <thead>
               <tr>
-                <th scope="col">العميل</th>
+                <th scope="col">اسم العميل</th>
                 <th scope="col">رقم العميل</th>
-                <th scope="col">الحالة</th>
+                <th scope="col">رقم نايوش</th>
+                <th scope="col">نوع العميل</th>
+                <th scope="col">الدولة</th>
+                <th scope="col">المدينة</th>
+                <th scope="col">نوع النشاط</th>
+                <th scope="col">المؤسسة</th>
                 <th scope="col">الأنظمة</th>
                 <th scope="col">الطلبات</th>
                 <th scope="col">المحفظة</th>
                 <th scope="col">آخر دخول</th>
-                <th scope="col">التنبيهات</th>
+                <th scope="col">آخر نشاط</th>
+                <th scope="col">الحالة</th>
                 <th scope="col">الإجراءات</th>
               </tr>
             </thead>
@@ -381,14 +431,34 @@
 
   function filterBar() {
     const systems = [...new Set(state.clients.flatMap((c) => (c.systems || []).map((s) => s.code || s.name).filter(Boolean)))];
+    const countries = [...new Set(state.clients.map((c) => c.country).filter(Boolean))].sort();
+    const cities = [...new Set(state.clients.map((c) => c.city).filter(Boolean))].sort();
+    const clientTypes = [...new Set(state.clients.map((c) => c.clientType).filter(Boolean))].sort();
+    const activities = [...new Set(state.clients.map((c) => c.activityType).filter(Boolean))].sort();
     return `<div class="posha-filters posha-clients-filters">
-      <input id="posha-q" type="search" placeholder="ابحث بالاسم أو رقم العميل أو البريد" value="${esc(state.q)}" />
+      <input id="posha-q" type="search" placeholder="ابحث بالاسم أو رقم العميل أو رقم نايوش أو البريد أو الهاتف أو الدولة أو المدينة أو المؤسسة" value="${esc(state.q)}" />
       <select id="posha-status" aria-label="الحالة">
         <option value="">الحالة: الكل</option>
         <option value="active" ${state.statusFilter === 'active' ? 'selected' : ''}>نشط</option>
         <option value="pending" ${state.statusFilter === 'pending' ? 'selected' : ''}>بانتظار التفعيل</option>
         <option value="suspended" ${state.statusFilter === 'suspended' ? 'selected' : ''}>موقوف</option>
         <option value="closed" ${state.statusFilter === 'closed' ? 'selected' : ''}>مغلق</option>
+      </select>
+      <select id="posha-ctype" aria-label="نوع العميل">
+        <option value="">نوع العميل: الكل</option>
+        ${clientTypes.map((s) => `<option value="${esc(s)}" ${state.clientTypeFilter === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
+      </select>
+      <select id="posha-country" aria-label="الدولة">
+        <option value="">الدولة: الكل</option>
+        ${countries.map((s) => `<option value="${esc(s)}" ${state.countryFilter === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
+      </select>
+      <select id="posha-city" aria-label="المدينة">
+        <option value="">المدينة: الكل</option>
+        ${cities.map((s) => `<option value="${esc(s)}" ${state.cityFilter === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
+      </select>
+      <select id="posha-activity" aria-label="نوع النشاط">
+        <option value="">نوع النشاط: الكل</option>
+        ${activities.map((s) => `<option value="${esc(s)}" ${state.activityTypeFilter === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
       </select>
       <select id="posha-system" aria-label="النظام">
         <option value="">النظام: الكل</option>
@@ -404,40 +474,82 @@
   }
 
   function overviewHtml() {
-    const latestReqs = cr()?.list?.({ view: 'active' })?.slice(0, 6) || [];
-    const latestClients = filteredClients().slice(0, 6);
+    const latestReqs = cr()?.list?.({ view: 'active' })?.slice(0, 8) || [];
+    const latestClients = filteredClients().slice(0, 8);
     const latestEvents = (state.events || []).slice(0, 8);
+    const typeAr = (r) => (cr().TYPE_LABELS_AR || {})[r.requestType] || r.requestTypeLabel || r.requestType || '';
+    const statusAr = (r) => (cr().STATUS_AR || {})[r.status] || r.status || '';
+    const reqRows = latestReqs
+      .map((r) => {
+        const client = findClientForRequest(r);
+        const created = fmtDateParts(r.createdAt);
+        const updated = fmtDateParts(r.updatedAt || r.createdAt);
+        const reqId = r.requestId || r.id;
+        const clientEmail = client?.email || r.email || '';
+        return `<tr>
+          <td data-label="رقم الطلب"><button type="button" class="posha-link-btn" data-req-open="${esc(r.id)}"><code>${esc(displayVal(reqId))}</code></button></td>
+          <td data-label="رقم العميل">${
+            clientEmail
+              ? `<button type="button" class="posha-link-btn" data-open-posha="${esc(clientEmail)}"><code>${esc(displayVal(client?.clientId || r.clientId || r.customerId))}</code></button>`
+              : esc(displayVal(r.clientId || r.customerId))
+          }</td>
+          <td data-label="اسم العميل">${
+            clientEmail
+              ? `<button type="button" class="posha-link-btn" data-open-posha="${esc(clientEmail)}">${esc(displayVal(client?.name || r.customerName || r.company))}</button>`
+              : esc(displayVal(r.customerName || r.company))
+          }</td>
+          <td data-label="الدولة">${esc(displayVal(client?.country))}</td>
+          <td data-label="المدينة">${esc(displayVal(client?.city))}</td>
+          <td data-label="نوع العميل">${esc(displayVal(client?.clientType))}</td>
+          <td data-label="نوع النشاط">${esc(displayVal(client?.activityType))}</td>
+          <td data-label="الطلب / الخدمة">${esc(displayVal(r.title || r.need || r.relatedSolution))}</td>
+          <td data-label="مصدر الطلب">${esc(displayVal(displaySourceModule(r.sourceModule) || r.sourcePage))}</td>
+          <td data-label="نوع الطلب">${esc(displayVal(typeAr(r)))}</td>
+          <td data-label="الحالة"><span class="chip">${esc(displayVal(statusAr(r)))}</span></td>
+          <td data-label="تاريخ الطلب"><div class="posha-datetime"><span>${esc(r.createdAt ? created.date : 'غير مسجل')}</span>${r.createdAt && created.time ? `<span class="posha-time">${esc(created.time)}</span>` : ''}</div></td>
+          <td data-label="آخر تحديث"><div class="posha-datetime"><span>${esc(r.updatedAt || r.createdAt ? updated.date : 'غير مسجل')}</span>${(r.updatedAt || r.createdAt) && updated.time ? `<span class="posha-time">${esc(updated.time)}</span>` : ''}</div></td>
+          <td data-label="المسؤول">${esc(displayVal(r.assignedTo || r.salesOwner || r.owner))}</td>
+          <td data-label="الإجراءات"><button type="button" class="btn btn-ghost btn-sm" data-req-open="${esc(r.id)}">عرض</button></td>
+        </tr>`;
+      })
+      .join('');
     return `
-      <section class="posha-panel posha-panel-requests">
+      <section class="posha-panel posha-panel-requests posha-panel--full">
         <div class="posha-panel-head">
           <h3>أحدث طلبات العملاء</h3>
           <button type="button" class="btn btn-ghost btn-sm" data-ptab-jump="orders">عرض الكل</button>
         </div>
         ${
           latestReqs.length
-            ? `<div class="table-wrap"><table class="data-table posha-table">
-                <thead><tr><th>رقم الطلب</th><th>العميل</th><th>النوع</th><th>الحالة</th><th></th></tr></thead>
-                <tbody>${latestReqs
-                  .map(
-                    (r) => `<tr>
-                  <td>${esc(r.id)}</td>
-                  <td>${esc(r.customerName || r.company || '—')}</td>
-                  <td>${esc((cr().TYPE_LABELS_AR || {})[r.requestType] || r.requestType || '—')}</td>
-                  <td><span class="chip">${esc((cr().STATUS_AR || {})[r.status] || r.status)}</span></td>
-                  <td><button type="button" class="btn btn-ghost btn-sm" data-req-open="${esc(r.id)}">عرض</button></td>
-                </tr>`
-                  )
-                  .join('')}</tbody></table></div>`
+            ? `<div class="posha-clients-table-wrap posha-req-overview-wrap"><table class="posha-clients-table posha-req-overview-table" role="table">
+                <thead><tr>
+                  <th scope="col">رقم الطلب</th>
+                  <th scope="col">رقم العميل</th>
+                  <th scope="col">اسم العميل</th>
+                  <th scope="col">الدولة</th>
+                  <th scope="col">المدينة</th>
+                  <th scope="col">نوع العميل</th>
+                  <th scope="col">نوع النشاط</th>
+                  <th scope="col">الطلب / الخدمة</th>
+                  <th scope="col">مصدر الطلب</th>
+                  <th scope="col">نوع الطلب</th>
+                  <th scope="col">الحالة</th>
+                  <th scope="col">تاريخ الطلب</th>
+                  <th scope="col">آخر تحديث</th>
+                  <th scope="col">المسؤول</th>
+                  <th scope="col">الإجراءات</th>
+                </tr></thead>
+                <tbody>${reqRows}</tbody></table></div>`
             : `<p class="posha-ws-empty">لا توجد طلبات عملاء جديدة. <button type="button" class="btn btn-ghost btn-sm" data-ptab-jump="orders">عرض كل الطلبات</button></p>`
         }
       </section>
-      <section class="posha-panel posha-panel-clients">
+      <section class="posha-panel posha-panel-clients posha-panel--full">
         <div class="posha-panel-head">
           <h3>أحدث العملاء</h3>
           <button type="button" class="btn btn-ghost btn-sm" data-ptab-jump="clients">عرض الكل</button>
         </div>
         ${filterBar()}
-        ${clientsTable(latestClients, { compact: true })}
+        ${clientsTable(latestClients, { compact: false })}
       </section>
       <section class="posha-panel posha-panel-activity">
         <div class="posha-panel-head">
@@ -453,7 +565,9 @@
     const q = state.q.trim().toLowerCase();
     if (q) {
       list = list.filter((c) =>
-        [c.name, c.email, c.clientId, c.phone, c.company].some((x) => String(x || '').toLowerCase().includes(q))
+        [c.name, c.email, c.clientId, c.naioshId, c.phone, c.company, c.country, c.city, c.clientType, c.activityType].some((x) =>
+          String(x || '').toLowerCase().includes(q)
+        )
       );
     }
     const f = state.statusFilter;
@@ -465,6 +579,10 @@
     if (f === 'orders') list = list.filter((c) => reqCountFor(c) > 0);
     if (f === 'payments') list = list.filter((c) => c.unpaidInvoices > 0);
     if (f === 'alerts') list = list.filter((c) => alertsCountFor(c) > 0);
+    if (state.clientTypeFilter) list = list.filter((c) => c.clientType === state.clientTypeFilter);
+    if (state.countryFilter) list = list.filter((c) => c.country === state.countryFilter);
+    if (state.cityFilter) list = list.filter((c) => c.city === state.cityFilter);
+    if (state.activityTypeFilter) list = list.filter((c) => c.activityType === state.activityTypeFilter);
     if (state.systemFilter) {
       list = list.filter((c) =>
         (c.systems || []).some((s) => s.code === state.systemFilter || s.name === state.systemFilter)
@@ -610,12 +728,22 @@
           <article><span>الطلبات المقبولة</span><strong>${num(crList.filter((r) => /Approved|Published|accepted/i.test(r.status)).length)}</strong></article>
           <article><span>المحفظة</span><strong>${num(c.wallet?.total ?? 0)}</strong></article>
         </div>
-        <div class="posha-drawer-overview">
-          <p><strong>البريد:</strong> ${esc(c.email)}</p>
-          <p><strong>الهاتف:</strong> ${esc(c.phone || '—')}</p>
-          <p><strong>حالة الحساب:</strong> ${esc(clientStatusAr(c.status))}</p>
-          <p><strong>تاريخ التسجيل:</strong> ${esc(fmtDateParts(c.createdAt).date)}</p>
-          <p><strong>آخر تسجيل دخول:</strong> ${esc(fmtDateParts(c.lastLoginAt).date)} ${esc(fmtDateParts(c.lastLoginAt).time)}</p>
+        <div class="posha-drawer-overview posha-drawer-profile">
+          <p><strong>الاسم:</strong> ${esc(displayVal(c.name))}</p>
+          <p><strong>رقم العميل:</strong> <code>${esc(displayVal(c.clientId))}</code></p>
+          <p><strong>رقم نايوش:</strong> <code>${esc(displayVal(c.naioshId))}</code></p>
+          <p><strong>البريد الإلكتروني:</strong> ${esc(displayVal(c.email))}</p>
+          <p><strong>الهاتف:</strong> ${esc(displayVal(c.phone))}</p>
+          <p><strong>الدولة:</strong> ${esc(displayVal(c.country))}</p>
+          <p><strong>المدينة:</strong> ${esc(displayVal(c.city))}</p>
+          <p><strong>العنوان:</strong> ${esc(displayVal(c.address))}</p>
+          <p><strong>نوع العميل:</strong> ${esc(displayVal(c.clientType))}</p>
+          <p><strong>نوع النشاط:</strong> ${esc(displayVal(c.activityType))}</p>
+          <p><strong>المؤسسة / الشركة:</strong> ${esc(displayVal(c.company))}</p>
+          <p><strong>تاريخ التسجيل:</strong> ${esc(c.createdAt ? fmtDateParts(c.createdAt).date : 'غير مسجل')}</p>
+          <p><strong>الحالة:</strong> ${esc(clientStatusAr(c.status))}</p>
+          <p><strong>آخر تسجيل دخول:</strong> ${esc(c.lastLoginAt ? `${fmtDateParts(c.lastLoginAt).date} ${fmtDateParts(c.lastLoginAt).time}` : 'غير مسجل')}</p>
+          <p><strong>آخر نشاط:</strong> ${esc(lastActivityIso(c) ? `${fmtDateParts(lastActivityIso(c)).date} ${fmtDateParts(lastActivityIso(c)).time}` : 'غير مسجل')}</p>
         </div>
         <h4>آخر الأنشطة</h4>
         <ul class="posha-timeline">${tl.map((e) => `<li><strong>${esc(e.type || e.title)}</strong> — ${esc(e.message || e.title || '')}<small>${esc(fmtDateParts(e.at).date)} ${esc(fmtDateParts(e.at).time)}</small></li>`).join('') || '<li>لا أحداث</li>'}</ul>`;
@@ -1897,6 +2025,22 @@
       state.statusFilter = e.target.value;
       paintBody();
     });
+    document.getElementById('posha-ctype')?.addEventListener('change', (e) => {
+      state.clientTypeFilter = e.target.value;
+      paintBody();
+    });
+    document.getElementById('posha-country')?.addEventListener('change', (e) => {
+      state.countryFilter = e.target.value;
+      paintBody();
+    });
+    document.getElementById('posha-city')?.addEventListener('change', (e) => {
+      state.cityFilter = e.target.value;
+      paintBody();
+    });
+    document.getElementById('posha-activity')?.addEventListener('change', (e) => {
+      state.activityTypeFilter = e.target.value;
+      paintBody();
+    });
     document.getElementById('posha-system')?.addEventListener('change', (e) => {
       state.systemFilter = e.target.value;
       paintBody();
@@ -1910,6 +2054,10 @@
       state.statusFilter = '';
       state.systemFilter = '';
       state.requestsFilter = '';
+      state.clientTypeFilter = '';
+      state.countryFilter = '';
+      state.cityFilter = '';
+      state.activityTypeFilter = '';
       paintBody();
     });
   }
