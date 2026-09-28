@@ -141,6 +141,30 @@
     return s?.websiteUrl || s?.website_url || '';
   }
 
+  function displayHost(url) {
+    if (!url) return '';
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch (_) {
+      return String(url)
+        .replace(/^https?:\/\//i, '')
+        .replace(/^www\./, '')
+        .split('/')[0];
+    }
+  }
+
+  function createdByLabel(s) {
+    const by = s?.createdBy || s?.created_by || '—';
+    if (by === 'system' || by === 'System') return 'النظام';
+    if (by === 'admin' || by === 'Admin') return 'مسؤول';
+    return by;
+  }
+
+  function dateOnly(iso) {
+    if (!iso) return '—';
+    return String(iso).slice(0, 10) || '—';
+  }
+
   function statusLabel(st) {
     return (
       window.HubI18n?.status?.(st) ||
@@ -159,10 +183,19 @@
     if (ui.q) {
       const q = ui.q.toLowerCase();
       list = list.filter((s) =>
-        `${storeName(s)} ${s.storeId} ${storeUrl(s)}`.toLowerCase().includes(q)
+        `${storeName(s)} ${s.storeId} ${storeUrl(s)} ${displayHost(storeUrl(s))}`.toLowerCase().includes(q)
       );
     }
     return list;
+  }
+
+  function linkCellHtml(url) {
+    if (!url) return '—';
+    const host = displayHost(url);
+    if (!/^https?:\/\//i.test(url)) return esc(host || url);
+    return `<a class="ss-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}">
+      <span>${esc(host || url)}</span><i class="fas fa-external-link-alt" aria-hidden="true"></i>
+    </a>`;
   }
 
   function storeActionsHtml(s) {
@@ -171,12 +204,21 @@
     const url = storeUrl(s);
     const open =
       url && /^https?:\/\//i.test(url)
-        ? `<a class="btn btn-ghost btn-sm" href="${esc(url)}" target="_blank" rel="noopener noreferrer">فتح الموقع ↗</a>`
+        ? `<a class="btn btn-ghost btn-sm btn-icon" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="فتح الموقع" aria-label="فتح الموقع"><i class="fas fa-external-link-alt"></i></a>`
         : '';
+    const moreMenu = `<div class="ss-more-wrap">
+        <button type="button" class="btn btn-ghost btn-sm btn-icon" data-ss-more="${id}" aria-label="المزيد">⋮</button>
+        <div class="ss-more-menu" hidden data-ss-menu="${id}">
+          <button type="button" data-ss-store-products="${id}">إدارة المنتجات</button>
+          <button type="button" data-ss-store-logo="${id}">تغيير الشعار</button>
+          ${st !== 'archived' ? `<button type="button" data-ss-store-archive="${id}">أرشفة</button>` : ''}
+          <button type="button" data-ss-store-delete="${id}">حذف</button>
+        </div>
+      </div>`;
     if (st === 'archived') {
       return `<button type="button" class="btn btn-dark btn-sm" data-ss-store-view="${id}">عرض</button>
         <button type="button" class="btn btn-primary btn-sm" data-ss-store-enable="${id}">تفعيل</button>
-        <div class="ss-more-wrap"><button type="button" class="btn btn-ghost btn-sm" data-ss-more="${id}">⋮</button></div>`;
+        ${open}${moreMenu}`;
     }
     const toggle =
       st === 'disabled'
@@ -186,15 +228,47 @@
       <button type="button" class="btn btn-ghost btn-sm" data-ss-store-edit="${id}">تعديل</button>
       ${toggle}
       ${open}
-      <div class="ss-more-wrap">
-        <button type="button" class="btn btn-ghost btn-sm" data-ss-more="${id}">⋮</button>
-        <div class="ss-more-menu" hidden data-ss-menu="${id}">
-          <button type="button" data-ss-store-products="${id}">إدارة المنتجات</button>
-          <button type="button" data-ss-store-logo="${id}">تغيير الشعار</button>
-          <button type="button" data-ss-store-archive="${id}">أرشفة</button>
-          <button type="button" data-ss-store-delete="${id}">حذف</button>
-        </div>
-      </div>`;
+      ${moreMenu}`;
+  }
+
+  function storeRowCells(s) {
+    const id = s.storeId;
+    const url = storeUrl(s);
+    const count = reg()?.productCount?.(id) ?? 0;
+    const logo = s.logo
+      ? `<img class="ss-logo" src="${esc(s.logo)}" alt="">`
+      : `<span class="ss-logo"><i class="${esc(s.icon || 'fas fa-store')}"></i></span>`;
+    return {
+      name: `<div class="ss-store-name">${esc(storeName(s))}</div><div class="ss-store-id">${esc(id)}</div>`,
+      logo,
+      link: linkCellHtml(url),
+      status: `<span class="chip ss-status-${esc(s.status || 'active')}">${esc(statusLabel(s.status))}</span>`,
+      count,
+      by: esc(createdByLabel(s)),
+      created: esc(dateOnly(s.createdAt || s.created_at)),
+      updated: esc(dateOnly(s.updatedAt || s.updated_at || s.createdAt)),
+      actions: storeActionsHtml(s),
+    };
+  }
+
+  function storesCardsHtml(rows) {
+    return `<div class="ss-store-cards">${rows
+      .map((s) => {
+        const c = storeRowCells(s);
+        return `<article class="ss-store-card">
+          <div class="ss-store-card-top">${c.logo}<div>${c.name}</div></div>
+          <div class="ss-store-card-meta">
+            <div><b>الرابط</b>${c.link}</div>
+            <div><b>الحالة</b>${c.status}</div>
+            <div><b>المنتجات</b>${c.count}</div>
+            <div><b>أضيف بواسطة</b>${c.by}</div>
+            <div><b>تاريخ الإضافة</b>${c.created}</div>
+            <div><b>آخر تحديث</b>${c.updated}</div>
+          </div>
+          <div class="ss-actions">${c.actions}</div>
+        </article>`;
+      })
+      .join('')}</div>`;
   }
 
   function storesTableHtml() {
@@ -202,39 +276,32 @@
     if (!rows.length) {
       return `<div class="ss-empty">لا توجد متاجر مطابقة للبحث أو الفلتر.</div>`;
     }
-    return `<div class="table-wrap"><table class="data-table ss-table">
+    return `${storesCardsHtml(rows)}
+    <div class="ss-table-wrap table-wrap"><table class="data ss-table">
       <thead><tr>
-        <th>المتجر</th><th>الشعار</th><th>الرابط</th><th>الحالة</th><th>المنتجات</th>
-        <th>أنشئ بواسطة</th><th>آخر تحديث</th><th>الإجراءات</th>
+        <th>المتجر</th>
+        <th>الشعار</th>
+        <th>الرابط</th>
+        <th>الحالة</th>
+        <th>المنتجات</th>
+        <th class="ss-col-added">أضيف بواسطة</th>
+        <th class="ss-col-created">تاريخ الإضافة</th>
+        <th>آخر تحديث</th>
+        <th>الإجراءات</th>
       </tr></thead>
       <tbody>${rows
         .map((s) => {
-          const id = s.storeId;
-          const url = storeUrl(s);
-          const count = reg()?.productCount?.(id) ?? 0;
-          const logo = s.logo
-            ? `<img class="ss-logo" src="${esc(s.logo)}" alt="">`
-            : `<i class="${esc(s.icon || 'fas fa-store')}"></i>`;
+          const c = storeRowCells(s);
           return `<tr>
-            <td><strong>${esc(storeName(s))}</strong><div class="ss-muted">${esc(id)}</div></td>
-            <td>${logo}</td>
-            <td>${
-              url
-                ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(url)}</a>`
-                : '—'
-            }</td>
-            <td><span class="chip ss-status-${esc(s.status || 'active')}">${esc(statusLabel(s.status))}</span></td>
-            <td>${count}</td>
-            <td>${esc(
-              (() => {
-                const by = s.createdBy || s.created_by || '—';
-                if (by === 'system' || by === 'System') return 'النظام';
-                if (by === 'admin' || by === 'Admin') return 'مسؤول';
-                return by;
-              })()
-            )}</td>
-            <td>${esc((s.updatedAt || s.updated_at || s.createdAt || '').slice(0, 10) || '—')}</td>
-            <td class="ss-actions">${storeActionsHtml(s)}</td>
+            <td>${c.name}</td>
+            <td>${c.logo}</td>
+            <td class="ss-col-link">${c.link}</td>
+            <td>${c.status}</td>
+            <td>${c.count}</td>
+            <td class="ss-col-added">${c.by}</td>
+            <td class="ss-col-created">${c.created}</td>
+            <td>${c.updated}</td>
+            <td><div class="ss-actions">${c.actions}</div></td>
           </tr>`;
         })
         .join('')}</tbody></table></div>`;
@@ -339,7 +406,7 @@
         user: ui.auditUser || undefined,
       }) || [];
     if (!rows.length) return `<div class="ss-empty">لا توجد سجلات بعد.</div>`;
-    return `<div class="table-wrap"><table class="data-table ss-table">
+    return `<div class="ss-table-wrap table-wrap"><table class="data ss-table">
       <thead><tr>
         <th>رقم العملية</th><th>القسم</th><th>الإجراء</th><th>القيمة السابقة</th><th>القيمة الجديدة</th>
         <th>عدّلها</th><th>الدور</th><th>التاريخ</th><th>الوقت</th>
@@ -382,7 +449,7 @@
         <div><b>${stats.rejected}</b><span>مرفوضة</span></div>
         <div><b>${stats.paused}</b><span>موقوفة</span></div>
       </div>
-      <div class="table-wrap"><table class="data-table ss-table">
+      <div class="ss-table-wrap table-wrap"><table class="data ss-table">
         <thead><tr><th>ID</th><th>المنتج</th><th>السعر</th><th>الحالة</th><th>تاريخ</th></tr></thead>
         <tbody>${
           (stats.submissions || [])
@@ -411,7 +478,6 @@
     if (ui.storeTab === 'list') {
       body = `
         <div class="ss-toolbar">
-          <button type="button" class="btn btn-primary" data-ss-add-store>+ إضافة متجر جديد</button>
           <input type="search" placeholder="بحث عن متجر..." value="${esc(ui.q)}" data-ss-store-q />
           <select data-ss-store-status>
             <option value="all" ${ui.statusFilter === 'all' ? 'selected' : ''}>كل الحالات</option>
@@ -419,6 +485,7 @@
             <option value="disabled" ${ui.statusFilter === 'disabled' ? 'selected' : ''}>معطل</option>
             <option value="archived" ${ui.statusFilter === 'archived' ? 'selected' : ''}>مؤرشف</option>
           </select>
+          <button type="button" class="btn btn-primary" data-ss-add-store>+ إضافة متجر جديد</button>
         </div>
         ${storesTableHtml()}`;
     } else if (ui.storeTab === 'store-audit') {
@@ -680,18 +747,11 @@
             <li><b>الاسم:</b> ${esc(storeName(s))}</li>
             <li><b>رقم المتجر:</b> <code>${esc(s.storeId)}</code></li>
             <li><b>الشعار:</b> ${s.logo ? `<img class="ss-logo" src="${esc(s.logo)}" alt="">` : '—'}</li>
-            <li><b>الرابط:</b> ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(url)}</a>` : '—'}</li>
+            <li><b>الرابط:</b> ${url ? linkCellHtml(url) : '—'}</li>
             <li><b>الحالة:</b> ${esc(statusLabel(s.status))}</li>
             <li><b>المنتجات:</b> ${reg()?.productCount?.(s.storeId) || 0}</li>
-            <li><b>أنشئ بواسطة:</b> ${esc(
-              (() => {
-                const by = s.createdBy || '—';
-                if (by === 'system' || by === 'System') return 'النظام';
-                if (by === 'admin' || by === 'Admin') return 'مسؤول';
-                return by;
-              })()
-            )}</li>
-            <li><b>Created At:</b> ${fmt(s.createdAt)}</li>
+            <li><b>أضيف بواسطة:</b> ${esc(createdByLabel(s))}</li>
+            <li><b>تاريخ الإضافة:</b> ${fmt(s.createdAt)}</li>
             <li><b>آخر تحديث:</b> ${fmt(s.updatedAt || s.createdAt)}</li>
           </ul>
           <div class="ss-modal-actions">
@@ -840,7 +900,7 @@
     const nav = SECTIONS.map(
       (s) =>
         `<button type="button" class="ss-nav-item ${ui.section === s.id ? 'is-on' : ''}" data-ss-section="${s.id}">
-          <i class="fas ${s.icon}"></i> ${esc(s.label)}
+          <i class="fas ${s.icon}"></i><span>${esc(s.label)}</span>
         </button>`
     ).join('');
     return `
@@ -854,7 +914,7 @@
         ${ui.toast ? `<div class="ss-toast">${esc(ui.toast)}</div>` : ''}
         ${ui.error ? `<div class="ss-error-banner">${esc(ui.error)}</div>` : ''}
         <div class="ss-layout">
-          <aside class="ss-nav" id="ss-nav">${nav}</aside>
+          <nav class="ss-nav" id="ss-nav" aria-label="أقسام إعدادات الموقع">${nav}</nav>
           <label class="ss-nav-mobile">
             <span>القسم</span>
             <select data-ss-section-select>
