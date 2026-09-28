@@ -126,7 +126,7 @@ async function main() {
   assert.ok(desktop.headers.includes('تاريخ الإضافة'));
   assert.ok(desktop.sampleHosts.every((h) => !h.startsWith('https://')), `hosts should be short: ${desktop.sampleHosts}`);
   assert.ok(desktop.sampleHosts.some((h) => /amazon\.com|alibaba\.com|noon\.com/.test(h)), 'expected known hosts');
-  assert.ok(desktop.actionCounts.every((n) => n <= 5), `actions cramped? ${desktop.actionCounts}`);
+  assert.ok(desktop.actionCounts.every((n) => n <= 4), `actions cramped? ${desktop.actionCounts}`);
 
   await shot(page, 'site-settings-stores-desktop');
 
@@ -151,7 +151,7 @@ async function main() {
   await page.waitForSelector('#ss-edit-name', { timeout: 5000 });
   await closeModal();
 
-  const href = await page.$eval('.ss-table .ss-actions a[aria-label="فتح الموقع"]', (el) => el.getAttribute('href'));
+  const href = await page.$eval('.ss-table a.ss-link', (el) => el.getAttribute('href'));
   assert.ok(/^https?:\/\//.test(href), `open href=${href}`);
 
   // Add store wizard opens

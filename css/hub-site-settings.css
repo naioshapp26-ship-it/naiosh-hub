@@ -236,15 +236,15 @@ table.data-table.ss-table th {
   white-space: nowrap;
 }
 
-.ss-table col.ss-c-store { width: 16%; }
+.ss-table col.ss-c-store { width: 18%; }
 .ss-table col.ss-c-logo { width: 6%; }
-.ss-table col.ss-c-link { width: 12%; }
+.ss-table col.ss-c-link { width: 13%; }
 .ss-table col.ss-c-status { width: 8%; }
 .ss-table col.ss-c-products { width: 7%; }
 .ss-table col.ss-c-added { width: 10%; }
 .ss-table col.ss-c-created { width: 10%; }
 .ss-table col.ss-c-updated { width: 10%; }
-.ss-table col.ss-c-actions { width: 21%; }
+.ss-table col.ss-c-actions { width: 18%; }
 
 .ss-table td:last-child,
 .ss-table th:last-child {
@@ -336,10 +336,28 @@ table.data-table.ss-table th {
   flex-shrink: 0;
 }
 
+.ss-more-menu a {
+  text-decoration: none;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  text-align: right;
+  padding: 9px 10px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 8px;
+  display: block;
+}
+
+.ss-more-menu a:hover {
+  background: #f3f4f6;
+}
+
 .ss-actions {
   display: flex;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   justify-content: flex-start;
   min-width: 0;

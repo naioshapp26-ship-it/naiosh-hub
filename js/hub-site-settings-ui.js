@@ -201,14 +201,14 @@
   function storeActionsHtml(s) {
     const id = esc(s.storeId);
     const st = s.status || 'active';
-    const url = storeUrl(s);
-    const open =
-      url && /^https?:\/\//i.test(url)
-        ? `<a class="btn btn-ghost btn-sm btn-icon" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="فتح الموقع" aria-label="فتح الموقع"><i class="fas fa-external-link-alt"></i></a>`
-        : '';
     const moreMenu = `<div class="ss-more-wrap">
         <button type="button" class="btn btn-ghost btn-sm btn-icon" data-ss-more="${id}" aria-label="المزيد">⋮</button>
         <div class="ss-more-menu" hidden data-ss-menu="${id}">
+          ${
+            storeUrl(s) && /^https?:\/\//i.test(storeUrl(s))
+              ? `<a href="${esc(storeUrl(s))}" target="_blank" rel="noopener noreferrer">فتح الموقع</a>`
+              : ''
+          }
           <button type="button" data-ss-store-products="${id}">إدارة المنتجات</button>
           <button type="button" data-ss-store-logo="${id}">تغيير الشعار</button>
           ${st !== 'archived' ? `<button type="button" data-ss-store-archive="${id}">أرشفة</button>` : ''}
@@ -218,7 +218,7 @@
     if (st === 'archived') {
       return `<button type="button" class="btn btn-dark btn-sm" data-ss-store-view="${id}">عرض</button>
         <button type="button" class="btn btn-primary btn-sm" data-ss-store-enable="${id}">تفعيل</button>
-        ${open}${moreMenu}`;
+        ${moreMenu}`;
     }
     const toggle =
       st === 'disabled'
@@ -227,7 +227,6 @@
     return `<button type="button" class="btn btn-dark btn-sm" data-ss-store-view="${id}">عرض</button>
       <button type="button" class="btn btn-ghost btn-sm" data-ss-store-edit="${id}">تعديل</button>
       ${toggle}
-      ${open}
       ${moreMenu}`;
   }
 
