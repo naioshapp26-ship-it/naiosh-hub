@@ -820,12 +820,90 @@
 .posha-clients-table {
   display: table !important;
   width: 100%;
-  min-width: 920px;
+  min-width: 1280px;
   border-collapse: separate;
   border-spacing: 0;
-  table-layout: fixed;
-  font-size: 14px;
+  table-layout: auto;
+  font-size: 13px;
   direction: rtl;
+}
+
+.posha-clients-table--wide,
+.posha-req-overview-table {
+  min-width: 1400px;
+}
+
+.posha-panel--full {
+  width: 100%;
+  max-width: none;
+}
+
+.posha-clients-table th,
+.posha-clients-table td {
+  display: table-cell !important;
+  vertical-align: middle;
+  text-align: right;
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef0f3;
+  color: #101828;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.45;
+  min-width: 88px;
+}
+
+.posha-col-client { min-width: 160px; width: 12%; }
+.posha-col-id { min-width: 110px; }
+.posha-col-naiosh { min-width: 110px; }
+.posha-col-ctype { min-width: 90px; }
+.posha-col-country { min-width: 90px; }
+.posha-col-city { min-width: 90px; }
+.posha-col-activity { min-width: 100px; }
+.posha-col-company { min-width: 120px; }
+.posha-col-status { min-width: 90px; }
+.posha-col-systems { min-width: 80px; }
+.posha-col-reqs { min-width: 80px; }
+.posha-col-wallet { min-width: 80px; }
+.posha-col-login { min-width: 110px; }
+.posha-col-lastact { min-width: 110px; }
+.posha-col-actions { min-width: 120px; }
+
+.posha-clients-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  align-items: center;
+}
+
+.posha-clients-filters input[type="search"] {
+  flex: 1 1 280px;
+  min-width: 220px;
+}
+
+.posha-clients-filters select {
+  flex: 0 1 auto;
+  min-width: 140px;
+}
+
+.posha-drawer-profile {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 16px;
+  margin: 12px 0 18px;
+}
+
+.posha-drawer-profile p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.posha-link-btn.posha-client-name {
+  font-weight: 800;
+  font-size: 14px;
+  color: #101828;
+  text-align: right;
 }
 
 .posha-clients-table thead {
@@ -1094,10 +1172,11 @@
 }
 
 @media (max-width: 1100px) {
-  .posha-clients-table .posha-col-alerts,
-  .posha-clients-table th:nth-child(8),
-  .posha-clients-table td.posha-col-alerts {
-    display: none !important;
+  .posha-clients-table .posha-col-naiosh,
+  .posha-clients-table .posha-col-lastact,
+  .posha-req-overview-table th:nth-child(13),
+  .posha-req-overview-table td:nth-child(13) {
+    /* keep identity columns; secondary can scroll */
   }
 }
 
