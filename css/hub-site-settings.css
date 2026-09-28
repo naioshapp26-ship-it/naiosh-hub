@@ -207,7 +207,7 @@ table.data-table.ss-table {
   width: 100%;
   max-width: none;
   border-collapse: collapse;
-  table-layout: auto;
+  table-layout: fixed;
   font-size: 14px;
 }
 
@@ -222,6 +222,33 @@ table.data-table.ss-table td {
   text-align: right;
   vertical-align: middle;
   white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ss-table th,
+table.data.ss-table th,
+table.data-table.ss-table th {
+  font-size: 12px;
+  font-weight: 800;
+  color: #475467;
+  background: #fafbfc;
+  white-space: nowrap;
+}
+
+.ss-table col.ss-c-store { width: 16%; }
+.ss-table col.ss-c-logo { width: 6%; }
+.ss-table col.ss-c-link { width: 12%; }
+.ss-table col.ss-c-status { width: 8%; }
+.ss-table col.ss-c-products { width: 7%; }
+.ss-table col.ss-c-added { width: 10%; }
+.ss-table col.ss-c-created { width: 10%; }
+.ss-table col.ss-c-updated { width: 10%; }
+.ss-table col.ss-c-actions { width: 21%; }
+
+.ss-table td:last-child,
+.ss-table th:last-child {
+  overflow: visible;
 }
 
 .ss-table th,
@@ -654,12 +681,21 @@ table.data-table.ss-table th {
     display: none;
   }
 
+  .ss-table col.ss-c-added,
+  .ss-table col.ss-c-created {
+    width: 0;
+  }
+
+  .ss-table col.ss-c-store { width: 22%; }
+  .ss-table col.ss-c-actions { width: 28%; }
+  .ss-table col.ss-c-link { width: 14%; }
+
   .ss-kpis {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 720px) {
   .ss-nav {
     display: none;
   }
@@ -698,13 +734,9 @@ table.data-table.ss-table th {
   }
 }
 
-@media (min-width: 901px) {
-  /* Desktop: never force horizontal scroll for this table */
+@media (min-width: 721px) {
+  /* Desktop/tablet: never force horizontal scroll for this table */
   .ss-table-wrap {
     overflow-x: hidden;
-  }
-
-  .ss-col-link {
-    max-width: 180px;
   }
 }

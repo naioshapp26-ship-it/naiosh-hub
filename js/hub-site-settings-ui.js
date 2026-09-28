@@ -278,6 +278,17 @@
     }
     return `${storesCardsHtml(rows)}
     <div class="ss-table-wrap table-wrap"><table class="data ss-table">
+      <colgroup>
+        <col class="ss-c-store" />
+        <col class="ss-c-logo" />
+        <col class="ss-c-link" />
+        <col class="ss-c-status" />
+        <col class="ss-c-products" />
+        <col class="ss-c-added ss-col-added" />
+        <col class="ss-c-created ss-col-created" />
+        <col class="ss-c-updated" />
+        <col class="ss-c-actions" />
+      </colgroup>
       <thead><tr>
         <th>المتجر</th>
         <th>الشعار</th>

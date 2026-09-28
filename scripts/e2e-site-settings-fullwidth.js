@@ -17,13 +17,16 @@ async function seedAdmin(page) {
   await page.goto(`${BASE}/dashboard.html`, { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => {
     const user = {
-      email: 'admin@naiosh.test',
-      name: 'Admin Test',
-      role: 'admin',
+      name: 'القائد الأعلى',
+      email: 'leader@naiosh.com',
+      role: 'supreme_leader',
+      naioshId: 'NAI-LEADER-001',
       employeeNo: 'EMP-0001',
     };
     localStorage.setItem('hubUser', JSON.stringify(user));
     sessionStorage.setItem('hubUser', JSON.stringify(user));
+    const token = `hub360.${btoa('leader@naiosh.com')}.${Date.now()}`;
+    localStorage.setItem('hubAuthToken', token);
   });
 }
 
@@ -62,7 +65,8 @@ async function measure(page) {
     const longUrls = [...table.querySelectorAll('td.ss-col-link a, td a.ss-link')].map((a) => (a.textContent || '').trim());
     const actionCounts = [...table.querySelectorAll('tbody tr')].slice(0, 3).map((tr) => {
       const acts = tr.querySelector('.ss-actions');
-      return acts ? acts.querySelectorAll('button, a').length : 0;
+      if (!acts) return 0;
+      return [...acts.children].filter((el) => el.matches('button, a, .ss-more-wrap')).length;
     });
     const headers = [...table.querySelectorAll('thead th')].map((th) => (th.textContent || '').trim());
     const sampleHosts = longUrls.slice(0, 5);
@@ -126,31 +130,35 @@ async function main() {
 
   await shot(page, 'site-settings-stores-desktop');
 
-  // View / Edit / Disable / Open site smoke
-  const firstView = await page.$('[data-ss-store-view]');
-  assert.ok(firstView, 'view button');
-  await firstView.click();
+  async function closeModal() {
+    await page.evaluate(() => {
+      const btn = document.querySelector('.ss-modal-actions [data-ss-close-modal]');
+      if (btn) btn.click();
+    });
+    await page.waitForFunction(() => !document.querySelector('.ss-modal'), { timeout: 8000 });
+  }
+
+  // View / Edit / Disable / Open site smoke — use visible table controls
+  await page.evaluate(() => {
+    document.querySelector('.ss-table [data-ss-store-view]')?.scrollIntoView({ block: 'center' });
+  });
+  await page.click('.ss-table [data-ss-store-view]');
   await page.waitForSelector('.ss-modal', { timeout: 5000 });
   await shot(page, 'site-settings-store-view');
-  await page.click('[data-ss-close-modal]');
-  await page.waitForFunction(() => !document.querySelector('.ss-modal'));
+  await closeModal();
 
-  const editBtn = await page.$('[data-ss-store-edit]');
-  assert.ok(editBtn, 'edit button');
-  await editBtn.click();
+  await page.click('.ss-table [data-ss-store-edit]');
   await page.waitForSelector('#ss-edit-name', { timeout: 5000 });
-  await page.click('[data-ss-close-modal]');
+  await closeModal();
 
-  const openLink = await page.$('.ss-actions a[aria-label="فتح الموقع"], .ss-actions a.btn-icon');
-  assert.ok(openLink, 'open site action');
-  const href = await page.evaluate((el) => el.getAttribute('href'), openLink);
+  const href = await page.$eval('.ss-table .ss-actions a[aria-label="فتح الموقع"]', (el) => el.getAttribute('href'));
   assert.ok(/^https?:\/\//.test(href), `open href=${href}`);
 
   // Add store wizard opens
   await page.click('[data-ss-add-store]');
   await page.waitForSelector('.ss-wizard-steps, .ss-modal', { timeout: 5000 });
   await shot(page, 'site-settings-add-store');
-  await page.click('[data-ss-close-modal]');
+  await closeModal();
 
   // Other sections fill width
   for (const sec of ['general', 'payment', 'shipping', 'audit']) {
@@ -174,17 +182,20 @@ async function main() {
   await page.click('.ss-nav-item[data-ss-section="stores"]');
   await page.waitForSelector('.ss-table, .ss-store-cards');
 
-  await page.setViewport({ width: 900, height: 900 });
+  await page.setViewport({ width: 1000, height: 900 });
   await new Promise((r) => setTimeout(r, 400));
   await shot(page, 'site-settings-stores-tablet');
   const tablet = await measure(page);
   console.log('tablet', { fillRatio: tablet.fillRatio, hasHScroll: tablet.hasHScroll, ok: tablet.ok });
+  assert.ok(tablet.ok && tablet.fillRatio >= 0.85, `tablet fill ${tablet.fillRatio}`);
+  assert.ok(!tablet.hasHScroll, 'tablet no h-scroll');
 
   await page.setViewport({ width: 390, height: 844 });
   await new Promise((r) => setTimeout(r, 400));
   const mobile = await page.evaluate(() => {
     const cards = document.querySelectorAll('.ss-store-card').length;
-    const tableHidden = getComputedStyle(document.querySelector('.ss-table-wrap')).display === 'none';
+    const wrap = document.querySelector('.ss-table-wrap');
+    const tableHidden = !wrap || getComputedStyle(wrap).display === 'none';
     const navHidden = getComputedStyle(document.querySelector('.ss-nav')).display === 'none';
     const mobileSelect = getComputedStyle(document.querySelector('.ss-nav-mobile')).display !== 'none';
     return { cards, tableHidden, navHidden, mobileSelect };
@@ -198,22 +209,19 @@ async function main() {
   // Disable/enable one store via custom confirm modal or window.confirm
   await page.setViewport({ width: 1440, height: 980 });
   await page.goto(`${BASE}/dashboard.html#site-settings`, { waitUntil: 'networkidle0' });
-  await page.waitForSelector('[data-ss-store-disable], [data-ss-store-enable]');
+  await page.waitForSelector('.ss-table [data-ss-store-disable], .ss-table [data-ss-store-enable]');
   page.on('dialog', async (d) => {
     try {
       await d.accept();
     } catch (_) {}
   });
-  const hasDisable = await page.$('[data-ss-store-disable]');
+  const hasDisable = await page.$('.ss-table [data-ss-store-disable]');
   if (hasDisable) {
-    await hasDisable.click();
-    await page.waitForSelector('.ss-modal [data-ss-confirm-ok], .ss-modal .btn-danger, .ss-modal .btn-primary', {
-      timeout: 5000,
-    }).catch(() => null);
-    const ok = await page.$('.ss-modal [data-ss-confirm-ok], .ss-modal .btn-danger, .ss-modal button.btn-primary');
-    if (ok) await ok.click();
+    await page.click('.ss-table [data-ss-store-disable]');
+    await page.waitForSelector('[data-ss-confirm-ok]', { timeout: 5000 });
+    await page.click('[data-ss-confirm-ok]');
   } else {
-    await page.click('[data-ss-store-enable]');
+    await page.click('.ss-table [data-ss-store-enable]');
   }
   await new Promise((r) => setTimeout(r, 700));
   await shot(page, 'site-settings-stores-after-toggle');
