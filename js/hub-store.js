@@ -4959,6 +4959,26 @@ const HubStore = (() => {
     recomputeWorkforceKpis();
     pushFeed('decision', `مكافأة ${e.name}: ${item.value}`);
     save();
+    if (item.status === 'Pending Approval' && window.HubHigherApprovals?.enqueueRewardApproval) {
+      try {
+        const ticket = window.HubHigherApprovals.enqueueRewardApproval(
+          {
+            rewardId: item.id,
+            subjectName: e.name,
+            subjectEmployeeNo: e.employeeNo || e.id || '',
+            employeeId: e.id,
+            rewardType: item.type,
+            value: item.value,
+            points: item.points,
+            reason: item.reason,
+            priority: /مالية|هدية|إجازة|money|gift|leave/i.test(String(item.type)) ? 'high' : 'normal',
+          },
+          typeof actor === 'string' ? { name: actor } : actor
+        );
+        item.higherApprovalId = ticket?.id || '';
+        save();
+      } catch (_) {}
+    }
     return item;
   };
 

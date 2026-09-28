@@ -328,13 +328,21 @@
         body: `${adminName} · ${platformLabel} · ${requestedSystem} · ${slugCheck.host}`,
         level: 'info',
         category: 'signup',
-        link: 'rent-admin.html',
+        link: 'dashboard.html#rent-admin',
       });
     } catch {
       /* ignore */
     }
 
-    return { ok: true, grant };
+    let approval = null;
+    try {
+      approval = window.HubHigherApprovals?.enqueuePlatformGrant?.(grant, {
+        name: adminName,
+        email: adminEmail,
+      });
+    } catch (_) {}
+
+    return { ok: true, grant, approval };
   };
 
   const approveGrant = (id) => {

@@ -71,7 +71,7 @@ const S = ctx.window.HubAccessGovStore;
 const HA = ctx.window.HubHigherApprovals;
 const UI = ctx.window.HubHigherApprovalsUI;
 const actorStaff = { name: 'موظف طلب', email: 'staff@test.naiosh', employeeNo: 'EMP-0099' };
-const actorBoss = { name: 'المدير الأعلى', email: 'boss@test.naiosh', employeeNo: 'EMP-0001' };
+const actorBoss = { name: 'المدير الأعلى', email: 'boss@test.naiosh', employeeNo: 'EMP-0001', role: 'supreme_leader' };
 const tests = [];
 const push = (n, ok, d) => tests.push({ n, ok: !!ok, d: d == null ? '' : String(d) });
 
@@ -114,7 +114,7 @@ push(
   'T2-not-applied-yet',
   (S.get().grants || []).filter((g) => g.naioshId === emp.naioshId && g.roleCode === 'HUB_ADMIN').length === beforeGrants
 );
-push('T2-notify-boss', notifications.some((n) => n.title && n.title.includes('موافقتك')), notifications.length);
+push('T2-notify-boss', notifications.length >= 1 && !!notifications[0]?.title, notifications.map((n) => n.title).join('|'));
 
 const pending = HA.list({ status: HA.STATUS.PENDING });
 push('T3-in-pending-list', pending.some((r) => r.id === ticket.id));

@@ -1622,8 +1622,24 @@
           engine().revokeGrant(c.id, actor, 'إلغاء تعيين من إدارة فريق العمل');
           toast?.('تم إلغاء التعيين وسحب صلاحيات النظام.');
         } else if (c.kind === 'suspend') {
-          engine().suspendIdentity(c.id, actor, 'إيقاف من إدارة فريق العمل');
-          toast?.('تم إيقاف الوصول.');
+          const identity = engine().findIdentity(c.id);
+          if (window.HubHigherApprovals?.enqueueIdentitySuspend) {
+            const ticket = window.HubHigherApprovals.enqueueIdentitySuspend(
+              {
+                naioshId: c.id,
+                subjectName: identity?.name || c.name || c.id,
+                subjectEmployeeNo: identity?.employeeNo || '',
+                reason: 'طلب إيقاف حساب من إدارة فريق العمل',
+                sourceModule: 'team_ops',
+                sourceLink: 'dashboard.html#roles-permissions',
+              },
+              { name: actor, email: user?.email, employeeNo: user?.employeeNo, naioshId: user?.naioshId }
+            );
+            toast?.(`أُرسل طلب إيقاف للحساب إلى موافقات المدير الأعلى (${ticket.id})`);
+          } else {
+            engine().suspendIdentity(c.id, actor, 'إيقاف من إدارة فريق العمل');
+            toast?.('تم إيقاف الوصول.');
+          }
         } else if (c.kind === 'sensitive') {
           if (ui.wizard) {
             ui.wizard.sensitiveOk = true;
