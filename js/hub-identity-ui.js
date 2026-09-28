@@ -1219,9 +1219,26 @@
       }
       if (m.next === 'suspend') {
         try {
-          eng()?.suspendIdentity?.(m.id, actor, 'إيقاف من هوية نايوش');
-          ui.modal = null;
-          toast?.('تم إيقاف الوصول');
+          const identity = eng()?.findIdentity?.(m.id);
+          if (window.HubHigherApprovals?.enqueueIdentitySuspend) {
+            const ticket = window.HubHigherApprovals.enqueueIdentitySuspend(
+              {
+                naioshId: m.id,
+                subjectName: identity?.name || m.id,
+                subjectEmployeeNo: identity?.employeeNo || '',
+                reason: 'طلب إيقاف حساب من هوية نايوش',
+                sourceModule: 'identity',
+                sourceLink: 'dashboard.html#identity',
+              },
+              { name: actor }
+            );
+            ui.modal = null;
+            toast?.(`أُرسل طلب الإيقاف إلى موافقات المدير الأعلى (${ticket.id})`);
+          } else {
+            eng()?.suspendIdentity?.(m.id, actor, 'إيقاف من هوية نايوش');
+            ui.modal = null;
+            toast?.('تم إيقاف الوصول');
+          }
         } catch (e) {
           ui.modal = { ...m, error: e.message || 'تعذر الإيقاف' };
         }
