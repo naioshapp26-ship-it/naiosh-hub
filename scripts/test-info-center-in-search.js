@@ -20,9 +20,10 @@ const index = read('index.html');
 const header = read('js/hub-header-actions.js');
 
 assert(redirectHtml.includes('hub-checklist.html'), 'info-center must redirect to hub-checklist');
-assert(header.includes('مركز معلومات نايوش هوب'), 'header button renamed');
+assert(header.includes('مركز معلومات نايوش هوب | نايوش هوب 360'), 'header button renamed');
 assert(header.includes("href: 'hub-checklist.html'"), 'header points to landing');
-assert(homeHtml.includes('مرحبًا بك في مركز معلومات نايوش هوب'), 'landing welcome title');
+assert(homeHtml.includes('مركز معلومات نايوش هوب | نايوش هوب 360'), 'landing brand title');
+assert(homeHtml.includes('مرحبًا بك في مركز معلومات نايوش هوب'), 'landing welcome copy');
 assert(homeHtml.includes('ماذا تريد أن تعرف؟'), 'landing start cards');
 assert(homeHtml.includes('hub-info-center-chrome.js'), 'landing loads chrome');
 

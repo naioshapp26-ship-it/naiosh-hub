@@ -9,7 +9,8 @@ const assert = require('assert');
 const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'hub-checklist.html'), 'utf8');
 
-assert(html.includes('مرحبًا بك في مركز معلومات نايوش هوب'), 'welcome title');
+assert(html.includes('مركز معلومات نايوش هوب | نايوش هوب 360'), 'brand page title');
+assert(html.includes('مرحبًا بك في مركز معلومات نايوش هوب'), 'welcome copy');
 assert(html.includes('ماذا تريد أن تعرف؟'), 'start section');
 assert(html.includes('policies.html'), 'policies card link');
 assert(html.includes('engine-specs.html'), 'specs card link');

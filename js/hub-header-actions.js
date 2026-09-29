@@ -12,7 +12,7 @@
     },
     {
       id: 'info',
-      label: 'مركز معلومات نايوش هوب',
+      label: 'مركز معلومات نايوش هوب | نايوش هوب 360',
       href: 'hub-checklist.html',
       className: 'hub-hbtn hub-hbtn--red',
       icon: 'fa-circle-info',
