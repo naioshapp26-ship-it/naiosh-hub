@@ -455,7 +455,7 @@
           <td>${esc(e.manager || '—')}</td>
           <td>${esc(e.workType || '—')}</td>
           <td>${esc(e.location || '—')}</td>
-          <td>${esc(e.attendance || '—')}</td>
+          <td>${esc(window.HubI18n?.label?.(e.attendance) || e.attendance || '—')}</td>
           <td><span class="wf-perf">${e.productivity ?? 0}%</span> ${bar(e.productivity)}</td>
           <td>${e.points ?? 0}</td>
           <td>${statusBadge(e.status)}</td>
@@ -498,7 +498,7 @@
             <tr>
               <th class="wf-check"><input type="checkbox" data-wf-change="sel-all" title="تحديد الكل" /></th>
               <th class="wf-sticky-name">${sortBtn('name', 'الاسم')}</th>
-              <th>${sortBtn('id', 'Employee ID')}</th>
+              <th>${sortBtn('id', window.HubI18n?.label?.('Employee ID') || 'رقم الموظف')}</th>
               <th>${sortBtn('title', 'المسمى')}</th>
               <th>${sortBtn('department', 'الإدارة')}</th>
               <th>${sortBtn('section', 'القسم')}</th>
@@ -591,7 +591,7 @@
       </div>
       ${can(user, 'reward') ? `<div class="toolbar"><button type="button" class="btn btn-primary" data-action="wf-reward-open"><i class="fas fa-plus"></i> منح مكافأة</button></div>` : ''}
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Reward ID</th><th>الموظف</th><th>النوع</th><th>القيمة</th><th>السبب</th><th>المصدر</th><th>رشّح</th><th>منح</th><th>اعتمد</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead>
+        <thead><tr><th>${esc(window.HubI18n?.label?.('Reward ID') || 'رقم المكافأة')}</th><th>الموظف</th><th>النوع</th><th>القيمة</th><th>السبب</th><th>المصدر</th><th>رشّح</th><th>منح</th><th>اعتمد</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead>
         <tbody>
           ${list
             .map(
@@ -606,7 +606,7 @@
               <td>${esc(r.grantedBy || '—')}</td>
               <td>${esc(r.approvedBy || '—')}</td>
               <td>${fmtTime(r.at)}</td>
-              <td>${esc(r.status)}</td>
+              <td>${esc(window.HubI18n?.status?.(r.status) || window.HubI18n?.label?.(r.status) || r.status)}</td>
               <td>${
                 r.status === 'Pending Approval' && can(user, 'reward')
                   ? `<button class="btn btn-sm btn-primary" data-action="wf-reward-decide" data-id="${esc(r.id)}" data-decision="approve">اعتماد</button>
@@ -774,7 +774,7 @@
         </div>`;
         break;
       case 'attendance':
-        body = `<p>الحضور الحالي: <strong>${esc(e.attendance)}</strong></p><p>ساعات اليوم: <strong>${e.hours ?? '—'}</strong></p><p class="muted">آخر نشاط: ${fmtTime(e.lastActivity)}</p>`;
+        body = `<p>الحضور الحالي: <strong>${esc(window.HubI18n?.label?.(e.attendance) || e.attendance)}</strong></p><p>ساعات اليوم: <strong>${e.hours ?? '—'}</strong></p><p class="muted">آخر نشاط: ${fmtTime(e.lastActivity)}</p>`;
         break;
       case 'performance':
         body = `<p>درجة الأداء: <strong>${e.productivity}%</strong> ${bar(e.productivity)}</p>
@@ -811,7 +811,7 @@
             <tbody>${rewards
               .map(
                 (r) =>
-                  `<tr><td>${fmtTime(r.at)}</td><td>${esc(r.type)}</td><td>${esc(r.value)}</td><td>${esc(r.reason)}</td><td>${esc(sourceLabel(r.source))}</td><td>${esc(r.grantedBy || '—')}</td><td>${esc(r.approvedBy || '—')}</td><td>${esc(r.status)}</td></tr>`
+                  `<tr><td>${fmtTime(r.at)}</td><td>${esc(r.type)}</td><td>${esc(r.value)}</td><td>${esc(r.reason)}</td><td>${esc(sourceLabel(r.source))}</td><td>${esc(r.grantedBy || '—')}</td><td>${esc(r.approvedBy || '—')}</td><td>${esc(window.HubI18n?.status?.(r.status) || window.HubI18n?.label?.(r.status) || r.status)}</td></tr>`
               )
               .join('')}</tbody></table></div>`
           : '<div class="empty">لا مكافآت لهذا الموظف</div>';
@@ -984,8 +984,8 @@
     } else {
       const needs = wf.settings?.requireRewardApproval || (d.type && String(d.type).includes('مالية'));
       body = `<p>مسار الاعتماد:</p>
-        <div class="wf-flow">Manager → HR → Approved</div>
-        <p class="muted">${needs ? 'هذه المكافأة ستُرسل للاعتماد (Pending Approval).' : 'يمكنك منحها مباشرة حسب صلاحيتك.'}</p>
+        <div class="wf-flow">المدير ← الموارد البشرية ← الاعتماد</div>
+        <p class="muted">${needs ? 'هذه المكافأة ستُرسل للاعتماد (بانتظار الاعتماد).' : 'يمكنك منحها مباشرة حسب صلاحيتك.'}</p>
         <label class="field"><span>تعليق</span><textarea id="wf-r-comment">${esc(d.comment || '')}</textarea></label>`;
     }
     return modalShell(

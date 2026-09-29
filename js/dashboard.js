@@ -825,8 +825,8 @@
                 const solo = launcher ? launcher.getStandaloneUrl(app) : app.url || 'apps.html';
                 return `<tr>
                   <td><strong>${esc(a.nameAr)}</strong><br><small>${esc(a.code)}</small></td>
-                  <td>${esc(a.category)}</td>
-                  <td>${esc(a.kind)}</td>
+                  <td>${esc(window.HubI18n?.label?.(a.category) || a.category)}</td>
+                  <td>${esc(window.HubI18n?.label?.(a.kind) || a.kind)}</td>
                   <td>${a.health || '—'}%</td>
                   <td>${a.lastSyncAt ? fmtTime(a.lastSyncAt) : '—'}</td>
                   <td>${badgeStatus(a.status)}</td>

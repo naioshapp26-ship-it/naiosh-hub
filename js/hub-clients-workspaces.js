@@ -132,7 +132,7 @@
             <div class="field"><label>بحث</label><input data-cl-change="q" value="${K.esc(clUi.filters.q)}" placeholder="اسم / بريد / رقم" /></div>
             <div class="field"><label>الحالة</label>
               <select data-cl-change="status"><option value="">الكل</option>
-                ${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${clUi.filters.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                ${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${clUi.filters.status === s ? 'selected' : ''}>${window.HubI18n?.status?.(s) || s}</option>`).join('')}
               </select>
             </div>
             <button type="button" class="btn btn-primary" data-action="cl-create"><i class="fas fa-plus"></i> عميل جديد</button>
@@ -145,7 +145,7 @@
                     .map(
                       (c) => `<tr>
                         <td><strong>${K.esc(c.name)}</strong><br/><small>${K.esc(c.email)} · ${K.esc(c.clientId || '')}</small></td>
-                        <td>${K.badge(c.status, c.status === 'active' ? 'badge-black' : c.status === 'pending' ? 'badge-gray' : 'badge-red')}</td>
+                        <td>${K.badge(window.HubI18n?.status?.(c.status) || c.status, c.status === 'active' ? 'badge-black' : c.status === 'pending' ? 'badge-gray' : 'badge-red')}</td>
                         <td>${c.systemsCount || (c.systems || []).length}</td>
                         <td>${c.openOrders ?? (c.orders || []).length}</td>
                         <td>${Number(c.walletTotal ?? c.wallet?.total ?? 0).toLocaleString('en-US')}</td>

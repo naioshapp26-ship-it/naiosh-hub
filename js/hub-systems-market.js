@@ -457,7 +457,7 @@
       .map(
         (s) => `<tr>
         <td class="sm-sticky-name">
-          <button type="button" class="sm-name-link" data-action="sm-view" data-id="${esc(s.id)}" title="عرض النظام">${esc(s.name)}</button>
+          <button type="button" class="sm-name-link" data-action="sm-view" data-id="${esc(s.id)}" title="عرض النظام">${esc(window.HubI18n?.label?.(s.name) || s.name)}</button>
           <small class="muted">${esc(sourceLabel(s.source))}</small>
         </td>
         <td><code>${esc(s.code)}</code></td>
@@ -579,12 +579,12 @@
 
   const renderIntegrations = (sys, user) =>
     `<div class="table-wrap"><table class="data">
-      <thead><tr><th>Integration</th><th>Type</th><th>Direction</th><th>Status</th><th>Last Sync</th><th>الإجراءات</th></tr></thead>
+      <thead><tr><th>التكامل</th><th>النوع</th><th>الاتجاه</th><th>الحالة</th><th>آخر مزامنة</th><th>الإجراءات</th></tr></thead>
       <tbody>${(sys.integrations || [])
         .map(
           (i) => `<tr>
-          <td>${esc(i.name)}</td><td>${esc(i.type)}</td><td>${esc(i.direction)}</td>
-          <td>${esc(i.status)}</td><td>${fmtTime(i.lastSync)}</td>
+          <td>${esc(window.HubI18n?.label?.(i.name) || i.name)}</td><td>${esc(window.HubI18n?.label?.(i.type) || i.type)}</td><td>${esc(window.HubI18n?.label?.(i.direction) || i.direction)}</td>
+          <td>${esc(window.HubI18n?.status?.(i.status) || i.status)}</td><td>${fmtTime(i.lastSync)}</td>
           <td>
             <button type="button" class="btn btn-sm btn-ghost" data-action="sm-int-test" data-sid="${esc(sys.id)}" data-iid="${esc(i.id)}" title="اختبار الاتصال">اختبار الاتصال</button>
             <button type="button" class="btn btn-sm btn-dark" data-action="sm-int-sync" data-sid="${esc(sys.id)}" data-iid="${esc(i.id)}" title="مزامنة الآن">مزامنة الآن</button>
