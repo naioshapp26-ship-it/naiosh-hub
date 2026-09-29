@@ -12,7 +12,7 @@
     {
       id: 'info-home',
       href: 'hub-checklist.html',
-      title: 'مركز معلومات نايوش هوب',
+      title: 'مركز معلومات نايوش هوب | نايوش هوب 360',
       shortTitle: 'مركز المعلومات',
       subtitle: 'ابدأ هنا: التعريف · السياسات · المواصفات · الأدلة',
       icon: 'fa-circle-info',

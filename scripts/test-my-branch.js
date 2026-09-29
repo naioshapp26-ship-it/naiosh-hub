@@ -100,7 +100,7 @@ assert(fs.readFileSync('/workspace/office.html', 'utf8').includes('hub-office.js
 assert(fs.readFileSync('/workspace/user-path.html', 'utf8').includes('hub-user-path.js?v=4'), 'user-path cache bump missing');
 
 const checklistHtml = fs.readFileSync('/workspace/hub-checklist.html', 'utf8');
-assert(checklistHtml.includes('hub-checklist.js?v=3'), 'checklist cache bump missing');
+assert(checklistHtml.includes('hub-checklist.js?v=5'), 'checklist cache bump missing');
 const checklist = fs.readFileSync('/workspace/js/hub-checklist.js', 'utf8');
 assert(checklist.includes("href: 'my-branch.html'"), 'checklist c25 missing my-branch');
 assert(checklist.includes("href: 'my-incubator.html'"), 'checklist c27 missing my-incubator');

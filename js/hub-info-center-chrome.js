@@ -5,7 +5,8 @@
   'use strict';
 
   var HOME = 'hub-checklist.html';
-  var LABEL = 'مركز معلومات نايوش هوب';
+  var LABEL = 'مركز معلومات نايوش هوب | نايوش هوب 360';
+  var PAGE_TITLE = 'مركز معلومات نايوش هوب | نايوش هوب 360';
 
   var NAV = [
     { id: 'overview', href: HOME + '#overview', label: 'نظرة عامة', match: ['hub-checklist.html'] },
@@ -83,6 +84,9 @@
   }
 
   function autoMount() {
+    if (document.body && document.body.getAttribute('data-info-center-home') === '1') {
+      if (document.title !== PAGE_TITLE) document.title = PAGE_TITLE;
+    }
     var navEl = document.querySelector('[data-info-subnav]');
     if (navEl) mountNav(navEl);
     var crumbEl = document.querySelector('[data-info-crumbs]');
@@ -107,6 +111,7 @@
   window.HubInfoCenter = {
     HOME: HOME,
     LABEL: LABEL,
+    PAGE_TITLE: PAGE_TITLE,
     NAV: NAV,
     mountNav: mountNav,
     mountCrumbs: mountCrumbs,
