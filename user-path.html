@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>مسار المستخدم | نايوش هوب 360</title>
+  <meta name="description" content="مسار المستخدم | نايوش هوب 360 — خطوات عملية من الهبوط حتى التشغيل." />
   <link rel="icon" href="assets/logo-hub.jpeg" type="image/jpeg" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -13,8 +14,9 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=19" />
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
+  <link rel="stylesheet" href="css/hub-user-path.css?v=1" />
 </head>
-<body class="homepage">
+<body class="homepage" data-hub-page="user-path">
   <header class="top-nav">
     <div class="container inner">
       <div class="nav-main">
@@ -34,9 +36,16 @@
   </header>
 
   <main class="container hub-feature-page" data-user-path>
+    <section class="up-page-head">
+      <div>
+        <h1>مسار المستخدم | نايوش هوب 360</h1>
+        <p>اتبع مسارًا عمليًا من الهبوط حتى التشغيل — انضم، اشحن، ادخل مساحتك، تعلّم، واطلب الدعم بدون تشتيت.</p>
+      </div>
+    </section>
+
     <section class="hub-feature-hero">
       <p class="hub-feature-kicker"><i class="fas fa-route"></i> ملف العميل · تسهيل المستخدم</p>
-      <h1>مسار واضح من الهبوط حتى التشغيل</h1>
+      <h2>مسار واضح من الهبوط حتى التشغيل</h2>
       <p>
         هذا المسار يترجم متطلبات «هوب = …» إلى خطوات عملية: انضم · اشحن · ادخل مساحتك · تعلّم · اطلب الدعم —
         بدون تشتيت.
@@ -48,12 +57,12 @@
       </div>
     </section>
 
-    <section class="hub-feature-grid" data-user-path-kpis aria-label="ملخص سريع"></section>
+    <section class="up-kpi-grid" data-user-path-kpis aria-label="ملخص سريع"></section>
 
-    <section class="hub-feature-section">
-      <h2 class="hub-feature-section-title">خطوات التسهيل</h2>
+    <section class="hub-feature-section up-steps-section">
+      <h2 class="hub-feature-section-title">خطوات التسجيل</h2>
       <p class="hub-feature-section-lead">اتبع الترتيب أو اقفز للخطوة التي تحتاجها الآن.</p>
-      <div class="hub-feature-grid" data-user-path-steps></div>
+      <div class="up-steps-grid" data-user-path-steps></div>
     </section>
   </main>
 
@@ -64,9 +73,10 @@
   <script src="js/hub-support-tickets.js"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-user-path.js?v=3"></script>
+  <script src="js/hub-user-path.js?v=4"></script>
   <script src="js/hub-control-nav.js?v=3"></script>
   <script src="js/hub-global-back.js" defer></script>
+  <script src="js/hub-page-guide.js?v=8" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>
 </html>
