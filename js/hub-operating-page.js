@@ -129,7 +129,7 @@
         return `<button type="button" class="op-system-btn" data-launch-code="${esc(code)}" data-launch-mode="hub" aria-label="فتح نظام ${esc(meta.nameAr)}">
           <i class="fas ${esc(meta.icon)}" style="background:${esc(meta.color)}" aria-hidden="true"></i>
           <strong>${esc(meta.nameAr)}</strong>
-          <small>${esc(code)} · ${esc(meta.domain)}</small>
+          <small>افتح عبر هوب</small>
         </button>
         <a class="sr-only" href="${esc(href)}">${esc(meta.nameAr)}</a>`;
       })
@@ -143,7 +143,7 @@
       .map(([code, list]) => {
         const name = window.HubLauncher?.SYSTEM_META?.[code]?.nameAr || code;
         return `<article class="op-service-group" id="op-service-${esc(code.toLowerCase())}">
-          <h3><i class="fas ${esc(window.HubLauncher?.SYSTEM_META?.[code]?.icon || 'fa-cube')}"></i> ${esc(name)} <small style="color:#9ca3af;font-weight:700">(${esc(code)})</small></h3>
+          <h3><i class="fas ${esc(window.HubLauncher?.SYSTEM_META?.[code]?.icon || 'fa-cube')}"></i> ${esc(name)}</h3>
           <div class="op-service-chips">
             ${list.map((s) => `<span><i class="fas ${esc(s.icon)}"></i> ${esc(s.nameAr)}</span>`).join('')}
           </div>
