@@ -1,5 +1,16 @@
 /* NAIOSH GLOBAL OPERATING SYSTEM */
 .gos-hero .hub-feature-kicker { color: #ffe8ec !important; font-weight: 800; }
+
+/* ضمان عرض كامل حتى لو تغيّرت أولوية الحاويات */
+main.container.hub-feature-page[data-global-os],
+main[data-global-os] {
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+  padding-inline: clamp(14px, 2vw, 28px) !important;
+  box-sizing: border-box;
+}
+
 .gos-promise {
   display: flex;
   gap: 12px;
@@ -81,8 +92,8 @@
 
 .gos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 12px;
 }
 .gos-card {
   border: 1px solid #eadfe2;
@@ -108,8 +119,8 @@
 
 .gos-docs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 10px;
   margin: 12px 0;
 }
 .gos-doc {
@@ -186,8 +197,8 @@
 
 .gos-sys-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
 }
 .gos-sys {
   border: 1px solid #eadfe2;

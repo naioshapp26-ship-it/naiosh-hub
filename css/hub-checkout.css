@@ -17,9 +17,17 @@
 }
 
 .hub-checkout {
-  max-width: 720px;
+  max-width: min(1100px, 100%);
   margin: 0 auto 4rem;
-  padding: 1.25rem 1rem 3rem;
+  padding: 1.25rem clamp(14px, 2vw, 28px) 3rem;
+  box-sizing: border-box;
+}
+
+/* قائمة طلباتي — عرض كامل للجدول/البطاقات */
+main[data-hub-my-orders].hub-checkout {
+  max-width: none;
+  margin-inline: 0;
+  width: 100%;
 }
 
 .hub-checkout-head h1 {

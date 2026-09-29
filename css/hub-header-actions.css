@@ -168,9 +168,9 @@ body.homepage .hero-sidebar-item.hub-sidebar-chat:focus-visible {
 
 /* عرض كامل لصفحات المحتوى — لا تبقى مضغوطة داخل .container 1200px */
 main.container.hub-feature-page {
-  width: 100%;
-  max-width: none;
-  margin-inline: 0;
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
   padding: 1.25rem clamp(14px, 2vw, 28px) 3.5rem;
   box-sizing: border-box;
 }
