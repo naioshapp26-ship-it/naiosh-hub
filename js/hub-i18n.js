@@ -285,7 +285,7 @@
     'Governance Center': 'مركز الحوكمة',
     KPI: 'مؤشرات الأداء',
     Compliance: 'الامتثال',
-    Risk: 'المخاطر',
+    Risk: 'مخاطر',
     'Executive Reports': 'تقارير القيادة',
     'Incubator Management': 'إدارة الحاضنات',
     'Platform & Digital Offices': 'المنصات والمكاتب الرقمية',
