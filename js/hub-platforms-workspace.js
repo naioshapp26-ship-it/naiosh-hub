@@ -770,17 +770,22 @@
     return '<details><summary>' + esc(q) + '</summary><p>' + esc(a) + '</p></details>';
   }
 
+  var PAGE_TITLE = 'المنصات | نايوش هوب 360';
+
   function render() {
     var all = catalog();
     var mine = minePlatforms();
     var list = filteredCatalog();
     var catCount = FRIENDLY_TABS.length - 1;
+    if (document.title !== PAGE_TITLE) document.title = PAGE_TITLE;
 
     root.innerHTML =
       '<section class="plt-ws-head">' +
       '<div>' +
-      '<h1>منصات نايوش 360</h1>' +
-      '<p>اكتشف منصات نايوش 360، تعرّف على وظيفة كل منصة، وادخل إلى الأدوات والخدمات المرتبطة بحسابك من مكان واحد.</p>' +
+      '<h1>' +
+      esc(PAGE_TITLE) +
+      '</h1>' +
+      '<p>اكتشف منصات نايوش هوب 360، تعرّف على وظيفة كل منصة، وادخل إلى الأدوات والخدمات المرتبطة بحسابك من مكان واحد.</p>' +
       '</div>' +
       '<div class="plt-ws-head-actions">' +
       '<button type="button" class="plt-ws-btn primary" data-plt-scroll="platforms-catalog">استكشف المنصات</button>' +
@@ -822,7 +827,7 @@
       esc(ui.q) +
       '" placeholder="ابحث عن منصة أو خدمة..." aria-label="بحث المنصات" />' +
       '</div>' +
-      '<p class="plt-ws-hint">مثال: ERP، CRM، إدارة مشاريع، تجارة إلكترونية...</p>' +
+      '<p class="plt-ws-hint">مثال: نظام موارد، علاقات عملاء، إدارة مشاريع، تجارة إلكترونية...</p>' +
       tabsHtml(FRIENDLY_TABS, ui.friendlyTab) +
       '</section>' +
       '<section class="plt-ws-section" id="platforms-mine">' +

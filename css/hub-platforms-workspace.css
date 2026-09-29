@@ -1,10 +1,17 @@
-/* Platforms Center — customer workspace */
+/* Platforms Center — عرض كامل + شبكة حتى 6 كروت */
+
+body[data-platforms-workspace="1"] {
+  overflow-x: hidden;
+}
 
 .platforms-workspace {
-  width: min(1500px, calc(100% - 24px));
-  margin: 18px auto 80px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 1.25rem clamp(14px, 2vw, 28px) 4rem;
   display: grid;
-  gap: 24px;
+  gap: 22px;
+  box-sizing: border-box;
 }
 
 .plt-ws-head {
@@ -14,19 +21,22 @@
   gap: 16px;
   align-items: flex-end;
   padding: 8px 0 4px;
+  width: 100%;
 }
 
 .plt-ws-head h1 {
   margin: 0;
-  font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+  font-size: clamp(1.55rem, 3vw, 2.35rem);
   font-weight: 900;
+  line-height: 1.3;
+  max-width: none;
 }
 
 .plt-ws-head p {
   margin: 8px 0 0;
   color: #667085;
   font-weight: 650;
-  max-width: 720px;
+  max-width: 64rem;
   line-height: 1.65;
 }
 
@@ -63,15 +73,16 @@
 }
 
 .plt-ws-btn.sm {
-  min-height: 40px;
-  padding: 8px 12px;
-  font-size: 13px;
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 12px;
 }
 
 .plt-ws-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+  width: 100%;
 }
 
 .plt-ws-step {
@@ -82,6 +93,7 @@
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .plt-ws-step-num {
@@ -116,6 +128,7 @@
   align-items: center;
   font-weight: 800;
   color: #344054;
+  width: 100%;
 }
 
 .plt-ws-stats button {
@@ -141,6 +154,7 @@
   backdrop-filter: blur(8px);
   padding: 8px 0;
   border-bottom: 1px solid #eef0f3;
+  width: 100%;
 }
 
 .plt-ws-nav button {
@@ -165,6 +179,8 @@
   border: 1px solid #e8eaee;
   border-radius: 18px;
   padding: 22px 24px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .plt-ws-section h2 {
@@ -216,6 +232,7 @@
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 14px;
+  width: 100%;
 }
 
 .plt-ws-toolbar input[type='search'] {
@@ -227,6 +244,7 @@
   font: inherit;
   font-size: 1rem;
   font-weight: 650;
+  box-sizing: border-box;
 }
 
 .plt-ws-hint {
@@ -238,13 +256,11 @@
 
 .plt-ws-tabs {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 4px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   padding-bottom: 6px;
-  scrollbar-width: thin;
+  width: 100%;
 }
 
 .plt-ws-tabs button {
@@ -267,48 +283,54 @@
   color: #b80000;
 }
 
+/* حتى 6 كروت في الصف على الشاشات الواسعة */
 .plt-ws-cards {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
 }
 
 .plt-card {
   border: 1px solid #e8eaee;
-  border-radius: 18px;
-  padding: 18px;
+  border-radius: 16px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-height: 100%;
+  min-width: 0;
   background: #fff;
   box-shadow: 0 1px 0 rgba(16, 24, 40, 0.02);
+  box-sizing: border-box;
 }
 
 .plt-card-head {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .plt-card-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: #fff7f7;
   border: 1px solid #f3d4d4;
   display: grid;
   place-items: center;
   color: #d70000;
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   flex-shrink: 0;
 }
 
 .plt-card-head h3 {
   margin: 0;
-  font-size: 1.12rem;
+  font-size: 0.95rem;
   font-weight: 900;
   line-height: 1.35;
+  word-break: break-word;
 }
 
 .plt-card-code {
@@ -319,12 +341,12 @@
 
 .plt-card-desc {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   color: #667085;
   font-weight: 650;
   line-height: 1.55;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   flex: 1;
@@ -341,6 +363,7 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   color: #475467;
+  max-width: 100%;
 }
 
 .plt-chip.is-open {
@@ -363,8 +386,15 @@
 .plt-card-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   margin-top: auto;
+  width: 100%;
+}
+
+.plt-card-actions .plt-ws-btn {
+  flex: 1 1 calc(50% - 6px);
+  min-width: 0;
+  justify-content: center;
 }
 
 .plt-empty {
@@ -421,6 +451,7 @@
   border-radius: 18px;
   padding: 22px 24px;
   border: 1px solid #e8eaee;
+  box-sizing: border-box;
 }
 
 .plt-modal.wide {
@@ -447,6 +478,7 @@
   border: 1px solid #e5e7eb;
   padding: 10px 12px;
   font: inherit;
+  box-sizing: border-box;
 }
 
 .plt-modal textarea {
@@ -462,16 +494,31 @@
   justify-content: flex-end;
 }
 
+/* —— Responsive —— */
+@media (max-width: 1400px) {
+  .plt-ws-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1100px) {
   .plt-ws-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .plt-ws-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .plt-ws-steps {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px) {
   .platforms-workspace {
-    width: calc(100% - 16px);
-    margin-top: 12px;
+    padding: 12px 12px 3rem;
     gap: 16px;
   }
   .plt-ws-head-actions {
@@ -480,9 +527,6 @@
   .plt-ws-head-actions .plt-ws-btn {
     flex: 1 1 auto;
     justify-content: center;
-  }
-  .plt-ws-steps {
-    grid-template-columns: 1fr;
   }
   .plt-ws-cards {
     grid-template-columns: 1fr;
@@ -494,5 +538,11 @@
     flex: 1 1 auto;
     justify-content: center;
     min-height: 46px;
+  }
+}
+
+@media (min-width: 420px) and (max-width: 640px) {
+  .plt-ws-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
