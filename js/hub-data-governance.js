@@ -397,7 +397,7 @@
             ${recent
               .map(
                 (a) => `<tr data-action="dg-drawer" data-id="${esc(a.id)}" style="cursor:pointer">
-                <td>${esc(a.id)}</td><td>${esc(a.name)}</td><td>${esc(a.type)}</td>
+                <td>${esc(a.id)}</td><td>${esc(a.name)}</td><td>${esc(disp(a.type))}</td>
                 <td>${a.classification ? badge(a.classification, 'classification') : badge('غير مصنّف')}</td>
                 <td>${a.quality ?? '—'}% ${bar(a.quality)}</td><td>${badge(statusLabel(a.status))}</td></tr>`
               )
@@ -414,7 +414,7 @@
     const sources = activeSources(dg);
     return `<div class="toolbar" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
       <label class="field">بحث<input type="search" data-dg-change="assetQ" value="${esc(ui.filters.assetQ)}" placeholder="اسم / معرّف / نظام…" /></label>
-      <label class="field">النوع<select data-dg-change="assetType"><option value="">الكل</option>${ASSET_TYPES.map((t) => `<option value="${esc(t)}" ${ui.filters.assetType === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+      <label class="field">النوع<select data-dg-change="assetType"><option value="">الكل</option>${ASSET_TYPES.map((t) => `<option value="${esc(t)}" ${ui.filters.assetType === t ? 'selected' : ''}>${esc(disp(t))}</option>`).join('')}</select></label>
       <label class="field">الحالة<select data-dg-change="assetStatus"><option value="">الكل</option>${ASSET_STATUSES.map((s) => `<option value="${esc(s.v)}" ${ui.filters.assetStatus === s.v ? 'selected' : ''}>${esc(s.l)}</option>`).join('')}</select></label>
       <label class="field">التصنيف<select data-dg-change="assetClassification"><option value="">الكل</option>${CLASSIFICATIONS.map((c) => `<option value="${esc(c)}" ${ui.filters.assetClassification === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
       <label class="field">المصدر<select data-dg-change="assetSource"><option value="">الكل</option>${sources.map((s) => `<option value="${esc(s.id)}" ${ui.filters.assetSource === s.id ? 'selected' : ''}>${esc(disp(s.name))}</option>`).join('')}</select></label>
@@ -441,7 +441,7 @@
                     if (can(user, 'edit_asset')) acts.push(`<button type="button" class="btn btn-sm btn-dark" data-action="dg-toggle-catalog" data-id="${esc(a.id)}">تبديل</button>`);
                     if (can(user, 'archive_asset')) acts.push(`<button type="button" class="btn btn-sm btn-ghost" data-action="dg-confirm" data-kind="archive_asset" data-id="${esc(a.id)}">أرشفة</button>`);
                     return `<tr>
-                    <td>${esc(a.id)}</td><td><strong>${esc(a.name)}</strong></td><td>${esc(a.type)}</td>
+                    <td>${esc(a.id)}</td><td><strong>${esc(a.name)}</strong></td><td>${esc(disp(a.type))}</td>
                     <td>${esc(disp(a.sourceName) || '—')}</td><td>${esc(window.HubI18n?.system?.(a.system) || disp(a.system) || '—')}</td>
                     <td>${esc(a.owner || '—')}</td><td>${esc(a.steward || '—')}</td>
                     <td>${a.classification ? badge(a.classification, 'classification') : '—'}</td>
@@ -591,7 +591,7 @@
       </table></div>
       <h4 style="margin-top:16px">مشكلات الجودة</h4>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Dataset</th><th>القاعدة</th><th>الخطورة</th><th>سجلات فاشلة</th><th>المالك</th><th>الحالة</th><th></th></tr></thead>
+        <thead><tr><th>${esc(L('Dataset', 'مجموعة البيانات'))}</th><th>القاعدة</th><th>الخطورة</th><th>سجلات فاشلة</th><th>المالك</th><th>الحالة</th><th></th></tr></thead>
         <tbody>
           ${issues
             .map((i) => {
@@ -695,7 +695,7 @@
                 acts.push(`<button type="button" class="btn btn-sm btn-dark" data-action="dg-approval" data-id="${esc(a.id)}" data-decision="changes">طلب تعديل</button>`);
                 acts.push(`<button type="button" class="btn btn-sm btn-ghost" data-action="dg-modal" data-modal="approval_reject" data-id="${esc(a.id)}">رفض</button>`);
               }
-              return `<tr><td>${esc(a.type)}</td><td>${esc(a.entityLabel)}</td><td>${esc(a.requestedBy)}</td><td>${esc(a.assignedTo || '—')}</td>
+              return `<tr><td>${esc(disp(a.type))}</td><td>${esc(a.entityLabel)}</td><td>${esc(a.requestedBy)}</td><td>${esc(a.assignedTo || '—')}</td>
               <td>${esc(fmtTime(a.date))}</td><td>${badge(a.status)}</td><td>${acts.join(' ') || '—'}</td></tr>`;
             })
             .join('') || '<tr><td colspan="7" class="empty">لا طلبات اعتماد.</td></tr>'}
@@ -878,7 +878,7 @@
         <dt>Asset ID</dt><dd>${esc(asset.id)}</dd>
         <dt>الاسم</dt><dd>${esc(asset.name)}</dd>
         <dt>اسم الأعمال</dt><dd>${esc(asset.businessName || '—')}</dd>
-        <dt>النوع</dt><dd>${esc(asset.type)}</dd>
+        <dt>النوع</dt><dd>${esc(disp(asset.type))}</dd>
         <dt>الحالة</dt><dd>${badge(statusLabel(asset.status))}</dd>
         <dt>الجودة</dt><dd>${asset.quality ?? '—'}% ${bar(asset.quality)}</dd>
         <dt>Metadata</dt><dd>${asset.metadataCompletion ?? '—'}% ${bar(asset.metadataCompletion)}</dd>
@@ -960,7 +960,7 @@
       case 0:
         return `${formField('اسم الأصل *', 'dg-w-name', w.name || '')}
           ${formField('اسم الأعمال', 'dg-w-bname', w.businessName || '')}
-          ${formField('النوع *', 'dg-w-type', '', 'select', ASSET_TYPES.map((t) => `<option value="${esc(t)}" ${w.type === t ? 'selected' : ''}>${esc(t)}</option>`).join(''))}
+          ${formField('النوع *', 'dg-w-type', '', 'select', ASSET_TYPES.map((t) => `<option value="${esc(t)}" ${w.type === t ? 'selected' : ''}>${esc(disp(t))}</option>`).join(''))}
           ${formField('الوصف *', 'dg-w-desc', w.description || '', 'textarea')}`;
       case 1:
         return `${formField('المصدر', 'dg-w-source', '', 'select', `<option value=""></option>${sources.map((s) => `<option value="${esc(s.id)}" data-name="${esc(s.name)}" ${w.sourceId === s.id ? 'selected' : ''}>${esc(disp(s.name))}</option>`).join('')}`)}

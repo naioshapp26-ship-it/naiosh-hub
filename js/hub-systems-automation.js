@@ -220,12 +220,14 @@
     return (maps[kind] || {})[v] || 'badge-outline';
   };
 
+  const disp = (v) => window.HubI18n?.label?.(v) || window.HubI18n?.status?.(v) || v || '—';
+
   const badge = (text, kind = 'status') =>
-    `<span class="badge ${badgeClass(kind, text)}">${esc(kind === 'status' ? statusLabel(text) : text)}</span>`;
+    `<span class="badge ${badgeClass(kind, text)}">${esc(kind === 'status' ? statusLabel(text) : disp(text))}</span>`;
 
-  const execBadge = (st) => `<span class="badge ${badgeClass('exec', st)}">${esc(st)}</span>`;
+  const execBadge = (st) => `<span class="badge ${badgeClass('exec', st)}">${esc(disp(st))}</span>`;
 
-  const connBadge = (st) => `<span class="badge ${badgeClass('conn', st)}">${esc(st)}</span>`;
+  const connBadge = (st) => `<span class="badge ${badgeClass('conn', st)}">${esc(disp(st))}</span>`;
 
   const activeAutos = (sa) => (sa.automations || sa.flows || []).filter((a) => !a.archived);
 

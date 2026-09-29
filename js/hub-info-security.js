@@ -647,7 +647,7 @@
                     return `<tr>
                     <td>${esc(c.id)}</td>
                     <td><strong>${esc(c.name)}</strong><br/><small>${esc(c.category || '')}</small></td>
-                    <td>${esc(c.framework)}</td>
+                    <td>${esc(window.HubI18n?.label?.(c.framework, c.framework) || c.framework)}</td>
                     <td>${c.compliance}% ${bar(c.compliance)}</td>
                     <td>${badge(ctrlStatusLabel(c.status))}</td>
                     <td>${esc(c.nextReview || '—')}</td>

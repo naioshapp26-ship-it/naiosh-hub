@@ -8,6 +8,29 @@
   const Kit = () => window.HubWsKit;
   const store = () => window.HubStore;
   const L = (en, ar) => window.HubI18n?.label?.(en, ar) || ar || en;
+  /** عرض للمستخدم فقط — لا يغيّر القيمة المخزّنة */
+  const disp = (v, fallback = '—') => {
+    if (v == null || v === '') return fallback;
+    const raw = String(v);
+    if (window.HubI18n?.hasArabic?.(raw) && !/[A-Za-z]{3,}/.test(raw)) return raw;
+    const exact =
+      window.HubI18n?.label?.(raw) ||
+      window.HubI18n?.status?.(raw) ||
+      null;
+    if (exact && exact !== raw) return exact;
+    // نصوص مختلطة: استبدل المقاطع الإنجليزية المعروفة (مثل Insight · ...)
+    if (/[A-Za-z]{3,}/.test(raw) && window.HubI18n?.LABELS) {
+      let out = raw;
+      const keys = Object.keys(window.HubI18n.LABELS).sort((a, b) => b.length - a.length);
+      for (const k of keys) {
+        if (!/[A-Za-z]/.test(k) || k.length < 2) continue;
+        if (out.includes(k)) out = out.split(k).join(window.HubI18n.LABELS[k]);
+      }
+      if (out !== raw) return out;
+    }
+    return L(raw, fallback === '—' ? raw : fallback);
+  };
+  const badgeDisp = (v, cls) => Kit().badge(disp(v), cls);
 
   const STATUS_AR = {
     Draft: 'مسودة',
@@ -29,7 +52,17 @@
   };
 
   const MODULES = ['المهام', 'القوى العاملة', 'القياس', 'أمن المعلومات', 'الحوكمة', 'حوكمة البيانات', 'العملاء', 'المبيعات', 'الأنظمة', 'التكامل'];
+  /** قيم داخلية للفلاتر — العرض عبر disp */
   const SOURCE_TYPES = ['يدوي', 'AI Analysis', 'Rule Engine', 'Anomaly', 'Prediction', 'Recommendation', 'External System'];
+  const SOURCE_TYPE_AR = {
+    يدوي: 'يدوي',
+    'AI Analysis': 'تحليل الذكاء الاصطناعي',
+    'Rule Engine': 'محرك القواعد',
+    Anomaly: 'شذوذ',
+    Prediction: 'تنبؤ',
+    Recommendation: 'توصية',
+    'External System': 'نظام خارجي',
+  };
 
   const CR_TABS = [
     { id: 'overview', label: 'نظرة عامة', icon: 'fa-gauge' },
@@ -69,7 +102,8 @@
   const confTip = (n) =>
     `title="درجة ثقة التحليل بناءً على جودة البيانات والنموذج · ${n}% — اضغط للتفاصيل"`;
 
-  const statusBadge = (st) => Kit().badge(STATUS_AR[st] || st, STATUS_BADGE[st] || 'badge-outline');
+  const statusBadge = (st) =>
+    Kit().badge(STATUS_AR[st] || disp(st), STATUS_BADGE[st] || 'badge-outline');
 
   const needsItems = (c) => {
     const items = [];
@@ -120,7 +154,7 @@
           ? `<div class="hub-ci-menu">
               <button type="button" data-action="cr-wizard-decision"><i class="fas fa-gavel"></i> إضافة قرار</button>
               <button type="button" data-action="cr-add-rec"><i class="fas fa-lightbulb"></i> إضافة توصية</button>
-              <button type="button" data-action="cr-add-insight"><i class="fas fa-eye"></i> إضافة رؤية Insight</button>
+              <button type="button" data-action="cr-add-insight"><i class="fas fa-eye"></i> إضافة رؤية</button>
               <button type="button" data-action="cr-add-pred"><i class="fas fa-binoculars"></i> إضافة تنبؤ</button>
               <button type="button" data-action="cr-add-anom"><i class="fas fa-triangle-exclamation"></i> تسجيل شذوذ</button>
               <button type="button" data-action="cr-add-rule"><i class="fas fa-code-branch"></i> إضافة قاعدة قرار</button>
@@ -175,7 +209,7 @@
       }
       <div class="field"><label>المصدر</label>
         <select data-cr-change="source"><option value="">الكل</option>
-          ${SOURCE_TYPES.map((s) => `<option value="${s}" ${ui.filters.source === s ? 'selected' : ''}>${s}</option>`).join('')}
+          ${SOURCE_TYPES.map((s) => `<option value="${s}" ${ui.filters.source === s ? 'selected' : ''}>${SOURCE_TYPE_AR[s] || disp(s)}</option>`).join('')}
         </select></div>
       <div class="field"><label>حجم الصفحة</label>
         <select data-cr-change="pageSize">${[10, 25, 50, 100].map((n) => `<option value="${n}" ${ui.pageSize === n ? 'selected' : ''}>${n}</option>`).join('')}</select>
@@ -232,13 +266,13 @@
           (d) => `<tr>
             <td><code>${K.esc(d.decisionId || d.id)}</code></td>
             <td><button type="button" class="btn btn-sm btn-ghost" data-action="cr-view" data-id="${d.id}" style="font-weight:800">${K.esc(d.title)}</button></td>
-            <td>${K.esc(d.type || '—')}</td>
-            <td>${K.badge(d.sourceType || '—', 'badge-outline')}</td>
-            <td>${K.esc(d.engine || '—')}</td>
-            <td>${K.esc(d.impact || '—')}</td>
+            <td>${K.esc(disp(d.type))}</td>
+            <td>${badgeDisp(d.sourceType || '—', 'badge-outline')}</td>
+            <td>${K.esc(disp(d.engine))}</td>
+            <td>${K.esc(disp(d.impact))}</td>
             <td><button type="button" class="btn btn-sm btn-ghost" data-action="cr-conf" data-id="${d.id}" ${confTip(d.confidence)}>${d.confidence ?? '—'}%</button></td>
-            <td>${K.esc(d.createdBy || '—')}</td>
-            <td>${K.esc(d.approvedBy || '—')}</td>
+            <td>${K.esc(disp(d.createdBy))}</td>
+            <td>${K.esc(disp(d.approvedBy))}</td>
             <td>${statusBadge(d.status)}</td>
             <td>${K.fmtTime(d.createdAt || d.at)}</td>
             <td>${decisionActions(d)}</td>
@@ -266,20 +300,20 @@
       body = `
         <div class="kpi-grid">
           <article class="kpi"><span>${L('Status', 'الحالة')}</span><strong>${statusBadge(d.status)}</strong></article>
-          <article class="kpi"><span>${L('Impact', 'الأثر')}</span><strong>${K.esc(d.impact)}</strong></article>
+          <article class="kpi"><span>${L('Impact', 'الأثر')}</span><strong>${K.esc(disp(d.impact))}</strong></article>
           <article class="kpi"><span>${L('Confidence', 'الثقة')}</span><strong ${confTip(d.confidence)}>${d.confidence}%</strong></article>
-          <article class="kpi"><span>${L('Priority', 'الأولوية')}</span><strong>${K.esc(d.priority)}</strong></article>
+          <article class="kpi"><span>${L('Priority', 'الأولوية')}</span><strong>${K.esc(disp(d.priority))}</strong></article>
         </div>
         <p>${K.esc(d.description || d.rationale || '')}</p>
         <article class="card" style="margin-top:10px">
           <h4>مصدر القرار</h4>
           <ul class="feed">
-            <li><b>مصدر القرار:</b> ${K.esc(d.sourceType)} · ${K.esc(d.engine)}</li>
-            <li><b>تم إنشاؤه بواسطة:</b> ${K.esc(d.createdBy)}</li>
+            <li><b>مصدر القرار:</b> ${K.esc(disp(d.sourceType))} · ${K.esc(disp(d.engine))}</li>
+            <li><b>تم إنشاؤه بواسطة:</b> ${K.esc(disp(d.createdBy))}</li>
             <li><b>${L('Created At', 'تاريخ الإنشاء')}:</b> ${K.fmtTime(d.createdAt || d.at)}</li>
-            <li><b>${L('Source Modules', 'وحدات المصدر')}:</b> ${K.esc((d.sourceModules || []).join(' + ') || '—')}</li>
-            <li><b>${L('Data Used', 'البيانات المستخدمة')}:</b> ${K.esc(d.dataUsed || '—')}</li>
-            <li><b>${L('Model / Rule', 'النموذج / القاعدة')}:</b> ${K.esc(d.model || '—')}</li>
+            <li><b>${L('Source Modules', 'وحدات المصدر')}:</b> ${K.esc((d.sourceModules || []).map((m) => disp(m)).join(' + ') || '—')}</li>
+            <li><b>${L('Data Used', 'البيانات المستخدمة')}:</b> ${K.esc(disp(d.dataUsed))}</li>
+            <li><b>${L('Model / Rule', 'النموذج / القاعدة')}:</b> ${K.esc(disp(d.model))}</li>
             <li><b>آخر تحديث:</b> ${K.fmtTime(d.updatedAt)}</li>
             <li><b>${L('Owner / Reviewer / Approver', 'المالك / المراجع / المعتمد')}:</b> ${K.esc(d.owner || '—')} · ${K.esc(d.reviewer || '—')} · ${K.esc(d.approver || d.approvedBy || '—')}</li>
           </ul>
@@ -292,7 +326,7 @@
             (d.evidence || [])
               .map(
                 (e) =>
-                  `<tr><td>${K.esc(e.source)}</td><td>${K.esc(e.metric)}</td><td>${K.esc(e.value)}</td><td>${K.esc(e.period)}</td><td>${K.fmtTime(e.updatedAt)}</td></tr>`
+                  `<tr><td>${K.esc(disp(e.source))}</td><td>${K.esc(e.metric)}</td><td>${K.esc(e.value)}</td><td>${K.esc(disp(e.period))}</td><td>${K.fmtTime(e.updatedAt)}</td></tr>`
               )
               .join('') || '<tr><td colspan="5" class="empty">لا أدلة بيانات</td></tr>'
           }</tbody>
@@ -326,8 +360,8 @@
             ? ex
                 .map(
                   (e) => `<article class="card" style="margin-top:8px">
-                    <b>${K.esc(e.id)}</b> · ${K.badge(e.status, e.status === 'Success' ? 'badge-black' : 'badge-red')}
-                    <p>${K.esc(e.result)}</p>
+                    <b>${K.esc(e.id)}</b> · ${badgeDisp(e.status, e.status === 'Success' ? 'badge-black' : 'badge-red')}
+                    <p>${K.esc(disp(e.result))}</p>
                     <ul>${(e.timeline || []).map((t) => `<li>${t.ok ? '✓' : '✕'} ${K.esc(t.text)}</li>`).join('')}</ul>
                   </article>`
                 )
@@ -337,9 +371,9 @@
     } else if (tab === 'impact') {
       body = `<h4>قياس أثر القرار</h4>
         <ul class="feed">
-          <li><b>${L('Expected', 'المتوقع')}:</b> ${K.esc(d.expectedOutcome || '—')}</li>
-          <li><b>${L('Actual', 'الفعلي')}:</b> ${K.esc(d.actualOutcome || '—')}</li>
-          <li><b>${L('Result', 'النتيجة')}:</b> ${K.esc(d.impactResult || '—')}</li>
+          <li><b>${L('Expected', 'المتوقع')}:</b> ${K.esc(disp(d.expectedOutcome))}</li>
+          <li><b>${L('Actual', 'الفعلي')}:</b> ${K.esc(disp(d.actualOutcome))}</li>
+          <li><b>${L('Result', 'النتيجة')}:</b> ${K.esc(disp(d.impactResult))}</li>
         </ul>
         <h4>تقييم القرار</h4>
         <div class="toolbar" style="flex-wrap:wrap">
@@ -351,7 +385,7 @@
           <button type="button" class="btn btn-dark btn-sm" data-action="cr-feedback-save" data-id="${d.id}" style="margin-top:6px">حفظ التقييم</button></div>`;
     } else {
       body = `<ul class="feed">${(d.history || [])
-        .map((h) => `<li><b>${K.esc(h.action)}</b> — ${K.esc(h.detail || '')} · ${K.esc(h.by)} <small>${K.fmtTime(h.at)}</small></li>`)
+        .map((h) => `<li><b>${K.esc(disp(h.action))}</b> — ${K.esc(h.detail || '')} · ${K.esc(disp(h.by))} <small>${K.fmtTime(h.at)}</small></li>`)
         .join('') || '<li>لا سجل</li>'}</ul>`;
     }
 
@@ -386,7 +420,7 @@
     if (step === 1) {
       body = `<div class="grid-2">
         <div class="field"><label>عنوان القرار *</label><input id="cr-w-title" value="${K.esc(d.title || '')}" /></div>
-        <div class="field"><label>الفئة</label><input id="cr-w-category" value="${K.esc(d.category || 'Operations')}" /></div>
+        <div class="field"><label>الفئة</label><input id="cr-w-category" value="${K.esc(d.category || 'العمليات')}" /></div>
         <div class="field" style="grid-column:1/-1"><label>الوصف *</label><textarea id="cr-w-desc" rows="3">${K.esc(d.description || '')}</textarea></div>
         <div class="field"><label>الأولوية</label>
           <select id="cr-w-priority">${['عاجل', 'عالي', 'متوسط', 'منخفض'].map((p) => `<option ${ (d.priority || 'متوسط') === p ? 'selected' : ''}>${p}</option>`).join('')}</select></div>
@@ -394,8 +428,13 @@
       </div>`;
     } else if (step === 2) {
       body = `<div class="field"><label>مصدر القرار</label>
-        <select id="cr-w-sourceType">${SOURCE_TYPES.map((s) => `<option ${ (d.sourceType || 'يدوي') === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
-        <div class="field"><label>المحرك / النظام</label><input id="cr-w-engine" value="${K.esc(d.engine || '')}" placeholder="AI Decision / Rule Engine / Manual" /></div>`;
+        <select id="cr-w-sourceType">${SOURCE_TYPES.map((s) => `<option value="${K.esc(s)}" ${ (d.sourceType || 'يدوي') === s ? 'selected' : ''}>${SOURCE_TYPE_AR[s] || disp(s)}</option>`).join('')}</select></div>
+        <div class="field"><label>المحرك / النظام</label>
+          <select id="cr-w-engine">
+            ${['AI Decision', 'Anomaly Engine', 'Optimization Engine', 'Rule Engine', 'Manual'].map((e) =>
+              `<option value="${K.esc(e)}" ${(d.engine || 'AI Decision') === e ? 'selected' : ''}>${disp(e)}</option>`
+            ).join('')}
+          </select></div>`;
     } else if (step === 3) {
       body = `<p class="muted">اختر مصادر البيانات المستخدمة</p>
         <div class="hub-ci-checks">${MODULES.map(
@@ -426,10 +465,10 @@
     } else {
       body = `<ul class="feed">
         <li><b>العنوان:</b> ${K.esc(d.title)}</li>
-        <li><b>المصدر:</b> ${K.esc(d.sourceType)} · ${K.esc(d.engine)}</li>
-        <li><b>الوحدات:</b> ${K.esc((d.sourceModules || []).join(', '))}</li>
+        <li><b>المصدر:</b> ${K.esc(disp(d.sourceType))} · ${K.esc(disp(d.engine))}</li>
+        <li><b>الوحدات:</b> ${K.esc((d.sourceModules || []).map((m) => disp(m)).join(', '))}</li>
         <li><b>المبرر:</b> ${K.esc(d.reason)}</li>
-        <li><b>الأثر:</b> ${K.esc(d.impact)} · ثقة ${d.confidence}%</li>
+        <li><b>الأثر:</b> ${K.esc(disp(d.impact))} · ثقة ${d.confidence}%</li>
         <li><b>المراجع/المعتمد:</b> ${K.esc(d.reviewer || '—')} / ${K.esc(d.approver || '—')}</li>
       </ul>`;
     }
@@ -491,7 +530,7 @@
             <div><span>نسبة نجاح القرارات المنفّذة</span><strong ${confTip(sr.rate)}>${sr.rate}%</strong>${K.bar(sr.rate)}
               <small class="muted">${sr.ok} من ${sr.measured} قرار مقاس · ${sr.executed} منفّذ</small></div>
             <div><span>دقة/ثقة التنبؤ</span><strong ${confTip(c.engineHealth?.predictive)}>${c.engineHealth?.predictive || 0}%</strong>${K.bar(c.engineHealth?.predictive)}
-              <small class="muted">Model Forecast v1 · Last Evaluation الآن · مصدر Predictive Engine</small></div>
+              <small class="muted">نموذج التنبؤ الإصدار 1 · آخر تقييم: الآن · مصدر محرك التنبؤ</small></div>
           </div>
           <div class="toolbar" style="margin-top:10px;flex-wrap:wrap">
             <button type="button" class="btn btn-primary" data-action="cr-wizard-decision"><i class="fas fa-plus"></i> إضافة قرار</button>
@@ -512,14 +551,14 @@
           <h3><span class="title-left"><i class="fas fa-gavel icon"></i> آخر القرارات</span>
             <button type="button" class="btn btn-sm btn-ghost" data-action="cr-tab" data-tab="decisions">الكل</button></h3>
           <ul class="hub-op-mini-list">${recent
-            .map((d) => `<li><b>${K.esc(d.title)}</b><small>${K.esc(d.sourceType)} · ${K.esc(d.createdBy)}</small>${statusBadge(d.status)}</li>`)
+            .map((d) => `<li><b>${K.esc(d.title)}</b><small>${K.esc(disp(d.sourceType))} · ${K.esc(disp(d.createdBy))}</small>${statusBadge(d.status)}</li>`)
             .join('')}</ul>
         </article>
         <article class="card hub-op-panel">
           <h3><span class="title-left"><i class="fas fa-lightbulb icon"></i> توصيات جديدة</span>
             <button type="button" class="btn btn-sm btn-ghost" data-action="cr-tab" data-tab="recommendations">الكل</button></h3>
           <ul class="hub-op-mini-list">${recs
-            .map((r) => `<li><b>${K.esc(r.title)}</b><small>${K.esc(r.source)} · ثقة ${r.confidence}%</small>
+            .map((r) => `<li><b>${K.esc(r.title)}</b><small>${K.esc(disp(r.source))} · ثقة ${r.confidence}%</small>
               <button type="button" class="btn btn-sm btn-primary" data-action="cr-rec-convert" data-id="${r.id}">تحويل لقرار</button></li>`)
             .join('') || '<li class="empty">لا توجد توصيات جديدة</li>'}</ul>
         </article>
@@ -527,7 +566,7 @@
           <h3><span class="title-left"><i class="fas fa-triangle-exclamation icon"></i> شذوذ مفتوح</span>
             <button type="button" class="btn btn-sm btn-ghost" data-action="cr-tab" data-tab="anomalies">الكل</button></h3>
           <ul class="hub-op-mini-list">${openAnom
-            .map((a) => `<li><b>${K.esc(a.signal || a.metric)}</b><small>${K.esc(a.source)}</small>${K.badge(a.severity || a.status, 'badge-red')}</li>`)
+            .map((a) => `<li><b>${K.esc(a.signal || a.metric)}</b><small>${K.esc(disp(a.source))}</small>${badgeDisp(a.severity || a.status, 'badge-red')}</li>`)
             .join('') || '<li class="empty">لا شذوذ مفتوح</li>'}</ul>
         </article>
       </div>
@@ -535,7 +574,7 @@
         <h3>النشاط الأخير</h3>
         <ul class="feed">${(c.auditLog || [])
           .slice(0, 8)
-          .map((a) => `<li><b>${K.esc(a.action)}</b> — ${K.esc(a.detail)} · ${K.esc(a.by)} <small>${K.fmtTime(a.at)}</small></li>`)
+          .map((a) => `<li><b>${K.esc(disp(a.action))}</b> — ${K.esc(a.detail)} · ${K.esc(disp(a.by))} <small>${K.fmtTime(a.at)}</small></li>`)
           .join('') || '<li>لا نشاط</li>'}</ul>
       </article>`;
   };
@@ -554,7 +593,7 @@
 
     const kpis = [
       { key: 'total', label: 'إجمالي القرارات', value: (c.decisions || []).length, tab: 'decisions' },
-      { key: 'pending', label: 'بانتظار الموافقة', value: pending, tab: 'decisions', hint: 'Pending' },
+      { key: 'pending', label: 'بانتظار الموافقة', value: pending, tab: 'decisions', hint: 'قيد الانتظار' },
       { key: 'executed', label: 'تم التنفيذ', value: executed, tab: 'executions' },
       { key: 'needs', label: 'يحتاج إلى إجراء', value: needs.length, tab: 'overview' },
       { key: 'insights', label: 'الرؤى الجديدة', value: newInsights, tab: 'insights' },
@@ -580,15 +619,15 @@
         <article class="card">${
           rows.length
             ? `<div class="table-wrap"><table class="data">
-              <thead><tr><th>ID</th><th>${L('Title', 'العنوان')}</th><th>${L('Source', 'المصدر')}</th><th>${L('Reason', 'السبب')}</th><th>${L('Impact', 'الأثر')}</th><th>${L('Confidence', 'الثقة')}</th><th>${L('Suggested Action', 'الإجراء المقترح')}</th><th>${L('Owner', 'المالك')}</th><th>${L('Status', 'الحالة')}</th><th>${L('Actions', 'الإجراءات')}</th></tr></thead>
+              <thead><tr><th>المعرّف</th><th>${L('Title', 'العنوان')}</th><th>${L('Source', 'المصدر')}</th><th>${L('Reason', 'السبب')}</th><th>${L('Impact', 'الأثر')}</th><th>${L('Confidence', 'الثقة')}</th><th>${L('Suggested Action', 'الإجراء المقترح')}</th><th>${L('Owner', 'المالك')}</th><th>${L('Status', 'الحالة')}</th><th>${L('Actions', 'الإجراءات')}</th></tr></thead>
               <tbody>${rows
                 .map(
                   (r) => `<tr>
-                    <td><code>${K.esc(r.id)}</code></td><td>${K.esc(r.title)}</td><td>${K.esc(r.source)}</td>
-                    <td>${K.esc(r.reason)}</td><td>${K.esc(r.impact)}</td>
+                    <td><code>${K.esc(r.id)}</code></td><td>${K.esc(r.title)}</td><td>${K.esc(disp(r.source))}</td>
+                    <td>${K.esc(r.reason)}</td><td>${K.esc(disp(r.impact))}</td>
                     <td><span ${confTip(r.confidence)}>${r.confidence}%</span></td>
-                    <td>${K.esc(r.suggestedAction)}</td><td>${K.esc(r.owner)}</td>
-                    <td>${K.badge(r.status, 'badge-outline')}</td>
+                    <td>${K.esc(r.suggestedAction)}</td><td>${K.esc(disp(r.owner))}</td>
+                    <td>${badgeDisp(r.status, 'badge-outline')}</td>
                     <td class="toolbar" style="margin:0;gap:4px">
                       <button type="button" class="btn btn-sm btn-ghost" data-action="cr-rec-view" data-id="${r.id}">عرض</button>
                       <button type="button" class="btn btn-sm btn-primary" data-action="cr-rec-convert" data-id="${r.id}">تحويل إلى قرار</button>
@@ -608,10 +647,10 @@
                   (ins) => `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px">
                     <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
                       <b>${K.esc(ins.insightId || ins.id)} · ${K.esc(ins.title)}</b>
-                      ${K.badge(ins.severity || '—', 'badge-red')} ${K.badge(ins.status, 'badge-outline')}
+                      ${badgeDisp(ins.severity || '—', 'badge-red')} ${badgeDisp(ins.status, 'badge-outline')}
                     </div>
                     <p class="muted">${K.esc(ins.summary || ins.rationale || '')}</p>
-                    <small>المصدر: ${K.esc(ins.source)} · ${K.fmtTime(ins.generatedAt || ins.at)} · ثقة ${ins.confidence}%</small>
+                    <small>المصدر: ${K.esc(disp(ins.source))} · ${K.fmtTime(ins.generatedAt || ins.at)} · ثقة ${ins.confidence}%</small>
                     <div class="toolbar" style="margin-top:8px">
                       <button type="button" class="btn btn-sm btn-ghost" data-action="cr-ins-view" data-id="${ins.id}">عرض التفاصيل</button>
                       <button type="button" class="btn btn-sm btn-dark" data-action="cr-ins-to-rec" data-id="${ins.id}">إنشاء توصية</button>
@@ -628,17 +667,17 @@
         <article class="card">${
           (c.predictions || []).length
             ? `<div class="table-wrap"><table class="data">
-              <thead><tr><th>ID</th><th>${L('Title', 'العنوان')}</th><th>${L('Target', 'الهدف')}</th><th>${L('Predicted', 'المتنبّأ')}</th><th>${L('Confidence', 'الثقة')}</th><th>${L('Period', 'الفترة')}</th><th>${L('Source', 'المصدر')}</th><th>${L('Model', 'النموذج')}</th><th>${L('Generated', 'تاريخ الإنشاء')}</th><th>${L('Status', 'الحالة')}</th></tr></thead>
+              <thead><tr><th>المعرّف</th><th>${L('Title', 'العنوان')}</th><th>${L('Target', 'الهدف')}</th><th>${L('Predicted', 'المتنبّأ')}</th><th>${L('Confidence', 'الثقة')}</th><th>${L('Period', 'الفترة')}</th><th>${L('Source', 'المصدر')}</th><th>${L('Model', 'النموذج')}</th><th>${L('Generated', 'تاريخ الإنشاء')}</th><th>${L('Status', 'الحالة')}</th></tr></thead>
               <tbody>${(c.predictions || [])
                 .map(
                   (p) => `<tr>
                     <td><code>${K.esc(p.predictionId || p.id)}</code></td>
-                    <td>${K.esc(p.title || p.risk)}</td><td>${K.esc(p.target || '—')}</td>
+                    <td>${K.esc(p.title || p.risk)}</td><td>${K.esc(disp(p.target))}</td>
                     <td>${p.predictedValue ?? p.probability}%</td>
                     <td><span ${confTip(p.confidence)}>${p.confidence ?? '—'}%</span></td>
-                    <td>${K.esc(p.period || p.eta)}</td><td>${K.esc(p.source || '—')}</td>
-                    <td>${K.esc(p.model || '—')}</td><td>${K.fmtTime(p.generatedAt)}</td>
-                    <td>${K.badge(p.status || 'Active', 'badge-black')}</td>
+                    <td>${K.esc(disp(p.period || p.eta))}</td><td>${K.esc(disp(p.source))}</td>
+                    <td>${K.esc(disp(p.model))}</td><td>${K.fmtTime(p.generatedAt)}</td>
+                    <td>${badgeDisp(p.status || 'Active', 'badge-black')}</td>
                   </tr>`
                 )
                 .join('')}</tbody></table></div>`
@@ -647,15 +686,15 @@
     } else if (ui.tab === 'anomalies') {
       body = `<div class="toolbar"><button type="button" class="btn btn-primary" data-action="cr-add-anom">تسجيل شذوذ</button></div>
         <article class="card"><div class="table-wrap"><table class="data">
-          <thead><tr><th>ID</th><th>${L('Type', 'النوع')}</th><th>${L('Source', 'المصدر')}</th><th>${L('Metric', 'المؤشر')}</th><th>${L('Expected', 'المتوقع')}</th><th>${L('Actual', 'الفعلي')}</th><th>${L('Deviation', 'الانحراف')}</th><th>${L('Severity', 'الحدة')}</th><th>${L('Detected', 'وقت الاكتشاف')}</th><th>${L('Owner', 'المالك')}</th><th>${L('Status', 'الحالة')}</th><th>${L('Actions', 'الإجراءات')}</th></tr></thead>
+          <thead><tr><th>المعرّف</th><th>${L('Type', 'النوع')}</th><th>${L('Source', 'المصدر')}</th><th>${L('Metric', 'المؤشر')}</th><th>${L('Expected', 'المتوقع')}</th><th>${L('Actual', 'الفعلي')}</th><th>${L('Deviation', 'الانحراف')}</th><th>${L('Severity', 'الحدة')}</th><th>${L('Detected', 'وقت الاكتشاف')}</th><th>${L('Owner', 'المالك')}</th><th>${L('Status', 'الحالة')}</th><th>${L('Actions', 'الإجراءات')}</th></tr></thead>
           <tbody>${(c.anomalies || [])
             .map(
               (a) => `<tr>
                 <td><code>${K.esc(a.anomalyId || a.id)}</code></td>
-                <td>${K.esc(a.type)}</td><td>${K.esc(a.source)}</td><td>${K.esc(a.metric || a.signal)}</td>
+                <td>${K.esc(disp(a.type))}</td><td>${K.esc(disp(a.source))}</td><td>${K.esc(a.metric || a.signal)}</td>
                 <td>${K.esc(a.expected)}</td><td>${K.esc(a.actual)}</td><td>${K.esc(a.deviation)}</td>
-                <td>${K.badge(a.severity || '—', 'badge-red')}</td><td>${K.fmtTime(a.detectedAt)}</td>
-                <td>${K.esc(a.owner)}</td><td>${K.badge(a.status, 'badge-outline')}</td>
+                <td>${badgeDisp(a.severity || '—', 'badge-red')}</td><td>${K.fmtTime(a.detectedAt)}</td>
+                <td>${K.esc(disp(a.owner))}</td><td>${badgeDisp(a.status, 'badge-outline')}</td>
                 <td class="toolbar" style="margin:0;gap:4px">
                   <button type="button" class="btn btn-sm btn-dark" data-action="cr-anom-invest" data-id="${a.id}">تحقيق</button>
                   <button type="button" class="btn btn-sm btn-ghost" data-action="cr-anom-task" data-id="${a.id}">مهمة</button>
@@ -671,11 +710,11 @@
         <article class="card">${(c.rules || [])
           .map(
             (r) => `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px">
-              <b>${K.esc(r.id)} · ${K.esc(r.name)}</b> ${K.badge(r.status, 'badge-black')} ${K.badge(r.severity, 'badge-red')}
+              <b>${K.esc(r.id)} · ${K.esc(r.name)}</b> ${badgeDisp(r.status, 'badge-black')} ${badgeDisp(r.severity, 'badge-red')}
               <p>إذا: <code>${K.esc(r.metric)} ${K.esc(r.operator)} ${r.value}</code>
                 ${(r.extraConditions || []).map((x) => ` و <code>${K.esc(x.metric)} ${K.esc(x.operator)} ${x.value}</code>`).join('')}
               </p>
-              <p>إذن: <b>${K.esc(L(r.action, r.action))}</b> · الوحدة: ${K.esc(r.sourceModule)} · المالك: ${K.esc(r.owner)}</p>
+              <p>إذن: <b>${K.esc(disp(r.action))}</b> · الوحدة: ${K.esc(disp(r.sourceModule))} · المالك: ${K.esc(disp(r.owner))}</p>
             </div>`
           )
           .join('') || '<div class="empty">لا قواعد بعد</div>'}</article>`;
@@ -686,9 +725,9 @@
           <tbody>${(c.dataSources || [])
             .map(
               (s) => `<tr>
-                <td>${K.esc(s.name)}</td><td>${K.esc(s.module)}</td><td>${K.esc(s.type)}</td>
-                <td>${K.badge(L(s.status, s.status), s.status === 'Connected' ? 'badge-black' : 'badge-red')}</td>
-                <td>${K.fmtTime(s.lastSync)}</td><td>${s.records}</td><td>${K.esc(s.owner)}</td>
+                <td>${K.esc(disp(s.name))}</td><td>${K.esc(disp(s.module))}</td><td>${K.esc(disp(s.type))}</td>
+                <td>${badgeDisp(s.status, s.status === 'Connected' ? 'badge-black' : 'badge-red')}</td>
+                <td>${K.fmtTime(s.lastSync)}</td><td>${s.records}</td><td>${K.esc(disp(s.owner))}</td>
                 <td class="toolbar" style="margin:0;gap:4px">
                   <button type="button" class="btn btn-sm btn-ghost" data-action="cr-src-view" data-id="${s.id}">عرض</button>
                   <button type="button" class="btn btn-sm btn-dark" data-action="cr-src-test" data-id="${s.id}">اختبار الاتصال</button>
@@ -709,8 +748,8 @@
               <td>${K.esc(e.decision)}</td><td>${K.esc(e.executedBy)}</td>
               <td>${K.fmtTime(e.startedAt)}</td><td>${K.fmtTime(e.completedAt)}</td>
               <td>${e.affectedRecords}</td>
-              <td>${K.badge(e.status, e.status === 'Success' ? 'badge-black' : 'badge-red')}</td>
-              <td>${K.esc(e.result)}</td>
+              <td>${badgeDisp(e.status, e.status === 'Success' ? 'badge-black' : 'badge-red')}</td>
+              <td>${K.esc(disp(e.result))}</td>
               <td class="toolbar" style="margin:0;gap:4px">
                 <button type="button" class="btn btn-sm btn-ghost" data-action="cr-exec-view" data-id="${e.id}">عرض</button>
                 ${e.status === 'Failed' ? `<button type="button" class="btn btn-sm btn-primary" data-action="cr-exec-retry" data-id="${e.id}">إعادة المحاولة</button>` : ''}
@@ -733,8 +772,8 @@
         <article class="card" style="margin-top:10px">${rows
           .map(
             (a) => `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px">
-              <b>${K.esc(a.decisionId)} · ${K.esc(a.title)}</b> · ${K.badge(a.stage, 'badge-outline')} · ${K.badge(a.status, 'badge-red')}
-              <p class="muted">المسند إلى: ${K.esc(a.assignee)}</p>
+              <b>${K.esc(a.decisionId)} · ${K.esc(a.title)}</b> · ${badgeDisp(a.stage, 'badge-outline')} · ${badgeDisp(a.status, 'badge-red')}
+              <p class="muted">المسند إلى: ${K.esc(disp(a.assignee))}</p>
               <div class="toolbar">
                 <button type="button" class="btn btn-sm btn-primary" data-action="cr-apr-decide" data-id="${a.id}" data-decision="approve">اعتماد</button>
                 <button type="button" class="btn btn-sm btn-dark" data-action="cr-apr-decide" data-id="${a.id}" data-decision="reject">رفض</button>
@@ -1407,7 +1446,7 @@
         { id: 'cr-f-op', key: 'operator', label: 'المعامل', type: 'select', options: ['>', '>=', '<', '<=', '='] },
         { id: 'cr-f-val', key: 'value', label: L('Value', 'القيمة'), type: 'number', value: '30' },
         { id: 'cr-f-action', key: 'action', label: L('Action', 'الإجراء'), type: 'select', options: ['Generate Recommendation', 'Generate Decision', 'Create Task', 'Notify Owner'] },
-        { id: 'cr-f-sev', key: 'severity', label: L('Severity', 'الحدة'), type: 'select', options: ['High', 'Medium', 'Low'] },
+        { id: 'cr-f-sev', key: 'severity', label: L('Severity', 'الحدة'), type: 'select', options: ['حرج', 'مرتفع', 'متوسط', 'منخفض'] },
       ], 'cr-save-rule');
       return true;
     }
