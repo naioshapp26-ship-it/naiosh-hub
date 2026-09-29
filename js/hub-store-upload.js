@@ -14,6 +14,11 @@
     { id: 'review', label: '5. المراجعة' }
   ];
 
+  /** اسم صفحة/قسم متجر المبيعات — يُستخدم للعنوان الظاهر وعنوان المتصفح */
+  var SALES_STORE_PAGE_TITLE = 'متجر المبيعات | نايوش هوب 360';
+  /** عنوان العملية داخل الصفحة — لا يُستبدل باسم الصفحة */
+  var UPLOAD_PROCESS_TITLE = 'رفع منتج على متجر';
+
   var HUB_HOME_URL = 'https://www.naioshai.com/'; // روابط خارجية للمتاجر فقط — لا يُستخدم لبطاقة داخل نايوش
   var NAIOSH_PRODUCTS_HASH = '#naiosh-products';
 
@@ -185,9 +190,14 @@
     return (
       '<div class="su-wizard">' +
         '<div class="su-wizard-head">' +
-          '<h2><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> رفع منتج على متجر</h2>' +
-          '<p>اختر المتجر ثم أدخل بيانات المنتج والرابط والسعر.</p>' +
-          '<button type="button" class="btn btn-outline su-help-btn" data-su-help title="كيف أرفع منتجاً؟">؟ كيف أرفع منتجاً؟</button>' +
+          '<div class="su-wizard-head-top">' +
+            '<div class="su-process-block">' +
+              '<h2><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> ' + esc(UPLOAD_PROCESS_TITLE) + '</h2>' +
+              '<p>اختر المتجر ثم أدخل بيانات المنتج والرابط والسعر.</p>' +
+              '<button type="button" class="btn btn-outline su-help-btn" data-su-help title="كيف أرفع منتجاً؟">؟ كيف أرفع منتجاً؟</button>' +
+            '</div>' +
+            '<h1 class="su-page-title">' + esc(SALES_STORE_PAGE_TITLE) + '</h1>' +
+          '</div>' +
         '</div>' +
         '<div class="su-steps">' + stepsHtml + '</div>' +
         '<div class="su-body">' + stepBodyHtml() + '</div>' +
@@ -1050,7 +1060,17 @@
     }
   });
 
+  function syncPageTitle() {
+    if (document.title !== SALES_STORE_PAGE_TITLE) {
+      document.title = SALES_STORE_PAGE_TITLE;
+    }
+    document.querySelectorAll('[data-sales-store-page-title]').forEach(function (el) {
+      el.textContent = SALES_STORE_PAGE_TITLE;
+    });
+  }
+
   function boot() {
+    syncPageTitle();
     loadDraft();
     if (!renderShell()) {
       setTimeout(boot, 200);
@@ -1065,6 +1085,8 @@
 
   window.HubStoreUploadWizard = {
     refresh: renderShell,
-    getState: function () { return state; }
+    getState: function () { return state; },
+    pageTitle: SALES_STORE_PAGE_TITLE,
+    processTitle: UPLOAD_PROCESS_TITLE
   };
 })();

@@ -86,7 +86,7 @@
     studio('FACILITIES', 'إدارة المرافق', 'services.html', 'fa-building'),
     studio('SUPPLY', 'سلاسل التوريد', 'services.html', 'fa-truck'),
     studio('SAFETY_INC', 'حاضنة السلامة', 'incubators.html', 'fa-helmet-safety'),
-    studio('STORE', 'متجر المبيعات', 'store.html', 'fa-bag-shopping'),
+    studio('STORE', 'متجر المبيعات | نايوش هوب 360', 'store.html', 'fa-bag-shopping'),
     studio('PRODUCTS', 'عرض المنتجات', 'products.html', 'fa-boxes-stacked'),
     studio('BRANCHES', 'الفروع العالمية', 'branches.html', 'fa-code-branch'),
     studio('INCUBATORS', 'الحاضنات القطاعية', 'incubators.html', 'fa-seedling'),
