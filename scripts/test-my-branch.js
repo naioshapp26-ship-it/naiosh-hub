@@ -97,7 +97,7 @@ const office = fs.readFileSync('/workspace/js/hub-office.js', 'utf8');
 assert(office.includes("href: 'my-branch.html'"), 'office shortcut فرعي missing');
 assert(!office.includes("href: 'branches.html', icon: 'fa-code-branch', label: 'فرعي'"), 'office still opens all branches');
 assert(fs.readFileSync('/workspace/office.html', 'utf8').includes('hub-office.js?v=3'), 'office cache bump missing');
-assert(fs.readFileSync('/workspace/user-path.html', 'utf8').includes('hub-user-path.js?v=3'), 'user-path cache bump missing');
+assert(fs.readFileSync('/workspace/user-path.html', 'utf8').includes('hub-user-path.js?v=4'), 'user-path cache bump missing');
 
 const checklistHtml = fs.readFileSync('/workspace/hub-checklist.html', 'utf8');
 assert(checklistHtml.includes('hub-checklist.js?v=3'), 'checklist cache bump missing');
