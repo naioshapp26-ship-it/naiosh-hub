@@ -568,8 +568,8 @@
     if (!hero) return;
     hero.innerHTML = `
       <p class="hub-feature-kicker" style="color:rgba(255,214,220,.95)"><i class="fas fa-newspaper"></i> مقالات تشغيلية</p>
-      <h1>مقالات تُشغّل — مش كلام عام</h1>
-      <p class="art-lead">كل مقالة تنتهي بخطوة عملية داخل هوب: فرع · رصيد · دردشة · منصات.</p>
+      <h1>المدونة | نايوش هوب 360</h1>
+      <p class="art-lead">مقالات تُشغّل — مش كلام عام. كل مقالة تنتهي بخطوة عملية داخل هوب: فرع · رصيد · دردشة · منصات.</p>
       <p class="art-hint">أرسل مقالك في خطوات بسيطة، وسنراجعه قبل النشر.</p>
       <div class="art-hero-actions">
         <button type="button" class="btn btn-primary" data-art="start-submit"><i class="fas fa-plus"></i> ارفع مقالك</button>
