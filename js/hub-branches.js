@@ -25,7 +25,13 @@
     toast._t = setTimeout(() => el.classList.remove('show'), 2200);
   };
 
+  const PAGE_TITLE = 'الفروع | نايوش هوب 360';
+
   const render = () => {
+    if (document.title !== PAGE_TITLE) document.title = PAGE_TITLE;
+    const h1 = document.querySelector('.branches-head h1');
+    if (h1 && h1.textContent.trim() !== PAGE_TITLE) h1.textContent = PAGE_TITLE;
+
     const list =
       window.HubStore?.get?.()?.empire?.organization?.worldBranches?.length
         ? window.HubStore.get().empire.organization.worldBranches
