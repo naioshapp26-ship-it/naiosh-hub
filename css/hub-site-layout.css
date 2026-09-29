@@ -1,6 +1,6 @@
 /**
  * NAIOSH HUB 360 — Site-wide page canvas standard
- * صفحات المحتوى تستغل عرض الشاشة؛ النماذج القصيرة والنصوص الطويلة تبقى مقروءة.
+ * تحميل عبر hub-chrome — صفحات المحتوى بعرض كامل.
  */
 
 :root {
@@ -41,24 +41,13 @@ main.sys-wrap,
   box-sizing: border-box;
 }
 
-/* Tailwind-style shells (roles-permissions وغيرها) */
+/* Tailwind-style shells */
 main.max-w-7xl,
 main.max-w-6xl,
 main.max-w-5xl {
   max-width: none !important;
   width: 100% !important;
   margin-inline: 0 !important;
-}
-
-/* شبكة بطاقات موحّدة — حتى 6 في الصف على الشاشات الواسعة */
-.hub-cards-grid,
-.gos-grid,
-.gos-sys-grid,
-.gos-chips,
-.gos-docs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--hub-card-min)), 1fr));
-  gap: var(--hub-card-gap);
 }
 
 @media (min-width: 1600px) {
@@ -76,7 +65,6 @@ main.max-w-5xl {
   }
 }
 
-/* جداول تستغل العرض */
 .hub-table-wrap,
 .gos-table-wrap {
   width: 100%;
@@ -89,33 +77,25 @@ main.max-w-5xl {
   min-width: 0;
 }
 
-/* ===== استثناءات مقصودة — لا تكسر النماذج/القراءة ===== */
-main.container.hub-checkout,
-main.hub-checkout,
-body.hub-checkout-page main.container {
-  /* صفحة الدفع تبقى أعرض من السابق لكن ليست بلا حدود للنموذج */
+/* ===== استثناءات مقصودة ===== */
+main.container.hub-checkout:not([data-hub-my-orders]),
+body.hub-checkout-page main.container:not([data-hub-my-orders]) {
   max-width: min(1100px, 100%) !important;
   margin-inline: auto !important;
   width: 100% !important;
 }
 
 main[data-hub-my-orders].hub-checkout {
-  /* قائمة الطلبات: عرض كامل */
   max-width: none !important;
   margin-inline: 0 !important;
 }
 
-body.login-page main,
-main.auth-shell,
-main.hub-auth-narrow,
-.login-card-wrap,
-.max-w-3xl.mx-auto.px-4.py-10 {
-  /* تسجيل الدخول / شروط القراءة الطويلة */
+/* شروط/خصوصية — عرض قراءة مقصود */
+main.max-w-3xl.mx-auto.px-4.py-10 {
   max-width: min(768px, 100%) !important;
   margin-inline: auto !important;
 }
 
-/* نص القراءة الطويل داخل صفحات واسعة */
 .hub-prose-readable,
 .hub-feature-hero > p,
 .gos-panel > p.lead {
