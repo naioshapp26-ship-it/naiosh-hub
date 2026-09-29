@@ -1,9 +1,53 @@
+/* آلية تشغيل الأنظمة — عرض كامل + شبكات متجاوبة */
+
+body[data-hub-page="system-ops"] main.container[data-system-ops] {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 1.25rem clamp(14px, 2vw, 28px) 3.5rem;
+  box-sizing: border-box;
+}
+
+body[data-hub-page="system-ops"] {
+  overflow-x: hidden;
+}
+
+body[data-hub-page="system-ops"] .hub-feature-hero {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body[data-hub-page="system-ops"] .hub-feature-hero h1 {
+  max-width: none;
+  font-size: clamp(1.45rem, 3vw, 2.35rem);
+  line-height: 1.35;
+}
+
+body[data-hub-page="system-ops"] .hub-feature-hero > p {
+  max-width: 64rem;
+}
+
+.sysops-system-badge {
+  margin: 0 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 235, 238, 0.95);
+  font-weight: 900;
+  font-size: 13px;
+}
+
 .sysops-layout {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
   margin-top: 18px;
+  width: 100%;
 }
 
 .sysops-sidebar {
@@ -16,6 +60,7 @@
   display: grid;
   gap: 6px;
   box-shadow: 0 8px 22px rgba(12, 14, 17, 0.06);
+  min-width: 0;
 }
 
 .sysops-sidebar a {
@@ -36,38 +81,46 @@
   color: #d70000;
 }
 
+/* مؤشرات — حتى ~11 عنصرًا في صف واحد على الشاشات الواسعة */
 .sysops-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(11, minmax(0, 1fr));
   gap: 10px;
   margin: 14px 0;
+  width: 100%;
 }
 
 .sysops-kpi {
   background: #fff;
   border: 1px solid #e8eaf0;
   border-radius: 14px;
-  padding: 12px;
+  padding: 12px 8px;
   text-align: center;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .sysops-kpi strong {
   display: block;
   color: #d70000;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .sysops-kpi span {
   font-size: 11px;
   font-weight: 800;
   color: #667085;
+  line-height: 1.35;
+  display: block;
 }
 
+/* بطاقات القدرات — حتى 6 في الصف */
 .sysops-caps {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 16px;
+  width: 100%;
 }
 
 .sysops-cap {
@@ -82,6 +135,8 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.12s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .sysops-cap:hover {
@@ -112,22 +167,25 @@
   font-size: 14px;
   line-height: 1;
   padding-top: 2px;
+  flex-shrink: 0;
 }
 
 .sysops-cap i {
   color: #d70000;
   margin-top: 3px;
+  flex-shrink: 0;
 }
 
 .sysops-cap strong {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
 .sysops-cap small {
   color: #8891a0;
   font-weight: 700;
+  font-size: 11px;
 }
 
 .sysops-section {
@@ -137,6 +195,7 @@
   padding: 16px;
   margin-bottom: 14px;
   scroll-margin-top: 96px;
+  min-width: 0;
 }
 
 .sysops-section.is-flash {
@@ -160,12 +219,6 @@
   font-size: 16px;
 }
 
-@media (max-width: 640px) {
-  .sysops-section {
-    scroll-margin-top: 80px;
-  }
-}
-
 .sysops-form,
 .sysops-form-row {
   display: grid;
@@ -184,6 +237,7 @@
   border-radius: 12px;
   padding: 10px 12px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .sysops-form label,
@@ -302,6 +356,25 @@
   transform: translateX(-50%) translateY(0);
 }
 
+/* —— Responsive —— */
+@media (max-width: 1400px) {
+  .sysops-caps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .sysops-kpis {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .sysops-caps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .sysops-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 920px) {
   .sysops-layout {
     grid-template-columns: 1fr;
@@ -311,5 +384,32 @@
     grid-auto-flow: column;
     grid-auto-columns: max-content;
     overflow-x: auto;
+  }
+  .sysops-caps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sysops-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .sysops-section {
+    scroll-margin-top: 80px;
+  }
+  .sysops-caps {
+    grid-template-columns: 1fr;
+  }
+  .sysops-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  body[data-hub-page="system-ops"] main.container[data-system-ops] {
+    padding-inline: 12px;
+  }
+}
+
+@media (max-width: 400px) {
+  .sysops-kpis {
+    grid-template-columns: 1fr;
   }
 }

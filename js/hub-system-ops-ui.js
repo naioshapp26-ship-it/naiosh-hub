@@ -130,14 +130,14 @@
     if (!box) return;
     const s = window.HubSystemOps.stats();
     box.innerHTML = [
-      ['دومينات فرعية', s.subdomains],
+      ['نطاقات فرعية', s.subdomains],
       ['هياكل ممنوحة', s.structures],
       ['أدوار', s.roles],
       ['عضويات', s.memberships],
       ['شهادات', s.certificates],
       ['صفحات', s.pages],
       ['إيجارات', s.rentals],
-      ['ERPI فعّال', s.erpiOn],
+      ['النظام المتكامل فعّال', s.erpiOn],
       ['قانوني فعّال', s.lawOn],
       ['أصول', s.assets],
       ['وفر التكلفة', s.costSaving],
@@ -499,13 +499,26 @@
     host.innerHTML = section('لوحة التشغيل', '<p>اختر قسمًا من المنيو الجانبي.</p>', 'sysops-fallback');
   };
 
+  const PAGE_TITLE = 'آلية تشغيل الأنظمة | نايوش هوب 360';
+
   const paint = ({ scroll = false, sectionId = '' } = {}) => {
     paintKpis();
     paintSidebar();
     paintCaps();
     paintPanel();
     const title = root.querySelector('[data-ops-title]');
-    if (title) title.textContent = `آلية تشغيل الأنظمة · ${systemCode}`;
+    if (title) title.textContent = PAGE_TITLE;
+    if (document.title !== PAGE_TITLE) document.title = PAGE_TITLE;
+    const sysBadge = root.querySelector('[data-ops-system]');
+    if (sysBadge) {
+      if (systemCode) {
+        sysBadge.hidden = false;
+        sysBadge.textContent = `النظام النشط: ${systemCode}`;
+      } else {
+        sysBadge.hidden = true;
+        sysBadge.textContent = '';
+      }
+    }
     if (scroll) afterPaintScroll(sectionId || CAP_TARGETS[activeCap]?.section || '');
   };
 
