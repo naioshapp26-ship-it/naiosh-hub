@@ -1,0 +1,103 @@
+/**
+ * NAIOSH HUB 360 — Site-wide page canvas standard
+ * تحميل عبر hub-chrome — صفحات المحتوى بعرض كامل.
+ */
+
+:root {
+  --hub-page-pad-inline: clamp(14px, 2vw, 28px);
+  --hub-card-min: 220px;
+  --hub-card-gap: 12px;
+}
+
+/* ===== عرض الصفحة الكامل ===== */
+main.container,
+main.hub-feature-page,
+main.container.hub-feature-page,
+body > main.container {
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+  padding-inline: var(--hub-page-pad-inline);
+  box-sizing: border-box;
+}
+
+/* أغلفة صفحات شائعة خارج .container */
+main.dir-page,
+main.ops-admin-page,
+main.gcs-page,
+main.so-page-wide,
+main.jr-page,
+main.rev-page,
+main.sc-page,
+main.hus-page,
+main.si-main,
+main.hub-rent-page,
+main.sys-wrap,
+.sys-wrap {
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+  padding-inline: var(--hub-page-pad-inline);
+  box-sizing: border-box;
+}
+
+/* Tailwind-style shells */
+main.max-w-7xl,
+main.max-w-6xl,
+main.max-w-5xl {
+  max-width: none !important;
+  width: 100% !important;
+  margin-inline: 0 !important;
+}
+
+@media (min-width: 1600px) {
+  :root { --hub-card-min: 200px; }
+}
+
+@media (max-width: 1100px) {
+  :root { --hub-card-min: 240px; }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --hub-card-min: 100%;
+    --hub-page-pad-inline: 12px;
+  }
+}
+
+.hub-table-wrap,
+.gos-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.hub-table-wrap table,
+.gos-table {
+  width: 100%;
+  min-width: 0;
+}
+
+/* ===== استثناءات مقصودة ===== */
+main.container.hub-checkout:not([data-hub-my-orders]),
+body.hub-checkout-page main.container:not([data-hub-my-orders]) {
+  max-width: min(1100px, 100%) !important;
+  margin-inline: auto !important;
+  width: 100% !important;
+}
+
+main[data-hub-my-orders].hub-checkout {
+  max-width: none !important;
+  margin-inline: 0 !important;
+}
+
+/* شروط/خصوصية — عرض قراءة مقصود */
+main.max-w-3xl.mx-auto.px-4.py-10 {
+  max-width: min(768px, 100%) !important;
+  margin-inline: auto !important;
+}
+
+.hub-prose-readable,
+.hub-feature-hero > p,
+.gos-panel > p.lead {
+  max-width: min(72ch, 100%);
+}

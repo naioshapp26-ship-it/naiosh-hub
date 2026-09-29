@@ -1,8 +1,11 @@
 /* نظام التوجيه المركزي — وضوح Desktop 100% */
 
 .dir-page {
-  width: min(1360px, calc(100% - 28px));
-  margin: 18px auto 80px;
+  width: 100%;
+  max-width: none;
+  margin: 18px 0 80px;
+  padding-inline: clamp(14px, 2vw, 28px);
+  box-sizing: border-box;
   display: grid;
   gap: 22px;
   font-size: 16px;
@@ -509,7 +512,8 @@
 
 @media (max-width: 720px) {
   .dir-page {
-    width: calc(100% - 16px);
+    width: 100%;
+    padding-inline: 12px;
     gap: 16px;
   }
   .dir-kpis {

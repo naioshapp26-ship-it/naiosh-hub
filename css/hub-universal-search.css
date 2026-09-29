@@ -758,8 +758,9 @@ body.hus-page-body {
 }
 
 .hus-page {
-  margin: 24px auto 48px;
-  max-width: 1180px;
+  margin: 24px 0 48px;
+  max-width: none;
+  width: 100%;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 22px;
@@ -769,6 +770,7 @@ body.hus-page-body {
   flex-direction: column;
   font-family: 'Cairo', 'Tajawal', sans-serif;
   font-size: 16px;
+  box-sizing: border-box;
 }
 
 .hus-page .hus-toolbar {

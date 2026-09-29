@@ -90,6 +90,15 @@ a {
   padding: 0 20px;
 }
 
+/* Site-wide: محتوى الصفحات يستغل عرض الشاشة (الهيدر/الفوتر يبقيان منظمَين) */
+main.container {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: clamp(14px, 2vw, 28px);
+  box-sizing: border-box;
+}
+
 .top-nav {
   position: sticky;
   top: 0;

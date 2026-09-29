@@ -2,9 +2,10 @@
 
 .so-page-wide {
   width: 100%;
-  max-width: min(1680px, 100%);
-  margin: 0 auto;
-  padding: 0 12px 48px;
+  max-width: none;
+  margin: 0;
+  padding: 0 clamp(14px, 2vw, 28px) 48px;
+  box-sizing: border-box;
 }
 
 .so-prose {

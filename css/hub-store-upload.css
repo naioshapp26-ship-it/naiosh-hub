@@ -5,8 +5,9 @@
 }
 
 .store-upload-panel {
-  width: min(1200px, 100%);
-  margin: 0 auto 28px;
+  width: 100%;
+  max-width: none;
+  margin: 0 0 28px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -15,8 +16,8 @@
 
 .su-wizard-wrap {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto 28px;
+  max-width: none;
+  margin: 0 0 28px;
   padding: 0;
 }
 

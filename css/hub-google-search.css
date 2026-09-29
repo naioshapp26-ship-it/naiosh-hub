@@ -133,8 +133,11 @@ body.homepage .hero-search-engines .hero-float-card.is-google-search {
 
 /* صفحة google-search.html */
 .gcs-page {
-  width: min(960px, calc(100% - 24px));
-  margin: 20px auto 72px;
+  width: 100%;
+  max-width: none;
+  margin: 20px 0 72px;
+  padding-inline: clamp(14px, 2vw, 28px);
+  box-sizing: border-box;
   display: grid;
   gap: 18px;
 }
