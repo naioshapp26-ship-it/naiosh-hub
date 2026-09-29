@@ -34,6 +34,31 @@
   border-bottom: 1px solid #f0f2f5;
 }
 
+.su-wizard-head-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-direction: row-reverse;
+}
+
+.su-process-block {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.su-page-title {
+  margin: 0;
+  flex: 0 1 auto;
+  max-width: min(100%, 420px);
+  font-size: clamp(1.15rem, 2.4vw, 1.55rem);
+  font-weight: 900;
+  line-height: 1.35;
+  color: #111;
+  text-align: start;
+}
+
 .su-wizard-head h2 {
   margin: 0;
   font-size: 1.55rem;
@@ -537,6 +562,15 @@
   .su-wizard-head,
   .su-body {
     padding: 20px;
+  }
+  .su-wizard-head-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .su-page-title {
+    max-width: none;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f2f5;
   }
 }
 
