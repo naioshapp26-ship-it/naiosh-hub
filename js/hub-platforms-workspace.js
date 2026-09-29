@@ -650,7 +650,7 @@
         '<p class="plt-ws-lead">المنصة: <strong>' +
         esc(ui.accessResult.platform) +
         '</strong></p>' +
-        '<p><strong>Request ID:</strong> <code dir="ltr">' +
+        '<p><strong>رقم الطلب:</strong> <code dir="ltr">' +
         esc(ui.accessResult.id) +
         '</code></p>' +
         '<p><strong>الحالة:</strong> ' +
@@ -697,7 +697,7 @@
         '<div class="plt-modal-overlay" data-plt-add-overlay>' +
         '<div class="plt-modal" role="dialog" aria-modal="true">' +
         '<h3>تم إرسال طلب إضافة المنصة</h3>' +
-        '<p><strong>Request ID:</strong> <code dir="ltr">' +
+        '<p><strong>رقم الطلب:</strong> <code dir="ltr">' +
         esc(ui.addResult.id) +
         '</code></p>' +
         '<p><strong>الحالة:</strong> ' +
