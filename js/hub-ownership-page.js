@@ -1,9 +1,10 @@
 /**
- * واجهة صفحة ملكية نايوش
+ * واجهة صفحة ملكية نايوش | نايوش هوب 360
  */
 (() => {
   'use strict';
 
+  const PAGE_TITLE = 'ملكية نايوش | نايوش هوب 360';
   const qs = (s, r = document) => r.querySelector(s);
   const api = () => window.HubOwnership;
 
@@ -17,7 +18,11 @@
   const fmtDate = (iso) => {
     if (!iso) return '—';
     try {
-      return new Date(iso).toLocaleDateString('ar-EG');
+      return new Date(iso).toLocaleDateString('en-GB', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
     } catch {
       return String(iso).slice(0, 10);
     }
@@ -28,6 +33,15 @@
 
   const visLabel = (v) =>
     ({ public: 'عام', customers: 'العملاء المسجلون', admin: 'الإدارة فقط' }[v] || v);
+
+  const kindLabel = (k) =>
+    ({
+      ownership: 'ملكية',
+      document: 'وثيقة',
+      right: 'حق',
+      info: 'معلومة',
+      action: 'إجراء',
+    }[k] || k || '—');
 
   let ui = { q: '', modal: null, detailId: '' };
 
@@ -47,52 +61,61 @@
     const manage = api().canManage();
     const isDoc = item.kind === 'document';
     const isAction = item.kind === 'action' || item.action === 'add';
-    const actions = [];
+    const primary = [];
+    const secondary = [];
     if (isAction) {
-      actions.push(
-        `<button type="button" class="own-btn primary" data-own-add><i class="fas fa-plus"></i> إضافة سجل</button>`
+      primary.push(
+        `<button type="button" class="own-btn primary sm" data-own-add><i class="fas fa-plus"></i> إضافة سجل</button>`
       );
     } else {
-      actions.push(
-        `<button type="button" class="own-btn primary" data-own-detail="${esc(item.id)}"><i class="fas fa-eye"></i> عرض التفاصيل</button>`
+      primary.push(
+        `<button type="button" class="own-btn primary sm" data-own-detail="${esc(item.id)}"><i class="fas fa-eye"></i> عرض التفاصيل</button>`
       );
       if (item.href) {
-        actions.push(
-          `<a class="own-btn" href="${esc(item.href)}"><i class="fas fa-arrow-up-left-from-circle"></i> فتح الصفحة المرتبطة</a>`
+        primary.push(
+          `<a class="own-btn sm" href="${esc(item.href)}"><i class="fas fa-arrow-up-left-from-circle"></i> فتح الصفحة المرتبطة</a>`
         );
       }
       if (isDoc && item.attachmentUrl) {
-        actions.push(
-          `<a class="own-btn" href="${esc(item.attachmentUrl)}" target="_blank" rel="noopener"><i class="fas fa-file"></i> عرض الوثيقة</a>`
+        primary.push(
+          `<a class="own-btn sm" href="${esc(item.attachmentUrl)}" target="_blank" rel="noopener"><i class="fas fa-file"></i> عرض الوثيقة</a>`
         );
-        actions.push(
-          `<a class="own-btn" href="${esc(item.attachmentUrl)}" download><i class="fas fa-download"></i> تحميل</a>`
+        secondary.push(
+          `<a class="own-btn sm" href="${esc(item.attachmentUrl)}" download><i class="fas fa-download"></i> تحميل</a>`
         );
       } else if (isDoc) {
-        actions.push(
-          `<button type="button" class="own-btn" data-own-detail="${esc(item.id)}"><i class="fas fa-file"></i> عرض الوثيقة</button>`
+        primary.push(
+          `<button type="button" class="own-btn sm" data-own-detail="${esc(item.id)}"><i class="fas fa-file"></i> عرض الوثيقة</button>`
         );
       }
     }
     if (manage && !isAction) {
-      actions.push(`<button type="button" class="own-btn" data-own-edit="${esc(item.id)}">تعديل</button>`);
-      actions.push(
-        `<button type="button" class="own-btn" data-own-status="${esc(item.id)}" data-status="${
+      secondary.push(`<button type="button" class="own-btn sm" data-own-edit="${esc(item.id)}">تعديل</button>`);
+      secondary.push(
+        `<button type="button" class="own-btn sm" data-own-status="${esc(item.id)}" data-status="${
           item.status === 'active' ? 'disabled' : 'active'
         }">${item.status === 'active' ? 'إيقاف' : 'تفعيل'}</button>`
       );
-      actions.push(
-        `<button type="button" class="own-btn" data-own-status="${esc(item.id)}" data-status="archived">أرشفة</button>`
+      secondary.push(
+        `<button type="button" class="own-btn sm" data-own-status="${esc(item.id)}" data-status="archived">أرشفة</button>`
       );
-      actions.push(`<button type="button" class="own-btn danger" data-own-del="${esc(item.id)}">حذف</button>`);
+      secondary.push(`<button type="button" class="own-btn sm danger" data-own-del="${esc(item.id)}">حذف</button>`);
     }
+
+    const more =
+      secondary.length > 0
+        ? `<details class="own-more">
+            <summary><i class="fas fa-ellipsis"></i> المزيد</summary>
+            <div class="own-more-menu">${secondary.join('')}</div>
+          </details>`
+        : '';
 
     return `<article class="own-card" data-own-id="${esc(item.id)}" id="item-${esc(item.id)}">
       <div class="own-card-head">
         <span class="own-card-icon" aria-hidden="true"><i class="fas ${esc(item.icon || 'fa-file')}"></i></span>
         <div>
           <h3>${esc(item.title)}</h3>
-          <p class="own-meta">${esc(item.category || item.kind)} · ${esc(statusLabel(item.status))}${
+          <p class="own-meta">${esc(item.category || kindLabel(item.kind))} · ${esc(statusLabel(item.status))}${
             manage ? ` · ${esc(visLabel(item.visibility))}` : ''
           }</p>
         </div>
@@ -107,7 +130,7 @@
             </div>`
           : ''
       }
-      <div class="own-card-actions">${actions.join('')}</div>
+      <div class="own-card-actions">${primary.join('')}${more}</div>
     </article>`;
   };
 
@@ -120,7 +143,7 @@
       <p class="own-desc">${esc(item.description || '')}</p>
       <div class="own-doc-meta" style="margin-top:12px">
         <div><span>التصنيف</span><strong>${esc(item.category || '—')}</strong></div>
-        <div><span>النوع</span><strong>${esc(item.kind || '—')}</strong></div>
+        <div><span>النوع</span><strong>${esc(kindLabel(item.kind))}</strong></div>
         <div><span>الحالة</span><strong>${esc(statusLabel(item.status))}</strong></div>
         ${item.docType ? `<div><span>نوع الوثيقة</span><strong>${esc(item.docType)}</strong></div>` : ''}
         ${item.reference ? `<div><span>المرجع</span><strong dir="ltr">${esc(item.reference)}</strong></div>` : ''}
@@ -157,19 +180,22 @@
       <label>النوع</label>
       <select data-f="kind">
         ${['ownership', 'document', 'right', 'info', 'action']
-          .map((k) => `<option value="${k}" ${item?.kind === k ? 'selected' : ''}>${k}</option>`)
+          .map(
+            (k) =>
+              `<option value="${k}" ${item?.kind === k ? 'selected' : ''}>${esc(kindLabel(k))}</option>`
+          )
           .join('')}
       </select>
       <label>الوصف</label><textarea data-f="description">${esc(item?.description || '')}</textarea>
       <label>نوع الوثيقة / المرجع</label>
       <div class="own-two">
         <input data-f="docType" placeholder="نوع الوثيقة" value="${esc(item?.docType || '')}" />
-        <input data-f="reference" placeholder="مرجع" value="${esc(item?.reference || '')}" dir="ltr" />
+        <input data-f="reference" placeholder="المرجع" value="${esc(item?.reference || '')}" dir="ltr" />
       </div>
       <label>رابط مرتبط / مرفق</label>
       <div class="own-two">
-        <input data-f="href" placeholder="href" value="${esc(item?.href || '')}" dir="ltr" />
-        <input data-f="attachmentUrl" placeholder="attachment URL" value="${esc(item?.attachmentUrl || '')}" dir="ltr" />
+        <input data-f="href" placeholder="رابط الصفحة المرتبطة" value="${esc(item?.href || '')}" dir="ltr" />
+        <input data-f="attachmentUrl" placeholder="رابط المرفق" value="${esc(item?.attachmentUrl || '')}" dir="ltr" />
       </div>
       <label>الحالة</label>
       <select data-f="status">
@@ -212,6 +238,7 @@
   const render = () => {
     const root = qs('[data-own-root]');
     if (!root || !api()) return;
+    if (document.title !== PAGE_TITLE) document.title = PAGE_TITLE;
     api().ensure();
     const s = api().stats();
     const q = ui.q;
