@@ -1,5 +1,73 @@
 /* Customer articles journey — blog.html */
-.art-page { padding-bottom: 4rem; }
+.art-page {
+  padding-bottom: 4rem;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+/* عرض موحّد: الهيرو + المساعدة + أحدث المقالات بنفس عرض الصفحة */
+.art-page .hub-feature-section,
+.art-page #art-app,
+.art-page .art-help-card {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.art-page .hub-feature-section-lead {
+  max-width: min(72ch, 100%);
+}
+
+/* شبكة المقالات — حتى 6 بطاقات على Desktop دون تمديد بطاقة واحدة على كامل الشاشة */
+.art-page [data-blog-posts] {
+  display: grid;
+  width: 100%;
+  max-width: none;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.art-page [data-blog-posts] > .hub-feature-card {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+
+/* مقال واحد: حجم بطاقة طبيعي — لا تمديد ولا تمركز ضيق */
+.art-page [data-blog-posts] > .hub-feature-card:only-child {
+  max-width: min(100%, 380px);
+  justify-self: start;
+}
+
+.art-page [data-blog-posts] > .art-posts-empty {
+  grid-column: 1 / -1;
+  max-width: none;
+  width: 100%;
+  justify-self: stretch;
+}
+
+@media (min-width: 1600px) {
+  .art-page [data-blog-posts] {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .art-page [data-blog-posts] {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  }
+  .art-page [data-blog-posts] > .hub-feature-card {
+    max-width: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .art-page [data-blog-posts] {
+    grid-template-columns: 1fr;
+  }
+}
 .art-hero {
   position: relative;
   overflow: hidden;

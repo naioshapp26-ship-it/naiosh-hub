@@ -563,12 +563,15 @@
     </div>`;
   };
 
+  const ART_PAGE_TITLE = 'المقالات | نايوش هوب 360';
+
   const renderHomeHero = () => {
+    document.title = ART_PAGE_TITLE;
     const hero = document.querySelector('[data-art-hero]');
     if (!hero) return;
     hero.innerHTML = `
       <p class="hub-feature-kicker" style="color:rgba(255,214,220,.95)"><i class="fas fa-newspaper"></i> مقالات تشغيلية</p>
-      <h1>المدونة | نايوش هوب 360</h1>
+      <h1>المقالات | نايوش هوب 360</h1>
       <p class="art-lead">مقالات تُشغّل — مش كلام عام. كل مقالة تنتهي بخطوة عملية داخل هوب: فرع · رصيد · دردشة · منصات.</p>
       <p class="art-hint">أرسل مقالك في خطوات بسيطة، وسنراجعه قبل النشر.</p>
       <div class="art-hero-actions">
@@ -583,7 +586,7 @@
     if (!grid) return;
     const posts = A()?.listPublished?.(40) || [];
     if (!posts.length) {
-      grid.innerHTML = `<aside class="art-help-card" style="grid-column:1/-1">
+      grid.innerHTML = `<aside class="art-help-card art-posts-empty">
         <span class="hub-feature-purpose-mark"><i class="fas fa-pen-to-square"></i></span>
         <div><strong>لا مقالات منشورة بعد</strong>
           <p>كن أول من يرسل مقالاً عبر زر «ارفع مقالك» — بعد المراجعة والاعتماد سيظهر هنا.</p>
