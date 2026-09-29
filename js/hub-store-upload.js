@@ -191,12 +191,12 @@
       '<div class="su-wizard">' +
         '<div class="su-wizard-head">' +
           '<div class="su-wizard-head-top">' +
+            '<h1 class="su-page-title">' + esc(SALES_STORE_PAGE_TITLE) + '</h1>' +
             '<div class="su-process-block">' +
               '<h2><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> ' + esc(UPLOAD_PROCESS_TITLE) + '</h2>' +
               '<p>اختر المتجر ثم أدخل بيانات المنتج والرابط والسعر.</p>' +
               '<button type="button" class="btn btn-outline su-help-btn" data-su-help title="كيف أرفع منتجاً؟">؟ كيف أرفع منتجاً؟</button>' +
             '</div>' +
-            '<h1 class="su-page-title">' + esc(SALES_STORE_PAGE_TITLE) + '</h1>' +
           '</div>' +
         '</div>' +
         '<div class="su-steps">' + stepsHtml + '</div>' +

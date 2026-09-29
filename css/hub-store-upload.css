@@ -40,6 +40,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px 24px;
+  flex-direction: row-reverse;
 }
 
 .su-process-block {
@@ -568,7 +569,6 @@
   }
   .su-page-title {
     max-width: none;
-    order: -1;
     padding-bottom: 8px;
     border-bottom: 1px solid #f0f2f5;
   }
