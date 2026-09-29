@@ -1,7 +1,21 @@
-.op-page { padding: 2rem 0 4rem; }
+/* صفحة آلية التشغيل — عرض كامل + شبكات متجاوبة */
+
+body[data-hub-page="operating"] main.container.op-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 1.25rem clamp(14px, 2vw, 28px) 3.5rem;
+  box-sizing: border-box;
+}
+
+.op-page {
+  padding: 2rem 0 4rem;
+}
+
 .op-hero {
   position: relative;
   overflow: hidden;
+  width: 100%;
   padding: clamp(28px, 4vw, 44px) clamp(20px, 3vw, 36px);
   background:
     radial-gradient(120% 80% at 100% 0%, rgba(215, 0, 0, 0.38), transparent 55%),
@@ -11,7 +25,9 @@
   margin-bottom: 1.5rem;
   color: #fff;
   box-shadow: 0 28px 70px rgba(60, 0, 14, 0.35);
+  box-sizing: border-box;
 }
+
 .op-kicker {
   margin: 0 0 12px;
   display: inline-flex;
@@ -23,22 +39,31 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: rgba(255, 214, 220, 0.95);
   font-weight: 900;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   font-size: 12px;
 }
+
 .op-hero h1 {
   margin: 0 0 10px;
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-size: clamp(1.55rem, 3.2vw, 2.45rem);
   font-weight: 900;
   color: #fff !important;
-  max-width: 16ch;
+  max-width: none;
+  line-height: 1.35;
 }
+
 .op-hero p {
   margin: 0;
-  max-width: 52rem;
+  max-width: 64rem;
   color: rgba(255, 245, 247, 0.96) !important;
   font-weight: 600;
   line-height: 1.7;
+}
+
+.op-hero .hub-feature-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .op-flow {
@@ -46,7 +71,9 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 2rem;
+  width: 100%;
 }
+
 .op-flow article {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -57,17 +84,24 @@
   border-top: 3px solid #dc2626;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
   transition: transform 0.2s ease;
+  min-width: 0;
 }
+
 .op-flow article.is-interactive {
   cursor: pointer;
 }
+
 .op-flow article.is-interactive:hover,
 .op-flow article.is-interactive:focus-visible {
   transform: translateY(-2px);
   outline: 2px solid #dc2626;
   outline-offset: 2px;
 }
-.op-flow article:hover { transform: translateY(-2px); }
+
+.op-flow article:hover {
+  transform: translateY(-2px);
+}
+
 .op-flow span {
   width: 28px;
   height: 28px;
@@ -79,77 +113,125 @@
   font-weight: 900;
   font-size: 12px;
 }
-.op-flow strong { font-size: 14px; }
-.op-flow small { color: #6b7280; font-weight: 700; font-size: 11px; }
 
+.op-flow strong {
+  font-size: 14px;
+}
+
+.op-flow small {
+  color: #6b7280;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* تفاصيل المبادئ — حتى 6 في الصف على الشاشات الواسعة */
 .op-principles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 2rem;
+  width: 100%;
 }
+
 .op-card {
   background: #fff;
   border: 1px solid #e8eaf0;
-  border-radius: 18px;
-  padding: 16px;
+  border-radius: 16px;
+  padding: 12px 14px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
   box-shadow: 0 8px 20px rgba(12, 14, 17, 0.04);
   border-top: 3px solid #dc2626;
   text-align: right;
   font: inherit;
   color: inherit;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
+
 .op-card.is-interactive {
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease, background 0.15s ease;
 }
+
 .op-card.is-interactive:hover {
   border-color: #f0b4b4;
   box-shadow: 0 12px 26px rgba(215, 0, 0, 0.1);
   transform: translateY(-2px);
 }
+
 .op-card.is-interactive:focus-visible {
   outline: 2px solid #d70000;
   outline-offset: 2px;
 }
+
 .op-card.is-interactive:active {
   transform: scale(0.99);
 }
+
 .op-card.is-active {
   border-color: #d70000;
   background: rgba(215, 0, 0, 0.04);
   box-shadow: 0 0 0 2px rgba(215, 0, 0, 0.12);
 }
+
 .op-card-top {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  min-width: 0;
 }
+
 .op-card-go {
   margin-inline-start: auto;
   color: #d70000;
   opacity: 0.75;
   font-size: 13px;
+  flex-shrink: 0;
 }
+
 .op-card-num {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 10px;
   background: linear-gradient(145deg, #ff1f2f, #8a000c);
   color: #fff;
   display: grid;
   place-items: center;
   font-weight: 900;
-  font-size: 12px;
+  font-size: 11px;
   flex-shrink: 0;
 }
-.op-card-top i { color: #dc2626; }
-.op-card h3 { margin: 0; font-size: 15px; font-weight: 900; }
-.op-card .summary { margin: 0; color: #991b1b; font-size: 12px; font-weight: 800; }
-.op-card .detail { margin: 0; color: #4b5563; font-size: 13px; font-weight: 600; line-height: 1.6; }
+
+.op-card-top i {
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+.op-card h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.op-card .summary {
+  margin: 0;
+  color: #991b1b;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.op-card .detail {
+  margin: 0;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.55;
+}
 
 .op-how,
 .op-details-head,
@@ -159,6 +241,7 @@
 #op-system-shortcuts,
 #op-start {
   scroll-margin-top: 96px;
+  width: 100%;
 }
 
 .op-how,
@@ -207,32 +290,36 @@
   transition: transform 0.25s ease;
   pointer-events: none;
 }
+
 .op-toast.is-on {
   transform: translateX(-50%) translateY(0);
 }
 
-@media (max-width: 640px) {
-  .op-how,
-  .op-details-head,
-  .op-systems,
-  .op-services,
-  #op-definition,
-  #op-system-shortcuts,
-  #op-start {
-    scroll-margin-top: 80px;
-  }
+.op-section-head {
+  margin: 0 0 14px;
 }
 
-.op-section-head { margin: 0 0 14px; }
-.op-section-head h2 { margin: 0 0 6px; font-size: 1.35rem; font-weight: 900; }
-.op-section-head p { margin: 0; color: #6b7280; font-weight: 700; }
+.op-section-head h2 {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
 
+.op-section-head p {
+  margin: 0;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+/* أيقونات الأنظمة — حتى 6 في الصف */
 .op-systems-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 2rem;
+  width: 100%;
 }
+
 .op-system-btn {
   display: grid;
   gap: 8px;
@@ -243,45 +330,76 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 16px;
-  padding: 18px 12px;
+  padding: 16px 10px;
   cursor: pointer;
   font: inherit;
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   border-top: 3px solid #dc2626;
+  min-width: 0;
+  box-sizing: border-box;
 }
+
 .op-system-btn:hover {
   transform: translateY(-2px);
   border-color: #dc2626;
   box-shadow: 0 14px 28px rgba(185, 28, 28, 0.12);
 }
+
 .op-system-btn i {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 14px;
   display: grid;
   place-items: center;
   color: #fff;
-  font-size: 20px;
+  font-size: 18px;
 }
-.op-system-btn strong { font-size: 13px; }
-.op-system-btn small { color: #6b7280; font-size: 11px; font-weight: 700; }
 
-.op-services-map { display: grid; gap: 12px; margin-bottom: 2rem; }
+.op-system-btn strong {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.op-system-btn small {
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+/* خريطة الخدمات — أعمدة متعددة بدل عمود واحد */
+.op-services-map {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
 .op-service-group {
   background: #fff;
   border: 1px solid #e8eaf0;
   border-radius: 16px;
   padding: 14px;
   border-top: 3px solid #dc2626;
+  min-width: 0;
 }
+
 .op-service-group h3 {
   margin: 0 0 10px;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   font-size: 14px;
 }
-.op-service-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.op-service-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .op-service-chips span {
   display: inline-flex;
   align-items: center;
@@ -297,27 +415,114 @@
 
 .op-cta {
   text-align: center;
-  padding: 2rem 1rem;
+  width: 100%;
+  padding: 2rem clamp(14px, 2vw, 28px);
   border-radius: 22px;
   background:
     radial-gradient(100% 80% at 50% 0%, rgba(215, 0, 0, 0.35), transparent 60%),
     linear-gradient(160deg, #0c0003, #230009 50%, #500014);
   color: #fff;
   border: 1px solid rgba(215, 0, 0, 0.35);
+  box-sizing: border-box;
 }
-.op-cta h2 { margin: 0 0 8px; }
-.op-cta p { margin: 0 0 16px; color: rgba(255, 220, 228, 0.88); font-weight: 600; }
-.op-cta-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+.op-cta h2 {
+  margin: 0 0 8px;
+}
+
+.op-cta p {
+  margin: 0 0 16px;
+  color: rgba(255, 220, 228, 0.88);
+  font-weight: 600;
+}
+
+.op-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
 .op-cta .btn-ghost {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.35);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+body[data-hub-page="operating"] #op-definition.hub-feature-purpose {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body[data-hub-page="operating"] {
+  overflow-x: hidden;
+}
+
+/* —— Responsive —— */
+@media (max-width: 1400px) {
+  .op-principles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .op-systems-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .op-principles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .op-systems-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .op-services-map {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .op-flow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
-  .op-flow { grid-template-columns: 1fr 1fr; }
-  .op-hero h1 { max-width: none; }
+  .op-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .op-hero h1 {
+    max-width: none;
+  }
 }
+
+@media (max-width: 720px) {
+  .op-principles,
+  .op-systems-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .op-services-map {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .op-how,
+  .op-details-head,
+  .op-systems,
+  .op-services,
+  #op-definition,
+  #op-system-shortcuts,
+  #op-start {
+    scroll-margin-top: 80px;
+  }
+}
+
 @media (max-width: 560px) {
-  .op-flow { grid-template-columns: 1fr; }
+  .op-flow {
+    grid-template-columns: 1fr;
+  }
+  .op-principles,
+  .op-systems-grid {
+    grid-template-columns: 1fr;
+  }
+  body[data-hub-page="operating"] main.container.op-page {
+    padding-inline: 12px;
+  }
 }
