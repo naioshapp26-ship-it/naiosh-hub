@@ -82,7 +82,7 @@
       ],
     },
     ownership: {
-      test: (path) => path.includes('naiosh-ownership') || path.includes('ownership'),
+      test: (path) => path.includes('naiosh-ownership'),
       title: 'دليل ملكية نايوش | نايوش هوب 360',
       subtitle: 'مركز موحّد للملكيات والحقوق والوثائق.',
       purpose: 'ملكية نايوش | نايوش هوب 360 — عرض الملكيات الهيكلية والملكية الفكرية ووثائق التوثيق.',
