@@ -44,6 +44,27 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    .login-logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: auto;
+      max-width: min(220px, 78vw);
+      padding: 6px 8px;
+      margin-bottom: 10px;
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+    }
+    .login-logo {
+      display: block;
+      height: auto !important;
+      width: auto !important;
+      max-height: 88px !important;
+      max-width: min(200px, 70vw) !important;
+      object-fit: contain !important;
+    }
   </style>
 </head>
 <body class="bg-white flex items-center justify-center min-h-screen p-4">
@@ -53,11 +74,11 @@
   </div>
 
   <div class="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden z-10 relative border border-gray-100">
-    <div class="bg-primary p-8 text-center relative overflow-hidden">
+    <div class="bg-primary p-6 text-center relative overflow-hidden">
       <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-30"></div>
       <div class="relative z-10">
-        <div class="inline-flex items-center justify-center w-[min(100%,280px)] h-auto rounded-2xl bg-white mb-4 px-3 py-2 border border-white/60 shadow-xl overflow-hidden">
-          <img src="assets/logo-hub.jpeg" alt="شعار نايوش هوب" class="w-full h-auto object-contain" />
+        <div class="login-logo-wrap">
+          <img src="assets/logo-hub.jpeg" alt="شعار نايوش هوب" class="login-logo" />
         </div>
         <div class="text-white text-3xl md:text-4xl font-extrabold tracking-wide">
           NAIOSH <span class="text-white">HUB</span>
