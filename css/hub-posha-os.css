@@ -40,7 +40,7 @@ body.pos-body {
   color: #fff;
   padding: 6px;
 }
-.pos-brand img { width: 42px; height: 42px; border-radius: 10px; object-fit: cover; }
+.pos-brand img { width: 42px; height: 42px; border-radius: 10px; object-fit: contain; background: #0a0a0a; }
 .pos-brand strong { display: block; font-size: 1.05rem; }
 .pos-brand span { display: block; color: #9aa0ab; font-size: 12px; font-weight: 700; }
 .pos-hub-link { margin: 0; padding: 0 6px; }
