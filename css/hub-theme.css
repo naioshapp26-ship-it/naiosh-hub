@@ -179,9 +179,9 @@ body.homepage .top-nav {
 }
 
 body.homepage .top-nav .inner {
-  min-height: 58px;
-  gap: 14px;
-  padding: 6px clamp(20px, 2.2vw, 40px) !important;
+  min-height: 52px;
+  gap: 12px;
+  padding: 4px clamp(20px, 2.2vw, 40px) !important;
   width: 100%;
   box-sizing: border-box;
 }

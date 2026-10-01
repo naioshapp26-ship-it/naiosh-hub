@@ -380,3 +380,26 @@ body[data-market-page="products"] #hub-back-button {
   right: auto;
   z-index: 10060;
 }
+
+/* شعار صفحة الدخول/التسجيل — متوسط، مستقل عن حجم الهيدر */
+.login-logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: min(220px, 78vw);
+  padding: 6px 8px;
+  margin-bottom: 10px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+}
+.login-logo {
+  display: block;
+  height: auto !important;
+  width: auto !important;
+  max-height: 88px !important;
+  max-width: min(200px, 70vw) !important;
+  object-fit: contain !important;
+}

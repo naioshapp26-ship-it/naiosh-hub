@@ -48,11 +48,12 @@
   }
 
   body.homepage .nav-main > .brand img,
-  body.homepage #site-logo-header {
+  body.homepage #site-logo-header,
+  body.homepage .site-header-logo {
     width: auto !important;
-    max-width: min(168px, 46vw) !important;
-    height: 40px !important;
-    max-height: 40px !important;
+    max-width: min(120px, 40vw) !important;
+    height: auto !important;
+    max-height: 34px !important;
     object-fit: contain !important;
   }
 

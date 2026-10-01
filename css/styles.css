@@ -157,15 +157,75 @@ main.container {
   text-decoration: none;
   color: var(--homepage-link-color);
   font-weight: 800;
+  line-height: 1;
+  flex: 0 0 auto;
 }
 
-.brand img {
-  height: 48px;
-  width: auto;
-  max-width: min(240px, 48vw);
-  object-fit: contain;
+/*
+ * أحجام الشعار حسب السياق — لا تستخدم حجمًا واحدًا لكل المواضع.
+ * .site-header-logo  → شريط التنقل (مضغوط)
+ * .login-logo        → بطاقة تسجيل الدخول (متوسط)
+ * .site-footer-logo  → التذييل
+ * .site-hero-logo    → شارة الهيرو
+ */
+.site-header-logo,
+.brand > img,
+.top-nav .brand img,
+#site-logo-header {
+  display: block;
+  height: auto !important;
+  width: auto !important;
+  max-height: 44px !important;
+  max-width: min(136px, 42vw) !important;
+  object-fit: contain !important;
   object-position: center;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
+  flex: 0 0 auto;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.16));
+}
+
+.login-logo {
+  display: block;
+  height: auto !important;
+  width: auto !important;
+  max-height: 88px !important;
+  max-width: min(200px, 70vw) !important;
+  object-fit: contain !important;
+  margin-inline: auto;
+}
+
+.login-logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: min(240px, 78vw);
+  height: auto;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.site-footer-logo,
+#site-logo-footer {
+  display: block;
+  height: auto !important;
+  width: auto !important;
+  max-height: 64px !important;
+  max-width: min(220px, 100%) !important;
+  object-fit: contain !important;
+  margin-bottom: 14px;
+}
+
+.site-hero-logo,
+#site-logo-hero-badge {
+  width: 44px !important;
+  height: 44px !important;
+  max-width: 44px !important;
+  max-height: 44px !important;
+  object-fit: contain !important;
 }
 
 .logo-text {
@@ -181,19 +241,29 @@ main.container {
 }
 
 @media (min-width: 768px) {
-  .brand img {
-    height: 58px;
-    max-width: 280px;
+  .site-header-logo,
+  .brand > img,
+  .top-nav .brand img,
+  #site-logo-header {
+    max-height: 46px !important;
+    max-width: 140px !important;
   }
 }
 
 @media (max-width: 767px) {
-  .brand img {
-    height: 42px;
-    max-width: min(200px, 56vw);
+  .site-header-logo,
+  .brand > img,
+  .top-nav .brand img,
+  #site-logo-header {
+    max-height: 36px !important;
+    max-width: min(120px, 40vw) !important;
   }
   .logo-text {
     font-size: 14px;
+  }
+  .login-logo {
+    max-height: 80px !important;
+    max-width: min(180px, 70vw) !important;
   }
 }
 
@@ -1895,10 +1965,11 @@ main#modules > section:not(:first-child)::before {
 }
 
 .site-footer-brand img {
-  width: auto;
-  height: 72px;
-  max-width: min(320px, 100%);
-  object-fit: contain;
+  width: auto !important;
+  height: auto !important;
+  max-height: 64px !important;
+  max-width: min(220px, 100%) !important;
+  object-fit: contain !important;
   margin-bottom: 14px;
 }
 

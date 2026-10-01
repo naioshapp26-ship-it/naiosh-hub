@@ -13,8 +13,9 @@ body.homepage .top-nav .inner {
   gap: 8px !important;
   max-width: none !important;
   width: 100% !important;
-  min-height: 56px !important;
-  padding: 6px clamp(12px, 1.6vw, 28px) !important;
+  min-height: 52px !important;
+  max-height: none;
+  padding: 4px clamp(12px, 1.6vw, 28px) !important;
   box-sizing: border-box !important;
 }
 
