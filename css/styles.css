@@ -160,9 +160,11 @@ main.container {
 }
 
 .brand img {
-  height: 45px;
+  height: 48px;
   width: auto;
+  max-width: min(240px, 48vw);
   object-fit: contain;
+  object-position: center;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
 }
 
@@ -173,13 +175,23 @@ main.container {
   white-space: nowrap;
 }
 
+/* اللوجو الجديد يتضمن HUB 360 — إخفاء النص المكرر بجانب الصورة */
+.brand .logo-text {
+  display: none;
+}
+
 @media (min-width: 768px) {
   .brand img {
-    height: 55px;
+    height: 58px;
+    max-width: 280px;
   }
 }
 
 @media (max-width: 767px) {
+  .brand img {
+    height: 42px;
+    max-width: min(200px, 56vw);
+  }
   .logo-text {
     font-size: 14px;
   }
@@ -1883,8 +1895,9 @@ main#modules > section:not(:first-child)::before {
 }
 
 .site-footer-brand img {
-  width: 64px;
-  height: 64px;
+  width: auto;
+  height: 72px;
+  max-width: min(320px, 100%);
   object-fit: contain;
   margin-bottom: 14px;
 }
