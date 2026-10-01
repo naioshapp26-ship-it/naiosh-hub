@@ -5,7 +5,7 @@
   'use strict';
 
   const DATA_URL = 'js/hub-side-projects-data.json?v=2';
-  const APP_URL = 'js/hub-side-projects.js?v=18';
+  const APP_URL = 'js/hub-side-projects.js?v=19';
   const FLOW_URL = 'js/hub-side-projects-flow.js?v=3';
 
   const root = document.querySelector('[data-side-projects-page]');
