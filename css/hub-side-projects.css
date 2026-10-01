@@ -526,9 +526,6 @@
 }
 
 /* شبكة الكتالوج: عرض كامل + أعمدة حسب عرض المحتوى المتاح */
-.sp-catalog-groups {
-  width: 100%;
-}
 .sp-catalog-grid {
   display: grid;
   width: 100%;
