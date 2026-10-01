@@ -24,6 +24,7 @@
   const resultsLead = root.querySelector('[data-sp-results-lead]');
   const catalogGrid = root.querySelector('[data-sp-catalog]');
   const catalogLead = root.querySelector('[data-sp-catalog-lead]');
+  const catalogPager = root.querySelector('[data-sp-pager]');
   const catFilter = root.querySelector('[data-sp-cat-filter]');
   const capitalFilter = root.querySelector('[data-sp-capital-filter]');
   const modeFilter = root.querySelector('[data-sp-mode-filter]');
@@ -238,7 +239,7 @@
   };
 
   let activeType = 'all';
-  let pageByCat = {};
+  let catalogPage = 1;
   let regStep = 1;
   const REG_STEP_LABELS = [
     '',
@@ -249,7 +250,11 @@
     'المراجعة والإرسال',
   ];
 
-  const PAGE_SIZE = 24;
+  const PAGE_SIZE = 50;
+
+  const resetCatalogPage = () => {
+    catalogPage = 1;
+  };
 
   const toast = (msg) => {
     if (!toastEl) return;
@@ -1036,11 +1041,47 @@
     else catFilter.value = '';
   };
 
+  const pagerPages = (current, total) => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = new Set([1, total, current, current - 1, current + 1, current - 2, current + 2]);
+    return [...pages].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  };
+
+  const paintPager = (total, page, totalPages) => {
+    if (!catalogPager) return;
+    if (total <= PAGE_SIZE) {
+      catalogPager.hidden = true;
+      catalogPager.innerHTML = '';
+      return;
+    }
+    catalogPager.hidden = false;
+    const from = (page - 1) * PAGE_SIZE + 1;
+    const to = Math.min(page * PAGE_SIZE, total);
+    const nums = pagerPages(page, totalPages);
+    let numsHtml = '';
+    let prev = 0;
+    nums.forEach((n) => {
+      if (prev && n - prev > 1) numsHtml += `<span class="sp-catalog-pager__ellipsis" aria-hidden="true">…</span>`;
+      numsHtml += `<button type="button" class="sp-catalog-pager__btn${n === page ? ' is-current' : ''}" data-sp-page="${n}" ${n === page ? 'aria-current="page"' : ''}>${n.toLocaleString('en-US')}</button>`;
+      prev = n;
+    });
+    catalogPager.innerHTML = `
+      <div class="sp-catalog-pager__meta">عرض ${from.toLocaleString('en-US')}–${to.toLocaleString('en-US')} من ${total.toLocaleString('en-US')} · صفحة ${page.toLocaleString('en-US')} من ${totalPages.toLocaleString('en-US')}</div>
+      <button type="button" class="sp-catalog-pager__btn" data-sp-page="${page - 1}" ${page <= 1 ? 'disabled' : ''} aria-label="الصفحة السابقة">السابق</button>
+      ${numsHtml}
+      <button type="button" class="sp-catalog-pager__btn" data-sp-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''} aria-label="الصفحة التالية">التالي</button>`;
+  };
+
   const paintCatalog = () => {
     const list = filteredProjects();
     const typeName = typeOf(activeType).nameAr;
     const catId = catFilter?.value || '';
     const catName = data.categories.find((c) => c.id === catId)?.nameAr;
+    const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+    if (catalogPage > totalPages) catalogPage = totalPages;
+    if (catalogPage < 1) catalogPage = 1;
+    const page = catalogPage;
+    const shown = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     if (catalogLead) {
       catalogLead.textContent = catName
@@ -1051,40 +1092,28 @@
     if (!catalogGrid) return;
     if (!list.length) {
       catalogGrid.innerHTML = '<p class="sp-empty">لا مشاريع مطابقة — جرّب نوعًا أو بحثًا آخر.</p>';
+      paintPager(0, 1, 1);
       return;
     }
 
-    const byCat = {};
-    list.forEach((p) => {
-      if (!byCat[p.categoryId]) byCat[p.categoryId] = [];
-      byCat[p.categoryId].push(p);
-    });
+    const cat = catId ? data.categories.find((c) => c.id === catId) : null;
+    const head = cat
+      ? `<header class="sp-cat-group-head">
+            <h3><i class="fas ${esc(cat.icon || 'fa-folder')}"></i> ${esc(cat.nameAr)}</h3>
+            <span>${list.length.toLocaleString('en-US')} مشروع</span>
+          </header>`
+      : `<header class="sp-cat-group-head">
+            <h3><i class="fas fa-list"></i> كل المشاريع المطابقة</h3>
+            <span>${list.length.toLocaleString('en-US')} مشروع · ${PAGE_SIZE.toLocaleString('en-US')} في الصفحة</span>
+          </header>`;
 
-    const order = catsForType(activeType).map((c) => c.id);
-    catalogGrid.innerHTML = order
-      .filter((id) => byCat[id]?.length)
-      .map((id) => {
-        const cat = data.categories.find((c) => c.id === id);
-        const all = byCat[id];
-        const page = pageByCat[id] || 1;
-        const shown = all.slice(0, page * PAGE_SIZE);
-        const more = all.length - shown.length;
-        return `<section class="sp-cat-group" data-cat-group="${esc(id)}">
-          <header class="sp-cat-group-head">
-            <h3><i class="fas ${esc(cat?.icon || 'fa-folder')}"></i> ${esc(cat?.nameAr || id)}</h3>
-            <span>${all.length.toLocaleString('en-US')} مشروع</span>
-          </header>
+    catalogGrid.innerHTML = `<section class="sp-cat-group">
+          ${head}
           <div class="sp-catalog-grid">
             ${shown.map((p) => projectCard(p)).join('')}
           </div>
-          ${
-            more > 0
-              ? `<button type="button" class="btn btn-secondary sp-load-more" data-sp-more="${esc(id)}">عرض المزيد (${more.toLocaleString('en-US')})</button>`
-              : ''
-          }
         </section>`;
-      })
-      .join('');
+    paintPager(list.length, page, totalPages);
     try {
       window.HubSideProjectsFlow?.markCatalogSelection?.();
     } catch (_) {}
@@ -1092,7 +1121,7 @@
 
   const setType = (typeId, { resetCat = true } = {}) => {
     activeType = typeId || 'all';
-    pageByCat = {};
+    resetCatalogPage();
     if (resetCat && catFilter) catFilter.value = '';
     paintTypeTabs();
     paintCatFilter();
@@ -1341,7 +1370,7 @@
     setIntroStep('understand');
     setType('all');
     if (catFilter) catFilter.value = '';
-    pageByCat = {};
+    resetCatalogPage();
     paintCatDir();
     paintCatalog();
 
@@ -1460,20 +1489,20 @@
     if (resultsPanel) resultsPanel.hidden = true;
   });
   searchEl?.addEventListener('input', () => {
-    pageByCat = {};
+    resetCatalogPage();
     paintCatalog();
   });
   catFilter?.addEventListener('change', () => {
-    pageByCat = {};
+    resetCatalogPage();
     paintCatDir();
     paintCatalog();
   });
   capitalFilter?.addEventListener('change', () => {
-    pageByCat = {};
+    resetCatalogPage();
     paintCatalog();
   });
   modeFilter?.addEventListener('change', () => {
-    pageByCat = {};
+    resetCatalogPage();
     paintCatalog();
   });
   typeTabs?.addEventListener('click', (e) => {
@@ -1487,10 +1516,19 @@
     if (!btn || !catFilter) return;
     const id = btn.getAttribute('data-sp-chip') || '';
     catFilter.value = catFilter.value === id ? '' : id;
-    pageByCat = {};
+    resetCatalogPage();
     paintCatDir();
     paintCatalog();
     journeyMark('typeChosen', true);
+    document.getElementById('sp-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  catalogPager?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-sp-page]');
+    if (!btn || btn.disabled || btn.classList.contains('is-current')) return;
+    const next = Number(btn.getAttribute('data-sp-page') || 1);
+    if (!Number.isFinite(next) || next < 1) return;
+    catalogPage = next;
+    paintCatalog();
     document.getElementById('sp-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   regForm?.addEventListener('submit', submitRegistration);
@@ -1559,13 +1597,6 @@
         regApi?.openDetails?.(id);
         return;
       }
-    }
-    const more = e.target.closest('[data-sp-more]');
-    if (more) {
-      const id = more.getAttribute('data-sp-more');
-      pageByCat[id] = (pageByCat[id] || 1) + 1;
-      paintCatalog();
-      return;
     }
     const expand = e.target.closest('[data-sp-expand]');
     if (expand) {

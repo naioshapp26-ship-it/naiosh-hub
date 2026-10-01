@@ -289,7 +289,11 @@
   color: #777;
 }
 
-.sp-catalog-groups { display: grid; gap: 18px; }
+.sp-catalog-groups {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+}
 .sp-cat-group-head {
   display: flex;
   align-items: center;
@@ -482,10 +486,18 @@
 }
 
 .sp-catalog-toolbar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  width: 100%;
+  align-items: end;
+}
+.sp-catalog-toolbar .sp-field {
+  min-width: 0;
+}
+.sp-catalog-toolbar .sp-field--search {
+  grid-column: auto;
 }
 .sp-cat-chips {
   display: flex;
@@ -507,46 +519,63 @@
 .sp-chip:hover { border-color: #d70000; color: #d70000; }
 .sp-chip i { margin-inline-end: 6px; color: #d70000; }
 
-.sp-results-grid,
-.sp-catalog-grid {
+.sp-results-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
+/* شبكة الكتالوج: عرض كامل + أعمدة حسب عرض المحتوى المتاح */
+.sp-catalog-groups {
+  width: 100%;
+}
+.sp-catalog-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .sp-card {
   border: 1px solid #eadfe2;
-  border-radius: 16px;
-  padding: 14px;
+  border-radius: 14px;
+  padding: 12px;
   background: linear-gradient(180deg, #fff 0%, #fffafb 100%);
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 .sp-card-top {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-start;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .sp-card-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
   background: #111;
   color: #fff;
   flex: 0 0 auto;
+  font-size: 13px;
 }
 .sp-card-top h3 {
-  margin: 0 0 4px;
-  font-size: 15px;
+  margin: 0 0 3px;
+  font-size: 13.5px;
   font-weight: 900;
   line-height: 1.35;
 }
 .sp-card-top small {
   color: #777;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .sp-score {
   margin-inline-start: auto;
@@ -560,16 +589,17 @@
 .sp-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
   margin-bottom: 8px;
 }
 .sp-badges span {
   background: #ffe5e5;
   color: #a00010;
   border-radius: 999px;
-  padding: 3px 8px;
-  font-size: 11px;
+  padding: 3px 7px;
+  font-size: 10.5px;
   font-weight: 800;
+  line-height: 1.3;
 }
 .sp-reasons {
   margin: 0 0 10px;
@@ -618,8 +648,16 @@
 .sp-plan p { margin: 0 0 6px; color: #555; font-weight: 650; }
 .sp-card-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
+  margin-top: auto;
+}
+.sp-catalog-grid .sp-card-actions .btn {
+  width: 100%;
+  justify-content: center;
+  font-size: 12px;
+  padding: 8px 10px;
+  white-space: nowrap;
 }
 
 /* أزرار ثانوية على خلفية بيضاء — نص غامق (يتغلب على body.homepage .btn-secondary) */
@@ -1246,7 +1284,6 @@ body.sp-success-open { overflow: hidden; }
   .sp-form-grid,
   .sp-reg-grid,
   .sp-results-grid,
-  .sp-catalog-grid,
   .sp-detail-grid,
   .sp-client-intro__results-grid { grid-template-columns: 1fr; }
   .sp-client-intro__cards,
@@ -1254,6 +1291,12 @@ body.sp-success-open { overflow: hidden; }
   .sp-client-intro__head { margin-bottom: 28px; }
   .sp-my-card { flex-direction: column; }
   .sp-journey-step { grid-template-columns: 48px 1fr; }
+  .sp-catalog-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sp-catalog-toolbar .sp-field--search {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1472,14 +1515,96 @@ body.sp-success-open { overflow: hidden; }
 .sp-card.is-compact .sp-card-actions,
 .sp-card .sp-card-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
 }
-@media (min-width: 981px) {
+
+/* تصفح الكتالوج */
+.sp-catalog-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 4px;
+}
+.sp-catalog-pager[hidden] { display: none !important; }
+.sp-catalog-pager__meta {
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #777;
+  margin-bottom: 2px;
+}
+.sp-catalog-pager__btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid #e2d6d9;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.sp-catalog-pager__btn:hover:not(:disabled):not(.is-current) {
+  border-color: #d70000;
+  color: #d70000;
+}
+.sp-catalog-pager__btn.is-current {
+  background: #d70000;
+  border-color: #d70000;
+  color: #fff;
+  cursor: default;
+}
+.sp-catalog-pager__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.sp-catalog-pager__ellipsis {
+  color: #999;
+  font-weight: 900;
+  padding: 0 2px;
+}
+
+/* أعمدة شبكة المشاريع حسب عرض الشاشة (المحتوى بعرض كامل) */
+@media (min-width: 1680px) {
+  .sp-catalog-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+@media (max-width: 1679px) and (min-width: 1200px) {
+  .sp-catalog-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1199px) and (min-width: 992px) {
+  .sp-catalog-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 991px) and (min-width: 720px) {
   .sp-catalog-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+@media (max-width: 719px) and (min-width: 480px) {
+  .sp-catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 479px) {
+  .sp-catalog-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 980px) {
   .sp-flow-needs__grid,
   .sp-flow-assess__qs {
