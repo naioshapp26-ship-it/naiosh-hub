@@ -3,32 +3,32 @@
 - PASS=47 FAIL=0
 - بطاقات مراجعة: 42
 - أزرار/CTAs: 5
-- صفحات موجودة رُبطت: 17
+- صفحات موجودة رُبطت: 14
 - صفحات جديدة: 0
 
 | اسم العنصر | نوعه | الصفحة | الوجهة | URL | قبل؟ | المشكلة | الإصلاح | فتحت؟ | بيانات؟ | ID؟ | صلاحيات؟ | Transaction؟ | PASS/FAIL |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| الطبقة 01 العقل المركزي | layer | index.html | directives.html | directives.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
+| الطبقة 01 العقل المركزي | layer | index.html | global-os.html | global-os.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | الطبقة 02 الحوكمة | layer | index.html | policies.html | policies.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | الطبقة 03 القوى العاملة | layer | index.html | job-roles.html | job-roles.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
-| الطبقة 04 الأنظمة | layer | index.html | system-ops.html | system-ops.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
-| الطبقة 05 المهام | layer | index.html | dashboard.html | dashboard.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
-| الطبقة 06 القياس | layer | index.html | self-assess.html | self-assess.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
-| الطبقة 07 التقارير | layer | index.html | dashboard.html | dashboard.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
+| الطبقة 04 الأنظمة | layer | index.html | apps.html | apps.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
+| الطبقة 05 المهام | layer | index.html | operating.html | operating.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
+| الطبقة 06 القياس | layer | index.html | quality.html | quality.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
+| الطبقة 07 التقارير | layer | index.html | hub-checklist.html | hub-checklist.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | الطبقة 08 التكامل | layer | index.html | global-os.html#integration | global-os.html#integration | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | تدفق البيانات | flow | index.html | global-os.html#data | global-os.html#data | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
-| تدفق القياس | flow | index.html | self-assess.html | self-assess.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
-| تدفق القرار | flow | index.html | directives.html | directives.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
+| تدفق القياس | flow | index.html | quality.html | quality.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
+| تدفق القرار | flow | index.html | global-os.html#ai | global-os.html#ai | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | تدفق الحوكمة | flow | index.html | policies.html | policies.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | تدفق التنفيذ | flow | index.html | operating.html | operating.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
-| تدفق التقارير | flow | index.html | dashboard.html | dashboard.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
-| مسار بناء العقل | track | index.html | directives.html | directives.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
+| تدفق التقارير | flow | index.html | hub-checklist.html | hub-checklist.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
+| مسار بناء العقل | track | index.html | global-os.html | global-os.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | مسار الحوكمة | track | index.html | policies.html | policies.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | مسار القوى العاملة | track | index.html | job-roles.html | job-roles.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | مسار ربط الأنظمة | track | index.html | apps.html | apps.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
-| مسار المهام | track | index.html | dashboard.html | dashboard.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
+| مسار المهام | track | index.html | operating.html | operating.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | مسار القياس | track | index.html | quality.html | quality.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
-| مسار التقارير | track | index.html | dashboard.html | dashboard.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
+| مسار التقارير | track | index.html | hub-checklist.html | hub-checklist.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | مسار التكامل | track | index.html | global-os.html#integration | global-os.html#integration | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | عرض المنتجات | cta | index.html | products.html | products.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
 | متجر المبيعات | cta | index.html | store.html | store.html | no navigation |  | ربط البطاقة بـ <a href> | true | true | N/A | public/login-gate on dashboard | N/A | PASS |
