@@ -2064,6 +2064,7 @@
         <ul class="feed">${state.tickets.map((t)=>`<li>
           <b>${esc(t.number||t.id)}</b> — ${esc(t.subject)} · ${esc(t.clientName)} (${esc(t.clientEmail)})
           <span class="chip">${esc(t.status)}</span>
+          ${(t.attachments||[]).length ? `<div class="posha-att-list" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${(t.attachments||[]).map((a)=>`<a class="btn btn-ghost btn-sm" href="${esc(a.adminContentUrl||a.contentUrl)}" target="_blank" rel="noopener"><i class="fas fa-paperclip"></i> ${esc(a.originalFileName||'مرفق')}</a>`).join('')}</div>` : ''}
           <button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(t.clientEmail)}">فتح العميل</button>
         </li>`).join('') || '<li class="posha-ws-empty">لا تذاكر دعم حالياً.</li>'}</ul>
       </section>`;

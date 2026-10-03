@@ -189,6 +189,152 @@
     return true;
   }
 
+  function formatBytes(n) {
+    n = Number(n) || 0;
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    if (n < 1024 * 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MB';
+    return (n / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  }
+
+  function attachmentsFieldHtml(formId) {
+    return (
+      '<div class="cp-field cp-attach-block" data-cp-attach-root="' + esc(formId) + '">' +
+        '<label>المرفقات</label>' +
+        '<p class="cp-attach-hint">يمكنك إرفاق صور أو ملفات أو فيديو — الحد الأقصى للملف الواحد 1500 MB.</p>' +
+        '<div class="cp-attach-actions">' +
+          '<label class="cp-attach-btn"><i class="fas fa-image"></i> إضافة صورة<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif" data-cp-attach-input="image" multiple hidden /></label>' +
+          '<label class="cp-attach-btn"><i class="fas fa-file"></i> إضافة ملف<input type="file" accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.zip,.rar,application/pdf,text/plain" data-cp-attach-input="file" multiple hidden /></label>' +
+          '<label class="cp-attach-btn"><i class="fas fa-video"></i> إضافة فيديو<input type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" data-cp-attach-input="video" multiple hidden /></label>' +
+        '</div>' +
+        '<div class="cp-attach-list" data-cp-attach-list hidden>' +
+          '<div class="cp-attach-list-head">الملفات المختارة:</div>' +
+          '<ul data-cp-attach-items></ul>' +
+        '</div>' +
+        '<p class="cp-attach-status" data-cp-attach-status hidden role="status"></p>' +
+      '</div>'
+    );
+  }
+
+  function pendingFilesOf(form) {
+    if (!form) return [];
+    if (!form._cpPendingFiles) form._cpPendingFiles = [];
+    return form._cpPendingFiles;
+  }
+
+  function renderPendingFiles(form) {
+    var root = form.querySelector('[data-cp-attach-root]');
+    if (!root) return;
+    var listWrap = root.querySelector('[data-cp-attach-list]');
+    var ul = root.querySelector('[data-cp-attach-items]');
+    var pending = pendingFilesOf(form);
+    if (!pending.length) {
+      listWrap.hidden = true;
+      ul.innerHTML = '';
+      return;
+    }
+    listWrap.hidden = false;
+    ul.innerHTML = pending.map(function (p, idx) {
+      return '<li data-idx="' + idx + '"><span class="cp-attach-name">' + esc(p.file.name) + '</span>' +
+        '<span class="cp-attach-meta">' + esc(formatBytes(p.file.size)) + ' · ' + esc(p.category === 'image' ? 'صورة' : p.category === 'video' ? 'فيديو' : 'ملف') + '</span>' +
+        '<button type="button" class="cp-attach-remove" data-cp-attach-remove="' + idx + '">حذف</button></li>';
+    }).join('');
+  }
+
+  function bindAttachInputs(form) {
+    if (!form || form._cpAttachBound) return;
+    form._cpAttachBound = true;
+    var maxBytes = (window.HubUploadLimits && HubUploadLimits.MAX_FILE_BYTES) || (1500 * 1024 * 1024);
+    form.querySelectorAll('[data-cp-attach-input]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        var cat = input.getAttribute('data-cp-attach-input') || 'file';
+        var files = Array.prototype.slice.call(input.files || []);
+        var pending = pendingFilesOf(form);
+        var status = form.querySelector('[data-cp-attach-status]');
+        files.forEach(function (file) {
+          if (file.size > maxBytes) {
+            if (status) {
+              status.hidden = false;
+              status.textContent = 'الملف أكبر من 1500 MB: ' + file.name;
+              status.classList.add('is-err');
+            }
+            return;
+          }
+          pending.push({ file: file, category: cat, id: 'local-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6) });
+        });
+        input.value = '';
+        renderPendingFiles(form);
+      });
+    });
+    form.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-cp-attach-remove]');
+      if (!btn) return;
+      var idx = Number(btn.getAttribute('data-cp-attach-remove'));
+      var pending = pendingFilesOf(form);
+      if (idx >= 0 && idx < pending.length) pending.splice(idx, 1);
+      renderPendingFiles(form);
+    });
+  }
+
+  function renderSavedAttachments(list) {
+    list = list || [];
+    if (!list.length) return '';
+    return '<div class="cp-attach-saved"><strong>المرفقات</strong><ul>' + list.map(function (a) {
+      return '<li><a href="' + esc(a.contentUrl) + '" target="_blank" rel="noopener">' + esc(a.originalFileName || 'مرفق') + '</a>' +
+        '<span>' + esc(a.fileSizeLabel || formatBytes(a.fileSize)) + ' · ' + esc(a.category === 'image' ? 'صورة' : a.category === 'video' ? 'فيديو' : 'ملف') + '</span></li>';
+    }).join('') + '</ul></div>';
+  }
+
+  async function uploadPendingToEntity(form, entityType, entityId, onProgress) {
+    var pending = pendingFilesOf(form).slice();
+    if (!pending.length) return [];
+    var uploaded = [];
+    for (var i = 0; i < pending.length; i++) {
+      var item = pending[i];
+      if (onProgress) onProgress(i + 1, pending.length, item.file.name);
+      var data = await uploadClientAttachment(item.file, entityType, entityId, item.category);
+      uploaded.push(data.attachment);
+    }
+    form._cpPendingFiles = [];
+    renderPendingFiles(form);
+    return uploaded;
+  }
+
+  function uploadClientAttachment(file, entityType, entityId, category) {
+    return new Promise(function (resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      var qs = '?entityType=' + encodeURIComponent(entityType) + '&entityId=' + encodeURIComponent(entityId) + '&category=' + encodeURIComponent(category || 'file');
+      xhr.open('POST', '/api/client/attachments' + qs);
+      xhr.responseType = 'json';
+      xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name || 'file'));
+      xhr.setRequestHeader('X-File-Type', file.type || 'application/octet-stream');
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.setRequestHeader('X-Entity-Type', entityType);
+      xhr.setRequestHeader('X-Entity-Id', entityId);
+      xhr.setRequestHeader('X-Attach-Category', category || 'file');
+      try {
+        var auth = window.HubAuth && HubAuth.authHeaders ? HubAuth.authHeaders() : {};
+        Object.keys(auth).forEach(function (k) {
+          if (auth[k]) xhr.setRequestHeader(k, auth[k]);
+        });
+      } catch (e) { /* ignore */ }
+      xhr.onload = function () {
+        var data = xhr.response && typeof xhr.response === 'object' ? xhr.response : null;
+        if (xhr.status === 413) {
+          reject(new Error('حجم الملف أكبر من 1500 MB'));
+          return;
+        }
+        if (xhr.status >= 200 && xhr.status < 300 && data && data.ok && data.attachment) {
+          resolve(data);
+          return;
+        }
+        reject(new Error((data && data.error) || 'فشل رفع المرفق'));
+      };
+      xhr.onerror = function () { reject(new Error('تعذر الاتصال بخادم الرفع')); };
+      xhr.send(file);
+    });
+  }
+
   async function api(path, options) {
     var opts = options || {};
     var res = await fetch(path, {
@@ -439,12 +585,15 @@
         '<div class="cp-field"><label>العنوان</label><input name="subject" required placeholder="ملخص الشكوى"></div>' +
         '<div class="cp-field"><label>التفاصيل</label><textarea name="message" required rows="4"></textarea></div>' +
         '<div class="cp-field"><label>الأولوية</label><select name="priority"><option value="NORMAL">عادية</option><option value="HIGH">عالية</option><option value="URGENT">عاجلة</option></select></div>' +
+        attachmentsFieldHtml('cp-complaint-form') +
         '<button type="submit" class="cp-btn cp-btn-primary">إرسال الشكوى</button>' +
       '</form></section>';
     var rows = !(list || []).length
       ? '<p style="color:var(--cp-muted);font-weight:700;margin:0">لا توجد شكاوى.</p>'
       : '<div class="cp-list">' + list.map(function (c) {
-          return '<div class="cp-row"><div><strong>' + esc(c.number || c.id) + ' — ' + esc(c.subject) + '</strong><small>' + esc(c.category) + ' · ' + esc(statusLabel(c.status)) + '</small></div><small>' + esc(fmtDate(c.created_at || c.createdAt)) + '</small></div>';
+          return '<div class="cp-row" style="align-items:flex-start"><div><strong>' + esc(c.number || c.id) + ' — ' + esc(c.subject) + '</strong><small>' + esc(c.category) + ' · ' + esc(statusLabel(c.status)) + '</small>' +
+            renderSavedAttachments(c.attachments) +
+            '</div><small>' + esc(fmtDate(c.created_at || c.createdAt)) + '</small></div>';
         }).join('') + '</div>';
     return form + '<section class="cp-card" style="margin-top:12px"><div class="cp-card-head"><h3>شكاواي</h3></div>' + rows + '</section>';
   }
@@ -492,6 +641,7 @@
         '<div class="cp-field"><label>الأولوية</label><select name="priority"><option value="NORMAL">عادية</option><option value="HIGH">عالية</option><option value="LOW">منخفضة</option><option value="URGENT">عاجلة</option></select></div>' +
         '<div class="cp-field"><label>النظام المتعلق</label><select name="systemCode"><option value="">— عام —</option>' + opts + '</select></div>' +
         '<div class="cp-field"><label>الرسالة</label><textarea name="message" required rows="4" maxlength="4000"></textarea></div>' +
+        attachmentsFieldHtml('cp-ticket-form') +
         '<button type="submit" class="cp-btn cp-btn-primary">إرسال التذكرة</button>' +
       '</form>';
     var tickets = !list.length
@@ -502,10 +652,11 @@
           }).join('');
           var st = String(t.status || '').toLowerCase();
           var canReply = st !== 'closed' && st !== 'resolved';
-          return '<article class="cp-card" style="box-shadow:none;margin-top:10px">' +
+          return '<article class="cp-card" style="box-shadow:none;margin-top:10px" data-ticket-id="' + esc(t.id) + '">' +
             '<div style="display:flex;justify-content:space-between;gap:8px"><strong>' + esc((t.number ? t.number + ' · ' : '') + t.subject) + '</strong><span class="cp-badge-status ' + statusMod(t.status) + '">' + esc(statusLabel(t.status)) + '</span></div>' +
             '<small style="font-weight:800;color:var(--cp-muted)">' + esc(t.department || t.category || '') + ' · ' + esc(fmtDate(t.createdAt || t.created_at)) + '</small>' +
             msgs +
+            renderSavedAttachments(t.attachments) +
             (canReply
               ? '<form class="cp-reply-form" data-id="' + esc(t.id) + '" style="display:flex;gap:8px;margin-top:10px"><input name="message" required placeholder="اكتب ردك…" style="flex:1;border:1px solid var(--cp-line);border-radius:12px;padding:10px;font:inherit"><button class="cp-btn" type="submit">رد</button></form>'
               : '') +
@@ -557,12 +708,15 @@
         '<div class="cp-field"><label>العنوان</label><input name="subject" required placeholder="مثال: ترقية باقة ERP"></div>' +
         '<div class="cp-field"><label>التفاصيل</label><textarea name="message" required rows="4" placeholder="اشرح المطلوب…"></textarea></div>' +
         '<div class="cp-field"><label>الأولوية</label><select name="priority"><option value="NORMAL">عادية</option><option value="HIGH">عالية</option><option value="URGENT">عاجلة</option></select></div>' +
+        attachmentsFieldHtml('cp-request-form') +
         '<button type="submit" class="cp-btn cp-btn-primary">إرسال الطلب</button>' +
       '</form></section>';
     var rows = !(list || []).length
       ? '<p style="color:var(--cp-muted);font-weight:700;margin:0">لا توجد طلبات خدمة بعد.</p>'
       : '<div class="cp-list">' + list.map(function (r) {
-          return '<div class="cp-row"><div><strong>' + esc(r.number || r.id) + ' — ' + esc(r.subject) + '</strong><small>' + esc(r.type) + ' · ' + esc(statusLabel(r.status)) + '</small></div><small>' + esc(fmtDate(r.created_at || r.createdAt)) + '</small></div>';
+          return '<div class="cp-row" style="align-items:flex-start"><div><strong>' + esc(r.number || r.id) + ' — ' + esc(r.subject) + '</strong><small>' + esc(r.type) + ' · ' + esc(statusLabel(r.status)) + '</small>' +
+            renderSavedAttachments(r.attachments) +
+            '</div><small>' + esc(fmtDate(r.created_at || r.createdAt)) + '</small></div>';
         }).join('') + '</div>';
     return form + '<section class="cp-card" style="margin-top:12px"><div class="cp-card-head"><h3>طلباتي</h3></div>' + rows + '</section>';
   }
@@ -719,50 +873,72 @@
 
     if (page === 'requests') {
       var rf = $('cp-request-form');
-      if (rf) rf.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        var fd = new FormData(rf);
-        try {
-          await api('/api/client/requests', {
-            method: 'POST',
-            body: {
-              type: fd.get('type'),
-              subject: fd.get('subject'),
-              message: fd.get('message'),
-              priority: fd.get('priority')
+      if (rf) {
+        bindAttachInputs(rf);
+        rf.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          var fd = new FormData(rf);
+          var btn = rf.querySelector('button[type="submit"]');
+          if (btn) { btn.disabled = true; btn.textContent = 'جارٍ الإرسال...'; }
+          try {
+            var created = await api('/api/client/requests', {
+              method: 'POST',
+              body: {
+                type: fd.get('type'),
+                subject: fd.get('subject'),
+                message: fd.get('message'),
+                priority: fd.get('priority')
+              }
+            });
+            var entityId = created.request && created.request.id;
+            if (entityId && pendingFilesOf(rf).length) {
+              await uploadPendingToEntity(rf, 'request', entityId);
             }
-          });
-          toast('تم إرسال طلب الخدمة');
-          state.cache.requests = null;
-          await render();
-        } catch (err) {
-          toast(err.message || 'تعذر الإرسال');
-        }
-      });
+            toast('تم إرسال طلب الخدمة');
+            state.cache.requests = null;
+            await render();
+          } catch (err) {
+            toast(err.message || 'تعذر الإرسال');
+          } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'إرسال الطلب'; }
+          }
+        });
+      }
     }
 
     if (page === 'complaints') {
       var cf = $('cp-complaint-form');
-      if (cf) cf.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        var fd = new FormData(cf);
-        try {
-          await api('/api/client/complaints', {
-            method: 'POST',
-            body: {
-              category: fd.get('category'),
-              subject: fd.get('subject'),
-              message: fd.get('message'),
-              priority: fd.get('priority')
+      if (cf) {
+        bindAttachInputs(cf);
+        cf.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          var fd = new FormData(cf);
+          var btn = cf.querySelector('button[type="submit"]');
+          if (btn) { btn.disabled = true; btn.textContent = 'جارٍ الإرسال...'; }
+          try {
+            var created = await api('/api/client/complaints', {
+              method: 'POST',
+              body: {
+                category: fd.get('category'),
+                subject: fd.get('subject'),
+                message: fd.get('message'),
+                priority: fd.get('priority')
+              }
+            });
+            var entityId = created.complaint && created.complaint.id;
+            if (entityId && pendingFilesOf(cf).length) {
+              await uploadPendingToEntity(cf, 'complaint', entityId);
             }
-          });
-          toast('تم إرسال الشكوى');
-          state.cache.complaints = null;
-          await render();
-        } catch (err) {
-          toast(err.message || 'تعذر الإرسال');
-        }
-      });
+            toast('تم إرسال الشكوى');
+            state.cache.complaints = null;
+            await render();
+          } catch (err) {
+            toast(err.message || 'تعذر الإرسال');
+          } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'إرسال الشكوى'; }
+          }
+        });
+      }
     }
 
     if (page === 'subscriptions') {
@@ -789,11 +965,14 @@
     if (page === 'support') {
       var form = $('cp-ticket-form');
       if (form) {
+        bindAttachInputs(form);
         form.addEventListener('submit', async function (e) {
           e.preventDefault();
           var fd = new FormData(form);
+          var btn = form.querySelector('button[type="submit"]');
+          if (btn) { btn.disabled = true; btn.textContent = 'جارٍ الإرسال...'; }
           try {
-            await api('/api/client/tickets', {
+            var created = await api('/api/client/tickets', {
               method: 'POST',
               body: {
                 subject: fd.get('subject'),
@@ -803,12 +982,18 @@
                 message: fd.get('message')
               }
             });
-            toast('تم فتح التذكرة بنجاح');
+            var entityId = created.ticket && created.ticket.id;
+            if (entityId && pendingFilesOf(form).length) {
+              await uploadPendingToEntity(form, 'ticket', entityId);
+            }
+            toast('تم فتح التذكرة بنجاح' + (created.ticket && created.ticket.number ? ' · ' + created.ticket.number : ''));
             state.cache.support = null;
             state.home = null;
             await render();
           } catch (err) {
             toast(err.message || 'تعذر الإرسال');
+          } finally {
+            if (btn) { btn.disabled = false; btn.textContent = 'إرسال التذكرة'; }
           }
         });
       }

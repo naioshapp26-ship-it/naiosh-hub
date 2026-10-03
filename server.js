@@ -1511,8 +1511,8 @@ const server = http.createServer((req, res) => {
       send(res, 400, 'Bad request');
       return;
     }
-    // مرفقات التسجيل خاصة — لا تُخدم عبر الرابط العام
-    if (hubRegisterAttachments.isPrivateStorageRef(id)) {
+    // مرفقات التسجيل / العميل خاصة — لا تُخدم عبر الرابط العام
+    if (hubRegisterAttachments.isPrivateStorageRef(id) || require('./lib/hub-client-attachments').isPrivateStorageRef(id)) {
       sendJson(res, 403, { ok: false, error: 'هذا المرفق خاص — استخدم واجهة الإدارة أو رابط المرفقات المصرّح' });
       return;
     }
