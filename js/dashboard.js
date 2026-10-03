@@ -261,7 +261,12 @@
     const brandStrong = document.querySelector('.sidebar-brand strong');
     const brandSpan = document.querySelector('.sidebar-brand span');
     const brandImg = document.querySelector('.sidebar-brand img');
-    if (brandStrong) brandStrong.textContent = s.orgNameEn || 'NAIOSH HUB';
+    const preferAr = String(s.locale || 'ar').toLowerCase().startsWith('ar');
+    if (brandStrong) {
+      brandStrong.textContent = preferAr
+        ? s.orgNameAr || s.orgNameEn || 'نايوش هوب'
+        : s.orgNameEn || s.orgNameAr || 'NAIOSH HUB';
+    }
     if (brandSpan) brandSpan.textContent = s.orgTagline || '360 · إمبراطوري';
     if (brandImg && s.logoMain) brandImg.src = s.logoMain;
 
