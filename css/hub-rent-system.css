@@ -828,3 +828,29 @@
     margin: 28px auto;
   }
 }
+
+/* مرفقات طلبات سجل معنا في لوحة الإدارة */
+.hub-rent-attachments {
+  margin: 10px 0 12px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+}
+.hub-rent-attachments h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+.hub-rent-attach-row {
+  margin: 6px 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #374151;
+  line-height: 1.55;
+}
+.hub-rent-attach-link {
+  color: #9b1c1c;
+  text-decoration: underline;
+  font-weight: 800;
+}

@@ -13,7 +13,8 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=20" />
-  <link rel="stylesheet" href="css/hub-booking.css?v=6" />
+  <link rel="stylesheet" href="css/hub-booking.css?v=7" />
+  <link rel="stylesheet" href="css/hub-register-attachments.css?v=1" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -92,7 +93,45 @@
           <label for="reg-notes">ملاحظات (اختياري)</label>
           <textarea id="reg-notes" name="notes" rows="3" placeholder="أي تفصيل إضافي لصاحب المنصة"></textarea>
 
-          <button class="btn btn-primary" type="submit"><i class="fas fa-paper-plane"></i> إرسال للموافقة</button>
+          <section class="hub-reg-attach" data-reg-attachments aria-labelledby="reg-attach-title">
+            <h3 id="reg-attach-title">المرفقات</h3>
+            <p class="hub-reg-attach-lead">يمكنك إرفاق الصور والملفات والفيديوهات المتعلقة بطلب التسجيل.</p>
+
+            <div class="hub-reg-drop" data-reg-drop="image">
+              <input id="reg-images" type="file" accept="image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple capture="environment" data-hub-skip-limit data-reg-input="image" hidden />
+              <label class="hub-reg-drop-face" for="reg-images">
+                <span class="hub-reg-drop-icon" aria-hidden="true"><i class="fas fa-image"></i></span>
+                <strong>رفع الصور</strong>
+                <small>اسحب الصور هنا أو اضغط للاختيار · JPG / JPEG / PNG / WEBP</small>
+              </label>
+              <ul class="hub-reg-file-list" data-reg-list="image" hidden></ul>
+            </div>
+
+            <div class="hub-reg-drop" data-reg-drop="document">
+              <input id="reg-docs" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,application/pdf,text/plain" multiple data-hub-skip-limit data-reg-input="document" hidden />
+              <label class="hub-reg-drop-face" for="reg-docs">
+                <span class="hub-reg-drop-icon" aria-hidden="true"><i class="fas fa-file-lines"></i></span>
+                <strong>رفع الملفات والمستندات</strong>
+                <small>اسحب الملفات هنا أو اضغط للاختيار · PDF / DOC / DOCX / XLS / XLSX / PPT / PPTX / TXT</small>
+              </label>
+              <ul class="hub-reg-file-list" data-reg-list="document" hidden></ul>
+            </div>
+
+            <div class="hub-reg-drop" data-reg-drop="video">
+              <input id="reg-videos" type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" multiple data-hub-skip-limit data-reg-input="video" hidden />
+              <label class="hub-reg-drop-face" for="reg-videos">
+                <span class="hub-reg-drop-icon" aria-hidden="true"><i class="fas fa-video"></i></span>
+                <strong>رفع الفيديو</strong>
+                <small>اسحب الفيديو هنا أو اضغط للاختيار</small>
+                <em class="hub-reg-drop-limit">الحد الأقصى للفيديو: 1500 MB</em>
+              </label>
+              <ul class="hub-reg-file-list" data-reg-list="video" hidden></ul>
+            </div>
+
+            <p class="hub-reg-attach-status" data-reg-attach-status role="status" aria-live="polite" hidden></p>
+          </section>
+
+          <button class="btn btn-primary" type="submit" data-reg-submit><i class="fas fa-paper-plane"></i> إرسال للموافقة</button>
           <p class="hub-book-feedback" data-register-feedback role="status" aria-live="polite" hidden></p>
         </form>
       </article>
@@ -122,11 +161,11 @@
   <script src="js/hub-store.js"></script>
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-rent-store.js?v=5"></script>
-  <script src="js/hub-platform-grants.js?v=3"></script>
+  <script src="js/hub-platform-grants.js?v=4"></script>
   <script src="js/hub-client-branches.js?v=1"></script>
-  <script src="js/hub-upload-limits.js?v=1"></script>
+  <script src="js/hub-upload-limits.js?v=2"></script>
   <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-register.js?v=6"></script>
+  <script src="js/hub-register.js?v=7"></script>
   <script src="js/hub-control-nav.js?v=4"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>

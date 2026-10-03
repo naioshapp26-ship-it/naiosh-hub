@@ -1925,7 +1925,7 @@ const HubStore = (() => {
     autoSyncMinutes: 15,
     defaultGrantPlan: 'standard',
     activityRetainDays: 90,
-    maxUploadMb: 150,
+    maxUploadMb: 1500,
     shopDefaultCategory: 'الكل',
     excludeKonzoo: true,
     searchIndexEnabled: true,
@@ -2012,7 +2012,7 @@ const HubStore = (() => {
       }
     });
     out.excludeKonzoo = true;
-    out.maxUploadMb = Math.max(1, Math.min(150, out.maxUploadMb || 150));
+    out.maxUploadMb = Math.max(1, Math.min(1500, out.maxUploadMb || 1500));
     out.sessionMinutes = Math.max(5, Math.min(24 * 60, out.sessionMinutes || 480));
     out.autoSyncMinutes = Math.max(0, Math.min(24 * 60, out.autoSyncMinutes || 0));
     out.activityRetainDays = Math.max(7, Math.min(3650, out.activityRetainDays || 90));
