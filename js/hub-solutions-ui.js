@@ -67,8 +67,19 @@
     return u?.name || u?.displayName || u?.email || 'زائر';
   };
 
-  const customerIdOf = (u = currentUser()) =>
-    u?.customerId || u?.naioshId || u?.clientId || u?.id || u?.email || '';
+  const customerIdOf = (u = currentUser()) => {
+    if (!u) return '';
+    return (
+      u.customerId ||
+      u.naioshId ||
+      u.clientId ||
+      u.clientNaioshId ||
+      (u.email === 'client@naiosh.com' ? 'NAI-CLIENT-001' : '') ||
+      u.id ||
+      u.email ||
+      ''
+    );
+  };
 
   const isStaff = () =>
     !!(
@@ -165,7 +176,7 @@
     const id = esc(s.id);
     return `
       <button type="button" class="${cls} btn-ghost" data-so="details" data-id="${id}"><i class="fas fa-eye"></i> عرض التفاصيل</button>
-      <button type="button" class="${cls} btn-primary" data-so="choose" data-id="${id}"><i class="fas fa-check"></i> اختيار حل</button>
+      <button type="button" class="${cls} btn-primary" data-so="choose" data-id="${id}"><i class="fas fa-check"></i> اختيار الحل</button>
       <button type="button" class="${cls} btn-dark" data-so="quote" data-id="${id}"><i class="fas fa-file-invoice-dollar"></i> طلب عرض سعر</button>`;
   };
 
