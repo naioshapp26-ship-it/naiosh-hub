@@ -1001,6 +1001,20 @@ a.hub-inline-ad.is-nav-card:focus-visible {
   outline-offset: 3px;
 }
 
+.card-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #d70000;
+}
+
+a.card.is-nav-card:hover .card-nav-cta {
+  text-decoration: underline;
+}
+
 .card.card-info {
   cursor: default;
 }
