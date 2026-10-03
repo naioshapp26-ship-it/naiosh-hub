@@ -19,7 +19,7 @@ assert(html.includes('data-research-workspace'), 'workspace mount');
 assert(html.includes('js/hub-research-publish.js?v=3'), 'page loads research script');
 assert(html.includes('css/hub-research-publish.css?v=1'), 'page loads research styles');
 assert(html.includes('js/hub-upload-limits.js'), 'page loads 150MB upload limits');
-assert(html.includes('js/hub-home-engage.js?v=2'), 'research page cache-busts engage pending filter');
+assert(html.includes('js/hub-home-engage.js?v=3'), 'research page cache-busts engage pending filter');
 assert(html.includes('name="body"'), 'clear writing field');
 assert(html.includes('class="rp-body"'), 'large writing area class');
 assert(html.includes('data-rp-upload="text"'), 'text file upload');
@@ -117,6 +117,8 @@ assert(kicker.includes('محفوظ على هذا الجهاز'), 'home kicker is
 assert(!kicker.includes('بانتظار المراجعة'), 'must not label drafts/sends as awaiting review');
 
 const index = read('index.html');
-assert(index.includes('hub-home-engage.js?v=2'), 'index cache-busts pending filter');
+assert(index.includes('hub-interaction.html'), 'index links to unified interaction page');
+assert(!index.includes('data-hub-engage-grid'), 'index no longer mounts home engage grid');
+assert(!index.includes('id="hub-engage"'), 'index removed engage section');
 
 console.log(`ok: research workspace writing + 4 uploads + CRUD + pending filter + ${api.NAIOSH_BANK.length} Naiosh questions`);
