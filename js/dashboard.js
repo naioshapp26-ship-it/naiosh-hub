@@ -16,7 +16,7 @@
     { key: 'apps', icon: 'fa-cubes', label: 'سجل الأنظمة' },
     { key: 'products', icon: 'fa-boxes-stacked', label: 'عرض المنتجات' },
     { key: 'store', icon: 'fa-bag-shopping', label: 'متجر المبيعات | نايوش هوب 360' },
-    { key: 'ads-studio', icon: 'fa-bullhorn', label: 'استوديو الحملات التسويقية', href: 'ads.html' },
+    { key: 'ads-studio', icon: 'fa-bullhorn', label: 'استوديو الحملات التسويقية', href: 'marketing-campaigns-studio.html' },
     { key: 'events-studio', icon: 'fa-calendar-days', label: 'استوديو الفعاليات الذكي', href: 'events.html' },
     { key: 'identity', icon: 'fa-id-card', label: 'هوية نايوش' },
     { key: 'organization', icon: 'fa-code-branch', label: 'الفروع | نايوش هوب 360' },
@@ -433,11 +433,11 @@
           const ret = studioReturnTarget();
           sessionStorage.setItem('hubStudioReturn', ret);
           localStorage.setItem('hubStudioReturn', ret);
-          window.location.href = key === 'ads-studio' ? 'ads.html' : 'events.html';
+          window.location.href = key === 'ads-studio' ? 'marketing-campaigns-studio.html' : 'events.html';
           return;
         }
       } catch (_) {
-        window.location.href = key === 'ads-studio' ? 'ads.html' : 'events.html';
+        window.location.href = key === 'ads-studio' ? 'marketing-campaigns-studio.html' : 'events.html';
         return;
       }
     }
@@ -1218,7 +1218,7 @@
   };
 
   const renderAdsStudio = () => {
-    window.location.href = 'ads.html';
+    window.location.href = 'marketing-campaigns-studio.html';
     return '<div class="empty">جاري فتح استوديو الحملات التسويقية…</div>';
   };
 
