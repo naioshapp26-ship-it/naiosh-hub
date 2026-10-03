@@ -16,10 +16,27 @@
     branches: 'إعلانات الفرع',
   };
 
+  /** Resolve a real destination for an ad (product → store, platform → platforms, else studio). */
+  const adDetailHref = (a = {}) => {
+    const id = String(a.id || a.adCode || '').trim();
+    const productId = String(a.productId || '').trim();
+    const platformCode = String(a.platformCode || '').trim().toUpperCase();
+    if (productId) return `store.html?buy=${encodeURIComponent(productId)}&ad=${encodeURIComponent(id || productId)}`;
+    if (platformCode && platformCode !== 'EVENTS') {
+      return `platforms.html?code=${encodeURIComponent(platformCode)}&ad=${encodeURIComponent(id || platformCode)}#platforms-catalog`;
+    }
+    if (platformCode === 'EVENTS' || /فعال/i.test(String(a.category || a.title || ''))) {
+      return `events.html${id ? `?ad=${encodeURIComponent(id)}` : ''}`;
+    }
+    return `ads.html${id ? `?ad=${encodeURIComponent(id)}` : ''}`;
+  };
+
   const cardHtml = (a) => {
     const levelMeta = window.HubMarketplaceData?.adLevelMeta?.(a.adLevel);
     const typeLabel = a.type || levelMeta?.adType || a.productType || 'إعلان';
-    return `<article class="hub-inline-ad">
+    const href = adDetailHref(a);
+    const adId = String(a.id || a.adCode || '');
+    return `<a class="hub-inline-ad is-nav-card" href="${esc(href)}" data-ad-id="${esc(adId)}" aria-label="${esc(a.title || 'تفاصيل الإعلان')}">
     <div class="hub-inline-ad-media">
       ${a.imageDataUrl ? `<img src="${esc(a.imageDataUrl)}" alt="" />` : `<i class="fas fa-rectangle-ad"></i>`}
     </div>
@@ -29,10 +46,10 @@
       <p>${esc(a.desc || a.content || '')}</p>
       <div class="hub-inline-ad-foot">
         <strong>${money(a.price || 0)}</strong>
-        <a href="ads.html?scope=${esc(a.adLevel === 'office' ? 'offices' : a.scope === 'multi' ? 'home' : a.scope || 'home')}">تفاصيل الإعلان</a>
+        <span class="hub-inline-ad-cta">تفاصيل الإعلان</span>
       </div>
     </div>
-  </article>`;
+  </a>`;
   };
 
   const renderInto = (selector, kind, name = '', opts = {}) => {
@@ -56,11 +73,10 @@
     }
     root.hidden = false;
     const title = opts.title || kindTitles[kind] || 'إعلانات نايوش';
-    const scopeLink = kind === 'home' ? 'home' : kind;
     root.innerHTML = `
       <div class="hub-inline-ads-head">
         <h2>${esc(title)}</h2>
-        <a href="ads.html?scope=${esc(scopeLink)}">كل الإعلانات</a>
+        <a href="ads.html">كل الإعلانات</a>
       </div>
       <div class="hub-inline-ads-grid">${slice.map(cardHtml).join('')}</div>`;
     return slice.length;
@@ -81,5 +97,5 @@
     autoMount();
   }
 
-  window.HubAdsDisplay = { renderInto, autoMount, cardHtml };
+  window.HubAdsDisplay = { renderInto, autoMount, cardHtml, adDetailHref };
 })();

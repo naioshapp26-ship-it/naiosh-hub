@@ -8,14 +8,16 @@
   const homeGrid = document.getElementById('home-platforms-grid');
   if (homeGrid && window.HubSovereignPlatforms?.list) {
     homeGrid.innerHTML = window.HubSovereignPlatforms.list
-      .map(
-        (p, idx) => `<article class="hub-platform-card" id="plat-${p.code.toLowerCase()}">
+      .map((p, idx) => {
+        const code = String(p.code || '').toUpperCase();
+        const href = `platforms.html?code=${encodeURIComponent(code)}#platforms-catalog`;
+        return `<a class="hub-platform-card is-nav-card" id="plat-${code.toLowerCase()}" href="${href}" aria-label="منصة ${String(idx + 1).padStart(2, '0')} — ${p.nameAr}">
           <span class="platform-code">منصة ${String(idx + 1).padStart(2, '0')}</span>
           <div class="icon-box"><i class="fas ${p.icon}"></i></div>
           <h3>${p.nameAr}</h3>
           <p><strong>${p.role}</strong> — ${p.desc}</p>
-        </article>`
-      )
+        </a>`;
+      })
       .join('');
   }
 
