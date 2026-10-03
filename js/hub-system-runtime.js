@@ -99,7 +99,9 @@
     try {
       const res = await fetch('/api/hub/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(payload),
       });
       remote = await res.json();
@@ -126,7 +128,9 @@
     try {
       await fetch('/api/hub/notifications', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(note),
       });
     } catch (_) {}
@@ -296,7 +300,9 @@
       });
       fetch('/api/hub/notifications', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           source: code,
           sourceName: meta.nameAr,

@@ -51,7 +51,9 @@
     try {
       await fetch(API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(publicState(state)),
       });
     } catch {
@@ -177,7 +179,9 @@
     try {
       await fetch('/api/hub/tenant-accounts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ version: 1, accounts: payload }),
       });
     } catch {
@@ -229,7 +233,9 @@
     try {
       await fetch('/api/hub/tenant-account', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(account),
       });
     } catch {

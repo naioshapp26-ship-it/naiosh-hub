@@ -347,7 +347,9 @@
       const items = window.HubSearchCatalog?.list?.() || [];
       const res = await fetch('/api/hub/search-catalog', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ items, config: read() }),
       });
       if (!res.ok) return { ok: false };

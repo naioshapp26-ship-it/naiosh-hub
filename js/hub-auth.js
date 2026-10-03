@@ -324,6 +324,24 @@
     return { ok: false, reason: 'isolation', message: 'ليس لديك صلاحية للوصول إلى هذه البيانات.' };
   };
 
+  /** Headers for authenticated Hub API calls (Bearer + optional role hints). */
+  const authHeaders = (extra = {}) => {
+    const headers = { ...(extra || {}) };
+    const token = getToken();
+    const user = getUser();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+      headers['X-Hub-Token'] = token;
+    }
+    if (user?.role) headers['X-Hub-User-Role'] = String(user.role);
+    if (user?.name || user?.fullName) {
+      const n = String(user.name || user.fullName || '');
+      // HTTP headers are Latin-1; keep ASCII-safe fallback for Arabic names
+      headers['X-Hub-User-Name'] = /^[\x20-\x7E]*$/.test(n) ? n : String(user.email || 'user');
+    }
+    return headers;
+  };
+
   window.HubAuth = {
     TOKEN_KEY,
     USER_KEY,
@@ -347,6 +365,7 @@
     canAccessSystem,
     attachSsoParams,
     issueHubTicket,
+    authHeaders,
     ownsResource,
     assertOwnsOrDeny,
     storageOf,
