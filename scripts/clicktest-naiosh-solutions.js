@@ -211,20 +211,44 @@ async function run() {
     await clickCardBtn(guestPage, 0, 'choose');
     await sleep(500);
     st = await uiState(guestPage);
-    const chooseGuestPass = st.guestVisible || /تسجيل الدخول/.test(st.guestMsg + st.toast);
-    row(c0.name, 'اختيار الحل (زائر)', 'يرجى تسجيل الدخول للمتابعة', st.guestVisible ? st.guestMsg : `view=${st.view}`, chooseGuestPass);
-    await shot(guestPage, 'guest-choose-gate');
+    const chooseGuestPass = st.view === 'selected' && st.selectedId === c0.id && !st.guestVisible;
+    row(c0.name, 'اختيار الحل (زائر)', 'فتح ملخص الحل بدون Login', `view=${st.view} selected=${st.selectedId} gate=${st.guestVisible}`, chooseGuestPass);
+    await shot(guestPage, 'guest-choose-ok');
 
     await guestPage.evaluate(() => {
       document.getElementById('hub-guest-gate-modal')?.setAttribute('hidden', '');
       window.HubSolutionsUI.ui.view = 'catalog';
+      window.HubSolutionsUI.ui.selected = null;
       window.HubSolutionsUI.render();
     });
     await clickCardBtn(guestPage, 0, 'quote');
     await sleep(500);
     st = await uiState(guestPage);
-    const quoteGuestPass = st.guestVisible || /تسجيل الدخول/.test(st.guestMsg + st.toast);
-    row(c0.name, 'طلب عرض سعر (زائر)', 'يرجى تسجيل الدخول للمتابعة', st.guestVisible ? st.guestMsg : `view=${st.view}`, quoteGuestPass);
+    const quoteGuestPass =
+      st.view === 'wizard' && st.wizardMode === 'quote' && st.wizardSolutionId === c0.id && !st.guestVisible && st.hasQuoteForm;
+    row(c0.name, 'طلب عرض سعر (زائر)', 'فتح نموذج العرض بدون Login', `view=${st.view} wiz=${st.wizardSolutionId} gate=${st.guestVisible}`, quoteGuestPass);
+
+    // Guest submit real request
+    await guestPage.evaluate(() => {
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+      set('so-c-name', 'زائر تجريبي');
+      set('so-c-phone', '0501112233');
+      set('so-c-email', 'guest-sol@test.com');
+      set('so-c-company', 'شركة زائر');
+      set('so-c-country', 'السعودية');
+      set('so-need', 'طلب عرض سعر كزائر بدون تسجيل دخول');
+    });
+    await guestPage.click('[data-so="wiz-submit"]');
+    await sleep(600);
+    st = await uiState(guestPage);
+    const guestSubmitPass = st.view === 'success' && /^SOL-REQ-/.test(st.successId || '');
+    row(c0.name, 'إرسال زائر', 'SOL-REQ بدون Login', `${st.view} ${st.successId}`, guestSubmitPass);
+    const guestStored = await guestPage.evaluate((id) => {
+      const r = window.HubCustomerRequests?.get?.(id);
+      return r ? { id: r.id, solutionId: r.solutionId, customerId: r.customerId, sourceModule: r.sourceModule, isGuest: r.isGuest || String(r.customerId||'').startsWith('GUEST') } : null;
+    }, st.successId);
+    row('Guest Backend', 'طلب زائر في الإدارة', 'سجل مركزي بدون صلاحيات', JSON.stringify(guestStored), !!(guestStored && guestStored.id));
+    report.guestRequestId = st.successId;
   } else {
     row('—', 'mount', 'cards rendered', JSON.stringify(mountOk), false);
   }
@@ -341,8 +365,12 @@ async function run() {
   });
   await sleep(300);
   await page.evaluate(() => {
-    const need = document.getElementById('so-need');
-    if (need) need.value = 'أحتاج عرض سعر — اختبار Click Test كامل';
+    const set = (id, v) => { const el = document.getElementById(id); if (el && !el.value) el.value = v; if (el && id==='so-need') el.value = v; };
+    set('so-c-name', 'أحمد العميل');
+    set('so-c-phone', '0500000000');
+    set('so-c-email', 'client@naiosh.com');
+    set('so-c-company', 'مؤسسة تجريبية');
+    set('so-need', 'أحتاج عرض سعر — اختبار Click Test كامل');
     const scope = document.getElementById('so-scope-detail');
     if (scope) scope.value = 'فرع الرياض';
   });
