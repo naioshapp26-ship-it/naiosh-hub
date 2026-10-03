@@ -1,0 +1,137 @@
+{
+  "startedAt": "2026-10-03T21:43:13.704Z",
+  "tests": [
+    {
+      "name": "TEST 1 — تسجيل دخول عميل",
+      "result": "PASS",
+      "user": "client@naiosh.com"
+    },
+    {
+      "name": "Catalog render",
+      "result": "PASS",
+      "cards": 22
+    },
+    {
+      "name": "حساب شركات ذكي لإدارة إنفاق المرافق والصيانة",
+      "result": "PASS",
+      "SolutionID": "SOL-2026-00001"
+    },
+    {
+      "name": "حلول مالية للشركات الاستشارية",
+      "result": "PASS",
+      "SolutionID": "SOL-2026-00002"
+    },
+    {
+      "name": "حلول مالية لوكالات التسويق والإعلان",
+      "result": "PASS"
+    },
+    {
+      "name": "TEST 4 — إرسال طلب عرض سعر",
+      "result": "PASS",
+      "RequestID": "SOL-REQ-2026-00001"
+    },
+    {
+      "name": "TEST 5 — رسالة نجاح وRequest ID",
+      "result": "PASS",
+      "RequestID": "SOL-REQ-2026-00001",
+      "message": "تم إرسال طلب عرض السعر بنجاح."
+    },
+    {
+      "name": "TEST 11 — منع الطلب المكرر",
+      "result": "PASS",
+      "created": 1
+    },
+    {
+      "name": "TEST 6 — دخول الإدارة",
+      "result": "PASS",
+      "user": "leader@naiosh.com"
+    },
+    {
+      "name": "TEST 7 — نفس Request ID في طلبات العملاء",
+      "result": "PASS",
+      "RequestID": "SOL-REQ-2026-00001"
+    },
+    {
+      "name": "حلول مالية للشركات الاستشارية",
+      "result": "PASS",
+      "CustomerID": "NAI-CLIENT-001",
+      "SolutionID": "SOL-2026-00002"
+    },
+    {
+      "name": "TEST 9 — إعداد وإرسال عرض السعر",
+      "result": "PASS",
+      "QuoteID": "QT-2026-00001",
+      "RequestID": "SOL-REQ-2026-00001",
+      "price": 12500
+    },
+    {
+      "name": "TEST 10 — العرض ظهر للعميل بنفس Request ID",
+      "result": "PASS",
+      "RequestID": "SOL-REQ-2026-00001",
+      "QuoteID": "QT-2026-00001"
+    },
+    {
+      "name": "TEST 12 — زائر ثم دخول يستأنف نفس الحل",
+      "result": "PASS",
+      "SolutionID": "SOL-2026-00006"
+    },
+    {
+      "name": "TEST 13 — عدة بطاقات حلول مختلفة",
+      "result": "PASS",
+      "ids": [
+        "SOL-2026-00001",
+        "SOL-2026-00002",
+        "SOL-2026-00005",
+        "SOL-2026-00006"
+      ]
+    },
+    {
+      "name": "TEST 14 — Desktop/Tablet/Mobile styles",
+      "result": "PASS",
+      "detail": "responsive breakpoints present"
+    },
+    {
+      "name": "CTA parity — كل بطاقة فيها اختيار حل وطلب عرض سعر",
+      "result": "PASS",
+      "chooseCount": 22,
+      "quoteCount": 22
+    },
+    {
+      "name": "Login resume — next العام مسموح للعميل",
+      "result": "PASS"
+    },
+    {
+      "name": "Root cause fixed — stopPropagation removed from card actions",
+      "result": "PASS"
+    }
+  ],
+  "filesChanged": [
+    "js/hub-solutions-ui.js",
+    "js/hub-solutions-data.js",
+    "js/hub-customer-requests.js",
+    "js/hub-posha-clients.js",
+    "js/login.js",
+    "naiosh-solutions.html",
+    "css/hub-service-offers.css"
+  ],
+  "rootCauses": {
+    "choose": "زر اختيار حل داخل .so-card-actions كان محجوباً بـ onclick=\"event.stopPropagation()\" فلن يصل حدث النقر إلى مستمع التفويض على #so-app.",
+    "quote": "نفس حجب stopPropagation + زر طلب عرض سعر كان يظهر فقط لبعض البطاقات (ctaType/priceType) وليس لكل الحلول."
+  },
+  "evidence": {
+    "requestId": "SOL-REQ-2026-00001",
+    "solutionId": "SOL-2026-00002",
+    "solutionName": "حلول مالية للشركات الاستشارية",
+    "quoteId": "QT-2026-00001"
+  },
+  "finishedAt": "2026-10-03T21:43:14.163Z",
+  "summary": {
+    "pass": 19,
+    "fail": 0,
+    "requestId": "SOL-REQ-2026-00001",
+    "quoteId": "QT-2026-00001",
+    "appearedInAdmin": true,
+    "quoteCreated": true,
+    "quoteReturnedToClient": true
+  }
+}
