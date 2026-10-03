@@ -919,6 +919,70 @@
     setTimeout(() => modal.querySelector('#posha-reject-reason')?.focus(), 30);
   }
 
+  function openQuoteFormModal(r) {
+    document.getElementById('posha-quote-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'posha-quote-modal';
+    modal.className = 'posha-modal-overlay';
+    const validDefault = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+    modal.innerHTML = `<div class="posha-modal" role="dialog" aria-modal="true">
+      <h3>إعداد عرض السعر</h3>
+      <p class="posha-muted">${esc(r.requestId || r.id)} · ${esc(r.solutionName || r.relatedSolution || r.title || '')}</p>
+      <div class="posha-form-grid" style="display:grid;gap:10px">
+        <label class="posha-field"><span>السعر *</span><input id="pq-price" type="number" min="0" step="1" value="5000" /></label>
+        <label class="posha-field"><span>العملة</span>
+          <select id="pq-currency"><option value="ر.س" selected>ر.س</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
+        </label>
+        <label class="posha-field"><span>تفاصيل العرض</span><textarea id="pq-details" rows="3" placeholder="مكونات العرض والخدمات المشمولة..."></textarea></label>
+        <label class="posha-field"><span>مدة التنفيذ</span><input id="pq-duration" placeholder="مثال: 3 أسابيع" /></label>
+        <label class="posha-field"><span>صلاحية العرض</span><input id="pq-valid" type="date" value="${esc(validDefault)}" /></label>
+        <label class="posha-field"><span>ملاحظات</span><textarea id="pq-notes" rows="2"></textarea></label>
+        <label class="posha-field"><span>شروط العرض</span><textarea id="pq-terms" rows="2" placeholder="شروط الدفع · الضمان · الاستثناءات..."></textarea></label>
+      </div>
+      <div class="posha-modal-actions">
+        <button type="button" class="btn btn-ghost" data-quote-cancel>إلغاء</button>
+        <button type="button" class="btn btn-primary" data-quote-send>إرسال عرض السعر للعميل</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    const close = () => modal.remove();
+    modal.querySelector('[data-quote-cancel]').onclick = close;
+    modal.onclick = (e) => {
+      if (e.target === modal) close();
+    };
+    modal.querySelector('[data-quote-send]').onclick = () => {
+      const price = Number(modal.querySelector('#pq-price')?.value || 0);
+      if (!price || price < 0) {
+        alert('السعر مطلوب');
+        return;
+      }
+      const payload = {
+        price,
+        currency: modal.querySelector('#pq-currency')?.value || 'ر.س',
+        details: String(modal.querySelector('#pq-details')?.value || '').trim(),
+        duration: String(modal.querySelector('#pq-duration')?.value || '').trim(),
+        validUntil: modal.querySelector('#pq-valid')?.value || validDefault,
+        notes: String(modal.querySelector('#pq-notes')?.value || '').trim(),
+        terms: String(modal.querySelector('#pq-terms')?.value || '').trim(),
+      };
+      const q =
+        window.HubSolutions?.createQuotation?.(r.id, payload, actor()) ||
+        cr()?.createQuotation?.(r.id, payload, actor());
+      if (!q) {
+        alert('تعذر إنشاء عرض السعر');
+        return;
+      }
+      close();
+      state.reqTab = 'quote';
+      state.moreId = null;
+      paintBody();
+      try {
+        document.dispatchEvent(new CustomEvent('posha-counters-refresh'));
+      } catch (_) {}
+    };
+    setTimeout(() => modal.querySelector('#pq-price')?.focus(), 30);
+  }
+
   function actor() {
     try {
       const u = window.HubAuth?.getUser?.() || JSON.parse(localStorage.getItem('hubUser') || '{}');
@@ -1006,8 +1070,18 @@
       r.requestType === 'Platform Add Request'
     )
       return 'platform';
-    if (String(r.requestType || '').toLowerCase().includes('product') || r.referenceType === 'Product') return 'product';
-    if (String(r.requestType || '').toLowerCase().includes('service') || r.referenceType === 'Service') return 'service';
+    if (
+      r.referenceType === 'Solution' ||
+      String(r.requestType || '').includes('Solution') ||
+      String(r.requestType || '').includes('Quote') ||
+      String(r.requestType || '').includes('Consultation') ||
+      String(r.requestType || '').includes('Cost') ||
+      String(r.id || '').startsWith('SOL-REQ') ||
+      String(r.id || '').startsWith('COST') ||
+      String(r.sourceModule || '').includes('حلول') ||
+      String(r.sourceModule || '').includes('خفض')
+    )
+      return 'solution';
     return 'general';
   }
 
@@ -1025,8 +1099,19 @@
     if (!r) return '';
     const pending = isPendingReq(r);
     const kind = requestKind(r);
-    const openBtn = `<button type="button" class="btn btn-dark btn-sm" data-req-open="${esc(r.id)}">عرض التفاصيل</button>`;
+    const openBtn = `<button type="button" class="btn btn-dark btn-sm" data-req-open="${esc(r.id)}">عرض</button>`;
     const moreBtn = `<button type="button" class="btn btn-ghost btn-sm" data-req-more="${esc(r.id)}" title="المزيد">⋮</button>${moreMenuHtml(r)}`;
+    if (kind === 'solution') {
+      const quoteBtn = `<button type="button" class="btn btn-primary btn-sm" data-req-quote-form="${esc(r.id)}">إعداد عرض سعر</button>`;
+      const acceptBtn = pending
+        ? `<button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">قبول</button>`
+        : '';
+      const reviseBtn = `<button type="button" class="btn btn-ghost btn-sm" data-req-info="${esc(r.id)}">طلب تعديل</button>`;
+      const rejectBtn = pending
+        ? `<button type="button" class="btn btn-danger btn-sm" data-req-reject="${esc(r.id)}">رفض</button>`
+        : '';
+      return `<div class="posha-req-actions-inner">${openBtn}${acceptBtn}${quoteBtn}${reviseBtn}${rejectBtn}${moreBtn}</div>`;
+    }
     if (!pending) {
       if (state.tab === 'approved') {
         const ad = kind === 'ad' ? findAd(r.referenceId) : null;
@@ -1162,6 +1247,7 @@
     const isArt = kind === 'article';
     const isAd = kind === 'ad';
     const isPlatform = kind === 'platform';
+    const isSolution = kind === 'solution';
     const art = isArt && r.referenceId ? window.HubArticles?.get?.(r.referenceId) : null;
     const ad = isAd ? findAd(r.referenceId) : null;
     const snap = art || r.articleSnapshot || {};
@@ -1175,6 +1261,7 @@
       ...(isArt ? [['article', 'المقال']] : []),
       ...(isAd ? [['ad', 'الإعلان']] : []),
       ...(isPlatform ? [['platform', 'المنصة']] : []),
+      ...(isSolution ? [['quote', 'عرض السعر']] : []),
       ['comms', 'التواصل'],
       ['notes', 'ملاحظات داخلية'],
       ['files', 'المرفقات'],
@@ -1202,9 +1289,13 @@
             <li><b>معرّف الطلب:</b> <code>${esc(r.requestId || r.id)}</code></li>
             <li><b>النوع:</b> ${esc(cr()?.labelType?.(r.requestType) || r.requestTypeLabel || r.requestType)}</li>
             ${isPlatform ? `<li><b>اسم المنصة:</b> ${esc(platformName || '—')}</li>` : ''}
+            ${isSolution ? `<li><b>اسم الحل:</b> ${esc(r.solutionName || r.relatedSolution || r.title || '—')}</li>` : ''}
+            ${isSolution ? `<li><b>معرّف الحل:</b> <code>${esc(r.solutionId || r.referenceId || '—')}</code></li>` : ''}
             <li><b>الموضوع:</b> ${esc(r.title)}</li>
-            <li><b>الوصف / سبب الطلب:</b> ${esc(r.description || r.need || '—')}</li>
+            <li><b>تفاصيل الاحتياج:</b> ${esc(r.description || r.need || '—')}</li>
             ${r.intendedUse ? `<li><b>الاستخدام المطلوب:</b> ${esc(r.intendedUse)}</li>` : ''}
+            ${r.scopeDetail ? `<li><b>النطاق / الكمية:</b> ${esc(r.scopeDetail)}</li>` : ''}
+            ${r.budget ? `<li><b>الميزانية المتوقعة:</b> ${esc(r.budget)}</li>` : ''}
             <li><b>المرجع:</b> ${esc(r.referenceType || '—')} · <code>${esc(r.referenceId || '—')}</code></li>
             <li><b>المصدر:</b> ${esc(displaySourceModule(r.sourceModule) || '—')}</li>
             <li><b>تاريخ الطلب:</b> ${fmt(r.createdAt)}</li>
@@ -1312,6 +1403,38 @@
         <li><b>Created At:</b> ${fmt(r.createdAt)}</li>
       </ul>
       ${r.sourceUrl ? `<a class="btn btn-dark btn-sm" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">فتح الصفحة الأصلية</a>` : ''}`;
+    } else if (tab === 'quote' && isSolution) {
+      const quotes =
+        (window.HubSolutions?.listQuotations?.(r.id) || cr()?.listQuotations?.(r.id) || r.quotations || []);
+      body = `<div class="posha-req-grid">
+        <article style="grid-column:1/-1">
+          <div class="posha-panel-head" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <h4>عروض السعر المرتبطة بالطلب</h4>
+            <button type="button" class="btn btn-primary btn-sm" data-req-quote-form="${esc(r.id)}">إعداد عرض سعر</button>
+          </div>
+          ${
+            quotes.length
+              ? quotes
+                  .map(
+                    (q) => `<ul class="feed" style="margin-top:12px;border:1px solid #e5e7eb;border-radius:10px;padding:12px">
+                      <li><b>رقم العرض:</b> <code>${esc(q.id)}</code></li>
+                      <li><b>رقم الطلب:</b> <code>${esc(r.requestId || r.id)}</code></li>
+                      <li><b>الحل:</b> ${esc(q.solutionName || r.solutionName || '—')}</li>
+                      <li><b>السعر:</b> ${Number(q.price || 0).toLocaleString('en-US')} ${esc(q.currency || 'ر.س')}</li>
+                      <li><b>مدة التنفيذ:</b> ${esc(q.duration || '—')}</li>
+                      <li><b>تفاصيل العرض:</b> ${esc(q.details || '—')}</li>
+                      <li><b>صلاحية العرض:</b> ${esc(q.validUntil || '—')}</li>
+                      <li><b>ملاحظات:</b> ${esc(q.notes || '—')}</li>
+                      <li><b>الشروط:</b> ${esc(q.terms || '—')}</li>
+                      <li><b>الحالة:</b> ${esc(q.status || '—')}</li>
+                      <li><b>تاريخ العرض:</b> ${fmt(q.createdAt)}</li>
+                    </ul>`
+                  )
+                  .join('')
+              : '<p class="posha-muted">لا يوجد عرض سعر بعد. استخدم «إعداد عرض سعر».</p>'
+          }
+        </article>
+      </div>`;
     } else if (tab === 'comms') {
       body = `<ul class="feed">${(r.messages || [])
         .map((m) => `<li><b>${esc(m.by)}</b>: ${esc(m.text)} <small>${fmt(m.at)}</small></li>`)
@@ -1343,14 +1466,23 @@
         ? '✓ منح الوصول'
         : kind === 'platform'
           ? '✓ قبول الطلب'
-          : '✓ قبول ونشر';
-    const decisionActions = pending
+          : kind === 'solution'
+            ? 'قبول'
+            : '✓ قبول ونشر';
+    const decisionActions = isSolution
       ? `
+        <button type="button" class="btn btn-ghost btn-sm" data-req-reject="${esc(r.id)}">رفض</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-req-info="${esc(r.id)}">طلب تعديل</button>
+        <button type="button" class="btn btn-primary btn-sm" data-req-quote-form="${esc(r.id)}">إعداد عرض سعر</button>
+        ${pending ? `<button type="button" class="btn btn-dark btn-sm" data-req-approve="${esc(r.id)}">${approveLabel}</button>` : ''}
+      `
+      : pending
+        ? `
         <button type="button" class="btn btn-ghost btn-sm" data-req-reject="${esc(r.id)}">رفض الطلب</button>
         <button type="button" class="btn btn-dark btn-sm" data-req-edit-linked="${esc(r.id)}">طلب معلومات</button>
         <button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">${approveLabel}</button>
       `
-      : primaryReqActionsHtml(r);
+        : primaryReqActionsHtml(r);
 
     return `
       <div class="posha-req-detail-head">
@@ -1716,13 +1848,25 @@
     body.querySelectorAll('[data-req-quote]').forEach((btn) => {
       btn.onclick = () => {
         const id = btn.getAttribute('data-req-quote');
-        if (window.HubSolutions?.createQuotation) {
-          const price = Number(window.prompt('السعر؟', '5000')) || 5000;
-          window.HubSolutions.createQuotation(id, { price }, actor());
+        const r = cr()?.get(id);
+        if (r) openQuoteFormModal(r);
+        else {
+          if (window.HubSolutions?.createQuotation) {
+            const price = Number(window.prompt('السعر؟', '5000')) || 5000;
+            window.HubSolutions.createQuotation(id, { price }, actor());
+          }
+          cr()?.updateStatus(id, 'Proposal Sent', actor(), 'إرسال عرض سعر');
+          state.moreId = null;
+          paintBody();
         }
-        cr()?.updateStatus(id, 'Proposal Sent', actor(), 'إرسال عرض سعر');
-        state.moreId = null;
-        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-quote-form]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-quote-form');
+        const r = cr()?.get(id);
+        if (!r) return;
+        openQuoteFormModal(r);
       };
     });
     body.querySelectorAll('[data-req-close]').forEach((btn) => {

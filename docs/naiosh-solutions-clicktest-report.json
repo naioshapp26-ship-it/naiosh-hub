@@ -1,0 +1,629 @@
+{
+  "startedAt": "2026-10-03T22:13:21.642Z",
+  "rows": [
+    {
+      "solution": "المرافق والصيانة",
+      "button": "عرض التفاصيل (زائر)",
+      "expected": "فتح تفاصيل SOL-2026-00001",
+      "actual": "view=detail id=SOL-2026-00001",
+      "result": "PASS"
+    },
+    {
+      "solution": "المرافق والصيانة",
+      "button": "اختيار الحل (زائر)",
+      "expected": "يرجى تسجيل الدخول للمتابعة",
+      "actual": "يرجى تسجيل الدخول للمتابعة.",
+      "result": "PASS"
+    },
+    {
+      "solution": "المرافق والصيانة",
+      "button": "طلب عرض سعر (زائر)",
+      "expected": "يرجى تسجيل الدخول للمتابعة",
+      "actual": "يرجى تسجيل الدخول للمتابعة.",
+      "result": "PASS"
+    },
+    {
+      "solution": "المرافق والصيانة",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00001",
+      "actual": "view=detail id=SOL-2026-00001 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00001"
+    },
+    {
+      "solution": "المرافق والصيانة",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00001 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00001",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00001"
+    },
+    {
+      "solution": "المرافق والصيانة",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00001",
+      "actual": "view=wizard wiz=SOL-2026-00001",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00001"
+    },
+    {
+      "solution": "الاستشارات",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00002",
+      "actual": "view=detail id=SOL-2026-00002 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00002"
+    },
+    {
+      "solution": "الاستشارات",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00002 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00002",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00002"
+    },
+    {
+      "solution": "الاستشارات",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00002",
+      "actual": "view=wizard wiz=SOL-2026-00002",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00002"
+    },
+    {
+      "solution": "الإعلام والحملات",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00003",
+      "actual": "view=detail id=SOL-2026-00003 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00003"
+    },
+    {
+      "solution": "الإعلام والحملات",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00003 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00003",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00003"
+    },
+    {
+      "solution": "الإعلام والحملات",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00003",
+      "actual": "view=wizard wiz=SOL-2026-00003",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00003"
+    },
+    {
+      "solution": "أغذية ومشروبات",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00004",
+      "actual": "view=detail id=SOL-2026-00004 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00004"
+    },
+    {
+      "solution": "أغذية ومشروبات",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00004 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00004",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00004"
+    },
+    {
+      "solution": "أغذية ومشروبات",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00004",
+      "actual": "view=wizard wiz=SOL-2026-00004",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00004"
+    },
+    {
+      "solution": "المقاولات",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00005",
+      "actual": "view=detail id=SOL-2026-00005 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00005"
+    },
+    {
+      "solution": "المقاولات",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00005 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00005",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00005"
+    },
+    {
+      "solution": "المقاولات",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00005",
+      "actual": "view=wizard wiz=SOL-2026-00005",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00005"
+    },
+    {
+      "solution": "تسويق وإعلان",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00006",
+      "actual": "view=detail id=SOL-2026-00006 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00006"
+    },
+    {
+      "solution": "تسويق وإعلان",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00006 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00006",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00006"
+    },
+    {
+      "solution": "تسويق وإعلان",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00006",
+      "actual": "view=wizard wiz=SOL-2026-00006",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00006"
+    },
+    {
+      "solution": "تجزئة وتجارة",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00007",
+      "actual": "view=detail id=SOL-2026-00007 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00007"
+    },
+    {
+      "solution": "تجزئة وتجارة",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00007 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00007",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00007"
+    },
+    {
+      "solution": "تجزئة وتجارة",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00007",
+      "actual": "view=wizard wiz=SOL-2026-00007",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00007"
+    },
+    {
+      "solution": "التصنيع",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00008",
+      "actual": "view=detail id=SOL-2026-00008 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00008"
+    },
+    {
+      "solution": "التصنيع",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00008 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00008",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00008"
+    },
+    {
+      "solution": "التصنيع",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00008",
+      "actual": "view=wizard wiz=SOL-2026-00008",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00008"
+    },
+    {
+      "solution": "التعليم",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00009",
+      "actual": "view=detail id=SOL-2026-00009 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00009"
+    },
+    {
+      "solution": "التعليم",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00009 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00009",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00009"
+    },
+    {
+      "solution": "التعليم",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00009",
+      "actual": "view=wizard wiz=SOL-2026-00009",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00009"
+    },
+    {
+      "solution": "SaaS والسحابة",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00010",
+      "actual": "view=detail id=SOL-2026-00010 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00010"
+    },
+    {
+      "solution": "SaaS والسحابة",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00010 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00010",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00010"
+    },
+    {
+      "solution": "SaaS والسحابة",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00010",
+      "actual": "view=wizard wiz=SOL-2026-00010",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00010"
+    },
+    {
+      "solution": "أسطول وشحن",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00011",
+      "actual": "view=detail id=SOL-2026-00011 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00011"
+    },
+    {
+      "solution": "أسطول وشحن",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00011 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00011",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00011"
+    },
+    {
+      "solution": "أسطول وشحن",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00011",
+      "actual": "view=wizard wiz=SOL-2026-00011",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00011"
+    },
+    {
+      "solution": "موظفون وتشغيل",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00012",
+      "actual": "view=detail id=SOL-2026-00012 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00012"
+    },
+    {
+      "solution": "موظفون وتشغيل",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00012 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00012",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00012"
+    },
+    {
+      "solution": "موظفون وتشغيل",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00012",
+      "actual": "view=wizard wiz=SOL-2026-00012",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00012"
+    },
+    {
+      "solution": "رعاية صحية",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00013",
+      "actual": "view=detail id=SOL-2026-00013 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00013"
+    },
+    {
+      "solution": "رعاية صحية",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00013 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00013",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00013"
+    },
+    {
+      "solution": "رعاية صحية",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00013",
+      "actual": "view=wizard wiz=SOL-2026-00013",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00013"
+    },
+    {
+      "solution": "سفر ورحلات",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00014",
+      "actual": "view=detail id=SOL-2026-00014 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00014"
+    },
+    {
+      "solution": "سفر ورحلات",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00014 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00014",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00014"
+    },
+    {
+      "solution": "سفر ورحلات",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00014",
+      "actual": "view=wizard wiz=SOL-2026-00014",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00014"
+    },
+    {
+      "solution": "الضيافة",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00015",
+      "actual": "view=detail id=SOL-2026-00015 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00015"
+    },
+    {
+      "solution": "الضيافة",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00015 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00015",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00015"
+    },
+    {
+      "solution": "الضيافة",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00015",
+      "actual": "view=wizard wiz=SOL-2026-00015",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00015"
+    },
+    {
+      "solution": "ميدان ووقود",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00016",
+      "actual": "view=detail id=SOL-2026-00016 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00016"
+    },
+    {
+      "solution": "ميدان ووقود",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00016 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00016",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00016"
+    },
+    {
+      "solution": "ميدان ووقود",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00016",
+      "actual": "view=wizard wiz=SOL-2026-00016",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00016"
+    },
+    {
+      "solution": "تطوير عقاري",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00017",
+      "actual": "view=detail id=SOL-2026-00017 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00017"
+    },
+    {
+      "solution": "تطوير عقاري",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00017 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00017",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00017"
+    },
+    {
+      "solution": "تطوير عقاري",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00017",
+      "actual": "view=wizard wiz=SOL-2026-00017",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00017"
+    },
+    {
+      "solution": "فعاليات",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00018",
+      "actual": "view=detail id=SOL-2026-00018 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00018"
+    },
+    {
+      "solution": "فعاليات",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00018 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00018",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00018"
+    },
+    {
+      "solution": "فعاليات",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00018",
+      "actual": "view=wizard wiz=SOL-2026-00018",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00018"
+    },
+    {
+      "solution": "حكومي",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00019",
+      "actual": "view=detail id=SOL-2026-00019 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00019"
+    },
+    {
+      "solution": "حكومي",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00019 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00019",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00019"
+    },
+    {
+      "solution": "حكومي",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00019",
+      "actual": "view=wizard wiz=SOL-2026-00019",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00019"
+    },
+    {
+      "solution": "غير ربحي",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00020",
+      "actual": "view=detail id=SOL-2026-00020 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00020"
+    },
+    {
+      "solution": "غير ربحي",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00020 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00020",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00020"
+    },
+    {
+      "solution": "غير ربحي",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00020",
+      "actual": "view=wizard wiz=SOL-2026-00020",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00020"
+    },
+    {
+      "solution": "استثمار",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00021",
+      "actual": "view=detail id=SOL-2026-00021 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00021"
+    },
+    {
+      "solution": "استثمار",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00021 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00021",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00021"
+    },
+    {
+      "solution": "استثمار",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00021",
+      "actual": "view=wizard wiz=SOL-2026-00021",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00021"
+    },
+    {
+      "solution": "خفض التكاليف",
+      "button": "عرض التفاصيل",
+      "expected": "فتح تفاصيل SOL-2026-00022",
+      "actual": "view=detail id=SOL-2026-00022 click=true",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00022"
+    },
+    {
+      "solution": "خفض التكاليف",
+      "button": "اختيار الحل",
+      "expected": "اختيار SOL-2026-00022 + ملخص",
+      "actual": "view=selected selected=SOL-2026-00022",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00022"
+    },
+    {
+      "solution": "خفض التكاليف",
+      "button": "طلب عرض سعر",
+      "expected": "نموذج عرض سعر SOL-2026-00022",
+      "actual": "view=wizard wiz=SOL-2026-00022",
+      "result": "PASS",
+      "solutionId": "SOL-2026-00022"
+    },
+    {
+      "solution": "الاستشارات",
+      "button": "إرسال طلب عرض السعر",
+      "expected": "نجاح + SOL-REQ",
+      "actual": "success SOL-REQ-2026-00001",
+      "result": "PASS"
+    },
+    {
+      "solution": "Backend/Store",
+      "button": "إنشاء Request",
+      "expected": "سجل في HubCustomerRequests",
+      "actual": "{\"id\":\"SOL-REQ-2026-00001\",\"solutionId\":\"SOL-2026-00002\",\"solutionName\":\"حلول مالية للشركات الاستشارية\",\"customerId\":\"NAI-CLIENT-001\",\"sourceModule\":\"حلول نايوش\",\"requestType\":\"Quote Request\",\"status\":\"Pending Review\"}",
+      "result": "PASS"
+    },
+    {
+      "solution": "الإدارة",
+      "button": "إعداد عرض السعر",
+      "expected": "QT مرتبط بالطلب",
+      "actual": "QT-2026-00001",
+      "result": "PASS"
+    },
+    {
+      "solution": "طلباتي",
+      "button": "ظهور عرض السعر",
+      "expected": "نفس Request ID + السعر",
+      "actual": "ظاهر",
+      "result": "PASS"
+    },
+    {
+      "solution": "المرافق والصيانة",
+      "button": "عرض التفاصيل بعد Refresh",
+      "expected": "يعمل",
+      "actual": "view=detail",
+      "result": "PASS"
+    }
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (File not found)",
+    "Failed to load resource: the server responded with a status of 501 (Unsupported method ('POST'))"
+  ],
+  "summary": {
+    "cards": 22,
+    "detailsTests": 24,
+    "chooseTests": 23,
+    "quoteTests": 23,
+    "pass": 74,
+    "fail": 0,
+    "requestId": "SOL-REQ-2026-00001",
+    "quoteId": "QT-2026-00001",
+    "consoleErrorCount": 2
+  },
+  "mount": {
+    "hasUI": true,
+    "hasData": true,
+    "cards": 22,
+    "listenersHint": true
+  },
+  "cardCount": 22,
+  "pointerProbe": {
+    "text": "اختيار الحل",
+    "pe": "auto",
+    "top": "BUTTON.btn btn-sm btn-primary",
+    "same": true
+  },
+  "requestId": "SOL-REQ-2026-00001",
+  "stored": {
+    "id": "SOL-REQ-2026-00001",
+    "solutionId": "SOL-2026-00002",
+    "solutionName": "حلول مالية للشركات الاستشارية",
+    "customerId": "NAI-CLIENT-001",
+    "sourceModule": "حلول نايوش",
+    "requestType": "Quote Request",
+    "status": "Pending Review"
+  },
+  "quoteId": "QT-2026-00001",
+  "finishedAt": "2026-10-03T22:14:02.237Z"
+}

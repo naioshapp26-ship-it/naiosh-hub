@@ -718,14 +718,18 @@
     const enriched = {
       ...payload,
       requestType: type,
+      status: payload.status || 'Pending Review',
       solutionId: sol?.id || payload.solutionId || '',
       solutionName: sol?.name || payload.solutionName || 'حل',
       title: sol?.name || payload.solutionName || payload.need || 'طلب حل',
       relatedSolution: sol?.name || payload.solutionName || '',
+      customerId: payload.customerId || payload.customer?.customerId || '',
+      referenceType: payload.referenceType || 'Solution',
+      referenceId: payload.referenceId || sol?.id || payload.solutionId || '',
       sourceModule: payload.sourceModule || (type.includes('Cost') ? 'برنامج خفض التكاليف' : 'حلول نايوش'),
       sourcePage: payload.sourcePage || sol?.name || (type.includes('Cost') ? 'برنامج خفض التكاليف' : 'كتالوج الحلول'),
       sourceUrl: payload.sourceUrl || (type.includes('Cost') ? 'cost-reduction.html' : 'naiosh-solutions.html'),
-      sourceAction: payload.sourceAction || (type.includes('Quote') ? 'طلب عرض سعر' : type.includes('Consultation') ? 'طلب استشارة' : type.includes('Cost') ? 'بدء طلب خفض التكاليف' : 'اختيار الحل'),
+      sourceAction: payload.sourceAction || (type.includes('Quote') ? 'طلب عرض سعر' : type.includes('Consultation') ? 'طلب استشارة' : type.includes('Cost') ? 'بدء طلب خفض التكاليف' : 'اختيار حل'),
       channel: payload.channel || 'Web',
     };
 
@@ -741,6 +745,7 @@
         requestType: central.requestType,
         solutionId: central.solutionId,
         solutionName: central.relatedSolution || central.solutionName || central.title,
+        customerId: central.customerId,
         customer: central.customer,
         need: central.need || central.description,
         priority: central.priority,
@@ -759,10 +764,13 @@
         timeline: central.timeline,
         messages: central.messages,
         tasks: central.tasks,
+        quotations: central.quotations || [],
         sourceModule: central.sourceModule,
         sourcePage: central.sourcePage,
         sourceUrl: central.sourceUrl,
         sourceAction: central.sourceAction,
+        referenceType: central.referenceType,
+        referenceId: central.referenceId,
       };
       if (idx >= 0) state.requests[idx] = mirrored;
       else state.requests.unshift(mirrored);
@@ -801,7 +809,8 @@
       scopeDetail: payload.scopeDetail || '',
       attachments: payload.attachments || [],
       costMeta: payload.costMeta || null,
-      status: 'New',
+      status: enriched.status || 'Pending Review',
+      customerId: enriched.customerId || '',
       requestedBy: actor,
       assignedTo: '',
       salesOwner: 'Sales Desk',
@@ -938,7 +947,37 @@
   };
 
   const createQuotation = (requestId, payload = {}, actor = 'Sales Desk') => {
-    const req = state.requests.find((r) => r.id === requestId);
+    if (window.HubCustomerRequests?.createQuotation) {
+      const item = window.HubCustomerRequests.createQuotation(requestId, payload, actor);
+      if (item) {
+        if (!Array.isArray(state.quotations)) state.quotations = [];
+        const idx = state.quotations.findIndex((x) => x.id === item.id);
+        if (idx >= 0) state.quotations[idx] = item;
+        else state.quotations.unshift(item);
+        const local = state.requests.find((r) => r.id === requestId);
+        if (local) {
+          local.status = 'Proposal Sent';
+          local.updatedAt = nowIso();
+          if (!Array.isArray(local.quotations)) local.quotations = [];
+          if (!local.quotations.find((q) => q.id === item.id)) local.quotations.unshift(item);
+        }
+        pushAudit({
+          action: 'Quotation Sent',
+          requestId,
+          customer: item.customerName || '',
+          solution: item.solutionName,
+          performedBy: actor,
+          oldStatus: 'Under Review',
+          newStatus: 'Proposal Sent',
+          solutionId: item.solutionId,
+        });
+        save();
+      }
+      return item;
+    }
+    const req =
+      state.requests.find((r) => r.id === requestId) ||
+      (window.HubCustomerRequests?.get ? window.HubCustomerRequests.get(requestId) : null);
     if (!req) return null;
     const price = Number(payload.price) || 0;
     const tax = Number(payload.tax) || Math.round(price * 0.15);
@@ -947,11 +986,16 @@
       id: nextSeq(state.quotations, 'QT'),
       requestId,
       solutionId: req.solutionId,
-      solutionName: req.solutionName,
+      solutionName: req.solutionName || req.relatedSolution || req.title,
       price,
+      currency: payload.currency || 'ر.س',
       tax,
       discount,
       total: price + tax - discount,
+      details: payload.details || '',
+      duration: payload.duration || '',
+      notes: payload.notes || '',
+      terms: payload.terms || '',
       validUntil: payload.validUntil || new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
       createdBy: actor,
       createdAt: nowIso(),
@@ -959,17 +1003,29 @@
     };
     state.quotations.unshift(item);
     updateRequestStatus(requestId, 'Proposal Sent', actor, `إرسال عرض سعر ${item.id}`);
-    pushAudit({ action: 'Quotation Sent', requestId, customer: req.customer?.company, solution: req.solutionName, performedBy: actor, oldStatus: 'Under Review', newStatus: 'Proposal Sent', solutionId: req.solutionId });
+    pushAudit({ action: 'Quotation Sent', requestId, customer: req.customer?.company || req.company, solution: item.solutionName, performedBy: actor, oldStatus: 'Under Review', newStatus: 'Proposal Sent', solutionId: req.solutionId });
     save();
     return item;
   };
 
-  const decideQuotation = (qid, decision, actor = 'عميل') => {
+  const decideQuotation = (qid, decision, actor = 'عميل', note = '') => {
+    if (window.HubCustomerRequests?.decideQuotation) {
+      const q = window.HubCustomerRequests.decideQuotation(qid, decision, actor, note);
+      if (q) {
+        const local = state.quotations.find((x) => x.id === qid);
+        if (local) Object.assign(local, q);
+        save();
+      }
+      return q;
+    }
     const q = state.quotations.find((x) => x.id === qid);
     if (!q) return null;
-    q.status = decision === 'accept' ? 'Accepted' : 'Rejected';
-    const next = decision === 'accept' ? 'Approved' : 'Need More Information';
-    updateRequestStatus(q.requestId, next, actor, decision === 'accept' ? 'قبول العرض' : 'رفض العرض');
+    if (decision === 'accept') q.status = 'Accepted';
+    else if (decision === 'revise') q.status = 'Revision Requested';
+    else q.status = 'Rejected';
+    const next =
+      decision === 'accept' ? 'Quote Accepted' : decision === 'revise' ? 'Need More Information' : 'Quote Rejected';
+    updateRequestStatus(q.requestId, next, actor, decision === 'accept' ? 'قبول العرض' : decision === 'revise' ? note || 'طلب تعديل العرض' : 'رفض العرض');
     if (decision === 'accept') {
       const req = state.requests.find((r) => r.id === q.requestId);
       if (req) {
@@ -1035,7 +1091,17 @@
       }
       return (state.requests || []).find((r) => r.id === id);
     },
-    listQuotations: (requestId) => (state.quotations || []).filter((q) => !requestId || q.requestId === requestId),
+    listQuotations: (requestId) => {
+      if (window.HubCustomerRequests?.listQuotations) {
+        const central = window.HubCustomerRequests.listQuotations(requestId);
+        if (central?.length) return central;
+      }
+      if (requestId && window.HubCustomerRequests?.get) {
+        const r = window.HubCustomerRequests.get(requestId);
+        if (Array.isArray(r?.quotations) && r.quotations.length) return r.quotations;
+      }
+      return (state.quotations || []).filter((q) => !requestId || q.requestId === requestId);
+    },
     listAudit: () => state.auditLog || [],
     pushAudit,
   };

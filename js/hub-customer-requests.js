@@ -130,17 +130,21 @@
   const labelOwner = (code) => OWNER_LABELS_AR[code] || code || '—';
 
   const STATUS_AR = {
-    New: 'جديد',
-    Viewed: 'تمت المشاهدة',
-    Assigned: 'تم التعيين',
+    New: 'بانتظار المراجعة',
+    Viewed: 'قيد المراجعة',
+    Assigned: 'قيد المراجعة',
     'Pending Review': 'بانتظار المراجعة',
     'Under Review': 'قيد المراجعة',
-    'Needs Changes': 'يحتاج تعديلات',
-    'Waiting For Customer': 'بانتظار العميل',
+    'Needs Changes': 'يحتاج معلومات إضافية',
+    'Need More Information': 'يحتاج معلومات إضافية',
+    'Waiting For Customer': 'يحتاج معلومات إضافية',
     'Pending Approval': 'بانتظار الموافقة',
-    'Proposal Sent': 'عرض مرسل',
+    'Quote Prepared': 'تم إعداد عرض السعر',
+    'Proposal Sent': 'تم إرسال عرض السعر',
+    'Quote Accepted': 'تم قبول العرض',
+    'Quote Rejected': 'تم رفض العرض',
     'In Progress': 'قيد التنفيذ',
-    Approved: 'مقبول',
+    Approved: 'تم قبول العرض',
     Published: 'نشط',
     Unpublished: 'متوقف',
     Scheduled: 'مجدول',
@@ -269,7 +273,7 @@
       solutionId: r.solutionId || '',
       solutionName: r.solutionName || '',
       priority: r.priority || 'عادي',
-      status: r.status === 'Draft' ? 'Draft' : r.status || 'New',
+      status: r.status === 'Draft' ? 'Draft' : r.status || 'Pending Review',
       assignedTo: r.assignedTo || route.assignedTo,
       department: r.department || route.department,
       salesOwner: r.salesOwner || route.assignedTo,
@@ -288,6 +292,10 @@
       messages: r.messages || [],
       internalNotes: r.internalNotes || [],
       tasks: r.tasks || [],
+      quotations: r.quotations || [],
+      budget: r.budget || '',
+      dueDate: r.dueDate || '',
+      notes: r.notes || '',
       scopeType: r.scopeType || '',
       scopeDetail: r.scopeDetail || '',
       costMeta: r.costMeta || null,
@@ -488,7 +496,7 @@
       referenceType: payload.referenceType || '',
       referenceId: payload.referenceId || '',
       articleSnapshot: payload.articleSnapshot || null,
-      status: payload.status || 'New',
+      status: payload.status || (String(type).includes('Solution') || type === 'Quote Request' || type === 'Consultation Request' || String(type).includes('Cost') ? 'Pending Review' : 'New'),
       assignedTo: payload.assignedTo || route.assignedTo,
       department: payload.department || route.department,
       salesOwner: payload.salesOwner || route.assignedTo,
@@ -497,6 +505,11 @@
       createdAt: payload.createdAt || stamp,
       updatedAt: payload.updatedAt || stamp,
       channel: payload.channel || 'Web',
+      quotations: payload.quotations || [],
+      budget: payload.budget || '',
+      dueDate: payload.dueDate || '',
+      notes: payload.notes || '',
+      customerId: payload.customerId || payload.customer?.customerId || '',
       timeline: payload.timeline || [
         { at: stamp, by: actor, text: 'تم إنشاء الطلب', key: 'created' },
         { at: stamp, by: 'النظام', text: `تم التوجيه إلى ${route.department} · ${route.assignedTo}`, key: 'routed' },
@@ -507,6 +520,7 @@
         phone: payload.phone || '',
         email: payload.email || '',
         branch: payload.branch || '',
+        customerId: payload.customerId || '',
       },
     });
 
@@ -1555,6 +1569,123 @@
     return state.settings;
   };
 
+  const listQuotations = (requestId) => {
+    if (requestId) {
+      const row = get(requestId);
+      return Array.isArray(row?.quotations) ? [...row.quotations] : [];
+    }
+    return state.requests.flatMap((r) => (Array.isArray(r.quotations) ? r.quotations : []));
+  };
+
+  const createQuotation = (requestId, payload = {}, actor = 'Sales Desk') => {
+    const row = get(requestId);
+    if (!row) return null;
+    if (!Array.isArray(row.quotations)) row.quotations = [];
+    const price = Number(payload.price) || 0;
+    const tax = Number(payload.tax) || Math.round(price * 0.15);
+    const discount = Number(payload.discount) || 0;
+    const stamp = nowIso();
+    const item = {
+      id: nextSeq(row.quotations, 'QT'),
+      requestId: row.id,
+      solutionId: row.solutionId || row.referenceId || '',
+      solutionName: row.solutionName || row.relatedSolution || row.title || '',
+      customerName: row.customerName || row.customer?.name || '',
+      customerId: row.customerId || '',
+      price,
+      currency: payload.currency || 'ر.س',
+      tax,
+      discount,
+      total: price + tax - discount,
+      details: payload.details || '',
+      duration: payload.duration || '',
+      notes: payload.notes || '',
+      terms: payload.terms || '',
+      validUntil: payload.validUntil || new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+      createdBy: actor,
+      createdAt: stamp,
+      status: 'Sent',
+    };
+    row.quotations.unshift(item);
+    const old = row.status;
+    row.status = 'Proposal Sent';
+    row.updatedAt = stamp;
+    if (!Array.isArray(row.timeline)) row.timeline = [];
+    row.timeline.push({ at: stamp, by: actor, text: `تم إرسال عرض السعر ${item.id}`, key: 'quote_sent' });
+    if (!Array.isArray(row.messages)) row.messages = [];
+    row.messages.push({
+      at: stamp,
+      by: actor,
+      text: `عرض سعر: ${item.price} ${item.currency} · مدة: ${item.duration || '—'} · صلاحية حتى ${item.validUntil}${item.details ? `\n${item.details}` : ''}`,
+      internal: false,
+    });
+    pushAudit({
+      action: 'Quotation Sent',
+      requestId: row.id,
+      customer: row.company || row.customerName,
+      sourceModule: row.sourceModule,
+      performedBy: actor,
+      oldStatus: old,
+      newStatus: row.status,
+      detail: `${item.id} · ${item.price} ${item.currency}`,
+    });
+    pushCustomerNotification({
+      title: 'عرض سعر جديد',
+      body: `وصل عرض سعر لطلبك ${row.requestId || row.id}`,
+      link: 'naiosh-solutions.html?view=my',
+      email: row.email || row.customer?.email,
+    });
+    save();
+    return item;
+  };
+
+  const decideQuotation = (qid, decision, actor = 'عميل', note = '') => {
+    let found = null;
+    let parent = null;
+    for (const r of state.requests) {
+      const q = (r.quotations || []).find((x) => x.id === qid);
+      if (q) {
+        found = q;
+        parent = r;
+        break;
+      }
+    }
+    if (!found || !parent) return null;
+    const stamp = nowIso();
+    if (decision === 'accept') found.status = 'Accepted';
+    else if (decision === 'revise') found.status = 'Revision Requested';
+    else found.status = 'Rejected';
+    const next =
+      decision === 'accept' ? 'Quote Accepted' : decision === 'revise' ? 'Need More Information' : 'Quote Rejected';
+    const old = parent.status;
+    parent.status = next;
+    parent.updatedAt = stamp;
+    if (!Array.isArray(parent.timeline)) parent.timeline = [];
+    parent.timeline.push({
+      at: stamp,
+      by: actor,
+      text:
+        decision === 'accept'
+          ? 'تم قبول العرض'
+          : decision === 'revise'
+            ? note || 'طلب تعديل العرض'
+            : 'تم رفض العرض',
+      key: `quote_${decision}`,
+    });
+    pushAudit({
+      action: decision === 'accept' ? 'Quotation Accepted' : decision === 'revise' ? 'Quotation Revision' : 'Quotation Rejected',
+      requestId: parent.id,
+      customer: parent.company || parent.customerName,
+      sourceModule: parent.sourceModule,
+      performedBy: actor,
+      oldStatus: old,
+      newStatus: next,
+      detail: found.id,
+    });
+    save();
+    return found;
+  };
+
   syncFromModules();
 
   window.HubCustomerRequests = {
@@ -1583,6 +1714,9 @@
     markViewed,
     addMessage,
     addAttachment,
+    createQuotation,
+    decideQuotation,
+    listQuotations,
     findSimilarOpen,
     findByReference,
     ensureForArticle,

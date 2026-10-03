@@ -5,7 +5,7 @@
  * Cache name is Hub-specific (never nais-shell-*).
  */
 
-const CACHE_NAME = 'hub-shell-v4';
+const CACHE_NAME = 'hub-shell-v5';
 
 const SHELL_URLS = [
   '/',
