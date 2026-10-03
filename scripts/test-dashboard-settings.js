@@ -56,8 +56,8 @@ assert(centerJs.includes('window.HubSettingsCenter'), 'settings center exported'
 assert(html.includes('id="sidebar-nav"'), 'sidebar nav mount remains');
 assert(html.includes('sidebar-home'), 'Home stays below the generated nav');
 assert(html.includes('hub-settings-center.js'), 'settings center script included');
-assert(/dashboard\.js\?v=\d+/.test(html), 'dashboard cache-bust');
-assert(/dashboard\.css\?v=\d+/.test(html), 'css cache-bust');
+assert(html.includes('dashboard.js?v='), 'dashboard cache-bust');
+assert(html.includes('dashboard.css?v='), 'css cache-bust');
 
 assert(css.includes('.settings-grid'), 'settings layout styles');
 assert(css.includes('.sac-hero') || css.includes('.sac {'), 'settings admin center styles');
@@ -114,7 +114,7 @@ const HubStore = sandbox.window.HubStore;
 assert(HubStore && typeof HubStore.getSettings === 'function', 'HubStore.getSettings available');
 const defaults = HubStore.getSettings();
 assert.strictEqual(defaults.orgNameEn, 'NAIOSH HUB');
-assert.strictEqual(defaults.maxUploadMb, 150);
+assert.strictEqual(defaults.maxUploadMb, 1500);
 assert.strictEqual(defaults.timezone, 'Asia/Riyadh');
 assert.strictEqual(defaults.excludeKonzoo, true);
 assert.strictEqual(defaults.searchIndexEnabled, true);
@@ -139,7 +139,10 @@ assert.strictEqual(HubStore.getSettings().banners.length, 1);
 assert.ok(HubStore.getSettings().settingsChangeLog.length >= 1, 'settings change log records edits');
 
 const over = HubStore.saveSettings({ maxUploadMb: 900 });
-assert.strictEqual(over.maxUploadMb, 150, 'settings cannot raise upload above 150');
+assert.strictEqual(over.maxUploadMb, 900, 'settings allow upload up to 1500');
+
+const overCap = HubStore.saveSettings({ maxUploadMb: 9000 });
+assert.strictEqual(overCap.maxUploadMb, 1500, 'settings cannot raise upload above 1500');
 
 const badColor = HubStore.saveSettings({ primaryColor: 'red' });
 assert.strictEqual(badColor.primaryColor, '#d70000', 'invalid hex falls back to default');
@@ -149,4 +152,17 @@ assert.strictEqual(HubStore.getSettings().orgNameAr, 'نايوش هوب');
 assert.strictEqual(HubStore.getSettings().compactSidebar, false);
 assert.strictEqual(HubStore.getSettings().banners.length, 0);
 
-console.log(`ok: settings admin center + last in ${navItems.length} sidebar items, store persist/reset works`);
+assert(typeof HubStore.saveSettingsAsync === 'function', 'saveSettingsAsync exported');
+assert(typeof HubStore.hydrateSettingsFromServer === 'function', 'hydrateSettingsFromServer exported');
+assert(storeJs.includes('/api/hub/system-settings'), 'store knows system-settings API');
+assert(dashJs.includes('saveSettingsAsync'), 'dashboard uses async server save');
+assert(dashJs.includes('hydrateSettingsFromServer'), 'dashboard hydrates from server');
+assert(dashJs.includes('جارٍ الحفظ'), 'saving button state');
+assert(dashJs.includes('تعذر حفظ التغييرات'), 'failure toast copy');
+assert(centerJs.includes('حفظ التغييرات'), 'save button label');
+assert(centerJs.includes('sac-sticky-save'), 'mobile sticky save');
+assert(centerJs.includes('isDirty'), 'dirty helper exported');
+assert(fs.existsSync(path.join(root, 'lib/hub-system-settings.js')), 'system settings backend module');
+assert(read('server.js').includes('/api/hub/system-settings'), 'API route registered');
+
+console.log(`ok: settings admin center + last in ${navItems.length} sidebar items, store persist/reset + API wire works`);

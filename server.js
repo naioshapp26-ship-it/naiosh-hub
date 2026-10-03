@@ -19,6 +19,7 @@ const hubPoshaOps = require('./lib/hub-posha-ops');
 const hubPoshaOs = require('./lib/hub-posha-os');
 const productCategories = require('./lib/hub-product-categories');
 const productOrders = require('./lib/hub-product-orders');
+const hubSystemSettings = require('./lib/hub-system-settings');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -58,7 +59,7 @@ function sendJson(res, status, payload) {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Hub-Token, X-Hub-User-Role, X-Hub-User-Name, X-File-Name, X-File-Type',
   });
 }
@@ -430,6 +431,113 @@ async function handleHubApi(req, res, pathname) {
       }
       return true;
     }
+  }
+
+  // —— إعدادات النظام (مصدر مركزي: ملف + hub_meta اختياريًا) ——
+  if (pathname === '/api/hub/system-settings' && req.method === 'GET') {
+    const url = new URL(req.url, 'http://local');
+    const wantPublic = String(url.searchParams.get('public') || '') === '1';
+    if (wantPublic) {
+      const settings = await hubSystemSettings.getSettings();
+      sendJson(res, 200, { ok: true, public: true, brand: hubSystemSettings.getPublicBrand(settings) });
+      return true;
+    }
+    let session;
+    try {
+      session = hubSession.requireStaff(req);
+    } catch (err) {
+      sendJson(res, err.status || 403, { ok: false, error: err.message || 'غير مصرح بقراءة إعدادات النظام' });
+      return true;
+    }
+    const settings = await hubSystemSettings.getSettings();
+    sendJson(res, 200, {
+      ok: true,
+      settings,
+      labels: hubSystemSettings.KEY_LABELS,
+      sections: hubSystemSettings.KEY_SECTIONS,
+      actor: { email: session.email, name: session.name, role: session.role },
+      storage: { file: hubSystemSettings.DATA_PATH, metaKey: hubSystemSettings.META_KEY },
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/system-settings' && (req.method === 'PUT' || req.method === 'POST')) {
+    let session;
+    try {
+      session = hubSession.requireStaff(req);
+    } catch (err) {
+      console.error('[system-settings] unauthorized save attempt', err.message);
+      sendJson(res, err.status || 403, {
+        ok: false,
+        error: 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.',
+        detail: err.message || 'غير مصرح',
+      });
+      return true;
+    }
+    try {
+      const body = await readBody(req);
+      const patch = body?.settings && typeof body.settings === 'object' ? body.settings : body || {};
+      const actor = {
+        email: session.email,
+        name: session.name || session.email,
+        employeeNo: body?.employeeNo || session.userId || session.email,
+        userId: session.userId,
+        role: session.role,
+      };
+      const result = await hubSystemSettings.saveSettings(patch, actor);
+      sendJson(res, 200, {
+        ok: true,
+        message: 'تم حفظ التغييرات بنجاح',
+        settings: result.settings,
+        changedKeys: result.changedKeys,
+        auditEntries: result.auditEntries,
+        storage: result.storage,
+      });
+    } catch (err) {
+      console.error('[system-settings] save failed', err);
+      sendJson(res, err.status || 500, {
+        ok: false,
+        error: 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.',
+      });
+    }
+    return true;
+  }
+
+  if (pathname === '/api/hub/system-settings/reset' && req.method === 'POST') {
+    let session;
+    try {
+      session = hubSession.requireStaff(req);
+    } catch (err) {
+      sendJson(res, err.status || 403, {
+        ok: false,
+        error: 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.',
+        detail: err.message || 'غير مصرح',
+      });
+      return true;
+    }
+    try {
+      const body = await readBody(req).catch(() => ({}));
+      const actor = {
+        email: session.email,
+        name: session.name || session.email,
+        employeeNo: body?.employeeNo || session.userId || session.email,
+        userId: session.userId,
+        role: session.role,
+      };
+      const result = await hubSystemSettings.resetSettings(actor);
+      sendJson(res, 200, {
+        ok: true,
+        message: 'تم حفظ التغييرات بنجاح',
+        settings: result.settings,
+        changedKeys: result.changedKeys,
+        auditEntries: result.auditEntries,
+        storage: result.storage,
+      });
+    } catch (err) {
+      console.error('[system-settings] reset failed', err);
+      sendJson(res, 500, { ok: false, error: 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.' });
+    }
+    return true;
   }
 
   // —— تصنيفات المنتجات (مصدر مركزي) ——

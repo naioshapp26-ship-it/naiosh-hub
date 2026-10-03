@@ -422,6 +422,9 @@
           toast?.('ليس لديك صلاحية لفتح هذا الاستوديو.');
           key = 'overview';
         } else {
+          if (window.HubSettingsCenter?.isDirty?.(root) && !confirm('لديك تغييرات غير محفوظة. هل تريد المغادرة دون حفظها؟')) {
+            return;
+          }
           const ret = studioReturnTarget();
           sessionStorage.setItem('hubStudioReturn', ret);
           localStorage.setItem('hubStudioReturn', ret);
@@ -441,6 +444,14 @@
         toast?.('ليس لديك صلاحية لفتح هذا القسم.');
       }
     } catch (_) {}
+    if (
+      current === 'settings' &&
+      next !== 'settings' &&
+      window.HubSettingsCenter?.isDirty?.(root) &&
+      !confirm('لديك تغييرات غير محفوظة. هل تريد المغادرة دون حفظها؟')
+    ) {
+      return;
+    }
     current = next;
     history.replaceState(null, '', `#${current}`);
     $('#page-title').textContent = TITLES[current][0];
@@ -2110,6 +2121,7 @@
         break;
       }
       case 'save-settings': {
+        if (btn.dataset.saving === '1') return;
         const patch = window.HubSettingsCenter?.collectDraft
           ? window.HubSettingsCenter.collectDraft(root)
           : (() => {
@@ -2128,16 +2140,66 @@
             return;
           }
         }
-        HubStore.saveSettings(patch);
-        applyDashboardChrome();
-        toast('تم حفظ التغييرات بنجاح ✓');
-        break;
+        const saveBtns = root.querySelectorAll('[data-action="save-settings"]');
+        saveBtns.forEach((b) => {
+          b.dataset.saving = '1';
+          b.disabled = true;
+          b.dataset.prevHtml = b.innerHTML;
+          b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الحفظ...';
+        });
+        window.HubSettingsCenter?.setSaveStatus?.(root, 'saving');
+        const finishButtons = (label) => {
+          saveBtns.forEach((b) => {
+            b.dataset.saving = '0';
+            b.disabled = false;
+            if (label) b.innerHTML = label;
+            else if (b.dataset.prevHtml) b.innerHTML = b.dataset.prevHtml;
+          });
+        };
+        (async () => {
+          const result = HubStore.saveSettingsAsync
+            ? await HubStore.saveSettingsAsync(patch)
+            : { ok: true, settings: HubStore.saveSettings(patch), message: 'تم حفظ التغييرات بنجاح' };
+          if (!result?.ok) {
+            finishButtons('<i class="fas fa-floppy-disk"></i> حفظ التغييرات');
+            window.HubSettingsCenter?.setSaveStatus?.(root, 'dirty');
+            window.HubSettingsCenter?.markDirty?.(root, true);
+            toast(result?.error || 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.');
+            return;
+          }
+          finishButtons('<i class="fas fa-check"></i> تم الحفظ');
+          window.HubSettingsCenter?.setSaveStatus?.(root, 'saved');
+          window.HubSettingsCenter?.markDirty?.(root, false);
+          applyDashboardChrome();
+          toast(result.message || 'تم حفظ التغييرات بنجاح');
+          setTimeout(() => {
+            finishButtons('<i class="fas fa-floppy-disk"></i> حفظ التغييرات');
+            renderNav();
+            render();
+          }, 700);
+        })().catch((err) => {
+          console.error('[settings] save failed', err);
+          finishButtons('<i class="fas fa-floppy-disk"></i> حفظ التغييرات');
+          window.HubSettingsCenter?.setSaveStatus?.(root, 'dirty');
+          toast('تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.');
+        });
+        return;
       }
       case 'reset-settings': {
         if (!confirm('إعادة كل الإعدادات الداخلية إلى القيم الافتراضية؟')) return;
-        HubStore.resetSettings();
-        applyDashboardChrome();
-        toast('أُعيدت الإعدادات للافتراضي');
+        (async () => {
+          const result = HubStore.resetSettingsAsync
+            ? await HubStore.resetSettingsAsync()
+            : { ok: true, settings: HubStore.resetSettings() };
+          if (!result?.ok) {
+            toast(result?.error || 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.');
+            return;
+          }
+          applyDashboardChrome();
+          toast(result.message || 'أُعيدت الإعدادات للافتراضي');
+          renderNav();
+          render();
+        })();
         break;
       }
       case 'export-settings': {
@@ -2165,11 +2227,19 @@
         try {
           const data = JSON.parse(String(reader.result || '{}'));
           if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('invalid');
-          HubStore.saveSettings(data);
-          applyDashboardChrome();
-          toast('تم استيراد الإعدادات');
-          renderNav();
-          render();
+          (async () => {
+            const result = HubStore.saveSettingsAsync
+              ? await HubStore.saveSettingsAsync(data)
+              : { ok: true, settings: HubStore.saveSettings(data) };
+            if (!result?.ok) {
+              toast(result?.error || 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.');
+              return;
+            }
+            applyDashboardChrome();
+            toast(result.message || 'تم استيراد الإعدادات');
+            renderNav();
+            render();
+          })();
         } catch {
           toast('ملف إعدادات غير صالح');
         }
@@ -2282,8 +2352,26 @@
     return TITLES[key] ? key : 'overview';
   };
 
-  const hash = panelFromHash();
-  activate(hash);
+  window.addEventListener('beforeunload', (e) => {
+    if (current === 'settings' && window.HubSettingsCenter?.isDirty?.(root)) {
+      e.preventDefault();
+      e.returnValue = 'لديك تغييرات غير محفوظة. هل تريد المغادرة دون حفظها؟';
+      return e.returnValue;
+    }
+  });
+
+  const bootDashboard = async () => {
+    if (HubStore.hydrateSettingsFromServer) {
+      try {
+        await HubStore.hydrateSettingsFromServer({ force: true });
+      } catch (err) {
+        console.warn('[settings] hydrate failed', err);
+      }
+    }
+    const hash = panelFromHash();
+    activate(hash);
+  };
+  bootDashboard();
 
   window.addEventListener('hashchange', () => {
     const next = panelFromHash();
