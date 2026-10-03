@@ -217,6 +217,24 @@ function buildAiAgentReply(message = '', meta = {}) {
   return `${base}\n\n(${mode} · صفحة: ${meta.path || '/'})`;
 }
 
+function requireHubStaffOrReject(req, res, permission = null) {
+  try {
+    return hubSession.requireStaff(req, permission);
+  } catch (err) {
+    sendJson(res, err.status || 403, { ok: false, success: false, error: err.message || 'غير مصرح' });
+    return null;
+  }
+}
+
+function requireHubAuthOrReject(req, res) {
+  try {
+    return hubSession.requireAuth(req);
+  } catch (err) {
+    sendJson(res, err.status || 401, { ok: false, success: false, error: err.message || 'مطلوب تسجيل الدخول' });
+    return null;
+  }
+}
+
 async function handleHubApi(req, res, pathname) {
   if (req.method === 'OPTIONS') {
     sendJson(res, 204, {});
@@ -230,6 +248,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/notifications' && req.method === 'POST') {
+    if (!requireHubAuthOrReject(req, res)) return true;
     const body = await readBody(req);
     const item = hubRuntime.addNotification(body);
     sendJson(res, 201, { ok: true, item });
@@ -237,6 +256,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/notifications/read' && req.method === 'POST') {
+    if (!requireHubAuthOrReject(req, res)) return true;
     const body = await readBody(req);
     const items = hubRuntime.markRead(body.id, !!body.all);
     sendJson(res, 200, { ok: true, items });
@@ -244,6 +264,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/sync' && req.method === 'POST') {
+    if (!requireHubAuthOrReject(req, res)) return true;
     const body = await readBody(req);
     const result = hubRuntime.ingestSync(body);
     sendJson(res, 200, { ok: true, ...result });
@@ -562,6 +583,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/search-catalog' && req.method === 'POST') {
+    if (!requireHubStaffOrReject(req, res)) return true;
     const body = await readBody(req);
     const items = Array.isArray(body?.items) ? body.items : [];
     const config = body?.config && typeof body.config === 'object' ? body.config : undefined;
@@ -571,6 +593,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/uploads' && req.method === 'POST') {
+    if (!requireHubAuthOrReject(req, res)) return true;
     try {
       const saved = await hubUploads.saveRequestToFile(req);
       sendJson(res, 201, { ok: true, ...saved, maxBytes: hubUploads.MAX_UPLOAD_BYTES, maxMb: hubUploads.MAX_UPLOAD_MB });
@@ -628,6 +651,8 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/system-rentals' && req.method === 'POST') {
+    // Authenticated write — prevents anonymous wipe/overwrite of rentals store
+    if (!requireHubAuthOrReject(req, res)) return true;
     const body = await readBody(req);
     const state = {
       version: 1,
@@ -671,6 +696,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/platform-grants' && req.method === 'POST') {
+    if (!requireHubStaffOrReject(req, res)) return true;
     const body = await readBody(req);
     const state = {
       version: 1,
@@ -682,11 +708,18 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/my-grant' && req.method === 'GET') {
+    const session = requireHubAuthOrReject(req, res);
+    if (!session) return true;
     const email = String(new URL(req.url, 'http://localhost').searchParams.get('email') || '')
       .trim()
       .toLowerCase();
     if (!email) {
       sendJson(res, 400, { ok: false, error: 'أدخل الإيميل' });
+      return true;
+    }
+    // Prevent IDOR: clients may only query their own email; staff may query any
+    if (hubSession.isClientLane(session.lane) && session.email !== email) {
+      sendJson(res, 403, { ok: false, error: 'لا يمكنك الاطلاع على طلبات عميل آخر' });
       return true;
     }
     const state = readPlatformGrantsFile();
@@ -731,6 +764,7 @@ async function handleHubApi(req, res, pathname) {
   };
 
   if (pathname === '/api/hub/tenant-accounts' && req.method === 'POST') {
+    if (!requireHubStaffOrReject(req, res)) return true;
     const body = await readBody(req);
     const accounts = Array.isArray(body?.accounts) ? body.accounts : [];
     writeTenantAccountsFile({ version: 1, accounts });
@@ -739,6 +773,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/tenant-account' && req.method === 'POST') {
+    if (!requireHubStaffOrReject(req, res)) return true;
     const body = await readBody(req);
     const email = String(body?.email || '').trim().toLowerCase();
     const password = String(body?.password || '');

@@ -38,6 +38,14 @@
       xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name || 'file'));
       xhr.setRequestHeader('X-File-Type', file.type || 'application/octet-stream');
       xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      try {
+        const auth = window.HubAuth?.authHeaders?.() || {};
+        if (auth.Authorization) xhr.setRequestHeader('Authorization', auth.Authorization);
+        if (auth['X-Hub-Token']) xhr.setRequestHeader('X-Hub-Token', auth['X-Hub-Token']);
+        if (auth['X-Hub-User-Role']) xhr.setRequestHeader('X-Hub-User-Role', auth['X-Hub-User-Role']);
+      } catch {
+        /* ignore */
+      }
       xhr.upload.onprogress = (event) => {
         if (!onProgress || !event.lengthComputable) return;
         onProgress(Math.round((event.loaded / event.total) * 100));

@@ -63,7 +63,9 @@
     try {
       await fetch(API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(publicState(state)),
       });
     } catch {
