@@ -1,0 +1,112 @@
+{
+  "generatedAt": "2026-10-03T21:06:42.292Z",
+  "videoLimitMb": 1500,
+  "storage": "data/uploads + metadata in data/register-attachments.json + mirrored on platform-grants.json",
+  "results": [
+    {
+      "name": "limits API reports 1500MB",
+      "pass": true,
+      "detail": "{\"ok\":true,\"maxMb\":1500,\"maxBytes\":1572864000,\"videoMaxMb\":1500,\"videoMaxBytes\":1572864000}"
+    },
+    {
+      "name": "TEST1 create request + Request ID",
+      "pass": true,
+      "detail": "REG-REQ-MUSVU118-2AD0"
+    },
+    {
+      "name": "TEST1 upload image",
+      "pass": true,
+      "detail": "att-musvu11e-3eac1db5"
+    },
+    {
+      "name": "TEST1 admin sees image on same Request ID",
+      "pass": true,
+      "detail": "atts=1"
+    },
+    {
+      "name": "TEST1 admin can view image content",
+      "pass": true,
+      "detail": "bytes=70"
+    },
+    {
+      "name": "TEST2 upload PDF",
+      "pass": true,
+      "detail": "att-musvu11p-7fc55678"
+    },
+    {
+      "name": "TEST2 admin download/open PDF",
+      "pass": true,
+      "detail": "type=application/pdf"
+    },
+    {
+      "name": "TEST3 upload video",
+      "pass": true,
+      "detail": "size=2097152"
+    },
+    {
+      "name": "TEST3 video linked to same Request ID in grants store",
+      "pass": true,
+      "detail": "REG-REQ-MUSVU11V-537A"
+    },
+    {
+      "name": "TEST4 hard limit is 1500MB",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "TEST4 progressive large-ish video (8MB) accepted",
+      "pass": true,
+      "detail": "size=8388608"
+    },
+    {
+      "name": "TEST4 validateUploadMeta allows exactly 1500MB",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "TEST6 reject executable from backend (validator)",
+      "pass": true,
+      "detail": "نوع الملف غير مسموح لأسباب أمنية (ملفات تنفيذية أو سكربتات خادم)."
+    },
+    {
+      "name": "TEST6 reject executable from backend (HTTP)",
+      "pass": true,
+      "detail": "نوع الملف غير مسموح لأسباب أمنية (ملفات تنفيذية أو سكربتات خادم)."
+    },
+    {
+      "name": "TEST5 reject over 1500MB (backend meta)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "TEST5 reject over 1500MB with Arabic error",
+      "pass": true,
+      "detail": "حجم الملف أكبر من 1500MB — صغّره أو ضع رابطًا خارجيًا"
+    },
+    {
+      "name": "TEST7 unauthorized / client / public URL denied",
+      "pass": true,
+      "detail": "staff-ok path protected; forbidden=403 anon=403 public=403"
+    },
+    {
+      "name": "TEST8 mobile-ready file inputs (capture/accept/multi)",
+      "pass": true,
+      "detail": "register markup + JS checks"
+    },
+    {
+      "name": "video stored as file reference not Base64",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "register UI has attachments section",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "summary": {
+    "total": 20,
+    "passed": 20,
+    "failed": 0
+  }
+}

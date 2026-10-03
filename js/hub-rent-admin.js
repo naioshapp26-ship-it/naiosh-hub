@@ -67,6 +67,96 @@
     });
   };
 
+  const renderAttachmentsBlock = (attachments = []) => {
+    const list = Array.isArray(attachments) ? attachments.filter((a) => a && a.uploadStatus !== 'failed') : [];
+    if (!list.length) return '';
+    const images = list.filter((a) => a.category === 'image');
+    const docs = list.filter((a) => a.category === 'document');
+    const videos = list.filter((a) => a.category === 'video');
+    const authQs = (() => {
+      try {
+        const h = window.HubAuth?.authHeaders?.() || {};
+        return h;
+      } catch {
+        return {};
+      }
+    })();
+    const contentUrl = (a) =>
+      a.contentUrl || `/api/hub/register-attachments/${encodeURIComponent(a.id)}/content`;
+    const openAuth = (url) => {
+      // open with Authorization via fetch blob when possible
+      return url;
+    };
+    const row = (title, items, actionLabel, kind) => {
+      if (!items.length) return '';
+      const links = items
+        .map((a) => {
+          const href = openAuth(contentUrl(a));
+          const name = escapeHtml(a.originalFileName || a.fileName || a.id);
+          if (kind === 'image') {
+            return `<a class="hub-rent-attach-link" href="${escapeHtml(href)}" target="_blank" rel="noopener" data-reg-preview="${escapeHtml(
+              href
+            )}" data-reg-kind="image">${name}</a>`;
+          }
+          if (kind === 'video') {
+            return `<a class="hub-rent-attach-link" href="${escapeHtml(href)}" target="_blank" rel="noopener" data-reg-preview="${escapeHtml(
+              href
+            )}" data-reg-kind="video">${name}</a>`;
+          }
+          return `<a class="hub-rent-attach-link" href="${escapeHtml(href)}" target="_blank" rel="noopener" data-reg-preview="${escapeHtml(
+            href
+          )}" data-reg-kind="document">${name}</a>`;
+        })
+        .join(' · ');
+      return `<div class="hub-rent-attach-row"><strong>${escapeHtml(title)}</strong> <span>${items.length}</span> — ${links} <button type="button" class="hub-rent-btn hub-rent-btn-secondary" style="width:auto;margin:0 6px;padding:4px 10px;font-size:.8rem" data-reg-open-group="${escapeHtml(
+        kind
+      )}" data-reg-urls="${escapeHtml(items.map((a) => contentUrl(a)).join('|'))}">${escapeHtml(actionLabel)}</button></div>`;
+    };
+    void authQs;
+    return `<section class="hub-rent-attachments" data-reg-attachments-admin>
+      <h4>المرفقات</h4>
+      ${row('الصور', images, 'عرض', 'image')}
+      ${row('المستندات', docs, 'عرض / تنزيل', 'document')}
+      ${row('الفيديو', videos, 'مشاهدة', 'video')}
+    </section>`;
+  };
+
+  const openAttachmentPreview = async (url, kind) => {
+    const headers = window.HubAuth?.authHeaders?.() || {};
+    try {
+      const res = await fetch(url, { headers, cache: 'no-store' });
+      if (!res.ok) {
+        toastMsg('تعذر فتح المرفق — تحقق من صلاحيات الإدارة');
+        return;
+      }
+      const blob = await res.blob();
+      const obj = URL.createObjectURL(blob);
+      const bodyHtml =
+        kind === 'image'
+          ? `<img src="${obj}" alt="معاينة" style="max-width:100%;max-height:70vh;border-radius:10px" />`
+          : kind === 'video'
+            ? `<video src="${obj}" controls playsinline style="width:100%;max-height:70vh;border-radius:10px;background:#000"></video>`
+            : blob.type === 'application/pdf'
+              ? `<iframe src="${obj}" title="PDF" style="width:100%;height:70vh;border:0;border-radius:10px"></iframe>`
+              : `<p>تم تجهيز الملف للتنزيل.</p><p><a href="${obj}" download>تنزيل الملف</a></p>`;
+      openHubModal({
+        title: kind === 'image' ? 'معاينة الصورة' : kind === 'video' ? 'معاينة الفيديو' : 'معاينة / تنزيل الملف',
+        bodyHtml,
+        confirmLabel: 'إغلاق',
+        onConfirm: () => {
+          try {
+            URL.revokeObjectURL(obj);
+          } catch {
+            /* ignore */
+          }
+          return true;
+        },
+      });
+    } catch {
+      toastMsg('تعذر الوصول إلى المرفق');
+    }
+  };
+
   const renderPlatformList = () => {
     const root = $('[data-platform-admin-list]');
     if (!root || !platforms()) return;
@@ -79,7 +169,8 @@
     root.innerHTML = rows
       .map(
         (r) => `<article class="hub-rent-admin-item" data-platform-id="${escapeHtml(r.id)}">
-        <h3>${escapeHtml(r.adminName || r.companyName)} <span class="hub-rent-status ${statusClass(r.status)}">${statusAr[r.status] || r.status}</span></h3>
+        <h3>${escapeHtml(r.adminName || r.companyName)} <span class="hub-rent-status ${statusClass(r.status)}">${statusAr[r.status] || r.statusLabel || r.status}</span></h3>
+        <p>رقم الطلب: <code dir="ltr">${escapeHtml(r.id)}</code></p>
         <p>الفرع: <strong>${escapeHtml(r.branchLabel || r.branch || '—')}</strong></p>
         <p>الحاضنة: <strong>${escapeHtml(r.incubatorLabel || r.incubator || '—')}</strong></p>
         <p>المنصة: <strong>${escapeHtml(r.platformLabel || r.platform || '—')}</strong></p>
@@ -87,6 +178,7 @@
         <p>المسؤول: ${escapeHtml(r.adminName)} · ${escapeHtml(r.adminEmail || '—')} · ${escapeHtml(r.adminPhone || '')}</p>
         <p>النطاق: <span dir="ltr">${escapeHtml(r.host)}</span></p>
         ${r.notes ? `<p>ملاحظات: ${escapeHtml(r.notes)}</p>` : ''}
+        ${renderAttachmentsBlock(r.attachments)}
         <p>الخطة: ${escapeHtml(r.planLabel || 'باقة مجانية')} · متبقي مجاني: ${escapeHtml(String(r.freeRemaining ?? r.freeQuota ?? '—'))}</p>
         <div class="hub-rent-admin-actions">
           ${
@@ -171,6 +263,22 @@
             return true;
           },
         });
+      });
+    });
+
+    root.querySelectorAll('[data-reg-preview]').forEach((link) => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        openAttachmentPreview(link.getAttribute('data-reg-preview'), link.getAttribute('data-reg-kind') || 'document');
+      });
+    });
+    root.querySelectorAll('[data-reg-open-group]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const kind = btn.getAttribute('data-reg-open-group') || 'document';
+        const first = String(btn.getAttribute('data-reg-urls') || '')
+          .split('|')
+          .filter(Boolean)[0];
+        if (first) openAttachmentPreview(first, kind);
       });
     });
   };

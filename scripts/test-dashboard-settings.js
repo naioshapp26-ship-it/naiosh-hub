@@ -73,7 +73,7 @@ assert(storeJs.includes('primaryColor'), 'branding colors in store');
 assert(storeJs.includes('banners'), 'banners in store');
 assert(storeJs.includes('settingsChangeLog'), 'settings change log');
 
-assert(/MAX_FILE_MB = 150/.test(uploadJs), 'system upload ceiling stays 150MB');
+assert(/MAX_FILE_MB = 1500/.test(uploadJs), 'system upload ceiling stays 1500MB');
 assert(uploadJs.includes('policyMaxMb'), 'upload policy can follow settings');
 assert(searchJs.includes('searchIndexEnabled'), 'search honors settings index flag');
 assert(marketJs.includes('shopDefaultCategory'), 'products/store honor default shop category');

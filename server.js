@@ -11,6 +11,7 @@ const erpAdapter = require('./lib/erp-saas-adapter');
 const hubSso = require('./lib/hub-sso');
 const { handleAdminApi } = require('./lib/hub-rbac-admin');
 const hubUploads = require('./lib/hub-uploads');
+const hubRegisterAttachments = require('./lib/hub-register-attachments');
 const customerAuth = require('./lib/hub-customer-auth');
 const hubSession = require('./lib/hub-session');
 const hubClientPortal = require('./lib/hub-client-portal');
@@ -611,8 +612,180 @@ async function handleHubApi(req, res, pathname) {
       ok: true,
       maxMb: hubUploads.MAX_UPLOAD_MB,
       maxBytes: hubUploads.MAX_UPLOAD_BYTES,
+      videoMaxMb: hubUploads.MAX_UPLOAD_MB,
+      videoMaxBytes: hubUploads.MAX_UPLOAD_BYTES,
     });
     return true;
+  }
+
+  // —— طلبات «سجل معنا» + المرفقات المرتبطة بنفس Request ID ——
+  if (pathname === '/api/hub/register-requests' && req.method === 'POST') {
+    const body = await readBody(req);
+    const adminName = String(body?.adminName || body?.fullName || '').trim();
+    const adminPhone = String(body?.adminPhone || body?.phone || '').trim();
+    const adminEmail = String(body?.adminEmail || body?.email || '').trim().toLowerCase();
+    const adminPassword = String(body?.adminPassword || body?.password || '');
+    const subdomain = String(body?.subdomain || body?.slug || '').trim().toLowerCase();
+    if (!adminName || !adminPhone || !adminEmail || !adminPassword) {
+      sendJson(res, 400, { ok: false, error: 'يرجى ملء جميع الحقول المطلوبة' });
+      return true;
+    }
+    if (adminPassword.length < 8) {
+      sendJson(res, 400, { ok: false, error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' });
+      return true;
+    }
+    if (!subdomain || subdomain.length < 2) {
+      sendJson(res, 400, { ok: false, error: 'النطاق الفرعي غير صالح' });
+      return true;
+    }
+    const { request, uploadToken } = hubRegisterAttachments.createRegisterRequest({
+      ...body,
+      adminName,
+      adminPhone,
+      adminEmail,
+      adminPassword,
+      subdomain,
+      slug: subdomain,
+      host: body?.host || `${subdomain}.naiosh.app`,
+    });
+    sendJson(res, 201, {
+      ok: true,
+      requestId: request.id,
+      status: request.status,
+      statusLabel: request.statusLabel,
+      uploadToken,
+      request: hubRegisterAttachments.publicRequest(request),
+    });
+    return true;
+  }
+
+  const registerReqMatch = pathname.match(/^\/api\/hub\/register-requests\/([^/]+)(?:\/(attachments(?:\/([^/]+))?)?)?$/);
+  if (registerReqMatch) {
+    const requestId = decodeURIComponent(registerReqMatch[1]);
+    const sub = registerReqMatch[2] || '';
+    const attachmentId = registerReqMatch[3] ? decodeURIComponent(registerReqMatch[3]) : '';
+
+    if (req.method === 'GET' && !sub) {
+      const token = String(req.headers['x-register-upload-token'] || '').trim();
+      let staff = false;
+      try {
+        const session = hubSession.requireStaff(req);
+        staff = !!session;
+      } catch {
+        staff = false;
+      }
+      const bundle = hubRegisterAttachments.getRequestBundle(requestId, { uploadToken: token, staff });
+      if (!bundle.ok) {
+        sendJson(res, bundle.status || 403, { ok: false, error: bundle.error });
+        return true;
+      }
+      sendJson(res, 200, bundle);
+      return true;
+    }
+
+    if (req.method === 'POST' && sub === 'attachments') {
+      const token = String(req.headers['x-register-upload-token'] || '').trim();
+      const category = String(req.headers['x-attachment-category'] || req.headers['x-file-category'] || '').trim().toLowerCase();
+      try {
+        const attachment = await hubRegisterAttachments.saveAttachmentFromRequest(req, {
+          requestId,
+          uploadToken: token,
+          category: category || undefined,
+        });
+        sendJson(res, 201, {
+          ok: true,
+          attachment,
+          contentUrl: `/api/hub/register-attachments/${encodeURIComponent(attachment.id)}/content`,
+          maxBytes: hubUploads.MAX_UPLOAD_BYTES,
+          maxMb: hubUploads.MAX_UPLOAD_MB,
+        });
+      } catch (error) {
+        if (!res.headersSent) {
+          sendJson(res, error.status || 500, { ok: false, error: error.message || 'فشل رفع المرفق', code: error.code });
+        }
+        try {
+          req.resume();
+          // أغلق فقط عند رفض الحجم حتى لا يعلق السيرفر بانتظار باقي Content-Length
+          if (error.status === 413) req.destroy();
+        } catch {
+          /* ignore */
+        }
+      }
+      return true;
+    }
+
+    if (req.method === 'DELETE' && attachmentId) {
+      const token = String(req.headers['x-register-upload-token'] || '').trim();
+      let staff = false;
+      try {
+        hubSession.requireStaff(req);
+        staff = true;
+      } catch {
+        staff = false;
+      }
+      const result = hubRegisterAttachments.deleteAttachment(attachmentId, { uploadToken: token, staff });
+      if (!result.ok) {
+        sendJson(res, result.status || 403, { ok: false, error: result.error });
+        return true;
+      }
+      sendJson(res, 200, { ok: true });
+      return true;
+    }
+  }
+
+  const registerAttMatch = pathname.match(/^\/api\/hub\/register-attachments\/([^/]+)(?:\/(content))?$/);
+  if (registerAttMatch) {
+    const attachmentId = decodeURIComponent(registerAttMatch[1]);
+    const wantContent = registerAttMatch[2] === 'content';
+    const token = String(req.headers['x-register-upload-token'] || '').trim();
+    let session = null;
+    try {
+      session = hubSession.resolveSession(req);
+      if (!session.ok) session = null;
+    } catch {
+      session = null;
+    }
+    const access = hubRegisterAttachments.canAccessAttachment(attachmentId, session, token);
+    if (!access.ok) {
+      sendJson(res, access.status || 403, { ok: false, error: access.error });
+      return true;
+    }
+    if (req.method === 'GET' && !wantContent) {
+      sendJson(res, 200, {
+        ok: true,
+        attachment: access.attachment,
+        contentUrl: `/api/hub/register-attachments/${encodeURIComponent(attachmentId)}/content`,
+      });
+      return true;
+    }
+    if (req.method === 'GET' && wantContent) {
+      const filePath = hubUploads.resolveUploadPath(access.attachment.storageRef);
+      if (!filePath || !fs.existsSync(filePath)) {
+        sendJson(res, 404, { ok: false, error: 'الملف غير موجود في التخزين' });
+        return true;
+      }
+      const stat = fs.statSync(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      const mime = access.attachment.mimeType || hubUploads.mimeForExt(ext) || 'application/octet-stream';
+      const disposition =
+        access.attachment.category === 'image' || access.attachment.category === 'video' || mime === 'application/pdf'
+          ? 'inline'
+          : 'attachment';
+      const original = String(access.attachment.originalFileName || access.attachment.fileName || 'file').replace(/"/g, '');
+      streamFile(
+        filePath,
+        res,
+        {
+          'Content-Type': mime,
+          'Content-Length': String(stat.size),
+          'Cache-Control': 'private, no-store',
+          'Content-Disposition': `${disposition}; filename="${original}"`,
+          'X-Content-Type-Options': 'nosniff',
+        },
+        false
+      );
+      return true;
+    }
   }
 
   const rentalsPath = path.join(ROOT, 'data', 'system-rentals.json');
@@ -1228,6 +1401,11 @@ const server = http.createServer((req, res) => {
     const filePath = hubUploads.resolveUploadPath(id);
     if (!filePath) {
       send(res, 400, 'Bad request');
+      return;
+    }
+    // مرفقات التسجيل خاصة — لا تُخدم عبر الرابط العام
+    if (hubRegisterAttachments.isPrivateStorageRef(id)) {
+      sendJson(res, 403, { ok: false, error: 'هذا المرفق خاص — استخدم واجهة الإدارة أو رابط المرفقات المصرّح' });
       return;
     }
     fs.stat(filePath, (err, stat) => {

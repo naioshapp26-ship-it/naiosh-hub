@@ -1,5 +1,5 @@
 /**
- * خدماتنا grid uses slide titles, add-service button, and 150MB image/video upload.
+ * خدماتنا grid uses slide titles, add-service button, and 1500MB image/video upload.
  */
 const fs = require('fs');
 const path = require('path');
@@ -89,7 +89,7 @@ assert(uiSrc.includes('data-service-request'), 'independent service pages includ
 assert(uiSrc.includes('FIELDS_HTML'), 'service request form uses shared attachment fields');
 assert(searchPage.includes('hub-services-catalog.js'), 'search loads services catalog');
 assert(searchSrc.includes('HubServicesCatalog'), 'universal search includes services');
-assert(/MAX_FILE_MB = 150/.test(limitsSrc), 'upload limit remains 150MB');
+assert(/MAX_FILE_MB = 1500/.test(limitsSrc), 'upload limit remains 1500MB');
 assert(uiSrc.includes('HubFormAttachments'), 'UI collects link/doc/image/video via shared helper');
 
 const store = {};
