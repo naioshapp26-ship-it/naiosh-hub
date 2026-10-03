@@ -214,6 +214,17 @@ body.homepage .hero-ctas .hero-cta-instructions:focus-visible {
   color: #ffffff !important;
 }
 
+body.homepage .hero-ctas .hero-cta-interaction {
+  background: linear-gradient(135deg, #0f172a, #334155) !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35) !important;
+}
+
+body.homepage .hero-ctas .hero-cta-interaction:hover,
+body.homepage .hero-ctas .hero-cta-interaction:focus-visible {
+  background: linear-gradient(135deg, #1e293b, #475569) !important;
+  color: #ffffff !important;
+}
+
 /* زر استئجار النظام — بارز ومميز عن الحجز والأحمر */
 body.homepage .hero-ctas .hero-cta-rent {
   order: -1 !important;
