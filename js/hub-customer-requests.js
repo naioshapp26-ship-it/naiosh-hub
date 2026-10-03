@@ -86,7 +86,7 @@
     'Support Request': 'طلب دعم',
     'Project Registration': 'تسجيل مشروع',
     'Consultation Request': 'طلب استشارة',
-    'Quote Request': 'طلب عرض سعر',
+    'Quote Request': 'طلب عرض سعر لحل',
     'Quotation Request': 'طلب تسعير',
     'Product Request': 'طلب منتج',
     'Service Request': 'طلب خدمة',

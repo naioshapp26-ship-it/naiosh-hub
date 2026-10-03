@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-10-03T22:13:21.642Z",
+  "startedAt": "2026-10-03T22:33:42.782Z",
   "rows": [
     {
       "solution": "المرافق والصيانة",
@@ -11,15 +11,29 @@
     {
       "solution": "المرافق والصيانة",
       "button": "اختيار الحل (زائر)",
-      "expected": "يرجى تسجيل الدخول للمتابعة",
-      "actual": "يرجى تسجيل الدخول للمتابعة.",
+      "expected": "فتح ملخص الحل بدون Login",
+      "actual": "view=selected selected=SOL-2026-00001 gate=false",
       "result": "PASS"
     },
     {
       "solution": "المرافق والصيانة",
       "button": "طلب عرض سعر (زائر)",
-      "expected": "يرجى تسجيل الدخول للمتابعة",
-      "actual": "يرجى تسجيل الدخول للمتابعة.",
+      "expected": "فتح نموذج العرض بدون Login",
+      "actual": "view=wizard wiz=SOL-2026-00001 gate=false",
+      "result": "PASS"
+    },
+    {
+      "solution": "المرافق والصيانة",
+      "button": "إرسال زائر",
+      "expected": "SOL-REQ بدون Login",
+      "actual": "success SOL-REQ-2026-00001",
+      "result": "PASS"
+    },
+    {
+      "solution": "Guest Backend",
+      "button": "طلب زائر في الإدارة",
+      "expected": "سجل مركزي بدون صلاحيات",
+      "actual": "{\"id\":\"SOL-REQ-2026-00001\",\"solutionId\":\"SOL-2026-00001\",\"customerId\":\"GUEST-MUSYY05N-5JR2\",\"sourceModule\":\"حلول نايوش\",\"isGuest\":true}",
       "result": "PASS"
     },
     {
@@ -595,7 +609,7 @@
     "detailsTests": 24,
     "chooseTests": 23,
     "quoteTests": 23,
-    "pass": 74,
+    "pass": 76,
     "fail": 0,
     "requestId": "SOL-REQ-2026-00001",
     "quoteId": "QT-2026-00001",
@@ -607,6 +621,7 @@
     "cards": 22,
     "listenersHint": true
   },
+  "guestRequestId": "SOL-REQ-2026-00001",
   "cardCount": 22,
   "pointerProbe": {
     "text": "اختيار الحل",
@@ -625,5 +640,5 @@
     "status": "Pending Review"
   },
   "quoteId": "QT-2026-00001",
-  "finishedAt": "2026-10-03T22:14:02.237Z"
+  "finishedAt": "2026-10-03T22:34:24.057Z"
 }

@@ -136,23 +136,18 @@
   const resumeUrl = (solutionId, action) =>
     `naiosh-solutions.html?resume=1&solutionId=${encodeURIComponent(solutionId)}&action=${encodeURIComponent(action)}`;
 
-  /** Guest gate — keep Solution ID context across login */
-  const requireCustomer = (solutionId, action) => {
-    if (isLoggedIn()) return true;
-    savePending({ solutionId, action });
-    const next = resumeUrl(solutionId, action);
-    if (typeof window.HubAuth?.showGuestGate === 'function') {
-      window.HubAuth.showGuestGate({ message: 'يرجى تسجيل الدخول للمتابعة.', next });
-      return false;
-    }
-    if (typeof window.HubAuth?.requireLogin === 'function') {
-      return window.HubAuth.requireLogin({ message: 'يرجى تسجيل الدخول للمتابعة.', next });
-    }
+  /** Guest lead id for anonymous solution requests (not an account / not staff). */
+  const guestLeadId = () => {
     try {
-      sessionStorage.setItem('hubAuthFlash', 'يرجى تسجيل الدخول للمتابعة.');
-    } catch (_) {}
-    window.location.href = `login.html?next=${encodeURIComponent(next)}`;
-    return false;
+      let id = sessionStorage.getItem('naiosh_guest_lead_id');
+      if (!id) {
+        id = `GUEST-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+        sessionStorage.setItem('naiosh_guest_lead_id', id);
+      }
+      return id;
+    } catch {
+      return `GUEST-${Date.now()}`;
+    }
   };
 
   const priceLabel = (s) => {
@@ -229,8 +224,10 @@
       toast('تعذر تحديد الحل. حاول مرة أخرى.');
       return;
     }
-    const u = currentUser();
-    const max = mode === 'cost' ? 7 : mode === 'quote' ? 1 : 6;
+    const loggedIn = isLoggedIn();
+    const u = loggedIn ? currentUser() : null;
+    // Quote = single-page form; choose/consult keep multi-step but allow guests to fill contact fields
+    const max = mode === 'cost' ? 7 : mode === 'quote' || mode === 'choose' ? 1 : 6;
     ui.wizard = {
       mode,
       step: 1,
@@ -243,7 +240,8 @@
           phone: u?.phone || '',
           email: u?.email || '',
           branch: u?.branch || '',
-          customerId: customerIdOf(u),
+          country: u?.country || '',
+          customerId: loggedIn ? customerIdOf(u) : '',
         },
         need: mode === 'consult' ? 'طلب استشارة حول الحل' : mode === 'quote' ? '' : mode === 'choose' ? `أريد تنفيذ حل: ${sol.name}` : '',
         scopeQty: '',
@@ -259,6 +257,11 @@
     };
     ui.view = 'wizard';
     ui.submitError = '';
+    // Dismiss any leftover guest-login modal from older builds
+    try {
+      const gate = document.getElementById('hub-guest-gate-modal');
+      if (gate) gate.hidden = true;
+    } catch (_) {}
     render();
   };
 
@@ -267,8 +270,12 @@
       toast('معرّف الحل غير موجود');
       return;
     }
-    if (!requireCustomer(solutionId, action)) return;
     clearPending();
+    // No login gate — guests and customers can start the customer-facing workflow
+    try {
+      const gate = document.getElementById('hub-guest-gate-modal');
+      if (gate) gate.hidden = true;
+    } catch (_) {}
     if (action === 'choose') {
       openSelectionSummary(solutionId);
       return;
@@ -556,24 +563,40 @@
       <div class="cardish">${body}</div>`;
   };
 
-  const renderQuoteForm = (w, sol) => {
+  const renderContactAndNeedForm = (w, sol, { titleHint = '' } = {}) => {
     const c = w.data.customer;
+    const loggedIn = isLoggedIn();
+    const cid = c.customerId || (loggedIn ? customerIdOf() : '');
     return `
       <div class="so-quote-form">
         <div class="so-kv so-quote-locked">
-          <div><b>الحل المطلوب</b><span>${esc(sol?.name || '—')}</span></div>
-          <div><b>معرّف الحل</b><span><code>${esc(sol?.id || w.solutionId)}</code></span></div>
-          <div><b>اسم العميل</b><span>${esc(c.name || '—')}</span></div>
-          <div><b>رقم العميل</b><span>${esc(c.customerId || '—')}</span></div>
-          <div><b>البريد الإلكتروني</b><span>${esc(c.email || '—')}</span></div>
-          <div><b>رقم الهاتف</b><span>${esc(c.phone || '—')}</span></div>
+          <div><b>طلب عرض سعر / طلب حل</b><span>${esc(titleHint || (w.mode === 'quote' ? 'طلب عرض سعر لحل' : 'طلب حل'))}</span></div>
+          <div><b>الحل المختار</b><span>${esc(sol?.name || '—')}</span></div>
+          <div><b>رقم الحل</b><span><code>${esc(sol?.id || w.solutionId)}</code></span></div>
+          ${cid ? `<div><b>رقم العميل</b><span><code>${esc(cid)}</code></span></div>` : `<div><b>نوع المرسل</b><span>زائر / عميل محتمل</span></div>`}
         </div>
-        <input type="hidden" id="so-c-name" value="${esc(c.name)}" />
-        <input type="hidden" id="so-c-company" value="${esc(c.company)}" />
-        <input type="hidden" id="so-c-phone" value="${esc(c.phone)}" />
-        <input type="hidden" id="so-c-email" value="${esc(c.email)}" />
-        <input type="hidden" id="so-c-branch" value="${esc(c.branch)}" />
-        <label class="so-block">اشرح احتياجك *
+        <div class="so-form-grid">
+          <label>الاسم *
+            <input id="so-c-name" value="${esc(c.name)}" ${loggedIn && c.name ? 'readonly' : ''} placeholder="الاسم الكامل" />
+          </label>
+          <label>رقم الهاتف *
+            <input id="so-c-phone" value="${esc(c.phone)}" placeholder="05xxxxxxxx" />
+          </label>
+          <label>البريد الإلكتروني *
+            <input id="so-c-email" type="email" value="${esc(c.email)}" ${loggedIn && c.email ? 'readonly' : ''} placeholder="name@example.com" />
+          </label>
+          <label>اسم الشركة / الجهة
+            <input id="so-c-company" value="${esc(c.company)}" placeholder="اختياري" />
+          </label>
+          <label>الدولة
+            <input id="so-c-country" value="${esc(c.country || '')}" placeholder="مثال: السعودية" />
+          </label>
+          <label>الفرع / المدينة
+            <input id="so-c-branch" value="${esc(c.branch)}" placeholder="اختياري" />
+          </label>
+        </div>
+        <input type="hidden" id="so-c-cid" value="${esc(cid)}" />
+        <label class="so-block">تفاصيل الاحتياج *
           <textarea id="so-need" rows="4" required placeholder="صف احتياجك بوضوح...">${esc(w.data.need)}</textarea>
         </label>
         <label class="so-block">الكمية / نطاق العمل
@@ -595,6 +618,8 @@
       </div>`;
   };
 
+  const renderQuoteForm = (w, sol) => renderContactAndNeedForm(w, sol, { titleHint: 'طلب عرض سعر لحل' });
+
   const renderWizard = () => {
     const w = ui.wizard;
     if (!w) return '';
@@ -602,14 +627,20 @@
     const step = w.step;
     const isCost = w.mode === 'cost';
     const isQuote = w.mode === 'quote';
+    const isChoose = w.mode === 'choose';
+    const isSingle = isQuote || isChoose;
     const labels = isCost
       ? ['الشركة', 'نوع المصروفات', 'المبلغ', 'المشكلة', 'الهدف', 'المستندات', 'إرسال']
       : isQuote
         ? ['طلب عرض السعر']
-        : ['الحل', 'العميل', 'الاحتياج', 'النطاق', 'المرفقات', 'مراجعة'];
+        : isChoose
+          ? ['استكمال طلب الحل']
+          : ['الحل', 'العميل', 'الاحتياج', 'النطاق', 'المرفقات', 'مراجعة'];
     let body = '';
     if (isQuote) {
       body = renderQuoteForm(w, sol);
+    } else if (isChoose) {
+      body = renderContactAndNeedForm(w, sol, { titleHint: 'طلب حل' });
     } else if (!isCost) {
       if (step === 1) {
         body = `<h3>${esc(sol?.name)}</h3><p>${esc(sol?.description)}</p><p><b>الفئة:</b> ${esc(sol?.category)} · <b>النوع:</b> ${esc(sol?.serviceType)}</p>${priceHtml(sol || {})}`;
@@ -701,9 +732,9 @@
         <div class="so-steps">${labels.map((l, i) => `<span class="${i + 1 === step ? 'on' : ''}">${i + 1}. ${l}</span>`).join('')}</div>
         <div class="so-wizard-body">${body}</div>
         <div class="so-row-actions">
-          ${!isQuote && step > 1 ? '<button type="button" class="btn btn-dark" data-so="wiz-prev">السابق</button>' : ''}
+          ${!isSingle && step > 1 ? '<button type="button" class="btn btn-dark" data-so="wiz-prev">السابق</button>' : ''}
           ${
-            !isQuote && step < w.max
+            !isSingle && step < w.max
               ? '<button type="button" class="btn btn-primary" data-so="wiz-next">التالي</button>'
               : `<button type="button" class="btn btn-primary" data-so="wiz-submit" ${SUBMIT_LOCK.busy ? 'disabled' : ''}><i class="fas fa-paper-plane"></i> ${submitLabel}</button>`
           }
@@ -714,14 +745,18 @@
   const renderSuccess = () => {
     const s = ui.success;
     if (!s) return '';
+    const guestHint = s.isGuest
+      ? `<p class="muted" style="margin-top:12px">لمتابعة حالة الطلب لاحقًا يمكنك <a href="login.html?next=${encodeURIComponent('naiosh-solutions.html?view=my')}">تسجيل الدخول</a> أو <a href="register.html">إنشاء حساب</a>.</p>`
+      : '';
     return `
       <div class="cardish so-success" role="status">
         <h2><i class="fas fa-check-circle"></i> ${esc(s.message || 'تم إرسال الطلب بنجاح.')}</h2>
         <p>رقم الطلب:</p>
         <p class="so-req-id"><code>${esc(s.requestId)}</code></p>
+        ${guestHint}
         <div class="so-row-actions">
           <button type="button" class="btn btn-primary" data-so="open-req" data-id="${esc(s.requestId)}">عرض طلبي</button>
-          <button type="button" class="btn btn-ghost" data-so="view-my">طلباتي</button>
+          ${s.isGuest ? '' : '<button type="button" class="btn btn-ghost" data-so="view-my">طلباتي</button>'}
           <button type="button" class="btn btn-dark" data-so="view-catalog">الكتالوج</button>
         </div>
       </div>`;
@@ -786,7 +821,8 @@
         phone: g('so-c-phone'),
         email: g('so-c-email'),
         branch: g('so-c-branch'),
-        customerId: g('so-c-cid') || d.customer.customerId || customerIdOf(),
+        country: g('so-c-country') || d.customer.country || '',
+        customerId: g('so-c-cid') || d.customer.customerId || (isLoggedIn() ? customerIdOf() : ''),
       };
     }
     if (document.getElementById('so-need')) d.need = g('so-need');
@@ -815,13 +851,13 @@
     if (w._submitted) return;
     const sol = S().getSolution(w.solutionId);
     const c = w.data.customer;
-    if (!c.name || !c.email) {
-      ui.submitError = 'الاسم والبريد مطلوبان';
-      toast('الاسم والبريد مطلوبان');
+    if (!c.name || !c.email || !c.phone) {
+      ui.submitError = 'الاسم والبريد ورقم الهاتف مطلوبة';
+      toast('الاسم والبريد ورقم الهاتف مطلوبة');
       render();
       return;
     }
-    if ((w.mode === 'quote' || (w.mode !== 'cost' && w.step >= 3)) && !w.data.need) {
+    if ((w.mode === 'quote' || w.mode === 'choose' || (w.mode !== 'cost' && w.step >= 3)) && !w.data.need) {
       ui.submitError = 'وصف الاحتياج مطلوب';
       toast('وصف الاحتياج مطلوب');
       render();
@@ -838,6 +874,7 @@
       if (w.data.budget) needParts.push(`الميزانية المتوقعة: ${w.data.budget}`);
       if (w.data.dueDate) needParts.push(`موعد التنفيذ المطلوب: ${w.data.dueDate}`);
       if (w.data.notes) needParts.push(`ملاحظات: ${w.data.notes}`);
+      if (c.country) needParts.push(`الدولة: ${c.country}`);
 
       const requestType =
         w.mode === 'cost'
@@ -848,18 +885,27 @@
               ? 'Consultation Request'
               : 'Solution Request';
 
+      const loggedIn = isLoggedIn();
+      const leadId = loggedIn ? '' : guestLeadId();
+      const customerId = loggedIn ? c.customerId || customerIdOf() : leadId;
+
       const req = S().createRequest(
         {
           solutionId: w.solutionId,
           solutionName: sol?.name || '',
           requestType,
-          customerId: c.customerId || customerIdOf(),
-          customer: c,
+          requestTypeLabel:
+            w.mode === 'quote' ? 'طلب عرض سعر لحل' : w.mode === 'choose' ? 'طلب حل' : undefined,
+          customerId,
+          guestLeadId: leadId || undefined,
+          isGuest: !loggedIn,
+          customer: { ...c, customerId },
           customerName: c.name,
           email: c.email,
           phone: c.phone,
           company: c.company,
           branch: c.branch,
+          country: c.country || '',
           need: needParts.filter(Boolean).join('\n'),
           description: needParts.filter(Boolean).join('\n'),
           priority: w.data.priority,
@@ -888,6 +934,7 @@
       ui.success = {
         requestId: req.requestId || req.id,
         message: w.mode === 'quote' ? 'تم إرسال طلب عرض السعر بنجاح.' : 'تم إرسال طلب الحل بنجاح.',
+        isGuest: !loggedIn,
       };
       ui.view = 'success';
       SUBMIT_LOCK.busy = false;
