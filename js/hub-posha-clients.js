@@ -62,10 +62,29 @@
     );
   }
 
+  function isHubArticleReq(r) {
+    if (!r) return false;
+    return (
+      r.hubArticleApi ||
+      String(r.requestId || r.id || '').startsWith('ART-REQ-') ||
+      String(r.articleId || r.referenceId || '').startsWith('ART-')
+    );
+  }
+
   async function hubEventDecision(r, action, note) {
     const eventId = r.eventId || r.referenceId;
     if (!eventId) throw new Error('رقم الفعالية غير موجود');
     return api(`/api/hub/events/${encodeURIComponent(eventId)}/action`, {
+      method: 'POST',
+      body: { action, note: note || '', reason: note || '' },
+      timeoutMs: 15000,
+    });
+  }
+
+  async function hubArticleDecision(r, action, note) {
+    const articleId = r.articleId || r.referenceId;
+    if (!articleId) throw new Error('رقم المقال غير موجود');
+    return api(`/api/hub/articles/${encodeURIComponent(articleId)}/action`, {
       method: 'POST',
       body: { action, note: note || '', reason: note || '' },
       timeoutMs: 15000,
@@ -932,6 +951,15 @@
           return;
         }
       }
+      if (requestKind(r) === 'article' && isHubArticleReq(r)) {
+        try {
+          await hubArticleDecision(r, 'reject', reason);
+          await window.HubArticles?.refreshFromApi?.();
+        } catch (err) {
+          alert(errText(err));
+          return;
+        }
+      }
       cr()?.rejectRequest?.(r.id, actor(), reason, { allowResubmit: allow }) ||
         cr()?.updateStatus?.(r.id, 'Rejected', actor(), reason);
       close();
@@ -1164,11 +1192,15 @@
     const previewBtn =
       kind === 'event'
         ? `<a class="btn btn-ghost btn-sm" href="${esc(r.previewUrl || r.sourceUrl || `events.html#event=${r.referenceId || ''}`)}" target="_blank" rel="noopener">معاينة</a>`
-        : '';
+        : kind === 'article'
+          ? `<a class="btn btn-ghost btn-sm" href="${esc(r.previewUrl || `blog.html#mine/${r.referenceId || ''}`)}" target="_blank" rel="noopener">معاينة المقال</a>`
+          : '';
     const changesBtn =
       kind === 'event'
         ? `<button type="button" class="btn btn-ghost btn-sm" data-req-event-changes="${esc(r.id)}">طلب تعديل</button>`
-        : '';
+        : kind === 'article'
+          ? `<button type="button" class="btn btn-ghost btn-sm" data-req-art-changes="${esc(r.id)}">طلب تعديل</button>`
+          : '';
     return `<div class="posha-req-actions-inner">${openBtn}${previewBtn}
       <button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">${approveLabel}</button>
       ${changesBtn}
@@ -1396,22 +1428,48 @@
         </article>
       </div>`;
     } else if (tab === 'article' && isArt) {
+      const coverUrl = snap.coverImage?.url || '';
+      const videoUrl = snap.video?.url || '';
+      const extras = snap.attachments || [];
       body = `<div class="posha-req-grid">
         <article style="grid-column:1/-1">
           <h4>بيانات المقال المرتبطة</h4>
           <ul class="feed">
+            <li><b>رقم الطلب:</b> <code>${esc(r.requestId || r.id)}</code></li>
             <li><b>رقم المقال:</b> <code>${esc(r.referenceId || snap.articleId || '—')}</code></li>
+            <li><b>صاحب الطلب:</b> ${esc(r.customerName || snap.authorName || '—')} · ${esc(r.email || '')}</li>
             <li><b>العنوان:</b> ${esc(snap.title || '—')}</li>
             <li><b>التصنيف:</b> ${esc(snap.category || '—')}</li>
             <li><b>الكاتب:</b> ${esc(snap.authorName || '—')}</li>
             <li><b>الملخص:</b> ${esc(snap.summary || '—')}</li>
+            <li><b>مصدر الطلب:</b> ${esc(r.sourceModule || 'المقالات')}</li>
+            <li><b>الحالة:</b> ${esc(displayReqStatus(r))}</li>
+            <li><b>مرحلة الموافقة:</b> مكتب المحتوى</li>
+            <li><b>المسؤول:</b> ${esc(cr()?.labelOwner?.(r.assignedTo) || r.assignedTo || 'Content Desk')}</li>
             <li><b>تاريخ الإرسال:</b> ${fmt(snap.submittedAt || r.createdAt)}</li>
           </ul>
           ${snap.body ? `<div style="white-space:pre-wrap;background:#f9fafb;padding:12px;border-radius:10px;margin-top:8px">${esc(snap.body)}</div>` : ''}
+          <h4 style="margin-top:14px">صورة المقال</h4>
+          ${coverUrl ? `<img src="${esc(coverUrl)}" alt="" style="max-width:100%;max-height:280px;border-radius:12px;object-fit:contain" />` : '<p class="posha-muted">لا صورة</p>'}
+          ${snap.coverImage ? `<p>${esc(snap.coverImage.name || '')}</p>` : ''}
+          <h4 style="margin-top:14px">فيديو المقال</h4>
+          ${videoUrl ? `<video src="${esc(videoUrl)}" controls style="max-width:100%;max-height:320px;border-radius:12px;background:#111"></video>` : '<p class="posha-muted">لا فيديو</p>'}
+          ${snap.video ? `<p>${esc(snap.video.name || '')}</p>` : ''}
+          <h4 style="margin-top:14px">المرفقات</h4>
+          ${
+            extras.length
+              ? extras
+                  .map((f) =>
+                    f.url
+                      ? `<p><a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a></p>`
+                      : `<p>${esc(f.name)}</p>`
+                  )
+                  .join('')
+              : '<p class="posha-muted">لا مرفقات إضافية</p>'
+          }
           ${snap.articleFile ? `<p style="margin-top:8px"><i class="fas fa-paperclip"></i> ${esc(snap.articleFile.name)}</p>` : ''}
           <div class="posha-req-actions" style="margin-top:12px">
-            <a class="btn btn-dark btn-sm" href="blog.html#mine/${esc(r.referenceId || '')}" target="_blank" rel="noopener">فتح المقال</a>
-            <a class="btn btn-ghost btn-sm" href="blog.html#mine/${esc(r.referenceId || '')}" target="_blank" rel="noopener">معاينة المقال</a>
+            <a class="btn btn-dark btn-sm" href="blog.html#mine/${esc(r.referenceId || '')}" target="_blank" rel="noopener">معاينة المقال</a>
           </div>
         </article>
       </div>`;
@@ -1740,6 +1798,15 @@
             return;
           }
         }
+        if (kind === 'article' && isHubArticleReq(r)) {
+          try {
+            await hubArticleDecision(r, 'publish');
+            await window.HubArticles?.refreshFromApi?.();
+          } catch (err) {
+            alert(errText(err));
+            return;
+          }
+        }
         const result = cr()?.approveRequest?.(id, actor()) || cr()?.approveAndPublish?.(id, actor());
         if (!result) return alert('تعذر إتمام الموافقة');
         state.tab = 'approved';
@@ -1868,10 +1935,21 @@
       };
     });
     body.querySelectorAll('[data-req-art-changes]').forEach((btn) => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         const id = btn.getAttribute('data-req-art-changes');
+        const r = cr()?.get(id);
+        if (!r) return;
         const note = window.prompt('سبب طلب التعديل؟');
         if (!note) return;
+        if (isHubArticleReq(r)) {
+          try {
+            await hubArticleDecision(r, 'request_changes', note);
+            await window.HubArticles?.refreshFromApi?.();
+          } catch (err) {
+            alert(errText(err));
+            return;
+          }
+        }
         cr()?.updateStatus(id, 'Needs Changes', actor(), note);
         paintBody();
       };
@@ -2371,13 +2449,14 @@
             apiWarn = apiWarn || errText(e);
             return null;
           });
-        const [clients, tickets, events, issues, notifs, hubEventReqs] = await Promise.all([
+        const [clients, tickets, events, issues, notifs, hubEventReqs, hubArticleReqs] = await Promise.all([
           soft('/api/admin/posha/clients'),
           soft('/api/admin/posha/tickets'),
           soft('/api/admin/posha/events'),
           soft('/api/admin/posha/issues'),
           soft('/api/admin/posha/notifications'),
           soft('/api/hub/events/requests'),
+          soft('/api/hub/articles/requests'),
         ]);
         if (clients) {
           state.clients = clients.clients || [];
@@ -2394,6 +2473,13 @@
           hubEventReqs.items.forEach((item) => {
             try {
               cr()?.ingestHubEventRequest?.(item);
+            } catch (_) {}
+          });
+        }
+        if (hubArticleReqs && Array.isArray(hubArticleReqs.items)) {
+          hubArticleReqs.items.forEach((item) => {
+            try {
+              cr()?.ingestHubArticleRequest?.(item);
             } catch (_) {}
           });
         }

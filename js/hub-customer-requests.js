@@ -474,7 +474,7 @@
     else if (String(type).includes('Solution') || type === 'Quote Request' || type === 'Consultation Request') prefix = 'SOL-REQ';
     else if (type === 'Project Registration') prefix = 'SP-REG';
     else if (type === 'Support Request') prefix = 'SUP';
-    else if (type === 'Article Submission' || type === 'مقال') prefix = 'REQ';
+    else if (type === 'Article Submission' || type === 'مقال') prefix = 'ART-REQ';
     else if (type === 'Platform Access Request' || type === 'Platform Add Request') prefix = 'PLT';
 
     const id = payload.id || payload.requestId || nextSeq(state.requests, prefix);
@@ -846,32 +846,42 @@
       authorName: article.authorName,
       body: article.body,
       coverImage: article.coverImage,
+      video: article.video,
       articleFile: article.articleFile,
       attachments: article.attachments,
       submittedAt: article.submittedAt,
     };
     if (row) {
       Object.assign(row, {
-        title: `مراجعة ونشر مقال: ${article.title || article.id}`,
+        id: article.requestId || row.id,
+        requestId: article.requestId || row.requestId || row.id,
+        title: `طلب نشر مقال: ${article.title || article.id}`,
         description: article.summary || String(article.body || '').slice(0, 280) || '',
-        customerName: article.authorName || row.customerName,
+        customerName: article.authorName || article.ownerName || row.customerName,
         company: article.company || row.company,
-        email: article.authorEmail || row.email,
-        customerId: article.customerId || row.customerId,
+        email: article.authorEmail || article.ownerEmail || row.email,
+        customerId: article.customerId || article.ownerEmail || row.customerId,
         status,
         assignedTo: article.reviewer || row.assignedTo || 'Content Desk',
         department: row.department || 'Content',
         referenceType: 'Article',
         referenceId: article.id,
         requestType: 'Article Submission',
-        requestTypeLabel: 'مقال',
+        requestTypeLabel: 'طلب نشر مقال',
+        sourceModule: 'المقالات',
+        sourcePage: 'إرسال مقال',
+        sourceUrl: `blog.html#mine/${article.id}`,
+        sourceAction: 'طلب نشر مقال',
         articleSnapshot: snapshot,
+        changeRequestNote: article.changeRequestNote || row.changeRequestNote || '',
+        rejectionReason: article.rejectionReason || row.rejectionReason || '',
+        hubArticleApi: true,
         updatedAt: article.updatedAt || nowIso(),
         publishedAt: article.publishedAt || row.publishedAt || '',
         customer: {
-          name: article.authorName || row.customer?.name || '',
+          name: article.authorName || article.ownerName || row.customer?.name || '',
           company: article.company || row.customer?.company || '',
-          email: article.authorEmail || row.customer?.email || '',
+          email: article.authorEmail || article.ownerEmail || row.customer?.email || '',
           phone: row.customer?.phone || '',
           branch: row.customer?.branch || '',
         },
@@ -881,9 +891,11 @@
     }
     return create(
       {
+        id: article.requestId || undefined,
+        requestId: article.requestId || undefined,
         requestType: 'Article Submission',
-        requestTypeLabel: 'مقال',
-        title: `مراجعة ونشر مقال: ${article.title || article.id}`,
+        requestTypeLabel: 'طلب نشر مقال',
+        title: `طلب نشر مقال: ${article.title || article.id}`,
         description: article.summary || String(article.body || '').slice(0, 280),
         need: article.summary || '',
         status,
@@ -894,13 +906,14 @@
         sourceAction: 'رفع مقال',
         referenceType: 'Article',
         referenceId: article.id,
-        customerId: article.customerId || '',
-        customerName: article.authorName || '',
+        customerId: article.customerId || article.ownerEmail || '',
+        customerName: article.authorName || article.ownerName || '',
         company: article.company || '',
-        email: article.authorEmail || '',
+        email: article.authorEmail || article.ownerEmail || '',
         assignedTo: article.reviewer || 'Content Desk',
         department: 'Content',
         channel: 'Web',
+        hubArticleApi: true,
         articleSnapshot: snapshot,
         createdAt: article.submittedAt || article.createdAt || nowIso(),
         updatedAt: article.updatedAt || nowIso(),
@@ -923,6 +936,56 @@
       },
       actor
     );
+  };
+
+  const ingestHubArticleRequest = (item) => {
+    if (!item) return null;
+    const id = item.requestId || item.id;
+    if (!id) return null;
+    const snap = item.articleSnapshot || {};
+    const payload = {
+      id,
+      requestId: id,
+      requestType: 'Article Submission',
+      requestTypeLabel: item.requestTypeLabel || 'طلب نشر مقال',
+      title: item.title || `طلب نشر مقال: ${snap.title || item.articleId || ''}`,
+      description: item.description || snap.summary || '',
+      status: item.status || 'Pending Review',
+      statusLabel: item.statusLabel || '',
+      referenceType: 'Article',
+      referenceId: item.articleId || item.referenceId || snap.articleId || '',
+      articleId: item.articleId || item.referenceId || snap.articleId || '',
+      sourceModule: item.sourceModule || 'المقالات',
+      sourcePage: item.sourcePage || 'إرسال مقال',
+      sourceUrl: item.sourceUrl || item.previewUrl || `blog.html#mine/${item.articleId || ''}`,
+      sourceAction: item.sourceAction || 'طلب نشر مقال',
+      customerName: item.customerName || '',
+      customerId: item.customerId || item.email || '',
+      email: item.email || '',
+      assignedTo: item.assignedTo || 'Content Desk',
+      department: item.department || 'Content',
+      createdAt: item.createdAt || nowIso(),
+      updatedAt: item.updatedAt || nowIso(),
+      changeRequestNote: item.changeRequestNote || '',
+      rejectionReason: item.rejectionReason || '',
+      previewUrl: item.previewUrl || `blog.html#mine/${item.articleId || ''}`,
+      articleSnapshot: snap,
+      channel: 'المقالات',
+      hubArticleApi: true,
+    };
+    let row = get(id) || findByReference('Article', payload.referenceId);
+    if (row) {
+      Object.assign(row, payload, { id: payload.id, requestId: payload.id, timeline: row.timeline || [] });
+      save();
+      return row;
+    }
+    payload.timeline = [
+      { at: payload.createdAt, by: payload.customerName || 'عميل', text: 'طلب نشر مقال من صفحة المقالات', key: 'created' },
+    ];
+    state.requests = state.requests || [];
+    state.requests.unshift(payload);
+    save();
+    return payload;
   };
 
   const mirrorToArticle = (row, actor = 'مشغّل') => {
@@ -1776,6 +1839,7 @@
     findSimilarOpen,
     findByReference,
     ensureForArticle,
+    ingestHubArticleRequest,
     ensureForAd,
     ensureForEvent,
     ingestHubEventRequest,
