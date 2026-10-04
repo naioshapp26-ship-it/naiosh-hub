@@ -339,7 +339,16 @@ CREATE TABLE IF NOT EXISTS hub_event_records (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_hub_event_records_status ON hub_event_records(status);
+CREATE TABLE IF NOT EXISTS hub_article_records (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  owner_email TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_hub_article_records_status ON hub_article_records(status);
 
 -- Idempotent column upgrades for store marketplace linking
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS brand TEXT;
