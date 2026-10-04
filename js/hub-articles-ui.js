@@ -45,6 +45,7 @@
     submitLockKey: '',
     creating: null,
     formError: '',
+    form: {},
     coverLocal: '',
     videoLocal: '',
     coverProgress: 0,
@@ -157,8 +158,23 @@
 
   const maxBytes = () => window.HubUploadLimits?.MAX_FILE_BYTES || 1500 * 1024 * 1024;
 
+  function snapshotForm() {
+    const root = document.getElementById('art-wizard');
+    if (!root) return ui.form || {};
+    const fields = collectForm(root);
+    ui.form = Object.assign({}, ui.form || {}, fields);
+    const row = draft();
+    if (row) Object.assign(row, fields);
+    return ui.form;
+  }
+
+  async function persistPatch(patch) {
+    const fields = snapshotForm();
+    return A().update(ui.draftId, Object.assign({}, fields, patch || {}));
+  }
+
   function collectForm(root) {
-    if (!root) return {};
+    if (!root) return ui.form || {};
     const tags = root.querySelector('[name="tags"]')?.value || '';
     return {
       title: root.querySelector('[name="title"]')?.value?.trim() || '',
@@ -425,11 +441,10 @@
       return `<div class="art-shell">${a ? renderSuccess(a) : '<p>المقال غير موجود</p>'}</div>`;
     }
     if (!loggedIn()) return renderLoginGate();
-    const a = draft();
-    if (!a) {
+    if (!draft()) {
       return `<div class="art-shell art-submit-page"><p class="art-step-lead">جاري إنشاء المسودة…</p></div>`;
     }
-    return renderForm(a);
+    return renderForm(Object.assign({}, draft(), ui.form || {}));
   };
 
   const renderMine = () => {
@@ -611,6 +626,7 @@
   }
 
   function paint() {
+    snapshotForm();
     paintApp();
   }
 
@@ -668,7 +684,7 @@
     ui.coverLocal = URL.createObjectURL(file);
     ui.coverProgress = 0;
     const meta = fileMeta(file, { status: 'uploading' });
-    await A().update(ui.draftId, { coverImage: meta });
+    await persistPatch({ coverImage: meta });
     paint();
     try {
       const up = await uploadViaHub(file, (pct) => {
@@ -678,9 +694,9 @@
         const lbl = document.querySelector('[data-zone="cover"] .ok');
         if (lbl) lbl.textContent = `جارٍ الرفع · ${pct}%`;
       });
-      await A().update(ui.draftId, { coverImage: up });
+      await persistPatch({ coverImage: up });
     } catch (e) {
-      await A().update(ui.draftId, { coverImage: fileMeta(file, { status: 'error' }) });
+      await persistPatch({ coverImage: fileMeta(file, { status: 'error' }) });
       alert(e?.message || 'فشل رفع الصورة');
     }
     paint();
@@ -700,7 +716,7 @@
     ui.videoLocal = URL.createObjectURL(file);
     ui.videoProgress = 0;
     const meta = fileMeta(file, { status: 'uploading' });
-    await A().update(ui.draftId, { video: meta });
+    await persistPatch({ video: meta });
     paint();
     try {
       const up = await uploadViaHub(file, (pct) => {
@@ -710,9 +726,9 @@
         const lbl = document.querySelector('[data-zone="video"] .ok');
         if (lbl) lbl.textContent = `جارٍ الرفع · ${pct}%`;
       });
-      await A().update(ui.draftId, { video: up });
+      await persistPatch({ video: up });
     } catch (e) {
-      await A().update(ui.draftId, { video: fileMeta(file, { status: 'error' }) });
+      await persistPatch({ video: fileMeta(file, { status: 'error' }) });
       alert(e?.message || 'فشل رفع الفيديو');
     }
     paint();
@@ -723,13 +739,13 @@
     const list = [...(article?.attachments || [])];
     let meta = fileMeta(file, { status: 'uploading' });
     list.push(meta);
-    await A().update(ui.draftId, { attachments: list });
+    await persistPatch({ attachments: list });
     paint();
     try {
       const up = await uploadViaHub(file);
       const next = [...(A().get(ui.draftId)?.attachments || list)];
       next[next.length - 1] = up;
-      await A().update(ui.draftId, { attachments: next });
+      await persistPatch({ attachments: next });
     } catch (e) {
       alert(e?.message || 'فشل رفع المرفق');
     }
@@ -782,7 +798,7 @@
     if (!ui.submitLockKey) ui.submitLockKey = `art-submit-${ui.draftId}-${Date.now()}`;
     paint();
     try {
-      await A().update(ui.draftId, fields);
+      await persistPatch(fields);
       const result = await A().submit(ui.draftId, null, { idempotencyKey: ui.submitLockKey });
       if (!result.ok) throw new Error(result.error || 'تعذر الإرسال');
       ui.view = 'success';
@@ -809,6 +825,7 @@
       ui.view = 'submit';
       ui.errors = {};
       ui.formError = '';
+      ui.form = {};
       ui.submitLockKey = '';
       ui.coverLocal = '';
       ui.videoLocal = '';
@@ -887,7 +904,7 @@
       if (ui.coverLocal) URL.revokeObjectURL(ui.coverLocal);
       ui.coverLocal = '';
       ui.lastCoverFile = null;
-      await A().update(ui.draftId, { coverImage: null });
+      await persistPatch({ coverImage: null });
       paint();
       return;
     }
@@ -895,7 +912,7 @@
       if (ui.videoLocal) URL.revokeObjectURL(ui.videoLocal);
       ui.videoLocal = '';
       ui.lastVideoFile = null;
-      await A().update(ui.draftId, { video: null });
+      await persistPatch({ video: null });
       paint();
       return;
     }
@@ -903,7 +920,7 @@
       const idx = Number(btn.getAttribute('data-idx'));
       const list = [...(draft()?.attachments || [])];
       list.splice(idx, 1);
-      await A().update(ui.draftId, { attachments: list });
+      await persistPatch({ attachments: list });
       paint();
       return;
     }

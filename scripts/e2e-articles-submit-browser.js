@@ -98,10 +98,18 @@ async function main() {
     await page.waitForSelector('#art-wizard, .art-submit-page', { timeout: 25000 });
     await page.waitForFunction(() => document.querySelector('[name="title"]'), { timeout: 25000 });
 
-    const text = await page.evaluate(() => document.body.innerText);
-    const hasStepper =
-      /التالي/.test(text) || /السابق/.test(text) || /الخطوة 1/.test(text) || /الخطوة 2/.test(text) || !!document.querySelector('.art-stepper');
-    mark('TEST-01/02 single page no stepper', !hasStepper, hasStepper ? text.slice(0, 180) : 'no stepper');
+    const flags = await page.evaluate(() => {
+      const text = document.body.innerText;
+      return {
+        text: text.slice(0, 400),
+        hasNext: /التالي/.test(text),
+        hasPrev: /السابق/.test(text),
+        hasStep: /الخطوة 1/.test(text) || /الخطوة 2/.test(text) || /الخطوة 3/.test(text) || /الخطوة 4/.test(text),
+        hasStepper: !!document.querySelector('.art-stepper'),
+      };
+    });
+    const hasStepper = flags.hasNext || flags.hasPrev || flags.hasStep || flags.hasStepper;
+    mark('TEST-01/02 single page no stepper', !hasStepper, hasStepper ? JSON.stringify(flags) : 'no stepper');
 
     await page.screenshot({ path: path.join(OUT, 'articles_submit_desktop.png'), fullPage: true });
 
