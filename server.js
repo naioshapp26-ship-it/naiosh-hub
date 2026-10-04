@@ -20,6 +20,7 @@ const hubPoshaOs = require('./lib/hub-posha-os');
 const productCategories = require('./lib/hub-product-categories');
 const productOrders = require('./lib/hub-product-orders');
 const hubSystemSettings = require('./lib/hub-system-settings');
+const hubMarketingCampaigns = require('./lib/hub-marketing-campaigns');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -60,7 +61,7 @@ function sendJson(res, status, payload) {
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Hub-Token, X-Hub-User-Role, X-Hub-User-Name, X-File-Name, X-File-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Hub-Token, X-Hub-User-Role, X-Hub-User-Name, X-File-Name, X-File-Type, Idempotency-Key',
   });
 }
 
@@ -240,6 +241,15 @@ function requireHubAuthOrReject(req, res) {
 async function handleHubApi(req, res, pathname) {
   if (req.method === 'OPTIONS') {
     sendJson(res, 204, {});
+    return true;
+  }
+
+  if (pathname.startsWith('/api/hub/marketing-campaigns')) {
+    await hubMarketingCampaigns.handleApi(req, res, pathname, {
+      sendJson,
+      readBody,
+      requireStaff: requireHubStaffOrReject,
+    });
     return true;
   }
 
