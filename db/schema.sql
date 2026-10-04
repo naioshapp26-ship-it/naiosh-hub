@@ -319,6 +319,17 @@ CREATE TABLE IF NOT EXISTS hub_product_categories (
 
 CREATE INDEX IF NOT EXISTS idx_hub_product_categories_status ON hub_product_categories(status);
 
+CREATE TABLE IF NOT EXISTS hub_marketing_campaigns (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  owner_email TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_hub_marketing_campaigns_status ON hub_marketing_campaigns(status);
+
 -- Idempotent column upgrades for store marketplace linking
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS brand TEXT;
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS item_kind TEXT DEFAULT 'منتج';

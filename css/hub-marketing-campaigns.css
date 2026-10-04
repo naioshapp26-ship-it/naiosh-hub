@@ -1,0 +1,117 @@
+:root {
+  --mcs-red: #b91c1c;
+  --mcs-red-dark: #991b1b;
+  --mcs-ink: #0f172a;
+  --mcs-text: #1e293b;
+  --mcs-muted: #64748b;
+  --mcs-line: #e2e8f0;
+  --mcs-bg: #f1f5f9;
+  --mcs-card: #ffffff;
+}
+html[dir="rtl"] body.mcs-body {
+  font-family: Cairo, sans-serif;
+  background: var(--mcs-bg);
+  color: var(--mcs-text);
+  margin: 0;
+}
+.mcs-wrap { max-width: 1500px; margin: 0 auto; padding: 16px; }
+.mcs-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #7f1d1d 100%);
+  color: #fff;
+  border-radius: 18px;
+  padding: 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.mcs-hero h1 { margin: 0 0 6px; font-size: 28px; color: #fff !important; }
+.mcs-hero p { margin: 0; color: rgba(254,226,226,.88); font-size: 14px; }
+.mcs-hero-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+.mcs-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 0; border-radius: 12px; padding: 10px 14px;
+  font-weight: 800; font-family: inherit; cursor: pointer; font-size: 14px;
+}
+.mcs-btn.primary { background: var(--mcs-red); color: #fff; }
+.mcs-btn.ghost { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.18); }
+.mcs-btn.light { background: #fff; color: var(--mcs-ink); border: 1px solid var(--mcs-line); }
+.mcs-btn.danger { background: #7f1d1d; color: #fff; }
+.mcs-btn:disabled { opacity: .5; cursor: not-allowed; }
+.mcs-nav {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+.mcs-nav button {
+  background: #fff; border: 1px solid var(--mcs-line); border-radius: 12px;
+  padding: 12px 8px; font-weight: 800; font-size: 13px; color: var(--mcs-muted);
+  display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; font-family: inherit;
+}
+.mcs-nav button.is-on { background: var(--mcs-red); color: #fff; border-color: var(--mcs-red); }
+.mcs-panel { background: #fff; border: 1px solid var(--mcs-line); border-radius: 16px; padding: 16px; }
+.mcs-kpis { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; }
+.mcs-detail h2 { margin: 8px 0 4px; }
+.mcs-drop input[type="file"] { display: block; margin: 10px auto 0; }
+.mcs-overlay, .mcs-drawer { display: none; }
+.mcs-kpi {
+  background: #fff; border: 1px solid var(--mcs-line); border-radius: 14px; padding: 14px; cursor: pointer; text-align: right;
+}
+.mcs-kpi strong { display: block; font-size: 26px; color: var(--mcs-ink); }
+.mcs-kpi span { color: var(--mcs-muted); font-size: 13px; font-weight: 700; }
+.mcs-kpi:hover { border-color: #fecaca; }
+.mcs-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mcs-table th, .mcs-table td { padding: 10px 8px; border-bottom: 1px solid var(--mcs-line); text-align: right; }
+.mcs-table th { background: #f8fafc; }
+.mcs-badge { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 800; background: #f1f5f9; }
+.mcs-badge.pending { background: #fef3c7; }
+.mcs-badge.active { background: #dcfce7; }
+.mcs-badge.danger { background: #fee2e2; }
+.mcs-empty { padding: 28px; text-align: center; color: var(--mcs-muted); font-weight: 700; }
+.mcs-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mcs-form label, .mcs-field { display: flex; flex-direction: column; gap: 6px; font-weight: 800; font-size: 13px; }
+.mcs-form input, .mcs-form select, .mcs-form textarea, .mcs-field input, .mcs-field select, .mcs-field textarea {
+  border: 1px solid var(--mcs-line); border-radius: 10px; padding: 10px; font-family: inherit; font-size: 14px;
+}
+.mcs-span-2 { grid-column: 1 / -1; }
+.mcs-steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.mcs-steps span { padding: 6px 10px; border-radius: 999px; background: #f1f5f9; font-size: 12px; font-weight: 800; }
+.mcs-steps span.is-on { background: var(--mcs-red); color: #fff; }
+.mcs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.mcs-chip { border: 1px solid var(--mcs-line); background: #fff; border-radius: 10px; padding: 8px 10px; cursor: pointer; font-weight: 800; font-size: 13px; }
+.mcs-chip.is-on { border-color: var(--mcs-red); background: #fef2f2; color: var(--mcs-red); }
+.mcs-overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 80;
+  display: flex; justify-content: flex-start;
+}
+.mcs-drawer {
+  width: min(980px, 100%); background: #fff; height: 100%; overflow: auto; padding: 18px;
+  box-shadow: -8px 0 30px rgba(0,0,0,.12);
+}
+.mcs-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+.mcs-tabs button { border: 1px solid var(--mcs-line); background: #fff; border-radius: 999px; padding: 7px 12px; font-weight: 800; cursor: pointer; font-family: inherit; }
+.mcs-tabs button.is-on { background: var(--mcs-red); color: #fff; border-color: var(--mcs-red); }
+.mcs-drop {
+  border: 2px dashed #fecaca; border-radius: 14px; padding: 18px; text-align: center; cursor: pointer; background: #fff7f7;
+}
+.mcs-toast {
+  position: fixed; bottom: 18px; left: 18px; background: #0f172a; color: #fff;
+  padding: 10px 14px; border-radius: 12px; z-index: 90; font-weight: 800;
+}
+.mcs-alerts { display: grid; gap: 8px; margin: 12px 0; }
+.mcs-alert { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 10px 12px; cursor: pointer; font-weight: 700; }
+.mcs-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.mcs-cal .day { min-height: 88px; border: 1px solid var(--mcs-line); border-radius: 10px; padding: 6px; background: #fff; }
+.mcs-cal .hit { display: block; font-size: 11px; background: #fef2f2; border-radius: 6px; padding: 2px 4px; margin-top: 4px; cursor: pointer; }
+.mcs-savebar { color: var(--mcs-muted); font-size: 12px; font-weight: 800; }
+.mcs-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 1100px) {
+  .mcs-nav, .mcs-kpis { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .mcs-form { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .mcs-nav, .mcs-kpis, .mcs-cal { grid-template-columns: 1fr 1fr; }
+  .mcs-hero h1 { font-size: 22px; }
+  .mcs-table { display: block; overflow-x: auto; }
+}
