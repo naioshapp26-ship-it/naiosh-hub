@@ -139,6 +139,41 @@ async function main() {
 
     mark('TEST30 console', errors.length ? 'errors' : 'clean', errors.length === 0, errors.slice(0, 5).join(' | '));
     await page.close();
+
+    const dash = await authedPage(browser, staff, 1440, 900);
+    dash.on('pageerror', (err) => errors.push('dash:' + String(err)));
+    await dash.goto(`${BASE}/dashboard.html#posha-clients`, { waitUntil: 'domcontentloaded' });
+    await dash.waitForFunction(
+      () => {
+        const t = document.body.innerText || '';
+        return t.includes('عملاء') || t.includes('طلبات') || !!document.getElementById('posha-ops');
+      },
+      { timeout: 25000 }
+    );
+    await dash.evaluate(() => {
+      const btn = document.querySelector('[data-ptab="orders"]');
+      if (btn) btn.click();
+    });
+    await new Promise(function (r) { setTimeout(r, 800); });
+    await dash.evaluate(() => {
+      const all = document.querySelector('[data-req-view="all"]');
+      if (all) all.click();
+    });
+    await new Promise(function (r) { setTimeout(r, 800); });
+    const inboxText = await dash.evaluate(() => document.body.innerText);
+    const hasReq = /EVT-REQ-\d{4}-\d{5}/.test(inboxText) && inboxText.includes('طلب نشر فعالية');
+    await dash.screenshot({ path: path.join(OUT, 'events_posha_inbox.png'), fullPage: true });
+    mark('TEST7/8 POSHA inbox', 'request visible', hasReq, hasReq ? (inboxText.match(/EVT-REQ-\d{4}-\d{5}/) || [])[0] : inboxText.slice(0, 220));
+    await dash.evaluate(() => {
+      const appr = document.querySelector('[data-ptab="approved"]');
+      if (appr) appr.click();
+    });
+    await new Promise(function (r) { setTimeout(r, 800); });
+    const apprText = await dash.evaluate(() => document.body.innerText);
+    const inApproved = /EVT-REQ-\d{4}-\d{5}/.test(apprText);
+    await dash.screenshot({ path: path.join(OUT, 'events_posha_approved.png'), fullPage: true });
+    mark('TEST13 POSHA approved', 'accepted requests', inApproved, inApproved ? (apprText.match(/EVT-REQ-\d{4}-\d{5}/) || [])[0] : apprText.slice(0, 180));
+    await dash.close();
   } catch (e) {
     mark('browser suite', 'fatal', false, String(e && e.message ? e.message : e));
   } finally {

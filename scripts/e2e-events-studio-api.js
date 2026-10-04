@@ -78,6 +78,7 @@ async function main() {
   const other = { email: 'client-other@naiosh.com', role: 'customer' };
   const staff = { email: 'leader@naiosh.com', role: 'supreme_leader' };
   const today = new Date().toISOString().slice(0, 10);
+  const runKey = 'e2e-' + Date.now();
   const end = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
   let eventId = '';
   let requestId = '';
@@ -102,7 +103,7 @@ async function main() {
         organizerEmail: client.email,
         requiresRegistration: true,
       },
-      headers: { 'Idempotency-Key': 'e2e-create-1' },
+      headers: { 'Idempotency-Key': runKey + '-create' },
     });
     assert.strictEqual(created.status, 201, JSON.stringify(created.json));
     eventId = created.json.event.id;
@@ -117,7 +118,7 @@ async function main() {
     const dup = await req('POST', '/api/hub/events', {
       ...client,
       body: { name: 'ورشة اختبار دورة الفعالية' },
-      headers: { 'Idempotency-Key': 'e2e-create-1' },
+      headers: { 'Idempotency-Key': runKey + '-create' },
     });
     assert.ok(dup.status === 201 || dup.status === 200);
     assert.strictEqual(dup.json.event.id, eventId);
@@ -151,7 +152,7 @@ async function main() {
     const submitted = await req('POST', '/api/hub/events/' + eventId + '/action', {
       ...client,
       body: { action: 'submit' },
-      headers: { 'Idempotency-Key': 'e2e-submit-1' },
+      headers: { 'Idempotency-Key': runKey + '-submit' },
     });
     assert.strictEqual(submitted.status, 200, JSON.stringify(submitted.json));
     assert.strictEqual(submitted.json.event.status, 'pending_review');
@@ -260,7 +261,7 @@ async function main() {
     const reg = await req('POST', '/api/hub/events/' + eventId + '/register', {
       ...other,
       body: { name: 'عميل آخر' },
-      headers: { 'Idempotency-Key': 'e2e-reg-1' },
+      headers: { 'Idempotency-Key': runKey + '-reg' },
     });
     assert.strictEqual(reg.status, 201, JSON.stringify(reg.json));
     registrationId = reg.json.registration.id;
@@ -275,7 +276,7 @@ async function main() {
     const dupReg = await req('POST', '/api/hub/events/' + eventId + '/register', {
       ...other,
       body: {},
-      headers: { 'Idempotency-Key': 'e2e-reg-1' },
+      headers: { 'Idempotency-Key': runKey + '-reg' },
     });
     assert.ok(dupReg.status === 201 || dupReg.status === 200 || dupReg.status === 409);
     if (dupReg.json.registration) assert.strictEqual(dupReg.json.registration.id, registrationId);

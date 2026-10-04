@@ -20,7 +20,7 @@ html[dir="rtl"] body.ev-body {
   color: #fff; border-radius: 16px; padding: 18px 20px;
   display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; align-items: center;
 }
-.ev-hero h1 { margin: 0 0 4px; font-size: 26px; color: #fff !important; font-weight: 900; }
+.ev-hero h1 { margin: 0 0 4px; font-size: 26px; color: #fff !important; font-weight: 900; line-height: 1.3; }
 .ev-hero p { margin: 0; color: rgba(254,226,226,.92); font-size: 14.5px; font-weight: 700; }
 .ev-hero-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .ev-btn {
@@ -42,7 +42,7 @@ html[dir="rtl"] body.ev-body {
 }
 .ev-nav-primary button.is-on { background: var(--ev-red); color: #fff; border-color: var(--ev-red); }
 .ev-tools {
-  display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; margin: 8px 0 14px;
+  display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin: 8px 0 14px;
 }
 .ev-tools button {
   background: #fff; border: 1px solid var(--ev-line); border-radius: 12px;
@@ -87,6 +87,7 @@ html[dir="rtl"] body.ev-body {
 .ev-cards { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
 .ev-card { border: 1px solid var(--ev-line); border-radius: 14px; padding: 14px; background: #fff; cursor: pointer; }
 .ev-card h3 { margin: 0 0 6px; font-size: 16px; }
+.ev-card .ev-btn { margin-top: 8px; white-space: nowrap; }
 .ev-meta { color: var(--ev-muted); font-size: 13px; font-weight: 700; }
 .ev-detail-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }

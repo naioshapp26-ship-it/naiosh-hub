@@ -69,6 +69,9 @@
       return '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)];
     });
   }
+  function usd(n) {
+    return '\u202A$' + lat(Number(n || 0)) + '\u202C';
+  }
   function num(v) {
     var n = Number(v || 0);
     if (!isFinite(n)) return lat(v);
@@ -157,7 +160,7 @@
   }
 
   function pricingLabel(e) {
-    if (e.pricing === 'paid') return 'مدفوعة · $' + lat(Number(e.priceUsd || 0));
+    if (e.pricing === 'paid') return 'مدفوعة · ' + usd(e.priceUsd);
     return 'مجانية';
   }
 
@@ -430,7 +433,7 @@
         '<p><b>التصنيف:</b> ' + esc(w.category) + '</p>' +
         '<p><b>التاريخ:</b> ' + fmtDate(w.startDate) + ' ' + fmtTime(w.startTime) + '</p>' +
         '<p><b>الحضور:</b> ' + esc(attendanceLabel(w.attendanceType)) + '</p>' +
-        '<p><b>التسعير:</b> ' + (w.pricing === 'paid' ? 'مدفوعة · $' + lat(w.priceUsd) : 'مجانية') + '</p>' +
+        '<p><b>التسعير:</b> ' + (w.pricing === 'paid' ? 'مدفوعة · ' + usd(w.priceUsd) : 'مجانية') + '</p>' +
         (w.id ? '<p><b>رقم الفعالية:</b> <code>' + esc(w.id) + '</code></p>' : '<p class="ev-meta">سيُنشأ رقم الفعالية عند الحفظ.</p>') +
         '</div>';
     }
@@ -520,7 +523,7 @@
         var cta = e.full
           ? '<span class="ev-badge danger">اكتمل العدد</span>'
           : e.pricing === 'paid'
-            ? 'احجز الآن – $' + lat(e.priceUsd || 0)
+            ? 'احجز الآن – ' + usd(e.priceUsd)
             : 'سجل مجانًا';
         return (
           '<article class="ev-card" data-open="' + esc(e.id) + '"><h3>' + esc(e.name) + '</h3>' +
@@ -541,7 +544,7 @@
     var cta = '';
     if (e.status === 'published' && e.requiresRegistration !== false) {
       if (e.full) cta = '<button class="ev-btn light" disabled>اكتمل العدد</button>';
-      else if (e.pricing === 'paid') cta = '<button class="ev-btn primary" data-ev="register">احجز الآن – $' + lat(e.priceUsd || 0) + '</button>';
+      else if (e.pricing === 'paid') cta = '<button class="ev-btn primary" data-ev="register">احجز الآن – ' + usd(e.priceUsd) + '</button>';
       else cta = '<button class="ev-btn primary" data-ev="register">سجل مجانًا</button>';
     }
     var adminActs = '';
