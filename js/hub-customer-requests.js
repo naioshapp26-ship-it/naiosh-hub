@@ -771,6 +771,62 @@
     );
   };
 
+  const ingestHubEventRequest = (item) => {
+    if (!item) return null;
+    const id = item.requestId || item.id;
+    if (!id) return null;
+    const snap = item.eventSnapshot || {};
+    const payload = {
+      id,
+      requestId: id,
+      requestType: 'Event Submission',
+      requestTypeLabel: item.requestTypeLabel || 'طلب نشر فعالية',
+      title: item.title || `طلب نشر فعالية: ${snap.name || item.eventId || ''}`,
+      description: item.description || '',
+      status: item.status || 'Pending Review',
+      statusLabel: item.statusLabel || '',
+      referenceType: 'Event',
+      referenceId: item.eventId || item.referenceId || snap.eventId || '',
+      eventId: item.eventId || item.referenceId || snap.eventId || '',
+      sourceModule: item.sourceModule || 'الفعاليات',
+      sourcePage: item.sourcePage || 'استوديو الفعاليات',
+      sourceUrl: item.sourceUrl || item.previewUrl || `events.html#event=${item.eventId || ''}`,
+      sourceAction: item.sourceAction || 'نشر فعالية',
+      customerName: item.customerName || '',
+      customerId: item.customerId || item.email || '',
+      email: item.email || '',
+      phone: item.phone || '',
+      assignedTo: item.assignedTo || 'Events Desk',
+      department: item.department || 'Marketing',
+      createdAt: item.createdAt || nowIso(),
+      updatedAt: item.updatedAt || nowIso(),
+      category: item.category || snap.category || '',
+      attendanceType: item.attendanceType || snap.attendanceType || '',
+      pricing: item.pricing || snap.pricing || '',
+      priceUsd: item.priceUsd != null ? item.priceUsd : snap.priceUsd,
+      seats: item.seats != null ? item.seats : snap.seats,
+      changeRequestNote: item.changeRequestNote || '',
+      rejectionReason: item.rejectionReason || '',
+      previewUrl: item.previewUrl || `events.html#event=${item.eventId || ''}`,
+      eventSnapshot: snap,
+      channel: 'استوديو الفعاليات',
+      hubEventApi: true,
+    };
+    let row = get(id) || findByReference('Event', payload.referenceId);
+    if (row) {
+      Object.assign(row, payload, { id: row.id, timeline: row.timeline || [] });
+      save();
+      return row;
+    }
+    payload.timeline = [
+      { at: payload.createdAt, by: payload.customerName || 'عميل', text: 'طلب نشر فعالية من الاستوديو', key: 'created' },
+    ];
+    state.requests = state.requests || [];
+    state.requests.unshift(payload);
+    save();
+    return payload;
+  };
+
   const ensureForArticle = (article, actor = 'عميل', { silent } = {}) => {
     if (!article?.id) return null;
     if (article.status === 'Draft') return null;
@@ -1722,6 +1778,7 @@
     ensureForArticle,
     ensureForAd,
     ensureForEvent,
+    ingestHubEventRequest,
     mapArticleStatus,
     approveAndPublish,
     approveRequest,

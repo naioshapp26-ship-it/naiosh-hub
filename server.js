@@ -21,6 +21,7 @@ const productCategories = require('./lib/hub-product-categories');
 const productOrders = require('./lib/hub-product-orders');
 const hubSystemSettings = require('./lib/hub-system-settings');
 const hubMarketingCampaigns = require('./lib/hub-marketing-campaigns');
+const hubEvents = require('./lib/hub-events');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -241,6 +242,16 @@ function requireHubAuthOrReject(req, res) {
 async function handleHubApi(req, res, pathname) {
   if (req.method === 'OPTIONS') {
     sendJson(res, 204, {});
+    return true;
+  }
+
+  if (pathname.startsWith('/api/hub/events')) {
+    await hubEvents.handleApi(req, res, pathname, {
+      sendJson,
+      readBody,
+      requireStaff: requireHubStaffOrReject,
+      requireAuth: requireHubAuthOrReject,
+    });
     return true;
   }
 
