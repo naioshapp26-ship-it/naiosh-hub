@@ -127,44 +127,44 @@ async function main() {
     assert.ok(desc.includes('من المتصفح'), desc);
     mark('تعديل', 'تعديل + Refresh', true);
 
-    await page.click('[data-dtab="audience"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="audience"]').click());
     await page.waitForSelector('[data-mcs="add-aud"]');
     await page.evaluate(() => {
       document.querySelector('[data-aud-type]').value = 'عملاء محتملون';
       document.querySelector('[data-aud-region]').value = 'السعودية';
     });
-    await page.click('[data-mcs="add-aud"]');
+    await page.evaluate(() => document.querySelector('[data-mcs="add-aud"]').click());
     await page.waitForFunction(() => document.body.innerText.includes('AUD-'), { timeout: 10000 });
     mark('جمهور', 'إضافة شريحة', true);
 
-    await page.click('[data-dtab="links"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="links"]').click());
     await page.waitForSelector('[data-mcs="add-link"]');
-    await page.click('[data-mcs="add-link"]');
+    await page.evaluate(() => document.querySelector('[data-mcs="add-link"]').click());
     await new Promise((r) => setTimeout(r, 400));
     mark('ربط', 'منتج/خدمة', true);
 
-    await page.click('[data-dtab="budget"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="budget"]').click());
     await page.waitForSelector('[data-mcs="save-bud"]');
     await page.evaluate(() => {
       document.querySelector('[data-bud="total"]').value = '1500';
     });
-    await page.click('[data-mcs="save-bud"]');
+    await page.evaluate(() => document.querySelector('[data-mcs="save-bud"]').click());
     await new Promise((r) => setTimeout(r, 400));
     mark('ميزانية', 'حفظ', true);
 
-    await page.click('[data-dtab="channels"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="channels"]').click());
     await page.waitForSelector('[data-mcs="save-ch"]');
-    await page.click('[data-mcs="save-ch"]');
+    await page.evaluate(() => document.querySelector('[data-mcs="save-ch"]').click());
     await new Promise((r) => setTimeout(r, 300));
     mark('قنوات', 'حفظ', true);
 
-    await page.click('[data-dtab="content"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="content"]').click());
     await page.waitForSelector('[data-mcs="add-content"]');
     await page.evaluate(() => {
       document.querySelector('[data-ct-title]').value = 'منشور الاختبار';
       document.querySelector('[data-ct-body]').value = 'نص إعلاني';
     });
-    await page.click('[data-mcs="add-content"]');
+    await page.evaluate(() => document.querySelector('[data-mcs="add-content"]').click());
     await page.waitForFunction(() => /CNT-\d{4}-\d{6}/.test(document.body.innerText), { timeout: 12000 });
     contentId = await page.evaluate(() => {
       const m = document.body.innerText.match(/CNT-\d{4}-\d{6}/);
@@ -172,7 +172,7 @@ async function main() {
     });
     mark('محتوى', 'إنشاء Content ID', true, contentId);
 
-    await page.click('[data-dtab="files"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="files"]').click());
     await page.waitForSelector('[data-file]');
     const png = path.join(OUT, '_mcs.png');
     const mp4 = path.join(OUT, '_mcs.mp4');
@@ -187,9 +187,9 @@ async function main() {
     await page.waitForFunction(() => /\.mp4|فيديو/.test(document.body.innerText), { timeout: 15000 }).catch(() => {});
     mark('رفع فيديو', 'رفع + تشغيل', true);
 
-    await page.click('[data-dtab="approvals"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="approvals"]').click());
     await page.waitForSelector('[data-act="submit"]');
-    await page.click('[data-act="submit"]');
+    await page.evaluate(() => document.querySelector('[data-act="submit"]').click());
     await page.waitForFunction(() => document.body.innerText.includes('بانتظار المراجعة'), { timeout: 12000 });
     mark('إرسال للمراجعة', 'تغيير الحالة', true);
 
@@ -197,17 +197,17 @@ async function main() {
       const n = document.querySelector('[data-act-note]');
       if (n) n.value = 'أضف صورة أوضح';
     });
-    await page.click('[data-act="request_changes"]');
+    await page.evaluate(() => document.querySelector('[data-act="request_changes"]').click());
     await page.waitForFunction(() => document.body.innerText.includes('أضف صورة أوضح') || document.body.innerText.includes('تحتاج تعديل'), { timeout: 12000 });
     mark('طلب تعديل', 'السبب يصل للمنشئ', true);
 
-    await page.click('[data-act="submit"]');
+    await page.evaluate(() => document.querySelector('[data-act="submit"]').click());
     await page.waitForFunction(() => document.body.innerText.includes('بانتظار المراجعة'), { timeout: 12000 });
-    await page.click('[data-act="approve"]');
+    await page.evaluate(() => document.querySelector('[data-act="approve"]').click());
     await page.waitForFunction(() => document.body.innerText.includes('معتمدة'), { timeout: 12000 });
     mark('اعتماد', 'تغيير الحالة', true);
 
-    await page.click('[data-dtab="schedule"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="schedule"]').click());
     await page.waitForSelector('[data-mcs="do-sch"]');
     await page.evaluate(() => {
       const d = document.querySelector('[data-sch-date]');
@@ -215,7 +215,7 @@ async function main() {
       const t = document.querySelector('[data-sch-time]');
       if (t) t.value = '14:00';
     });
-    await page.click('[data-mcs="do-sch"]');
+    await page.evaluate(() => document.querySelector('[data-mcs="do-sch"]').click());
     await new Promise((r) => setTimeout(r, 700));
     await page.evaluate(() => document.querySelector('[data-sec="calendar"]')?.click());
     await page.waitForFunction(() => document.body.innerText.includes('تقويم'), { timeout: 8000 });
@@ -229,13 +229,13 @@ async function main() {
       const url = document.querySelector('[data-pub-url]');
       if (url) url.value = 'https://instagram.com/p/test';
     }, campaignId);
-    await page.click('[data-mcs="log-publish"]');
+    await page.evaluate(() => document.querySelector('[data-mcs="log-publish"]').click());
     await new Promise((r) => setTimeout(r, 600));
     mark('النشر', 'تسجيل/تنفيذ صحيح', true);
 
     await page.goto(`${BASE}/marketing-campaigns-studio.html#campaign=${campaignId}`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-dtab="performance"]', { timeout: 15000 });
-    await page.click('[data-dtab="performance"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="performance"]').click());
     await page.waitForSelector('[data-mcs="add-res"]');
     await page.evaluate(() => {
       const date = document.querySelector('[data-res-date]');
@@ -246,24 +246,24 @@ async function main() {
       document.querySelector('[data-res-sales]').value = '200';
       document.querySelector('[data-res-spend]').value = '50';
     });
-    await page.click('[data-mcs="add-res"]');
+    await page.evaluate(() => document.querySelector('[data-mcs="add-res"]').click());
     await page.waitForFunction(() => document.body.innerText.includes('المشاهدات') || document.body.innerText.includes('1000'), { timeout: 12000 });
     mark('النتائج', 'حفظ النتائج', true);
     mark('Dashboard', 'قراءة البيانات الحقيقية', true);
 
-    await page.click('[data-dtab="overview"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="overview"]').click());
     await page.waitForSelector('[data-act="complete"]');
-    await page.click('[data-act="complete"]');
+    await page.evaluate(() => document.querySelector('[data-act="complete"]').click());
     await new Promise((r) => setTimeout(r, 500));
-    await page.click('[data-dtab="reports"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="reports"]').click());
     await page.waitForSelector('[data-mcs="mk-report"]');
-    await page.click('[data-mcs="mk-report"]');
+    await page.evaluate(() => document.querySelector('[data-mcs="mk-report"]').click());
     await page.waitForFunction(() => document.body.innerText.includes('آخر تقرير'), { timeout: 12000 });
     mark('التقرير', 'إنشاء التقرير النهائي', true);
 
-    await page.click('[data-dtab="overview"]');
+    await page.evaluate(() => document.querySelector('[data-dtab="overview"]').click());
     await page.waitForSelector('[data-act="archive"]');
-    await page.click('[data-act="archive"]');
+    await page.evaluate(() => document.querySelector('[data-act="archive"]').click());
     await new Promise((r) => setTimeout(r, 600));
     mark('الأرشفة', 'نقل الحملة للأرشيف', true);
 

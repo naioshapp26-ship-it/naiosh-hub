@@ -1078,7 +1078,16 @@
       '<div class="mcs-actions"><button class="mcs-btn light" data-close-x><i class="fas fa-arrow-right"></i> رجوع للقائمة</button></div>' +
       '<h2>' +
       esc(c.name) +
+      ' ' +
+      badge(c.status, c.statusLabel) +
       '</h2>' +
+      '<p><strong data-campaign-id="' +
+      esc(c.id) +
+      '">' +
+      esc(c.id) +
+      '</strong>' +
+      (c.changeRequestNote ? ' · سبب طلب التعديل: ' + esc(c.changeRequestNote) : '') +
+      '</p>' +
       '<div class="mcs-tabs">' +
       tabs
         .map(function (t) {
