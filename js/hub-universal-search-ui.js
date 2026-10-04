@@ -13,6 +13,7 @@
   const SEARCH_PAGE = 'search.html';
   let filter = 'all';
   let activeIntentId = null;
+  let visibleCount = 40;
 
   const pageRoot = () => document.querySelector('[data-hus-page]');
   const isSearchPage = () => !!pageRoot();
@@ -39,28 +40,34 @@
       </label>
       <div class="hus-intent-bar" data-hus-intent-bar hidden></div>
       <div class="hus-followups" data-hus-followups hidden></div>
-      <div class="hus-suggest" data-hus-suggest aria-label="قوائم مقترحة"></div>
-      <div class="hus-filters" role="tablist" aria-label="تصفية النوع">
+    </div>
+    <section class="hus-results-cluster" data-hus-results-cluster aria-label="نتائج البحث">
+      <div class="hus-results-meta" data-hus-results-meta></div>
+      <div class="hus-filters-wrap">
+        <p class="hus-filters-label"><i class="fas fa-filter"></i> تصفية نتائج البحث</p>
+        <div class="hus-filters" role="tablist" aria-label="تصفية نتائج البحث">
         <button type="button" class="is-active" data-hus-filter="all">الكل</button>
         <button type="button" data-hus-filter="branch">فروع</button>
         <button type="button" data-hus-filter="incubator">حاضنات</button>
         <button type="button" data-hus-filter="platform">منصات</button>
-        <button type="button" data-hus-filter="subdomain">دومينات فرعية</button>
+        <button type="button" data-hus-filter="subdomain">هويات فرعية</button>
         <button type="button" data-hus-filter="system">أنظمة</button>
         <button type="button" data-hus-filter="knowledge">مركز المعلومات</button>
         <button type="button" data-hus-filter="service">خدمات</button>
         <button type="button" data-hus-filter="content">محتوى</button>
         <button type="button" data-hus-filter="product">منتجات</button>
         <button type="button" data-hus-filter="event">فعاليات</button>
-        <button type="button" data-hus-filter="service">خدمات</button>
         <button type="button" data-hus-filter="store">متجر</button>
         <button type="button" data-hus-filter="image">صور</button>
         <button type="button" data-hus-filter="file">ملفات</button>
         <button type="button" data-hus-filter="video">فيديو</button>
+        </div>
       </div>
-    </div>
-    <div class="hus-section-head" data-hus-section-head hidden></div>
-    <div class="hus-results" data-hus-results></div>
+      <div class="hus-section-head" data-hus-section-head hidden></div>
+      <div class="hus-results" data-hus-results></div>
+      <div class="hus-more" data-hus-more hidden></div>
+    </section>
+    <section class="hus-suggest" data-hus-suggest aria-label="قوائم سريعة"></section>
     <footer class="hus-foot">
       <a href="info-center.html"><i class="fas fa-circle-info"></i> مركز المعلومات</a>
       <a href="services.html"><i class="fas fa-concierge-bell"></i> خدماتنا</a>
@@ -261,6 +268,30 @@
     return orchestrate(query, filter, { intentId: activeIntentId || undefined });
   };
 
+  const renderResultsMeta = (root, query, total) => {
+    const el = root.querySelector('[data-hus-results-meta]');
+    if (!el) return;
+    const q = String(query || '').trim();
+    const count = Number(total || 0).toLocaleString('en-US');
+    if (q) {
+      el.innerHTML = `<strong>نتائج البحث عن: ${esc(q)}</strong><span>تم العثور على ${count} نتيجة</span>`;
+    } else {
+      el.innerHTML = `<strong>النتائج</strong><span>${count} عنصر في الفهرس الحالي · اكتب كلمة لإظهار نتائج البحث مباشرة أسفل المربع</span>`;
+    }
+  };
+
+  const renderMore = (root, total) => {
+    const el = root.querySelector('[data-hus-more]');
+    if (!el) return;
+    if (total <= visibleCount) {
+      el.hidden = true;
+      el.innerHTML = '';
+      return;
+    }
+    el.hidden = false;
+    el.innerHTML = `<button type="button" class="hus-more-btn" data-hus-load-more>تحميل المزيد (${Number(visibleCount).toLocaleString('en-US')} من ${Number(total).toLocaleString('en-US')})</button>`;
+  };
+
   const renderResults = (root, query) => {
     renderSectionHead(root);
     renderStarters(root);
@@ -271,6 +302,7 @@
     renderFollowUps(root, pack.followUps, pack.query || query);
 
     const list = pack.results || [];
+    renderResultsMeta(root, query, list.length);
     const box = root.querySelector('[data-hus-results]');
     if (!box) return;
     if (!list.length) {
@@ -283,10 +315,11 @@
               ? 'لا خدمات في النتائج. افتح خدماتنا من الرابط أعلاه أو أضف خدمة جديدة.'
           : `لا نتائج في «${esc(sectionLabel(filter).pageTitle)}». جرّب كلمة بداية أو اكتب سؤالك بحرية.`;
       box.innerHTML = `<p class="hus-empty">${emptyMsg}</p>`;
+      renderMore(root, 0);
       return;
     }
     box.innerHTML = list
-      .slice(0, 200)
+      .slice(0, visibleCount)
       .map((item) => {
         const why =
           item.why && item.why.length
@@ -311,10 +344,12 @@
         </a>`;
       })
       .join('');
+    renderMore(root, list.length);
   };
 
   const applyFilter = (root, nextFilter) => {
     filter = nextFilter || 'all';
+    visibleCount = 40;
     root.querySelectorAll('[data-hus-filter]').forEach((b) => {
       b.classList.toggle('is-active', b.getAttribute('data-hus-filter') === filter);
     });
@@ -333,6 +368,7 @@
       }
     }
     filter = 'all';
+    visibleCount = 40;
     root.querySelectorAll('[data-hus-filter]').forEach((b) => {
       b.classList.toggle('is-active', b.getAttribute('data-hus-filter') === 'all');
     });
@@ -344,6 +380,12 @@
     root.addEventListener('click', (e) => {
       if (e.target.closest('[data-hus-clear-intent]')) {
         activeIntentId = null;
+        renderResults(root, root.querySelector('[data-hus-input]')?.value || '');
+        return;
+      }
+      const moreBtn = e.target.closest('[data-hus-load-more]');
+      if (moreBtn) {
+        visibleCount += 40;
         renderResults(root, root.querySelector('[data-hus-input]')?.value || '');
         return;
       }
@@ -381,6 +423,7 @@
       const detected = intentsApi?.detectIntent?.(val);
       if (!val.trim()) activeIntentId = null;
       else if (detected) activeIntentId = detected.id;
+      visibleCount = 40;
       renderResults(root, val);
     });
   };

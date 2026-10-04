@@ -411,6 +411,75 @@ body.homepage .hero-float-card.is-search-trigger .hero-float-icon {
   border-bottom: 1px solid #f1f5f9;
 }
 
+.hus-results-cluster {
+  display: grid;
+  gap: 10px;
+  padding: 8px 20px 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.hus-results-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.hus-results-meta strong {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.hus-results-meta span {
+  font-size: 14px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.hus-filters-wrap {
+  display: grid;
+  gap: 6px;
+}
+
+.hus-filters-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 850;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hus-filters-label i {
+  color: #dc2626;
+}
+
+.hus-more {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 8px;
+}
+
+.hus-more-btn {
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #991b1b;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.hus-more-btn:hover {
+  background: #fff1f2;
+}
+
 .hus-results {
   flex: 1 1 auto;
   min-height: min(52vh, 560px);
@@ -628,6 +697,17 @@ body.hus-open {
     grid-template-columns: 1fr;
   }
 
+  .hus-page .hus-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 4px;
+  }
+
+  .hus-page .hus-filters button {
+    flex: 0 0 auto;
+  }
+
   .hus-item {
     grid-template-columns: auto 1fr;
   }
@@ -777,7 +857,9 @@ body.hus-page-body {
   max-height: none;
   overflow: visible;
   flex: 0 0 auto;
-  border-bottom: 1px solid #f1f5f9;
+  gap: 8px;
+  padding: 10px 20px 8px;
+  border-bottom: 0;
 }
 
 .hus-page .hus-starters {
@@ -785,12 +867,29 @@ body.hus-page-body {
   overflow: visible;
 }
 
+.hus-page .hus-results-cluster {
+  padding: 4px 20px 12px;
+  gap: 8px;
+}
+
 .hus-page .hus-results {
   flex: 0 0 auto;
   min-height: 0;
   max-height: none;
   overflow: visible;
-  padding: 12px 20px 28px;
+  padding: 0;
+  gap: 8px;
+}
+
+.hus-page .hus-section-head {
+  margin: 0;
+}
+
+.hus-page .hus-suggest {
+  padding: 16px 20px 8px;
+  margin: 8px 0 0;
+  border-top: 1px solid #e5e7eb;
+  background: #fafafa;
 }
 
 .hus-back {
