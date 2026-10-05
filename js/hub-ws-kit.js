@@ -14,14 +14,17 @@
 
   const fmtTime = (iso) => {
     if (!iso) return '—';
+    if (window.HubFormat?.formatDateTime) return window.HubFormat.formatDateTime(iso);
     try {
-      return new Date(iso).toLocaleString('ar-EG', {
+      return new Date(iso).toLocaleString('ar-SA', {
         hour: '2-digit',
         minute: '2-digit',
         day: 'numeric',
         month: 'short',
         year: 'numeric',
-      });
+        numberingSystem: 'latn',
+        hour12: true,
+      }).replace(/\bPM\b|\bp\b/gi, 'م').replace(/\bAM\b|\ba\b/gi, 'ص');
     } catch {
       return String(iso);
     }
@@ -32,9 +35,16 @@
     return `<div class="bar" aria-hidden="true"><i style="width:${n}%"></i></div>`;
   };
 
+  const display = (text, type) => {
+    if (text == null || text === '') return '—';
+    const raw = String(text);
+    if (window.HubI18n?.getArabicLabel) return window.HubI18n.getArabicLabel(type || 'default', raw);
+    return window.HubI18n?.label?.(raw) || window.HubI18n?.status?.(raw) || raw;
+  };
+
   const badge = (text, cls = 'badge-outline') => {
     const raw = text == null || text === '' ? '—' : String(text);
-    const shown = window.HubI18n?.status?.(raw) || window.HubI18n?.label?.(raw) || raw;
+    const shown = display(raw, 'status');
     return `<span class="badge ${cls}">${esc(shown)}</span>`;
   };
 
@@ -181,10 +191,10 @@
                 .map(
                   (a) => `<tr>
                     <td>${esc(fmt(a.at))}</td>
-                    <td>${esc(window.HubI18n?.label?.(a.action || a.kind) || a.action || a.kind || '—')}</td>
-                    <td>${esc(a.detail || a.text || '—')}</td>
-                    <td>${esc(a.by || '—')}</td>
-                    <td>${esc(a.source || '—')}</td>
+                    <td>${esc(display(a.action || a.kind))}</td>
+                    <td>${esc(window.HubI18n?.localizeText?.(a.detail || a.text || '—') || a.detail || a.text || '—')}</td>
+                    <td>${esc(display(a.by || '—'))}</td>
+                    <td>${esc(display(a.source || '—'))}</td>
                   </tr>`
                 )
                 .join('')
@@ -193,10 +203,11 @@
       </tbody>
     </table></div>`;
 
-  const sourceBadge = (src) => badge(window.HubI18n?.label?.(src) || src || 'إدخال يدوي', 'badge-outline');
+  const sourceBadge = (src) => badge(display(src || 'إدخال يدوي'), 'badge-outline');
 
   window.HubWsKit = {
     esc,
+    display,
     fmtTime,
     bar,
     badge,

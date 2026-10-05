@@ -1598,6 +1598,7 @@
 
   const render = () => {
     root.innerHTML = `<section class="panel active">${renderers[current]()}</section>`;
+    window.HubI18n?.applyDisplayLayer?.(root);
     if (current === 'posha-clients' && window.HubPoshaClients?.mount) {
       const mount = document.getElementById('posha-mount');
       if (mount) window.HubPoshaClients.mount(mount);

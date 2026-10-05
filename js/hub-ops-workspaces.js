@@ -1589,7 +1589,7 @@
                 ['Anomaly', health.anomaly],
                 ['Knowledge', health.knowledge],
               ]
-                .map(([n, v]) => `<div><span>${n}</span><strong>${v || 0}%</strong>${K.bar(v || 0)}</div>`)
+                .map(([n, v]) => `<div><span>${window.HubI18n?.getArabicLabel?.('engine', n) || n}</span><strong>${v || 0}%</strong>${K.bar(v || 0)}</div>`)
                 .join('')}
             </div>
             <div class="toolbar" style="margin-top:10px;flex-wrap:wrap">
@@ -1604,7 +1604,7 @@
             <ul class="hub-op-mini-list">${
               pendingDec
                 .slice(0, 5)
-                .map((d) => `<li><b>${K.esc(d.title)}</b><small>${K.esc(d.engine)} · ${K.esc(d.impact || '')}</small>${K.badge('معلّق', 'badge-red')}</li>`)
+                .map((d) => `<li><b>${K.esc(d.title)}</b><small>${K.esc(window.HubI18n?.getArabicLabel?.('engine', d.engine) || d.engine)} · ${K.esc(d.impact || '')}</small>${K.badge('معلّق', 'badge-red')}</li>`)
                 .join('') || '<li class="empty">لا قرارات معلّقة</li>'
             }</ul>
           </article>
@@ -1649,7 +1649,7 @@
         <div class="toolbar" style="flex-wrap:wrap">
           <div class="field"><label>قرار جديد</label><input id="cr-decision-title" placeholder="عنوان القرار" /></div>
           <div class="field"><label>المحرك</label>
-            <select id="cr-decision-engine"><option>AI Decision</option><option>Predictive</option><option>Optimization</option><option>Anomaly</option></select>
+            <select id="cr-decision-engine"><option value="AI Decision">قرارات الذكاء الاصطناعي</option><option value="Predictive">تنبؤي</option><option value="Optimization">تحسين</option><option value="Anomaly">اكتشاف الشذوذ</option></select>
           </div>
           <div class="field"><label>التبرير</label><input id="cr-decision-rationale" placeholder="لماذا هذا القرار؟" /></div>
           <button type="button" class="btn btn-primary" data-action="cr-issue"><i class="fas fa-microchip"></i> إصدار</button>
@@ -1660,7 +1660,7 @@
             (s.decisions || [])
               .map(
                 (d) => `<tr>
-                  <td>${K.esc(d.title)}</td><td>${K.esc(d.engine)}</td>
+                  <td>${K.esc(d.title)}</td><td>${K.esc(window.HubI18n?.getArabicLabel?.('engine', d.engine) || d.engine)}</td>
                   <td>${K.badge(d.impact, 'badge-outline')}</td><td>${K.badge(d.status, d.status === 'executed' ? 'badge-black' : 'badge-red')}</td>
                   <td><small>${K.esc(d.source || '—')}<br/>${K.esc(d.rationale || '—')}</small></td>
                   <td>${d.status !== 'executed' ? `<button type="button" class="btn btn-sm btn-primary" data-action="cr-exec" data-id="${d.id}">تنفيذ</button>` : '—'}</td>
@@ -1860,5 +1860,7 @@
   window.HubMeasurementWS = { render: renderMeasurement, handle: handleMeasurement, ui: msUi };
   window.HubReportsWS = { render: renderReports, handle: handleReports, ui: rpUi };
   window.HubIntegrationWS = { render: renderIntegration, handle: handleIntegration, ui: igUi };
-  window.HubCoreWS = { render: renderCore, handle: handleCore, ui: crUi };
+  if (!window.HubCoreIntelligence) {
+    window.HubCoreWS = { render: renderCore, handle: handleCore, ui: crUi };
+  }
 })();
