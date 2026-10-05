@@ -73,6 +73,38 @@ assert.strictEqual(I18n.looksLikeUiEnglish('API'), false);
 assert.strictEqual(I18n.looksLikeUiEnglish('حفظ'), false);
 assert.strictEqual(I18n.looksLikeUiEnglish('leader@naiosh.com'), false);
 
+vm.runInContext(read('js/hub-i18n-display.js'), context);
+const I2 = context.window.HubI18n;
+assert.ok(typeof I2.getArabicLabel === 'function', 'getArabicLabel exists');
+
+const coreCases = {
+  'Central Intelligence Engine': 'محرك الذكاء المركزي',
+  'AI Decision': 'قرارات الذكاء الاصطناعي',
+  'AI Decisions': 'قرارات الذكاء الاصطناعي',
+  'AI Analysis': 'تحليل الذكاء الاصطناعي',
+  Operational: 'تشغيلي',
+  Anomaly: 'اكتشاف الشذوذ',
+  Risk: 'مخاطر',
+  'Anomaly Engine': 'محرك اكتشاف الشذوذ',
+  Optimization: 'تحسين',
+  'Optimization Engine': 'محرك التحسين',
+  Growth: 'نمو',
+  pending: 'قيد الانتظار',
+  approved: 'تمت الموافقة',
+  rejected: 'مرفوض',
+  high: 'مرتفع',
+};
+Object.entries(coreCases).forEach(([en, ar]) => {
+  const got = I2.getArabicLabel('default', en);
+  assert.ok(/[\u0600-\u06FF]/.test(got), `${en} → Arabic, got ${got}`);
+  assert.notStrictEqual(got, en);
+  assert.strictEqual(got, ar, `${en} expected ${ar}, got ${got}`);
+});
+
+assert.strictEqual(I2.getArabicLabel('default', 'DEC-2026-00001'), 'DEC-2026-00001');
+assert.strictEqual(I2.getArabicLabel('default', 'EMP-0004'), 'EMP-0004');
+assert.ok(!/[A-Za-z]{3,}/.test(I2.localizeText('نوع Operational')));
+
 // dashboard renderBlueprint must not inject English layer names as visible small tags
 const dash = read('js/dashboard.js');
 assert.ok(!/esc\(l\.name\)/.test(dash) || !/fiveLayers[\s\S]{0,200}esc\(l\.name\)/.test(dash));

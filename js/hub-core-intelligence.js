@@ -8,25 +8,19 @@
   const Kit = () => window.HubWsKit;
   const store = () => window.HubStore;
   const L = (en, ar) => window.HubI18n?.label?.(en, ar) || ar || en;
-  /** عرض للمستخدم فقط — لا يغيّر القيمة المخزّنة */
-  const disp = (v, fallback = '—') => {
+  const disp = (v, type = 'default', fallback = '—') => {
     if (v == null || v === '') return fallback;
     const raw = String(v);
+    if (window.HubI18n?.getArabicLabel) return window.HubI18n.getArabicLabel(type, raw);
     if (window.HubI18n?.hasArabic?.(raw) && !/[A-Za-z]{3,}/.test(raw)) return raw;
     const exact =
       window.HubI18n?.label?.(raw) ||
       window.HubI18n?.status?.(raw) ||
       null;
     if (exact && exact !== raw) return exact;
-    // نصوص مختلطة: استبدل المقاطع الإنجليزية المعروفة (مثل Insight · ...)
-    if (/[A-Za-z]{3,}/.test(raw) && window.HubI18n?.LABELS) {
-      let out = raw;
-      const keys = Object.keys(window.HubI18n.LABELS).sort((a, b) => b.length - a.length);
-      for (const k of keys) {
-        if (!/[A-Za-z]/.test(k) || k.length < 2) continue;
-        if (out.includes(k)) out = out.split(k).join(window.HubI18n.LABELS[k]);
-      }
-      if (out !== raw) return out;
+    if (/[A-Za-z]{3,}/.test(raw) && window.HubI18n?.localizeText) {
+      const out = window.HubI18n.localizeText(raw);
+      if (out && out !== raw) return out;
     }
     return L(raw, fallback === '—' ? raw : fallback);
   };
@@ -266,10 +260,10 @@
           (d) => `<tr>
             <td><code>${K.esc(d.decisionId || d.id)}</code></td>
             <td><button type="button" class="btn btn-sm btn-ghost" data-action="cr-view" data-id="${d.id}" style="font-weight:800">${K.esc(d.title)}</button></td>
-            <td>${K.esc(disp(d.type))}</td>
+            <td>${K.esc(disp(d.type, 'type'))}</td>
             <td>${badgeDisp(d.sourceType || '—', 'badge-outline')}</td>
-            <td>${K.esc(disp(d.engine))}</td>
-            <td>${K.esc(disp(d.impact))}</td>
+            <td>${K.esc(disp(d.engine, 'engine'))}</td>
+            <td>${K.esc(disp(d.impact, 'impact'))}</td>
             <td><button type="button" class="btn btn-sm btn-ghost" data-action="cr-conf" data-id="${d.id}" ${confTip(d.confidence)}>${d.confidence ?? '—'}%</button></td>
             <td>${K.esc(disp(d.createdBy))}</td>
             <td>${K.esc(disp(d.approvedBy))}</td>
