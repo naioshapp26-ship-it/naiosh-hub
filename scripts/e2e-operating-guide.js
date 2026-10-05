@@ -80,7 +80,7 @@ async function main() {
   const blogHref = await page.$eval('a[href="blog.html"]', (a) => a.getAttribute('href'));
   assert.equal(blogHref, 'blog.html');
   REPORT.push({
-    el: 'صفحة المقالات (للعملاء)',
+    el: 'صفحة المدونة (للعملاء)',
     role: 'رابط',
     target: 'blog.html',
     ok: true,

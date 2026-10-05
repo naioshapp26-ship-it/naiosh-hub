@@ -980,7 +980,7 @@
       return row;
     }
     payload.timeline = [
-      { at: payload.createdAt, by: payload.customerName || 'عميل', text: 'طلب نشر مقال من صفحة المقالات', key: 'created' },
+      { at: payload.createdAt, by: payload.customerName || 'عميل', text: 'طلب نشر مقال من صفحة المدونة', key: 'created' },
     ];
     state.requests = state.requests || [];
     state.requests.unshift(payload);
