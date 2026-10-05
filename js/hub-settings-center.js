@@ -905,9 +905,9 @@
         'content',
         'fa-newspaper',
         'المحتوى',
-        'المقالات والإعلانات والفعاليات والمشاريع.',
+        'المدونة والإعلانات والفعاليات والمشاريع.',
         'محتوى قابل للنشر',
-        '<div class="settings-links" data-search="مقالات إعلانات فعاليات"><a class="btn btn-ghost" href="#articles">المقالات</a><a class="btn btn-ghost" href="#ads">الإعلانات</a><a class="btn btn-ghost" href="#events">الفعاليات</a></div>',
+        '<div class="settings-links" data-search="مدونة مقالات إعلانات فعاليات"><a class="btn btn-ghost" href="#articles">المدونة</a><a class="btn btn-ghost" href="#ads">الإعلانات</a><a class="btn btn-ghost" href="#events">الفعاليات</a></div>',
         'content'
       ) +
       section(

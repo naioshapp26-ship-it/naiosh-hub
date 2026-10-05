@@ -7362,7 +7362,7 @@ const HubStore = (() => {
       } else if (key === 'store' || key === 'المتجر') {
         targets.platforms = targets.platforms.length ? targets.platforms : ['*'];
         places.push('store');
-      } else if (key === 'articles' || key === 'المقالات') {
+      } else if (key === 'articles' || key === 'المقالات' || key === 'المدونة') {
         targets.home = true;
         places.push('articles');
       } else if (key === 'services' || key === 'الخدمات') {

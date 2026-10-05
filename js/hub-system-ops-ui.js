@@ -340,9 +340,9 @@
           : [];
       host.innerHTML =
         section(
-          'المقالات — فصل تجربة العميل عن التشغيل',
+          'المدونة — فصل تجربة العميل عن التشغيل',
           `<p class="sysops-note"><strong>للعملاء:</strong> رفع المقال يتم عبر رحلة بسيطة في
-            <a href="blog.html#submit" target="_blank" rel="noopener">صفحة المقالات ← ارفع مقالك</a>
+            <a href="blog.html#submit" target="_blank" rel="noopener">صفحة المدونة ← ارفع مقالك</a>
             (بيانات → محتوى → مراجعة → إرسال). لا تطلب من العميل فتح هذه الشاشة التقنية.</p>
           <p class="sysops-note"><strong>للإدارة:</strong> راجع المقالات الواردة، عيّن مراجعاً، اطلب تعديلاً، اعتمد وانشر من
             <a href="dashboard.html#content-articles">غرفة العمليات ← المقالات الواردة</a>.

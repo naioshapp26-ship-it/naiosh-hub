@@ -19,10 +19,10 @@
     },
     {
       id: 'blog',
-      label: 'المقالات',
+      label: 'المدونة',
       href: 'blog.html',
       className: 'hub-hbtn hub-hbtn--red',
-      icon: 'fa-newspaper',
+      icon: 'fa-blog',
     },
     {
       id: 'membership',
