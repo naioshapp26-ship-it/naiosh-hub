@@ -41,6 +41,10 @@ body.cp-body {
   text-decoration: none;
   color: #fff;
   padding: 8px;
+  cursor: pointer;
+}
+.cp-brand:hover {
+  opacity: 0.92;
 }
 .cp-brand img { width: 42px; height: 42px; border-radius: 12px; object-fit: cover; }
 .cp-brand strong { display: block; font-size: 14px; }
