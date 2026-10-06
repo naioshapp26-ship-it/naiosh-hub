@@ -394,6 +394,15 @@ async function handleHubApi(req, res, pathname) {
         });
         created.push(result);
       }
+      try {
+        const portalStore = hubClientPortal.readStore();
+        created.forEach((c) => {
+          if (c?.order) hubClientPortal.attachProductOrder(portalStore, productOrders.enrichOrder(c.order));
+        });
+        hubClientPortal.writeStore(portalStore);
+      } catch {
+        /* portal mirror must not fail checkout */
+      }
       sendJson(res, 201, {
         ok: true,
         duplicate: created.every((c) => c.duplicate),
@@ -1400,7 +1409,13 @@ const server = http.createServer((req, res) => {
         if (result.ok && result.user?.email) {
           try {
             const store = hubClientPortal.readStore();
-            hubClientPortal.ensureClient(store, result.user.email, result.user.name || result.user.fullName);
+            const portalClient = hubClientPortal.ensureClient(
+              store,
+              result.user.email,
+              result.user.name || result.user.fullName
+            );
+            if (result.user.phone) portalClient.phone = result.user.phone;
+            portalClient.status = portalClient.status === 'pending' ? 'active' : portalClient.status;
             hubPoshaOps.emitEvent(store, {
               type: 'CLIENT_REGISTERED',
               clientEmail: result.user.email,

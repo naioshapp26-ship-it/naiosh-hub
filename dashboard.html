@@ -14,8 +14,9 @@
         var u = JSON.parse(raw);
         var r = String(u && u.role || '').toLowerCase();
         if (r === 'customer' || r === 'client' || r === 'client_user') {
-          // إلا إذا كان معيّنًا كموظف (رقم موظف في الجلسة)
-          if (u.employeeNo && String(u.employeeNo).indexOf('EMP-') === 0) return;
+          try {
+            sessionStorage.setItem('hubAuthFlash', 'ليس لديك صلاحية للوصول إلى هذه الصفحة.');
+          } catch (e2) {}
           location.replace('client.html');
         }
       } catch (e) {}
