@@ -137,12 +137,19 @@ async function main() {
   try {
     // 1. Guest homepage
     await page.goto(`${BASE}/index.html`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    const homeText = await visibleText(page);
+    const guestMeta = await page.evaluate(() => ({
+      path: location.pathname,
+      hasLogin: !!document.querySelector('header.top-nav a.auth-btn[href*="login.html"]'),
+      hasAdminSidebar: !!document.querySelector('aside.sidebar #sidebar-nav, #panel-root'),
+      hero: /نايوش|هوب|NAIOSH|مركز التشغيل/i.test(document.body ? document.body.innerText : ''),
+    }));
     const guestOk =
-      /نايوش|هوب|NAIOSH/i.test(homeText) &&
-      !/غرفة العمليات — نايوش هوب/.test(homeText) &&
-      !/مركز التحكم العالمي/.test(homeText);
-    mark('زائر — الصفحة الرئيسية', guestOk, guestOk ? '' : 'الصفحة الرئيسية لم تظهر بشكل طبيعي');
+      /index\.html|^\/$/.test(guestMeta.path) && guestMeta.hasLogin && !guestMeta.hasAdminSidebar && guestMeta.hero;
+    mark(
+      'زائر — الصفحة الرئيسية',
+      guestOk,
+      guestOk ? '' : `path=${guestMeta.path} login=${guestMeta.hasLogin} admin=${guestMeta.hasAdminSidebar}`
+    );
     await shot(page, 'e2e-guest-home.png');
 
     await page.goto(`${BASE}/products.html`, { waitUntil: 'domcontentloaded' });
