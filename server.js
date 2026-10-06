@@ -210,6 +210,13 @@ async function checkDatabase() {
       FROM information_schema.tables
       WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
     `);
+    let hubOrders = null;
+    try {
+      const orders = await client.query('SELECT COUNT(*)::int AS n FROM hub_orders');
+      hubOrders = orders.rows[0]?.n || 0;
+    } catch {
+      hubOrders = null;
+    }
     await client.end();
     return {
       linked: true,
@@ -217,6 +224,7 @@ async function checkDatabase() {
       message: 'قاعدة البيانات متصلة',
       ok: result.rows[0]?.ok === 1,
       tables: tables.rows[0]?.n || 0,
+      hubOrders,
     };
   } catch (error) {
     return {
@@ -414,6 +422,7 @@ async function handleHubApi(req, res, pathname) {
         ? body.items
         : [{ productId: body?.productId, qty: body?.qty || 1, clientPrice: body?.clientPrice }];
       const created = [];
+      const persistJobs = [];
       const baseKey = String(body?.idempotencyKey || '').trim();
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i] || {};
@@ -427,7 +436,10 @@ async function handleHubApi(req, res, pathname) {
           clientPrice: line.clientPrice != null ? line.clientPrice : body?.clientPrice,
         });
         created.push(result);
+        if (result?.persisted) persistJobs.push(result.persisted);
       }
+      const persistResults = persistJobs.length ? await Promise.all(persistJobs) : [];
+      const dbPersisted = persistResults.length > 0 && persistResults.every((r) => r && r.ok);
       try {
         const portalStore = hubClientPortal.readStore();
         created.forEach((c) => {
@@ -452,6 +464,7 @@ async function handleHubApi(req, res, pathname) {
       sendJson(res, 201, {
         ok: true,
         duplicate: created.every((c) => c.duplicate),
+        dbPersisted,
         order: created[0]?.order || null,
         orders: created.map((c) => c.order),
         statusLabels: productOrders.STATUS_LABELS,
