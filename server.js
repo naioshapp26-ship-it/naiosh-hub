@@ -1416,6 +1416,7 @@ const server = http.createServer((req, res) => {
             );
             if (result.user.phone) portalClient.phone = result.user.phone;
             portalClient.status = portalClient.status === 'pending' ? 'active' : portalClient.status;
+            portalClient.lastLoginAt = portalClient.lastLoginAt || new Date().toISOString();
             hubPoshaOps.emitEvent(store, {
               type: 'CLIENT_REGISTERED',
               clientEmail: result.user.email,
