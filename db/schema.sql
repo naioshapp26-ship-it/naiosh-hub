@@ -158,6 +158,31 @@ CREATE TABLE IF NOT EXISTS hub_store_orders (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS hub_orders (
+  id TEXT PRIMARY KEY,
+  number TEXT NOT NULL UNIQUE,
+  customer_id TEXT,
+  customer_email TEXT NOT NULL,
+  customer_name TEXT,
+  product_id TEXT,
+  product_name TEXT,
+  qty INT NOT NULL DEFAULT 1,
+  unit_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  total NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  payment_status TEXT NOT NULL DEFAULT 'unpaid',
+  payment_mode TEXT,
+  order_status TEXT NOT NULL DEFAULT 'received',
+  invoice_number TEXT,
+  source TEXT,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hub_orders_email_idx ON hub_orders (lower(customer_email));
+CREATE INDEX IF NOT EXISTS hub_orders_number_idx ON hub_orders (number);
+
 CREATE TABLE IF NOT EXISTS hub_ads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   external_id TEXT UNIQUE,

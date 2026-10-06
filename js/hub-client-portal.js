@@ -49,6 +49,26 @@
     completed: 'مكتمل',
     rejected: 'مرفوض',
     cancelled: 'ملغى',
+    received: 'تم الاستلام',
+    payment_confirmed: 'تم تأكيد الدفع',
+    under_review: 'قيد المراجعة',
+    confirmed: 'تم التأكيد',
+    demo_paid: 'دفع تجريبي مكتمل',
+    onboarding: 'تهيئة الحساب',
+    pending_approval: 'بانتظار الموافقة',
+    registered: 'مسجّل',
+    at_risk: 'يتطلب متابعة',
+    renewal_due: 'قرب التجديد',
+    churned: 'منتهٍ',
+    ONBOARDING: 'تهيئة الحساب',
+    PENDING_APPROVAL: 'بانتظار الموافقة',
+    REGISTERED: 'مسجّل',
+    AT_RISK: 'يتطلب متابعة',
+    RENEWAL_DUE: 'قرب التجديد',
+    CHURNED: 'منتهٍ',
+    ACTIVE: 'نشط',
+    APPROVED: 'معتمد',
+    SUSPENDED: 'موقوف',
     open: 'مفتوحة',
     OPEN: 'مفتوحة',
     IN_PROGRESS: 'قيد المعالجة',
@@ -92,26 +112,49 @@
   }
 
   function statusLabel(s) {
-    return STATUS_AR[String(s || '').toLowerCase()] || s || '—';
+    var raw = String(s || '');
+    if (!raw) return '—';
+    if (STATUS_AR[raw]) return STATUS_AR[raw];
+    var lower = raw.toLowerCase();
+    if (STATUS_AR[lower]) return STATUS_AR[lower];
+    try {
+      if (window.HubI18n && typeof window.HubI18n.getArabicLabel === 'function') {
+        var mapped = window.HubI18n.getArabicLabel('status', raw);
+        if (mapped && mapped !== raw) return mapped;
+      }
+      if (window.HubI18n && typeof window.HubI18n.display === 'function') {
+        var d = window.HubI18n.display(raw, 'status');
+        if (d && d !== raw) return d;
+      }
+    } catch (e) {}
+    return raw;
+  }
+
+  function lifecycleLabel(s) {
+    return statusLabel(s);
   }
 
   function statusMod(s) {
     var v = String(s || '').toLowerCase();
-    if (['active', 'paid', 'completed', 'approved', 'resolved', 'done'].indexOf(v) >= 0) return '';
-    if (['pending', 'under_setup', 'in_progress', 'open', 'waiting_customer', 'unpaid', 'current'].indexOf(v) >= 0) return 'is-warn';
+    if (['active', 'paid', 'completed', 'approved', 'resolved', 'done', 'demo_paid', 'payment_confirmed'].indexOf(v) >= 0) return '';
+    if (['pending', 'under_setup', 'in_progress', 'open', 'waiting_customer', 'unpaid', 'current', 'onboarding', 'pending_approval', 'pending_review', 'received', 'under_review'].indexOf(v) >= 0) return 'is-warn';
     return 'is-off';
   }
 
   function money(n, cur) {
     var v = Number(n);
     if (!isFinite(v)) return '—';
-    return v.toLocaleString('ar-SA') + (cur === 'USD' ? ' $' : ' ر.س');
+    var formatted = window.HubFormat && window.HubFormat.formatNumber
+      ? window.HubFormat.formatNumber(v)
+      : v.toLocaleString('en-US');
+    return formatted + (cur === 'USD' ? ' $' : ' ر.س');
   }
 
   function fmtDate(iso) {
     if (!iso) return '—';
     try {
-      return new Date(iso).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+      if (window.HubFormat && window.HubFormat.formatDate) return window.HubFormat.formatDate(iso);
+      return new Date(iso).toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', numberingSystem: 'latn' });
     } catch (e) {
       return String(iso).slice(0, 10);
     }
@@ -454,7 +497,7 @@
           '<span class="cp-chip">رقم العميل: ' + esc(w.clientId || '—') + '</span>' +
           '<span class="cp-chip">المستوى: ' + esc(w.accountLevel || 'أساسي') + '</span>' +
           '<span class="cp-chip">' + esc(statusLabel(w.status || 'active')) + '</span>' +
-          (w.lifecycle ? '<span class="cp-chip">' + esc(w.lifecycle) + '</span>' : '') +
+          (w.lifecycle ? '<span class="cp-chip">' + esc(lifecycleLabel(w.lifecycle)) + '</span>' : '') +
         '</div></section>';
 
     var pendingBanner = (w.status === 'pending')
@@ -498,7 +541,7 @@
     sysHtml += '</section>';
 
     var ordHtml = '<section class="cp-card"><div class="cp-card-head"><h3>أحدث الطلبات</h3><a class="cp-link" href="#orders" data-nav="orders">عرض جميع الطلبات</a></div>';
-    if (!orders.length) ordHtml += '<p style="color:var(--cp-muted);font-weight:700;margin:0">لا توجد طلبات بعد.</p>';
+    if (!orders.length) ordHtml += '<p style="color:var(--cp-muted);font-weight:700;margin:0">لا توجد طلبات حتى الآن</p>';
     else {
       ordHtml += '<div class="cp-list">' + orders.map(function (o) {
         return '<div class="cp-row"><div><strong>' + esc(o.number) + '</strong><small>' + esc(o.service) + ' · ' + esc(fmtDate(o.date || o.createdAt)) + '</small></div>' +
@@ -545,22 +588,29 @@
   }
 
   function renderOrders(list) {
-    if (!list.length) return empty('fa-receipt', 'لا توجد طلبات', 'عند تقديم طلب سيظهر هنا مع تتبع حالته.', 'استكشف الخدمات', 'marketplace');
+    if (!list.length) return empty('fa-receipt', 'لا توجد طلبات حتى الآن', 'عند تقديم طلب سيظهر هنا مع تتبع حالته.', 'استكشف الخدمات', 'marketplace');
     return '<section class="cp-card"><div class="cp-card-head"><h3>طلباتي</h3></div><div class="cp-list">' + list.map(function (o) {
       var tl = (o.timeline || []).map(function (t) {
         return '<li style="margin:4px 0"><strong>' + esc(t.label || statusLabel(t.status)) + '</strong> · <small>' + esc(fmtDate(t.at)) + '</small></li>';
       }).join('');
-      return '<article class="cp-row" style="align-items:flex-start;flex-direction:column">' +
+      var next = o.nextAction || (o.status === 'unpaid' || o.paymentStatus === 'unpaid' ? 'أكمل الدفع لمتابعة الطلب' : 'تابع حالة طلبك من هنا');
+      return '<article class="cp-row" style="align-items:flex-start;flex-direction:column" data-order-id="' + esc(o.id || o.number) + '">' +
         '<div style="display:flex;width:100%;justify-content:space-between;gap:8px"><div><strong>' + esc(o.number) + '</strong><small>' + esc(o.service) + '</small></div>' +
-        '<span class="cp-badge-status ' + statusMod(o.status) + '">' + esc(statusLabel(o.status)) + '</span></div>' +
-        '<div style="display:flex;gap:12px;font-size:12px;font-weight:800;color:var(--cp-muted)"><span>' + esc(fmtDate(o.date)) + '</span><span>' + money(o.amount, o.currency) + '</span></div>' +
+        '<span class="cp-badge-status ' + statusMod(o.status) + '">' + esc(statusLabel(o.orderStatusLabel || o.status)) + '</span></div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;font-weight:800;color:var(--cp-muted)">' +
+          '<span>التاريخ: ' + esc(fmtDate(o.date || o.createdAt)) + '</span>' +
+          '<span>السعر: ' + money(o.amount, o.currency) + '</span>' +
+          (o.invoiceNumber ? '<span>الفاتورة: ' + esc(o.invoiceNumber) + '</span>' : '') +
+          (o.paymentStatus ? '<span>الدفع: ' + esc(statusLabel(o.paymentStatusLabel || o.paymentStatus)) + '</span>' : '') +
+        '</div>' +
+        '<p style="margin:8px 0 0;font-weight:800">ماذا يجب أن أفعل الآن؟ ' + esc(next) + '</p>' +
         (tl ? '<ul style="margin:8px 0 0;padding:0 18px 0 0;width:100%">' + tl + '</ul>' : '') +
         '</article>';
     }).join('') + '</div></section>';
   }
 
   function renderSubs(list) {
-    if (!list.length) return empty('fa-rotate', 'لا توجد اشتراكات', 'ستظهر اشتراكات أنظمتك هنا.', null, null);
+    if (!list.length) return empty('fa-rotate', 'لا توجد اشتراكات نشطة', 'ستظهر اشتراكات أنظمتك هنا.', null, null);
     return '<section class="cp-card"><div class="cp-card-head"><h3>اشتراكاتي</h3></div><div class="cp-sys-grid">' + list.map(function (s) {
       var canRenew = ['EXPIRING', 'EXPIRED', 'expiring', 'expired', 'active', 'ACTIVE'].indexOf(String(s.status || '')) >= 0;
       return '<article class="cp-sys"><strong>' + esc(s.systemName) + '</strong>' +
@@ -618,7 +668,7 @@
   }
 
   function renderInvoices(list) {
-    if (!list.length) return empty('fa-file-invoice', 'لا توجد فواتير', 'ستظهر فواتيرك هنا عند إصدارها.', null, null);
+    if (!list.length) return empty('fa-file-invoice', 'لا توجد فواتير حتى الآن', 'ستظهر فواتيرك هنا عند إصدارها.', null, null);
     return '<section class="cp-card"><div class="cp-card-head"><h3>الفواتير والمدفوعات</h3></div><div class="cp-list">' + list.map(function (inv) {
       return '<div class="cp-row"><div><strong>' + esc(inv.number) + '</strong><small>' + esc(fmtDate(inv.date)) + ' · ' + money(inv.amount, inv.currency) + '</small></div>' +
         '<div class="cp-actions"><span class="cp-badge-status ' + statusMod(inv.status) + '">' + esc(statusLabel(inv.status)) + '</span>' +
@@ -668,7 +718,7 @@
   function renderNotifications(list) {
     return '<section class="cp-card"><div class="cp-card-head"><h3>الإشعارات</h3><button type="button" class="cp-btn" id="cp-read-all">تعليم الكل كمقروء</button></div>' +
       (!list.length
-        ? empty('fa-bell', 'لا إشعارات', 'ستصلك تنبيهات الطلبات والفواتير هنا.', null, null)
+        ? empty('fa-bell', 'لا توجد إشعارات حتى الآن', 'ستصلك تنبيهات الطلبات والفواتير هنا.', null, null)
         : '<div class="cp-list">' + list.map(function (n) {
             return '<button type="button" class="cp-row" data-nid="' + esc(n.id) + '" style="width:100%;text-align:right;cursor:pointer;background:' + (n.read ? '#fff' : '#fff7f7') + '">' +
               '<div><strong>' + esc(n.title) + '</strong><small>' + esc(n.body || '') + '</small></div><small>' + esc(fmtDate(n.at || n.createdAt)) + '</small></button>';
@@ -726,8 +776,8 @@
     return '<section class="cp-card"><div class="cp-card-head"><h3>حسابي</h3></div>' +
       '<form class="cp-form" id="cp-profile-form">' +
         '<div class="cp-field"><label>الاسم</label><input name="name" value="' + esc(p.name || '') + '" required></div>' +
-        '<div class="cp-field"><label>البريد</label><input value="' + esc(p.email || '') + '" disabled></div>' +
-        '<div class="cp-field"><label>الهاتف</label><input name="phone" value="' + esc(p.phone || '') + '"></div>' +
+        '<div class="cp-field"><label>البريد</label><input value="' + esc(p.email || '') + '" disabled dir="ltr"></div>' +
+        '<div class="cp-field"><label>الهاتف</label><input name="phone" value="' + esc(p.phone || '') + '" dir="ltr"></div>' +
         '<div class="cp-field"><label>الشركة / المنظمة</label><input name="company" value="' + esc(p.company || '') + '"></div>' +
         '<div class="cp-field"><label>نوع العميل</label><select name="clientType">' +
           ['','فرد','مؤسسة','شركة','مكتب','منصة'].map(function (t) {
@@ -738,7 +788,9 @@
         '<div class="cp-field"><label>المدينة</label><input name="city" value="' + esc(p.city || '') + '"></div>' +
         '<div class="cp-field"><label>نوع النشاط</label><input name="activityType" value="' + esc(p.activityType || '') + '" placeholder="مثال: تعليم"></div>' +
         '<div class="cp-field"><label>العنوان</label><input name="address" value="' + esc(p.address || '') + '"></div>' +
-        '<div class="cp-field"><label>اللغة</label><select name="language"><option value="ar"' + (p.language !== 'en' ? ' selected' : '') + '>العربية</option><option value="en"' + (p.language === 'en' ? ' selected' : '') + '>English</option></select></div>' +
+        '<div class="cp-field"><label>رقم العميل</label><input value="' + esc(p.clientId || '') + '" disabled dir="ltr"></div>' +
+        '<div class="cp-field"><label>رقم الموظف</label><input value="لا يوجد" disabled></div>' +
+        '<div class="cp-field"><label>اللغة</label><select name="language"><option value="ar"' + (p.language !== 'en' ? ' selected' : '') + '>العربية</option><option value="en"' + (p.language === 'en' ? ' selected' : '') + '>الإنجليزية</option></select></div>' +
         '<button type="submit" class="cp-btn cp-btn-primary">حفظ التغييرات</button>' +
       '</form></section>';
   }
@@ -770,7 +822,7 @@
               return '<div class="cp-row"><div><strong>محاولة فاشلة</strong><small>' + esc(f.reason || '') + '</small></div><small>' + esc(fmtDate(f.at)) + '</small></div>';
             }).join('') + '</div>'
           : '<p style="color:var(--cp-muted);font-weight:700">لا تنبيهات.</p>') +
-        '<p style="margin:12px 0 0;font-size:12px;font-weight:700;color:var(--cp-muted)">المصادقة الثنائية (2FA) — البنية جاهزة للتفعيل لاحقًا</p>' +
+        '<p style="margin:12px 0 0;font-size:12px;font-weight:700;color:var(--cp-muted)">التحقق بخطوتين — البنية جاهزة للتفعيل لاحقًا</p>' +
       '</div></section>';
   }
 
@@ -1158,6 +1210,13 @@
 
   function boot() {
     if (!ensureClient()) return;
+    try {
+      var flash = sessionStorage.getItem('hubAuthFlash');
+      if (flash) {
+        sessionStorage.removeItem('hubAuthFlash');
+        setTimeout(function () { toast(flash); }, 200);
+      }
+    } catch (e) {}
     buildNav();
     $('cp-logout') && $('cp-logout').addEventListener('click', logout);
     $('cp-menu') && $('cp-menu').addEventListener('click', function () {

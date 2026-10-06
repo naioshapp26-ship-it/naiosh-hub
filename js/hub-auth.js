@@ -105,23 +105,51 @@
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
     const storage = remember ? localStorage : sessionStorage;
-    // اربط رقم الموظف إن وُجد في AG
-    try {
-      const emp = getEmployeeRecord(user) || (window.HubAccessGov?.findIdentity?.(user?.email) && null);
-      const id =
-        window.HubAccessGov?.findIdentity?.(user?.email) ||
-        window.HubAccessGov?.findIdentity?.(user?.naioshId) ||
-        null;
-      if (id?.employeeNo && id.userType === 'STAFF') {
-        user = { ...user, employeeNo: id.employeeNo, naioshId: id.naioshId || user.naioshId };
+    const role = String(user?.role || '').toLowerCase();
+    const customerOnly = CLIENT_ROLES.has(role) && !STAFF_ROLES.has(role);
+    if (customerOnly) {
+      if (user && (user.employeeNo || user.employeeNo === '')) {
+        user = { ...user };
+        delete user.employeeNo;
       }
-    } catch (_) {}
+    } else {
+      try {
+        const id =
+          window.HubAccessGov?.findIdentity?.(user?.email) ||
+          window.HubAccessGov?.findIdentity?.(user?.naioshId) ||
+          null;
+        if (id?.employeeNo && id.userType === 'STAFF') {
+          user = { ...user, employeeNo: id.employeeNo, naioshId: id.naioshId || user.naioshId };
+        }
+      } catch (_) {}
+    }
     storage.setItem(TOKEN_KEY, token);
     storage.setItem(USER_KEY, JSON.stringify(user));
+    try {
+      document.cookie = 'hub_session=' + encodeURIComponent(token) + '; Path=/; SameSite=Lax; Max-Age=2592000';
+    } catch (_) {}
     window.HubStore?.recordActivity?.('auth', `تسجيل دخول: ${user.name || user.email}`, {
       email: user.email,
       role: user.role,
       employeeNo: user.employeeNo || null,
+    });
+    try {
+      syncPublicAuthUi();
+    } catch (_) {}
+  };
+
+  const syncPublicAuthUi = () => {
+    if (typeof document === 'undefined') return;
+    const logged = isLoggedIn();
+    const user = getUser();
+    const customer = logged && isClient(user) && !isStaff(user);
+    document.querySelectorAll('header.top-nav .auth-actions a.auth-btn').forEach((a) => {
+      const href = String(a.getAttribute('href') || '');
+      if (customer && (/login\.html/i.test(href) || /client\.html/i.test(href))) {
+        a.setAttribute('href', 'client.html');
+        a.textContent = 'حسابي';
+        a.setAttribute('aria-label', 'مركز العميل');
+      }
     });
   };
 
@@ -130,6 +158,9 @@
     localStorage.removeItem(USER_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
+    try {
+      document.cookie = 'hub_session=; Path=/; SameSite=Lax; Max-Age=0';
+    } catch (_) {}
   };
 
   const loginUrl = ({ next = '', system = '' } = {}) => {
@@ -356,6 +387,7 @@
     postLoginDestination,
     setSession,
     clearSession,
+    syncPublicAuthUi,
     loginUrl,
     requireLogin,
     requireStaff,
@@ -370,4 +402,14 @@
     assertOwnsOrDeny,
     storageOf,
   };
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', syncPublicAuthUi);
+    } else {
+      try {
+        syncPublicAuthUi();
+      } catch (_) {}
+    }
+  }
 })();

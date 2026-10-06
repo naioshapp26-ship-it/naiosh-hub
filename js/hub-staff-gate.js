@@ -12,6 +12,9 @@
     var u = JSON.parse(raw);
     var r = String((u && u.role) || '').toLowerCase();
     if (r === 'customer' || r === 'client' || r === 'client_user') {
+      try {
+        sessionStorage.setItem('hubAuthFlash', 'ليس لديك صلاحية للوصول إلى هذه الصفحة.');
+      } catch (e2) {}
       location.replace('client.html');
     }
   } catch (e) {
