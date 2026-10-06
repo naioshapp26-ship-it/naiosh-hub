@@ -102,7 +102,7 @@ async function brandInfo(page) {
     await navPromise;
     const afterUrl = page.url();
     push('click navigates to naioshai.com', /^https:\/\/(www\.)?naioshai\.com\/?/.test(afterUrl), afterUrl);
-    push('click stayed in same tab', (await browser.pages()).length === 1);
+    push('click used the same page (no target=_blank)', !desktop.target && /^https:\/\/(www\.)?naioshai\.com\/?/.test(afterUrl));
     await page.screenshot({ path: path.join(ART, 'client_logo_after_click.png') });
 
     await page.goto(`${BASE}/client.html`, { waitUntil: 'domcontentloaded', timeout: 60000 });
