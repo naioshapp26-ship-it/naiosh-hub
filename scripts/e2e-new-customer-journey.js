@@ -394,18 +394,21 @@ async function main() {
 
     // Admin block while logged in as customer
     await page.goto(`${BASE}/dashboard.html`, { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => /client\.html/i.test(location.pathname), { timeout: 12000 }).catch(() => {});
-    const blocked = /client\.html/i.test(page.url());
-    await new Promise((r) => setTimeout(r, 500));
-    const denyText = await visibleText(page);
-    const toastText = await page.evaluate(() => {
-      const el = document.getElementById('cp-toast');
-      return el ? el.textContent : '';
-    });
+    await new Promise((r) => setTimeout(r, 800));
+    const dashState = await page.evaluate(() => ({
+      path: location.pathname,
+      status: document.title,
+      text: document.body ? document.body.innerText : '',
+      hasOpsSidebar: !!document.querySelector('aside.sidebar #sidebar-nav, #panel-root'),
+    }));
+    const blocked =
+      /ليس لديك صلاحية/.test(dashState.text) ||
+      /client\.html/i.test(dashState.path) ||
+      !dashState.hasOpsSidebar;
     mark(
       'منع العميل من لوحة الإدارة',
-      blocked && (/ليس لديك صلاحية/.test(denyText + toastText) || blocked),
-      blocked ? '' : 'العميل دخل لوحة الإدارة'
+      blocked,
+      blocked ? '' : `path=${dashState.path} ops=${dashState.hasOpsSidebar}`
     );
 
     const db = await req('GET', '/api/client/me', { token, role: 'customer' });
@@ -423,7 +426,9 @@ async function main() {
     mark('الأرقام الإنجليزية', !latinFail, latinFail ? findings.filter((f) => f.includes('أرقام')).join(' | ') : '');
 
     const seriousNet = report.networkErrors.filter((e) => !/404/.test(e) && !/ORD-1999/.test(e) && !/admin\//.test(e));
-    const seriousCon = report.consoleErrors.filter((e) => !/favicon|Failed to load resource/i.test(e));
+    const seriousCon = report.consoleErrors.filter(
+      (e) => !/favicon|Failed to load resource|403 \(Forbidden\)/i.test(e)
+    );
     mark('Console/API', seriousNet.length === 0 && seriousCon.length === 0, [...seriousNet, ...seriousCon].slice(0, 6).join(' | '));
   } finally {
     await browser.close().catch(() => {});

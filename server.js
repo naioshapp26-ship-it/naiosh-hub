@@ -57,13 +57,14 @@ function send(res, status, body, headers = {}) {
   res.end(body);
 }
 
-function sendJson(res, status, payload) {
+function sendJson(res, status, payload, extraHeaders = {}) {
   send(res, status, JSON.stringify(payload, null, 2), {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Hub-Token, X-Hub-User-Role, X-Hub-User-Name, X-File-Name, X-File-Type, Idempotency-Key',
+    ...extraHeaders,
   });
 }
 
@@ -135,6 +136,31 @@ function serveStatic(req, res) {
   const filePath = resolveSafePath(pathname);
   if (!filePath) {
     return send(res, 403, 'Forbidden');
+  }
+
+  const adminPages = new Set([
+    'dashboard.html',
+    'roles-permissions.html',
+    'search-admin.html',
+    'rent-admin.html',
+    'ops-catalog-admin.html',
+    'side-project-registrations.html',
+  ]);
+  const base = path.basename(filePath).toLowerCase();
+  if (adminPages.has(base)) {
+    const session = hubSession.resolveSession(req);
+    if (session.ok && hubSession.isClientLane(session.lane) && !hubSession.isStaffLane(session.lane)) {
+      const html =
+        '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+        '<title>غير مصرح</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">' +
+        '<style>body{font-family:Cairo,sans-serif;background:#fff5f5;color:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}' +
+        '.box{background:#fff;border:1px solid #fecaca;border-radius:16px;padding:28px;max-width:420px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.06)}' +
+        'a{color:#d70000;font-weight:800;text-decoration:none}</style></head><body><div class="box">' +
+        '<h1 style="margin:0 0 10px">ليس لديك صلاحية للوصول إلى هذه الصفحة.</h1>' +
+        '<p style="margin:0 0 16px;color:#555;font-weight:700">هذه الصفحة مخصصة لفريق التشغيل فقط.</p>' +
+        '<a href="/client.html">العودة إلى مركز العميل</a></div></body></html>';
+      return send(res, 403, html, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    }
   }
 
   fs.stat(filePath, (err, stat) => {
@@ -369,8 +395,16 @@ async function handleHubApi(req, res, pathname) {
     const body = await readBody(req);
     try {
       const customer = {
-        id: session.userId || session.id || session.email,
-        email: session.email,
+            id: session.userId || session.id || session.email,
+            clientId: (() => {
+              try {
+                const st = hubClientPortal.readStore();
+                return hubClientPortal.ensureClient(st, session.email, session.name)?.clientId;
+              } catch {
+                return session.email;
+              }
+            })(),
+            email: session.email,
         name: body?.customer?.name || body?.customerName || session.name || session.fullName || session.email,
         phone: body?.customer?.phone || body?.customerPhone || session.phone || '',
         country: body?.customer?.country || body?.customerCountry || session.country || '',
@@ -397,11 +431,23 @@ async function handleHubApi(req, res, pathname) {
       try {
         const portalStore = hubClientPortal.readStore();
         created.forEach((c) => {
-          if (c?.order) hubClientPortal.attachProductOrder(portalStore, productOrders.enrichOrder(c.order));
+          const order = c?.order;
+          if (!order) return;
+          hubPoshaOps.emitEvent(portalStore, {
+            type: 'ORDER_CREATED',
+            clientEmail: order.customerEmail,
+            actorId: session.email,
+            actorRole: 'client',
+            title: 'تم إنشاء طلبك',
+            message: `طلب ${order.number} — ${order.productName}`,
+            metadata: { orderId: order.id, orderNumber: order.number, invoiceNumber: order.invoiceNumber },
+            forceClient: true,
+            forceAdmin: true,
+          });
         });
         hubClientPortal.writeStore(portalStore);
       } catch {
-        /* portal mirror must not fail checkout */
+        /* notification must not fail checkout */
       }
       sendJson(res, 201, {
         ok: true,
@@ -1431,17 +1477,22 @@ const server = http.createServer((req, res) => {
             /* ignore */
           }
         }
-        sendJson(res, result.status || (result.ok ? 201 : 400), {
-          success: !!result.ok,
-          ok: !!result.ok,
-          message: result.message || result.error || '',
-          error: result.ok ? undefined : result.error,
-          field: result.field,
-          strength: result.strength,
-          token: result.token,
-          user: result.user,
-          destination: result.ok ? 'client.html' : undefined,
-        });
+        sendJson(
+          res,
+          result.status || (result.ok ? 201 : 400),
+          {
+            success: !!result.ok,
+            ok: !!result.ok,
+            message: result.message || result.error || '',
+            error: result.ok ? undefined : result.error,
+            field: result.field,
+            strength: result.strength,
+            token: result.token,
+            user: result.user,
+            destination: result.ok ? 'client.html' : undefined,
+          },
+          result.ok && result.token ? { 'Set-Cookie': hubSession.sessionCookieHeader(result.token) } : {}
+        );
       })
       .catch((error) => {
         const status = error.status || 400;
@@ -1473,15 +1524,20 @@ const server = http.createServer((req, res) => {
             /* ignore */
           }
         }
-        sendJson(res, result.status || (result.ok ? 200 : 401), {
-          success: !!result.ok,
-          ok: !!result.ok,
-          message: result.message || result.error || '',
-          error: result.ok ? undefined : result.error,
-          token: result.token,
-          user: result.user,
-          destination: result.ok ? hubSession.postLoginDestination(result.user?.role || 'customer') : undefined,
-        });
+        sendJson(
+          res,
+          result.status || (result.ok ? 200 : 401),
+          {
+            success: !!result.ok,
+            ok: !!result.ok,
+            message: result.message || result.error || '',
+            error: result.ok ? undefined : result.error,
+            token: result.token,
+            user: result.user,
+            destination: result.ok ? hubSession.postLoginDestination(result.user?.role || 'customer') : undefined,
+          },
+          result.ok && result.token ? { 'Set-Cookie': hubSession.sessionCookieHeader(result.token) } : {}
+        );
       })
       .catch((error) => {
         const status = error.status || 400;
@@ -1608,8 +1664,15 @@ async function boot() {
     }
   }
 
-  try {
-    await hubClientPortal.ensureDemoClientAccount();
+    try {
+      const hyd = await productOrders.hydrateFromDb();
+      if (hyd?.ok) console.log(`hub_orders hydrated from database (${hyd.count || 0})`);
+    } catch (error) {
+      console.error('hub_orders hydrate skipped:', error.message);
+    }
+
+    try {
+      await hubClientPortal.ensureDemoClientAccount();
     console.log('Demo client ready: client@naiosh.com');
   } catch (error) {
     console.error('Demo client seed skipped:', error.message);

@@ -125,6 +125,9 @@
     }
     storage.setItem(TOKEN_KEY, token);
     storage.setItem(USER_KEY, JSON.stringify(user));
+    try {
+      document.cookie = 'hub_session=' + encodeURIComponent(token) + '; Path=/; SameSite=Lax; Max-Age=2592000';
+    } catch (_) {}
     window.HubStore?.recordActivity?.('auth', `تسجيل دخول: ${user.name || user.email}`, {
       email: user.email,
       role: user.role,
@@ -155,6 +158,9 @@
     localStorage.removeItem(USER_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
+    try {
+      document.cookie = 'hub_session=; Path=/; SameSite=Lax; Max-Age=0';
+    } catch (_) {}
   };
 
   const loginUrl = ({ next = '', system = '' } = {}) => {
