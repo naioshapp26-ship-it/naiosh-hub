@@ -201,7 +201,14 @@
   }
 
   function logout() {
+    var go = function () {
+      window.location.href = 'login.html';
+    };
     try {
+      if (window.HubAuth && HubAuth.clearSessionAsync) {
+        HubAuth.clearSessionAsync().then(go).catch(go);
+        return;
+      }
       if (window.HubAuth && HubAuth.clearSession) HubAuth.clearSession();
       else {
         localStorage.removeItem('hubAuthToken');
@@ -210,7 +217,7 @@
         sessionStorage.removeItem('hubUser');
       }
     } catch (e) {}
-    window.location.href = 'login.html';
+    go();
   }
 
   function ensureClient() {

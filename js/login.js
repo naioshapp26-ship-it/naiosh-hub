@@ -98,8 +98,15 @@ function fillLogin(email, password, autoSubmit = true) {
     }
 
     setLoading(true);
+    // End any prior identity (customer/admin) before accepting a new login —
+    // clears HttpOnly hub_session so the next account is not mixed with the last.
+    if (window.HubAuth?.clearSessionAsync) {
+      await window.HubAuth.clearSessionAsync().catch(() => null);
+    } else if (window.HubAuth?.clearSession) {
+      window.HubAuth.clearSession();
+    }
     await window.HubPlatformGrants?.hydrate?.().catch?.(() => null);
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     const demo = DEMO_USERS[email];
     const localTenant = (() => {
@@ -139,7 +146,10 @@ function fillLogin(email, password, autoSubmit = true) {
           ...customerData.user,
           role: 'customer',
           name: customerData.user.name || customerData.user.fullName || email,
+          customerId: customerData.user.customerId || customerData.user.clientId || customerData.user.id,
+          clientId: customerData.user.clientId || customerData.user.customerId || '',
         };
+        delete customerUser.employeeNo;
         if (customerData.token) {
           // Prefer server token when present
           window.__hubCustomerToken = customerData.token;
@@ -162,6 +172,8 @@ function fillLogin(email, password, autoSubmit = true) {
     }
 
     let user = null;
+    // Demo/staff identities win over customer API so Admin/Employee switching
+    // cannot be poisoned by a customer row or stale cookie for the same email.
     if (demo && demo.password === password) {
       user = {
         email,
@@ -169,7 +181,7 @@ function fillLogin(email, password, autoSubmit = true) {
         role: demo.role,
         platform: 'naiosh-hub-360',
       };
-    } else if (customerUser) {
+    } else if (customerUser && !demo) {
       user = {
         email: customerUser.email,
         name: customerUser.name,
@@ -179,6 +191,8 @@ function fillLogin(email, password, autoSubmit = true) {
         role: 'customer',
         platform: customerUser.platform || 'naiosh-hub-360',
         id: customerUser.id,
+        customerId: customerUser.customerId || customerUser.clientId || customerUser.id,
+        clientId: customerUser.clientId || customerUser.customerId || '',
       };
     } else if (serverUser) {
       user = serverUser;
@@ -264,9 +278,25 @@ function fillLogin(email, password, autoSubmit = true) {
   });
 
   window.addEventListener('load', () => {
+    const params = new URLSearchParams(window.location.search);
+    const prefillEmail = (params.get('email') || '').trim().toLowerCase();
+    const switchAccount = params.get('switch') === '1' || params.get('switch') === 'true';
+    if (prefillEmail) {
+      const emailInput = document.getElementById('email');
+      if (emailInput && !emailInput.value) emailInput.value = prefillEmail;
+    }
+    // Explicit account switch: end prior session and stay on the form.
+    if (switchAccount && window.HubAuth?.clearSessionAsync) {
+      window.HubAuth.clearSessionAsync().catch(() => null);
+      return;
+    }
+
     const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
     if (!token) return;
-    const params = new URLSearchParams(window.location.search);
+    // If arriving from registration with ?email=, prefer the login form over auto-redirect
+    // so the new customer (or another account) can authenticate cleanly.
+    if (prefillEmail) return;
+
     const next = params.get('next') || '';
     let dest = 'dashboard.html';
     try {

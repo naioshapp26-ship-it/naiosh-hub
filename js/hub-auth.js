@@ -6,9 +6,16 @@
 
   const TOKEN_KEY = 'hubAuthToken';
   const USER_KEY = 'hubUser';
+  /** Auth-only keys — never wipe unrelated drafts / booking / prefs. */
+  const AUTH_STORAGE_KEYS = [TOKEN_KEY, USER_KEY, 'hubAuthFlash'];
 
   const STAFF_ROLES = new Set(['supreme_leader', 'chief_engineer', 'admin', 'super_admin']);
   const CLIENT_ROLES = new Set(['customer', 'client', 'client_user', 'platform_owner']);
+
+  const DEMO_STAFF = {
+    'leader@naiosh.com': { role: 'supreme_leader', employeeNo: 'EMP-0001', naioshId: 'NAI-LEADER-001' },
+    'malika@naiosh.com': { role: 'chief_engineer', employeeNo: 'EMP-0003', naioshId: 'NAI-MALIKA-001' },
+  };
 
   const storageOf = () => {
     if (localStorage.getItem(TOKEN_KEY)) return localStorage;
@@ -99,29 +106,74 @@
     return 'client.html';
   };
 
+  const clearLocalAuthKeys = () => {
+    AUTH_STORAGE_KEYS.forEach((key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch (_) {}
+      try {
+        sessionStorage.removeItem(key);
+      } catch (_) {}
+    });
+    try {
+      // Best-effort for non-HttpOnly leftovers; HttpOnly cleared via /api/auth/logout
+      document.cookie = 'hub_session=; Path=/; SameSite=Lax; Max-Age=0';
+    } catch (_) {}
+  };
+
+  const endServerSession = () => {
+    try {
+      return fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        keepalive: true,
+      }).catch(() => null);
+    } catch (_) {
+      return Promise.resolve(null);
+    }
+  };
+
   const setSession = (user, token, { remember = true } = {}) => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(USER_KEY);
+    clearLocalAuthKeys();
     const storage = remember ? localStorage : sessionStorage;
     const role = String(user?.role || '').toLowerCase();
     const customerOnly = CLIENT_ROLES.has(role) && !STAFF_ROLES.has(role);
+    const emailKey = String(user?.email || '').toLowerCase();
     if (customerOnly) {
-      if (user && (user.employeeNo || user.employeeNo === '')) {
-        user = { ...user };
-        delete user.employeeNo;
-      }
+      user = { ...user };
+      delete user.employeeNo;
+      delete user.naioshId;
+      // Never promote customer → staff from stale browser state
+      user.role = 'customer';
+      if (!user.customerId && user.clientId) user.customerId = user.clientId;
+      if (!user.clientId && user.customerId) user.clientId = user.customerId;
     } else {
-      try {
-        const id =
-          window.HubAccessGov?.findIdentity?.(user?.email) ||
-          window.HubAccessGov?.findIdentity?.(user?.naioshId) ||
-          null;
-        if (id?.employeeNo && id.userType === 'STAFF') {
-          user = { ...user, employeeNo: id.employeeNo, naioshId: id.naioshId || user.naioshId };
-        }
-      } catch (_) {}
+      const demo = DEMO_STAFF[emailKey];
+      if (demo) {
+        user = {
+          ...user,
+          role: STAFF_ROLES.has(role) ? role : demo.role,
+          employeeNo: demo.employeeNo,
+          naioshId: demo.naioshId,
+        };
+      } else {
+        try {
+          const id =
+            window.HubAccessGov?.findIdentity?.(user?.email) ||
+            window.HubAccessGov?.findIdentity?.(user?.naioshId) ||
+            null;
+          if (id?.employeeNo && id.userType === 'STAFF') {
+            user = { ...user, employeeNo: id.employeeNo, naioshId: id.naioshId || user.naioshId };
+          }
+        } catch (_) {}
+      }
+      // Staff must not carry customer portal IDs from a previous browser account
+      if (user) {
+        user = { ...user };
+        delete user.customerId;
+        delete user.clientId;
+      }
     }
     storage.setItem(TOKEN_KEY, token);
     storage.setItem(USER_KEY, JSON.stringify(user));
@@ -132,6 +184,7 @@
       email: user.email,
       role: user.role,
       employeeNo: user.employeeNo || null,
+      customerId: user.customerId || null,
     });
     try {
       syncPublicAuthUi();
@@ -154,13 +207,15 @@
   };
 
   const clearSession = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(USER_KEY);
-    try {
-      document.cookie = 'hub_session=; Path=/; SameSite=Lax; Max-Age=0';
-    } catch (_) {}
+    clearLocalAuthKeys();
+    endServerSession();
+  };
+
+  /** Awaitable logout — clears HttpOnly hub_session via API, then auth keys only. */
+  const clearSessionAsync = async () => {
+    clearLocalAuthKeys();
+    await endServerSession();
+    clearLocalAuthKeys();
   };
 
   const loginUrl = ({ next = '', system = '' } = {}) => {
@@ -387,6 +442,7 @@
     postLoginDestination,
     setSession,
     clearSession,
+    clearSessionAsync,
     syncPublicAuthUi,
     loginUrl,
     requireLogin,

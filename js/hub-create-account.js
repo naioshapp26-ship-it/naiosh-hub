@@ -246,27 +246,30 @@
         return;
       }
 
-      const user = {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.name || data.user.fullName,
-        fullName: data.user.fullName || data.user.name,
-        username: data.user.username,
-        phone: data.user.phone,
-        role: 'customer',
-        platform: data.user.platform || 'naiosh-hub-360',
-      };
-      const token = data.token || `hub360.${btoa(user.email)}.${Date.now()}`;
-      if (window.HubAuth?.setSession) {
-        window.HubAuth.setSession(user, token, { remember: true });
+      // Registration must NOT leave an authenticated session.
+      // Clear any prior identity so a later Admin/Employee login is not blocked.
+      if (window.HubAuth?.clearSessionAsync) {
+        await window.HubAuth.clearSessionAsync().catch(() => null);
+      } else if (window.HubAuth?.clearSession) {
+        window.HubAuth.clearSession();
       } else {
-        localStorage.setItem('hubAuthToken', token);
-        localStorage.setItem('hubUser', JSON.stringify(user));
+        try {
+          localStorage.removeItem('hubAuthToken');
+          localStorage.removeItem('hubUser');
+          sessionStorage.removeItem('hubAuthToken');
+          sessionStorage.removeItem('hubUser');
+        } catch (_) {}
       }
 
       form?.classList.add('hidden');
       successPanel?.classList.remove('hidden');
-      showAlert('تم إنشاء الحساب بنجاح', 'success');
+      const customerId = data.user.customerId || data.user.clientId || data.user.id || '';
+      showAlert(
+        customerId
+          ? `تم إنشاء الحساب بنجاح. رقم العميل: ${customerId}. سيتم تحويلك لتسجيل الدخول.`
+          : 'تم إنشاء الحساب بنجاح. سيتم تحويلك لتسجيل الدخول.',
+        'success'
+      );
       const params = new URLSearchParams(location.search);
       const next = params.get('next') || '';
       const safeNext =
@@ -277,8 +280,11 @@
         /^[a-zA-Z0-9_\-./?#=&%]+$/.test(next)
           ? next
           : '';
+      const loginUrl = new URL('login.html', location.href);
+      if (data.user.email) loginUrl.searchParams.set('email', data.user.email);
+      if (safeNext) loginUrl.searchParams.set('next', safeNext);
       setTimeout(() => {
-        window.location.href = safeNext || data.destination || 'client.html';
+        window.location.href = loginUrl.pathname + loginUrl.search;
       }, 900);
     } catch {
       showAlert('حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.');
