@@ -179,10 +179,20 @@ async function runTxPart() {
       await new Promise((r) => setTimeout(r, 250));
     }
     await page.waitForSelector('[data-ads-submit]', { timeout: 8000 });
-    await jsClick('[data-ads-submit]');
-    await page.waitForFunction(() => /تم إرسال الإعلان للمراجعة/.test(document.body.innerText), {
-      timeout: 15000,
+    await page.evaluate(() => {
+      const name = document.querySelector('[data-draft="ownerName"]');
+      const email = document.querySelector('[data-draft="ownerEmail"]');
+      const phone = document.querySelector('[data-draft="ownerPhone"]');
+      if (name && !name.value) name.value = 'عميل اختبار';
+      if (email && !email.value) email.value = 'client@naiosh.com';
+      if (phone) phone.value = '+966512345678';
+      [name, email, phone].forEach((el) => el && el.dispatchEvent(new Event('input', { bubbles: true })));
     });
+    await jsClick('[data-ads-submit]');
+    await page.waitForFunction(
+      () => /تم إرسال إعلانك للمراجعة بنجاح|تم إرسال الإعلان للمراجعة/.test(document.body.innerText),
+      { timeout: 20000 }
+    );
 
     const submitInfo = await page.evaluate(() => {
       const ads = HubStore.get().empire.adsStudio.listings || [];
@@ -198,12 +208,21 @@ async function runTxPart() {
         sourcePage: req && req.sourcePage,
         typeLabel: req && req.requestTypeLabel,
         status: req && req.status,
+        ownerType: req && req.ownerType,
+        phone: req && req.phone,
+        email: req && req.email,
       };
     });
     console.log('submitInfo', submitInfo);
     assert.ok(submitInfo.requestId, 'missing Request ID');
-    assert.ok(submitInfo.sourceModule === 'إدارة الإعلانات' || submitInfo.sourcePage === 'الإعلانات');
+    assert.ok(
+      submitInfo.sourceModule === 'الإعلانات' ||
+        submitInfo.sourceModule === 'إدارة الإعلانات' ||
+        submitInfo.sourcePage === 'الإعلانات'
+    );
     assert.equal(submitInfo.typeLabel, 'طلب نشر إعلان');
+    assert.ok(submitInfo.phone, 'owner phone missing on request');
+    assert.ok(submitInfo.email, 'owner email missing on request');
     mark('إرسال الطلب', 'إنشاء Request ID', true);
     await page.screenshot({ path: path.join(OUT, 'ads_submit_success.png') });
 

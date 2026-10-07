@@ -267,8 +267,18 @@
       form?.classList.add('hidden');
       successPanel?.classList.remove('hidden');
       showAlert('تم إنشاء الحساب بنجاح', 'success');
+      const params = new URLSearchParams(location.search);
+      const next = params.get('next') || '';
+      const safeNext =
+        next &&
+        !next.startsWith('http') &&
+        !next.includes('://') &&
+        !/dashboard\.html/i.test(next) &&
+        /^[a-zA-Z0-9_\-./?#=&%]+$/.test(next)
+          ? next
+          : '';
       setTimeout(() => {
-        window.location.href = data.destination || 'client.html';
+        window.location.href = safeNext || data.destination || 'client.html';
       }, 900);
     } catch {
       showAlert('حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.');
@@ -285,9 +295,19 @@
   if (window.HubAuth?.isLoggedIn?.()) {
     const user = window.HubAuth.getUser();
     if (user?.role === 'customer' || user?.role === 'client') {
+      const params = new URLSearchParams(location.search);
+      const next = params.get('next') || '';
+      const safeNext =
+        next &&
+        !next.startsWith('http') &&
+        !next.includes('://') &&
+        !/dashboard\.html/i.test(next) &&
+        /^[a-zA-Z0-9_\-./?#=&%]+$/.test(next)
+          ? next
+          : 'client.html';
       showAlert('لديك جلسة نشطة. جاري تحويلك...', 'info');
       setTimeout(() => {
-        window.location.href = 'client.html';
+        window.location.href = safeNext;
       }, 700);
     }
   }

@@ -19,6 +19,7 @@ const hubPoshaOps = require('./lib/hub-posha-ops');
 const hubPoshaOs = require('./lib/hub-posha-os');
 const productCategories = require('./lib/hub-product-categories');
 const productOrders = require('./lib/hub-product-orders');
+const adSubmissions = require('./lib/hub-ad-submissions');
 const hubSystemSettings = require('./lib/hub-system-settings');
 const hubMarketingCampaigns = require('./lib/hub-marketing-campaigns');
 const hubEvents = require('./lib/hub-events');
@@ -798,6 +799,106 @@ async function handleHubApi(req, res, pathname) {
     const config = body?.config && typeof body.config === 'object' ? body.config : undefined;
     writeCatalogFile(items, config);
     sendJson(res, 200, { ok: true, count: items.length });
+    return true;
+  }
+
+  if (pathname === '/api/hub/ad-submissions' && req.method === 'GET') {
+    let session;
+    try {
+      session = hubSession.requireAuth(req);
+    } catch (err) {
+      sendJson(res, err.status || 401, { ok: false, error: err.message || 'مطلوب تسجيل الدخول' });
+      return true;
+    }
+    const staff = hubSession.isStaffLane(session.lane);
+    const list = adSubmissions.listSubmissions({ email: session.email, staff });
+    sendJson(res, 200, {
+      ok: true,
+      staff,
+      count: list.length,
+      submissions: list,
+      requests: list.map((s) => adSubmissions.toAdminRequest(s)),
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/ad-submissions' && req.method === 'POST') {
+    const body = await readBody(req);
+    const session = hubSession.resolveSession(req);
+    const authed = session.ok ? session : null;
+    try {
+      const result = adSubmissions.createSubmission({
+        session: authed,
+        guestContact: body?.owner || body?.guestContact || body?.contact || null,
+        ad: body?.ad || body || {},
+        idempotencyKey: body?.idempotencyKey || '',
+        claimedCustomerId: body?.customerId || body?.claimedCustomerId || '',
+      });
+      const persistResults = result.persisted ? await result.persisted : { ok: false };
+      try {
+        if (result.submission && !result.duplicate) {
+          const portalStore = hubClientPortal.readStore();
+          hubPoshaOps.emitEvent(portalStore, {
+            type: 'AD_SUBMISSION_CREATED',
+            clientEmail: result.submission.ownerEmail,
+            actorId: result.submission.ownerEmail,
+            actorRole: result.submission.ownerType === 'Customer' ? 'client' : 'guest',
+            title: 'طلب نشر إعلان',
+            message: `طلب ${result.submission.requestId} — ${result.submission.title}`,
+            metadata: {
+              requestId: result.submission.requestId,
+              adId: result.submission.adId,
+              adCode: result.submission.adCode,
+              ownerType: result.submission.ownerType,
+              customerId: result.submission.customerId,
+              guestContactId: result.submission.guestContactId,
+            },
+            forceClient: result.submission.ownerType === 'Customer',
+            forceAdmin: true,
+          });
+          hubClientPortal.writeStore(portalStore);
+        }
+      } catch {
+        /* notification must not fail submit */
+      }
+      sendJson(res, result.duplicate ? 200 : 201, {
+        ok: true,
+        duplicate: !!result.duplicate,
+        dbPersisted: !!(persistResults && persistResults.ok),
+        submission: result.submission,
+        request: adSubmissions.toAdminRequest(result.submission),
+      });
+    } catch (err) {
+      sendJson(res, err.status || 400, {
+        ok: false,
+        error: err.message || 'تعذر إرسال الإعلان.',
+        field: err.field,
+        code: err.code,
+      });
+    }
+    return true;
+  }
+
+  const adSubMatch = pathname.match(/^\/api\/hub\/ad-submissions\/([^/]+)$/);
+  if (adSubMatch && req.method === 'GET') {
+    let session;
+    try {
+      session = hubSession.requireAuth(req);
+    } catch (err) {
+      sendJson(res, err.status || 401, { ok: false, error: err.message || 'مطلوب تسجيل الدخول' });
+      return true;
+    }
+    try {
+      const submission = adSubmissions.getSubmission(decodeURIComponent(adSubMatch[1]));
+      adSubmissions.assertCanView(submission, session);
+      sendJson(res, 200, {
+        ok: true,
+        submission,
+        request: adSubmissions.toAdminRequest(submission),
+      });
+    } catch (err) {
+      sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحميل الطلب' });
+    }
     return true;
   }
 
@@ -1682,6 +1783,13 @@ async function boot() {
       if (hyd?.ok) console.log(`hub_orders hydrated from database (${hyd.count || 0})`);
     } catch (error) {
       console.error('hub_orders hydrate skipped:', error.message);
+    }
+
+    try {
+      const adHyd = await adSubmissions.hydrateFromDb();
+      if (adHyd?.ok) console.log(`hub_ad_submissions hydrated from database (${adHyd.count || 0})`);
+    } catch (error) {
+      console.error('hub_ad_submissions hydrate skipped:', error.message);
     }
 
     try {
