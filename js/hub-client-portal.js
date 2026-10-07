@@ -810,8 +810,8 @@
       '<form class="cp-form" id="cp-password-form">' +
         '<h4 style="margin:0">تغيير كلمة المرور</h4>' +
         '<div class="cp-field"><label>كلمة المرور الحالية</label><input type="password" name="currentPassword" required autocomplete="current-password"></div>' +
-        '<div class="cp-field"><label>كلمة المرور الجديدة</label><input type="password" name="newPassword" required minlength="8" autocomplete="new-password"></div>' +
-        '<div class="cp-field"><label>تأكيد كلمة المرور الجديدة</label><input type="password" name="confirmPassword" required minlength="8" autocomplete="new-password"></div>' +
+        '<div class="cp-field"><label>كلمة المرور الجديدة</label><input type="password" name="newPassword" required autocomplete="new-password"></div>' +
+        '<div class="cp-field"><label>تأكيد كلمة المرور الجديدة</label><input type="password" name="confirmPassword" required autocomplete="new-password"></div>' +
         '<button type="submit" class="cp-btn cp-btn-primary">حفظ</button>' +
       '</form>' +
       '<div style="margin-top:18px;border-top:1px solid var(--cp-line);padding-top:14px">' +
