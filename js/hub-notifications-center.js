@@ -331,11 +331,15 @@
   };
 
   const openNote = (id) => {
+    if (window.HubNotificationRouter?.openNotification) {
+      window.HubNotificationRouter.openNotification(id);
+      return;
+    }
     const n = (store()?.get?.()?.notifications || []).find((x) => x.id === id);
     if (!n) return;
     store()?.markNotificationRead?.(id);
     const link = n.actionLink || n.link || n.sourceLink;
-    if (link) window.location.href = link;
+    if (link && !/^dashboard\.html/i.test(link)) window.location.href = link;
   };
 
   const handle = (action, btn, ctx = {}) => {
