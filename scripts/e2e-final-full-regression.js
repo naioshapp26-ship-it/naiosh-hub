@@ -22,10 +22,19 @@ const ART = '/opt/cursor/artifacts';
 fs.mkdirSync(ART, { recursive: true });
 
 const stamp = Date.now().toString(36);
-const PW = process.env.HUB_E2E_PASSWORD || 'Hub@360';
-const EMP1 = { email: 'leader@naiosh.com', employeeNo: 'EMP-0001', role: 'supreme_leader' };
+// Production Super Admin identity (migrated EMP-0001). Legacy demos need HUB_ALLOW_LEGACY_DEMO=1.
+const PW = process.env.HUB_E2E_PASSWORD || process.env.HUB_SUPER_ADMIN_INITIAL_PASSWORD || '';
+const EMP1 = {
+  email: process.env.HUB_SUPER_ADMIN_EMAIL || 'naioshhub@example.com',
+  employeeNo: 'EMP-0001',
+  role: 'supreme_leader',
+};
 const EMP3 = { email: 'malika@naiosh.com', employeeNo: 'EMP-0003', role: 'chief_engineer' };
 const VIEWER = { email: 'viewer@naiosh.com', employeeNo: 'EMP-0099', role: 'admin' };
+if (!PW) {
+  console.error('Set HUB_E2E_PASSWORD or HUB_SUPER_ADMIN_INITIAL_PASSWORD (never commit secrets).');
+  process.exit(2);
+}
 
 const TINY_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
