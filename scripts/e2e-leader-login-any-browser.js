@@ -80,7 +80,7 @@ async function launch() {
   return puppeteer.launch({
     executablePath: process.env.CHROME_PATH || '/usr/local/bin/google-chrome',
     headless: 'new',
-    protocolTimeout: 120000,
+    protocolTimeout: 180000,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1280,800'],
     defaultViewport: { width: 1280, height: 800 },
   });
