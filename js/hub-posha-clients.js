@@ -1341,18 +1341,31 @@
     ];
     let body = '';
     if (tab === 'overview') {
+      const ownerType = r.ownerType || r.customer?.ownerType || (r.isGuest ? 'Guest' : r.customerId ? 'Customer' : '');
+      const isGuestOwner = ownerType === 'Guest' || !!r.isGuest;
+      const ownerTypeLabel = isGuestOwner ? 'زائر' : ownerType === 'Customer' ? 'عميل' : '—';
       body = `<div class="posha-req-grid">
         <article>
-          <h4>بيانات العميل</h4>
+          <h4>بيانات صاحب الطلب</h4>
           <ul class="feed">
-            <li><b>الاسم:</b> <button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.email || '')}">${esc(r.customerName || r.customer?.name || '—')}</button></li>
-            <li><b>معرّف العميل:</b> ${esc(r.customerId || '—')}</li>
-            <li><b>الشركة:</b> ${esc(r.company || '—')}</li>
-            <li><b>الهاتف:</b> ${esc(r.phone || '—')}</li>
-            <li><b>البريد:</b> ${esc(r.email || '—')}</li>
+            <li><b>نوع صاحب الطلب:</b> ${esc(ownerTypeLabel)}</li>
+            <li><b>الاسم:</b> ${
+              isGuestOwner
+                ? esc(r.customerName || r.customer?.name || '—')
+                : `<button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.email || '')}">${esc(r.customerName || r.customer?.name || '—')}</button>`
+            }</li>
+            <li><b>معرّف العميل:</b> ${esc(isGuestOwner ? '—' : r.customerId || '—')}</li>
+            ${isGuestOwner ? `<li><b>معرّف تواصل الزائر:</b> <code>${esc(r.guestContactId || r.customer?.guestContactId || '—')}</code></li>` : ''}
+            <li><b>الشركة / الجهة:</b> ${esc(r.company || r.customer?.company || '—')}</li>
+            <li><b>الهاتف:</b> ${esc(r.phone || r.customer?.phone || '—')}</li>
+            <li><b>البريد:</b> ${esc(r.email || r.customer?.email || '—')}</li>
             <li><b>الفرع:</b> ${esc(r.branch || '—')}</li>
           </ul>
-          <button type="button" class="btn btn-dark btn-sm" data-open-posha="${esc(r.email || '')}">فتح ملف العميل</button>
+          ${
+            isGuestOwner
+              ? '<p class="posha-muted">صاحب الطلب زائر — لا يوجد ملف عميل مرتبط تلقائياً.</p>'
+              : `<button type="button" class="btn btn-dark btn-sm" data-open-posha="${esc(r.email || '')}">فتح ملف العميل</button>`
+          }
         </article>
         <article>
           <h4>بيانات الطلب</h4>
@@ -1409,6 +1422,7 @@
           <h4>معاينة الإعلان قبل القرار</h4>
           <div style="margin:10px 0">${media}</div>
           <ul class="feed">
+            <li><b>رقم الطلب:</b> <code>${esc(r.requestId || r.id || '—')}</code></li>
             <li><b>Ad ID:</b> <code>${esc(adSnap.adCode || adSnap.id || r.referenceId || '—')}</code></li>
             <li><b>اسم الإعلان:</b> ${esc(adSnap.title || '—')}</li>
             <li><b>نوع الإعلان:</b> ${esc(adSnap.contentType || '—')}</li>
@@ -2449,7 +2463,7 @@
             apiWarn = apiWarn || errText(e);
             return null;
           });
-        const [clients, tickets, events, issues, notifs, hubEventReqs, hubArticleReqs] = await Promise.all([
+        const [clients, tickets, events, issues, notifs, hubEventReqs, hubArticleReqs, hubAdSubs] = await Promise.all([
           soft('/api/admin/posha/clients'),
           soft('/api/admin/posha/tickets'),
           soft('/api/admin/posha/events'),
@@ -2457,6 +2471,7 @@
           soft('/api/admin/posha/notifications'),
           soft('/api/hub/events/requests'),
           soft('/api/hub/articles/requests'),
+          soft('/api/hub/ad-submissions'),
         ]);
         if (clients) {
           state.clients = clients.clients || [];
@@ -2482,6 +2497,11 @@
               cr()?.ingestHubArticleRequest?.(item);
             } catch (_) {}
           });
+        }
+        if (hubAdSubs && Array.isArray(hubAdSubs.requests)) {
+          try {
+            cr()?.mergeServerAdRequests?.(hubAdSubs.requests);
+          } catch (_) {}
         }
         _lastApiWarn = apiWarn;
         await paintBody();

@@ -245,9 +245,14 @@
   const normalizeFromSolutions = (r) => {
     const type = r.requestType || 'Solution Request';
     const route = routeFor(type);
+    const ownerType = r.ownerType || r.customer?.ownerType || (r.isGuest ? 'Guest' : r.customerId ? 'Customer' : '');
     return {
       id: r.id || r.requestId,
       requestId: r.requestId || r.id,
+      ownerType: ownerType || undefined,
+      isGuest: ownerType === 'Guest' || !!r.isGuest,
+      guestContactId: r.guestContactId || r.customer?.guestContactId || '',
+      serverSubmissionId: r.serverSubmissionId || '',
       customerId: r.customerId || '',
       customerName: r.customer?.name || r.customerName || '',
       company: r.customer?.company || r.company || '',
@@ -624,6 +629,13 @@
       adEndDate: ad.adEndDate,
       rejectionReason: ad.rejectionReason || '',
     };
+    const ownerType = ad.ownerType || (ad.isGuest ? 'Guest' : ad.customerId ? 'Customer' : row?.ownerType || 'Guest');
+    const ownerName = ad.ownerName || ad.createdBy || actor;
+    const ownerEmail = ad.ownerEmail || row?.email || '';
+    const ownerPhone = ad.ownerPhone || row?.phone || '';
+    const ownerCompany = ad.ownerCompany || row?.company || '';
+    const customerId = ownerType === 'Customer' ? ad.customerId || row?.customerId || '' : '';
+    const guestContactId = ownerType === 'Guest' ? ad.guestContactId || row?.guestContactId || '' : '';
     if (row) {
       const prevStatus = row.status;
       const nextStatus =
@@ -636,7 +648,7 @@
         requestTypeLabel: 'طلب نشر إعلان',
         referenceType: 'Ad',
         referenceId: ad.id,
-        sourceModule: 'إدارة الإعلانات',
+        sourceModule: 'الإعلانات',
         sourcePage: 'الإعلانات',
         sourceUrl: 'ads.html',
         sourceAction: 'نشر إعلان',
@@ -644,8 +656,25 @@
         assignedTo: row.assignedTo || 'Ads Desk',
         adSnapshot: snapshot,
         updatedAt: nowIso(),
-        customerName: ad.createdBy || row.customerName || actor,
+        ownerType,
+        isGuest: ownerType === 'Guest',
+        customerId,
+        guestContactId,
+        customerName: ownerName,
+        email: ownerEmail,
+        phone: ownerPhone,
+        company: ownerCompany,
+        customer: {
+          name: ownerName,
+          email: ownerEmail,
+          phone: ownerPhone,
+          company: ownerCompany,
+          customerId,
+          ownerType,
+          guestContactId,
+        },
         adPublishStatus: ad.workflowStatus || row.adPublishStatus || '',
+        serverSubmissionId: ad.serverSubmissionId || row.serverSubmissionId || '',
       });
       if (status === 'Pending Review' && !silent && (prevStatus === 'Rejected' || prevStatus === 'Needs Changes')) {
         row.rejectionReason = '';
@@ -659,27 +688,46 @@
     }
     return create(
       {
+        id: ad.requestId || undefined,
+        requestId: ad.requestId || undefined,
         requestType: 'Ad Submission',
         requestTypeLabel: 'طلب نشر إعلان',
         title: `طلب نشر إعلان: ${ad.title || ad.adCode || ad.id}`,
         description: ad.desc || ad.headline || '',
         status: 'Pending Review',
         priority: 'متوسطة',
-        sourceModule: 'إدارة الإعلانات',
+        sourceModule: 'الإعلانات',
         sourcePage: 'الإعلانات',
         sourceUrl: 'ads.html',
         sourceAction: 'نشر إعلان',
         referenceType: 'Ad',
         referenceId: ad.id,
-        customerName: ad.createdBy || actor,
+        ownerType,
+        isGuest: ownerType === 'Guest',
+        customerId,
+        guestContactId,
+        customerName: ownerName,
+        email: ownerEmail,
+        phone: ownerPhone,
+        company: ownerCompany,
+        customer: {
+          name: ownerName,
+          email: ownerEmail,
+          phone: ownerPhone,
+          company: ownerCompany,
+          customerId,
+          ownerType,
+          guestContactId,
+        },
         assignedTo: 'Ads Desk',
         department: 'Marketing',
         channel: 'Web',
         adSnapshot: snapshot,
+        serverSubmissionId: ad.serverSubmissionId || '',
         createdAt: ad.createdAt || nowIso(),
         updatedAt: nowIso(),
       },
-      actor
+      ownerName || actor
     );
   };
 
@@ -1805,6 +1853,38 @@
     return found;
   };
 
+  const upsertServerAdRequest = (req) => {
+    if (!req?.id && !req?.requestId) return null;
+    const id = req.requestId || req.id;
+    let row = get(id) || findByReference('Ad', req.referenceId);
+    if (row) {
+      Object.assign(row, {
+        ...req,
+        id: row.id || id,
+        requestId: row.requestId || id,
+        updatedAt: nowIso(),
+      });
+      save();
+      return row;
+    }
+    const item = normalizeFromSolutions({
+      ...req,
+      id,
+      requestId: id,
+      status: req.status || 'Pending Review',
+      createdAt: req.createdAt || nowIso(),
+      updatedAt: req.updatedAt || nowIso(),
+    });
+    state.requests.unshift(item);
+    save();
+    return item;
+  };
+
+  const mergeServerAdRequests = (requests = []) => {
+    (requests || []).forEach((r) => upsertServerAdRequest(r));
+    return state.requests.filter((r) => r.requestType === 'Ad Submission');
+  };
+
   syncFromModules();
 
   window.HubCustomerRequests = {
@@ -1841,6 +1921,8 @@
     ensureForArticle,
     ingestHubArticleRequest,
     ensureForAd,
+    upsertServerAdRequest,
+    mergeServerAdRequests,
     ensureForEvent,
     ingestHubEventRequest,
     mapArticleStatus,

@@ -7467,11 +7467,13 @@ const HubStore = (() => {
             : 'paused');
     const actor =
       payload.createdBy ||
+      payload.ownerName ||
       window.HubAuth?.getUser?.()?.email ||
       window.HubAuth?.getUser?.()?.name ||
       'عميل';
+    const ownerType = payload.ownerType || (payload.isGuest ? 'Guest' : payload.customerId ? 'Customer' : 'Guest');
     const ad = {
-      id: uid('ad'),
+      id: payload.id || uid('ad'),
       adCode: payload.adCode || nextAdCode(),
       title: payload.title,
       headline: payload.headline || payload.title || '',
@@ -7520,6 +7522,15 @@ const HubStore = (() => {
       scope: payload.scope || deriveAdScope(publishTargets),
       assignee: '',
       createdBy: actor,
+      ownerType,
+      isGuest: ownerType === 'Guest',
+      customerId: ownerType === 'Customer' ? payload.customerId || '' : '',
+      guestContactId: ownerType === 'Guest' ? payload.guestContactId || '' : '',
+      ownerName: payload.ownerName || actor,
+      ownerEmail: payload.ownerEmail || '',
+      ownerPhone: payload.ownerPhone || '',
+      ownerCompany: payload.ownerCompany || '',
+      serverSubmissionId: payload.serverSubmissionId || '',
       createdAt: nowIso(),
       updatedAt: nowIso(),
       activity: [],
