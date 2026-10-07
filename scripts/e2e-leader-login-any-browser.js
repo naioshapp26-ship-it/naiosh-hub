@@ -90,24 +90,19 @@ async function doLogout(page) {
   const tok = await page.evaluate(
     () => localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken') || ''
   );
-  await page.evaluate(async () => {
+  // Revoke via Node HTTP (reliable), then clear browser storage without awaiting hung page fetch.
+  if (tok) {
+    await req('POST', '/api/auth/logout', { token: tok }).catch(() => null);
+  }
+  await page.evaluate(() => {
     try {
-      if (window.HubAuth?.clearSessionAsync) await window.HubAuth.clearSessionAsync();
-      else if (window.HubAuth?.clearSession) window.HubAuth.clearSession();
-      else {
-        localStorage.removeItem('hubAuthToken');
-        localStorage.removeItem('hubUser');
-        sessionStorage.removeItem('hubAuthToken');
-        sessionStorage.removeItem('hubUser');
-      }
-    } catch (_) {
       localStorage.removeItem('hubAuthToken');
       localStorage.removeItem('hubUser');
       sessionStorage.removeItem('hubAuthToken');
       sessionStorage.removeItem('hubUser');
-    }
+      document.cookie = 'hub_session=; Path=/; SameSite=Lax; Max-Age=0';
+    } catch (_) {}
   });
-  // Navigate from Puppeteer (avoid location.href inside evaluate hanging the CDP session).
   await page.goto(`${BASE}/login.html`, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => null);
   await sleep(300);
   return tok;
@@ -319,8 +314,20 @@ async function main() {
   );
   await ps.goto(`${BASE}/dashboard.html`, { waitUntil: 'networkidle2' });
   await sleep(800);
-  const custDash = ps.url();
-  mark('27b. Customer Dashboard Denied', /client\.html|login\.html/i.test(custDash), custDash);
+  const custDash = await ps.evaluate(() => ({
+    url: location.href,
+    denied: /ليس لديك صلاحية|فريق التشغيل فقط|مركز العميل/i.test(document.body?.innerText || ''),
+  }));
+  const custTok = await ps.evaluate(
+    () => localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken') || ''
+  );
+  const custAdmin = custTok ? await req('GET', '/api/admin/clients', { token: custTok }) : { status: 0 };
+  mark(
+    '27b. Customer Dashboard Denied',
+    (/client\.html|login\.html/i.test(custDash.url) || custDash.denied) &&
+      (custAdmin.status === 403 || custAdmin.status === 401 || custAdmin.json?.ok === false),
+    `url=${custDash.url} deniedUi=${custDash.denied} api=${custAdmin.status}`
+  );
 
   // Customer → EMP-0001
   await ps.goto(`${BASE}/login.html?switch=1`, { waitUntil: 'networkidle2' });

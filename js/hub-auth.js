@@ -131,18 +131,20 @@
         headers['X-Hub-Token'] = token;
       }
       const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      const timer = ctrl ? setTimeout(() => ctrl.abort(), 4000) : null;
-      return fetch('/api/auth/logout', {
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 3500) : null;
+      // Do not use keepalive here — it can ignore AbortSignal and hang awaited logout.
+      const req = fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'same-origin',
         headers,
-        keepalive: true,
         signal: ctrl?.signal,
-      })
-        .catch(() => null)
-        .finally(() => {
-          if (timer) clearTimeout(timer);
-        });
+      }).catch(() => null);
+      return Promise.race([
+        req,
+        new Promise((resolve) => setTimeout(() => resolve(null), 4000)),
+      ]).finally(() => {
+        if (timer) clearTimeout(timer);
+      });
     } catch (_) {
       return Promise.resolve(null);
     }
