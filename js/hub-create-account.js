@@ -98,7 +98,7 @@
   }
 
   function clearAllErrors() {
-    ['fullName', 'username', 'email', 'phone', 'password', 'confirmPassword', 'terms'].forEach(clearFieldError);
+    ['fullName', 'email', 'phone', 'password', 'confirmPassword', 'terms'].forEach(clearFieldError);
   }
 
   /** Owner policy: no complexity — any non-empty password (numeric OK). */
@@ -160,7 +160,6 @@
   function validateClient() {
     clearAllErrors();
     const fullName = document.getElementById('fullName')?.value.trim() || '';
-    const username = (document.getElementById('username')?.value || '').trim().toLowerCase();
     const email = (document.getElementById('email')?.value || '').trim().toLowerCase();
     const phone = (document.getElementById('phone')?.value || '').trim().replace(/[\s\-()]/g, '');
     const password = passwordInput?.value || '';
@@ -170,10 +169,6 @@
     let ok = true;
     if (fullName.length < 2) {
       setFieldError('fullName', 'من فضلك أكمل جميع البيانات المطلوبة.');
-      ok = false;
-    }
-    if (!/^[a-z0-9._-]{3,32}$/.test(username)) {
-      setFieldError('username', 'اسم المستخدم غير صالح.');
       ok = false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -203,7 +198,6 @@
       payload: {
         fullName,
         name: fullName,
-        username,
         email,
         phone,
         password,
@@ -295,7 +289,6 @@
 
   const collectDraftFields = () => ({
     fullName: document.getElementById('fullName')?.value || '',
-    username: document.getElementById('username')?.value || '',
     email: document.getElementById('email')?.value || '',
     phone: document.getElementById('phone')?.value || '',
     governorate: document.getElementById('governorate')?.value || '',
@@ -323,7 +316,7 @@
   wireToggle('toggleConfirmPassword', 'confirmPassword', 'toggleConfirmPasswordIcon');
   passwordInput?.addEventListener('input', updatePasswordUI);
   confirmInput?.addEventListener('input', updatePasswordUI);
-  ['fullName', 'username', 'email', 'phone', 'governorate', 'city', 'address'].forEach((id) => {
+  ['fullName', 'email', 'phone', 'governorate', 'city', 'address'].forEach((id) => {
     document.getElementById(id)?.addEventListener('input', persistDraft);
   });
   form?.addEventListener('submit', onSubmit);
