@@ -903,6 +903,23 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  if (pathname === '/api/hub/product-submissions/published' && req.method === 'GET') {
+    const list = productSubmissions.listPublished();
+    sendJson(res, 200, {
+      ok: true,
+      count: list.length,
+      items: list.map((s) => productSubmissions.toStoreItem(s)).filter(Boolean),
+      submissions: list.map((s) => ({
+        productId: s.productId,
+        requestId: s.requestId,
+        title: s.title,
+        status: s.status,
+        publishedAt: s.publishedAt || s.approvedAt || s.updatedAt,
+      })),
+    });
+    return true;
+  }
+
   if (pathname === '/api/hub/product-submissions' && req.method === 'GET') {
     let session;
     try {

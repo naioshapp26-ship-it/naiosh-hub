@@ -17,7 +17,20 @@
   /** اسم صفحة/قسم متجر المبيعات — يُستخدم للعنوان الظاهر وعنوان المتصفح */
   var SALES_STORE_PAGE_TITLE = 'متجر المبيعات | نايوش هوب 360';
   /** عنوان العملية داخل الصفحة — لا يُستبدل باسم الصفحة */
-  var UPLOAD_PROCESS_TITLE = 'رفع منتج على متجر';
+  var UPLOAD_PROCESS_TITLE = 'إضافة منتج للمراجعة';
+
+  var CATEGORY_LABELS = {
+    electronics: 'إلكترونيات',
+    fashion: 'أزياء',
+    home: 'منزل',
+    beauty: 'تجميل',
+    other: 'أخرى'
+  };
+
+  function categoryLabel(value) {
+    var key = String(value || '').trim();
+    return CATEGORY_LABELS[key] || key || '—';
+  }
 
   var HUB_HOME_URL = 'https://www.naioshai.com/'; // روابط خارجية للمتاجر فقط — لا يُستخدم لبطاقة داخل نايوش
   var NAIOSH_PRODUCTS_HASH = '#naiosh-products';
@@ -271,8 +284,8 @@
             '<h1 class="su-page-title">' + esc(SALES_STORE_PAGE_TITLE) + '</h1>' +
             '<div class="su-process-block">' +
               '<h2><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> ' + esc(UPLOAD_PROCESS_TITLE) + '</h2>' +
-              '<p>اختر المتجر ثم أدخل بيانات المنتج والرابط والسعر.</p>' +
-              '<button type="button" class="btn btn-outline su-help-btn" data-su-help title="كيف أرفع منتجاً؟">؟ كيف أرفع منتجاً؟</button>' +
+              '<p>أضف منتجك من هنا. بعد الإرسال يذهب للإدارة للمراجعة، وبعد القبول يظهر في المتجر للزوار.</p>' +
+              '<button type="button" class="btn btn-outline su-help-btn" data-su-help title="كيف أضيف منتجاً؟">؟ كيف أضيف منتجاً؟</button>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -490,18 +503,19 @@
           reviewItem('اسم المنتج', state.productName || '—') +
           reviewItem('السعر', state.priceUsd ? ('$' + state.priceUsd + ' USD') : '—') +
           reviewItem('الرابط', state.purchaseType === 'EXTERNAL' ? state.productUrl || '—' : '— (شراء داخلي)') +
-          reviewItem('الفئة', state.category || '—') +
+          reviewItem('الفئة', categoryLabel(state.category)) +
           reviewItem('الصور', String(state.images.length)) +
         '</div>' +
         '<div class="hub-purchase-steps" style="margin-top:16px"><strong>كيف سيشتري العميل؟</strong><p style="margin:8px 0 0;font-weight:700;line-height:1.7">' +
           esc(howBuy) +
         '</p></div>' +
+        '<p class="su-hint" style="margin-top:12px;color:#026aa2;font-weight:800">بعد الضغط على «إرسال للمراجعة» لن يظهر المنتج فوراً في المتجر — تنتظر الإدارة قبوله أولاً.</p>' +
       '</section>' +
       '<section class="su-card" style="margin-top:14px">' +
         '<h3>بيانات صاحب المنتج</h3>' +
         (logged
-          ? '<p class="su-hint">سيتم ربط المنتج بحسابك الحالي كعميل مسجّل. راجع بيانات التواصل قبل الإرسال.</p>'
-          : '<p class="su-hint">أنت تزور كزائر. أدخل بيانات التواصل لإرسال الطلب — لن يتم إنشاء حساب تلقائياً.</p>') +
+          ? '<p class="su-hint">سيتم ربط المنتج بحسابك الحالي كعميل مسجّل. راجع بيانات التواصل قبل الإرسال حتى تستطيع الإدارة التواصل معك.</p>'
+          : '<p class="su-hint">أنت تزور كزائر. نطلب الاسم والبريد والهاتف حتى تتواصل الإدارة معك بشأن مراجعة المنتج — لن يتم إنشاء حساب تلقائياً.</p>') +
         '<div class="su-form-grid">' +
           field('ownerName', 'الاسم الكامل *', 'text', state.ownerName, true, true) +
           '<label class="full"><span>البريد الإلكتروني *</span><input type="email" data-su-field="ownerEmail" dir="ltr" value="' +
@@ -560,7 +574,7 @@
     var right = '<button type="button" class="btn btn-outline" data-su-draft>حفظ كمسودة</button>';
     if (last) {
       right += '<button type="button" class="btn btn-outline" data-su-preview>معاينة</button>';
-      right += '<button type="button" class="btn btn-primary" data-su-submit>إرسال للمراجعة</button>';
+      right += '<button type="button" class="btn btn-primary" data-su-submit>إرسال المنتج للمراجعة</button>';
     } else {
       right += '<button type="button" class="btn btn-primary" data-su-next>التالي</button>';
     }
@@ -893,14 +907,13 @@
     var html =
       '<div class="su-modal-overlay" data-su-modal>' +
         '<div class="su-modal" role="dialog" aria-modal="true">' +
-          '<h3>كيف أرفع منتجاً؟</h3>' +
+          '<h3>كيف أضيف منتجاً؟</h3>' +
           '<ol style="padding-inline-start:1.2rem;line-height:1.9;font-weight:700;color:#303848">' +
-            '<li>اختر المتجر.</li>' +
-            '<li>افتح موقع المتجر.</li>' +
-            '<li>انسخ رابط المنتج.</li>' +
-            '<li>أدخل البيانات والسعر بالدولار.</li>' +
-            '<li>أضف الصور.</li>' +
-            '<li>راجع وأرسل.</li>' +
+            '<li>اختر أين يُباع المنتج (داخل نايوش أو متجر خارجي).</li>' +
+            '<li>أدخل اسم المنتج والفئة والوصف والسعر بالدولار.</li>' +
+            '<li>أضف صورة واحدة على الأقل إن أمكن.</li>' +
+            '<li>أدخل بيانات صاحب المنتج للتواصل.</li>' +
+            '<li>أرسل للمراجعة — بعد قبول الإدارة يظهر في المتجر.</li>' +
           '</ol>' +
           '<div class="su-modal-actions"><button type="button" class="btn btn-primary" data-su-close-modal>حسناً</button></div>' +
         '</div>' +
