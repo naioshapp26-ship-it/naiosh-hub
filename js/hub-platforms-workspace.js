@@ -17,7 +17,7 @@
     UOS: 'global-os.html',
     KMS: 'dashboard.html#knowledge',
     CCS: 'dashboard.html#control',
-    NAI: 'index.html',
+    NAI: 'global-os.html#ai',
     NERP: 'apps.html',
     NHR: 'office.html',
     NQMS: 'system-ops.html',
@@ -1022,8 +1022,24 @@
     }
   }
 
+  function applyCodeQuery() {
+    try {
+      var code = new URLSearchParams(location.search).get('code') || '';
+      code = String(code).trim().toUpperCase();
+      if (!code) return;
+      var p = platformByCode(code);
+      if (!p) return;
+      ui.detailCode = code;
+      setTimeout(function () {
+        scrollToId('platforms-catalog');
+        render();
+      }, 100);
+    } catch (e) {}
+  }
+
   syncApprovedRequests();
   applyHash();
+  applyCodeQuery();
   render();
 
   window.addEventListener('hashchange', applyHash);

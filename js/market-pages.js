@@ -142,6 +142,39 @@
     let channelFilter = null;
     const connectors = data.MARKETPLACE_CONNECTORS || [];
 
+    const mergePublishedItem = (item) => {
+      if (!item || !store?.get || !store?.save) return;
+      const sales = store.get()?.empire?.salesStore;
+      if (!sales) return;
+      if (!Array.isArray(sales.items)) sales.items = [];
+      const pid = String(item.productId || '');
+      const sid = String(item.submissionId || '');
+      const idx = sales.items.findIndex(
+        (x) =>
+          (pid && String(x.productId || '') === pid) ||
+          (sid && String(x.submissionId || '') === sid) ||
+          String(x.id || '') === String(item.id || '')
+      );
+      if (idx >= 0) {
+        sales.items[idx] = { ...sales.items[idx], ...item, status: 'active', published: true };
+      } else {
+        sales.items.unshift({ ...item, status: 'active', published: true });
+      }
+      store.save();
+    };
+
+    const hydratePublishedFromServer = async () => {
+      try {
+        const res = await fetch('/api/hub/product-submissions/published', { headers: { Accept: 'application/json' } });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok || !payload.ok || !Array.isArray(payload.items)) return 0;
+        payload.items.forEach((item) => mergePublishedItem(item));
+        return payload.items.length;
+      } catch (_) {
+        return 0;
+      }
+    };
+
     const loadItems = () => {
       const rawItems = store?.get?.().empire?.salesStore?.items || data.STORE_ITEMS;
       return (rawItems || []).filter(
@@ -410,9 +443,17 @@
     } catch (_) {}
 
     paint();
+    hydratePublishedFromServer().then((n) => {
+      if (n > 0) paint();
+    });
 
     window.HubMarketPages = window.HubMarketPages || {};
-    window.HubMarketPages.refreshStore = () => paint();
+    window.HubMarketPages.refreshStore = () => {
+      paint();
+      hydratePublishedFromServer().then((n) => {
+        if (n > 0) paint();
+      });
+    };
     window.HubMarketPages.showNaioshInternalProducts = showNaioshInternalProducts;
     window.HubMarketPages.clearChannelFilter = clearChannelFilter;
   };

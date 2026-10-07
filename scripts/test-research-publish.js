@@ -18,7 +18,7 @@ assert(!/ساي فاي|Sci-?Fi/i.test(html + js), 'research form must not add Sc
 assert(html.includes('data-research-workspace'), 'workspace mount');
 assert(html.includes('js/hub-research-publish.js?v=3'), 'page loads research script');
 assert(html.includes('css/hub-research-publish.css?v=1'), 'page loads research styles');
-assert(html.includes('js/hub-upload-limits.js'), 'page loads 150MB upload limits');
+assert(html.includes('js/hub-upload-limits.js'), 'page loads 1500MB upload limits');
 assert(html.includes('js/hub-home-engage.js?v=3'), 'research page cache-busts engage pending filter');
 assert(html.includes('name="body"'), 'clear writing field');
 assert(html.includes('class="rp-body"'), 'large writing area class');

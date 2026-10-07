@@ -17,11 +17,25 @@
   /** اسم صفحة/قسم متجر المبيعات — يُستخدم للعنوان الظاهر وعنوان المتصفح */
   var SALES_STORE_PAGE_TITLE = 'متجر المبيعات | نايوش هوب 360';
   /** عنوان العملية داخل الصفحة — لا يُستبدل باسم الصفحة */
-  var UPLOAD_PROCESS_TITLE = 'رفع منتج على متجر';
+  var UPLOAD_PROCESS_TITLE = 'إضافة منتج للمراجعة';
+
+  var CATEGORY_LABELS = {
+    electronics: 'إلكترونيات',
+    fashion: 'أزياء',
+    home: 'منزل',
+    beauty: 'تجميل',
+    other: 'أخرى'
+  };
+
+  function categoryLabel(value) {
+    var key = String(value || '').trim();
+    return CATEGORY_LABELS[key] || key || '—';
+  }
 
   var HUB_HOME_URL = 'https://www.naioshai.com/'; // روابط خارجية للمتاجر فقط — لا يُستخدم لبطاقة داخل نايوش
   var NAIOSH_PRODUCTS_HASH = '#naiosh-products';
 
+  var SUBMIT_LOCK = { busy: false };
   var state = {
     step: 0,
     purchaseType: 'INTERNAL', // INTERNAL | EXTERNAL — داخل نايوش افتراضيًا
@@ -41,9 +55,75 @@
     images: [],
     attachments: [],
     submissionId: '',
+    productId: '',
+    requestId: '',
+    ownerType: '',
+    ownerName: '',
+    ownerEmail: '',
+    ownerPhone: '',
+    ownerCompany: '',
+    idempotencyKey: '',
+    submitError: '',
     urlError: '',
     urlOk: false
   };
+
+  function isLoggedIn() {
+    return !!(window.HubAuth && HubAuth.isLoggedIn && HubAuth.isLoggedIn());
+  }
+
+  function currentUser() {
+    return (window.HubAuth && HubAuth.getUser && HubAuth.getUser()) || null;
+  }
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+  }
+
+  function isValidPhone(phone) {
+    var raw = String(phone || '').trim();
+    var digits = raw.replace(/\D/g, '');
+    return digits.length >= 8 && digits.length <= 15 && /^\+?[0-9]+$/.test(raw);
+  }
+
+  function authHeaders() {
+    var headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+    var token = (window.HubAuth && HubAuth.getToken && HubAuth.getToken()) || '';
+    var user = currentUser() || {};
+    if (token) {
+      headers.Authorization = 'Bearer ' + token;
+      headers['X-Hub-Token'] = token;
+    }
+    if (user.role && /^[\x00-\x7F]+$/.test(String(user.role))) {
+      headers['X-Hub-User-Role'] = String(user.role);
+    }
+    return headers;
+  }
+
+  function ensureIdempotency() {
+    if (!state.idempotencyKey) {
+      state.idempotencyKey =
+        'prd-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    }
+    return state.idempotencyKey;
+  }
+
+  function fillOwnerFromSession() {
+    if (!isLoggedIn()) return;
+    var user = currentUser() || {};
+    state.ownerName = state.ownerName || user.name || user.fullName || '';
+    state.ownerEmail = user.email || state.ownerEmail || '';
+    state.ownerPhone = state.ownerPhone || user.phone || '';
+    state.ownerCompany = state.ownerCompany || user.company || '';
+  }
+
+  function loginResumeUrl() {
+    return 'login.html?next=' + encodeURIComponent('store.html#upload');
+  }
+
+  function signupResumeUrl() {
+    return 'create-account.html?next=' + encodeURIComponent('store.html#upload');
+  }
 
   function esc(v) {
     return String(v == null ? '' : v)
@@ -164,15 +244,25 @@
   }
 
   function buildWizardHtml() {
-    if (state.submissionId) {
+    if (state.submissionId || state.requestId) {
+      var isCustomer = state.ownerType === 'Customer';
       return (
         '<div class="su-wizard">' +
           '<div class="su-success">' +
-            '<h3>تم إرسال المنتج للمراجعة</h3>' +
-            '<p>الحالة: بانتظار موافقة الإدارة</p>' +
-            '<code>' + esc(state.submissionId) + '</code>' +
+            '<h3>تم إرسال المنتج للمراجعة بنجاح.</h3>' +
+            '<p>رقم الطلب</p>' +
+            '<code>' + esc(state.requestId || state.submissionId) + '</code>' +
+            '<p>رقم المنتج</p>' +
+            '<code>' + esc(state.productId || '—') + '</code>' +
+            '<p>الحالة: بانتظار المراجعة</p>' +
+            (isCustomer
+              ? '<p>يمكنك متابعة الطلب من حسابك.</p>'
+              : '<p>تم تسجيل الطلب كزائر ببيانات التواصل التي أدخلتها. سنتواصل معك عبر البريد أو الهاتف عند تحديث الحالة.</p>') +
             '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
-              '<a class="btn btn-primary" href="store.html">متابعة الطلب</a>' +
+              (isCustomer
+                ? '<a class="btn btn-primary" href="client.html">متابعة طلبي</a>'
+                : '') +
+              '<a class="btn ' + (isCustomer ? 'btn-outline' : 'btn-primary') + '" href="store.html">العودة للمتجر</a>' +
               '<button type="button" class="btn btn-outline" data-su-new>رفع منتج جديد</button>' +
             '</div>' +
           '</div>' +
@@ -194,8 +284,8 @@
             '<h1 class="su-page-title">' + esc(SALES_STORE_PAGE_TITLE) + '</h1>' +
             '<div class="su-process-block">' +
               '<h2><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> ' + esc(UPLOAD_PROCESS_TITLE) + '</h2>' +
-              '<p>اختر المتجر ثم أدخل بيانات المنتج والرابط والسعر.</p>' +
-              '<button type="button" class="btn btn-outline su-help-btn" data-su-help title="كيف أرفع منتجاً؟">؟ كيف أرفع منتجاً؟</button>' +
+              '<p>أضف منتجك من هنا. بعد الإرسال يذهب للإدارة للمراجعة، وبعد القبول يظهر في المتجر للزوار.</p>' +
+              '<button type="button" class="btn btn-outline su-help-btn" data-su-help title="كيف أضيف منتجاً؟">؟ كيف أضيف منتجاً؟</button>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -394,7 +484,10 @@
   }
 
   function reviewStepHtml() {
+    fillOwnerFromSession();
     var store = selectedStore();
+    var logged = isLoggedIn();
+    var ownerEmailReadonly = logged && state.ownerEmail ? ' readonly' : '';
     var howBuy =
       state.purchaseType === 'EXTERNAL'
         ? (store ? storeName(store) : 'المتجر') +
@@ -410,12 +503,40 @@
           reviewItem('اسم المنتج', state.productName || '—') +
           reviewItem('السعر', state.priceUsd ? ('$' + state.priceUsd + ' USD') : '—') +
           reviewItem('الرابط', state.purchaseType === 'EXTERNAL' ? state.productUrl || '—' : '— (شراء داخلي)') +
-          reviewItem('الفئة', state.category || '—') +
+          reviewItem('الفئة', categoryLabel(state.category)) +
           reviewItem('الصور', String(state.images.length)) +
         '</div>' +
         '<div class="hub-purchase-steps" style="margin-top:16px"><strong>كيف سيشتري العميل؟</strong><p style="margin:8px 0 0;font-weight:700;line-height:1.7">' +
           esc(howBuy) +
         '</p></div>' +
+        '<p class="su-hint" style="margin-top:12px;color:#026aa2;font-weight:800">بعد الضغط على «إرسال للمراجعة» لن يظهر المنتج فوراً في المتجر — تنتظر الإدارة قبوله أولاً.</p>' +
+      '</section>' +
+      '<section class="su-card" style="margin-top:14px">' +
+        '<h3>بيانات صاحب المنتج</h3>' +
+        (logged
+          ? '<p class="su-hint">سيتم ربط المنتج بحسابك الحالي كعميل مسجّل. راجع بيانات التواصل قبل الإرسال حتى تستطيع الإدارة التواصل معك.</p>'
+          : '<p class="su-hint">أنت تزور كزائر. نطلب الاسم والبريد والهاتف حتى تتواصل الإدارة معك بشأن مراجعة المنتج — لن يتم إنشاء حساب تلقائياً.</p>') +
+        '<div class="su-form-grid">' +
+          field('ownerName', 'الاسم الكامل *', 'text', state.ownerName, true, true) +
+          '<label class="full"><span>البريد الإلكتروني *</span><input type="email" data-su-field="ownerEmail" dir="ltr" value="' +
+          esc(state.ownerEmail) +
+          '"' +
+          ownerEmailReadonly +
+          ' required></label>' +
+          field('ownerPhone', 'رقم الهاتف *', 'tel', state.ownerPhone, true) +
+          field('ownerCompany', 'اسم الشركة / الجهة / المتجر', 'text', state.ownerCompany, false) +
+        '</div>' +
+        (logged
+          ? '<p style="margin:10px 0 0;color:#027a48;font-weight:800">نوع صاحب الطلب: عميل</p>'
+          : '<p style="margin:10px 0 0;color:#b54708;font-weight:800">نوع صاحب الطلب: زائر</p>' +
+            '<div style="margin-top:12px;padding:12px;border-radius:10px;background:#fff7ed;border:1px solid #fdba74">' +
+              '<p style="margin:0 0 10px;font-weight:700">لمتابعة حالة المنتج لاحقاً من حسابك، سجّل الدخول أو أنشئ حساباً. مسودة المنتج محفوظة ولن تُفقد.</p>' +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+                '<a class="btn btn-primary" href="' + esc(loginResumeUrl()) + '">تسجيل الدخول</a>' +
+                '<a class="btn btn-outline" href="' + esc(signupResumeUrl()) + '">إنشاء حساب</a>' +
+              '</div>' +
+            '</div>') +
+        (state.submitError ? '<p class="su-error" style="color:#b42318;font-weight:700;margin-top:10px">' + esc(state.submitError) + '</p>' : '') +
       '</section>'
     );
   }
@@ -453,7 +574,7 @@
     var right = '<button type="button" class="btn btn-outline" data-su-draft>حفظ كمسودة</button>';
     if (last) {
       right += '<button type="button" class="btn btn-outline" data-su-preview>معاينة</button>';
-      right += '<button type="button" class="btn btn-primary" data-su-submit>إرسال للمراجعة</button>';
+      right += '<button type="button" class="btn btn-primary" data-su-submit>إرسال المنتج للمراجعة</button>';
     } else {
       right += '<button type="button" class="btn btn-primary" data-su-next>التالي</button>';
     }
@@ -533,15 +654,26 @@
       images: [],
       attachments: [],
       submissionId: '',
+      productId: '',
+      requestId: '',
+      ownerType: '',
+      ownerName: '',
+      ownerEmail: '',
+      ownerPhone: '',
+      ownerCompany: '',
+      idempotencyKey: '',
+      submitError: '',
       urlError: '',
       urlOk: false
     };
+    ensureIdempotency();
   }
 
-  function saveDraft() {
+  function saveDraft(silent) {
     try {
       localStorage.setItem('naiosh_store_upload_draft_v1', JSON.stringify({
         step: state.step,
+        purchaseType: state.purchaseType,
         storeId: state.storeId,
         productName: state.productName,
         category: state.category,
@@ -552,11 +684,18 @@
         quantity: state.quantity,
         condition: state.condition,
         priceUsd: state.priceUsd,
-        productUrl: state.productUrl
+        productUrl: state.productUrl,
+        ownerName: state.ownerName,
+        ownerEmail: state.ownerEmail,
+        ownerPhone: state.ownerPhone,
+        ownerCompany: state.ownerCompany,
+        idempotencyKey: ensureIdempotency(),
+        images: state.images.slice(0, 4),
+        attachments: state.attachments.slice(0, 4)
       }));
-      toast('تم حفظ المسودة', 'success');
+      if (!silent) toast('تم حفظ المسودة', 'success');
     } catch (e) {
-      toast('تعذر حفظ المسودة', 'error');
+      if (!silent) toast('تعذر حفظ المسودة', 'error');
     }
   }
 
@@ -568,7 +707,27 @@
       Object.keys(d).forEach(function (k) {
         if (Object.prototype.hasOwnProperty.call(state, k)) state[k] = d[k];
       });
+      fillOwnerFromSession();
+      ensureIdempotency();
     } catch (e) {}
+  }
+
+  function validateOwner() {
+    fillOwnerFromSession();
+    if (!String(state.ownerName || '').trim()) {
+      state.submitError = 'الاسم الكامل مطلوب';
+      return false;
+    }
+    if (!isValidEmail(state.ownerEmail)) {
+      state.submitError = 'البريد الإلكتروني غير صالح';
+      return false;
+    }
+    if (!isValidPhone(state.ownerPhone)) {
+      state.submitError = 'رقم الهاتف غير صالح';
+      return false;
+    }
+    state.submitError = '';
+    return true;
   }
 
   function readFiles(fileList, kind) {
@@ -587,104 +746,174 @@
     });
   }
 
-  function submitProduct() {
-    if (!validateStep()) {
-      renderShell();
-      return;
-    }
-    var store = selectedStore();
+  function applyServerSubmission(submission, request) {
+    if (!submission) return;
+    state.submissionId = submission.requestId;
+    state.requestId = submission.requestId;
+    state.productId = submission.productId;
+    state.ownerType = submission.ownerType || '';
     var reg = registry();
-    var price = Number(state.priceUsd);
-    var payload = {
-      store_id: state.storeId,
-      storeId: state.storeId,
-      store_name: store ? storeName(store) : state.purchaseType === 'INTERNAL' ? 'NAIOSh' : '',
-      storeName: store ? storeName(store) : state.purchaseType === 'INTERNAL' ? 'NAIOSh' : '',
-      product_name: state.productName,
-      title: state.productName,
-      product_url: state.purchaseType === 'EXTERNAL' ? state.productUrl : '',
-      productUrl: state.purchaseType === 'EXTERNAL' ? state.productUrl : '',
-      price_usd: price,
-      priceUsd: price,
-      price: price,
-      category: state.category,
-      brand: state.brand,
-      sku: state.sku,
-      short_desc: state.shortDesc,
-      summary: state.shortDesc,
-      description: state.shortDesc,
-      desc: state.shortDesc,
-      quantity: Number(state.quantity) || 1,
-      stock: Number(state.quantity) || 1,
-      condition: state.condition,
-      images_count: state.images.length,
-      attachments_count: state.attachments.length,
-      currency: 'USD',
-      purchaseType: state.purchaseType || 'INTERNAL',
-      status: 'pending_review'
-    };
-
-    var created = null;
-    try {
-      created = reg ? reg.createSubmission(payload) : null;
-    } catch (err) {
-      toast((err && err.message) || 'تعذر إرسال المنتج', 'error');
-      return;
+    if (reg && typeof reg.createSubmission === 'function') {
+      try {
+        reg.createSubmission({
+          id: submission.requestId,
+          storeId: submission.storeId,
+          storeName: submission.storeName,
+          title: submission.title,
+          productUrl: submission.productUrl,
+          priceUsd: submission.priceUsd,
+          category: submission.category,
+          brand: submission.brand,
+          sku: submission.sku,
+          summary: submission.summary,
+          description: submission.description,
+          quantity: submission.quantity,
+          condition: submission.condition,
+          images: submission.images,
+          attachments: submission.attachments,
+          status: 'بانتظار المراجعة',
+          customer: submission.ownerName,
+          productId: submission.productId,
+          ownerType: submission.ownerType,
+          ownerEmail: submission.ownerEmail,
+          ownerPhone: submission.ownerPhone,
+          ownerCompany: submission.ownerCompany,
+          customerId: submission.customerId,
+          guestContactId: submission.guestContactId
+        });
+      } catch (e) {}
     }
-    state.submissionId = (created && (created.submission_id || created.id)) || ('PRD-' + new Date().getFullYear() + '-' + Date.now().toString().slice(-6));
-
+    if (window.HubCustomerRequests) {
+      if (request && HubCustomerRequests.upsertServerProductRequest) {
+        HubCustomerRequests.upsertServerProductRequest(request);
+      } else if (HubCustomerRequests.ensureForProduct) {
+        HubCustomerRequests.ensureForProduct(submission, submission.ownerName);
+      }
+    }
     try {
       if (window.HubStore && typeof HubStore.addStoreItem === 'function') {
         HubStore.addStoreItem({
-          title: state.productName,
-          name: state.productName,
-          marketplace: state.storeId,
-          storeId: state.storeId,
-          storeName: store ? storeName(store) : 'NAIOSh',
-          url: state.purchaseType === 'EXTERNAL' ? state.productUrl : '',
-          productUrl: state.purchaseType === 'EXTERNAL' ? state.productUrl : '',
-          price: price,
+          title: submission.title,
+          name: submission.title,
+          marketplace: submission.storeId,
+          storeId: submission.storeId,
+          storeName: submission.storeName || 'NAIOSh',
+          url: submission.productUrl || '',
+          productUrl: submission.productUrl || '',
+          price: submission.priceUsd,
           currency: 'USD',
-          category: state.category,
-          brand: state.brand,
-          sku: state.sku,
-          description: state.shortDesc,
-          quantity: Number(state.quantity) || 1,
-          stock: Number(state.quantity) || 1,
-          condition: state.condition,
-          submissionId: state.submissionId,
-          purchaseType: state.purchaseType || 'INTERNAL',
+          category: submission.category,
+          brand: submission.brand,
+          sku: submission.sku,
+          description: submission.summary,
+          quantity: submission.quantity || 1,
+          stock: submission.quantity || 1,
+          condition: submission.condition,
+          submissionId: submission.requestId,
+          productId: submission.productId,
+          images: submission.images || [],
+          imageDataUrl: (submission.images && submission.images[0] && submission.images[0].dataUrl) || '',
+          purchaseType: submission.purchaseType || 'INTERNAL',
           status: 'pending_review',
           mirrorToCatalog: true
         });
       }
-    } catch (e) {}
+    } catch (e2) {}
+  }
 
-    try { localStorage.removeItem('naiosh_store_upload_draft_v1'); } catch (e2) {}
-    toast('تم إرسال المنتج بنجاح', 'success');
+  function submitProduct() {
+    if (SUBMIT_LOCK.busy) return;
+    if (!validateStep()) {
+      renderShell();
+      return;
+    }
+    if (!validateOwner()) {
+      state.step = STEPS.length - 1;
+      renderShell();
+      return;
+    }
+    SUBMIT_LOCK.busy = true;
+    state.submitError = '';
+    saveDraft(true);
     renderShell();
-    try {
-      if (window.HubMarketPages && typeof window.HubMarketPages.refreshStore === 'function') {
-        window.HubMarketPages.refreshStore();
+
+    var store = selectedStore();
+    var price = Number(state.priceUsd);
+    var body = {
+      idempotencyKey: ensureIdempotency(),
+      customerId: '',
+      owner: {
+        name: String(state.ownerName || '').trim(),
+        email: String(state.ownerEmail || '').trim().toLowerCase(),
+        phone: String(state.ownerPhone || '').trim(),
+        company: String(state.ownerCompany || '').trim()
+      },
+      product: {
+        title: state.productName,
+        productName: state.productName,
+        category: state.category,
+        brand: state.brand,
+        sku: state.sku,
+        summary: state.shortDesc,
+        shortDesc: state.shortDesc,
+        description: state.fullDesc || state.shortDesc,
+        quantity: Number(state.quantity) || 1,
+        condition: state.condition,
+        priceUsd: price,
+        purchaseType: state.purchaseType || 'INTERNAL',
+        storeId: state.storeId,
+        store_id: state.storeId,
+        storeName: store ? storeName(store) : state.purchaseType === 'INTERNAL' ? 'NAIOSh' : '',
+        productUrl: state.purchaseType === 'EXTERNAL' ? state.productUrl : '',
+        images: state.images,
+        attachments: state.attachments
       }
-      if ((state.purchaseType || 'INTERNAL') === 'INTERNAL' && window.HubMarketPages?.showNaioshInternalProducts) {
-        // لا ننتقل تلقائيًا بعد الحفظ — يبقى النموذج؛ التحديث فقط لقائمة المنتجات
-      }
-    } catch (e3) {}
+    };
+
+    fetch('/api/hub/product-submissions', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(body)
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          return { res: res, data: data };
+        });
+      })
+      .then(function (pack) {
+        if (!pack.res.ok || !pack.data.ok || !pack.data.submission) {
+          throw new Error((pack.data && pack.data.error) || 'تعذر إرسال المنتج.');
+        }
+        applyServerSubmission(pack.data.submission, pack.data.request);
+        try { localStorage.removeItem('naiosh_store_upload_draft_v1'); } catch (e2) {}
+        toast('تم إرسال المنتج للمراجعة بنجاح.', 'success');
+        try {
+          if (window.HubMarketPages && typeof window.HubMarketPages.refreshStore === 'function') {
+            window.HubMarketPages.refreshStore();
+          }
+        } catch (e3) {}
+      })
+      .catch(function (err) {
+        state.submitError = (err && err.message) || 'تعذر إرسال المنتج.';
+        toast(state.submitError, 'error');
+      })
+      .finally(function () {
+        SUBMIT_LOCK.busy = false;
+        renderShell();
+      });
   }
 
   function openHelp() {
     var html =
       '<div class="su-modal-overlay" data-su-modal>' +
         '<div class="su-modal" role="dialog" aria-modal="true">' +
-          '<h3>كيف أرفع منتجاً؟</h3>' +
+          '<h3>كيف أضيف منتجاً؟</h3>' +
           '<ol style="padding-inline-start:1.2rem;line-height:1.9;font-weight:700;color:#303848">' +
-            '<li>اختر المتجر.</li>' +
-            '<li>افتح موقع المتجر.</li>' +
-            '<li>انسخ رابط المنتج.</li>' +
-            '<li>أدخل البيانات والسعر بالدولار.</li>' +
-            '<li>أضف الصور.</li>' +
-            '<li>راجع وأرسل.</li>' +
+            '<li>اختر أين يُباع المنتج (داخل نايوش أو متجر خارجي).</li>' +
+            '<li>أدخل اسم المنتج والفئة والوصف والسعر بالدولار.</li>' +
+            '<li>أضف صورة واحدة على الأقل إن أمكن.</li>' +
+            '<li>أدخل بيانات صاحب المنتج للتواصل.</li>' +
+            '<li>أرسل للمراجعة — بعد قبول الإدارة يظهر في المتجر.</li>' +
           '</ol>' +
           '<div class="su-modal-actions"><button type="button" class="btn btn-primary" data-su-close-modal>حسناً</button></div>' +
         '</div>' +
@@ -997,10 +1226,15 @@
     });
 
     var submit = root.querySelector('[data-su-submit]');
-    if (submit) submit.addEventListener('click', function () {
-      syncFields(root);
-      submitProduct();
-    });
+    if (submit) {
+      if (SUBMIT_LOCK.busy) submit.setAttribute('disabled', 'disabled');
+      submit.addEventListener('click', function () {
+        if (SUBMIT_LOCK.busy) return;
+        syncFields(root);
+        saveDraft(true);
+        submitProduct();
+      });
+    }
 
     var help = root.querySelector('[data-su-help]');
     if (help) help.addEventListener('click', openHelp);

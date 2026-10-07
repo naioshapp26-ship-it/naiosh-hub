@@ -317,6 +317,36 @@
         ${r.rejectReason ? `<p class="ha-note is-bad"><b>سبب الرفض:</b> ${esc(r.rejectReason)}</p>` : ''}
       </section>
 
+      ${
+        Array.isArray(r.attachments) && r.attachments.length
+          ? `<section class="ha-block" data-ha-attachments>
+        <h3>المرفقات</h3>
+        ${(() => {
+          const list = r.attachments;
+          const images = list.filter((a) => a.category === 'image');
+          const docs = list.filter((a) => a.category === 'document');
+          const videos = list.filter((a) => a.category === 'video');
+          const line = (label, items, action) =>
+            items.length
+              ? `<p><strong>${esc(label)}</strong> ${items.length} —
+                  ${items
+                    .map(
+                      (a) =>
+                        `<a href="${esc(
+                          a.contentUrl || `/api/hub/register-attachments/${encodeURIComponent(a.id)}/content`
+                        )}" target="_blank" rel="noopener" data-ha-attach="${esc(a.category || 'document')}">${esc(
+                          a.originalFileName || a.fileName || a.id
+                        )}</a>`
+                    )
+                    .join(' · ')}
+                  <span class="ha-attach-action">${esc(action)}</span></p>`
+              : '';
+          return `${line('الصور', images, 'عرض')}${line('المستندات', docs, 'عرض / تنزيل')}${line('الفيديو', videos, 'مشاهدة')}`;
+        })()}
+      </section>`
+          : ''
+      }
+
       <section class="ha-compare">
         <h3>التغييرات المطلوبة</h3>
         <div class="ha-compare-grid">

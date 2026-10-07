@@ -13,7 +13,7 @@
     { id: 'home', label: 'الصفحة الرئيسية', hint: 'يظهر في المساحات الإعلانية بالصفحة الرئيسية.' },
     { id: 'products', label: 'صفحة المنتجات', hint: 'يظهر ضمن صفحات المنتجات.' },
     { id: 'store', label: 'المتجر', hint: 'يظهر في صفحات المتجر.' },
-    { id: 'articles', label: 'المقالات', hint: 'يظهر بجانب المقالات.' },
+    { id: 'articles', label: 'المدونة', hint: 'يظهر بجانب مقالات المدونة.' },
     { id: 'services', label: 'الخدمات', hint: 'يظهر في صفحات الخدمات.' },
     { id: 'incubators', label: 'الحاضنات', hint: 'يظهر في صفحات الحاضنات.' },
     { id: 'branches', label: 'الفروع', hint: 'يظهر في صفحات الفروع.' },
@@ -27,6 +27,7 @@
     { value: 'تواصل معنا', label: 'تواصل معنا' }
   ];
 
+  var SUBMIT_LOCK = { busy: false };
   var ui = {
     section: 'mine',
     filter: 'all',
@@ -36,9 +37,12 @@
     wizardStep: 0,
     editingId: '',
     successCode: '',
+    successRequestId: '',
+    successOwnerType: '',
     drawerId: '',
     autosaveNote: '',
     showAdvancedAudience: false,
+    submitError: '',
     errors: {}
   };
 
@@ -67,8 +71,70 @@
       adStartDate: '',
       adStartTime: '',
       adEndDate: '',
-      adEndTime: ''
+      adEndTime: '',
+      ownerName: '',
+      ownerEmail: '',
+      ownerPhone: '',
+      ownerCompany: '',
+      idempotencyKey: ''
     };
+  }
+
+  function isLoggedIn() {
+    return !!(window.HubAuth && HubAuth.isLoggedIn && HubAuth.isLoggedIn());
+  }
+
+  function currentUser() {
+    return (window.HubAuth && HubAuth.getUser && HubAuth.getUser()) || null;
+  }
+
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+  }
+
+  function isValidPhone(phone) {
+    var raw = String(phone || '').trim();
+    var digits = raw.replace(/\D/g, '');
+    return digits.length >= 8 && digits.length <= 15 && /^\+?[0-9]+$/.test(raw);
+  }
+
+  function authHeaders() {
+    var headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+    var token = (window.HubAuth && HubAuth.getToken && HubAuth.getToken()) || '';
+    var user = currentUser() || {};
+    if (token) {
+      headers.Authorization = 'Bearer ' + token;
+      headers['X-Hub-Token'] = token;
+    }
+    if (user.role && /^[\x00-\x7F]+$/.test(String(user.role))) {
+      headers['X-Hub-User-Role'] = String(user.role);
+    }
+    return headers;
+  }
+
+  function ensureIdempotency() {
+    if (!draft.idempotencyKey) {
+      draft.idempotencyKey =
+        'ad-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    }
+    return draft.idempotencyKey;
+  }
+
+  function fillOwnerFromSession() {
+    if (!isLoggedIn()) return;
+    var user = currentUser() || {};
+    draft.ownerName = draft.ownerName || user.name || user.fullName || '';
+    draft.ownerEmail = user.email || draft.ownerEmail || '';
+    draft.ownerPhone = draft.ownerPhone || user.phone || '';
+    draft.ownerCompany = draft.ownerCompany || user.company || '';
+  }
+
+  function loginResumeUrl() {
+    return 'login.html?next=' + encodeURIComponent('ads.html#wizard');
+  }
+
+  function signupResumeUrl() {
+    return 'create-account.html?next=' + encodeURIComponent('ads.html#wizard');
   }
 
   function esc(v) {
@@ -218,7 +284,10 @@
     ui.wizardOpen = true;
     ui.wizardStep = 0;
     ui.errors = {};
+    ui.submitError = '';
     ui.successCode = '';
+    ui.successRequestId = '';
+    ui.successOwnerType = '';
     ui.showAdvancedAudience = false;
     if (ad) {
       ui.editingId = ad.id;
@@ -244,13 +313,20 @@
         adStartDate: ad.adStartDate || '',
         adStartTime: ad.adStartTime || '',
         adEndDate: ad.adEndDate || '',
-        adEndTime: ad.adEndTime || ''
+        adEndTime: ad.adEndTime || '',
+        ownerName: ad.ownerName || '',
+        ownerEmail: ad.ownerEmail || '',
+        ownerPhone: ad.ownerPhone || '',
+        ownerCompany: ad.ownerCompany || '',
+        idempotencyKey: ''
       };
     } else {
       ui.editingId = '';
       loadAutosave();
-      if (!draft.title) draft = blankDraft();
+      if (!draft.title && !draft.headline) draft = blankDraft();
     }
+    fillOwnerFromSession();
+    ensureIdempotency();
     render();
   }
 
@@ -285,26 +361,25 @@
         ui.errors.adEndDate = 'تاريخ النهاية يجب أن يكون بعد البداية';
       }
     }
+    if (ui.wizardStep === 4) {
+      fillOwnerFromSession();
+      if (!String(draft.ownerName || '').trim()) ui.errors.ownerName = 'الاسم الكامل مطلوب';
+      if (!isValidEmail(draft.ownerEmail)) ui.errors.ownerEmail = 'البريد الإلكتروني غير صالح';
+      if (!isValidPhone(draft.ownerPhone)) ui.errors.ownerPhone = 'رقم الهاتف غير صالح';
+    }
     return Object.keys(ui.errors).length === 0;
   }
 
-  function submitDraft(asDraft) {
-    if (!asDraft && !validateStep()) {
-      ui.wizardStep = 0;
-      for (var i = 0; i < STEPS.length; i++) {
-        ui.wizardStep = i;
-        if (!validateStep()) break;
-      }
-      render();
-      return;
-    }
-    if (!asDraft) {
-      ui.wizardStep = 4;
-      if (!validateStep()) {
-        render();
-        return;
-      }
-    }
+  function validateOwnerForSubmit() {
+    ui.errors = {};
+    fillOwnerFromSession();
+    if (!String(draft.ownerName || '').trim()) ui.errors.ownerName = 'الاسم الكامل مطلوب';
+    if (!isValidEmail(draft.ownerEmail)) ui.errors.ownerEmail = 'البريد الإلكتروني غير صالح';
+    if (!isValidPhone(draft.ownerPhone)) ui.errors.ownerPhone = 'رقم الهاتف غير صالح';
+    return Object.keys(ui.errors).length === 0;
+  }
+
+  function saveLocalDraftOnly() {
     var payload = {
       title: draft.title,
       headline: draft.headline,
@@ -327,47 +402,184 @@
       adStartTime: draft.adStartTime,
       adEndDate: draft.adEndDate,
       adEndTime: draft.adEndTime,
+      ownerName: draft.ownerName,
+      ownerEmail: draft.ownerEmail,
+      ownerPhone: draft.ownerPhone,
+      ownerCompany: draft.ownerCompany,
       publishStatus: 'draft',
-      workflowStatus: asDraft ? 'draft' : 'pending_review',
+      workflowStatus: 'draft',
       status: 'paused'
     };
-
     var ad;
     if (ui.editingId && HubStore.updateAdListing) {
-      ad = HubStore.updateAdListing(ui.editingId, Object.assign({}, payload, {
-        workflowStatus: asDraft ? workflowOf(listings().find(function (x) { return x.id === ui.editingId; })) : 'pending_review',
-        publishStatus: asDraft ? undefined : 'draft',
-        status: asDraft ? undefined : 'paused'
-      }));
-      if (!asDraft && HubStore.setAdWorkflowStatus) {
-        ad = HubStore.setAdWorkflowStatus(ui.editingId, 'pending_review');
-      }
+      ad = HubStore.updateAdListing(ui.editingId, payload);
+    } else {
+      ad = HubStore.addAdListing(payload);
+      if (ad) ui.editingId = ad.id;
+    }
+    return ad;
+  }
+
+  function applyServerSubmission(submission, request) {
+    if (!submission) return null;
+    var payload = {
+      id: submission.adId,
+      adCode: submission.adCode,
+      title: submission.title,
+      headline: submission.headline,
+      desc: submission.desc,
+      bodyText: submission.bodyText,
+      contentType: submission.contentType,
+      mediaDataUrl: submission.mediaDataUrl,
+      mediaName: submission.mediaName,
+      mediaSize: submission.mediaSize,
+      thumbnailDataUrl: submission.thumbnailDataUrl,
+      destinationUrl: submission.destinationUrl,
+      ctaLabel: submission.ctaLabel,
+      fileAction: submission.fileAction,
+      placements: submission.placements || [],
+      position: submission.position,
+      audience: submission.audience,
+      audienceDetail: submission.audienceDetail,
+      scheduleMode: submission.scheduleMode,
+      adStartDate: submission.adStartDate,
+      adStartTime: submission.adStartTime,
+      adEndDate: submission.adEndDate,
+      adEndTime: submission.adEndTime,
+      publishStatus: 'draft',
+      workflowStatus: 'pending_review',
+      status: 'paused',
+      requestId: submission.requestId,
+      ownerType: submission.ownerType,
+      isGuest: submission.ownerType === 'Guest',
+      customerId: submission.customerId || '',
+      guestContactId: submission.guestContactId || '',
+      ownerName: submission.ownerName,
+      ownerEmail: submission.ownerEmail,
+      ownerPhone: submission.ownerPhone,
+      ownerCompany: submission.ownerCompany || '',
+      createdBy: submission.ownerName,
+      serverSubmissionId: submission.id
+    };
+    var existing = listings().find(function (x) {
+      return x.id === submission.adId || x.adCode === submission.adCode || x.requestId === submission.requestId;
+    });
+    var ad;
+    if (existing && HubStore.updateAdListing) {
+      ad = HubStore.updateAdListing(existing.id, payload);
     } else {
       ad = HubStore.addAdListing(payload);
     }
+    if (window.HubCustomerRequests) {
+      if (request && HubCustomerRequests.upsertServerAdRequest) {
+        HubCustomerRequests.upsertServerAdRequest(request);
+      } else if (ad && HubCustomerRequests.ensureForAd) {
+        HubCustomerRequests.ensureForAd(ad, submission.ownerName);
+      }
+    }
+    return ad;
+  }
 
-    if (!ad) {
-      toast('تعذر حفظ الإعلان', 'error');
+  function submitDraft(asDraft) {
+    if (asDraft) {
+      autosave();
+      var local = saveLocalDraftOnly();
+      if (!local) {
+        toast('تعذر حفظ المسودة', 'error');
+        return;
+      }
+      toast('تم حفظ المسودة', 'success');
+      ui.wizardOpen = false;
+      render();
+      return;
+    }
+    if (SUBMIT_LOCK.busy) return;
+    if (!validateStep()) {
+      ui.wizardStep = 0;
+      for (var i = 0; i < STEPS.length; i++) {
+        ui.wizardStep = i;
+        if (!validateStep()) break;
+      }
+      render();
+      return;
+    }
+    ui.wizardStep = 4;
+    if (!validateOwnerForSubmit()) {
+      render();
       return;
     }
 
-    if (!asDraft && window.HubCustomerRequests && HubCustomerRequests.ensureForAd) {
-      var req = HubCustomerRequests.ensureForAd(ad, ad.createdBy || 'عميل');
-      if (req && req.id) {
-        ad.requestId = req.id;
-        if (HubStore.updateAdListing) HubStore.updateAdListing(ad.id, { requestId: req.id });
-      }
-    }
-
-    clearAutosave();
-    if (asDraft) {
-      toast('تم حفظ المسودة', 'success');
-      ui.wizardOpen = false;
-    } else {
-      ui.successCode = ad.adCode || ad.id;
-      ui.wizardOpen = false;
-    }
+    SUBMIT_LOCK.busy = true;
+    ui.submitError = '';
     render();
+
+    var body = {
+      idempotencyKey: ensureIdempotency(),
+      customerId: '',
+      owner: {
+        name: String(draft.ownerName || '').trim(),
+        email: String(draft.ownerEmail || '').trim().toLowerCase(),
+        phone: String(draft.ownerPhone || '').trim(),
+        company: String(draft.ownerCompany || '').trim()
+      },
+      ad: {
+        id: ui.editingId || undefined,
+        title: draft.title,
+        headline: draft.headline,
+        desc: draft.desc || draft.bodyText,
+        bodyText: draft.bodyText,
+        contentType: draft.contentType,
+        mediaDataUrl: draft.mediaDataUrl,
+        mediaName: draft.mediaName,
+        mediaSize: draft.mediaSize,
+        thumbnailDataUrl: draft.thumbnailDataUrl,
+        destinationUrl: draft.destinationUrl,
+        ctaLabel: draft.ctaLabel,
+        fileAction: draft.fileAction,
+        placements: draft.placements.slice(),
+        position: draft.position,
+        audience: draft.audience,
+        audienceDetail: draft.audienceDetail,
+        scheduleMode: draft.scheduleMode,
+        adStartDate: draft.adStartDate,
+        adStartTime: draft.adStartTime,
+        adEndDate: draft.adEndDate,
+        adEndTime: draft.adEndTime
+      }
+    };
+
+    fetch('/api/hub/ad-submissions', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(body)
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          return { res: res, data: data };
+        });
+      })
+      .then(function (pack) {
+        if (!pack.res.ok || !pack.data.ok || !pack.data.submission) {
+          throw new Error((pack.data && pack.data.error) || 'تعذر إرسال الإعلان.');
+        }
+        var ad = applyServerSubmission(pack.data.submission, pack.data.request);
+        clearAutosave();
+        ui.successCode = (pack.data.submission && pack.data.submission.adCode) || (ad && ad.adCode) || '';
+        ui.successRequestId = pack.data.submission.requestId || '';
+        ui.successOwnerType = pack.data.submission.ownerType || '';
+        ui.wizardOpen = false;
+        toast('تم إرسال إعلانك للمراجعة بنجاح.', 'success');
+      })
+      .catch(function (err) {
+        ui.submitError = (err && err.message) || 'تعذر إرسال الإعلان.';
+        toast(ui.submitError, 'error');
+        ui.wizardOpen = true;
+        ui.wizardStep = 4;
+      })
+      .finally(function () {
+        SUBMIT_LOCK.busy = false;
+        render();
+      });
   }
 
   function render() {
@@ -685,17 +897,32 @@
   }
 
   function successHtml() {
+    var isCustomer = ui.successOwnerType === 'Customer';
     return (
       '<section class="ads-ws-section ads-success">' +
-        '<h2>✓ تم إرسال الإعلان للمراجعة</h2>' +
+        '<h2>✓ تم إرسال إعلانك للمراجعة بنجاح.</h2>' +
+        '<p>رقم الطلب</p>' +
+        '<code>' +
+        esc(ui.successRequestId || '—') +
+        '</code>' +
         '<p>رقم الإعلان</p>' +
         '<code>' +
         esc(ui.successCode) +
         '</code>' +
         '<p>الحالة: بانتظار المراجعة</p>' +
-        '<p>سيظهر الإعلان تلقائياً بعد موافقة الإدارة وفي الموعد الذي حددته.</p>' +
+        (isCustomer
+          ? '<p>يمكنك متابعة الطلب من حسابك أو من تبويب الطلبات.</p>'
+          : '<p>تم تسجيل الطلب كزائر ببيانات التواصل التي أدخلتها. لإنشاء حساب ومتابعة الطلب لاحقاً: <a href="' +
+            esc(signupResumeUrl()) +
+            '">إنشاء حساب</a>.</p>') +
         '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
-          '<button type="button" class="ads-ws-btn primary" data-ads-clear-success>العودة إلى إعلاناتي</button>' +
+          (isCustomer
+            ? '<a class="ads-ws-btn primary" href="client.html">متابعة طلبي</a>'
+            : '') +
+          '<button type="button" class="ads-ws-btn ' +
+          (isCustomer ? 'ghost' : 'primary') +
+          '" data-ads-clear-success>العودة إلى إعلاناتي</button>' +
+          '<button type="button" class="ads-ws-btn ghost" data-ads-create>رفع إعلان جديد</button>' +
         '</div></section>'
     );
   }
@@ -911,6 +1138,9 @@
   }
 
   function stepReview() {
+    fillOwnerFromSession();
+    var logged = isLoggedIn();
+    var ownerEmailReadonly = logged && draft.ownerEmail ? ' readonly' : '';
     return (
       '<h3 style="margin:0">مراجعة قبل الإرسال</h3>' +
       '<div class="ads-preview-box">' +
@@ -925,7 +1155,37 @@
         }).join(' + ') || '—') + '<br>' +
         'الجمهور: ' + esc(draft.audience === 'all' ? 'جميع الزوار' : draft.audience) + '<br>' +
         'الجدول: ' + esc(draft.scheduleMode === 'immediate' ? 'فور الموافقة' : (draft.adStartDate + ' → ' + draft.adEndDate)) +
-      '</div>'
+      '</div>' +
+      '<section class="ads-owner-block" style="margin-top:16px;padding:14px;border:1px solid #e4e7ec;border-radius:12px;background:#fafafa">' +
+        '<h3 style="margin:0 0 8px">بيانات صاحب الإعلان</h3>' +
+        (logged
+          ? '<p style="margin:0 0 12px;color:#475467;font-weight:700">سيتم ربط الإعلان بحسابك الحالي كعميل مسجّل. يمكنك مراجعة بيانات التواصل قبل الإرسال.</p>'
+          : '<p style="margin:0 0 12px;color:#475467;font-weight:700">أنت تزور كزائر. أدخل بيانات التواصل لإرسال الطلب — لن يتم إنشاء حساب تلقائياً.</p>') +
+        field('ownerName', 'الاسم الكامل *', draft.ownerName) +
+        '<label>البريد الإلكتروني *<input type="email" data-draft="ownerEmail" dir="ltr" value="' +
+        esc(draft.ownerEmail) +
+        '"' +
+        ownerEmailReadonly +
+        '></label>' +
+        (ui.errors.ownerEmail ? '<p class="ads-field-error">' + esc(ui.errors.ownerEmail) + '</p>' : '') +
+        field('ownerPhone', 'رقم الهاتف *', draft.ownerPhone, 'tel') +
+        field('ownerCompany', 'الشركة / الجهة (اختياري)', draft.ownerCompany) +
+        (logged
+          ? '<p style="margin:8px 0 0;color:#027a48;font-weight:800">نوع صاحب الطلب: عميل</p>'
+          : '<p style="margin:8px 0 0;color:#b54708;font-weight:800">نوع صاحب الطلب: زائر</p>' +
+            '<div style="margin-top:12px;padding:12px;border-radius:10px;background:#fff7ed;border:1px solid #fdba74">' +
+              '<p style="margin:0 0 10px;font-weight:700">لمتابعة حالة الإعلان لاحقاً من حسابك، سجّل الدخول أو أنشئ حساباً. مسودة الإعلان محفوظة ولن تُفقد.</p>' +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+                '<a class="ads-ws-btn primary" href="' +
+                esc(loginResumeUrl()) +
+                '">تسجيل الدخول</a>' +
+                '<a class="ads-ws-btn ghost" href="' +
+                esc(signupResumeUrl()) +
+                '">إنشاء حساب</a>' +
+              '</div>' +
+            '</div>') +
+        (ui.submitError ? '<p class="ads-field-error" style="margin-top:10px">' + esc(ui.submitError) + '</p>' : '') +
+      '</section>'
     );
   }
 
@@ -1292,8 +1552,11 @@
       }
       var submit = overlay.querySelector('[data-ads-submit]');
       if (submit) {
+        if (SUBMIT_LOCK.busy) submit.setAttribute('disabled', 'disabled');
         submit.addEventListener('click', function () {
+          if (SUBMIT_LOCK.busy) return;
           syncDraftFields(overlay);
+          autosave();
           submitDraft(false);
         });
       }

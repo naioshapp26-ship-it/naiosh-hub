@@ -259,6 +259,17 @@ body.homepage #platforms-home .hub-platform-card {
   box-shadow: 0 8px 22px rgba(12, 14, 17, 0.07);
   border-top: 3px solid #d70000;
   min-width: 0;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+}
+
+body.homepage #platforms-home .hub-platform-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 30px rgba(215, 0, 0, 0.14);
+  border-color: #f3c3cb;
 }
 
 body.homepage #platforms-home .hub-platform-card .platform-code {

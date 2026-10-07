@@ -158,6 +158,31 @@ CREATE TABLE IF NOT EXISTS hub_store_orders (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS hub_orders (
+  id TEXT PRIMARY KEY,
+  number TEXT NOT NULL UNIQUE,
+  customer_id TEXT,
+  customer_email TEXT NOT NULL,
+  customer_name TEXT,
+  product_id TEXT,
+  product_name TEXT,
+  qty INT NOT NULL DEFAULT 1,
+  unit_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  total NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  payment_status TEXT NOT NULL DEFAULT 'unpaid',
+  payment_mode TEXT,
+  order_status TEXT NOT NULL DEFAULT 'received',
+  invoice_number TEXT,
+  source TEXT,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hub_orders_email_idx ON hub_orders (lower(customer_email));
+CREATE INDEX IF NOT EXISTS hub_orders_number_idx ON hub_orders (number);
+
 CREATE TABLE IF NOT EXISTS hub_ads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   external_id TEXT UNIQUE,
@@ -299,6 +324,54 @@ CREATE INDEX IF NOT EXISTS idx_hub_branches_country ON hub_branches(country_code
 CREATE INDEX IF NOT EXISTS idx_hub_products_category ON hub_products(category);
 CREATE INDEX IF NOT EXISTS idx_hub_store_items_category ON hub_store_items(category);
 CREATE INDEX IF NOT EXISTS idx_hub_ads_status ON hub_ads(status);
+
+CREATE TABLE IF NOT EXISTS hub_ad_submissions (
+  id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL UNIQUE,
+  ad_id TEXT NOT NULL,
+  ad_code TEXT,
+  owner_type TEXT NOT NULL DEFAULT 'Guest',
+  customer_id TEXT,
+  guest_contact_id TEXT,
+  owner_name TEXT NOT NULL,
+  owner_email TEXT NOT NULL,
+  owner_phone TEXT NOT NULL,
+  owner_company TEXT,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending_review',
+  source TEXT,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hub_ad_submissions_email_idx ON hub_ad_submissions (lower(owner_email));
+CREATE INDEX IF NOT EXISTS hub_ad_submissions_request_idx ON hub_ad_submissions (request_id);
+CREATE INDEX IF NOT EXISTS hub_ad_submissions_customer_idx ON hub_ad_submissions (customer_id);
+
+CREATE TABLE IF NOT EXISTS hub_product_submissions (
+  id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL UNIQUE,
+  product_id TEXT NOT NULL,
+  owner_type TEXT NOT NULL DEFAULT 'Guest',
+  customer_id TEXT,
+  guest_contact_id TEXT,
+  owner_name TEXT NOT NULL,
+  owner_email TEXT NOT NULL,
+  owner_phone TEXT NOT NULL,
+  owner_company TEXT,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending_review',
+  source TEXT,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hub_product_submissions_email_idx ON hub_product_submissions (lower(owner_email));
+CREATE INDEX IF NOT EXISTS hub_product_submissions_request_idx ON hub_product_submissions (request_id);
+CREATE INDEX IF NOT EXISTS hub_product_submissions_product_idx ON hub_product_submissions (product_id);
+CREATE INDEX IF NOT EXISTS hub_product_submissions_customer_idx ON hub_product_submissions (customer_id);
 CREATE INDEX IF NOT EXISTS idx_hub_events_date ON hub_events(event_date);
 CREATE INDEX IF NOT EXISTS idx_hub_employees_status ON hub_employees(status);
 CREATE INDEX IF NOT EXISTS idx_hub_feed_created ON hub_feed(created_at DESC);
@@ -318,6 +391,37 @@ CREATE TABLE IF NOT EXISTS hub_product_categories (
 );
 
 CREATE INDEX IF NOT EXISTS idx_hub_product_categories_status ON hub_product_categories(status);
+
+CREATE TABLE IF NOT EXISTS hub_marketing_campaigns (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  owner_email TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_hub_marketing_campaigns_status ON hub_marketing_campaigns(status);
+
+CREATE TABLE IF NOT EXISTS hub_event_records (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  owner_email TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS hub_article_records (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  owner_email TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_hub_article_records_status ON hub_article_records(status);
 
 -- Idempotent column upgrades for store marketplace linking
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS brand TEXT;

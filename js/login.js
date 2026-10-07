@@ -231,9 +231,16 @@ function fillLogin(email, password, autoSubmit = true) {
     if (destGate?.ok || isStaff) dest = 'dashboard.html';
     else if (isClientRole) dest = role === 'platform_owner' ? 'my-platform.html' : 'client.html';
 
-    // CLIENT always lands in Client Portal — never ops room / admin URLs
+    // CLIENT: allow safe public next (e.g. solutions resume), never admin/ops
+    const isSafePublicNext = (n) => {
+      if (!n || n.startsWith('http') || n.includes('://') || n.includes('..')) return false;
+      if (/dashboard\.html/i.test(n)) return false;
+      return /^[a-zA-Z0-9_\-./?#=&%]+$/.test(n);
+    };
     if (isClientRole && !(destGate?.ok)) {
-      if (role === 'platform_owner' && (!next || next === 'my-platform.html')) {
+      if (next && isSafePublicNext(next)) {
+        dest = next;
+      } else if (role === 'platform_owner' && (!next || next === 'my-platform.html')) {
         dest = next || 'my-platform.html';
       } else {
         dest = 'client.html';
@@ -285,7 +292,13 @@ function fillLogin(email, password, autoSubmit = true) {
         }
       })();
       const isClientRole = role === 'customer' || role === 'client' || role === 'client_user';
-      if (isClientRole) dest = 'client.html';
+      const safePublic =
+        next &&
+        !next.includes('..') &&
+        !/dashboard\.html/i.test(next) &&
+        /^[a-zA-Z0-9_\-./?#=&%]+$/.test(next);
+      if (isClientRole && safePublic) dest = next;
+      else if (isClientRole) dest = 'client.html';
       else dest = next;
     }
     showAlert('لديك جلسة نشطة. جاري تحويلك...', 'success');

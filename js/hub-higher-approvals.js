@@ -986,6 +986,7 @@
         impactIfApproved: `سيتم تفعيل منحة المنصة ${grant.host || grant.id} ومنح النظام للمسؤول ${grant.adminEmail || ''}.`,
         impactIfRejected: 'لن يُفعَّل وصول المنصة.',
         applyPayload: { grantId: grant.id },
+        attachments: Array.isArray(grant.attachments) ? grant.attachments : [],
       },
       actor || { name: grant.adminName || 'عميل', email: grant.adminEmail }
     );

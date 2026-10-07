@@ -327,21 +327,6 @@
             source: 'product-checkout',
           });
         }
-        const store = window.HubStore?.get?.()?.empire?.salesStore;
-        if (store?.orders) {
-          store.orders.unshift({
-            id: order.id,
-            number: order.number,
-            itemId: order.productId,
-            title: order.productName,
-            buyer: order.customerName || order.customerEmail,
-            amount: order.total,
-            at: order.createdAt,
-            status: order.orderStatus,
-            source: 'product-checkout',
-          });
-          window.HubStore.save?.();
-        }
       } catch {
         /* ignore */
       }

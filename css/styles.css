@@ -988,6 +988,43 @@ main.container {
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
+a.card.is-nav-card,
+a.hub-platform-card.is-nav-card,
+a.hub-inline-ad.is-nav-card {
+  cursor: pointer;
+}
+
+a.card.is-nav-card:focus-visible,
+a.hub-platform-card.is-nav-card:focus-visible,
+a.hub-inline-ad.is-nav-card:focus-visible {
+  outline: 3px solid rgba(229, 9, 20, 0.45);
+  outline-offset: 3px;
+}
+
+.card-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #d70000;
+}
+
+a.card.is-nav-card:hover .card-nav-cta {
+  text-decoration: underline;
+}
+
+.card.card-info {
+  cursor: default;
+}
+
+.card.card-info:hover {
+  transform: none;
+  box-shadow: 0 10px 28px rgba(12, 14, 17, 0.08);
+  border-color: var(--brand-border);
+}
+
 .card:hover {
   transform: translateY(-5px) scale(1.02);
   box-shadow: 0 20px 38px rgba(12, 14, 17, 0.14);
@@ -2934,6 +2971,12 @@ body.homepage .tour-form-card:hover,
 body.homepage .registration-card:hover {
   border-color: rgba(229, 9, 20, 0.28);
   box-shadow: 0 18px 32px rgba(229, 9, 20, 0.18);
+}
+
+body.homepage .card.card-info:hover {
+  border-color: rgba(229, 9, 20, 0.1);
+  box-shadow: 0 10px 25px rgba(21, 30, 47, 0.08);
+  transform: none;
 }
 
 body.homepage .icon-box {

@@ -1,6 +1,6 @@
 /**
  * Customer articles UI — blog.html
- * Views: home CTAs · submit wizard (4 steps) · my articles · article detail
+ * Single-page submit (no stepper) · my articles · article detail
  */
 (() => {
   'use strict';
@@ -33,67 +33,63 @@
   })();
 
   const ui = {
-    view: 'home', // home | submit | mine | detail | success
-    step: 1,
+    view: 'home',
     draftId: '',
     successId: '',
     detailId: '',
-    contentMode: '',
     errors: {},
     autosaveAt: '',
     helpOpen: false,
+    submitting: false,
+    saving: false,
+    submitLockKey: '',
+    creating: null,
+    formError: '',
+    form: {},
+    coverLocal: '',
+    videoLocal: '',
+    coverProgress: 0,
+    videoProgress: 0,
+    extraProgress: 0,
+    lastVideoFile: null,
+    lastCoverFile: null,
   };
+
+  const loggedIn = () => !!window.HubAuth?.isLoggedIn?.();
 
   const draft = () => (ui.draftId ? A()?.get(ui.draftId) : null);
 
-  const ensureDraft = () => {
-    if (ui.draftId && A()?.get(ui.draftId)) return A().get(ui.draftId);
-    const u = window.HubAuth?.getUser?.();
-    const row = A().createDraft(
-      {
-        authorName: u?.name || u?.fullName || '',
-        authorEmail: u?.email || '',
-        sessionId,
-      },
-      u?.name || 'زائر'
-    );
-    ui.draftId = row.id;
-    return row;
-  };
-
-  const collectStep1 = (root) => {
-    const title = root.querySelector('[name="title"]')?.value?.trim() || '';
-    const category = root.querySelector('[name="category"]')?.value?.trim() || '';
-    const summary = root.querySelector('[name="summary"]')?.value?.trim() || '';
-    const authorName = root.querySelector('[name="authorName"]')?.value?.trim() || '';
-    const company = root.querySelector('[name="company"]')?.value?.trim() || '';
-    const tags = root.querySelector('[name="tags"]')?.value || '';
-    const errors = {};
-    if (!title) errors.title = 'عنوان المقال مطلوب.';
-    if (!category) errors.category = 'يرجى اختيار التصنيف.';
-    if (!summary) errors.summary = 'النبذة المختصرة مطلوبة.';
-    ui.errors = errors;
-    if (Object.keys(errors).length) return null;
-    return A().update(
-      ui.draftId,
-      { title, category, summary, authorName, company, tags },
-      authorName || 'كاتب'
-    );
-  };
-
-  const collectStep2 = (root) => {
-    const body = root.querySelector('[name="body"]')?.value || '';
-    const article = draft();
-    const patch = { body, contentMode: ui.contentMode || article?.contentMode || 'write' };
-    A().update(ui.draftId, patch);
-    const row = A().get(ui.draftId);
-    if (!String(row.body || '').trim() && !row.articleFile) {
-      ui.errors = { content: 'يرجى كتابة المقال أو رفع ملف.' };
-      return null;
+  async function ensureDraft() {
+    if (ui.creating) return ui.creating;
+    if (!loggedIn()) return null;
+    if (ui.draftId) {
+      const existing = A()?.get(ui.draftId);
+      if (existing) return existing;
+      try {
+        const row = await A().loadOne(ui.draftId);
+        if (row) return row;
+      } catch (_) {}
     }
-    ui.errors = {};
-    return row;
-  };
+    ui.creating = (async () => {
+      const u = window.HubAuth?.getUser?.();
+      const row = await A().createDraft(
+        {
+          authorName: u?.name || u?.fullName || '',
+          authorEmail: u?.email || '',
+          sessionId,
+        },
+        u?.name || 'زائر'
+      );
+      ui.draftId = row.id;
+      setHash(`submit/${row.id}`);
+      return row;
+    })();
+    try {
+      return await ui.creating;
+    } finally {
+      ui.creating = null;
+    }
+  }
 
   const statusClass = (st) => {
     if (st === 'Draft') return 'is-draft';
@@ -101,6 +97,7 @@
     if (st === 'Under Review') return 'is-review';
     if (st === 'Needs Changes') return 'is-needs';
     if (st === 'Published' || st === 'Approved') return 'is-ok';
+    if (st === 'Rejected') return 'is-needs';
     return '';
   };
 
@@ -135,11 +132,12 @@
   };
 
   const fileMeta = (file, extra = {}) => ({
+    id: extra.id || '',
     name: file.name,
-    mime: file.type || '',
-    size: file.size || 0,
+    mime: file.type || extra.mime || '',
+    size: file.size || extra.size || 0,
     url: extra.url || '',
-    uploadedAt: new Date().toISOString(),
+    uploadedAt: extra.uploadedAt || new Date().toISOString(),
     status: extra.status || 'local',
   });
 
@@ -150,288 +148,291 @@
     return `${(b / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const acceptArticle = () => A()?.settings?.()?.articleExts?.join(',') || '.docx,.pdf,.txt';
-  const acceptCover = () => A()?.settings?.()?.coverExts?.join(',') || '.jpg,.jpeg,.png,.webp';
+  const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+  const VIDEO_EXTS = ['.mp4', '.webm', '.mov', '.m4v'];
 
   const validateExt = (name, list) => {
     const lower = String(name || '').toLowerCase();
     return (list || []).some((ext) => lower.endsWith(ext));
   };
 
-  async function attachArticleFile(file) {
-    const settings = A().settings();
-    const max = (settings.maxArticleMb || 15) * 1024 * 1024;
-    if (!validateExt(file.name, settings.articleExts)) {
-      alert('الصيغ المسموحة: DOCX · PDF · TXT');
-      return;
-    }
-    if (file.size > max) {
-      alert(`الحجم الأقصى ${settings.maxArticleMb} ميجابايت`);
-      return;
-    }
-    let meta = fileMeta(file, { status: 'uploading' });
-    A().update(ui.draftId, { articleFile: meta, contentMode: 'file' });
-    ui.contentMode = 'file';
-    try {
-      if (window.HubUploadLimits?.uploadFile) {
-        const up = await window.HubUploadLimits.uploadFile(file);
-        meta = fileMeta(file, { url: up.url, status: 'ok' });
-        meta.name = up.name || file.name;
-        meta.size = up.size || file.size;
-        meta.mime = up.mime || file.type;
-      } else {
-        meta.status = 'ok';
-      }
-      A().update(ui.draftId, { articleFile: meta, contentMode: 'file' });
-    } catch (e) {
-      meta.status = 'error';
-      A().update(ui.draftId, { articleFile: meta });
-      alert(e?.message || 'فشل الرفع');
-    }
-    paint();
+  const maxBytes = () => window.HubUploadLimits?.MAX_FILE_BYTES || 1500 * 1024 * 1024;
+
+  function snapshotForm() {
+    const root = document.getElementById('art-wizard');
+    if (!root) return ui.form || {};
+    const fields = collectForm(root);
+    ui.form = Object.assign({}, ui.form || {}, fields);
+    const row = draft();
+    if (row) Object.assign(row, fields);
+    return ui.form;
   }
 
-  async function attachCover(file) {
-    const settings = A().settings();
-    const max = (settings.maxCoverMb || 5) * 1024 * 1024;
-    if (!validateExt(file.name, settings.coverExts)) {
-      alert('صورة الغلاف: JPG · PNG · WEBP');
-      return;
-    }
-    if (file.size > max) {
-      alert(`الحجم الأقصى لصورة الغلاف ${settings.maxCoverMb} ميجابايت`);
-      return;
-    }
-    let meta = fileMeta(file, { status: 'uploading' });
-    A().update(ui.draftId, { coverImage: meta });
-    try {
-      if (window.HubUploadLimits?.uploadFile) {
-        const up = await window.HubUploadLimits.uploadFile(file);
-        meta = fileMeta(file, { url: up.url, status: 'ok' });
-      } else {
-        const dataUrl = await new Promise((resolve, reject) => {
-          const r = new FileReader();
-          r.onload = () => resolve(r.result);
-          r.onerror = reject;
-          r.readAsDataURL(file);
-        });
-        meta.url = String(dataUrl);
-        meta.status = 'ok';
-      }
-      A().update(ui.draftId, { coverImage: meta });
-    } catch (e) {
-      alert(e?.message || 'فشل رفع الصورة');
-    }
-    paint();
+  async function persistPatch(patch) {
+    const fields = snapshotForm();
+    return A().update(ui.draftId, Object.assign({}, fields, patch || {}));
   }
 
-  async function attachExtra(file) {
-    const article = draft();
-    const list = [...(article?.attachments || [])];
-    let meta = fileMeta(file, { status: 'ok' });
-    try {
-      if (window.HubUploadLimits?.uploadFile) {
-        const up = await window.HubUploadLimits.uploadFile(file);
-        meta = fileMeta(file, { url: up.url, status: 'ok' });
-      }
-    } catch (_) {}
-    list.push(meta);
-    A().update(ui.draftId, { attachments: list });
-    paint();
+  function collectForm(root) {
+    if (!root) return ui.form || {};
+    const tags = root.querySelector('[name="tags"]')?.value || '';
+    return {
+      title: root.querySelector('[name="title"]')?.value?.trim() || '',
+      category: root.querySelector('[name="category"]')?.value?.trim() || '',
+      summary: root.querySelector('[name="summary"]')?.value?.trim() || '',
+      authorName: root.querySelector('[name="authorName"]')?.value?.trim() || '',
+      company: root.querySelector('[name="company"]')?.value?.trim() || '',
+      body: root.querySelector('[name="body"]')?.value || '',
+      tags,
+    };
   }
 
-  const stepperHtml = (step) => {
-    const items = [
-      [1, 'بيانات المقال'],
-      [2, 'المحتوى'],
-      [3, 'المراجعة'],
-      [4, 'الإرسال'],
-    ];
-    return `<div class="art-stepper" aria-label="خطوات الإرسال">
-      ${items
-        .map(([n, label]) => {
-          const cls = n < step ? 'is-done' : n === step ? 'is-current' : '';
-          return `<div class="art-step ${cls}"><span>${n}</span>${esc(label)}</div>`;
-        })
-        .join('')}
-    </div>
-    <p class="art-step-lead">الخطوة ${step} من 4 — ${esc(items[step - 1][1])}</p>`;
-  };
+  function validateRequired(fields) {
+    const errors = {};
+    if (!fields.title) errors.title = 'عنوان المقال مطلوب.';
+    if (!fields.category) errors.category = 'يرجى اختيار التصنيف.';
+    if (!fields.summary) errors.summary = 'النبذة المختصرة مطلوبة.';
+    if (!String(fields.body || '').trim()) errors.body = 'محتوى المقال مطلوب.';
+    return errors;
+  }
 
-  const field = (name, label, control, required = false) => {
+  function field(name, label, control, required = false, hint = '') {
     const err = ui.errors[name];
     return `<div class="art-field ${err ? 'has-error' : ''}">
       <label>${esc(label)}${required ? ' <span class="req">*</span>' : ''}</label>
       ${control}
+      ${hint ? `<small class="art-hint-inline">${esc(hint)}</small>` : ''}
       <div class="err">${esc(err || '')}</div>
     </div>`;
-  };
+  }
 
-  const renderStep1 = (a) => {
+  function mediaStatusLabel(status) {
+    if (status === 'uploading') return 'جارٍ الرفع';
+    if (status === 'ok' || status === 'ready') return 'تم الرفع';
+    if (status === 'error') return 'فشل الرفع';
+    return 'بانتظار الرفع';
+  }
+
+  function coverUrl(a) {
+    return ui.coverLocal || a?.coverImage?.url || '';
+  }
+  function videoUrl(a) {
+    return ui.videoLocal || a?.video?.url || '';
+  }
+
+  function renderCoverZone(a) {
+    const f = a.coverImage;
+    const url = coverUrl(a);
+    const uploading = f?.status === 'uploading';
+    const failed = f?.status === 'error';
+    return `<section class="art-media-card" data-zone="cover">
+      <h3>صورة المقال</h3>
+      <p class="art-zone-lead">اختر صورة من الجهاز. الصيغ: JPG · PNG · WEBP · GIF — حتى ${esc(String(A()?.settings?.()?.maxCoverMb || 1500))} ميجابايت.</p>
+      ${
+        url
+          ? `<div class="art-media-preview"><img src="${esc(url)}" alt="معاينة صورة المقال" /></div>`
+          : `<div class="art-drop art-drop-lg">
+              <strong>اسحب الصورة هنا أو اختر من الجهاز</strong>
+              <p>ستظهر معاينة فورية قبل الإرسال.</p>
+            </div>`
+      }
+      ${
+        f
+          ? `<div class="art-file-card ${failed ? 'is-error' : uploading ? 'is-busy' : ''}">
+              <div>
+                <div>${esc(f.name || 'صورة')}</div>
+                <small>${esc(f.mime || 'صورة')} · ${esc(formatSize(f.size))}</small>
+                <div class="ok">${esc(mediaStatusLabel(f.status))}${uploading ? ` · ${ui.coverProgress || 0}%` : ''}</div>
+                ${uploading ? `<div class="art-progress"><span style="width:${Number(ui.coverProgress) || 0}%"></span></div>` : ''}
+              </div>
+              <div class="art-footer-end">
+                ${failed ? `<button type="button" class="btn btn-secondary btn-sm" data-art="retry-cover">إعادة المحاولة</button>` : ''}
+                <button type="button" class="btn btn-ghost btn-sm" data-art="pick-cover">استبدال</button>
+                <button type="button" class="btn btn-dark btn-sm" data-art="clear-cover">حذف</button>
+              </div>
+            </div>`
+          : `<button type="button" class="btn btn-primary" data-art="pick-cover"><i class="fas fa-image"></i> اختيار صورة</button>`
+      }
+      <input type="file" hidden data-art-cover accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" />
+    </section>`;
+  }
+
+  function renderVideoZone(a) {
+    const f = a.video;
+    const url = videoUrl(a);
+    const uploading = f?.status === 'uploading';
+    const failed = f?.status === 'error';
+    return `<section class="art-media-card" data-zone="video">
+      <h3>فيديو المقال</h3>
+      <p class="art-zone-lead">رفع فيديو فعلي من الجهاز عبر نظام المرفقات الموحّد (حتى 1500 ميجابايت). الصيغ: MP4 · WEBM · MOV.</p>
+      ${
+        url && (f?.status === 'ok' || f?.status === 'ready' || ui.videoLocal)
+          ? `<div class="art-media-preview"><video src="${esc(url)}" controls playsinline></video></div>`
+          : `<div class="art-drop art-drop-lg">
+              <strong>اختر فيديو من الجهاز</strong>
+              <p>يظهر اسم الملف والحجم وتقدّم الرفع هنا.</p>
+            </div>`
+      }
+      ${
+        f
+          ? `<div class="art-file-card ${failed ? 'is-error' : uploading ? 'is-busy' : ''}">
+              <div>
+                <div>${esc(f.name || 'فيديو')}</div>
+                <small>${esc(f.mime || 'فيديو')} · ${esc(formatSize(f.size))}</small>
+                <div class="ok">${esc(mediaStatusLabel(f.status))}${uploading ? ` · ${ui.videoProgress || 0}%` : ''}</div>
+                ${uploading || failed ? `<div class="art-progress"><span style="width:${Number(ui.videoProgress) || 0}%"></span></div>` : ''}
+              </div>
+              <div class="art-footer-end">
+                ${failed ? `<button type="button" class="btn btn-secondary btn-sm" data-art="retry-video">إعادة المحاولة</button>` : ''}
+                <button type="button" class="btn btn-ghost btn-sm" data-art="pick-video">استبدال</button>
+                <button type="button" class="btn btn-dark btn-sm" data-art="clear-video">حذف</button>
+              </div>
+            </div>`
+          : `<button type="button" class="btn btn-primary" data-art="pick-video"><i class="fas fa-video"></i> اختيار فيديو</button>`
+      }
+      <input type="file" hidden data-art-video accept=".mp4,.webm,.mov,.m4v,video/mp4,video/webm,video/quicktime" />
+    </section>`;
+  }
+
+  function renderExtraZone(a) {
+    const list = a.attachments || [];
+    return `<section class="art-media-card" data-zone="extra">
+      <h3>مرفقات إضافية</h3>
+      <p class="art-zone-lead">صور أو ملفات داعمة عبر نظام المرفقات الموحّد.</p>
+      <button type="button" class="btn btn-secondary" data-art="pick-extra"><i class="fas fa-paperclip"></i> إضافة مرفق</button>
+      <input type="file" hidden data-art-extra />
+      ${
+        list.length
+          ? list
+              .map(
+                (f, i) => `<div class="art-file-card">
+                  <div>
+                    <div>${esc(f.name)}</div>
+                    <small>${esc(formatSize(f.size))} · ${esc(mediaStatusLabel(f.status))}</small>
+                  </div>
+                  <button type="button" class="btn btn-ghost btn-sm" data-art="clear-extra" data-idx="${i}">حذف</button>
+                </div>`
+              )
+              .join('')
+          : '<p class="art-zone-lead">لا مرفقات إضافية بعد.</p>'
+      }
+    </section>`;
+  }
+
+  function renderPreview(a) {
+    const snippet = String(a.body || '').trim().slice(0, 280);
+    const extras = (a.attachments || []).map((f) => f.name).join(' · ');
+    return `<section class="art-preview art-preview-inline" id="art-live-preview">
+      <h3>معاينة قبل الإرسال</h3>
+      ${coverUrl(a) ? `<img src="${esc(coverUrl(a))}" alt="" />` : ''}
+      <h4>${esc(a.title || 'بدون عنوان')}</h4>
+      <div class="meta">${esc(a.authorName || '—')} · ${esc(a.category || '—')} · ${esc(a.company || '')}</div>
+      <p><strong>النبذة:</strong> ${esc(a.summary || '—')}</p>
+      <p><strong>جزء من المحتوى:</strong> ${esc(snippet || '—')}</p>
+      <p><strong>الفيديو:</strong> ${a.video ? `${esc(a.video.name || 'فيديو')} · ${esc(mediaStatusLabel(a.video.status))}` : 'لا يوجد'}</p>
+      <p><strong>المرفقات:</strong> ${esc(extras || 'لا يوجد')}</p>
+    </section>`;
+  }
+
+  function renderLoginGate() {
+    const next = encodeURIComponent('blog.html#submit');
+    return `<div class="art-shell art-submit-page">
+      <h2>إرسال مقال جديد</h2>
+      <p class="art-step-lead">يلزم تسجيل الدخول لرفع المقال وربطه بحسابك وطلب المراجعة.</p>
+      <div class="art-footer">
+        <a class="btn btn-primary" href="login.html?next=${next}">تسجيل الدخول</a>
+        <button type="button" class="btn btn-ghost" data-art="goto-home">العودة للمقالات</button>
+      </div>
+    </div>`;
+  }
+
+  function renderSuccess(a) {
+    return `<div class="art-success">
+      <div class="big"><i class="fas fa-check"></i></div>
+      <h2>تم إرسال المقال للمراجعة بنجاح</h2>
+      <p>رقم الطلب</p>
+      <code>${esc(a.requestId || a.id)}</code>
+      <p>رقم المقال: <code>${esc(a.id)}</code></p>
+      <p>الحالة: <strong>${esc(a.statusAr || 'بانتظار المراجعة')}</strong></p>
+      <div class="art-success-actions">
+        <button type="button" class="btn btn-primary" data-art="open-detail" data-id="${esc(a.id)}">عرض المقال</button>
+        <button type="button" class="btn btn-secondary" data-art="goto-mine">مقالاتي</button>
+        <button type="button" class="btn btn-ghost" data-art="start-submit">إرسال مقال آخر</button>
+      </div>
+    </div>`;
+  }
+
+  function renderForm(a) {
     const cats = A().CATEGORIES.map(
       (c) => `<option value="${esc(c)}" ${a.category === c ? 'selected' : ''}>${esc(c)}</option>`
     ).join('');
-    return `
-      ${stepperHtml(1)}
-      <h2>بيانات المقال</h2>
-      <p class="art-step-lead">ابدأ بالمعلومات الأساسية للمقال.</p>
-      <div class="art-form">
-        ${field('title', 'عنوان المقال', `<input name="title" value="${esc(a.title || '')}" placeholder="مثال: كيف تخفض تكاليف التشغيل خلال 30 يوماً" />`, true)}
-        ${field('category', 'التصنيف', `<select name="category"><option value="">اختر التصنيف</option>${cats}</select>`, true)}
-        ${field('summary', 'نبذة مختصرة', `<textarea name="summary" placeholder="اكتب ملخصاً قصيراً يوضح فكرة المقال...">${esc(a.summary || '')}</textarea>`, true)}
-        ${field('authorName', 'الكاتب', `<input name="authorName" value="${esc(a.authorName || '')}" />`)}
-        ${field('company', 'الجهة / الشركة (اختياري)', `<input name="company" value="${esc(a.company || '')}" />`)}
-        ${field('tags', 'Tags (اختياري)', `<input name="tags" value="${esc((a.tags || []).join(', '))}" placeholder="تشغيل, تكاليف, فروع" />`)}
-      </div>
-      <div class="art-autosave">${ui.autosaveAt ? `✓ تم الحفظ تلقائياً ${esc(ui.autosaveAt)}` : ''}</div>
-      <div class="art-footer">
-        <button type="button" class="btn btn-ghost" data-art="cancel">إلغاء</button>
-        <div class="art-footer-end">
-          <button type="button" class="btn btn-secondary" data-art="save-draft">حفظ كمسودة</button>
-          <button type="button" class="btn btn-primary" data-art="next-1">التالي: إضافة المحتوى ←</button>
+    const busy = ui.submitting || a.coverImage?.status === 'uploading' || a.video?.status === 'uploading';
+    return `<div class="art-shell art-submit-page" id="art-wizard">
+      <div class="art-submit-head">
+        <div>
+          <h2>إرسال مقال جديد</h2>
+          <p class="art-step-lead">صفحة واحدة متصلة — اكتب المحتوى وارفع الصورة والفيديو ثم أرسل للمراجعة.</p>
+          ${a.id ? `<p class="art-step-lead">رقم المقال: <code>${esc(a.id)}</code></p>` : ''}
         </div>
-      </div>`;
-  };
-
-  const renderFileZone = (a) => {
-    const f = a.articleFile;
-    const settings = A().settings();
-    return `<div class="art-drop">
-      <strong>رفع ملف المقال</strong>
-      <p>الصيغ المقبولة: DOCX · PDF · TXT — الحد الأقصى ${esc(String(settings.maxArticleMb))} ميجابايت.<br>
-      الصور يمكن أن تكون داخل الملف، أو ارفع صورة غلاف منفصلة بالأسفل. يمكنك استبدال الملف لاحقاً.</p>
-      <button type="button" class="btn btn-primary" data-art="pick-file"><i class="fas fa-file-arrow-up"></i> اختيار ملف</button>
-      <input type="file" hidden data-art-file accept="${esc(acceptArticle())}" />
+        <button type="button" class="btn btn-ghost btn-sm" data-art="help">؟ كيف أرسل مقالاً؟</button>
+      </div>
       ${
-        f
-          ? `<div class="art-file-card">
-              <div>
-                <div>${esc(f.name)}</div>
-                <small>${esc(f.mime || 'ملف')} · ${esc(formatSize(f.size))}</small>
-                <div class="ok">${f.status === 'ok' ? '✓ تم الرفع بنجاح' : f.status === 'uploading' ? 'جاري الرفع…' : 'بانتظار الرفع'}</div>
-              </div>
-              <div class="art-footer-end">
-                ${f.url ? `<a class="btn btn-ghost btn-sm" href="${esc(f.url)}" target="_blank" rel="noopener">معاينة</a>` : ''}
-                <button type="button" class="btn btn-ghost btn-sm" data-art="pick-file">استبدال</button>
-                <button type="button" class="btn btn-dark btn-sm" data-art="clear-file">حذف</button>
-              </div>
-            </div>`
+        ui.helpOpen
+          ? `<aside class="art-help-card"><div><strong>كيف أرسل مقالاً؟</strong>
+              <p>أكمل البيانات والمحتوى والمرفقات في هذه الصفحة ثم اضغط «إرسال للمراجعة». سيُنشأ رقم طلب ويصل إلى مكتب المحتوى — وليس مباشرة إلى موافقات المدير الأعلى.</p></div></aside>`
           : ''
       }
-    </div>`;
-  };
-
-  const renderStep2 = (a) => {
-    const mode = ui.contentMode || a.contentMode || '';
-    return `
-      ${stepperHtml(2)}
-      <h2>أضف محتوى المقال</h2>
-      <p class="art-step-lead">يمكنك كتابة المقال مباشرة أو رفعه كملف.</p>
-      <div class="art-mode-pick">
-        <button type="button" class="art-mode ${mode === 'write' ? 'is-on' : ''}" data-art="mode-write">✍ كتابة المقال<small>محرر نص بسيط</small></button>
-        <button type="button" class="art-mode ${mode === 'file' ? 'is-on' : ''}" data-art="mode-file">↑ رفع ملف<small>DOCX · PDF · TXT</small></button>
-      </div>
-      ${ui.errors.content ? `<p class="art-field has-error"><span class="err" style="display:block">${esc(ui.errors.content)}</span></p>` : ''}
-      ${
-        mode === 'write'
-          ? `<div class="art-editor">
+      ${ui.formError ? `<p class="art-form-error">${esc(ui.formError)}</p>` : ''}
+      <div class="art-submit-grid">
+        <div class="art-submit-main">
+          <section class="art-section">
+            <h3>بيانات المقال</h3>
+            <div class="art-form art-form-wide">
+              ${field('title', 'عنوان المقال', `<input name="title" value="${esc(a.title || '')}" placeholder="مثال: كيف تخفض تكاليف التشغيل خلال 30 يوماً" />`, true)}
+              ${field('summary', 'نبذة مختصرة', `<textarea name="summary" placeholder="اكتب ملخصاً قصيراً يوضح فكرة المقال...">${esc(a.summary || '')}</textarea>`, true)}
+            </div>
+          </section>
+          <section class="art-section">
+            <h3>محتوى المقال</h3>
+            ${ui.errors.body ? `<p class="art-field has-error"><span class="err" style="display:block">${esc(ui.errors.body)}</span></p>` : ''}
+            <div class="art-editor">
               <div class="art-editor-tools">
                 <button type="button" data-art-fmt="bold"><b>B</b></button>
                 <button type="button" data-art-fmt="h2">عنوان فرعي</button>
                 <button type="button" data-art-fmt="ul">قائمة</button>
                 <button type="button" data-art-fmt="link">رابط</button>
               </div>
-              <textarea name="body" placeholder="اكتب مقالك هنا...">${esc(a.body || '')}</textarea>
-            </div>`
-          : mode === 'file'
-            ? renderFileZone(a)
-            : `<p class="art-step-lead">اختر طريقة إضافة المحتوى أعلاه للمتابعة.</p>`
-      }
-      <div class="art-form" style="margin-top:18px">
-        <div class="art-field">
-          <label>صورة المقال الرئيسية (اختياري)</label>
-          <button type="button" class="btn btn-secondary btn-sm" data-art="pick-cover">رفع صورة</button>
-          <input type="file" hidden data-art-cover accept="${esc(acceptCover())}" />
-          ${
-            a.coverImage
-              ? `<div class="art-file-card"><span>${esc(a.coverImage.name)} · ${esc(formatSize(a.coverImage.size))}</span>
-                  <button type="button" class="btn btn-ghost btn-sm" data-art="clear-cover">حذف</button></div>`
-              : ''
-          }
+              <textarea name="body" placeholder="اكتب مقالك هنا... يكفي سطر واحد لاختبار الإرسال.">${esc(a.body || '')}</textarea>
+            </div>
+          </section>
+          ${renderPreview(a)}
+          <div class="art-autosave">${ui.autosaveAt ? `✓ تم الحفظ تلقائياً ${esc(ui.autosaveAt)}` : ''}</div>
+          ${a.changeRequestNote ? `<div class="art-review-note"><strong>سبب طلب التعديل</strong><p>${esc(a.changeRequestNote)}</p></div>` : ''}
+          <div class="art-footer art-footer-submit">
+            <button type="button" class="btn btn-ghost" data-art="cancel">إلغاء</button>
+            <div class="art-footer-end">
+              <button type="button" class="btn btn-secondary" data-art="save-draft" ${ui.saving ? 'disabled' : ''}>حفظ كمسودة</button>
+              <button type="button" class="btn btn-primary" data-art="submit" ${busy ? 'disabled' : ''}><i class="fas fa-paper-plane"></i> إرسال للمراجعة</button>
+            </div>
+          </div>
         </div>
-        <div class="art-field">
-          <label>مرفقات إضافية (اختياري)</label>
-          <button type="button" class="btn btn-secondary btn-sm" data-art="pick-extra">إضافة مرفق</button>
-          <input type="file" hidden data-art-extra />
-          ${(a.attachments || []).map((f) => `<div class="art-file-card"><span>${esc(f.name)}</span></div>`).join('')}
-        </div>
-      </div>
-      <div class="art-autosave">${ui.autosaveAt ? `✓ تم الحفظ تلقائياً ${esc(ui.autosaveAt)}` : ''}</div>
-      <div class="art-footer">
-        <button type="button" class="btn btn-ghost" data-art="prev">→ السابق</button>
-        <div class="art-footer-end">
-          <button type="button" class="btn btn-secondary" data-art="save-draft">حفظ كمسودة</button>
-          <button type="button" class="btn btn-primary" data-art="next-2">التالي: المراجعة ←</button>
-        </div>
-      </div>`;
-  };
-
-  const checklist = (a) => {
-    const items = [
-      [!!a.title, 'تم إدخال العنوان', 'title'],
-      [!!a.category, 'تم اختيار التصنيف', 'category'],
-      [!!(a.body || a.articleFile), 'تم إضافة المحتوى', 'content'],
-      [!!a.authorName, 'تم إضافة بيانات الكاتب', 'author'],
-      [!!a.coverImage, 'صورة المقال', 'cover', true],
-    ];
-    return `<ul class="art-check">${items
-      .map(([ok, label, , optional]) => {
-        if (ok) return `<li><span class="ok">✓</span> ${esc(label)}</li>`;
-        if (optional) {
-          return `<li><span class="bad">✕</span> صورة المقال غير مضافة
-            <button type="button" class="btn btn-ghost btn-sm" data-art="goto-2">إضافة الآن</button></li>`;
-        }
-        return `<li><span class="bad">✕</span> ${esc(label)}</li>`;
-      })
-      .join('')}</ul>`;
-  };
-
-  const renderStep3 = (a) => `
-    ${stepperHtml(3)}
-    <h2>راجع مقالك قبل الإرسال</h2>
-    <p class="art-step-lead">تأكد أن كل شيء صحيح — بعد الإرسال سيصل لفريق المحتوى للمراجعة.</p>
-    <div class="art-preview">
-      ${a.coverImage?.url ? `<img src="${esc(a.coverImage.url)}" alt="" style="max-width:100%;border-radius:12px;margin-bottom:12px" />` : ''}
-      <h3>${esc(a.title || 'بدون عنوان')}</h3>
-      <div class="meta">${esc(a.authorName || '—')} · ${esc(a.category || '—')} · ${esc(a.company || '')}</div>
-      <p><strong>الملخص:</strong> ${esc(a.summary || '—')}</p>
-      ${a.body ? `<div style="white-space:pre-wrap;margin-top:12px;font-weight:600">${esc(a.body)}</div>` : ''}
-      ${a.articleFile ? `<p style="margin-top:12px"><i class="fas fa-paperclip"></i> ملف: ${esc(a.articleFile.name)}</p>` : ''}
-      ${(a.attachments || []).length ? `<p>مرفقات: ${esc(a.attachments.map((f) => f.name).join(' · '))}</p>` : ''}
-    </div>
-    ${checklist(a)}
-    <div class="art-footer">
-      <button type="button" class="btn btn-ghost" data-art="prev">رجوع للتعديل</button>
-      <div class="art-footer-end">
-        <button type="button" class="btn btn-secondary" data-art="save-draft">حفظ كمسودة</button>
-        <button type="button" class="btn btn-primary" data-art="submit"><i class="fas fa-paper-plane"></i> إرسال للمراجعة</button>
+        <aside class="art-submit-side">
+          <section class="art-section">
+            <h3>التصنيف والكاتب</h3>
+            <div class="art-form art-form-wide">
+              ${field('category', 'التصنيف', `<select name="category"><option value="">اختر التصنيف</option>${cats}</select>`, true)}
+              ${field('authorName', 'اسم الكاتب', `<input name="authorName" value="${esc(a.authorName || '')}" />`)}
+              ${field('company', 'الجهة / الشركة', `<input name="company" value="${esc(a.company || '')}" placeholder="اختياري" />`)}
+              ${field('tags', 'وسوم', `<input name="tags" value="${esc((a.tags || []).join(', '))}" placeholder="تشغيل, تكاليف, فروع" />`)}
+            </div>
+          </section>
+          ${renderCoverZone(a)}
+          ${renderVideoZone(a)}
+          ${renderExtraZone(a)}
+        </aside>
       </div>
     </div>`;
-
-  const renderSuccess = (a) => `
-    <div class="art-success">
-      <div class="big"><i class="fas fa-check"></i></div>
-      <h2>تم إرسال مقالك بنجاح</h2>
-      <p>رقم المقال</p>
-      <code>${esc(a.id)}</code>
-      <p>الحالة: <strong>${esc(a.statusAr || 'بانتظار المراجعة')}</strong></p>
-      <p>تم استلام المقال وسيتم مراجعته قبل النشر. يمكنك متابعة حالته من صفحة مقالاتي.</p>
-      <div class="art-success-actions">
-        <button type="button" class="btn btn-primary" data-art="open-detail" data-id="${esc(a.id)}">متابعة المقال</button>
-        <button type="button" class="btn btn-secondary" data-art="goto-mine">مقالاتي</button>
-        <button type="button" class="btn btn-ghost" data-art="goto-home">العودة للمقالات</button>
-      </div>
-    </div>`;
+  }
 
   const renderSubmit = () => {
     if (!A()) return `<div class="art-shell"><p>تعذّر تحميل نظام المقالات.</p></div>`;
@@ -439,24 +440,11 @@
       const a = A().get(ui.successId);
       return `<div class="art-shell">${a ? renderSuccess(a) : '<p>المقال غير موجود</p>'}</div>`;
     }
-    const a = ensureDraft();
-    let body = '';
-    if (ui.step === 1) body = renderStep1(a);
-    else if (ui.step === 2) body = renderStep2(a);
-    else body = renderStep3(a);
-    return `<div class="art-shell" id="art-wizard">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-        <h2 style="margin:0">إرسال مقال جديد</h2>
-        <button type="button" class="btn btn-ghost btn-sm" data-art="help">؟ كيف أرسل مقالاً؟</button>
-      </div>
-      ${
-        ui.helpOpen
-          ? `<aside class="art-help-card"><div><strong>كيف أرسل مقالاً؟</strong>
-              <p>1) أدخل بيانات المقال.<br>2) اكتب المحتوى أو ارفع ملفاً.<br>3) راجع المقال.<br>4) أرسله للمراجعة.<br>5) تابع حالته من «مقالاتي».</p></div></aside>`
-          : ''
-      }
-      ${body}
-    </div>`;
+    if (!loggedIn()) return renderLoginGate();
+    if (!draft()) {
+      return `<div class="art-shell art-submit-page"><p class="art-step-lead">جاري إنشاء المسودة…</p></div>`;
+    }
+    return renderForm(Object.assign({}, draft(), ui.form || {}));
   };
 
   const renderMine = () => {
@@ -466,14 +454,14 @@
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
         <div>
           <h2 style="margin:0">مقالاتي</h2>
-          <p class="art-step-lead">تابع حالة كل مقال أرسلته — من المسودة حتى النشر.</p>
+          <p class="art-step-lead">تابع حالة كل مقال — مسودة → بانتظار المراجعة → تحت المراجعة → يحتاج تعديل / مرفوض / منشور.</p>
         </div>
         <button type="button" class="btn btn-primary" data-art="start-submit"><i class="fas fa-plus"></i> ارفع مقالك</button>
       </div>
       <div class="art-table-wrap">
         <table class="art-table">
           <thead><tr>
-            <th>رقم المقال</th><th>العنوان</th><th>التصنيف</th><th>تاريخ الإرسال</th><th>الحالة</th><th>آخر تحديث</th><th>الإجراءات</th>
+            <th>رقم المقال</th><th>رقم الطلب</th><th>العنوان</th><th>التصنيف</th><th>تاريخ الإرسال</th><th>الحالة</th><th>الإجراءات</th>
           </tr></thead>
           <tbody>
             ${
@@ -483,9 +471,7 @@
                       const actions = [];
                       if (a.status === 'Draft') {
                         actions.push(`<button type="button" class="btn btn-primary btn-sm" data-art="edit" data-id="${esc(a.id)}">تعديل</button>`);
-                        actions.push(`<button type="button" class="btn btn-ghost btn-sm" data-art="open-detail" data-id="${esc(a.id)}">معاينة</button>`);
                         actions.push(`<button type="button" class="btn btn-secondary btn-sm" data-art="send-now" data-id="${esc(a.id)}">إرسال</button>`);
-                        actions.push(`<button type="button" class="btn btn-dark btn-sm" data-art="delete" data-id="${esc(a.id)}">حذف</button>`);
                       } else if (a.status === 'Needs Changes') {
                         actions.push(`<button type="button" class="btn btn-primary btn-sm" data-art="open-detail" data-id="${esc(a.id)}">عرض الملاحظات</button>`);
                         actions.push(`<button type="button" class="btn btn-secondary btn-sm" data-art="edit" data-id="${esc(a.id)}">تعديل وإعادة الإرسال</button>`);
@@ -494,15 +480,14 @@
                         actions.push(`<button type="button" class="btn btn-ghost btn-sm" data-art="open-detail" data-id="${esc(a.id)}">التفاصيل</button>`);
                       } else {
                         actions.push(`<button type="button" class="btn btn-primary btn-sm" data-art="open-detail" data-id="${esc(a.id)}">عرض</button>`);
-                        actions.push(`<button type="button" class="btn btn-ghost btn-sm" data-art="open-detail" data-id="${esc(a.id)}">متابعة</button>`);
                       }
                       return `<tr>
                         <td><code>${esc(a.id)}</code></td>
+                        <td><code>${esc(a.requestId || '—')}</code></td>
                         <td>${esc(a.title || '—')}</td>
                         <td>${esc(a.category || '—')}</td>
                         <td>${fmt(a.submittedAt || a.createdAt)}</td>
                         <td><span class="art-chip ${statusClass(a.status)}">${esc(a.statusAr || a.status)}</span></td>
-                        <td>${fmt(a.updatedAt)}</td>
                         <td>${actions.join(' ')}</td>
                       </tr>`;
                     })
@@ -518,9 +503,10 @@
 
   const renderDetail = (id) => {
     const a = A().get(id);
-    if (!a) return `<div class="art-shell"><p>المقال غير موجود.</p><button class="btn btn-ghost" data-art="goto-mine">مقالاتي</button></div>`;
+    if (!a) return `<div class="art-shell"><p>المقال غير موجود أو غير مصرح لك بعرضه.</p><button class="btn btn-ghost" data-art="goto-mine">مقالاتي</button></div>`;
     const timeline = a.timeline || [];
     let currentFound = false;
+    const note = a.changeRequestNote || a.reviewNotes || a.rejectionReason || '';
     return `<div class="art-shell">
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
         <div>
@@ -529,19 +515,22 @@
           <p><span class="art-chip ${statusClass(a.status)}">${esc(a.statusAr)}</span> · ${esc(A().customerPhase(a))}</p>
         </div>
         <div class="art-footer-end">
-          ${a.status === 'Draft' || a.status === 'Needs Changes' ? `<button type="button" class="btn btn-primary" data-art="edit" data-id="${esc(a.id)}">تعديل</button>` : ''}
+          ${a.status === 'Draft' || a.status === 'Needs Changes' ? `<button type="button" class="btn btn-primary" data-art="edit" data-id="${esc(a.id)}">تعديل وإعادة الإرسال</button>` : ''}
           ${a.status === 'Needs Changes' ? `<button type="button" class="btn btn-secondary" data-art="resubmit" data-id="${esc(a.id)}">إعادة الإرسال</button>` : ''}
           <button type="button" class="btn btn-ghost" data-art="goto-mine">مقالاتي</button>
         </div>
       </div>
+      ${note && (a.status === 'Needs Changes' || a.status === 'Rejected') ? `<div class="art-review-note"><strong>${a.status === 'Rejected' ? 'سبب الرفض' : 'سبب التعديل'}</strong><p>${esc(note)}</p></div>` : ''}
       <div class="art-detail-grid" style="margin-top:16px">
         <div class="art-card">
           <h4>المحتوى</h4>
           <p><strong>التصنيف:</strong> ${esc(a.category)}</p>
+          <p><strong>الكاتب:</strong> ${esc(a.authorName || '—')}</p>
           <p><strong>الملخص:</strong> ${esc(a.summary)}</p>
+          ${a.coverImage?.url ? `<img src="${esc(a.coverImage.url)}" alt="" style="max-width:100%;border-radius:12px;margin:10px 0" />` : ''}
+          ${a.video?.url ? `<video src="${esc(a.video.url)}" controls style="max-width:100%;border-radius:12px;margin:10px 0"></video>` : ''}
           ${a.body ? `<div style="white-space:pre-wrap;margin-top:10px">${esc(a.body)}</div>` : ''}
-          ${a.articleFile ? `<p><i class="fas fa-paperclip"></i> ${esc(a.articleFile.name)}</p>` : ''}
-          ${a.reviewNotes ? `<div style="margin-top:14px;padding:12px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca"><strong>ملاحظات المراجعة</strong><p>${esc(a.reviewNotes)}</p></div>` : ''}
+          ${(a.attachments || []).map((f) => `<p><i class="fas fa-paperclip"></i> ${esc(f.name)}</p>`).join('')}
         </div>
         <div class="art-card">
           <h4>حالة المقال</h4>
@@ -563,17 +552,17 @@
     </div>`;
   };
 
-  const ART_PAGE_TITLE = 'المقالات | نايوش هوب 360';
+  const ART_PAGE_TITLE = 'المدونة | نايوش هوب 360';
 
   const renderHomeHero = () => {
     document.title = ART_PAGE_TITLE;
     const hero = document.querySelector('[data-art-hero]');
     if (!hero) return;
     hero.innerHTML = `
-      <p class="hub-feature-kicker" style="color:rgba(255,214,220,.95)"><i class="fas fa-newspaper"></i> مقالات تشغيلية</p>
-      <h1>المقالات | نايوش هوب 360</h1>
+      <p class="hub-feature-kicker" style="color:rgba(255,214,220,.95)"><i class="fas fa-blog"></i> مقالات تشغيلية</p>
+      <h1>المدونة | نايوش هوب 360</h1>
       <p class="art-lead">مقالات تُشغّل — مش كلام عام. كل مقالة تنتهي بخطوة عملية داخل هوب: فرع · رصيد · دردشة · منصات.</p>
-      <p class="art-hint">أرسل مقالك في خطوات بسيطة، وسنراجعه قبل النشر.</p>
+      <p class="art-hint">أرسل مقالك من صفحة واحدة، وسنراجعه في مكتب المحتوى قبل النشر.</p>
       <div class="art-hero-actions">
         <button type="button" class="btn btn-primary" data-art="start-submit"><i class="fas fa-plus"></i> ارفع مقالك</button>
         <button type="button" class="btn btn-secondary" data-art="goto-mine"><i class="fas fa-folder-open"></i> مقالاتي</button>
@@ -598,13 +587,17 @@
     grid.innerHTML = posts
       .map((post, index) => {
         const featured = index === 0 ? ' hub-feature-card--featured' : '';
+        const cover = post.coverImage?.url
+          ? `<img src="${esc(post.coverImage.url)}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:12px;margin-bottom:10px" />`
+          : '';
         return `<article class="hub-feature-card${featured}">
+          ${cover}
           <div class="hub-feature-card-top">
             <span class="hub-feature-icon"><i class="fas fa-newspaper"></i></span>
             <h3>${esc(post.title || 'مقال')}</h3>
           </div>
           <p>${esc(post.body || '')}</p>
-          <small style="display:block;margin-top:8px;color:#6b7280;font-weight:700">${esc(post.authorName || '')} · ${esc(post.category || '')} · ${fmt(post.at)}</small>
+          <small style="display:block;margin-top:8px;color:#6b7280;font-weight:700">${esc(post.authorName || '')} · ${esc(post.category || '')} · ${fmt(post.publishedAt || post.at)}</small>
           <div class="hub-feature-actions" style="margin-top:12px">
             <a class="btn btn-primary" href="#posts">اقرأ</a>
           </div>
@@ -616,6 +609,7 @@
   function paintApp() {
     const host = document.getElementById('art-app');
     if (!host) return;
+    document.body.classList.toggle('art-mode-submit', ui.view === 'submit' || ui.view === 'success');
     if (ui.view === 'submit' || ui.view === 'success') host.innerHTML = renderSubmit();
     else if (ui.view === 'mine') host.innerHTML = renderMine();
     else if (ui.view === 'detail') host.innerHTML = renderDetail(ui.detailId);
@@ -623,7 +617,7 @@
       host.innerHTML = `<aside class="art-help-card">
         <span class="hub-feature-purpose-mark"><i class="fas fa-circle-question"></i></span>
         <div><strong>كيف يعمل رفع المقال؟</strong>
-          <p>اضغط «ارفع مقالك» → أدخل البيانات → أضف المحتوى → راجع → أرسل للمراجعة. لا تحتاج التعامل مع آلية التشغيل؛ النظام يشغّل المراجعة تلقائياً في الخلفية.</p>
+          <p>اضغط «ارفع مقالك» → أكمل البيانات والمحتوى والمرفقات في صفحة واحدة → أرسل للمراجعة. يصل الطلب إلى مكتب المحتوى وصندوق طلبات العملاء.</p>
         </div>
       </aside>`;
     }
@@ -632,31 +626,195 @@
   }
 
   function paint() {
+    snapshotForm();
     paintApp();
   }
 
-  function autoSaveFromDom() {
+  function updatePreviewDom() {
     const root = document.getElementById('art-wizard');
-    if (!root || !ui.draftId) return;
-    if (ui.step === 1) {
-      A().update(ui.draftId, {
-        title: root.querySelector('[name="title"]')?.value || '',
-        category: root.querySelector('[name="category"]')?.value || '',
-        summary: root.querySelector('[name="summary"]')?.value || '',
-        authorName: root.querySelector('[name="authorName"]')?.value || '',
-        company: root.querySelector('[name="company"]')?.value || '',
-        tags: root.querySelector('[name="tags"]')?.value || '',
-      });
-    } else if (ui.step === 2) {
-      const body = root.querySelector('[name="body"]')?.value;
-      if (body !== undefined) A().update(ui.draftId, { body });
-    }
-    ui.autosaveAt = new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
-    const el = root.querySelector('.art-autosave');
-    if (el) el.textContent = `✓ تم الحفظ تلقائياً ${ui.autosaveAt}`;
+    if (!root) return;
+    const a = Object.assign({}, draft() || {}, collectForm(root));
+    const box = document.getElementById('art-live-preview');
+    if (!box) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = renderPreview(a);
+    if (tmp.firstElementChild) box.replaceWith(tmp.firstElementChild);
   }
 
-  function onAction(e) {
+  async function autoSaveFromDom() {
+    const root = document.getElementById('art-wizard');
+    if (!root || !ui.draftId || ui.submitting) return;
+    const fields = collectForm(root);
+    try {
+      await A().update(ui.draftId, fields);
+      ui.autosaveAt = new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+      const el = root.querySelector('.art-autosave');
+      if (el) el.textContent = `✓ تم الحفظ تلقائياً ${ui.autosaveAt}`;
+    } catch (_) {}
+  }
+
+  async function uploadViaHub(file, onProgress) {
+    const check = window.HubUploadLimits?.assertFile?.(file);
+    if (check && !check.ok) throw new Error(check.error);
+    if (file.size > maxBytes()) throw new Error(`الحجم الأقصى ${Math.round(maxBytes() / 1024 / 1024)} ميجابايت`);
+    if (!window.HubUploadLimits?.uploadFile) throw new Error('مكوّن الرفع غير متاح');
+    const up = await window.HubUploadLimits.uploadFile(file, { onProgress });
+    return {
+      id: up.id || up.filename || '',
+      name: up.name || file.name,
+      mime: up.mime || file.type,
+      size: up.size || file.size,
+      url: up.url,
+      uploadedAt: new Date().toISOString(),
+      status: 'ok',
+    };
+  }
+
+  async function attachCover(file) {
+    if (!validateExt(file.name, IMAGE_EXTS)) {
+      alert('صيغة الصورة غير مدعومة. المسموح: JPG · PNG · WEBP · GIF');
+      return;
+    }
+    if (file.size > maxBytes()) {
+      alert(`الحجم الأقصى للصورة ${Math.round(maxBytes() / 1024 / 1024)} ميجابايت`);
+      return;
+    }
+    ui.lastCoverFile = file;
+    if (ui.coverLocal) URL.revokeObjectURL(ui.coverLocal);
+    ui.coverLocal = URL.createObjectURL(file);
+    ui.coverProgress = 0;
+    const meta = fileMeta(file, { status: 'uploading' });
+    await persistPatch({ coverImage: meta });
+    paint();
+    try {
+      const up = await uploadViaHub(file, (pct) => {
+        ui.coverProgress = pct;
+        const bar = document.querySelector('[data-zone="cover"] .art-progress span');
+        if (bar) bar.style.width = `${pct}%`;
+        const lbl = document.querySelector('[data-zone="cover"] .ok');
+        if (lbl) lbl.textContent = `جارٍ الرفع · ${pct}%`;
+      });
+      await persistPatch({ coverImage: up });
+    } catch (e) {
+      await persistPatch({ coverImage: fileMeta(file, { status: 'error' }) });
+      alert(e?.message || 'فشل رفع الصورة');
+    }
+    paint();
+  }
+
+  async function attachVideo(file) {
+    if (!validateExt(file.name, VIDEO_EXTS)) {
+      alert('صيغة الفيديو غير مدعومة. المسموح: MP4 · WEBM · MOV');
+      return;
+    }
+    if (file.size > maxBytes()) {
+      alert(`الحجم الأقصى للفيديو ${Math.round(maxBytes() / 1024 / 1024)} ميجابايت`);
+      return;
+    }
+    ui.lastVideoFile = file;
+    if (ui.videoLocal) URL.revokeObjectURL(ui.videoLocal);
+    ui.videoLocal = URL.createObjectURL(file);
+    ui.videoProgress = 0;
+    const meta = fileMeta(file, { status: 'uploading' });
+    await persistPatch({ video: meta });
+    paint();
+    try {
+      const up = await uploadViaHub(file, (pct) => {
+        ui.videoProgress = pct;
+        const bar = document.querySelector('[data-zone="video"] .art-progress span');
+        if (bar) bar.style.width = `${pct}%`;
+        const lbl = document.querySelector('[data-zone="video"] .ok');
+        if (lbl) lbl.textContent = `جارٍ الرفع · ${pct}%`;
+      });
+      await persistPatch({ video: up });
+    } catch (e) {
+      await persistPatch({ video: fileMeta(file, { status: 'error' }) });
+      alert(e?.message || 'فشل رفع الفيديو');
+    }
+    paint();
+  }
+
+  async function attachExtra(file) {
+    const article = draft();
+    const list = [...(article?.attachments || [])];
+    let meta = fileMeta(file, { status: 'uploading' });
+    list.push(meta);
+    await persistPatch({ attachments: list });
+    paint();
+    try {
+      const up = await uploadViaHub(file);
+      const next = [...(A().get(ui.draftId)?.attachments || list)];
+      next[next.length - 1] = up;
+      await persistPatch({ attachments: next });
+    } catch (e) {
+      alert(e?.message || 'فشل رفع المرفق');
+    }
+    paint();
+  }
+
+  async function submitCurrent() {
+    if (ui.submitting) return;
+    const root = document.getElementById('art-wizard');
+    const live = collectForm(root);
+    const a = Object.assign({}, draft() || {}, live);
+    const fields = {
+      title: live.title || a.title || '',
+      category: live.category || a.category || '',
+      summary: live.summary || a.summary || '',
+      authorName: live.authorName || a.authorName || '',
+      company: live.company || a.company || '',
+      body: live.body || a.body || '',
+      tags: live.tags || a.tags || [],
+    };
+    const errors = validateRequired(fields);
+    ui.errors = errors;
+    ui.formError = '';
+    if (Object.keys(errors).length) {
+      paint();
+      return;
+    }
+    const media = draft() || a;
+    if (media?.coverImage?.status === 'uploading') {
+      ui.formError = 'انتظر اكتمال رفع صورة المقال قبل الإرسال.';
+      paint();
+      return;
+    }
+    if (media?.video?.status === 'uploading') {
+      ui.formError = 'انتظر اكتمال رفع فيديو المقال قبل الإرسال.';
+      paint();
+      return;
+    }
+    if (media?.coverImage?.status === 'error') {
+      ui.formError = 'فشل رفع الصورة — احذفها أو أعد المحاولة.';
+      paint();
+      return;
+    }
+    if (media?.video?.status === 'error') {
+      ui.formError = 'فشل رفع الفيديو — احذف أو أعد المحاولة قبل الإرسال.';
+      paint();
+      return;
+    }
+    ui.submitting = true;
+    if (!ui.submitLockKey) ui.submitLockKey = `art-submit-${ui.draftId}-${Date.now()}`;
+    paint();
+    try {
+      await persistPatch(fields);
+      const result = await A().submit(ui.draftId, null, { idempotencyKey: ui.submitLockKey });
+      if (!result.ok) throw new Error(result.error || 'تعذر الإرسال');
+      ui.view = 'success';
+      ui.successId = result.article.id;
+      ui.submitting = false;
+      ui.submitLockKey = '';
+      setHash(`success/${result.article.id}`);
+      paint();
+    } catch (e) {
+      ui.submitting = false;
+      ui.formError = e?.message || 'تعذر إرسال المقال';
+      paint();
+    }
+  }
+
+  async function onAction(e) {
     const btn = e.target.closest('[data-art]');
     if (!btn) return;
     const act = btn.getAttribute('data-art');
@@ -665,14 +823,26 @@
 
     if (act === 'start-submit') {
       ui.view = 'submit';
-      ui.step = 1;
-      ui.draftId = '';
       ui.errors = {};
-      ui.contentMode = '';
-      ensureDraft();
-      setHash(`submit/${ui.draftId}`);
+      ui.formError = '';
+      ui.form = {};
+      ui.submitLockKey = '';
+      ui.coverLocal = '';
+      ui.videoLocal = '';
+      const current = ui.draftId ? A()?.get(ui.draftId) : null;
+      if (!current || current.status !== 'Draft') ui.draftId = '';
+      setHash(ui.draftId ? `submit/${ui.draftId}` : 'submit');
       paint();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (loggedIn()) {
+        try {
+          await ensureDraft();
+          paint();
+        } catch (err) {
+          ui.formError = err?.message || 'تعذر إنشاء المسودة';
+          paint();
+        }
+      }
       return;
     }
     if (act === 'goto-mine') {
@@ -699,89 +869,64 @@
       return;
     }
     if (act === 'save-draft') {
-      autoSaveFromDom();
-      alert('تم حفظ المسودة. تجدها في مقالاتي.');
-      return;
-    }
-    if (act === 'next-1') {
-      if (!collectStep1(root)) {
-        paint();
-        return;
+      ui.saving = true;
+      try {
+        await autoSaveFromDom();
+        alert('تم حفظ المسودة. تجدها في مقالاتي.');
+      } catch (err) {
+        alert(err?.message || 'تعذر حفظ المسودة');
+      } finally {
+        ui.saving = false;
       }
-      ui.step = 2;
-      paint();
-      return;
-    }
-    if (act === 'next-2') {
-      if (!collectStep2(root)) {
-        paint();
-        return;
-      }
-      ui.step = 3;
-      paint();
-      return;
-    }
-    if (act === 'prev') {
-      if (ui.step === 3) {
-        autoSaveFromDom();
-        ui.step = 2;
-      } else if (ui.step === 2) {
-        autoSaveFromDom();
-        ui.step = 1;
-      }
-      paint();
-      return;
-    }
-    if (act === 'goto-2') {
-      ui.step = 2;
-      paint();
-      return;
-    }
-    if (act === 'mode-write') {
-      ui.contentMode = 'write';
-      A().update(ui.draftId, { contentMode: 'write' });
-      paint();
-      return;
-    }
-    if (act === 'mode-file') {
-      ui.contentMode = 'file';
-      A().update(ui.draftId, { contentMode: 'file' });
-      paint();
-      return;
-    }
-    if (act === 'pick-file') {
-      root?.querySelector('[data-art-file]')?.click();
       return;
     }
     if (act === 'pick-cover') {
       root?.querySelector('[data-art-cover]')?.click();
       return;
     }
+    if (act === 'pick-video') {
+      root?.querySelector('[data-art-video]')?.click();
+      return;
+    }
     if (act === 'pick-extra') {
       root?.querySelector('[data-art-extra]')?.click();
       return;
     }
-    if (act === 'clear-file') {
-      A().update(ui.draftId, { articleFile: null });
-      paint();
+    if (act === 'retry-cover' && ui.lastCoverFile) {
+      await attachCover(ui.lastCoverFile);
+      return;
+    }
+    if (act === 'retry-video' && ui.lastVideoFile) {
+      await attachVideo(ui.lastVideoFile);
       return;
     }
     if (act === 'clear-cover') {
-      A().update(ui.draftId, { coverImage: null });
+      if (ui.coverLocal) URL.revokeObjectURL(ui.coverLocal);
+      ui.coverLocal = '';
+      ui.lastCoverFile = null;
+      await persistPatch({ coverImage: null });
       paint();
       return;
     }
-    if (act === 'submit') {
-      autoSaveFromDom();
-      const result = A().submit(ui.draftId);
-      if (!result.ok) {
-        alert(result.error);
-        return;
-      }
-      ui.view = 'success';
-      ui.successId = result.article.id;
-      setHash(`success/${result.article.id}`);
+    if (act === 'clear-video') {
+      if (ui.videoLocal) URL.revokeObjectURL(ui.videoLocal);
+      ui.videoLocal = '';
+      ui.lastVideoFile = null;
+      await persistPatch({ video: null });
       paint();
+      return;
+    }
+    if (act === 'clear-extra') {
+      const idx = Number(btn.getAttribute('data-idx'));
+      const list = [...(draft()?.attachments || [])];
+      list.splice(idx, 1);
+      await persistPatch({ attachments: list });
+      paint();
+      return;
+    }
+    if (act === 'submit' || act === 'send-now') {
+      if (act === 'send-now') ui.draftId = id;
+      await submitCurrent();
       return;
     }
     if (act === 'open-detail') {
@@ -794,41 +939,23 @@
     if (act === 'edit') {
       ui.view = 'submit';
       ui.draftId = id;
-      ui.step = 1;
-      ui.contentMode = A().get(id)?.contentMode || '';
+      ui.submitLockKey = '';
       setHash(`submit/${id}`);
       paint();
       return;
     }
-    if (act === 'send-now') {
-      const result = A().submit(id);
-      if (!result.ok) alert(result.error);
-      else {
-        ui.view = 'success';
-        ui.successId = id;
-        setHash(`success/${id}`);
-        paint();
-      }
-      return;
-    }
     if (act === 'resubmit') {
-      A().resubmit(id);
-      alert('أُعيد إرسال المقال للمراجعة.');
-      paint();
+      ui.draftId = id;
+      ui.submitLockKey = `art-submit-${id}-${Date.now()}`;
+      await submitCurrent();
       return;
-    }
-    if (act === 'delete') {
-      if (confirm('حذف المسودة؟')) {
-        A().remove(id);
-        paint();
-      }
     }
   }
 
   function onChange(e) {
     const t = e.target;
-    if (t.matches('[data-art-file]') && t.files?.[0]) attachArticleFile(t.files[0]);
     if (t.matches('[data-art-cover]') && t.files?.[0]) attachCover(t.files[0]);
+    if (t.matches('[data-art-video]') && t.files?.[0]) attachVideo(t.files[0]);
     if (t.matches('[data-art-extra]') && t.files?.[0]) attachExtra(t.files[0]);
   }
 
@@ -837,39 +964,56 @@
     if (!btn) return;
     const ta = document.querySelector('#art-wizard textarea[name="body"]');
     if (!ta) return;
-    const fmt = btn.getAttribute('data-art-fmt');
+    const kind = btn.getAttribute('data-art-fmt');
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
     const sel = ta.value.slice(start, end) || 'نص';
     let insert = sel;
-    if (fmt === 'bold') insert = `**${sel}**`;
-    if (fmt === 'h2') insert = `\n## ${sel}\n`;
-    if (fmt === 'ul') insert = `\n- ${sel}\n`;
-    if (fmt === 'link') insert = `[${sel}](https://)`;
+    if (kind === 'bold') insert = `**${sel}**`;
+    if (kind === 'h2') insert = `\n## ${sel}\n`;
+    if (kind === 'ul') insert = `\n- ${sel}\n`;
+    if (kind === 'link') insert = `[${sel}](https://)`;
     ta.value = ta.value.slice(0, start) + insert + ta.value.slice(end);
     autoSaveFromDom();
+    updatePreviewDom();
   }
 
-  function boot() {
+  async function boot() {
     if (!document.getElementById('art-app')) return;
     readHash();
-    if ((location.hash || '').includes('submit') && !ui.draftId) ensureDraft();
     paint();
+    if ((location.hash || '').includes('submit') && loggedIn()) {
+      try {
+        await ensureDraft();
+        paint();
+      } catch (err) {
+        ui.formError = err?.message || 'تعذر إنشاء المسودة';
+        paint();
+      }
+    }
     document.addEventListener('click', onAction);
     document.addEventListener('click', onFmt);
     document.addEventListener('change', onChange);
     document.addEventListener('input', (e) => {
       if (e.target.closest('#art-wizard')) {
         clearTimeout(boot._t);
-        boot._t = setTimeout(autoSaveFromDom, 700);
+        boot._t = setTimeout(() => {
+          autoSaveFromDom();
+          updatePreviewDom();
+        }, 700);
       }
     });
     window.addEventListener('hashchange', () => {
       readHash();
       paint();
+      if (ui.view === 'submit' && loggedIn() && !draft()) {
+        ensureDraft()
+          .then(() => paint())
+          .catch(() => paint());
+      }
     });
     window.addEventListener('hub-articles-changed', () => {
-      if (ui.view === 'mine' || ui.view === 'detail' || ui.view === 'home') paint();
+      if (ui.view === 'mine' || ui.view === 'detail' || ui.view === 'home' || ui.view === 'success') paint();
     });
   }
 

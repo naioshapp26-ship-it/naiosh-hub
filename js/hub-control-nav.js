@@ -1,6 +1,7 @@
 /**
- * شعار صغير → صفحة الهبوط، وزر «لوحة التحكم» → غرفة العمليات.
- * يُحقن في أعلى يسار كل الصفحات حتى لا يبقى المستخدم محبوسًا داخل صفحات الإدارة.
+ * شعار صغير → صفحة الهبوط.
+ * لا يُعرض زر «لوحة التحكم» في الهيدر العام للزائر/المستخدم —
+ * الوصول لغرفة العمليات يتم عبر تسجيل الدخول والصلاحيات فقط.
  */
 (() => {
   'use strict';
@@ -9,7 +10,7 @@
   window.HubControlNav = { mounted: false };
 
   const STYLE_ID = 'hub-control-nav-style';
-  // الصفحات التي لا تحتاج الشريط (لديها تنقل كافٍ أو هي صفحة الهبوط نفسها)
+  // الصفحات التي لا تحتاج شريط الشعار المصغّر (لديها تنقل كافٍ أو هي صفحة الهبوط نفسها)
   const SKIP_PAGES = new Set([
     'index.html',
     '',
@@ -22,7 +23,6 @@
   const fileName = () => (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
   const inSystems = /\/systems\//i.test(window.location.pathname.replace(/\\/g, '/'));
   const prefix = inSystems ? '../' : '';
-  const isDashboard = fileName() === 'dashboard.html';
   const isHome = fileName() === 'index.html' || fileName() === '' || fileName() === '/';
   const isAuthPage = SKIP_PAGES.has(fileName());
 
@@ -63,28 +63,6 @@
         object-fit: cover;
         display: block;
       }
-      .hub-control-nav__dash {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        min-height: 36px;
-        padding: 6px 12px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #b10011, #7a000c);
-        color: #fff !important;
-        font-family: Cairo, Tajawal, sans-serif;
-        font-size: 13px;
-        font-weight: 800;
-        text-decoration: none !important;
-        white-space: nowrap;
-        box-shadow: 0 8px 18px rgba(177, 0, 17, 0.28);
-      }
-      .hub-control-nav__dash:hover,
-      .hub-control-nav__dash:focus-visible {
-        filter: brightness(1.08);
-        color: #fff !important;
-      }
       .hub-control-nav:not(.hub-control-nav--inline) {
         position: fixed;
         top: 12px;
@@ -94,6 +72,12 @@
       body:has(.top-nav) .hub-control-nav:not(.hub-control-nav--inline) {
         top: 10px;
       }
+      header.top-nav .auth-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
     `;
     document.head.appendChild(style);
   };
@@ -102,7 +86,7 @@
     const wrap = document.createElement('div');
     wrap.className = 'hub-control-nav';
     wrap.dataset.hubControlNav = '1';
-    wrap.setAttribute('aria-label', 'التنقل إلى الرئيسية ولوحة التحكم');
+    wrap.setAttribute('aria-label', 'التنقل إلى الرئيسية');
 
     const logo = document.createElement('a');
     logo.className = 'hub-control-nav__logo';
@@ -111,20 +95,17 @@
     logo.setAttribute('aria-label', 'نايوش هوب — الصفحة الرئيسية');
     logo.innerHTML = `<img src="${prefix}assets/hub-icon-192.png" alt="نايوش هوب" />`;
     wrap.appendChild(logo);
-
-    if (!isDashboard) {
-      const dash = document.createElement('a');
-      dash.className = 'hub-control-nav__dash';
-      dash.href = `${prefix}dashboard.html`;
-      dash.innerHTML = '<i class="fas fa-gauge-high" aria-hidden="true"></i><span>لوحة التحكم</span>';
-      wrap.appendChild(dash);
-    }
     return wrap;
   };
 
-  const stripDuplicateDash = (root) => {
-    root?.querySelectorAll?.('a').forEach((a) => {
-      if (a.closest('[data-hub-control-nav]')) return;
+  /** يحذف زر «لوحة التحكم» من الهيدر العام فقط — دون المساس بروابط أخرى داخل الصفحات */
+  const stripPublicHeaderDash = (root = document) => {
+    root.querySelectorAll?.('header.top-nav a, .auth-actions a, a.hub-control-nav__dash').forEach((a) => {
+      if (a.classList.contains('hub-control-nav__dash')) {
+        a.remove();
+        return;
+      }
+      if (!a.closest('header.top-nav') && !a.closest('.auth-actions')) return;
       if (!isDashHref(a.getAttribute('href'))) return;
       const label = (a.textContent || '').replace(/\s+/g, ' ').trim();
       if (label === 'لوحة التحكم') a.remove();
@@ -159,6 +140,9 @@
   const mount = () => {
     if (window.HubControlNav.mounted) return;
     ensureStyle();
+    // دائمًا: أزل زر لوحة التحكم من الهيدر العام (يشمل الرئيسية حتى لو تُتخطى الحقن)
+    stripPublicHeaderDash(document);
+
     if (document.querySelector('[data-hub-control-nav]')) {
       window.HubControlNav.mounted = true;
       return;
@@ -171,7 +155,7 @@
     const wrap = build();
     if (inline) {
       wrap.classList.add('hub-control-nav--inline');
-      stripDuplicateDash(el);
+      stripPublicHeaderDash(el);
       el.appendChild(wrap);
     } else {
       el.appendChild(wrap);
@@ -180,6 +164,7 @@
   };
 
   window.HubControlNav.mount = mount;
+  window.HubControlNav.stripPublicHeaderDash = stripPublicHeaderDash;
   window.HubControlNav.isHome = isHome;
   window.HubControlNav.isAuthPage = isAuthPage;
 

@@ -30,7 +30,6 @@
       </div>
       <div class="auth-actions">
         <a href="apps.html" class="auth-btn">سجل الأنظمة</a>
-        <a href="dashboard.html" class="auth-btn primary">لوحة التحكم</a>
       </div>
     </div>
   </header>
@@ -62,7 +61,8 @@
         <div class="hub-rent-fields">
           <div>
             <label for="companyName">اسم الشركة *</label>
-            <input id="companyName" type="text" placeholder="مثال: شركة الأفق للتقنية" autocomplete="organization" />
+            <input id="companyName" type="text" placeholder="مثال: شركة الأفق للتقنية" autocomplete="off" />
+            <p class="hub-rent-field-error" data-err-for="companyName" hidden></p>
           </div>
           <div>
             <label for="subdomain">النطاق الفرعي *</label>
@@ -70,25 +70,31 @@
               <input id="subdomain" type="text" placeholder="acme" autocomplete="off" dir="ltr" />
               <span class="hub-rent-subdomain-suffix" data-subdomain-suffix>.naiosh.app</span>
             </div>
+            <p class="hub-rent-field-error" data-err-for="subdomain" hidden></p>
             <p class="hub-rent-subdomain-status" data-subdomain-status>أدخل النطاق الفرعي للتحقق من توفره</p>
           </div>
           <div class="hub-rent-row-2">
             <div>
-              <label for="adminName">الاسم الكامل للمسؤول *</label>
-              <input id="adminName" type="text" placeholder="محمد أحمد" autocomplete="name" />
+              <label for="adminName">الاسم الكامل *</label>
+              <input id="adminName" type="text" placeholder="مثال: محمد أحمد" autocomplete="off" data-rent-contact />
+              <p class="hub-rent-field-error" data-err-for="adminName" hidden></p>
             </div>
             <div>
-              <label for="adminPhone">رقم الجوال *</label>
-              <input id="adminPhone" type="tel" placeholder="966500000000" dir="ltr" autocomplete="tel" />
+              <label for="adminPhone">رقم الهاتف *</label>
+              <input id="adminPhone" type="tel" placeholder="مثال: 966500000000" dir="ltr" autocomplete="off" data-rent-contact />
+              <p class="hub-rent-field-error" data-err-for="adminPhone" hidden></p>
             </div>
           </div>
           <div>
-            <label for="adminEmail">البريد الإلكتروني</label>
-            <input id="adminEmail" type="email" placeholder="admin@company.com" autocomplete="email" />
+            <label for="adminEmail">البريد الإلكتروني *</label>
+            <input id="adminEmail" type="email" placeholder="example@example.com" autocomplete="off" data-rent-contact />
+            <p class="hub-rent-field-error" data-err-for="adminEmail" hidden></p>
+            <p class="hub-rent-hint" data-rent-account-hint hidden>بيانات الحساب المسجّل — يمكن تعديل هاتف/اسم التواصل لهذا الطلب فقط دون تغيير الحساب.</p>
           </div>
           <div>
             <label for="adminPassword">كلمة المرور *</label>
             <input id="adminPassword" type="password" placeholder="••••••••" autocomplete="new-password" />
+            <p class="hub-rent-field-error" data-err-for="adminPassword" hidden></p>
           </div>
         </div>
 
@@ -208,17 +214,19 @@
     </div>
   </main>
 
+  <script src="js/hub-i18n.js?v=ar13"></script>
+  <script src="js/hub-i18n-display.js?v=ar13"></script>
   <script src="js/hub-live-systems.js"></script>
   <script src="js/hub-marketplace-data.js"></script>
   <script src="js/hub-store.js"></script>
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-system-ops-spec.js"></script>
   <script src="js/hub-system-ops-engine.js"></script>
-  <script src="js/hub-rent-store.js?v=9"></script>
-  <script src="js/hub-rent-system.js?v=8"></script>
+  <script src="js/hub-rent-store.js?v=10"></script>
+  <script src="js/hub-rent-system.js?v=9"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>
-  <script src="js/hub-header-actions.js?v=18"></script>
-  <script src="js/hub-control-nav.js?v=4"></script>
+  <script src="js/hub-header-actions.js?v=22"></script>
+  <script src="js/hub-control-nav.js?v=5"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
 </body>

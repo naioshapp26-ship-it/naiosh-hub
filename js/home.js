@@ -8,14 +8,16 @@
   const homeGrid = document.getElementById('home-platforms-grid');
   if (homeGrid && window.HubSovereignPlatforms?.list) {
     homeGrid.innerHTML = window.HubSovereignPlatforms.list
-      .map(
-        (p, idx) => `<article class="hub-platform-card" id="plat-${p.code.toLowerCase()}">
+      .map((p, idx) => {
+        const code = String(p.code || '').toUpperCase();
+        const href = `platforms.html?code=${encodeURIComponent(code)}#platforms-catalog`;
+        return `<a class="hub-platform-card is-nav-card" id="plat-${code.toLowerCase()}" href="${href}" aria-label="منصة ${String(idx + 1).padStart(2, '0')} — ${p.nameAr}">
           <span class="platform-code">منصة ${String(idx + 1).padStart(2, '0')}</span>
           <div class="icon-box"><i class="fas ${p.icon}"></i></div>
           <h3>${p.nameAr}</h3>
           <p><strong>${p.role}</strong> — ${p.desc}</p>
-        </article>`
-      )
+        </a>`;
+      })
       .join('');
   }
 
@@ -125,5 +127,17 @@
       menu.classList.toggle('open', !open);
       menu.setAttribute('aria-hidden', open ? 'true' : 'false');
     });
+  });
+
+  // Ensure homepage operational cards always navigate (backup if default blocked)
+  document.getElementById('layers')?.addEventListener('click', (event) => {
+    const link = event.target.closest('a.is-nav-card[href]');
+    if (!link) return;
+    const href = link.getAttribute('href');
+    if (!href || href === '#' || href.startsWith('javascript:')) return;
+    // Let browser handle normally; force only if something cancelled default
+    if (event.defaultPrevented) {
+      window.location.assign(href);
+    }
   });
 })();

@@ -1,10 +1,14 @@
 /**
- * NAIOSH Solutions Catalog UI — selectable catalog + request transactions
+ * NAIOSH Solutions Catalog UI — اختيار حل · طلب عرض سعر · Transaction كاملة
  */
 (() => {
   'use strict';
 
   const S = () => window.HubSolutions;
+  const CR = () => window.HubCustomerRequests;
+  const PENDING_KEY = 'naiosh_solutions_pending_v1';
+  const SUBMIT_LOCK = { busy: false };
+
   const esc = (v = '') =>
     String(v)
       .replace(/&/g, '&amp;')
@@ -23,15 +27,23 @@
 
   const STATUS_AR = {
     Draft: 'مسودة',
-    New: 'جديد',
+    New: 'بانتظار المراجعة',
+    'Pending Review': 'بانتظار المراجعة',
+    Viewed: 'قيد المراجعة',
+    Assigned: 'قيد المراجعة',
     'Under Review': 'قيد المراجعة',
-    'Need More Information': 'يحتاج معلومات',
-    'Proposal Sent': 'عُرض سعر',
-    Approved: 'معتمد',
+    'Need More Information': 'يحتاج معلومات إضافية',
+    'Needs Changes': 'يحتاج معلومات إضافية',
+    'Waiting For Customer': 'يحتاج معلومات إضافية',
+    'Quote Prepared': 'تم إعداد عرض السعر',
+    'Proposal Sent': 'تم إرسال عرض السعر',
+    'Quote Accepted': 'تم قبول العرض',
+    'Quote Rejected': 'تم رفض العرض',
+    Approved: 'تم قبول العرض',
     'In Progress': 'قيد التنفيذ',
     Completed: 'مكتمل',
-    Rejected: 'مرفوض',
-    Cancelled: 'ملغى',
+    Rejected: 'ملغي',
+    Cancelled: 'ملغي',
   };
 
   const currentUser = () => {
@@ -44,21 +56,50 @@
     }
   };
 
+  const isLoggedIn = () => {
+    if (typeof window.HubAuth?.isLoggedIn === 'function') return !!window.HubAuth.isLoggedIn();
+    const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
+    return !!(token && currentUser());
+  };
+
   const actorName = () => {
     const u = currentUser();
     return u?.name || u?.displayName || u?.email || 'زائر';
   };
 
-  const isStaff = () => !!(window.HubAuth?.isStaff?.() || ['supreme_leader', 'admin', 'manager', 'sales'].includes(String(currentUser()?.role || '').toLowerCase()));
+  const customerIdOf = (u = currentUser()) => {
+    if (!u) return '';
+    return (
+      u.customerId ||
+      u.naioshId ||
+      u.clientId ||
+      u.clientNaioshId ||
+      (u.email === 'client@naiosh.com' ? 'NAI-CLIENT-001' : '') ||
+      u.id ||
+      u.email ||
+      ''
+    );
+  };
+
+  const isStaff = () =>
+    !!(
+      window.HubAuth?.isStaff?.() ||
+      ['supreme_leader', 'admin', 'manager', 'sales', 'chief_engineer', 'super_admin'].includes(
+        String(currentUser()?.role || '').toLowerCase()
+      )
+    );
 
   const ui = {
-    view: 'catalog', // catalog | my | detail | request | admin | audit | cost
+    view: 'catalog', // catalog | my | detail | request | selected | wizard | success | admin | audit
     filters: { q: '', category: '', sector: '', serviceType: '', priceKind: '', duration: '' },
     solutionId: null,
     requestId: null,
+    selected: null, // { solutionId, mode }
     wizard: null,
+    success: null, // { requestId, message }
     detailTab: 'overview',
     toast: '',
+    submitError: '',
   };
 
   const root = () => document.getElementById('so-app');
@@ -68,28 +109,70 @@
     setTimeout(() => {
       if (ui.toast === msg) ui.toast = '';
       render();
-    }, 2800);
+    }, 3200);
     render();
   };
 
-  const priceHtml = (s) => {
-    if (s.priceType === 'starting' && s.startingFrom != null) {
-      return `<div class="so-price"><span>Starting From</span><strong>${Number(s.startingFrom).toLocaleString('en-US')} ر.س</strong></div>`;
-    }
-    return `<div class="so-price so-price-muted"><span>${esc(s.priceLabel || 'السعر يحدد بعد دراسة الاحتياج')}</span></div>`;
+  const savePending = (ctx) => {
+    try {
+      sessionStorage.setItem(PENDING_KEY, JSON.stringify({ ...ctx, at: Date.now() }));
+    } catch (_) {}
   };
 
+  const loadPending = () => {
+    try {
+      return JSON.parse(sessionStorage.getItem(PENDING_KEY) || 'null');
+    } catch {
+      return null;
+    }
+  };
+
+  const clearPending = () => {
+    try {
+      sessionStorage.removeItem(PENDING_KEY);
+    } catch (_) {}
+  };
+
+  const resumeUrl = (solutionId, action) =>
+    `naiosh-solutions.html?resume=1&solutionId=${encodeURIComponent(solutionId)}&action=${encodeURIComponent(action)}`;
+
+  /** Guest lead id for anonymous solution requests (not an account / not staff). */
+  const guestLeadId = () => {
+    try {
+      let id = sessionStorage.getItem('naiosh_guest_lead_id');
+      if (!id) {
+        id = `GUEST-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+        sessionStorage.setItem('naiosh_guest_lead_id', id);
+      }
+      return id;
+    } catch {
+      return `GUEST-${Date.now()}`;
+    }
+  };
+
+  const priceLabel = (s) => {
+    if (!s) return 'يحدد بعد دراسة الاحتياج';
+    if (s.priceType === 'starting' && s.startingFrom != null) {
+      return `يبدأ من ${Number(s.startingFrom).toLocaleString('en-US')} ر.س`;
+    }
+    return s.priceLabel || 'يحدد بعد دراسة الاحتياج';
+  };
+
+  const priceHtml = (s) => {
+    if (s?.priceType === 'starting' && s.startingFrom != null) {
+      return `<div class="so-price"><span>يبدأ من</span><strong>${Number(s.startingFrom).toLocaleString('en-US')} ر.س</strong></div>`;
+    }
+    return `<div class="so-price so-price-muted"><span>${esc(priceLabel(s))}</span></div>`;
+  };
+
+  /** Always expose اختيار حل + طلب عرض سعر with real Solution ID */
   const ctaButtons = (s, compact = false) => {
     const cls = compact ? 'btn btn-sm' : 'btn';
-    const choose = `<button type="button" class="${cls} btn-primary" data-so="choose" data-id="${esc(s.id)}"><i class="fas fa-check"></i> اختيار الحل</button>`;
-    const details = `<button type="button" class="${cls} btn-ghost" data-so="details" data-id="${esc(s.id)}"><i class="fas fa-eye"></i> عرض التفاصيل</button>`;
-    if (s.ctaType === 'Request Quote' || s.priceType === 'quote') {
-      return `${details}${choose}<button type="button" class="${cls} btn-dark" data-so="quote" data-id="${esc(s.id)}"><i class="fas fa-file-invoice-dollar"></i> طلب عرض سعر</button>`;
-    }
-    if (s.ctaType === 'Request Consultation' || s.priceType === 'consultation') {
-      return `${details}<button type="button" class="${cls} btn-primary" data-so="consult" data-id="${esc(s.id)}"><i class="fas fa-comments"></i> طلب استشارة</button>${choose}`;
-    }
-    return `${details}${choose}`;
+    const id = esc(s.id);
+    return `
+      <button type="button" class="${cls} btn-ghost" data-so="details" data-id="${id}"><i class="fas fa-eye"></i> عرض التفاصيل</button>
+      <button type="button" class="${cls} btn-primary" data-so="choose" data-id="${id}"><i class="fas fa-check"></i> اختيار الحل</button>
+      <button type="button" class="${cls} btn-dark" data-so="quote" data-id="${id}"><i class="fas fa-file-invoice-dollar"></i> طلب عرض سعر</button>`;
   };
 
   const filteredSolutions = () => {
@@ -111,15 +194,45 @@
       });
   };
 
+  const openSelectionSummary = (solutionId) => {
+    const sol = S().getSolution(solutionId);
+    if (!sol) {
+      toast('تعذر تحديد الحل. حاول مرة أخرى.');
+      return;
+    }
+    ui.selected = {
+      solutionId: sol.id,
+      name: sol.name,
+      shortName: sol.shortName,
+      category: sol.category,
+      sector: sol.sector,
+      serviceType: sol.serviceType,
+      description: sol.description,
+      price: priceLabel(sol),
+      duration: sol.duration || '',
+      startingFrom: sol.startingFrom ?? null,
+    };
+    ui.solutionId = sol.id;
+    ui.view = 'selected';
+    ui.wizard = null;
+    render();
+  };
+
   const openWizard = (solutionId, mode = 'choose') => {
     const sol = S().getSolution(solutionId);
-    if (!sol) return;
-    const u = currentUser();
+    if (!sol) {
+      toast('تعذر تحديد الحل. حاول مرة أخرى.');
+      return;
+    }
+    const loggedIn = isLoggedIn();
+    const u = loggedIn ? currentUser() : null;
+    // Quote = single-page form; choose/consult keep multi-step but allow guests to fill contact fields
+    const max = mode === 'cost' ? 7 : mode === 'quote' || mode === 'choose' ? 1 : 6;
     ui.wizard = {
       mode,
       step: 1,
-      max: mode === 'cost' ? 7 : 6,
-      solutionId,
+      max,
+      solutionId: sol.id,
       data: {
         customer: {
           name: u?.name || u?.displayName || '',
@@ -127,8 +240,14 @@
           phone: u?.phone || '',
           email: u?.email || '',
           branch: u?.branch || '',
+          country: u?.country || '',
+          customerId: loggedIn ? customerIdOf(u) : '',
         },
-        need: mode === 'consult' ? 'طلب استشارة حول الحل' : mode === 'quote' ? 'طلب عرض سعر' : '',
+        need: mode === 'consult' ? 'طلب استشارة حول الحل' : mode === 'quote' ? '' : mode === 'choose' ? `أريد تنفيذ حل: ${sol.name}` : '',
+        scopeQty: '',
+        budget: '',
+        dueDate: '',
+        notes: '',
         priority: 'عادي',
         scopeType: 'شركة كاملة',
         scopeDetail: '',
@@ -137,7 +256,56 @@
       },
     };
     ui.view = 'wizard';
+    ui.submitError = '';
+    // Dismiss any leftover guest-login modal from older builds
+    try {
+      const gate = document.getElementById('hub-guest-gate-modal');
+      if (gate) gate.hidden = true;
+    } catch (_) {}
     render();
+  };
+
+  const startAction = (solutionId, action) => {
+    if (!solutionId) {
+      toast('معرّف الحل غير موجود');
+      return;
+    }
+    clearPending();
+    // No login gate — guests and customers can start the customer-facing workflow
+    try {
+      const gate = document.getElementById('hub-guest-gate-modal');
+      if (gate) gate.hidden = true;
+    } catch (_) {}
+    if (action === 'choose') {
+      openSelectionSummary(solutionId);
+      return;
+    }
+    if (action === 'quote' || action === 'consult') {
+      openWizard(solutionId, action);
+      return;
+    }
+    openWizard(solutionId, action);
+  };
+
+  const resumePending = () => {
+    if (!isLoggedIn()) return false;
+    const params = new URLSearchParams(location.search);
+    const fromUrl =
+      params.get('resume') === '1'
+        ? { solutionId: params.get('solutionId'), action: params.get('action') || 'choose' }
+        : null;
+    const pending = fromUrl?.solutionId ? fromUrl : loadPending();
+    if (!pending?.solutionId) return false;
+    clearPending();
+    try {
+      const url = new URL(location.href);
+      url.searchParams.delete('resume');
+      url.searchParams.delete('solutionId');
+      url.searchParams.delete('action');
+      history.replaceState({}, '', url.pathname + (url.search || '') + url.hash);
+    } catch (_) {}
+    startAction(pending.solutionId, pending.action || 'choose');
+    return true;
   };
 
   const renderCatalog = () => {
@@ -147,7 +315,7 @@
     const types = [...new Set(S().listSolutions(true).map((s) => s.serviceType))];
     return `
       <section class="so-intro cardish">
-        <p>اختر الحل المناسب لاحتياجك، ثم أرسل طلبك وسيقوم فريق نايوش بمراجعته ومتابعته معك.</p>
+        <p>اختر الحل المناسب لاحتياجك، ثم أرسل طلباً وسيقوم فريق نايوش بمراجعته ومتابعته معك.</p>
         <div class="so-intro-actions">
           <a class="btn btn-primary" href="#so-catalog"><i class="fas fa-list"></i> تصفح الحلول</a>
           <button type="button" class="btn btn-dark" data-so="consult-generic"><i class="fas fa-comments"></i> طلب استشارة</button>
@@ -166,17 +334,14 @@
           <select data-so-filter="serviceType"><option value="">نوع الخدمة</option>${types.map((c) => `<option value="${esc(c)}" ${ui.filters.serviceType === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
           <select data-so-filter="priceKind">
             <option value="">السعر / النوع</option>
-            <option value="paid" ${ui.filters.priceKind === 'paid' ? 'selected' : ''}>مدفوع / Starting From</option>
-            <option value="consult" ${ui.filters.priceKind === 'consult' ? 'selected' : ''}>استشاري</option>
+            <option value="paid" ${ui.filters.priceKind === 'paid' ? 'selected' : ''}>مدفوع / يبدأ من</option>
+            <option value="consult" ${ui.filters.priceKind === 'consult' ? 'selected' : ''}>استشارة</option>
           </select>
           <select data-so-filter="duration">
             <option value="">مدة التنفيذ</option>
-            <option value="2" ${ui.filters.duration === '2' ? 'selected' : ''}>حوالي أسبوعين</option>
-            <option value="3" ${ui.filters.duration === '3' ? 'selected' : ''}>حوالي 3 أسابيع</option>
-            <option value="4" ${ui.filters.duration === '4' ? 'selected' : ''}>4 أسابيع+</option>
+            <option value="أسبوع" ${ui.filters.duration === 'أسبوع' ? 'selected' : ''}>خلال أسابيع</option>
+            <option value="شهر" ${ui.filters.duration === 'شهر' ? 'selected' : ''}>خلال أشهر</option>
           </select>
-        </div>
-        <div class="so-toolbar-side">
           <span class="so-count">${list.length} حل</span>
           ${isStaff() ? `<button type="button" class="btn btn-sm btn-dark" data-so="view-admin"><i class="fas fa-plus"></i> إدارة الحلول</button>
             <button type="button" class="btn btn-sm btn-ghost" data-so="view-audit">سجل العمليات</button>` : ''}
@@ -188,8 +353,8 @@
           list.length
             ? list
                 .map(
-                  (s) => `<article class="so-card" data-so="details" data-id="${esc(s.id)}" tabindex="0" role="button">
-                    <div class="so-card-top">
+                  (s) => `<article class="so-card" data-solution-id="${esc(s.id)}">
+                    <div class="so-card-top" data-so="details" data-id="${esc(s.id)}" tabindex="0" role="button">
                       <span class="so-icon"><i class="fas ${esc(s.icon || 'fa-lightbulb')}"></i></span>
                       <div>
                         <small class="so-meta">${esc(s.id)} · ${esc(s.owner || '—')}</small>
@@ -203,7 +368,7 @@
                       <span>${esc(s.duration || '—')}</span>
                     </div>
                     ${priceHtml(s)}
-                    <div class="so-card-actions" onclick="event.stopPropagation()">${ctaButtons(s, true)}</div>
+                    <div class="so-card-actions">${ctaButtons(s, true)}</div>
                   </article>`
                 )
                 .join('')
@@ -212,12 +377,49 @@
       </section>`;
   };
 
+  const renderSelected = () => {
+    const sel = ui.selected;
+    const sol = S().getSolution(sel?.solutionId);
+    if (!sel || !sol) return `<div class="so-empty">لم يتم اختيار حل</div>`;
+    return `
+      <div class="so-panel-head">
+        <h2>الحل المختار</h2>
+        <button type="button" class="btn btn-ghost" data-so="view-catalog">رجوع للكتالوج</button>
+      </div>
+      <article class="cardish so-selected-summary" data-solution-id="${esc(sol.id)}">
+        <small class="so-meta">${esc(sol.id)}</small>
+        <h3>${esc(sol.name)}</h3>
+        <p>${esc(sol.description)}</p>
+        <ul class="so-feed">
+          <li><b>السعر:</b> ${esc(priceLabel(sol))}</li>
+          <li><b>مدة التنفيذ:</b> ${esc(sol.duration || '—')}</li>
+          <li><b>التصنيف:</b> ${esc(sol.category || '—')}</li>
+          <li><b>القطاع:</b> ${esc(sol.sector || '—')}</li>
+          <li><b>نوع الخدمة:</b> ${esc(sol.serviceType || '—')}</li>
+          <li><b>رقم العميل:</b> ${esc(customerIdOf() || '—')}</li>
+        </ul>
+        <div class="so-row-actions so-selected-actions">
+          <button type="button" class="btn btn-primary" data-so="continue-request" data-id="${esc(sol.id)}"><i class="fas fa-arrow-left"></i> متابعة طلب الحل</button>
+          <button type="button" class="btn btn-dark" data-so="quote" data-id="${esc(sol.id)}"><i class="fas fa-file-invoice-dollar"></i> طلب عرض سعر</button>
+          <button type="button" class="btn btn-ghost" data-so="cancel-selected">إلغاء</button>
+        </div>
+      </article>`;
+  };
+
   const renderMyRequests = () => {
     const u = currentUser();
     const email = (u?.email || '').toLowerCase();
+    const cid = customerIdOf(u);
     const rows = S()
       .listRequests()
-      .filter((r) => !email || (r.customer?.email || '').toLowerCase() === email || r.requestedBy === actorName() || isStaff());
+      .filter(
+        (r) =>
+          !email ||
+          (r.customer?.email || r.email || '').toLowerCase() === email ||
+          r.customerId === cid ||
+          r.requestedBy === actorName() ||
+          isStaff()
+      );
     return `
       <div class="so-panel-head">
         <h2>طلباتي</h2>
@@ -225,7 +427,7 @@
       </div>
       <div class="so-table-wrap">
         <table class="so-table">
-          <thead><tr><th>Request ID</th><th>الحل</th><th>تاريخ الطلب</th><th>المسؤول</th><th>الحالة</th><th>آخر تحديث</th><th>الإجراءات</th></tr></thead>
+          <thead><tr><th>رقم الطلب</th><th>الحل</th><th>نوع الطلب</th><th>تاريخ الطلب</th><th>الحالة</th><th>آخر تحديث</th><th>الإجراءات</th></tr></thead>
           <tbody>
             ${
               rows.length
@@ -233,16 +435,15 @@
                     .map(
                       (r) => `<tr>
                         <td><code>${esc(r.requestId || r.id)}</code></td>
-                        <td>${esc(r.solutionName)}</td>
+                        <td>${esc(r.solutionName || r.relatedSolution || r.title)}</td>
+                        <td>${esc(CR()?.labelType?.(r.requestType) || r.requestTypeLabel || r.requestType)}</td>
                         <td>${fmtTime(r.createdAt)}</td>
-                        <td>${esc(r.assignedTo || r.salesOwner || '—')}</td>
-                        <td><span class="so-badge">${esc(STATUS_AR[r.status] || r.status)}</span></td>
+                        <td><span class="so-badge">${esc(STATUS_AR[r.status] || CR()?.STATUS_AR?.[r.status] || r.status)}</span></td>
                         <td>${fmtTime(r.updatedAt)}</td>
                         <td class="so-row-actions">
                           <button type="button" class="btn btn-sm btn-ghost" data-so="open-req" data-id="${esc(r.id)}">عرض</button>
-                          <button type="button" class="btn btn-sm btn-dark" data-so="open-req" data-id="${esc(r.id)}">متابعة</button>
                           ${!['Completed', 'Cancelled', 'Rejected'].includes(r.status) ? `<button type="button" class="btn btn-sm btn-ghost" data-so="add-att" data-id="${esc(r.id)}">إضافة مرفق</button>` : ''}
-                          ${['New', 'Draft', 'Under Review'].includes(r.status) ? `<button type="button" class="btn btn-sm btn-dark" data-so="cancel-req" data-id="${esc(r.id)}">إلغاء</button>` : ''}
+                          ${['New', 'Draft', 'Pending Review', 'Under Review'].includes(r.status) ? `<button type="button" class="btn btn-sm btn-dark" data-so="cancel-req" data-id="${esc(r.id)}">إلغاء</button>` : ''}
                         </td>
                       </tr>`
                     )
@@ -260,7 +461,7 @@
     return `
       <div class="so-panel-head">
         <div>
-          <small class="so-meta">${esc(s.id)} · Owner: ${esc(s.owner)} · ${esc(s.status)}</small>
+          <small class="so-meta">${esc(s.id)} · ${esc(s.owner)} · ${esc(s.status)}</small>
           <h2>${esc(s.name)}</h2>
         </div>
         <button type="button" class="btn btn-ghost" data-so="view-catalog">رجوع</button>
@@ -271,14 +472,7 @@
           <p>${esc(s.fullDescription || s.description)}</p>
           <h3>لمن هذا الحل؟</h3><p>${esc(s.audience || '—')}</p>
           <h3>المشكلة التي يحلها</h3><p>${esc(s.problem || '—')}</p>
-          <h3>النطاق</h3><p>${esc(s.scope || '—')}</p>
-          <h3>المخرجات</h3><ul>${(s.deliverables || []).map((d) => `<li>${esc(d)}</li>`).join('') || '<li>—</li>'}</ul>
           <h3>المدة المتوقعة</h3><p>${esc(s.duration)}</p>
-          <h3>المتطلبات</h3><ul>${(s.requirements || []).map((d) => `<li>${esc(d)}</li>`).join('') || '<li>—</li>'}</ul>
-          <h3>الخطوات</h3><ol>${(s.steps || []).map((d) => `<li>${esc(d)}</li>`).join('') || '<li>—</li>'}</ol>
-          <h3>FAQ</h3>
-          <p><b>هل يوجد سعر ثابت؟</b> ${s.priceType === 'starting' ? `نعم، يبدأ من ${s.startingFrom} ر.س` : 'يُحدد بعد دراسة الاحتياج أو عبر استشارة.'}</p>
-          <p><b>ماذا بعد الاختيار؟</b> يُنشأ طلب برقم Request ID ويُتابع من «طلباتي».</p>
         </article>
         <aside class="cardish so-detail-side">
           ${priceHtml(s)}
@@ -298,37 +492,25 @@
       ['comms', 'التواصل'],
       ['quote', 'العرض المالي'],
       ['files', 'المرفقات'],
-      ['tasks', 'المهام'],
-      ['timeline', 'Timeline'],
-      ['audit', 'سجل العمليات'],
+      ['timeline', 'الخط الزمني'],
     ];
     let body = '';
     if (tab === 'overview') {
       body = `
         <div class="so-kv">
-          <div><b>العميل</b><span>${esc(r.customer?.name)} · ${esc(r.customer?.company)}</span></div>
-          <div><b>التواصل</b><span>${esc(r.customer?.phone)} · ${esc(r.customer?.email)}</span></div>
-          <div><b>الفرع</b><span>${esc(r.customer?.branch || '—')}</span></div>
-          <div><b>الاحتياج</b><span>${esc(r.need)}</span></div>
-          <div><b>الأولوية</b><span>${esc(r.priority)}</span></div>
-          <div><b>النطاق</b><span>${esc(r.scopeType)} ${esc(r.scopeDetail || '')}</span></div>
-          <div><b>Requested By</b><span>${esc(r.requestedBy)}</span></div>
-          <div><b>Assigned To</b><span>${esc(r.assignedTo || '—')}</span></div>
-          <div><b>Sales Owner</b><span>${esc(r.salesOwner || '—')}</span></div>
-          <div><b>Consultant</b><span>${esc(r.consultant || '—')}</span></div>
-          <div><b>Approver</b><span>${esc(r.approver || '—')}</span></div>
-        </div>
-        ${
-          isStaff()
-            ? `<div class="so-row-actions" style="margin-top:12px">
-                <button type="button" class="btn btn-sm btn-dark" data-so="assign" data-id="${esc(r.id)}">تعيين مسؤول</button>
-                <button type="button" class="btn btn-sm btn-primary" data-so="status" data-id="${esc(r.id)}" data-status="Under Review">قيد المراجعة</button>
-                <button type="button" class="btn btn-sm btn-primary" data-so="make-quote" data-id="${esc(r.id)}">إرسال عرض سعر</button>
-                <button type="button" class="btn btn-sm btn-dark" data-so="status" data-id="${esc(r.id)}" data-status="In Progress">بدء التنفيذ</button>
-                <button type="button" class="btn btn-sm btn-primary" data-so="status" data-id="${esc(r.id)}" data-status="Completed">إكمال</button>
-              </div>`
-            : ''
-        }`;
+          <div><b>رقم الطلب</b><span><code>${esc(r.requestId || r.id)}</code></span></div>
+          <div><b>الحل المطلوب</b><span>${esc(r.solutionName || r.relatedSolution || r.title)}</span></div>
+          <div><b>معرّف الحل</b><span><code>${esc(r.solutionId || '—')}</code></span></div>
+          <div><b>رقم العميل</b><span>${esc(r.customerId || '—')}</span></div>
+          <div><b>العميل</b><span>${esc(r.customer?.name || r.customerName)} · ${esc(r.customer?.company || r.company)}</span></div>
+          <div><b>التواصل</b><span>${esc(r.customer?.phone || r.phone)} · ${esc(r.customer?.email || r.email)}</span></div>
+          <div><b>نوع الطلب</b><span>${esc(CR()?.labelType?.(r.requestType) || r.requestType)}</span></div>
+          <div><b>المصدر</b><span>${esc(r.sourceModule || 'حلول نايوش')}</span></div>
+          <div><b>الحالة</b><span>${esc(STATUS_AR[r.status] || r.status)}</span></div>
+          <div><b>الاحتياج</b><span>${esc(r.need || r.description)}</span></div>
+          <div><b>النطاق / الكمية</b><span>${esc(r.scopeDetail || r.scopeType || '—')}</span></div>
+          <div><b>تاريخ الطلب</b><span>${fmtTime(r.createdAt)}</span></div>
+        </div>`;
     } else if (tab === 'comms') {
       body = `<ul class="so-feed">${(r.messages || []).map((m) => `<li><b>${esc(m.by)}</b>: ${esc(m.text)} <small>${fmtTime(m.at)}</small></li>`).join('') || '<li>لا رسائل بعد</li>'}</ul>
         <div class="so-inline"><input id="so-msg" placeholder="اكتب رسالة..." /><button type="button" class="btn btn-primary btn-sm" data-so="send-msg" data-id="${esc(r.id)}">إرسال</button></div>`;
@@ -336,17 +518,28 @@
       body = quotes.length
         ? quotes
             .map(
-              (q) => `<article class="cardish" style="margin-bottom:10px">
-                <b>${esc(q.id)}</b> · ${esc(q.status)}
-                <p>Price: ${q.price} · Tax: ${q.tax} · Discount: ${q.discount} · <strong>Total: ${q.total}</strong></p>
-                <p>Valid Until: ${esc(q.validUntil)} · By: ${esc(q.createdBy)}</p>
+              (q) => `<article class="cardish" style="margin-bottom:10px" data-quote-id="${esc(q.id)}">
+                <h4>عرض السعر · <code>${esc(q.id)}</code></h4>
+                <ul class="so-feed">
+                  <li><b>رقم الطلب:</b> <code>${esc(r.requestId || r.id)}</code></li>
+                  <li><b>الحل المطلوب:</b> ${esc(q.solutionName || r.solutionName)}</li>
+                  <li><b>حالة الطلب:</b> ${esc(STATUS_AR[r.status] || r.status)}</li>
+                  <li><b>السعر المقترح:</b> ${Number(q.price || 0).toLocaleString('en-US')} ${esc(q.currency || 'ر.س')}</li>
+                  <li><b>مدة التنفيذ:</b> ${esc(q.duration || '—')}</li>
+                  <li><b>تفاصيل العرض:</b> ${esc(q.details || '—')}</li>
+                  <li><b>صلاحية العرض:</b> ${esc(q.validUntil || '—')}</li>
+                  <li><b>ملاحظات:</b> ${esc(q.notes || '—')}</li>
+                  <li><b>شروط العرض:</b> ${esc(q.terms || '—')}</li>
+                  <li><b>تاريخ العرض:</b> ${fmtTime(q.createdAt)}</li>
+                </ul>
                 ${
-                  q.status === 'Sent'
+                  q.status === 'Sent' && !isStaff()
                     ? `<div class="so-row-actions">
-                        <button type="button" class="btn btn-sm btn-primary" data-so="quote-accept" data-id="${esc(q.id)}">قبول</button>
-                        <button type="button" class="btn btn-sm btn-dark" data-so="quote-reject" data-id="${esc(q.id)}">رفض</button>
+                        <button type="button" class="btn btn-sm btn-primary" data-so="quote-accept" data-id="${esc(q.id)}">قبول العرض</button>
+                        <button type="button" class="btn btn-sm btn-dark" data-so="quote-reject" data-id="${esc(q.id)}">رفض العرض</button>
+                        <button type="button" class="btn btn-sm btn-ghost" data-so="quote-revise" data-id="${esc(q.id)}">طلب تعديل العرض</button>
                       </div>`
-                    : ''
+                    : `<p class="muted">حالة العرض: ${esc(q.status === 'Accepted' ? 'مقبول' : q.status === 'Rejected' ? 'مرفوض' : q.status === 'Revision Requested' ? 'طلب تعديل' : q.status)}</p>`
                 }
               </article>`
             )
@@ -355,24 +548,14 @@
     } else if (tab === 'files') {
       body = `<ul class="so-feed">${(r.attachments || []).map((a) => `<li>${esc(a.name)} · ${esc(a.by)} <small>${fmtTime(a.at)}</small></li>`).join('') || '<li>لا مرفقات</li>'}</ul>
         <button type="button" class="btn btn-dark btn-sm" data-so="add-att" data-id="${esc(r.id)}">إضافة مرفق</button>`;
-    } else if (tab === 'tasks') {
-      body = `<ul class="so-feed">${(r.tasks || []).map((t) => `<li>${esc(t)}</li>`).join('') || '<li>لا مهام مرتبطة بعد — تُضاف عند بدء التنفيذ.</li>'}</ul>`;
-    } else if (tab === 'timeline') {
-      body = `<ol class="so-timeline">${(r.timeline || []).map((t) => `<li><b>${esc(t.text)}</b><small>${esc(t.by)} · ${fmtTime(t.at)}</small></li>`).join('')}</ol>`;
     } else {
-      const logs = S()
-        .listAudit()
-        .filter((a) => a.requestId === r.id);
-      body = `<div class="so-table-wrap"><table class="so-table"><thead><tr><th>TX</th><th>Action</th><th>By</th><th>Status</th><th>At</th></tr></thead>
-        <tbody>${logs.map((a) => `<tr><td><code>${esc(a.id)}</code></td><td>${esc(a.action)}</td><td>${esc(a.performedBy)}</td><td>${esc(a.oldStatus)} → ${esc(a.newStatus)}</td><td>${fmtTime(a.at)}</td></tr>`).join('') || '<tr><td colspan="5">لا سجل</td></tr>'}</tbody></table></div>`;
+      body = `<ol class="so-feed">${(r.timeline || []).map((t) => `<li><b>${esc(t.text)}</b> · ${esc(t.by)} <small>${fmtTime(t.at)}</small></li>`).join('') || '<li>لا أحداث</li>'}</ol>`;
     }
-
     return `
       <div class="so-panel-head">
         <div>
-          <small class="so-meta">${esc(r.requestId || r.id)} · ${esc(r.requestType || 'Solution Request')}</small>
-          <h2>${esc(r.solutionName)}</h2>
-          <span class="so-badge">${esc(STATUS_AR[r.status] || r.status)}</span>
+          <small class="so-meta">${esc(r.requestId || r.id)} · ${esc(STATUS_AR[r.status] || r.status)}</small>
+          <h2>${esc(r.solutionName || r.title)}</h2>
         </div>
         <button type="button" class="btn btn-ghost" data-so="view-my">طلباتي</button>
       </div>
@@ -380,17 +563,85 @@
       <div class="cardish">${body}</div>`;
   };
 
+  const renderContactAndNeedForm = (w, sol, { titleHint = '' } = {}) => {
+    const c = w.data.customer;
+    const loggedIn = isLoggedIn();
+    const cid = c.customerId || (loggedIn ? customerIdOf() : '');
+    return `
+      <div class="so-quote-form">
+        <div class="so-kv so-quote-locked">
+          <div><b>طلب عرض سعر / طلب حل</b><span>${esc(titleHint || (w.mode === 'quote' ? 'طلب عرض سعر لحل' : 'طلب حل'))}</span></div>
+          <div><b>الحل المختار</b><span>${esc(sol?.name || '—')}</span></div>
+          <div><b>رقم الحل</b><span><code>${esc(sol?.id || w.solutionId)}</code></span></div>
+          ${cid ? `<div><b>رقم العميل</b><span><code>${esc(cid)}</code></span></div>` : `<div><b>نوع المرسل</b><span>زائر / عميل محتمل</span></div>`}
+        </div>
+        <div class="so-form-grid">
+          <label>الاسم *
+            <input id="so-c-name" value="${esc(c.name)}" ${loggedIn && c.name ? 'readonly' : ''} placeholder="الاسم الكامل" />
+          </label>
+          <label>رقم الهاتف *
+            <input id="so-c-phone" value="${esc(c.phone)}" placeholder="05xxxxxxxx" />
+          </label>
+          <label>البريد الإلكتروني *
+            <input id="so-c-email" type="email" value="${esc(c.email)}" ${loggedIn && c.email ? 'readonly' : ''} placeholder="name@example.com" />
+          </label>
+          <label>اسم الشركة / الجهة
+            <input id="so-c-company" value="${esc(c.company)}" placeholder="اختياري" />
+          </label>
+          <label>الدولة
+            <input id="so-c-country" value="${esc(c.country || '')}" placeholder="مثال: السعودية" />
+          </label>
+          <label>الفرع / المدينة
+            <input id="so-c-branch" value="${esc(c.branch)}" placeholder="اختياري" />
+          </label>
+        </div>
+        <input type="hidden" id="so-c-cid" value="${esc(cid)}" />
+        <label class="so-block">تفاصيل الاحتياج *
+          <textarea id="so-need" rows="4" required placeholder="صف احتياجك بوضوح...">${esc(w.data.need)}</textarea>
+        </label>
+        <label class="so-block">الكمية / نطاق العمل
+          <input id="so-scope-detail" value="${esc(w.data.scopeDetail || w.data.scopeQty)}" placeholder="مثال: فرع واحد · 3 أنظمة · حملة شهرية" />
+        </label>
+        <div class="so-form-grid">
+          <label>الميزانية المتوقعة (اختياري)<input id="so-budget" value="${esc(w.data.budget)}" placeholder="مثال: 15000 ر.س" /></label>
+          <label>موعد التنفيذ المطلوب (اختياري)<input id="so-due" type="date" value="${esc(w.data.dueDate)}" /></label>
+        </div>
+        <label class="so-block">ملاحظات إضافية
+          <textarea id="so-notes" rows="3" placeholder="أي تفاصيل إضافية...">${esc(w.data.notes)}</textarea>
+        </label>
+        <label class="so-block">مرفق (اسم الملف)
+          <input id="so-att" placeholder="مثال: brief.pdf" />
+        </label>
+        <ul>${(w.data.attachments || []).map((a) => `<li>${esc(a)}</li>`).join('')}</ul>
+        <button type="button" class="btn btn-sm btn-dark" data-so="wiz-add-att">إضافة مرفق للقائمة</button>
+        ${ui.submitError ? `<p class="so-error" role="alert">${esc(ui.submitError)}</p>` : ''}
+      </div>`;
+  };
+
+  const renderQuoteForm = (w, sol) => renderContactAndNeedForm(w, sol, { titleHint: 'طلب عرض سعر لحل' });
+
   const renderWizard = () => {
     const w = ui.wizard;
     if (!w) return '';
     const sol = S().getSolution(w.solutionId);
     const step = w.step;
     const isCost = w.mode === 'cost';
+    const isQuote = w.mode === 'quote';
+    const isChoose = w.mode === 'choose';
+    const isSingle = isQuote || isChoose;
     const labels = isCost
       ? ['الشركة', 'نوع المصروفات', 'المبلغ', 'المشكلة', 'الهدف', 'المستندات', 'إرسال']
-      : ['الحل', 'العميل', 'الاحتياج', 'النطاق', 'المرفقات', 'مراجعة'];
+      : isQuote
+        ? ['طلب عرض السعر']
+        : isChoose
+          ? ['استكمال طلب الحل']
+          : ['الحل', 'العميل', 'الاحتياج', 'النطاق', 'المرفقات', 'مراجعة'];
     let body = '';
-    if (!isCost) {
+    if (isQuote) {
+      body = renderQuoteForm(w, sol);
+    } else if (isChoose) {
+      body = renderContactAndNeedForm(w, sol, { titleHint: 'طلب حل' });
+    } else if (!isCost) {
       if (step === 1) {
         body = `<h3>${esc(sol?.name)}</h3><p>${esc(sol?.description)}</p><p><b>الفئة:</b> ${esc(sol?.category)} · <b>النوع:</b> ${esc(sol?.serviceType)}</p>${priceHtml(sol || {})}`;
       } else if (step === 2) {
@@ -401,6 +652,7 @@
           <label>الهاتف<input id="so-c-phone" value="${esc(c.phone)}" /></label>
           <label>البريد<input id="so-c-email" type="email" value="${esc(c.email)}" /></label>
           <label>الفرع<input id="so-c-branch" value="${esc(c.branch)}" /></label>
+          <label>رقم العميل<input id="so-c-cid" value="${esc(c.customerId)}" readonly /></label>
         </div>`;
       } else if (step === 3) {
         body = `<label class="so-block">ما الذي تريد تحقيقه من هذا الحل؟
@@ -416,19 +668,16 @@
       } else if (step === 5) {
         body = `<label class="so-block">اسم المرفق / المستند
           <input id="so-att" placeholder="مثال: budget.pdf" /></label>
-          <p class="muted">يمكنك إضافة المزيد لاحقاً من تفاصيل الطلب.</p>
           <ul>${(w.data.attachments || []).map((a) => `<li>${esc(a)}</li>`).join('')}</ul>
           <button type="button" class="btn btn-sm btn-dark" data-so="wiz-add-att">إضافة للقائمة</button>`;
       } else {
         const c = w.data.customer;
         body = `<ul class="so-feed">
-          <li><b>الحل:</b> ${esc(sol?.name)}</li>
-          <li><b>العميل:</b> ${esc(c.name)} · ${esc(c.company)} · ${esc(c.email)}</li>
+          <li><b>الحل:</b> ${esc(sol?.name)} (<code>${esc(sol?.id)}</code>)</li>
+          <li><b>العميل:</b> ${esc(c.name)} · ${esc(c.customerId)} · ${esc(c.email)}</li>
           <li><b>الاحتياج:</b> ${esc(w.data.need)}</li>
           <li><b>الأولوية:</b> ${esc(w.data.priority)}</li>
           <li><b>النطاق:</b> ${esc(w.data.scopeType)} ${esc(w.data.scopeDetail)}</li>
-          <li><b>المرفقات:</b> ${(w.data.attachments || []).join(', ') || '—'}</li>
-          <li><b>الوضع:</b> ${esc(w.mode === 'quote' ? 'طلب عرض سعر' : w.mode === 'consult' ? 'طلب استشارة' : 'اختيار حل')}</li>
         </ul>`;
       }
     } else {
@@ -457,53 +706,78 @@
           <select id="so-cost-goal">${['خفض 10%', 'خفض 20%', 'تحليل فقط', 'تحديد فرص توفير'].map((g) => `<option ${cm.goal === g ? 'selected' : ''}>${g}</option>`).join('')}</select>
         </label>`;
       } else if (step === 6) {
-        body = `<div class="so-checks">${['Invoices', 'Expense Reports', 'Budgets', 'Contracts']
+        const docs = ['كشف مصروفات', 'عقود موردين', 'ميزانيات', 'أخرى'];
+        body = `<div class="so-checks">${docs
           .map((d) => `<label><input type="checkbox" data-so-doc="${esc(d)}" ${(cm.docs || []).includes(d) ? 'checked' : ''}/> ${d}</label>`)
           .join('')}</div>`;
       } else {
-        body = `<ul class="so-feed">
-          <li><b>النوع:</b> Cost Reduction Assessment</li>
-          <li><b>الشركة:</b> ${esc(w.data.customer.company)} · ${esc(w.data.customer.branch)}</li>
-          <li><b>المصروفات:</b> ${(cm.expenseTypes || []).join(', ')}</li>
-          <li><b>المبلغ:</b> ${esc(cm.amount)}</li>
-          <li><b>الهدف:</b> ${esc(cm.goal)}</li>
-          <li><b>المستندات:</b> ${(cm.docs || []).join(', ') || '—'}</li>
-        </ul>`;
+        body = `<ul class="so-feed"><li><b>الهدف:</b> ${esc(cm.goal)}</li><li><b>المشكلة:</b> ${esc(cm.problem)}</li></ul>`;
       }
     }
+
+    const submitLabel = isQuote
+      ? SUBMIT_LOCK.busy
+        ? 'جارٍ إرسال الطلب...'
+        : 'إرسال طلب عرض السعر'
+      : SUBMIT_LOCK.busy
+        ? 'جارٍ إرسال الطلب...'
+        : 'إرسال الطلب';
 
     return `
       <div class="so-wizard cardish">
         <div class="so-panel-head">
-          <h2>${isCost ? 'طلب خفض التكاليف' : w.mode === 'quote' ? 'طلب عرض سعر' : w.mode === 'consult' ? 'طلب استشارة' : 'اختيار حل'}</h2>
+          <h2>${isCost ? 'طلب خفض التكاليف' : isQuote ? 'طلب عرض سعر' : w.mode === 'consult' ? 'طلب استشارة' : 'طلب حل'}</h2>
           <button type="button" class="btn btn-ghost" data-so="wiz-cancel">إلغاء</button>
         </div>
         <div class="so-steps">${labels.map((l, i) => `<span class="${i + 1 === step ? 'on' : ''}">${i + 1}. ${l}</span>`).join('')}</div>
-        <div class="so-wiz-body">${body}</div>
-        <div class="so-wiz-foot">
-          ${step > 1 ? '<button type="button" class="btn btn-dark" data-so="wiz-prev">السابق</button>' : ''}
-          ${step < w.max ? '<button type="button" class="btn btn-primary" data-so="wiz-next">التالي</button>' : '<button type="button" class="btn btn-primary" data-so="wiz-submit"><i class="fas fa-paper-plane"></i> إرسال الطلب</button>'}
+        <div class="so-wizard-body">${body}</div>
+        <div class="so-row-actions">
+          ${!isSingle && step > 1 ? '<button type="button" class="btn btn-dark" data-so="wiz-prev">السابق</button>' : ''}
+          ${
+            !isSingle && step < w.max
+              ? '<button type="button" class="btn btn-primary" data-so="wiz-next">التالي</button>'
+              : `<button type="button" class="btn btn-primary" data-so="wiz-submit" ${SUBMIT_LOCK.busy ? 'disabled' : ''}><i class="fas fa-paper-plane"></i> ${submitLabel}</button>`
+          }
+        </div>
+      </div>`;
+  };
+
+  const renderSuccess = () => {
+    const s = ui.success;
+    if (!s) return '';
+    const guestHint = s.isGuest
+      ? `<p class="muted" style="margin-top:12px">لمتابعة حالة الطلب لاحقًا يمكنك <a href="login.html?next=${encodeURIComponent('naiosh-solutions.html?view=my')}">تسجيل الدخول</a> أو <a href="register.html">إنشاء حساب</a>.</p>`
+      : '';
+    return `
+      <div class="cardish so-success" role="status">
+        <h2><i class="fas fa-check-circle"></i> ${esc(s.message || 'تم إرسال الطلب بنجاح.')}</h2>
+        <p>رقم الطلب:</p>
+        <p class="so-req-id"><code>${esc(s.requestId)}</code></p>
+        ${guestHint}
+        <div class="so-row-actions">
+          <button type="button" class="btn btn-primary" data-so="open-req" data-id="${esc(s.requestId)}">عرض طلبي</button>
+          ${s.isGuest ? '' : '<button type="button" class="btn btn-ghost" data-so="view-my">طلباتي</button>'}
+          <button type="button" class="btn btn-dark" data-so="view-catalog">الكتالوج</button>
         </div>
       </div>`;
   };
 
   const renderAdmin = () => {
-    if (!isStaff()) return `<div class="so-empty">للإدارة فقط</div>`;
-    const list = S().listSolutions(true);
+    const rows = S().listSolutions(true);
     return `
       <div class="so-panel-head">
         <h2>إدارة الحلول</h2>
-        <div>
-          <button type="button" class="btn btn-primary" data-so="admin-add"><i class="fas fa-plus"></i> إضافة حل</button>
+        <div class="so-row-actions">
+          <button type="button" class="btn btn-sm btn-primary" data-so="admin-add"><i class="fas fa-plus"></i> إضافة حل</button>
           <button type="button" class="btn btn-ghost" data-so="view-catalog">الكتالوج</button>
         </div>
       </div>
       <div class="so-table-wrap"><table class="so-table">
-        <thead><tr><th>ID</th><th>الاسم</th><th>الفئة</th><th>Owner</th><th>CTA</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody>${list
+        <thead><tr><th>ID</th><th>الاسم</th><th>الفئة</th><th>المالك</th><th>CTA</th><th>الحالة</th><th></th></tr></thead>
+        <tbody>${rows
           .map(
             (s) => `<tr>
-              <td><code>${esc(s.id)}</code></td><td>${esc(s.shortName || s.name)}</td><td>${esc(s.category)}</td>
+              <td><code>${esc(s.id)}</code></td><td>${esc(s.name)}</td><td>${esc(s.category)}</td>
               <td>${esc(s.owner)}</td><td>${esc(s.ctaType)}</td><td>${esc(s.status)}</td>
               <td class="so-row-actions">
                 <button type="button" class="btn btn-sm btn-ghost" data-so="details" data-id="${esc(s.id)}">عرض</button>
@@ -519,13 +793,11 @@
       </table></div>`;
   };
 
-  const renderAudit = () => {
-    const rows = S().listAudit();
-    return `
+  const renderAudit = () => `
       <div class="so-panel-head"><h2>سجل العمليات</h2><button type="button" class="btn btn-ghost" data-so="view-catalog">رجوع</button></div>
       <div class="so-table-wrap"><table class="so-table">
-        <thead><tr><th>رقم العملية</th><th>رقم الطلب</th><th>العميل</th><th>الحل</th><th>الإجراء</th><th>بواسطة</th><th>التاريخ</th><th>الحالة</th></tr></thead>
-        <tbody>${rows
+        <thead><tr><th>TX</th><th>الطلب</th><th>العميل</th><th>الحل</th><th>الإجراء</th><th>بواسطة</th><th>الوقت</th><th>الحالة</th></tr></thead>
+        <tbody>${(S().listAudit() || [])
           .map(
             (a) => `<tr>
               <td><code>${esc(a.id)}</code></td><td><code>${esc(a.requestId || '—')}</code></td>
@@ -536,7 +808,6 @@
           )
           .join('') || '<tr><td colspan="8">لا عمليات</td></tr>'}</tbody>
       </table></div>`;
-  };
 
   const readWizardFields = () => {
     const w = ui.wizard;
@@ -550,12 +821,17 @@
         phone: g('so-c-phone'),
         email: g('so-c-email'),
         branch: g('so-c-branch'),
+        country: g('so-c-country') || d.customer.country || '',
+        customerId: g('so-c-cid') || d.customer.customerId || (isLoggedIn() ? customerIdOf() : ''),
       };
     }
     if (document.getElementById('so-need')) d.need = g('so-need');
     if (document.getElementById('so-priority')) d.priority = g('so-priority');
     if (document.getElementById('so-scope')) d.scopeType = g('so-scope');
     if (document.getElementById('so-scope-detail')) d.scopeDetail = g('so-scope-detail');
+    if (document.getElementById('so-budget')) d.budget = g('so-budget');
+    if (document.getElementById('so-due')) d.dueDate = g('so-due');
+    if (document.getElementById('so-notes')) d.notes = g('so-notes');
     if (w.mode === 'cost') {
       d.costMeta = d.costMeta || {};
       d.costMeta.expenseTypes = [...document.querySelectorAll('[data-so-exp]:checked')].map((el) => el.getAttribute('data-so-exp'));
@@ -568,39 +844,108 @@
   };
 
   const submitWizard = () => {
+    if (SUBMIT_LOCK.busy) return;
     readWizardFields();
     const w = ui.wizard;
+    if (!w) return;
+    if (w._submitted) return;
+    const sol = S().getSolution(w.solutionId);
     const c = w.data.customer;
-    if (!c.name || !c.email) {
-      toast('الاسم والبريد مطلوبان');
+    if (!c.name || !c.email || !c.phone) {
+      ui.submitError = 'الاسم والبريد ورقم الهاتف مطلوبة';
+      toast('الاسم والبريد ورقم الهاتف مطلوبة');
+      render();
       return;
     }
-    if (w.mode !== 'cost' && w.step >= 3 && !w.data.need) {
+    if ((w.mode === 'quote' || w.mode === 'choose' || (w.mode !== 'cost' && w.step >= 3)) && !w.data.need) {
+      ui.submitError = 'وصف الاحتياج مطلوب';
       toast('وصف الاحتياج مطلوب');
+      render();
       return;
     }
-    const req = S().createRequest(
-      {
-        solutionId: w.solutionId,
-        requestType: w.mode === 'cost' ? 'Cost Reduction Assessment' : w.mode === 'quote' ? 'Quote Request' : w.mode === 'consult' ? 'Consultation Request' : 'Solution Request',
-        customer: c,
-        need: w.data.need,
-        priority: w.data.priority,
-        scopeType: w.data.scopeType,
-        scopeDetail: w.data.scopeDetail,
-        attachments: (w.data.attachments || []).map((name) => ({ name, at: new Date().toISOString(), by: actorName() })),
-        costMeta: w.data.costMeta,
-      },
-      actorName()
-    );
-    ui.wizard = null;
-    ui.requestId = req.id;
-    ui.view = 'request';
-    ui.detailTab = 'overview';
-    if (req._similar) {
-      toast(`تم إنشاء ${req.requestId || req.id} · يوجد طلب مشابه مفتوح: ${req._similar.id}`);
-    } else {
-      toast(`تم إنشاء الطلب ${req.requestId || req.id} — يظهر أيضاً في عملاء هوب → طلبات العملاء`);
+
+    SUBMIT_LOCK.busy = true;
+    w._submitted = true;
+    ui.submitError = '';
+    render();
+
+    try {
+      const needParts = [w.data.need];
+      if (w.data.budget) needParts.push(`الميزانية المتوقعة: ${w.data.budget}`);
+      if (w.data.dueDate) needParts.push(`موعد التنفيذ المطلوب: ${w.data.dueDate}`);
+      if (w.data.notes) needParts.push(`ملاحظات: ${w.data.notes}`);
+      if (c.country) needParts.push(`الدولة: ${c.country}`);
+
+      const requestType =
+        w.mode === 'cost'
+          ? 'Cost Reduction Assessment'
+          : w.mode === 'quote'
+            ? 'Quote Request'
+            : w.mode === 'consult'
+              ? 'Consultation Request'
+              : 'Solution Request';
+
+      const loggedIn = isLoggedIn();
+      const leadId = loggedIn ? '' : guestLeadId();
+      const customerId = loggedIn ? c.customerId || customerIdOf() : leadId;
+
+      const req = S().createRequest(
+        {
+          solutionId: w.solutionId,
+          solutionName: sol?.name || '',
+          requestType,
+          requestTypeLabel:
+            w.mode === 'quote' ? 'طلب عرض سعر لحل' : w.mode === 'choose' ? 'طلب حل' : undefined,
+          customerId,
+          guestLeadId: leadId || undefined,
+          isGuest: !loggedIn,
+          customer: { ...c, customerId },
+          customerName: c.name,
+          email: c.email,
+          phone: c.phone,
+          company: c.company,
+          branch: c.branch,
+          country: c.country || '',
+          need: needParts.filter(Boolean).join('\n'),
+          description: needParts.filter(Boolean).join('\n'),
+          priority: w.data.priority,
+          scopeType: w.data.scopeType,
+          scopeDetail: w.data.scopeDetail || w.data.scopeQty || '',
+          budget: w.data.budget || '',
+          dueDate: w.data.dueDate || '',
+          notes: w.data.notes || '',
+          attachments: (w.data.attachments || []).map((name) => ({ name, at: new Date().toISOString(), by: actorName() })),
+          costMeta: w.data.costMeta,
+          status: 'Pending Review',
+          sourceModule: 'حلول نايوش',
+          sourcePage: sol?.name || 'كتالوج الحلول',
+          sourceUrl: 'naiosh-solutions.html',
+          sourceAction: w.mode === 'quote' ? 'طلب عرض سعر' : w.mode === 'consult' ? 'طلب استشارة' : 'اختيار حل',
+          channel: 'Web',
+        },
+        actorName()
+      );
+
+      if (!req?.id) throw new Error('createRequest returned empty');
+
+      ui.wizard = null;
+      ui.selected = null;
+      ui.requestId = req.id;
+      ui.success = {
+        requestId: req.requestId || req.id,
+        message: w.mode === 'quote' ? 'تم إرسال طلب عرض السعر بنجاح.' : 'تم إرسال طلب الحل بنجاح.',
+        isGuest: !loggedIn,
+      };
+      ui.view = 'success';
+      SUBMIT_LOCK.busy = false;
+      render();
+    } catch (err) {
+      console.error('[HubSolutionsUI] submit failed', err);
+      SUBMIT_LOCK.busy = false;
+      w._submitted = false;
+      ui.submitError = 'تعذر إرسال الطلب. حاول مرة أخرى.';
+      toast('تعذر إرسال الطلب. حاول مرة أخرى.');
+      render();
     }
   };
 
@@ -612,7 +957,9 @@
     else if (ui.view === 'my') main = renderMyRequests();
     else if (ui.view === 'detail') main = renderSolutionDetail();
     else if (ui.view === 'request') main = renderRequestDetail();
+    else if (ui.view === 'selected') main = renderSelected();
     else if (ui.view === 'wizard') main = renderWizard();
+    else if (ui.view === 'success') main = renderSuccess();
     else if (ui.view === 'admin') main = renderAdmin();
     else if (ui.view === 'audit') main = renderAudit();
     else main = renderCatalog();
@@ -621,7 +968,7 @@
       ${ui.toast ? `<div class="so-toast" role="status">${esc(ui.toast)}</div>` : ''}
       <nav class="so-topnav">
         <button type="button" class="btn btn-sm ${ui.view === 'catalog' ? 'btn-primary' : 'btn-ghost'}" data-so="view-catalog">الكتالوج</button>
-        <button type="button" class="btn btn-sm ${ui.view === 'my' ? 'btn-primary' : 'btn-ghost'}" data-so="view-my">طلباتي</button>
+        <button type="button" class="btn btn-sm ${ui.view === 'my' || ui.view === 'request' || ui.view === 'success' ? 'btn-primary' : 'btn-ghost'}" data-so="view-my">طلباتي</button>
         ${isStaff() ? `<button type="button" class="btn btn-sm ${ui.view === 'admin' ? 'btn-primary' : 'btn-ghost'}" data-so="view-admin">إدارة</button>
           <button type="button" class="btn btn-sm ${ui.view === 'audit' ? 'btn-primary' : 'btn-ghost'}" data-so="view-audit">سجل العمليات</button>` : ''}
       </nav>
@@ -631,11 +978,14 @@
   const onClick = (e) => {
     const btn = e.target.closest('[data-so]');
     if (!btn) return;
+    e.preventDefault();
     const action = btn.getAttribute('data-so');
     const id = btn.getAttribute('data-id');
 
     if (action === 'view-catalog') {
       ui.view = 'catalog';
+      ui.selected = null;
+      ui.wizard = null;
       render();
       return;
     }
@@ -661,23 +1011,34 @@
       return;
     }
     if (action === 'choose' || action === 'quote' || action === 'consult') {
-      openWizard(id, action === 'choose' ? 'choose' : action);
+      startAction(id, action);
+      return;
+    }
+    if (action === 'continue-request') {
+      openWizard(id, 'choose');
+      return;
+    }
+    if (action === 'cancel-selected') {
+      ui.selected = null;
+      ui.view = 'catalog';
+      render();
       return;
     }
     if (action === 'consult-generic') {
       const cost = S().listSolutions().find((s) => s.ctaType === 'Request Consultation') || S().listSolutions()[0];
-      if (cost) openWizard(cost.id, 'consult');
+      if (cost) startAction(cost.id, 'consult');
       return;
     }
     if (action === 'cost-start') {
       const sol = S().getSolution('SOL-2026-00022') || S().listSolutions().find((s) => s.requestType === 'Cost Reduction Assessment');
-      if (sol) openWizard(sol.id, 'cost');
+      if (sol) startAction(sol.id, 'cost');
       return;
     }
     if (action === 'open-req') {
       ui.requestId = id;
       ui.view = 'request';
       ui.detailTab = 'overview';
+      ui.success = null;
       render();
       return;
     }
@@ -688,7 +1049,7 @@
     }
     if (action === 'wiz-cancel') {
       ui.wizard = null;
-      ui.view = 'catalog';
+      ui.view = ui.selected ? 'selected' : 'catalog';
       render();
       return;
     }
@@ -753,7 +1114,7 @@
       return;
     }
     if (action === 'assign') {
-      const name = window.prompt('اسم المسؤول (Assigned To)?', 'مستشار الحلول');
+      const name = window.prompt('اسم المسؤول؟', 'مستشار الحلول');
       if (!name) return;
       S().assignRequest(id, { assignedTo: name, consultant: name }, actorName());
       toast('تم التعيين');
@@ -783,6 +1144,13 @@
     if (action === 'quote-reject') {
       S().decideQuotation(id, 'reject', actorName());
       toast('تم رفض العرض');
+      render();
+      return;
+    }
+    if (action === 'quote-revise') {
+      const note = window.prompt('ما التعديل المطلوب على العرض؟') || 'طلب تعديل العرض';
+      S().decideQuotation(id, 'revise', actorName(), note);
+      toast('تم إرسال طلب تعديل العرض');
       render();
       return;
     }
@@ -837,13 +1205,19 @@
 
   const mount = () => {
     if (!root() || !S()) return;
+    if (ui._mounted) {
+      S().reload();
+      if (resumePending()) return;
+      render();
+      return;
+    }
+    ui._mounted = true;
     S().reload();
     root().addEventListener('click', onClick);
     root().addEventListener('change', onChange);
     root().addEventListener('input', (e) => {
       if (e.target.matches('[data-so-filter="q"]')) {
         ui.filters.q = e.target.value;
-        // debounce light
         clearTimeout(ui._q);
         ui._q = setTimeout(render, 180);
       }
@@ -852,15 +1226,17 @@
     if (params.get('view') === 'my') ui.view = 'my';
     if (params.get('cost') === '1') {
       const sol = S().getSolution('SOL-2026-00022');
-      if (sol) openWizard(sol.id, 'cost');
-      else render();
-      return;
+      if (sol) {
+        startAction(sol.id, 'cost');
+        return;
+      }
     }
+    if (resumePending()) return;
     render();
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
 
-  window.HubSolutionsUI = { render, ui, openWizard, mount };
+  window.HubSolutionsUI = { render, ui, openWizard, openSelectionSummary, startAction, resumePending, mount };
 })();

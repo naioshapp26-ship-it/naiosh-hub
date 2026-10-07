@@ -53,6 +53,44 @@
     }
   }
 
+  function isHubEventReq(r) {
+    if (!r) return false;
+    return (
+      r.hubEventApi ||
+      String(r.requestId || r.id || '').startsWith('EVT-REQ-') ||
+      String(r.eventId || r.referenceId || '').startsWith('EVT-')
+    );
+  }
+
+  function isHubArticleReq(r) {
+    if (!r) return false;
+    return (
+      r.hubArticleApi ||
+      String(r.requestId || r.id || '').startsWith('ART-REQ-') ||
+      String(r.articleId || r.referenceId || '').startsWith('ART-')
+    );
+  }
+
+  async function hubEventDecision(r, action, note) {
+    const eventId = r.eventId || r.referenceId;
+    if (!eventId) throw new Error('رقم الفعالية غير موجود');
+    return api(`/api/hub/events/${encodeURIComponent(eventId)}/action`, {
+      method: 'POST',
+      body: { action, note: note || '', reason: note || '' },
+      timeoutMs: 15000,
+    });
+  }
+
+  async function hubArticleDecision(r, action, note) {
+    const articleId = r.articleId || r.referenceId;
+    if (!articleId) throw new Error('رقم المقال غير موجود');
+    return api(`/api/hub/articles/${encodeURIComponent(articleId)}/action`, {
+      method: 'POST',
+      body: { action, note: note || '', reason: note || '' },
+      timeoutMs: 15000,
+    });
+  }
+
   function errText(e) {
     if (!e) return 'خطأ غير معروف';
     if (typeof e === 'string') return e;
@@ -871,12 +909,15 @@
 
   function openRejectModal(r) {
     document.getElementById('posha-reject-modal')?.remove();
+    const kind = requestKind(r);
     const title =
-      requestKind(r) === 'ad'
+      kind === 'ad'
         ? 'رفض طلب نشر الإعلان'
-        : requestKind(r) === 'article'
+        : kind === 'article'
           ? 'رفض طلب نشر المقال'
-          : 'رفض الطلب';
+          : kind === 'product'
+            ? 'رفض طلب إضافة منتج'
+            : 'رفض الطلب';
     const modal = document.createElement('div');
     modal.id = 'posha-reject-modal';
     modal.className = 'posha-modal-overlay';
@@ -898,17 +939,49 @@
     modal.onclick = (e) => {
       if (e.target === modal) close();
     };
-    modal.querySelector('[data-reject-confirm]').onclick = () => {
+    modal.querySelector('[data-reject-confirm]').onclick = async () => {
       const reason = String(modal.querySelector('#posha-reject-reason')?.value || '').trim();
       if (!reason) {
         alert('سبب الرفض مطلوب');
         return;
       }
       const allow = !!modal.querySelector('#posha-reject-resubmit')?.checked;
-      cr()?.rejectRequest?.(r.id, actor(), reason, { allowResubmit: allow }) ||
-        cr()?.updateStatus?.(r.id, 'Rejected', actor(), reason);
+      if (kind === 'event' && isHubEventReq(r)) {
+        try {
+          await hubEventDecision(r, 'reject', reason);
+        } catch (err) {
+          alert(errText(err));
+          return;
+        }
+      }
+      if (kind === 'article' && isHubArticleReq(r)) {
+        try {
+          await hubArticleDecision(r, 'reject', reason);
+          await window.HubArticles?.refreshFromApi?.();
+        } catch (err) {
+          alert(errText(err));
+          return;
+        }
+      }
+      if (kind === 'product') {
+        try {
+          await api(`/api/hub/product-submissions/${encodeURIComponent(r.requestId || r.id)}/status`, {
+            method: 'POST',
+            body: { status: allow ? 'needs_changes' : 'rejected', reason },
+          });
+        } catch (err) {
+          alert(errText(err));
+          return;
+        }
+      }
+      if (kind === 'product' && allow) {
+        cr()?.updateStatus?.(r.id, 'Needs Changes', actor(), reason);
+      } else {
+        cr()?.rejectRequest?.(r.id, actor(), reason, { allowResubmit: allow }) ||
+          cr()?.updateStatus?.(r.id, 'Rejected', actor(), reason);
+      }
       close();
-      state.reqView = 'rejected';
+      state.reqView = allow && kind === 'product' ? 'waiting' : 'rejected';
       state.reqId = null;
       state.moreId = null;
       paintBody();
@@ -917,6 +990,70 @@
       } catch (_) {}
     };
     setTimeout(() => modal.querySelector('#posha-reject-reason')?.focus(), 30);
+  }
+
+  function openQuoteFormModal(r) {
+    document.getElementById('posha-quote-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'posha-quote-modal';
+    modal.className = 'posha-modal-overlay';
+    const validDefault = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+    modal.innerHTML = `<div class="posha-modal" role="dialog" aria-modal="true">
+      <h3>إعداد عرض السعر</h3>
+      <p class="posha-muted">${esc(r.requestId || r.id)} · ${esc(r.solutionName || r.relatedSolution || r.title || '')}</p>
+      <div class="posha-form-grid" style="display:grid;gap:10px">
+        <label class="posha-field"><span>السعر *</span><input id="pq-price" type="number" min="0" step="1" value="5000" /></label>
+        <label class="posha-field"><span>العملة</span>
+          <select id="pq-currency"><option value="ر.س" selected>ر.س</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
+        </label>
+        <label class="posha-field"><span>تفاصيل العرض</span><textarea id="pq-details" rows="3" placeholder="مكونات العرض والخدمات المشمولة..."></textarea></label>
+        <label class="posha-field"><span>مدة التنفيذ</span><input id="pq-duration" placeholder="مثال: 3 أسابيع" /></label>
+        <label class="posha-field"><span>صلاحية العرض</span><input id="pq-valid" type="date" value="${esc(validDefault)}" /></label>
+        <label class="posha-field"><span>ملاحظات</span><textarea id="pq-notes" rows="2"></textarea></label>
+        <label class="posha-field"><span>شروط العرض</span><textarea id="pq-terms" rows="2" placeholder="شروط الدفع · الضمان · الاستثناءات..."></textarea></label>
+      </div>
+      <div class="posha-modal-actions">
+        <button type="button" class="btn btn-ghost" data-quote-cancel>إلغاء</button>
+        <button type="button" class="btn btn-primary" data-quote-send>إرسال عرض السعر للعميل</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    const close = () => modal.remove();
+    modal.querySelector('[data-quote-cancel]').onclick = close;
+    modal.onclick = (e) => {
+      if (e.target === modal) close();
+    };
+    modal.querySelector('[data-quote-send]').onclick = () => {
+      const price = Number(modal.querySelector('#pq-price')?.value || 0);
+      if (!price || price < 0) {
+        alert('السعر مطلوب');
+        return;
+      }
+      const payload = {
+        price,
+        currency: modal.querySelector('#pq-currency')?.value || 'ر.س',
+        details: String(modal.querySelector('#pq-details')?.value || '').trim(),
+        duration: String(modal.querySelector('#pq-duration')?.value || '').trim(),
+        validUntil: modal.querySelector('#pq-valid')?.value || validDefault,
+        notes: String(modal.querySelector('#pq-notes')?.value || '').trim(),
+        terms: String(modal.querySelector('#pq-terms')?.value || '').trim(),
+      };
+      const q =
+        window.HubSolutions?.createQuotation?.(r.id, payload, actor()) ||
+        cr()?.createQuotation?.(r.id, payload, actor());
+      if (!q) {
+        alert('تعذر إنشاء عرض السعر');
+        return;
+      }
+      close();
+      state.reqTab = 'quote';
+      state.moreId = null;
+      paintBody();
+      try {
+        document.dispatchEvent(new CustomEvent('posha-counters-refresh'));
+      } catch (_) {}
+    };
+    setTimeout(() => modal.querySelector('#pq-price')?.focus(), 30);
   }
 
   function actor() {
@@ -998,6 +1135,7 @@
   function requestKind(r) {
     if (!r) return 'general';
     if (r.referenceType === 'Ad' || r.requestType === 'Ad Submission') return 'ad';
+    if (r.referenceType === 'Product' || r.requestType === 'Product Submission') return 'product';
     if (r.referenceType === 'Event' || r.requestType === 'Event Submission') return 'event';
     if (r.referenceType === 'Article' || r.requestType === 'Article Submission') return 'article';
     if (
@@ -1006,8 +1144,18 @@
       r.requestType === 'Platform Add Request'
     )
       return 'platform';
-    if (String(r.requestType || '').toLowerCase().includes('product') || r.referenceType === 'Product') return 'product';
-    if (String(r.requestType || '').toLowerCase().includes('service') || r.referenceType === 'Service') return 'service';
+    if (
+      r.referenceType === 'Solution' ||
+      String(r.requestType || '').includes('Solution') ||
+      String(r.requestType || '').includes('Quote') ||
+      String(r.requestType || '').includes('Consultation') ||
+      String(r.requestType || '').includes('Cost') ||
+      String(r.id || '').startsWith('SOL-REQ') ||
+      String(r.id || '').startsWith('COST') ||
+      String(r.sourceModule || '').includes('حلول') ||
+      String(r.sourceModule || '').includes('خفض')
+    )
+      return 'solution';
     return 'general';
   }
 
@@ -1025,8 +1173,19 @@
     if (!r) return '';
     const pending = isPendingReq(r);
     const kind = requestKind(r);
-    const openBtn = `<button type="button" class="btn btn-dark btn-sm" data-req-open="${esc(r.id)}">عرض التفاصيل</button>`;
+    const openBtn = `<button type="button" class="btn btn-dark btn-sm" data-req-open="${esc(r.id)}">عرض</button>`;
     const moreBtn = `<button type="button" class="btn btn-ghost btn-sm" data-req-more="${esc(r.id)}" title="المزيد">⋮</button>${moreMenuHtml(r)}`;
+    if (kind === 'solution') {
+      const quoteBtn = `<button type="button" class="btn btn-primary btn-sm" data-req-quote-form="${esc(r.id)}">إعداد عرض سعر</button>`;
+      const acceptBtn = pending
+        ? `<button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">قبول</button>`
+        : '';
+      const reviseBtn = `<button type="button" class="btn btn-ghost btn-sm" data-req-info="${esc(r.id)}">طلب تعديل</button>`;
+      const rejectBtn = pending
+        ? `<button type="button" class="btn btn-danger btn-sm" data-req-reject="${esc(r.id)}">رفض</button>`
+        : '';
+      return `<div class="posha-req-actions-inner">${openBtn}${acceptBtn}${quoteBtn}${reviseBtn}${rejectBtn}${moreBtn}</div>`;
+    }
     if (!pending) {
       if (state.tab === 'approved') {
         const ad = kind === 'ad' ? findAd(r.referenceId) : null;
@@ -1046,11 +1205,28 @@
     const approveLabel =
       kind === 'platform' && r.requestType === 'Platform Access Request'
         ? '✓ منح الوصول'
-        : kind === 'ad' || kind === 'article' || kind === 'event'
-          ? '✓ قبول'
+        : kind === 'ad' || kind === 'article' || kind === 'event' || kind === 'product'
+          ? '✓ قبول ونشر'
           : '✓ قبول';
-    return `<div class="posha-req-actions-inner">${openBtn}
+    const previewBtn =
+      kind === 'event'
+        ? `<a class="btn btn-ghost btn-sm" href="${esc(r.previewUrl || r.sourceUrl || `events.html#event=${r.referenceId || ''}`)}" target="_blank" rel="noopener">معاينة</a>`
+        : kind === 'article'
+          ? `<a class="btn btn-ghost btn-sm" href="${esc(r.previewUrl || `blog.html#mine/${r.referenceId || ''}`)}" target="_blank" rel="noopener">معاينة المقال</a>`
+          : kind === 'product'
+            ? `<a class="btn btn-ghost btn-sm" href="${esc(r.sourceUrl || 'store.html')}" target="_blank" rel="noopener">معاينة</a>`
+            : '';
+    const changesBtn =
+      kind === 'event'
+        ? `<button type="button" class="btn btn-ghost btn-sm" data-req-event-changes="${esc(r.id)}">طلب تعديل</button>`
+        : kind === 'article'
+          ? `<button type="button" class="btn btn-ghost btn-sm" data-req-art-changes="${esc(r.id)}">طلب تعديل</button>`
+          : kind === 'product'
+            ? `<button type="button" class="btn btn-ghost btn-sm" data-req-product-changes="${esc(r.id)}">طلب تعديل</button>`
+            : '';
+    return `<div class="posha-req-actions-inner">${openBtn}${previewBtn}
       <button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">${approveLabel}</button>
+      ${changesBtn}
       <button type="button" class="btn btn-danger btn-sm" data-req-reject="${esc(r.id)}">✕ رفض</button>
       ${moreBtn}</div>`;
   }
@@ -1079,7 +1255,9 @@
                     ? `blog.html#mine/${encodeURIComponent(r.referenceId || '')}`
                     : rk === 'platform'
                       ? `platforms.html#platforms-catalog`
-                      : '';
+                      : rk === 'event'
+                        ? `events.html#event=${encodeURIComponent(r.eventId || r.referenceId || '')}`
+                        : '';
               return `<tr data-req-row="${esc(r.id)}">
                       <td><code>${esc(r.requestId || r.id)}</code></td>
                       <td>${esc(typeLabel)}<br><small class="posha-muted">${esc(r.channel || 'عميل')}</small></td>
@@ -1162,6 +1340,7 @@
     const isArt = kind === 'article';
     const isAd = kind === 'ad';
     const isPlatform = kind === 'platform';
+    const isSolution = kind === 'solution';
     const art = isArt && r.referenceId ? window.HubArticles?.get?.(r.referenceId) : null;
     const ad = isAd ? findAd(r.referenceId) : null;
     const snap = art || r.articleSnapshot || {};
@@ -1174,7 +1353,10 @@
       ['source', 'مصدر الطلب'],
       ...(isArt ? [['article', 'المقال']] : []),
       ...(isAd ? [['ad', 'الإعلان']] : []),
+      ...(kind === 'product' ? [['product', 'المنتج']] : []),
       ...(isPlatform ? [['platform', 'المنصة']] : []),
+      ...(isSolution ? [['quote', 'عرض السعر']] : []),
+      ...(kind === 'event' ? [['event', 'الفعالية']] : []),
       ['comms', 'التواصل'],
       ['notes', 'ملاحظات داخلية'],
       ['files', 'المرفقات'],
@@ -1183,18 +1365,31 @@
     ];
     let body = '';
     if (tab === 'overview') {
+      const ownerType = r.ownerType || r.customer?.ownerType || (r.isGuest ? 'Guest' : r.customerId ? 'Customer' : '');
+      const isGuestOwner = ownerType === 'Guest' || !!r.isGuest;
+      const ownerTypeLabel = isGuestOwner ? 'زائر' : ownerType === 'Customer' ? 'عميل' : '—';
       body = `<div class="posha-req-grid">
         <article>
-          <h4>بيانات العميل</h4>
+          <h4>بيانات صاحب الطلب</h4>
           <ul class="feed">
-            <li><b>الاسم:</b> <button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.email || '')}">${esc(r.customerName || r.customer?.name || '—')}</button></li>
-            <li><b>معرّف العميل:</b> ${esc(r.customerId || '—')}</li>
-            <li><b>الشركة:</b> ${esc(r.company || '—')}</li>
-            <li><b>الهاتف:</b> ${esc(r.phone || '—')}</li>
-            <li><b>البريد:</b> ${esc(r.email || '—')}</li>
+            <li><b>نوع صاحب الطلب:</b> ${esc(ownerTypeLabel)}</li>
+            <li><b>الاسم:</b> ${
+              isGuestOwner
+                ? esc(r.customerName || r.customer?.name || '—')
+                : `<button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.email || '')}">${esc(r.customerName || r.customer?.name || '—')}</button>`
+            }</li>
+            <li><b>معرّف العميل:</b> ${esc(isGuestOwner ? '—' : r.customerId || '—')}</li>
+            ${isGuestOwner ? `<li><b>معرّف تواصل الزائر:</b> <code>${esc(r.guestContactId || r.customer?.guestContactId || '—')}</code></li>` : ''}
+            <li><b>الشركة / الجهة:</b> ${esc(r.company || r.customer?.company || '—')}</li>
+            <li><b>الهاتف:</b> ${esc(r.phone || r.customer?.phone || '—')}</li>
+            <li><b>البريد:</b> ${esc(r.email || r.customer?.email || '—')}</li>
             <li><b>الفرع:</b> ${esc(r.branch || '—')}</li>
           </ul>
-          <button type="button" class="btn btn-dark btn-sm" data-open-posha="${esc(r.email || '')}">فتح ملف العميل</button>
+          ${
+            isGuestOwner
+              ? '<p class="posha-muted">صاحب الطلب زائر — لا يوجد ملف عميل مرتبط تلقائياً.</p>'
+              : `<button type="button" class="btn btn-dark btn-sm" data-open-posha="${esc(r.email || '')}">فتح ملف العميل</button>`
+          }
         </article>
         <article>
           <h4>بيانات الطلب</h4>
@@ -1202,10 +1397,21 @@
             <li><b>معرّف الطلب:</b> <code>${esc(r.requestId || r.id)}</code></li>
             <li><b>النوع:</b> ${esc(cr()?.labelType?.(r.requestType) || r.requestTypeLabel || r.requestType)}</li>
             ${isPlatform ? `<li><b>اسم المنصة:</b> ${esc(platformName || '—')}</li>` : ''}
+            ${isSolution ? `<li><b>اسم الحل:</b> ${esc(r.solutionName || r.relatedSolution || r.title || '—')}</li>` : ''}
+            ${isSolution ? `<li><b>معرّف الحل:</b> <code>${esc(r.solutionId || r.referenceId || '—')}</code></li>` : ''}
             <li><b>الموضوع:</b> ${esc(r.title)}</li>
-            <li><b>الوصف / سبب الطلب:</b> ${esc(r.description || r.need || '—')}</li>
+            <li><b>تفاصيل الاحتياج:</b> ${esc(r.description || r.need || '—')}</li>
             ${r.intendedUse ? `<li><b>الاستخدام المطلوب:</b> ${esc(r.intendedUse)}</li>` : ''}
+            ${r.scopeDetail ? `<li><b>النطاق / الكمية:</b> ${esc(r.scopeDetail)}</li>` : ''}
+            ${r.budget ? `<li><b>الميزانية المتوقعة:</b> ${esc(r.budget)}</li>` : ''}
             <li><b>المرجع:</b> ${esc(r.referenceType || '—')} · <code>${esc(r.referenceId || '—')}</code></li>
+            ${kind === 'event' ? `<li><b>رقم الفعالية:</b> <code>${esc(r.eventId || r.referenceId || '—')}</code></li>` : ''}
+            ${kind === 'event' ? `<li><b>التصنيف:</b> ${esc(r.category || r.eventSnapshot?.category || '—')}</li>` : ''}
+            ${kind === 'event' ? `<li><b>التاريخ:</b> ${esc(r.eventSnapshot?.date || r.date || '—')}</li>` : ''}
+            ${kind === 'event' ? `<li><b>نوع الحضور:</b> ${esc(r.attendanceType || r.eventSnapshot?.attendanceType || '—')}</li>` : ''}
+            ${kind === 'event' ? `<li><b>التسعير:</b> ${esc((r.pricing || r.eventSnapshot?.pricing) === 'paid' ? `مدفوعة · $${r.priceUsd || r.eventSnapshot?.priceUsd || 0}` : 'مجانية')}</li>` : ''}
+            ${kind === 'event' ? `<li><b>المقاعد:</b> ${esc(r.seats != null ? r.seats : r.eventSnapshot?.seats != null ? r.eventSnapshot.seats : '—')}</li>` : ''}
+            ${r.changeRequestNote ? `<li><b>سبب طلب التعديل:</b> ${esc(r.changeRequestNote)}</li>` : ''}
             <li><b>المصدر:</b> ${esc(displaySourceModule(r.sourceModule) || '—')}</li>
             <li><b>تاريخ الطلب:</b> ${fmt(r.createdAt)}</li>
             <li><b>الحالة:</b> ${esc(displayReqStatus(r))}</li>
@@ -1240,6 +1446,7 @@
           <h4>معاينة الإعلان قبل القرار</h4>
           <div style="margin:10px 0">${media}</div>
           <ul class="feed">
+            <li><b>رقم الطلب:</b> <code>${esc(r.requestId || r.id || '—')}</code></li>
             <li><b>Ad ID:</b> <code>${esc(adSnap.adCode || adSnap.id || r.referenceId || '—')}</code></li>
             <li><b>اسم الإعلان:</b> ${esc(adSnap.title || '—')}</li>
             <li><b>نوع الإعلان:</b> ${esc(adSnap.contentType || '—')}</li>
@@ -1258,23 +1465,82 @@
           </div>
         </article>
       </div>`;
+    } else if (tab === 'product' && kind === 'product') {
+      const pSnap = r.productSnapshot || {};
+      const imgs = Array.isArray(pSnap.images) ? pSnap.images : [];
+      const media = imgs.length
+        ? imgs
+            .slice(0, 4)
+            .map((img) =>
+              img.dataUrl
+                ? `<img src="${esc(img.dataUrl)}" alt="" style="max-width:160px;max-height:120px;border-radius:10px;object-fit:contain;margin:4px" />`
+                : `<span class="posha-muted">${esc(img.name || 'صورة')}</span>`
+            )
+            .join('')
+        : '<p class="posha-muted">لا توجد صور</p>';
+      body = `<div class="posha-req-grid">
+        <article style="grid-column:1/-1">
+          <h4>معاينة المنتج قبل القرار</h4>
+          <div style="margin:10px 0;display:flex;flex-wrap:wrap;gap:6px">${media}</div>
+          <ul class="feed">
+            <li><b>رقم الطلب:</b> <code>${esc(r.requestId || r.id || '—')}</code></li>
+            <li><b>رقم المنتج:</b> <code>${esc(pSnap.productId || r.productId || r.referenceId || '—')}</code></li>
+            <li><b>اسم المنتج:</b> ${esc(pSnap.title || '—')}</li>
+            <li><b>الفئة:</b> ${esc(pSnap.category || '—')}</li>
+            <li><b>السعر:</b> ${esc(pSnap.priceUsd != null ? `$${pSnap.priceUsd} ${pSnap.currency || 'USD'}` : '—')}</li>
+            <li><b>المتجر:</b> ${esc(pSnap.storeName || '—')}</li>
+            <li><b>الرابط:</b> ${pSnap.productUrl ? `<a href="${esc(pSnap.productUrl)}" target="_blank" rel="noopener">${esc(pSnap.productUrl)}</a>` : '—'}</li>
+            <li><b>الوصف:</b> ${esc(pSnap.summary || pSnap.description || '—')}</li>
+            <li><b>الحالة:</b> ${esc(pSnap.status || r.statusLabel || r.status || '—')}</li>
+          </ul>
+          <div class="posha-req-actions" style="margin-top:12px">
+            <a class="btn btn-dark btn-sm" href="store.html" target="_blank" rel="noopener">فتح المتجر</a>
+          </div>
+        </article>
+      </div>`;
     } else if (tab === 'article' && isArt) {
+      const coverUrl = snap.coverImage?.url || '';
+      const videoUrl = snap.video?.url || '';
+      const extras = snap.attachments || [];
       body = `<div class="posha-req-grid">
         <article style="grid-column:1/-1">
           <h4>بيانات المقال المرتبطة</h4>
           <ul class="feed">
+            <li><b>رقم الطلب:</b> <code>${esc(r.requestId || r.id)}</code></li>
             <li><b>رقم المقال:</b> <code>${esc(r.referenceId || snap.articleId || '—')}</code></li>
+            <li><b>صاحب الطلب:</b> ${esc(r.customerName || snap.authorName || '—')} · ${esc(r.email || '')}</li>
             <li><b>العنوان:</b> ${esc(snap.title || '—')}</li>
             <li><b>التصنيف:</b> ${esc(snap.category || '—')}</li>
             <li><b>الكاتب:</b> ${esc(snap.authorName || '—')}</li>
             <li><b>الملخص:</b> ${esc(snap.summary || '—')}</li>
+            <li><b>مصدر الطلب:</b> ${esc(r.sourceModule || 'المقالات')}</li>
+            <li><b>الحالة:</b> ${esc(displayReqStatus(r))}</li>
+            <li><b>مرحلة الموافقة:</b> مكتب المحتوى</li>
+            <li><b>المسؤول:</b> ${esc(cr()?.labelOwner?.(r.assignedTo) || r.assignedTo || 'Content Desk')}</li>
             <li><b>تاريخ الإرسال:</b> ${fmt(snap.submittedAt || r.createdAt)}</li>
           </ul>
           ${snap.body ? `<div style="white-space:pre-wrap;background:#f9fafb;padding:12px;border-radius:10px;margin-top:8px">${esc(snap.body)}</div>` : ''}
+          <h4 style="margin-top:14px">صورة المقال</h4>
+          ${coverUrl ? `<img src="${esc(coverUrl)}" alt="" style="max-width:100%;max-height:280px;border-radius:12px;object-fit:contain" />` : '<p class="posha-muted">لا صورة</p>'}
+          ${snap.coverImage ? `<p>${esc(snap.coverImage.name || '')}</p>` : ''}
+          <h4 style="margin-top:14px">فيديو المقال</h4>
+          ${videoUrl ? `<video src="${esc(videoUrl)}" controls style="max-width:100%;max-height:320px;border-radius:12px;background:#111"></video>` : '<p class="posha-muted">لا فيديو</p>'}
+          ${snap.video ? `<p>${esc(snap.video.name || '')}</p>` : ''}
+          <h4 style="margin-top:14px">المرفقات</h4>
+          ${
+            extras.length
+              ? extras
+                  .map((f) =>
+                    f.url
+                      ? `<p><a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a></p>`
+                      : `<p>${esc(f.name)}</p>`
+                  )
+                  .join('')
+              : '<p class="posha-muted">لا مرفقات إضافية</p>'
+          }
           ${snap.articleFile ? `<p style="margin-top:8px"><i class="fas fa-paperclip"></i> ${esc(snap.articleFile.name)}</p>` : ''}
           <div class="posha-req-actions" style="margin-top:12px">
-            <a class="btn btn-dark btn-sm" href="blog.html#mine/${esc(r.referenceId || '')}" target="_blank" rel="noopener">فتح المقال</a>
-            <a class="btn btn-ghost btn-sm" href="blog.html#mine/${esc(r.referenceId || '')}" target="_blank" rel="noopener">معاينة المقال</a>
+            <a class="btn btn-dark btn-sm" href="blog.html#mine/${esc(r.referenceId || '')}" target="_blank" rel="noopener">معاينة المقال</a>
           </div>
         </article>
       </div>`;
@@ -1301,6 +1567,30 @@
           </div>
         </article>
       </div>`;
+    } else if (tab === 'event' && kind === 'event') {
+      const snap = r.eventSnapshot || {};
+      body = `<div class="posha-req-grid">
+        <article style="grid-column:1/-1">
+          <h4>معاينة طلب نشر الفعالية</h4>
+          <ul class="feed">
+            <li><b>رقم الطلب:</b> <code>${esc(r.requestId || r.id)}</code></li>
+            <li><b>رقم الفعالية:</b> <code>${esc(r.eventId || r.referenceId || snap.eventId || '—')}</code></li>
+            <li><b>اسم الفعالية:</b> ${esc(snap.name || r.title || '—')}</li>
+            <li><b>التصنيف:</b> ${esc(r.category || snap.category || '—')}</li>
+            <li><b>التاريخ:</b> ${esc(snap.date || r.date || '—')} ${esc(snap.startTime || '')}</li>
+            <li><b>نوع الحضور:</b> ${esc(r.attendanceType || snap.attendanceType || '—')}</li>
+            <li><b>التسعير:</b> ${esc((r.pricing || snap.pricing) === 'paid' ? `مدفوعة · $${r.priceUsd || snap.priceUsd || 0}` : 'مجانية')}</li>
+            <li><b>عدد المقاعد:</b> ${esc(r.seats != null ? r.seats : snap.seats != null ? snap.seats : 'غير محدد')}</li>
+            <li><b>معرّف العميل:</b> ${esc(r.customerId || r.email || '—')}</li>
+            <li><b>اسم العميل:</b> ${esc(r.customerName || '—')}</li>
+            ${r.changeRequestNote ? `<li><b>سبب طلب التعديل:</b> ${esc(r.changeRequestNote)}</li>` : ''}
+            ${r.rejectionReason ? `<li><b>سبب الرفض:</b> ${esc(r.rejectionReason)}</li>` : ''}
+          </ul>
+          <div class="posha-req-actions" style="margin-top:12px">
+            <a class="btn btn-dark btn-sm" href="${esc(r.previewUrl || `events.html#event=${r.eventId || r.referenceId || ''}`)}" target="_blank" rel="noopener">فتح معاينة الفعالية</a>
+          </div>
+        </article>
+      </div>`;
     } else if (tab === 'source') {
       body = `<ul class="feed">
         <li><b>Source Module:</b> ${esc(displaySourceModule(r.sourceModule))}</li>
@@ -1312,6 +1602,38 @@
         <li><b>Created At:</b> ${fmt(r.createdAt)}</li>
       </ul>
       ${r.sourceUrl ? `<a class="btn btn-dark btn-sm" href="${esc(r.sourceUrl)}" target="_blank" rel="noopener">فتح الصفحة الأصلية</a>` : ''}`;
+    } else if (tab === 'quote' && isSolution) {
+      const quotes =
+        (window.HubSolutions?.listQuotations?.(r.id) || cr()?.listQuotations?.(r.id) || r.quotations || []);
+      body = `<div class="posha-req-grid">
+        <article style="grid-column:1/-1">
+          <div class="posha-panel-head" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <h4>عروض السعر المرتبطة بالطلب</h4>
+            <button type="button" class="btn btn-primary btn-sm" data-req-quote-form="${esc(r.id)}">إعداد عرض سعر</button>
+          </div>
+          ${
+            quotes.length
+              ? quotes
+                  .map(
+                    (q) => `<ul class="feed" style="margin-top:12px;border:1px solid #e5e7eb;border-radius:10px;padding:12px">
+                      <li><b>رقم العرض:</b> <code>${esc(q.id)}</code></li>
+                      <li><b>رقم الطلب:</b> <code>${esc(r.requestId || r.id)}</code></li>
+                      <li><b>الحل:</b> ${esc(q.solutionName || r.solutionName || '—')}</li>
+                      <li><b>السعر:</b> ${Number(q.price || 0).toLocaleString('en-US')} ${esc(q.currency || 'ر.س')}</li>
+                      <li><b>مدة التنفيذ:</b> ${esc(q.duration || '—')}</li>
+                      <li><b>تفاصيل العرض:</b> ${esc(q.details || '—')}</li>
+                      <li><b>صلاحية العرض:</b> ${esc(q.validUntil || '—')}</li>
+                      <li><b>ملاحظات:</b> ${esc(q.notes || '—')}</li>
+                      <li><b>الشروط:</b> ${esc(q.terms || '—')}</li>
+                      <li><b>الحالة:</b> ${esc(q.status || '—')}</li>
+                      <li><b>تاريخ العرض:</b> ${fmt(q.createdAt)}</li>
+                    </ul>`
+                  )
+                  .join('')
+              : '<p class="posha-muted">لا يوجد عرض سعر بعد. استخدم «إعداد عرض سعر».</p>'
+          }
+        </article>
+      </div>`;
     } else if (tab === 'comms') {
       body = `<ul class="feed">${(r.messages || [])
         .map((m) => `<li><b>${esc(m.by)}</b>: ${esc(m.text)} <small>${fmt(m.at)}</small></li>`)
@@ -1343,14 +1665,24 @@
         ? '✓ منح الوصول'
         : kind === 'platform'
           ? '✓ قبول الطلب'
-          : '✓ قبول ونشر';
-    const decisionActions = pending
+          : kind === 'solution'
+            ? 'قبول'
+            : '✓ قبول ونشر';
+    const decisionActions = isSolution
       ? `
+        <button type="button" class="btn btn-ghost btn-sm" data-req-reject="${esc(r.id)}">رفض</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-req-info="${esc(r.id)}">طلب تعديل</button>
+        <button type="button" class="btn btn-primary btn-sm" data-req-quote-form="${esc(r.id)}">إعداد عرض سعر</button>
+        ${pending ? `<button type="button" class="btn btn-dark btn-sm" data-req-approve="${esc(r.id)}">${approveLabel}</button>` : ''}
+      `
+      : pending
+        ? `
         <button type="button" class="btn btn-ghost btn-sm" data-req-reject="${esc(r.id)}">رفض الطلب</button>
-        <button type="button" class="btn btn-dark btn-sm" data-req-edit-linked="${esc(r.id)}">طلب معلومات</button>
+        ${kind === 'event' ? `<button type="button" class="btn btn-ghost btn-sm" data-req-event-changes="${esc(r.id)}">طلب تعديل</button>` : `<button type="button" class="btn btn-dark btn-sm" data-req-edit-linked="${esc(r.id)}">طلب معلومات</button>`}
+        <a class="btn btn-ghost btn-sm" href="${esc(r.previewUrl || r.sourceUrl || '#')}" target="_blank" rel="noopener">معاينة</a>
         <button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">${approveLabel}</button>
       `
-      : primaryReqActionsHtml(r);
+        : primaryReqActionsHtml(r);
 
     return `
       <div class="posha-req-detail-head">
@@ -1504,7 +1836,7 @@
       };
     });
     body.querySelectorAll('[data-req-approve], [data-req-approve-publish]').forEach((btn) => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         if (!(canPerm('customer_requests.approve', 'CRM') || canPerm('customer_requests.approve', 'POSHA'))) {
           alert('ليس لديك صلاحية قبول الطلب.');
           return;
@@ -1519,9 +1851,11 @@
           kind === 'ad'
             ? `الموافقة على نشر الإعلان؟\n\nالإعلان: ${ad?.title || r.title || '—'}\nالعميل: ${r.customerName || '—'}\nأماكن الظهور: ${places}\nالبداية: ${ad?.adStartDate || 'فور الموافقة'}\nالنهاية: ${ad?.adEndDate || '—'}`
             : kind === 'event'
-              ? `الموافقة على نشر الفعالية؟\n\n${r.title || r.id}\nالعميل: ${r.customerName || '—'}`
+              ? `الموافقة على نشر الفعالية؟\n\nالطلب: ${r.requestId || r.id}\nالفعالية: ${r.eventId || r.referenceId || '—'}\n${r.title || ''}\nالعميل: ${r.customerName || '—'}`
               : kind === 'article'
                 ? `هل تريد اعتماد ونشر هذا المقال؟\n\nRequest: ${r.id}\nArticle: ${r.referenceId || '—'}\nالعنوان: ${r.title || ''}\nالعميل: ${r.customerName || ''}`
+                : kind === 'product'
+                  ? `الموافقة على نشر المنتج؟\n\nالطلب: ${r.requestId || r.id}\nالمنتج: ${r.productId || r.referenceId || '—'}\n${r.title || ''}\nالعميل: ${r.customerName || '—'}`
                 : kind === 'platform'
                   ? r.requestType === 'Platform Access Request'
                     ? `منح الوصول للمنصة؟\n\nالمنصة: ${r.referenceId || '—'}\nالعميل: ${r.customerName || '—'}\n${r.title || ''}`
@@ -1529,6 +1863,34 @@
                   : `الموافقة على الطلب؟\n\n${r.title || r.id}\nالعميل: ${r.customerName || '—'}`
         );
         if (!ok) return;
+        if (kind === 'event' && isHubEventReq(r)) {
+          try {
+            await hubEventDecision(r, 'approve');
+          } catch (err) {
+            alert(errText(err));
+            return;
+          }
+        }
+        if (kind === 'article' && isHubArticleReq(r)) {
+          try {
+            await hubArticleDecision(r, 'publish');
+            await window.HubArticles?.refreshFromApi?.();
+          } catch (err) {
+            alert(errText(err));
+            return;
+          }
+        }
+        if (kind === 'product') {
+          try {
+            await api(`/api/hub/product-submissions/${encodeURIComponent(r.requestId || r.id)}/status`, {
+              method: 'POST',
+              body: { status: 'published' },
+            });
+          } catch (err) {
+            alert(errText(err));
+            return;
+          }
+        }
         const result = cr()?.approveRequest?.(id, actor()) || cr()?.approveAndPublish?.(id, actor());
         if (!result) return alert('تعذر إتمام الموافقة');
         state.tab = 'approved';
@@ -1554,7 +1916,29 @@
         const id = btn.getAttribute('data-req-open-ref');
         state.reqId = id;
         const r = cr()?.get(id);
-        state.reqTab = requestKind(r) === 'ad' ? 'ad' : requestKind(r) === 'article' ? 'article' : 'overview';
+        const k = requestKind(r);
+        state.reqTab =
+          k === 'ad' ? 'ad' : k === 'article' ? 'article' : k === 'product' ? 'product' : k === 'event' ? 'event' : 'overview';
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-product-changes]').forEach((btn) => {
+      btn.onclick = async () => {
+        const id = btn.getAttribute('data-req-product-changes');
+        const r = cr()?.get(id);
+        if (!r) return;
+        const note = window.prompt('سبب طلب التعديل؟');
+        if (!note) return;
+        try {
+          await api(`/api/hub/product-submissions/${encodeURIComponent(r.requestId || r.id)}/status`, {
+            method: 'POST',
+            body: { status: 'needs_changes', reason: note },
+          });
+        } catch (err) {
+          alert(errText(err));
+          return;
+        }
+        cr()?.updateStatus(id, 'Needs Changes', actor(), note);
         paintBody();
       };
     });
@@ -1637,11 +2021,41 @@
         paintBody();
       };
     });
-    body.querySelectorAll('[data-req-art-changes]').forEach((btn) => {
-      btn.onclick = () => {
-        const id = btn.getAttribute('data-req-art-changes');
+    body.querySelectorAll('[data-req-event-changes]').forEach((btn) => {
+      btn.onclick = async () => {
+        const id = btn.getAttribute('data-req-event-changes');
+        const r = cr()?.get(id);
+        if (!r) return;
         const note = window.prompt('سبب طلب التعديل؟');
         if (!note) return;
+        if (isHubEventReq(r)) {
+          try {
+            await hubEventDecision(r, 'request_changes', note);
+          } catch (err) {
+            alert(errText(err));
+            return;
+          }
+        }
+        cr()?.updateStatus(id, 'Needs Changes', actor(), note);
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-art-changes]').forEach((btn) => {
+      btn.onclick = async () => {
+        const id = btn.getAttribute('data-req-art-changes');
+        const r = cr()?.get(id);
+        if (!r) return;
+        const note = window.prompt('سبب طلب التعديل؟');
+        if (!note) return;
+        if (isHubArticleReq(r)) {
+          try {
+            await hubArticleDecision(r, 'request_changes', note);
+            await window.HubArticles?.refreshFromApi?.();
+          } catch (err) {
+            alert(errText(err));
+            return;
+          }
+        }
         cr()?.updateStatus(id, 'Needs Changes', actor(), note);
         paintBody();
       };
@@ -1716,13 +2130,25 @@
     body.querySelectorAll('[data-req-quote]').forEach((btn) => {
       btn.onclick = () => {
         const id = btn.getAttribute('data-req-quote');
-        if (window.HubSolutions?.createQuotation) {
-          const price = Number(window.prompt('السعر؟', '5000')) || 5000;
-          window.HubSolutions.createQuotation(id, { price }, actor());
+        const r = cr()?.get(id);
+        if (r) openQuoteFormModal(r);
+        else {
+          if (window.HubSolutions?.createQuotation) {
+            const price = Number(window.prompt('السعر؟', '5000')) || 5000;
+            window.HubSolutions.createQuotation(id, { price }, actor());
+          }
+          cr()?.updateStatus(id, 'Proposal Sent', actor(), 'إرسال عرض سعر');
+          state.moreId = null;
+          paintBody();
         }
-        cr()?.updateStatus(id, 'Proposal Sent', actor(), 'إرسال عرض سعر');
-        state.moreId = null;
-        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-quote-form]').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.getAttribute('data-req-quote-form');
+        const r = cr()?.get(id);
+        if (!r) return;
+        openQuoteFormModal(r);
       };
     });
     body.querySelectorAll('[data-req-close]').forEach((btn) => {
@@ -1920,6 +2346,7 @@
         <ul class="feed">${state.tickets.map((t)=>`<li>
           <b>${esc(t.number||t.id)}</b> — ${esc(t.subject)} · ${esc(t.clientName)} (${esc(t.clientEmail)})
           <span class="chip">${esc(t.status)}</span>
+          ${(t.attachments||[]).length ? `<div class="posha-att-list" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${(t.attachments||[]).map((a)=>`<a class="btn btn-ghost btn-sm" href="${esc(a.adminContentUrl||a.contentUrl)}" target="_blank" rel="noopener"><i class="fas fa-paperclip"></i> ${esc(a.originalFileName||'مرفق')}</a>`).join('')}</div>` : ''}
           <button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(t.clientEmail)}">فتح العميل</button>
         </li>`).join('') || '<li class="posha-ws-empty">لا تذاكر دعم حالياً.</li>'}</ul>
       </section>`;
@@ -2128,12 +2555,16 @@
             apiWarn = apiWarn || errText(e);
             return null;
           });
-        const [clients, tickets, events, issues, notifs] = await Promise.all([
+        const [clients, tickets, events, issues, notifs, hubEventReqs, hubArticleReqs, hubAdSubs, hubPrdSubs] = await Promise.all([
           soft('/api/admin/posha/clients'),
           soft('/api/admin/posha/tickets'),
           soft('/api/admin/posha/events'),
           soft('/api/admin/posha/issues'),
           soft('/api/admin/posha/notifications'),
+          soft('/api/hub/events/requests'),
+          soft('/api/hub/articles/requests'),
+          soft('/api/hub/ad-submissions'),
+          soft('/api/hub/product-submissions'),
         ]);
         if (clients) {
           state.clients = clients.clients || [];
@@ -2146,6 +2577,30 @@
         state.events = events?.events || state.events || [];
         state.issues = issues?.issues || state.issues || [];
         state.notifications = notifs?.notifications || state.notifications || [];
+        if (hubEventReqs && Array.isArray(hubEventReqs.items)) {
+          hubEventReqs.items.forEach((item) => {
+            try {
+              cr()?.ingestHubEventRequest?.(item);
+            } catch (_) {}
+          });
+        }
+        if (hubArticleReqs && Array.isArray(hubArticleReqs.items)) {
+          hubArticleReqs.items.forEach((item) => {
+            try {
+              cr()?.ingestHubArticleRequest?.(item);
+            } catch (_) {}
+          });
+        }
+        if (hubAdSubs && Array.isArray(hubAdSubs.requests)) {
+          try {
+            cr()?.mergeServerAdRequests?.(hubAdSubs.requests);
+          } catch (_) {}
+        }
+        if (hubPrdSubs && Array.isArray(hubPrdSubs.requests)) {
+          try {
+            cr()?.mergeServerProductRequests?.(hubPrdSubs.requests);
+          } catch (_) {}
+        }
         _lastApiWarn = apiWarn;
         await paintBody();
         if (apiWarn && bodyEl) {

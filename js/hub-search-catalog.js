@@ -10,7 +10,7 @@
   const AUDIT_KEY = 'naiosh_hub_search_audit_v1';
   const EMPTY_Q_KEY = 'naiosh_hub_search_empty_queries_v1';
   const limits = () => window.HubUploadLimits || {};
-  const MAX_FILE_BYTES = () => limits().MAX_FILE_BYTES || 150 * 1024 * 1024;
+  const MAX_FILE_BYTES = () => limits().MAX_FILE_BYTES || 1500 * 1024 * 1024;
   const INLINE_DATA_URL_MAX_BYTES = () => limits().INLINE_DATA_URL_MAX_BYTES || 1.5 * 1024 * 1024;
 
   const readSettings = () => {
@@ -463,7 +463,9 @@
       } catch (_) {}
       const res = await fetch('/api/hub/search-catalog', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(body),
       });
       if (!res.ok) return { ok: false };

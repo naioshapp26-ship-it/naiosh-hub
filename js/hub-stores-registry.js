@@ -257,8 +257,29 @@
   const createSubmission = (payload = {}, actor = 'عميل') => {
     const storeId = payload.storeId || payload.store_id || '';
     const store = get(storeId);
+    const existingId = payload.id || payload.requestId || payload.submission_id || '';
+    if (existingId) {
+      const found = (subs.items || []).find((x) => x.id === existingId || x.submission_id === existingId);
+      if (found) {
+        Object.assign(found, {
+          title: payload.title || payload.product_name || found.title,
+          productId: payload.productId || found.productId || '',
+          ownerType: payload.ownerType || found.ownerType || '',
+          ownerEmail: payload.ownerEmail || found.ownerEmail || '',
+          ownerPhone: payload.ownerPhone || found.ownerPhone || '',
+          ownerCompany: payload.ownerCompany || found.ownerCompany || '',
+          customerId: payload.customerId || found.customerId || '',
+          guestContactId: payload.guestContactId || found.guestContactId || '',
+          customer: payload.customer || found.customer || actor,
+          updatedAt: nowIso(),
+        });
+        saveSubs();
+        return Object.assign({}, found, { submission_id: found.id });
+      }
+    }
     const item = {
-      id: nextSubmissionId(),
+      id: existingId || nextSubmissionId(),
+      productId: payload.productId || '',
       storeId: store?.storeId || storeId,
       storeName: store?.nameAr || store?.name || payload.storeName || payload.store_name || '',
       productUrl: payload.productUrl || payload.product_url || '',
@@ -278,6 +299,12 @@
       attachmentsCount: payload.attachments_count || (payload.attachments || []).length || 0,
       status: payload.status || 'بانتظار المراجعة',
       customer: payload.customer || actor,
+      ownerType: payload.ownerType || '',
+      ownerEmail: payload.ownerEmail || '',
+      ownerPhone: payload.ownerPhone || '',
+      ownerCompany: payload.ownerCompany || '',
+      customerId: payload.customerId || '',
+      guestContactId: payload.guestContactId || '',
       createdBy: actor,
       createdAt: nowIso(),
       updatedAt: nowIso(),

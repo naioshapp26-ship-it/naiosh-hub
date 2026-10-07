@@ -41,6 +41,10 @@ body.cp-body {
   text-decoration: none;
   color: #fff;
   padding: 8px;
+  cursor: pointer;
+}
+.cp-brand:hover {
+  opacity: 0.92;
 }
 .cp-brand img { width: 42px; height: 42px; border-radius: 12px; object-fit: cover; }
 .cp-brand strong { display: block; font-size: 14px; }
@@ -173,11 +177,43 @@ body.cp-body {
   border: 1px solid #a7f3d0; background: #ecfdf5; color: #065f46;
   border-radius: 14px; padding: 14px; font-weight: 700;
 }
-.cp-form { display: grid; gap: 10px; max-width: 520px; }
+.cp-form { display: grid; gap: 10px; max-width: 560px; }
 .cp-field label { display: block; font-size: 13px; font-weight: 800; margin-bottom: 6px; }
 .cp-field input, .cp-field select, .cp-field textarea {
   width: 100%; border: 1px solid var(--cp-line); border-radius: 12px; padding: 10px 12px; font: inherit;
 }
+.cp-attach-block { margin-top: 4px; }
+.cp-attach-hint { margin: 0 0 10px; color: var(--cp-muted); font-size: 12px; font-weight: 700; line-height: 1.6; }
+.cp-attach-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.cp-attach-btn {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1px dashed rgba(215,0,0,.35); background: #fff7f7; color: #9f1239;
+  border-radius: 12px; padding: 10px 12px; font-weight: 800; font-size: 13px;
+}
+.cp-attach-btn:hover { background: #ffe4e6; }
+.cp-attach-list {
+  margin-top: 10px; border: 1px solid var(--cp-line); border-radius: 12px; background: #fff; padding: 10px 12px;
+}
+.cp-attach-list-head { font-size: 12px; font-weight: 800; color: var(--cp-muted); margin-bottom: 8px; }
+.cp-attach-list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cp-attach-list li {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center;
+  border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;
+}
+.cp-attach-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.cp-attach-name { font-weight: 800; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-attach-meta { color: var(--cp-muted); font-size: 12px; font-weight: 700; }
+.cp-attach-remove {
+  border: 0; background: #fee2e2; color: #991b1b; border-radius: 8px; padding: 6px 10px;
+  font: inherit; font-weight: 800; font-size: 12px; cursor: pointer;
+}
+.cp-attach-status { margin: 8px 0 0; font-size: 12px; font-weight: 800; color: #065f46; }
+.cp-attach-status.is-err { color: #991b1b; }
+.cp-attach-saved { margin-top: 10px; border: 1px solid var(--cp-line); border-radius: 12px; padding: 10px 12px; background: #fafafa; }
+.cp-attach-saved strong { display: block; margin-bottom: 6px; font-size: 13px; }
+.cp-attach-saved ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cp-attach-saved li { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 700; }
+.cp-attach-saved a { color: var(--cp-red); text-decoration: none; }
 .cp-toast {
   position: fixed; bottom: 18px; left: 18px; background: #111; color: #fff;
   padding: 12px 14px; border-radius: 12px; font-weight: 800; font-size: 13px;

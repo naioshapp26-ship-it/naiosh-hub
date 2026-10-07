@@ -27,7 +27,7 @@
     { id: 'approval', label: 'موافقات مطلوبة' },
     { id: 'system', label: 'إشعارات الأنظمة' },
     { id: 'payment', label: 'المدفوعات' },
-    { id: 'article', label: 'المقالات' },
+    { id: 'article', label: 'المدونة' },
     { id: 'ad', label: 'الإعلانات' },
     { id: 'event', label: 'الفعاليات' },
     { id: 'store', label: 'المتجر' },

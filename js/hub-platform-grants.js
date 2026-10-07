@@ -51,7 +51,9 @@
     try {
       await fetch(API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(publicState(state)),
       });
     } catch {
@@ -177,7 +179,9 @@
     try {
       await fetch('/api/hub/tenant-accounts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ version: 1, accounts: payload }),
       });
     } catch {
@@ -229,7 +233,9 @@
     try {
       await fetch('/api/hub/tenant-account', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(account),
       });
     } catch {
@@ -281,7 +287,7 @@
 
     const now = new Date().toISOString();
     const grant = {
-      id: uid('pgrant'),
+      id: String(payload.id || '').trim() || uid('pgrant'),
       kind: source === 'register' ? 'signup' : 'platform',
       source,
       companyName,
@@ -301,17 +307,21 @@
       requestedSystem,
       requestedSystemLabel,
       notes,
+      attachments: Array.isArray(payload.attachments) ? payload.attachments : [],
       plan: 'free',
       planLabel: 'باقة مجانية',
       freeQuota: FREE_QUOTA,
       freeRemaining: FREE_QUOTA,
       status: 'pending',
+      statusLabel: 'بانتظار المراجعة',
       createdAt: now,
       updatedAt: now,
     };
 
     const state = readLocal();
     state.grants = state.grants || [];
+    // استبدال طلب بنفس المعرّف إن وُجد (طلب السيرفر REG-REQ-…)
+    state.grants = state.grants.filter((g) => String(g.id) !== String(grant.id));
     state.grants.unshift(grant);
     saveLocal(state);
     syncRemote(state);

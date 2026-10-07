@@ -1925,7 +1925,7 @@ const HubStore = (() => {
     autoSyncMinutes: 15,
     defaultGrantPlan: 'standard',
     activityRetainDays: 90,
-    maxUploadMb: 150,
+    maxUploadMb: 1500,
     shopDefaultCategory: 'الكل',
     excludeKonzoo: true,
     searchIndexEnabled: true,
@@ -2012,7 +2012,7 @@ const HubStore = (() => {
       }
     });
     out.excludeKonzoo = true;
-    out.maxUploadMb = Math.max(1, Math.min(150, out.maxUploadMb || 150));
+    out.maxUploadMb = Math.max(1, Math.min(1500, out.maxUploadMb || 1500));
     out.sessionMinutes = Math.max(5, Math.min(24 * 60, out.sessionMinutes || 480));
     out.autoSyncMinutes = Math.max(0, Math.min(24 * 60, out.autoSyncMinutes || 0));
     out.activityRetainDays = Math.max(7, Math.min(3650, out.activityRetainDays || 90));
@@ -3489,12 +3489,24 @@ const HubStore = (() => {
 
   const get = () => state || load();
 
+  const SETTINGS_API = '/api/hub/system-settings';
+  let settingsHydratePromise = null;
+
+  const applyServerSettings = (remote) => {
+    if (!remote || typeof remote !== 'object') return getSettings();
+    const s = get();
+    s.settings = coerceSettings(remote);
+    save();
+    return getSettings();
+  };
+
   const getSettings = () => {
     get();
     if (hydrateSettings()) save();
     return { ...(get().settings || defaultSettings()) };
   };
 
+  /** Local-only save (unit tests / offline cache). Prefer saveSettingsAsync for real persistence. */
   const saveSettings = (patch = {}) => {
     const s = get();
     const prev = { ...(s.settings || defaultSettings()) };
@@ -3507,7 +3519,7 @@ const HubStore = (() => {
       }
     })();
     const actor = actorUser?.name || actorUser?.email || 'مشغّل هوب';
-    const employeeNo = actorUser?.employeeNo || null;
+    const employeeNo = actorUser?.employeeNo || actorUser?.email || null;
     if (!Array.isArray(next.settingsChangeLog)) next.settingsChangeLog = Array.isArray(prev.settingsChangeLog) ? prev.settingsChangeLog.slice() : [];
     Object.keys(patch || {}).forEach((key) => {
       if (key === 'updatedAt' || key === 'settingsChangeLog') return;
@@ -3519,16 +3531,143 @@ const HubStore = (() => {
         at: nowIso(),
         actor,
         employeeNo,
+        email: actorUser?.email || null,
         key,
+        label: key,
+        section: 'إعدادات النظام',
         oldValue: oldVal == null ? '' : typeof oldVal === 'object' ? JSON.stringify(oldVal) : String(oldVal),
         newValue: newVal == null ? '' : typeof newVal === 'object' ? JSON.stringify(newVal) : String(newVal),
+        operation: 'تعديل إعداد',
       });
     });
-    if (next.settingsChangeLog.length > 200) next.settingsChangeLog.length = 200;
+    if (next.settingsChangeLog.length > 500) next.settingsChangeLog.length = 500;
     s.settings = next;
     save();
     recordActivity('settings', 'تحديث الإعدادات الداخلية', { keys: Object.keys(patch || {}), employeeNo, actor });
     return getSettings();
+  };
+
+  const settingsAuthHeaders = () => {
+    try {
+      return window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || { 'Content-Type': 'application/json' };
+    } catch (_) {
+      return { 'Content-Type': 'application/json' };
+    }
+  };
+
+  const hydrateSettingsFromServer = async ({ force = false } = {}) => {
+    if (settingsHydratePromise && !force) return settingsHydratePromise;
+    settingsHydratePromise = (async () => {
+      try {
+        const res = await fetch(SETTINGS_API, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: settingsAuthHeaders(),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data?.ok || !data.settings) {
+          if (res.status === 401 || res.status === 403) {
+            const pub = await fetch(`${SETTINGS_API}?public=1`, { cache: 'no-store' });
+            const pubData = await pub.json().catch(() => ({}));
+            if (pub.ok && pubData?.ok && pubData.brand) {
+              const merged = coerceSettings({ ...getSettings(), ...pubData.brand });
+              const s = get();
+              s.settings = merged;
+              save();
+              return { ok: true, source: 'public', settings: getSettings() };
+            }
+          }
+          return { ok: false, error: data?.error || `HTTP ${res.status}`, settings: getSettings() };
+        }
+        applyServerSettings(data.settings);
+        return { ok: true, source: 'server', settings: getSettings(), storage: data.storage || null };
+      } catch (err) {
+        return { ok: false, error: err?.message || 'network', settings: getSettings() };
+      } finally {
+        settingsHydratePromise = null;
+      }
+    })();
+    return settingsHydratePromise;
+  };
+
+  const saveSettingsAsync = async (patch = {}) => {
+    try {
+      const actorUser = (() => {
+        try {
+          return window.HubAuth?.getUser?.() || null;
+        } catch (_) {
+          return null;
+        }
+      })();
+      const res = await fetch(SETTINGS_API, {
+        method: 'PUT',
+        cache: 'no-store',
+        headers: settingsAuthHeaders(),
+        body: JSON.stringify({
+          settings: patch,
+          employeeNo: actorUser?.employeeNo || actorUser?.email || null,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok || !data.settings) {
+        return {
+          ok: false,
+          error: data?.error || 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.',
+          status: res.status,
+          settings: getSettings(),
+        };
+      }
+      applyServerSettings(data.settings);
+      recordActivity('settings', 'تحديث إعدادات النظام عبر الخادم', {
+        keys: data.changedKeys || Object.keys(patch || {}),
+        employeeNo: actorUser?.employeeNo || actorUser?.email || null,
+      });
+      return {
+        ok: true,
+        message: data.message || 'تم حفظ التغييرات بنجاح',
+        settings: getSettings(),
+        changedKeys: data.changedKeys || [],
+        auditEntries: data.auditEntries || [],
+        storage: data.storage || null,
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        error: 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.',
+        detail: err?.message || 'network',
+        settings: getSettings(),
+      };
+    }
+  };
+
+  const resetSettingsAsync = async () => {
+    try {
+      const res = await fetch(`${SETTINGS_API}/reset`, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: settingsAuthHeaders(),
+        body: JSON.stringify({}),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok || !data.settings) {
+        return {
+          ok: false,
+          error: data?.error || 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.',
+          status: res.status,
+          settings: getSettings(),
+        };
+      }
+      applyServerSettings(data.settings);
+      recordActivity('settings', 'إعادة إعدادات النظام للافتراضي عبر الخادم');
+      return { ok: true, message: data.message || 'تم حفظ التغييرات بنجاح', settings: getSettings() };
+    } catch (err) {
+      return {
+        ok: false,
+        error: 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.',
+        detail: err?.message || 'network',
+        settings: getSettings(),
+      };
+    }
   };
 
   const resetSettings = () => {
@@ -6899,14 +7038,33 @@ const HubStore = (() => {
     return item;
   };
 
-  const registerApp = (manifest) => {
+  const registerApp = (manifest = {}) => {
     const empire = get().empire;
     if (!empire.apps) empire.apps = [];
-    const code = (manifest.code || '').trim().toUpperCase();
-    if (!code || !manifest.nameAr) return null;
+    const nameAr = String(manifest.nameAr || '').trim();
+    const code = String(manifest.code || '')
+      .trim()
+      .toUpperCase();
+    registerApp.lastError = null;
+    if (!nameAr) {
+      registerApp.lastError = { ok: false, error: 'اسم النظام مطلوب.', field: 'nameAr' };
+      return null;
+    }
+    if (!code) {
+      registerApp.lastError = { ok: false, error: 'رمز النظام مطلوب.', field: 'code' };
+      return null;
+    }
+    if (!/^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(code)) {
+      registerApp.lastError = {
+        ok: false,
+        error: 'رمز النظام غير صالح. استخدم أحرفًا إنجليزية وأرقامًا فقط.',
+        field: 'code',
+      };
+      return null;
+    }
     const existing = empire.apps.find((a) => a.code === code);
     if (existing) {
-      Object.assign(existing, manifest, { code, status: manifest.status || existing.status });
+      Object.assign(existing, manifest, { code, nameAr, status: manifest.status || existing.status });
       pushFeed('architecture', `تحديث نظام في هوب: ${existing.nameAr}`);
       save();
       return existing;
@@ -6914,7 +7072,7 @@ const HubStore = (() => {
     const app = {
       id: uid('app'),
       code,
-      nameAr: manifest.nameAr,
+      nameAr,
       kind: manifest.kind || 'system',
       category: manifest.category || 'أنظمة نايوش',
       url: manifest.url || manifest.launchUrl || 'apps.html',
@@ -7055,6 +7213,12 @@ const HubStore = (() => {
       storeId: normalized.storeId || '',
       storeName: normalized.storeName || '',
       submissionId: normalized.submissionId || '',
+      productId: normalized.productId || '',
+      images: Array.isArray(normalized.images) ? normalized.images : [],
+      imageDataUrl:
+        normalized.imageDataUrl ||
+        (Array.isArray(normalized.images) && normalized.images[0] && normalized.images[0].dataUrl) ||
+        '',
       mirrorToCatalog: normalized.mirrorToCatalog !== false,
       ...pickCommonMeta(normalized),
     };
@@ -7223,7 +7387,7 @@ const HubStore = (() => {
       } else if (key === 'store' || key === 'المتجر') {
         targets.platforms = targets.platforms.length ? targets.platforms : ['*'];
         places.push('store');
-      } else if (key === 'articles' || key === 'المقالات') {
+      } else if (key === 'articles' || key === 'المقالات' || key === 'المدونة') {
         targets.home = true;
         places.push('articles');
       } else if (key === 'services' || key === 'الخدمات') {
@@ -7328,11 +7492,13 @@ const HubStore = (() => {
             : 'paused');
     const actor =
       payload.createdBy ||
+      payload.ownerName ||
       window.HubAuth?.getUser?.()?.email ||
       window.HubAuth?.getUser?.()?.name ||
       'عميل';
+    const ownerType = payload.ownerType || (payload.isGuest ? 'Guest' : payload.customerId ? 'Customer' : 'Guest');
     const ad = {
-      id: uid('ad'),
+      id: payload.id || uid('ad'),
       adCode: payload.adCode || nextAdCode(),
       title: payload.title,
       headline: payload.headline || payload.title || '',
@@ -7381,6 +7547,15 @@ const HubStore = (() => {
       scope: payload.scope || deriveAdScope(publishTargets),
       assignee: '',
       createdBy: actor,
+      ownerType,
+      isGuest: ownerType === 'Guest',
+      customerId: ownerType === 'Customer' ? payload.customerId || '' : '',
+      guestContactId: ownerType === 'Guest' ? payload.guestContactId || '' : '',
+      ownerName: payload.ownerName || actor,
+      ownerEmail: payload.ownerEmail || '',
+      ownerPhone: payload.ownerPhone || '',
+      ownerCompany: payload.ownerCompany || '',
+      serverSubmissionId: payload.serverSubmissionId || '',
       createdAt: nowIso(),
       updatedAt: nowIso(),
       activity: [],
@@ -9168,7 +9343,11 @@ const HubStore = (() => {
     defaultSettings,
     getSettings,
     saveSettings,
+    saveSettingsAsync,
+    hydrateSettingsFromServer,
     resetSettings,
+    resetSettingsAsync,
+    applyServerSettings,
     kpis,
     pushFeed,
     pushNotification,

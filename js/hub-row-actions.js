@@ -161,14 +161,26 @@
     return { branches, incubators, platforms, offices };
   };
 
+  const fieldLabelHtml = (label, { required = false, optional = false } = {}) => {
+    if (required) {
+      return `${esc(label)} <span class="hub-req" aria-hidden="true">*</span>`;
+    }
+    if (optional) {
+      return `${esc(label)} <span class="hub-optional">(اختياري)</span>`;
+    }
+    return esc(label);
+  };
+
   const selectHtml = (id, label, options, value = '', required = false) => `
-    <label>${esc(label)}
-      <select id="hub-field-${esc(id)}" ${required ? 'required' : ''}>
+    <label class="hub-field" data-field-wrap="${esc(id)}">
+      <span class="hub-field-label">${fieldLabelHtml(label, { required })}</span>
+      <select id="hub-field-${esc(id)}" ${required ? 'required aria-required="true"' : ''}>
         <option value="">— اختر —</option>
         ${options
           .map((o) => `<option value="${esc(o)}" ${o === value ? 'selected' : ''}>${esc(o)}</option>`)
           .join('')}
       </select>
+      <p class="hub-field-error" data-err-for="${esc(id)}" hidden></p>
     </label>`;
 
   const commonMetaFormHtml = (values = {}) => {
@@ -177,39 +189,54 @@
       <div class="hub-form-block hub-common-meta">
         <h4><i class="fas fa-sitemap"></i> الشركة · الأطراف · الفرع · الحاضنة · المنصة · المرفقات</h4>
         <div class="hub-form-grid">
-          <label>اسم الشركة
-            <input id="hub-field-companyName" type="text" value="${esc(values.companyName || '')}" required placeholder="اسم الشركة المقدِّمة للمنتج" />
+          <label class="hub-field" data-field-wrap="companyName">
+            <span class="hub-field-label">${fieldLabelHtml('اسم الشركة', { required: true })}</span>
+            <input id="hub-field-companyName" type="text" value="${esc(values.companyName || '')}" required aria-required="true" placeholder="اسم الشركة المقدِّمة للنظام" autocomplete="organization" />
+            <p class="hub-field-error" data-err-for="companyName" hidden></p>
           </label>
-          <label>عنوان الشركة
-            <input id="hub-field-companyAddress" type="text" value="${esc(values.companyAddress || '')}" required placeholder="العنوان / المدينة" />
+          <label class="hub-field" data-field-wrap="companyAddress">
+            <span class="hub-field-label">${fieldLabelHtml('عنوان الشركة', { required: true })}</span>
+            <input id="hub-field-companyAddress" type="text" value="${esc(values.companyAddress || '')}" required aria-required="true" placeholder="العنوان / المدينة" />
+            <p class="hub-field-error" data-err-for="companyAddress" hidden></p>
           </label>
-          <label>طرف أول
-            <input id="hub-field-party1Name" type="text" value="${esc(values.party1Name || '')}" required placeholder="اسم الطرف الأول" />
+          <label class="hub-field" data-field-wrap="party1Name">
+            <span class="hub-field-label">${fieldLabelHtml('طرف أول', { required: true })}</span>
+            <input id="hub-field-party1Name" type="text" value="${esc(values.party1Name || '')}" required aria-required="true" placeholder="اسم الطرف الأول" />
+            <p class="hub-field-error" data-err-for="party1Name" hidden></p>
           </label>
-          <label>رقم جوال الطرف الأول
-            <input id="hub-field-party1Phone" type="tel" value="${esc(values.party1Phone || '')}" required placeholder="05xxxxxxxx" />
+          <label class="hub-field" data-field-wrap="party1Phone">
+            <span class="hub-field-label">${fieldLabelHtml('رقم جوال الطرف الأول', { required: true })}</span>
+            <input id="hub-field-party1Phone" type="tel" value="${esc(values.party1Phone || '')}" required aria-required="true" placeholder="05xxxxxxxx" dir="ltr" />
+            <p class="hub-field-error" data-err-for="party1Phone" hidden></p>
           </label>
-          <label>طرف ثاني
-            <input id="hub-field-party2Name" type="text" value="${esc(values.party2Name || '')}" required placeholder="اسم الطرف الثاني" />
+          <label class="hub-field" data-field-wrap="party2Name">
+            <span class="hub-field-label">${fieldLabelHtml('طرف ثاني', { required: true })}</span>
+            <input id="hub-field-party2Name" type="text" value="${esc(values.party2Name || '')}" required aria-required="true" placeholder="اسم الطرف الثاني" />
+            <p class="hub-field-error" data-err-for="party2Name" hidden></p>
           </label>
-          <label>رقم جوال الطرف الثاني
-            <input id="hub-field-party2Phone" type="tel" value="${esc(values.party2Phone || '')}" required placeholder="05xxxxxxxx" />
+          <label class="hub-field" data-field-wrap="party2Phone">
+            <span class="hub-field-label">${fieldLabelHtml('رقم جوال الطرف الثاني', { required: true })}</span>
+            <input id="hub-field-party2Phone" type="tel" value="${esc(values.party2Phone || '')}" required aria-required="true" placeholder="05xxxxxxxx" dir="ltr" />
+            <p class="hub-field-error" data-err-for="party2Phone" hidden></p>
           </label>
-          ${selectHtml('branch', 'الفرع (من قائمة الفروع)', opts.branches, values.branch || '', true)}
-          ${selectHtml('incubator', 'الحاضنة (من قائمة الحاضنات)', opts.incubators, values.incubator || '', true)}
-          ${selectHtml('platform', 'المنصة (من قائمة المنصات)', opts.platforms, values.platform || '', true)}
+          ${selectHtml('branch', 'الفرع', opts.branches, values.branch || '', true)}
+          ${selectHtml('incubator', 'الحاضنة', opts.incubators, values.incubator || '', true)}
+          ${selectHtml('platform', 'المنصة', opts.platforms, values.platform || '', true)}
           ${selectHtml('office', 'المكتب', opts.offices, values.office || '', true)}
         </div>
         <div class="hub-upload-grid">
-          <label class="hub-upload-card">رفع ملف / مستند
+          <label class="hub-upload-card">
+            <span class="hub-field-label">${fieldLabelHtml('رفع ملف / مستند', { optional: true })}</span>
             <input id="hub-field-docFile" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,image/*" />
             <small>${esc(values.docName || 'PDF · Word · Excel · حتى 150MB')}</small>
           </label>
-          <label class="hub-upload-card">رفع صورة
+          <label class="hub-upload-card">
+            <span class="hub-field-label">${fieldLabelHtml('رفع صورة', { optional: true })}</span>
             <input id="hub-field-imageFile" type="file" accept="image/*" />
             <small>${esc(values.imageName || 'PNG · JPG · WEBP · حتى 150MB')}</small>
           </label>
-          <label class="hub-upload-card">رفع فيديو
+          <label class="hub-upload-card">
+            <span class="hub-field-label">${fieldLabelHtml('رفع فيديو', { optional: true })}</span>
             <input id="hub-field-videoFile" type="file" accept="video/*" />
             <small>${esc(values.videoName || 'MP4 · MOV · WEBM · حتى 150MB')}</small>
           </label>
@@ -260,16 +287,16 @@
     const incubator = val('incubator');
     const platform = val('platform');
     const office = val('office');
-    if (!companyName) return { error: 'اسم الشركة مطلوب' };
-    if (!companyAddress) return { error: 'عنوان الشركة مطلوب' };
-    if (!party1Name) return { error: 'طرف أول مطلوب' };
-    if (!party1Phone) return { error: 'جوال الطرف الأول مطلوب' };
-    if (!party2Name) return { error: 'طرف ثاني مطلوب' };
-    if (!party2Phone) return { error: 'جوال الطرف الثاني مطلوب' };
-    if (!branch) return { error: 'الفرع مطلوب' };
-    if (!incubator) return { error: 'الحاضنة مطلوبة' };
-    if (!platform) return { error: 'المنصة مطلوبة' };
-    if (!office) return { error: 'المكتب مطلوب' };
+    if (!companyName) return { error: 'اسم الشركة مطلوب.', field: 'companyName' };
+    if (!companyAddress) return { error: 'عنوان الشركة مطلوب.', field: 'companyAddress' };
+    if (!party1Name) return { error: 'طرف أول مطلوب.', field: 'party1Name' };
+    if (!party1Phone) return { error: 'رقم جوال الطرف الأول مطلوب.', field: 'party1Phone' };
+    if (!party2Name) return { error: 'طرف ثاني مطلوب.', field: 'party2Name' };
+    if (!party2Phone) return { error: 'رقم جوال الطرف الثاني مطلوب.', field: 'party2Phone' };
+    if (!branch) return { error: 'الفرع مطلوب.', field: 'branch' };
+    if (!incubator) return { error: 'الحاضنة مطلوبة.', field: 'incubator' };
+    if (!platform) return { error: 'المنصة مطلوبة.', field: 'platform' };
+    if (!office) return { error: 'المكتب مطلوب.', field: 'office' };
 
     const [doc, image, video] = await Promise.all([
       readFileMeta(document.getElementById('hub-field-docFile')),
@@ -721,9 +748,9 @@
       title: 'إضافة نظام',
       fields: [
         { id: 'nameAr', label: 'اسم النظام', required: true },
-        { id: 'code', label: 'رمز النظام', value: 'SYS', required: true },
-        { id: 'category', label: 'التصنيف', value: 'أنظمة نايوش' },
-        { id: 'url', label: 'رابط التشغيل المباشر', value: '' },
+        { id: 'code', label: 'رمز النظام', value: '', required: true, placeholder: 'مثال: CRM' },
+        { id: 'category', label: 'التصنيف', value: 'أنظمة نايوش', optional: true },
+        { id: 'url', label: 'رابط التشغيل المباشر', value: '', optional: true },
       ],
       save: (v) =>
         window.HubStore.registerApp({
@@ -1022,10 +1049,15 @@
   };
 
   const fieldHtml = (f, ctx = {}) => {
+    const optional = !f.required && f.optional !== false;
+    const labelInner = fieldLabelHtml(f.label, { required: !!f.required, optional: !f.required && optional });
+    const reqAttr = f.required ? 'required aria-required="true"' : '';
+    const err = `<p class="hub-field-error" data-err-for="${esc(f.id)}" hidden></p>`;
     if (f.type === 'select') {
       const opts = resolveFieldOptions(f, ctx);
-      return `<label>${esc(f.label)}
-        <select id="hub-add-${esc(f.id)}" ${f.required ? 'required' : ''}>
+      return `<label class="hub-field" data-field-wrap="${esc(f.id)}">
+        <span class="hub-field-label">${labelInner}</span>
+        <select id="hub-add-${esc(f.id)}" ${reqAttr}>
           <option value="">— اختر —</option>
           ${opts
             .map((o) => {
@@ -1035,21 +1067,59 @@
             })
             .join('')}
         </select>
+        ${err}
       </label>`;
     }
     if (f.type === 'textarea') {
-      return `<label class="full-span">${esc(f.label)}
-        <textarea id="hub-add-${esc(f.id)}" rows="3" ${f.required ? 'required' : ''}>${esc(f.value || '')}</textarea>
+      return `<label class="hub-field full-span" data-field-wrap="${esc(f.id)}">
+        <span class="hub-field-label">${labelInner}</span>
+        <textarea id="hub-add-${esc(f.id)}" rows="3" ${reqAttr}>${esc(f.value || '')}</textarea>
+        ${err}
       </label>`;
     }
     if (f.type === 'date') {
-      return `<label>${esc(f.label)}
-        <input id="hub-add-${esc(f.id)}" type="date" value="${esc(f.value || '')}" ${f.required ? 'required' : ''} />
+      return `<label class="hub-field" data-field-wrap="${esc(f.id)}">
+        <span class="hub-field-label">${labelInner}</span>
+        <input id="hub-add-${esc(f.id)}" type="date" value="${esc(f.value || '')}" ${reqAttr} />
+        ${err}
       </label>`;
     }
-    return `<label>${esc(f.label)}
-      <input id="hub-add-${esc(f.id)}" type="${f.type || 'text'}" value="${esc(f.value || '')}" ${f.required ? 'required' : ''} />
+    const ph = f.placeholder ? ` placeholder="${esc(f.placeholder)}"` : '';
+    return `<label class="hub-field" data-field-wrap="${esc(f.id)}">
+      <span class="hub-field-label">${labelInner}</span>
+      <input id="hub-add-${esc(f.id)}" type="${f.type || 'text'}" value="${esc(f.value || '')}" ${reqAttr}${ph} autocomplete="off" />
+      ${err}
     </label>`;
+  };
+
+  const clearHubFieldErrors = () => {
+    document.querySelectorAll('#hub-erp-modal .hub-field-error').forEach((el) => {
+      el.hidden = true;
+      el.textContent = '';
+    });
+    document.querySelectorAll('#hub-erp-modal .hub-field.is-invalid, #hub-erp-modal .is-invalid').forEach((el) => {
+      el.classList.remove('is-invalid');
+    });
+  };
+
+  const showHubFieldError = (fieldId, message) => {
+    const err = document.querySelector(`#hub-erp-modal [data-err-for="${fieldId}"]`);
+    const wrap = document.querySelector(`#hub-erp-modal [data-field-wrap="${fieldId}"]`);
+    const input =
+      document.getElementById(`hub-add-${fieldId}`) || document.getElementById(`hub-field-${fieldId}`);
+    if (wrap) wrap.classList.add('is-invalid');
+    if (input) {
+      input.classList.add('is-invalid');
+      try {
+        input.focus({ preventScroll: false });
+      } catch {
+        input.focus();
+      }
+    }
+    if (err) {
+      err.hidden = false;
+      err.textContent = message;
+    }
   };
 
   const multiSelectBlockHtml = (title, hint, idPrefix, items, iconClass = 'fa-check') => `
@@ -1465,6 +1535,7 @@
       kicker: kickers[entity] || 'نموذج إضافة جديد — حقول هوب الإلزامية',
       body: `<div class="hub-form-block">
         <h4><i class="fas fa-plus-circle"></i> بيانات ${esc(ENTITY_LABELS[entity] || 'السجل')}</h4>
+        <p class="hub-req-legend" data-req-legend>الحقول المميزة بعلامة <span class="hub-req">*</span> مطلوبة.</p>
         <div class="hub-form-grid">
         ${form.fields.map((f) => fieldHtml(f)).join('')}
         </div>
@@ -1553,10 +1624,14 @@
 
     document.getElementById('hub-add-save')?.addEventListener('click', async () => {
       if (isPublishable) return savePublishableForm(entity, form, 'published');
+      clearHubFieldErrors();
       const values = {};
       for (const f of form.fields) {
         values[f.id] = document.getElementById(`hub-add-${f.id}`)?.value.trim() || '';
-        if (f.required && !values[f.id]) return toast(`${f.label} مطلوب`);
+        if (f.required && !values[f.id]) {
+          showHubFieldError(f.id, `${f.label} مطلوب.`);
+          return toast(`${f.label} مطلوب.`);
+        }
       }
       if (form.includeMarketplaces) {
         const list = window.HubMarketplaceData?.MARKETPLACE_CONNECTORS || [];
@@ -1569,17 +1644,61 @@
         values.mp_url_custom = document.getElementById('hub-add-mp_url_custom')?.value.trim() || '';
       }
       const meta = entity === 'branches' ? {} : await collectCommonMeta();
-      if (meta.error) return toast(meta.error);
+      if (meta.error) {
+        if (meta.field) showHubFieldError(meta.field, meta.error);
+        return toast(meta.error);
+      }
       Object.assign(values, meta);
+
+      // Server-side validation for apps (must match UI * markers)
+      if (entity === 'apps') {
+        try {
+          const res = await fetch('/api/hub/apps', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({
+              nameAr: values.nameAr,
+              code: values.code,
+              category: values.category,
+              url: values.url,
+              companyName: values.companyName,
+              companyAddress: values.companyAddress,
+              party1Name: values.party1Name,
+              party1Phone: values.party1Phone,
+              party2Name: values.party2Name,
+              party2Phone: values.party2Phone,
+              branch: values.branch,
+              incubator: values.incubator,
+              platform: values.platform,
+              office: values.office,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) {
+            if (data.field) showHubFieldError(data.field, data.error || 'تعذّرت الإضافة.');
+            return toast(data.error || 'تعذّرت الإضافة على الخادم.');
+          }
+        } catch {
+          return toast('تعذّر الاتصال بالخادم للتحقق من البيانات.');
+        }
+      }
+
       const ok = form.save(values);
-      if (!ok) return toast('تعذّرت الإضافة');
+      if (!ok || ok?.ok === false) {
+        const err = ok?.error || window.HubStore?.registerApp?.lastError?.error || 'تعذّرت الإضافة.';
+        const field = ok?.field || window.HubStore?.registerApp?.lastError?.field;
+        if (field) showHubFieldError(field, err);
+        return toast(err);
+      }
       closeModal();
       toast(
         entity === 'store'
           ? 'تم رفع المنتج/الخدمة على المتجر'
           : entity === 'branches'
             ? 'تم حفظ الفرع'
-            : 'تمت الإضافة مع بيانات الأطراف والهيكل'
+            : entity === 'apps'
+              ? 'تم إضافة النظام بنجاح'
+              : 'تمت الإضافة مع بيانات الأطراف والهيكل'
       );
       afterChange(entity, 'add');
     });

@@ -30,6 +30,7 @@
     'Cost Reduction Assessment': { department: 'Financial Consulting', assignedTo: 'Financial Consulting Team' },
     'Cost Reduction Request': { department: 'Financial Consulting', assignedTo: 'Financial Consulting Team' },
     'Product Request': { department: 'Sales', assignedTo: 'Sales Desk' },
+    'Product Submission': { department: 'Sales', assignedTo: 'Sales Desk' },
     'Service Request': { department: 'Sales', assignedTo: 'Sales Desk' },
     'System Request': { department: 'Systems', assignedTo: 'Systems Team' },
     'Integration Request': { department: 'Systems', assignedTo: 'Systems Team' },
@@ -86,9 +87,10 @@
     'Support Request': 'طلب دعم',
     'Project Registration': 'تسجيل مشروع',
     'Consultation Request': 'طلب استشارة',
-    'Quote Request': 'طلب عرض سعر',
+    'Quote Request': 'طلب عرض سعر لحل',
     'Quotation Request': 'طلب تسعير',
     'Product Request': 'طلب منتج',
+    'Product Submission': 'طلب إضافة منتج',
     'Service Request': 'طلب خدمة',
     'System Request': 'طلب نظام',
     'Integration Request': 'طلب تكامل',
@@ -130,17 +132,21 @@
   const labelOwner = (code) => OWNER_LABELS_AR[code] || code || '—';
 
   const STATUS_AR = {
-    New: 'جديد',
-    Viewed: 'تمت المشاهدة',
-    Assigned: 'تم التعيين',
+    New: 'بانتظار المراجعة',
+    Viewed: 'قيد المراجعة',
+    Assigned: 'قيد المراجعة',
     'Pending Review': 'بانتظار المراجعة',
     'Under Review': 'قيد المراجعة',
-    'Needs Changes': 'يحتاج تعديلات',
-    'Waiting For Customer': 'بانتظار العميل',
+    'Needs Changes': 'يحتاج إلى تعديل',
+    'Need More Information': 'يحتاج معلومات إضافية',
+    'Waiting For Customer': 'يحتاج معلومات إضافية',
     'Pending Approval': 'بانتظار الموافقة',
-    'Proposal Sent': 'عرض مرسل',
+    'Quote Prepared': 'تم إعداد عرض السعر',
+    'Proposal Sent': 'تم إرسال عرض السعر',
+    'Quote Accepted': 'تم قبول العرض',
+    'Quote Rejected': 'تم رفض العرض',
     'In Progress': 'قيد التنفيذ',
-    Approved: 'مقبول',
+    Approved: 'تم قبول العرض',
     Published: 'نشط',
     Unpublished: 'متوقف',
     Scheduled: 'مجدول',
@@ -241,9 +247,14 @@
   const normalizeFromSolutions = (r) => {
     const type = r.requestType || 'Solution Request';
     const route = routeFor(type);
+    const ownerType = r.ownerType || r.customer?.ownerType || (r.isGuest ? 'Guest' : r.customerId ? 'Customer' : '');
     return {
       id: r.id || r.requestId,
       requestId: r.requestId || r.id,
+      ownerType: ownerType || undefined,
+      isGuest: ownerType === 'Guest' || !!r.isGuest,
+      guestContactId: r.guestContactId || r.customer?.guestContactId || '',
+      serverSubmissionId: r.serverSubmissionId || '',
       customerId: r.customerId || '',
       customerName: r.customer?.name || r.customerName || '',
       company: r.customer?.company || r.company || '',
@@ -269,7 +280,7 @@
       solutionId: r.solutionId || '',
       solutionName: r.solutionName || '',
       priority: r.priority || 'عادي',
-      status: r.status === 'Draft' ? 'Draft' : r.status || 'New',
+      status: r.status === 'Draft' ? 'Draft' : r.status || 'Pending Review',
       assignedTo: r.assignedTo || route.assignedTo,
       department: r.department || route.department,
       salesOwner: r.salesOwner || route.assignedTo,
@@ -288,11 +299,17 @@
       messages: r.messages || [],
       internalNotes: r.internalNotes || [],
       tasks: r.tasks || [],
+      quotations: r.quotations || [],
+      budget: r.budget || '',
+      dueDate: r.dueDate || '',
+      notes: r.notes || '',
       scopeType: r.scopeType || '',
       scopeDetail: r.scopeDetail || '',
       costMeta: r.costMeta || null,
       articleSnapshot: r.articleSnapshot || null,
       adSnapshot: r.adSnapshot || null,
+      productSnapshot: r.productSnapshot || null,
+      productId: r.productId || r.productSnapshot?.productId || '',
       eventSnapshot: r.eventSnapshot || null,
       platformDraft: r.platformDraft || null,
       platformName: r.platformName || '',
@@ -466,7 +483,7 @@
     else if (String(type).includes('Solution') || type === 'Quote Request' || type === 'Consultation Request') prefix = 'SOL-REQ';
     else if (type === 'Project Registration') prefix = 'SP-REG';
     else if (type === 'Support Request') prefix = 'SUP';
-    else if (type === 'Article Submission' || type === 'مقال') prefix = 'REQ';
+    else if (type === 'Article Submission' || type === 'مقال') prefix = 'ART-REQ';
     else if (type === 'Platform Access Request' || type === 'Platform Add Request') prefix = 'PLT';
 
     const id = payload.id || payload.requestId || nextSeq(state.requests, prefix);
@@ -488,7 +505,7 @@
       referenceType: payload.referenceType || '',
       referenceId: payload.referenceId || '',
       articleSnapshot: payload.articleSnapshot || null,
-      status: payload.status || 'New',
+      status: payload.status || (String(type).includes('Solution') || type === 'Quote Request' || type === 'Consultation Request' || String(type).includes('Cost') ? 'Pending Review' : 'New'),
       assignedTo: payload.assignedTo || route.assignedTo,
       department: payload.department || route.department,
       salesOwner: payload.salesOwner || route.assignedTo,
@@ -497,6 +514,11 @@
       createdAt: payload.createdAt || stamp,
       updatedAt: payload.updatedAt || stamp,
       channel: payload.channel || 'Web',
+      quotations: payload.quotations || [],
+      budget: payload.budget || '',
+      dueDate: payload.dueDate || '',
+      notes: payload.notes || '',
+      customerId: payload.customerId || payload.customer?.customerId || '',
       timeline: payload.timeline || [
         { at: stamp, by: actor, text: 'تم إنشاء الطلب', key: 'created' },
         { at: stamp, by: 'النظام', text: `تم التوجيه إلى ${route.department} · ${route.assignedTo}`, key: 'routed' },
@@ -507,6 +529,7 @@
         phone: payload.phone || '',
         email: payload.email || '',
         branch: payload.branch || '',
+        customerId: payload.customerId || '',
       },
     });
 
@@ -610,6 +633,13 @@
       adEndDate: ad.adEndDate,
       rejectionReason: ad.rejectionReason || '',
     };
+    const ownerType = ad.ownerType || (ad.isGuest ? 'Guest' : ad.customerId ? 'Customer' : row?.ownerType || 'Guest');
+    const ownerName = ad.ownerName || ad.createdBy || actor;
+    const ownerEmail = ad.ownerEmail || row?.email || '';
+    const ownerPhone = ad.ownerPhone || row?.phone || '';
+    const ownerCompany = ad.ownerCompany || row?.company || '';
+    const customerId = ownerType === 'Customer' ? ad.customerId || row?.customerId || '' : '';
+    const guestContactId = ownerType === 'Guest' ? ad.guestContactId || row?.guestContactId || '' : '';
     if (row) {
       const prevStatus = row.status;
       const nextStatus =
@@ -622,7 +652,7 @@
         requestTypeLabel: 'طلب نشر إعلان',
         referenceType: 'Ad',
         referenceId: ad.id,
-        sourceModule: 'إدارة الإعلانات',
+        sourceModule: 'الإعلانات',
         sourcePage: 'الإعلانات',
         sourceUrl: 'ads.html',
         sourceAction: 'نشر إعلان',
@@ -630,8 +660,25 @@
         assignedTo: row.assignedTo || 'Ads Desk',
         adSnapshot: snapshot,
         updatedAt: nowIso(),
-        customerName: ad.createdBy || row.customerName || actor,
+        ownerType,
+        isGuest: ownerType === 'Guest',
+        customerId,
+        guestContactId,
+        customerName: ownerName,
+        email: ownerEmail,
+        phone: ownerPhone,
+        company: ownerCompany,
+        customer: {
+          name: ownerName,
+          email: ownerEmail,
+          phone: ownerPhone,
+          company: ownerCompany,
+          customerId,
+          ownerType,
+          guestContactId,
+        },
         adPublishStatus: ad.workflowStatus || row.adPublishStatus || '',
+        serverSubmissionId: ad.serverSubmissionId || row.serverSubmissionId || '',
       });
       if (status === 'Pending Review' && !silent && (prevStatus === 'Rejected' || prevStatus === 'Needs Changes')) {
         row.rejectionReason = '';
@@ -645,27 +692,46 @@
     }
     return create(
       {
+        id: ad.requestId || undefined,
+        requestId: ad.requestId || undefined,
         requestType: 'Ad Submission',
         requestTypeLabel: 'طلب نشر إعلان',
         title: `طلب نشر إعلان: ${ad.title || ad.adCode || ad.id}`,
         description: ad.desc || ad.headline || '',
         status: 'Pending Review',
         priority: 'متوسطة',
-        sourceModule: 'إدارة الإعلانات',
+        sourceModule: 'الإعلانات',
         sourcePage: 'الإعلانات',
         sourceUrl: 'ads.html',
         sourceAction: 'نشر إعلان',
         referenceType: 'Ad',
         referenceId: ad.id,
-        customerName: ad.createdBy || actor,
+        ownerType,
+        isGuest: ownerType === 'Guest',
+        customerId,
+        guestContactId,
+        customerName: ownerName,
+        email: ownerEmail,
+        phone: ownerPhone,
+        company: ownerCompany,
+        customer: {
+          name: ownerName,
+          email: ownerEmail,
+          phone: ownerPhone,
+          company: ownerCompany,
+          customerId,
+          ownerType,
+          guestContactId,
+        },
         assignedTo: 'Ads Desk',
         department: 'Marketing',
         channel: 'Web',
         adSnapshot: snapshot,
+        serverSubmissionId: ad.serverSubmissionId || '',
         createdAt: ad.createdAt || nowIso(),
         updatedAt: nowIso(),
       },
-      actor
+      ownerName || actor
     );
   };
 
@@ -757,6 +823,62 @@
     );
   };
 
+  const ingestHubEventRequest = (item) => {
+    if (!item) return null;
+    const id = item.requestId || item.id;
+    if (!id) return null;
+    const snap = item.eventSnapshot || {};
+    const payload = {
+      id,
+      requestId: id,
+      requestType: 'Event Submission',
+      requestTypeLabel: item.requestTypeLabel || 'طلب نشر فعالية',
+      title: item.title || `طلب نشر فعالية: ${snap.name || item.eventId || ''}`,
+      description: item.description || '',
+      status: item.status || 'Pending Review',
+      statusLabel: item.statusLabel || '',
+      referenceType: 'Event',
+      referenceId: item.eventId || item.referenceId || snap.eventId || '',
+      eventId: item.eventId || item.referenceId || snap.eventId || '',
+      sourceModule: item.sourceModule || 'الفعاليات',
+      sourcePage: item.sourcePage || 'استوديو الفعاليات',
+      sourceUrl: item.sourceUrl || item.previewUrl || `events.html#event=${item.eventId || ''}`,
+      sourceAction: item.sourceAction || 'نشر فعالية',
+      customerName: item.customerName || '',
+      customerId: item.customerId || item.email || '',
+      email: item.email || '',
+      phone: item.phone || '',
+      assignedTo: item.assignedTo || 'Events Desk',
+      department: item.department || 'Marketing',
+      createdAt: item.createdAt || nowIso(),
+      updatedAt: item.updatedAt || nowIso(),
+      category: item.category || snap.category || '',
+      attendanceType: item.attendanceType || snap.attendanceType || '',
+      pricing: item.pricing || snap.pricing || '',
+      priceUsd: item.priceUsd != null ? item.priceUsd : snap.priceUsd,
+      seats: item.seats != null ? item.seats : snap.seats,
+      changeRequestNote: item.changeRequestNote || '',
+      rejectionReason: item.rejectionReason || '',
+      previewUrl: item.previewUrl || `events.html#event=${item.eventId || ''}`,
+      eventSnapshot: snap,
+      channel: 'استوديو الفعاليات',
+      hubEventApi: true,
+    };
+    let row = get(id) || findByReference('Event', payload.referenceId);
+    if (row) {
+      Object.assign(row, payload, { id: row.id, timeline: row.timeline || [] });
+      save();
+      return row;
+    }
+    payload.timeline = [
+      { at: payload.createdAt, by: payload.customerName || 'عميل', text: 'طلب نشر فعالية من الاستوديو', key: 'created' },
+    ];
+    state.requests = state.requests || [];
+    state.requests.unshift(payload);
+    save();
+    return payload;
+  };
+
   const ensureForArticle = (article, actor = 'عميل', { silent } = {}) => {
     if (!article?.id) return null;
     if (article.status === 'Draft') return null;
@@ -776,32 +898,42 @@
       authorName: article.authorName,
       body: article.body,
       coverImage: article.coverImage,
+      video: article.video,
       articleFile: article.articleFile,
       attachments: article.attachments,
       submittedAt: article.submittedAt,
     };
     if (row) {
       Object.assign(row, {
-        title: `مراجعة ونشر مقال: ${article.title || article.id}`,
+        id: article.requestId || row.id,
+        requestId: article.requestId || row.requestId || row.id,
+        title: `طلب نشر مقال: ${article.title || article.id}`,
         description: article.summary || String(article.body || '').slice(0, 280) || '',
-        customerName: article.authorName || row.customerName,
+        customerName: article.authorName || article.ownerName || row.customerName,
         company: article.company || row.company,
-        email: article.authorEmail || row.email,
-        customerId: article.customerId || row.customerId,
+        email: article.authorEmail || article.ownerEmail || row.email,
+        customerId: article.customerId || article.ownerEmail || row.customerId,
         status,
         assignedTo: article.reviewer || row.assignedTo || 'Content Desk',
         department: row.department || 'Content',
         referenceType: 'Article',
         referenceId: article.id,
         requestType: 'Article Submission',
-        requestTypeLabel: 'مقال',
+        requestTypeLabel: 'طلب نشر مقال',
+        sourceModule: 'المقالات',
+        sourcePage: 'إرسال مقال',
+        sourceUrl: `blog.html#mine/${article.id}`,
+        sourceAction: 'طلب نشر مقال',
         articleSnapshot: snapshot,
+        changeRequestNote: article.changeRequestNote || row.changeRequestNote || '',
+        rejectionReason: article.rejectionReason || row.rejectionReason || '',
+        hubArticleApi: true,
         updatedAt: article.updatedAt || nowIso(),
         publishedAt: article.publishedAt || row.publishedAt || '',
         customer: {
-          name: article.authorName || row.customer?.name || '',
+          name: article.authorName || article.ownerName || row.customer?.name || '',
           company: article.company || row.customer?.company || '',
-          email: article.authorEmail || row.customer?.email || '',
+          email: article.authorEmail || article.ownerEmail || row.customer?.email || '',
           phone: row.customer?.phone || '',
           branch: row.customer?.branch || '',
         },
@@ -811,9 +943,11 @@
     }
     return create(
       {
+        id: article.requestId || undefined,
+        requestId: article.requestId || undefined,
         requestType: 'Article Submission',
-        requestTypeLabel: 'مقال',
-        title: `مراجعة ونشر مقال: ${article.title || article.id}`,
+        requestTypeLabel: 'طلب نشر مقال',
+        title: `طلب نشر مقال: ${article.title || article.id}`,
         description: article.summary || String(article.body || '').slice(0, 280),
         need: article.summary || '',
         status,
@@ -824,13 +958,14 @@
         sourceAction: 'رفع مقال',
         referenceType: 'Article',
         referenceId: article.id,
-        customerId: article.customerId || '',
-        customerName: article.authorName || '',
+        customerId: article.customerId || article.ownerEmail || '',
+        customerName: article.authorName || article.ownerName || '',
         company: article.company || '',
-        email: article.authorEmail || '',
+        email: article.authorEmail || article.ownerEmail || '',
         assignedTo: article.reviewer || 'Content Desk',
         department: 'Content',
         channel: 'Web',
+        hubArticleApi: true,
         articleSnapshot: snapshot,
         createdAt: article.submittedAt || article.createdAt || nowIso(),
         updatedAt: article.updatedAt || nowIso(),
@@ -853,6 +988,56 @@
       },
       actor
     );
+  };
+
+  const ingestHubArticleRequest = (item) => {
+    if (!item) return null;
+    const id = item.requestId || item.id;
+    if (!id) return null;
+    const snap = item.articleSnapshot || {};
+    const payload = {
+      id,
+      requestId: id,
+      requestType: 'Article Submission',
+      requestTypeLabel: item.requestTypeLabel || 'طلب نشر مقال',
+      title: item.title || `طلب نشر مقال: ${snap.title || item.articleId || ''}`,
+      description: item.description || snap.summary || '',
+      status: item.status || 'Pending Review',
+      statusLabel: item.statusLabel || '',
+      referenceType: 'Article',
+      referenceId: item.articleId || item.referenceId || snap.articleId || '',
+      articleId: item.articleId || item.referenceId || snap.articleId || '',
+      sourceModule: item.sourceModule || 'المقالات',
+      sourcePage: item.sourcePage || 'إرسال مقال',
+      sourceUrl: item.sourceUrl || item.previewUrl || `blog.html#mine/${item.articleId || ''}`,
+      sourceAction: item.sourceAction || 'طلب نشر مقال',
+      customerName: item.customerName || '',
+      customerId: item.customerId || item.email || '',
+      email: item.email || '',
+      assignedTo: item.assignedTo || 'Content Desk',
+      department: item.department || 'Content',
+      createdAt: item.createdAt || nowIso(),
+      updatedAt: item.updatedAt || nowIso(),
+      changeRequestNote: item.changeRequestNote || '',
+      rejectionReason: item.rejectionReason || '',
+      previewUrl: item.previewUrl || `blog.html#mine/${item.articleId || ''}`,
+      articleSnapshot: snap,
+      channel: 'المقالات',
+      hubArticleApi: true,
+    };
+    let row = get(id) || findByReference('Article', payload.referenceId);
+    if (row) {
+      Object.assign(row, payload, { id: payload.id, requestId: payload.id, timeline: row.timeline || [] });
+      save();
+      return row;
+    }
+    payload.timeline = [
+      { at: payload.createdAt, by: payload.customerName || 'عميل', text: 'طلب نشر مقال من صفحة المدونة', key: 'created' },
+    ];
+    state.requests = state.requests || [];
+    state.requests.unshift(payload);
+    save();
+    return payload;
   };
 
   const mirrorToArticle = (row, actor = 'مشغّل') => {
@@ -1008,7 +1193,78 @@
     row.updatedAt = stamp;
     row.timeline = row.timeline || [];
 
-    if (row.referenceType === 'Ad' || row.requestType === 'Ad Submission') {
+    if (row.referenceType === 'Product' || row.requestType === 'Product Submission') {
+      try {
+        if (window.HubStoresRegistry?.approveSubmission) {
+          window.HubStoresRegistry.approveSubmission(row.requestId || row.id, actor);
+        }
+        const items = window.HubStore?.get?.()?.empire?.salesStore?.items || [];
+        const item = items.find(
+          (x) =>
+            x.submissionId === row.requestId ||
+            x.submissionId === row.id ||
+            x.productId === row.productId ||
+            x.productId === row.referenceId
+        );
+        if (item) {
+          item.status = 'active';
+          item.published = true;
+          window.HubStore?.save?.();
+        } else if (window.HubStore?.addStoreItem && row.productSnapshot) {
+          const snap = row.productSnapshot;
+          window.HubStore.addStoreItem({
+            title: snap.title,
+            name: snap.title,
+            marketplace: snap.storeId,
+            storeId: snap.storeId,
+            storeName: snap.storeName,
+            url: snap.productUrl || '',
+            productUrl: snap.productUrl || '',
+            price: snap.priceUsd,
+            currency: 'USD',
+            category: snap.category,
+            brand: snap.brand,
+            sku: snap.sku,
+            description: snap.summary,
+            quantity: snap.quantity || 1,
+            stock: snap.quantity || 1,
+            submissionId: row.requestId || row.id,
+            productId: snap.productId || row.referenceId,
+            images: snap.images || [],
+            imageDataUrl: (snap.images && snap.images[0] && snap.images[0].dataUrl) || '',
+            purchaseType: snap.purchaseType || 'INTERNAL',
+            status: 'active',
+            mirrorToCatalog: true,
+          });
+        }
+      } catch (_) {}
+      row.status = 'Approved';
+      row.publishedAt = stamp;
+      row.timeline.push({
+        at: stamp,
+        by: actor,
+        text: 'موافقة ونشر المنتج',
+        key: 'approved_product',
+      });
+      pushAudit({
+        action: 'Approved',
+        requestId: row.id,
+        performedBy: actor,
+        oldStatus: old,
+        newStatus: row.status,
+        customer: row.company || row.customerName,
+        sourceModule: row.sourceModule,
+        detail: row.referenceId || row.productId || '',
+      });
+      pushCustomerNotification({
+        title: 'تمت الموافقة على منتجك ونشره',
+        message: `${row.title || row.referenceId} · ${row.id}`,
+        source: 'المتجر',
+        link: 'store.html',
+      });
+      save();
+      return row;
+    } else if (row.referenceType === 'Ad' || row.requestType === 'Ad Submission') {
       let adStatus = 'active';
       try {
         if (window.HubStore?.setAdWorkflowStatus && row.referenceId) {
@@ -1555,6 +1811,301 @@
     return state.settings;
   };
 
+  const listQuotations = (requestId) => {
+    if (requestId) {
+      const row = get(requestId);
+      return Array.isArray(row?.quotations) ? [...row.quotations] : [];
+    }
+    return state.requests.flatMap((r) => (Array.isArray(r.quotations) ? r.quotations : []));
+  };
+
+  const createQuotation = (requestId, payload = {}, actor = 'Sales Desk') => {
+    const row = get(requestId);
+    if (!row) return null;
+    if (!Array.isArray(row.quotations)) row.quotations = [];
+    const price = Number(payload.price) || 0;
+    const tax = Number(payload.tax) || Math.round(price * 0.15);
+    const discount = Number(payload.discount) || 0;
+    const stamp = nowIso();
+    const item = {
+      id: nextSeq(row.quotations, 'QT'),
+      requestId: row.id,
+      solutionId: row.solutionId || row.referenceId || '',
+      solutionName: row.solutionName || row.relatedSolution || row.title || '',
+      customerName: row.customerName || row.customer?.name || '',
+      customerId: row.customerId || '',
+      price,
+      currency: payload.currency || 'ر.س',
+      tax,
+      discount,
+      total: price + tax - discount,
+      details: payload.details || '',
+      duration: payload.duration || '',
+      notes: payload.notes || '',
+      terms: payload.terms || '',
+      validUntil: payload.validUntil || new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+      createdBy: actor,
+      createdAt: stamp,
+      status: 'Sent',
+    };
+    row.quotations.unshift(item);
+    const old = row.status;
+    row.status = 'Proposal Sent';
+    row.updatedAt = stamp;
+    if (!Array.isArray(row.timeline)) row.timeline = [];
+    row.timeline.push({ at: stamp, by: actor, text: `تم إرسال عرض السعر ${item.id}`, key: 'quote_sent' });
+    if (!Array.isArray(row.messages)) row.messages = [];
+    row.messages.push({
+      at: stamp,
+      by: actor,
+      text: `عرض سعر: ${item.price} ${item.currency} · مدة: ${item.duration || '—'} · صلاحية حتى ${item.validUntil}${item.details ? `\n${item.details}` : ''}`,
+      internal: false,
+    });
+    pushAudit({
+      action: 'Quotation Sent',
+      requestId: row.id,
+      customer: row.company || row.customerName,
+      sourceModule: row.sourceModule,
+      performedBy: actor,
+      oldStatus: old,
+      newStatus: row.status,
+      detail: `${item.id} · ${item.price} ${item.currency}`,
+    });
+    pushCustomerNotification({
+      title: 'عرض سعر جديد',
+      body: `وصل عرض سعر لطلبك ${row.requestId || row.id}`,
+      link: 'naiosh-solutions.html?view=my',
+      email: row.email || row.customer?.email,
+    });
+    save();
+    return item;
+  };
+
+  const decideQuotation = (qid, decision, actor = 'عميل', note = '') => {
+    let found = null;
+    let parent = null;
+    for (const r of state.requests) {
+      const q = (r.quotations || []).find((x) => x.id === qid);
+      if (q) {
+        found = q;
+        parent = r;
+        break;
+      }
+    }
+    if (!found || !parent) return null;
+    const stamp = nowIso();
+    if (decision === 'accept') found.status = 'Accepted';
+    else if (decision === 'revise') found.status = 'Revision Requested';
+    else found.status = 'Rejected';
+    const next =
+      decision === 'accept' ? 'Quote Accepted' : decision === 'revise' ? 'Need More Information' : 'Quote Rejected';
+    const old = parent.status;
+    parent.status = next;
+    parent.updatedAt = stamp;
+    if (!Array.isArray(parent.timeline)) parent.timeline = [];
+    parent.timeline.push({
+      at: stamp,
+      by: actor,
+      text:
+        decision === 'accept'
+          ? 'تم قبول العرض'
+          : decision === 'revise'
+            ? note || 'طلب تعديل العرض'
+            : 'تم رفض العرض',
+      key: `quote_${decision}`,
+    });
+    pushAudit({
+      action: decision === 'accept' ? 'Quotation Accepted' : decision === 'revise' ? 'Quotation Revision' : 'Quotation Rejected',
+      requestId: parent.id,
+      customer: parent.company || parent.customerName,
+      sourceModule: parent.sourceModule,
+      performedBy: actor,
+      oldStatus: old,
+      newStatus: next,
+      detail: found.id,
+    });
+    save();
+    return found;
+  };
+
+  const upsertServerAdRequest = (req) => {
+    if (!req?.id && !req?.requestId) return null;
+    const id = req.requestId || req.id;
+    let row = get(id) || findByReference('Ad', req.referenceId);
+    if (row) {
+      Object.assign(row, {
+        ...req,
+        id: row.id || id,
+        requestId: row.requestId || id,
+        updatedAt: nowIso(),
+      });
+      save();
+      return row;
+    }
+    const item = normalizeFromSolutions({
+      ...req,
+      id,
+      requestId: id,
+      status: req.status || 'Pending Review',
+      createdAt: req.createdAt || nowIso(),
+      updatedAt: req.updatedAt || nowIso(),
+    });
+    state.requests.unshift(item);
+    save();
+    return item;
+  };
+
+  const mergeServerAdRequests = (requests = []) => {
+    (requests || []).forEach((r) => upsertServerAdRequest(r));
+    return state.requests.filter((r) => r.requestType === 'Ad Submission');
+  };
+
+  const upsertServerProductRequest = (req) => {
+    if (!req?.id && !req?.requestId) return null;
+    const id = req.requestId || req.id;
+    let row = get(id) || findByReference('Product', req.referenceId || req.productId);
+    if (row) {
+      Object.assign(row, {
+        ...req,
+        id: row.id || id,
+        requestId: row.requestId || id,
+        updatedAt: nowIso(),
+      });
+      save();
+      return row;
+    }
+    const item = normalizeFromSolutions({
+      ...req,
+      id,
+      requestId: id,
+      status: req.status || 'Pending Review',
+      createdAt: req.createdAt || nowIso(),
+      updatedAt: req.updatedAt || nowIso(),
+    });
+    state.requests.unshift(item);
+    save();
+    return item;
+  };
+
+  const mergeServerProductRequests = (requests = []) => {
+    (requests || []).forEach((r) => upsertServerProductRequest(r));
+    return state.requests.filter((r) => r.requestType === 'Product Submission');
+  };
+
+  const ensureForProduct = (product, actor = 'عميل', { silent } = {}) => {
+    if (!product?.productId && !product?.id) return null;
+    const productId = product.productId || product.id;
+    let row = findByReference('Product', productId) || (product.requestId ? get(product.requestId) : null);
+    const ownerType = product.ownerType || (product.isGuest ? 'Guest' : product.customerId ? 'Customer' : 'Guest');
+    const ownerName = product.ownerName || product.customer || actor;
+    const ownerEmail = product.ownerEmail || '';
+    const ownerPhone = product.ownerPhone || '';
+    const ownerCompany = product.ownerCompany || product.storeName || '';
+    const snapshot = {
+      productId,
+      title: product.title || product.productName || '',
+      category: product.category || '',
+      brand: product.brand || '',
+      sku: product.sku || '',
+      summary: product.summary || product.shortDesc || '',
+      description: product.description || '',
+      priceUsd: product.priceUsd || product.price || 0,
+      currency: product.currency || 'USD',
+      purchaseType: product.purchaseType || 'INTERNAL',
+      storeId: product.storeId || '',
+      storeName: product.storeName || '',
+      productUrl: product.productUrl || '',
+      images: product.images || [],
+      attachments: product.attachments || [],
+      status: product.status || 'pending_review',
+    };
+    const status =
+      product.status === 'published' || product.status === 'approved'
+        ? 'Approved'
+        : product.status === 'rejected'
+          ? 'Rejected'
+          : product.status === 'needs_changes'
+            ? 'Needs Changes'
+            : 'Pending Review';
+    if (row) {
+      Object.assign(row, {
+        title: `طلب إضافة منتج: ${snapshot.title || productId}`,
+        description: snapshot.summary,
+        status: silent ? row.status : status,
+        requestType: 'Product Submission',
+        requestTypeLabel: 'طلب إضافة منتج',
+        referenceType: 'Product',
+        referenceId: productId,
+        productId,
+        sourceModule: 'المتجر',
+        sourcePage: 'المتجر',
+        sourceUrl: 'store.html#upload',
+        sourceAction: 'إضافة منتج',
+        ownerType,
+        isGuest: ownerType === 'Guest',
+        customerId: ownerType === 'Customer' ? product.customerId || '' : '',
+        guestContactId: ownerType === 'Guest' ? product.guestContactId || '' : '',
+        customerName: ownerName,
+        email: ownerEmail,
+        phone: ownerPhone,
+        company: ownerCompany,
+        productSnapshot: snapshot,
+        serverSubmissionId: product.serverSubmissionId || product.id || row.serverSubmissionId || '',
+        updatedAt: nowIso(),
+      });
+      if (!silent) save();
+      return row;
+    }
+    return create(
+      {
+        id: product.requestId || undefined,
+        requestId: product.requestId || undefined,
+        requestType: 'Product Submission',
+        requestTypeLabel: 'طلب إضافة منتج',
+        title: `طلب إضافة منتج: ${snapshot.title || productId}`,
+        description: snapshot.summary,
+        status: 'Pending Review',
+        priority: 'متوسطة',
+        sourceModule: 'المتجر',
+        sourcePage: 'المتجر',
+        sourceUrl: 'store.html#upload',
+        sourceAction: 'إضافة منتج',
+        referenceType: 'Product',
+        referenceId: productId,
+        productId,
+        ownerType,
+        isGuest: ownerType === 'Guest',
+        customerId: ownerType === 'Customer' ? product.customerId || '' : '',
+        guestContactId: ownerType === 'Guest' ? product.guestContactId || '' : '',
+        customerName: ownerName,
+        email: ownerEmail,
+        phone: ownerPhone,
+        company: ownerCompany,
+        customer: {
+          name: ownerName,
+          email: ownerEmail,
+          phone: ownerPhone,
+          company: ownerCompany,
+          customerId: ownerType === 'Customer' ? product.customerId || '' : '',
+          ownerType,
+          guestContactId: ownerType === 'Guest' ? product.guestContactId || '' : '',
+        },
+        assignedTo: 'Sales Desk',
+        department: 'Sales',
+        channel: 'Web',
+        productSnapshot: snapshot,
+        attachments: [
+          ...(snapshot.images || []).map((img) => ({ name: img.name || 'image', at: nowIso() })),
+          ...(snapshot.attachments || []).map((f) => ({ name: f.name || 'file', at: nowIso() })),
+        ],
+        serverSubmissionId: product.serverSubmissionId || product.id || '',
+        createdAt: product.createdAt || nowIso(),
+        updatedAt: nowIso(),
+      },
+      ownerName || actor
+    );
+  };
+
   syncFromModules();
 
   window.HubCustomerRequests = {
@@ -1583,11 +2134,21 @@
     markViewed,
     addMessage,
     addAttachment,
+    createQuotation,
+    decideQuotation,
+    listQuotations,
     findSimilarOpen,
     findByReference,
     ensureForArticle,
+    ingestHubArticleRequest,
     ensureForAd,
+    upsertServerAdRequest,
+    mergeServerAdRequests,
+    ensureForProduct,
+    upsertServerProductRequest,
+    mergeServerProductRequests,
     ensureForEvent,
+    ingestHubEventRequest,
     mapArticleStatus,
     approveAndPublish,
     approveRequest,

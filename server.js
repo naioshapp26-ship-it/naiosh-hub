@@ -11,6 +11,7 @@ const erpAdapter = require('./lib/erp-saas-adapter');
 const hubSso = require('./lib/hub-sso');
 const { handleAdminApi } = require('./lib/hub-rbac-admin');
 const hubUploads = require('./lib/hub-uploads');
+const hubRegisterAttachments = require('./lib/hub-register-attachments');
 const customerAuth = require('./lib/hub-customer-auth');
 const hubSession = require('./lib/hub-session');
 const hubClientPortal = require('./lib/hub-client-portal');
@@ -19,6 +20,13 @@ const hubPoshaOs = require('./lib/hub-posha-os');
 const productCategories = require('./lib/hub-product-categories');
 const productOrders = require('./lib/hub-product-orders');
 const platformBooking = require('./lib/hub-platform-booking');
+const adSubmissions = require('./lib/hub-ad-submissions');
+const productSubmissions = require('./lib/hub-product-submissions');
+const systemRentals = require('./lib/hub-system-rentals');
+const hubSystemSettings = require('./lib/hub-system-settings');
+const hubMarketingCampaigns = require('./lib/hub-marketing-campaigns');
+const hubEvents = require('./lib/hub-events');
+const hubArticles = require('./lib/hub-articles');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -53,13 +61,14 @@ function send(res, status, body, headers = {}) {
   res.end(body);
 }
 
-function sendJson(res, status, payload) {
+function sendJson(res, status, payload, extraHeaders = {}) {
   send(res, status, JSON.stringify(payload, null, 2), {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Hub-Token, X-Hub-User-Role, X-Hub-User-Name, X-File-Name, X-File-Type',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Hub-Token, X-Hub-User-Role, X-Hub-User-Name, X-File-Name, X-File-Type, Idempotency-Key',
+    ...extraHeaders,
   });
 }
 
@@ -133,6 +142,31 @@ function serveStatic(req, res) {
     return send(res, 403, 'Forbidden');
   }
 
+  const adminPages = new Set([
+    'dashboard.html',
+    'roles-permissions.html',
+    'search-admin.html',
+    'rent-admin.html',
+    'ops-catalog-admin.html',
+    'side-project-registrations.html',
+  ]);
+  const base = path.basename(filePath).toLowerCase();
+  if (adminPages.has(base)) {
+    const session = hubSession.resolveSession(req);
+    if (session.ok && hubSession.isClientLane(session.lane) && !hubSession.isStaffLane(session.lane)) {
+      const html =
+        '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+        '<title>غير مصرح</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">' +
+        '<style>body{font-family:Cairo,sans-serif;background:#fff5f5;color:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}' +
+        '.box{background:#fff;border:1px solid #fecaca;border-radius:16px;padding:28px;max-width:420px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.06)}' +
+        'a{color:#d70000;font-weight:800;text-decoration:none}</style></head><body><div class="box">' +
+        '<h1 style="margin:0 0 10px">ليس لديك صلاحية للوصول إلى هذه الصفحة.</h1>' +
+        '<p style="margin:0 0 16px;color:#555;font-weight:700">هذه الصفحة مخصصة لفريق التشغيل فقط.</p>' +
+        '<a href="/client.html">العودة إلى مركز العميل</a></div></body></html>';
+      return send(res, 403, html, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    }
+  }
+
   fs.stat(filePath, (err, stat) => {
     if (err || !stat.isFile()) {
       if (pathname !== '/index.html') {
@@ -180,6 +214,13 @@ async function checkDatabase() {
       FROM information_schema.tables
       WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
     `);
+    let hubOrders = null;
+    try {
+      const orders = await client.query('SELECT COUNT(*)::int AS n FROM hub_orders');
+      hubOrders = orders.rows[0]?.n || 0;
+    } catch {
+      hubOrders = null;
+    }
     await client.end();
     return {
       linked: true,
@@ -187,6 +228,7 @@ async function checkDatabase() {
       message: 'قاعدة البيانات متصلة',
       ok: result.rows[0]?.ok === 1,
       tables: tables.rows[0]?.n || 0,
+      hubOrders,
     };
   } catch (error) {
     return {
@@ -218,9 +260,56 @@ function buildAiAgentReply(message = '', meta = {}) {
   return `${base}\n\n(${mode} · صفحة: ${meta.path || '/'})`;
 }
 
+function requireHubStaffOrReject(req, res, permission = null) {
+  try {
+    return hubSession.requireStaff(req, permission);
+  } catch (err) {
+    sendJson(res, err.status || 403, { ok: false, success: false, error: err.message || 'غير مصرح' });
+    return null;
+  }
+}
+
+function requireHubAuthOrReject(req, res) {
+  try {
+    return hubSession.requireAuth(req);
+  } catch (err) {
+    sendJson(res, err.status || 401, { ok: false, success: false, error: err.message || 'مطلوب تسجيل الدخول' });
+    return null;
+  }
+}
+
 async function handleHubApi(req, res, pathname) {
   if (req.method === 'OPTIONS') {
     sendJson(res, 204, {});
+    return true;
+  }
+
+  if (pathname.startsWith('/api/hub/articles')) {
+    await hubArticles.handleApi(req, res, pathname, {
+      sendJson,
+      readBody,
+      requireStaff: requireHubStaffOrReject,
+      requireAuth: requireHubAuthOrReject,
+    });
+    return true;
+  }
+
+  if (pathname.startsWith('/api/hub/events')) {
+    await hubEvents.handleApi(req, res, pathname, {
+      sendJson,
+      readBody,
+      requireStaff: requireHubStaffOrReject,
+      requireAuth: requireHubAuthOrReject,
+    });
+    return true;
+  }
+
+  if (pathname.startsWith('/api/hub/marketing-campaigns')) {
+    await hubMarketingCampaigns.handleApi(req, res, pathname, {
+      sendJson,
+      readBody,
+      requireStaff: requireHubStaffOrReject,
+    });
     return true;
   }
 
@@ -231,6 +320,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/notifications' && req.method === 'POST') {
+    if (!requireHubAuthOrReject(req, res)) return true;
     const body = await readBody(req);
     const item = hubRuntime.addNotification(body);
     sendJson(res, 201, { ok: true, item });
@@ -238,6 +328,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/notifications/read' && req.method === 'POST') {
+    if (!requireHubAuthOrReject(req, res)) return true;
     const body = await readBody(req);
     const items = hubRuntime.markRead(body.id, !!body.all);
     sendJson(res, 200, { ok: true, items });
@@ -245,6 +336,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/sync' && req.method === 'POST') {
+    if (!requireHubAuthOrReject(req, res)) return true;
     const body = await readBody(req);
     const result = hubRuntime.ingestSync(body);
     sendJson(res, 200, { ok: true, ...result });
@@ -253,6 +345,21 @@ async function handleHubApi(req, res, pathname) {
 
   if (pathname === '/api/hub/apps' && req.method === 'GET') {
     sendJson(res, 200, { ok: true, apps: hubRuntime.listApps(), synced: hubRuntime.getSynced() });
+    return true;
+  }
+
+  if (pathname === '/api/hub/apps' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const result = hubRuntime.registerApp(body || {});
+      sendJson(res, 201, { ok: true, app: result.app });
+    } catch (err) {
+      sendJson(res, err.status || 400, {
+        ok: false,
+        error: err.message || 'تعذر إضافة النظام.',
+        field: err.field,
+      });
+    }
     return true;
   }
 
@@ -315,8 +422,16 @@ async function handleHubApi(req, res, pathname) {
     const body = await readBody(req);
     try {
       const customer = {
-        id: session.userId || session.id || session.email,
-        email: session.email,
+            id: session.userId || session.id || session.email,
+            clientId: (() => {
+              try {
+                const st = hubClientPortal.readStore();
+                return hubClientPortal.ensureClient(st, session.email, session.name)?.clientId;
+              } catch {
+                return session.email;
+              }
+            })(),
+            email: session.email,
         name: body?.customer?.name || body?.customerName || session.name || session.fullName || session.email,
         phone: body?.customer?.phone || body?.customerPhone || session.phone || '',
         country: body?.customer?.country || body?.customerCountry || session.country || '',
@@ -326,6 +441,7 @@ async function handleHubApi(req, res, pathname) {
         ? body.items
         : [{ productId: body?.productId, qty: body?.qty || 1, clientPrice: body?.clientPrice }];
       const created = [];
+      const persistJobs = [];
       const baseKey = String(body?.idempotencyKey || '').trim();
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i] || {};
@@ -339,10 +455,35 @@ async function handleHubApi(req, res, pathname) {
           clientPrice: line.clientPrice != null ? line.clientPrice : body?.clientPrice,
         });
         created.push(result);
+        if (result?.persisted) persistJobs.push(result.persisted);
+      }
+      const persistResults = persistJobs.length ? await Promise.all(persistJobs) : [];
+      const dbPersisted = persistResults.length > 0 && persistResults.every((r) => r && r.ok);
+      try {
+        const portalStore = hubClientPortal.readStore();
+        created.forEach((c) => {
+          const order = c?.order;
+          if (!order) return;
+          hubPoshaOps.emitEvent(portalStore, {
+            type: 'ORDER_CREATED',
+            clientEmail: order.customerEmail,
+            actorId: session.email,
+            actorRole: 'client',
+            title: 'تم إنشاء طلبك',
+            message: `طلب ${order.number} — ${order.productName}`,
+            metadata: { orderId: order.id, orderNumber: order.number, invoiceNumber: order.invoiceNumber },
+            forceClient: true,
+            forceAdmin: true,
+          });
+        });
+        hubClientPortal.writeStore(portalStore);
+      } catch {
+        /* notification must not fail checkout */
       }
       sendJson(res, 201, {
         ok: true,
         duplicate: created.every((c) => c.duplicate),
+        dbPersisted,
         order: created[0]?.order || null,
         orders: created.map((c) => c.order),
         statusLabels: productOrders.STATUS_LABELS,
@@ -409,6 +550,113 @@ async function handleHubApi(req, res, pathname) {
       }
       return true;
     }
+  }
+
+  // —— إعدادات النظام (مصدر مركزي: ملف + hub_meta اختياريًا) ——
+  if (pathname === '/api/hub/system-settings' && req.method === 'GET') {
+    const url = new URL(req.url, 'http://local');
+    const wantPublic = String(url.searchParams.get('public') || '') === '1';
+    if (wantPublic) {
+      const settings = await hubSystemSettings.getSettings();
+      sendJson(res, 200, { ok: true, public: true, brand: hubSystemSettings.getPublicBrand(settings) });
+      return true;
+    }
+    let session;
+    try {
+      session = hubSession.requireStaff(req);
+    } catch (err) {
+      sendJson(res, err.status || 403, { ok: false, error: err.message || 'غير مصرح بقراءة إعدادات النظام' });
+      return true;
+    }
+    const settings = await hubSystemSettings.getSettings();
+    sendJson(res, 200, {
+      ok: true,
+      settings,
+      labels: hubSystemSettings.KEY_LABELS,
+      sections: hubSystemSettings.KEY_SECTIONS,
+      actor: { email: session.email, name: session.name, role: session.role },
+      storage: { file: hubSystemSettings.DATA_PATH, metaKey: hubSystemSettings.META_KEY },
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/system-settings' && (req.method === 'PUT' || req.method === 'POST')) {
+    let session;
+    try {
+      session = hubSession.requireStaff(req);
+    } catch (err) {
+      console.error('[system-settings] unauthorized save attempt', err.message);
+      sendJson(res, err.status || 403, {
+        ok: false,
+        error: 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.',
+        detail: err.message || 'غير مصرح',
+      });
+      return true;
+    }
+    try {
+      const body = await readBody(req);
+      const patch = body?.settings && typeof body.settings === 'object' ? body.settings : body || {};
+      const actor = {
+        email: session.email,
+        name: session.name || session.email,
+        employeeNo: body?.employeeNo || session.userId || session.email,
+        userId: session.userId,
+        role: session.role,
+      };
+      const result = await hubSystemSettings.saveSettings(patch, actor);
+      sendJson(res, 200, {
+        ok: true,
+        message: 'تم حفظ التغييرات بنجاح',
+        settings: result.settings,
+        changedKeys: result.changedKeys,
+        auditEntries: result.auditEntries,
+        storage: result.storage,
+      });
+    } catch (err) {
+      console.error('[system-settings] save failed', err);
+      sendJson(res, err.status || 500, {
+        ok: false,
+        error: 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.',
+      });
+    }
+    return true;
+  }
+
+  if (pathname === '/api/hub/system-settings/reset' && req.method === 'POST') {
+    let session;
+    try {
+      session = hubSession.requireStaff(req);
+    } catch (err) {
+      sendJson(res, err.status || 403, {
+        ok: false,
+        error: 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.',
+        detail: err.message || 'غير مصرح',
+      });
+      return true;
+    }
+    try {
+      const body = await readBody(req).catch(() => ({}));
+      const actor = {
+        email: session.email,
+        name: session.name || session.email,
+        employeeNo: body?.employeeNo || session.userId || session.email,
+        userId: session.userId,
+        role: session.role,
+      };
+      const result = await hubSystemSettings.resetSettings(actor);
+      sendJson(res, 200, {
+        ok: true,
+        message: 'تم حفظ التغييرات بنجاح',
+        settings: result.settings,
+        changedKeys: result.changedKeys,
+        auditEntries: result.auditEntries,
+        storage: result.storage,
+      });
+    } catch (err) {
+      console.error('[system-settings] reset failed', err);
+      sendJson(res, 500, { ok: false, error: 'تعذر حفظ التغييرات، يرجى المحاولة مرة أخرى.' });
+    }
+    return true;
   }
 
   // —— تصنيفات المنتجات (مصدر مركزي) ——
@@ -563,6 +811,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/search-catalog' && req.method === 'POST') {
+    if (!requireHubStaffOrReject(req, res)) return true;
     const body = await readBody(req);
     const items = Array.isArray(body?.items) ? body.items : [];
     const config = body?.config && typeof body.config === 'object' ? body.config : undefined;
@@ -571,7 +820,253 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  if (pathname === '/api/hub/ad-submissions' && req.method === 'GET') {
+    let session;
+    try {
+      session = hubSession.requireAuth(req);
+    } catch (err) {
+      sendJson(res, err.status || 401, { ok: false, error: err.message || 'مطلوب تسجيل الدخول' });
+      return true;
+    }
+    const staff = hubSession.isStaffLane(session.lane);
+    const list = adSubmissions.listSubmissions({ email: session.email, staff });
+    sendJson(res, 200, {
+      ok: true,
+      staff,
+      count: list.length,
+      submissions: list,
+      requests: list.map((s) => adSubmissions.toAdminRequest(s)),
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/ad-submissions' && req.method === 'POST') {
+    const body = await readBody(req);
+    const session = hubSession.resolveSession(req);
+    const authed = session.ok ? session : null;
+    try {
+      const result = adSubmissions.createSubmission({
+        session: authed,
+        guestContact: body?.owner || body?.guestContact || body?.contact || null,
+        ad: body?.ad || body || {},
+        idempotencyKey: body?.idempotencyKey || '',
+        claimedCustomerId: body?.customerId || body?.claimedCustomerId || '',
+      });
+      const persistResults = result.persisted ? await result.persisted : { ok: false };
+      try {
+        if (result.submission && !result.duplicate) {
+          const portalStore = hubClientPortal.readStore();
+          hubPoshaOps.emitEvent(portalStore, {
+            type: 'AD_SUBMISSION_CREATED',
+            clientEmail: result.submission.ownerEmail,
+            actorId: result.submission.ownerEmail,
+            actorRole: result.submission.ownerType === 'Customer' ? 'client' : 'guest',
+            title: 'طلب نشر إعلان',
+            message: `طلب ${result.submission.requestId} — ${result.submission.title}`,
+            metadata: {
+              requestId: result.submission.requestId,
+              adId: result.submission.adId,
+              adCode: result.submission.adCode,
+              ownerType: result.submission.ownerType,
+              customerId: result.submission.customerId,
+              guestContactId: result.submission.guestContactId,
+            },
+            forceClient: result.submission.ownerType === 'Customer',
+            forceAdmin: true,
+          });
+          hubClientPortal.writeStore(portalStore);
+        }
+      } catch {
+        /* notification must not fail submit */
+      }
+      sendJson(res, result.duplicate ? 200 : 201, {
+        ok: true,
+        duplicate: !!result.duplicate,
+        dbPersisted: !!(persistResults && persistResults.ok),
+        submission: result.submission,
+        request: adSubmissions.toAdminRequest(result.submission),
+      });
+    } catch (err) {
+      sendJson(res, err.status || 400, {
+        ok: false,
+        error: err.message || 'تعذر إرسال الإعلان.',
+        field: err.field,
+        code: err.code,
+      });
+    }
+    return true;
+  }
+
+  const adSubMatch = pathname.match(/^\/api\/hub\/ad-submissions\/([^/]+)$/);
+  if (adSubMatch && req.method === 'GET') {
+    let session;
+    try {
+      session = hubSession.requireAuth(req);
+    } catch (err) {
+      sendJson(res, err.status || 401, { ok: false, error: err.message || 'مطلوب تسجيل الدخول' });
+      return true;
+    }
+    try {
+      const submission = adSubmissions.getSubmission(decodeURIComponent(adSubMatch[1]));
+      adSubmissions.assertCanView(submission, session);
+      sendJson(res, 200, {
+        ok: true,
+        submission,
+        request: adSubmissions.toAdminRequest(submission),
+      });
+    } catch (err) {
+      sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحميل الطلب' });
+    }
+    return true;
+  }
+
+  if (pathname === '/api/hub/product-submissions/published' && req.method === 'GET') {
+    const list = productSubmissions.listPublished();
+    sendJson(res, 200, {
+      ok: true,
+      count: list.length,
+      items: list.map((s) => productSubmissions.toStoreItem(s)).filter(Boolean),
+      submissions: list.map((s) => ({
+        productId: s.productId,
+        requestId: s.requestId,
+        title: s.title,
+        status: s.status,
+        publishedAt: s.publishedAt || s.approvedAt || s.updatedAt,
+      })),
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/product-submissions' && req.method === 'GET') {
+    let session;
+    try {
+      session = hubSession.requireAuth(req);
+    } catch (err) {
+      sendJson(res, err.status || 401, { ok: false, error: err.message || 'مطلوب تسجيل الدخول' });
+      return true;
+    }
+    const staff = hubSession.isStaffLane(session.lane);
+    const list = productSubmissions.listSubmissions({ email: session.email, staff });
+    sendJson(res, 200, {
+      ok: true,
+      staff,
+      count: list.length,
+      submissions: list,
+      requests: list.map((s) => productSubmissions.toAdminRequest(s)),
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/product-submissions' && req.method === 'POST') {
+    const body = await readBody(req);
+    const session = hubSession.resolveSession(req);
+    const authed = session.ok ? session : null;
+    try {
+      const result = productSubmissions.createSubmission({
+        session: authed,
+        guestContact: body?.owner || body?.guestContact || body?.contact || null,
+        product: body?.product || body || {},
+        idempotencyKey: body?.idempotencyKey || '',
+        claimedCustomerId: body?.customerId || body?.claimedCustomerId || '',
+      });
+      const persistResults = result.persisted ? await result.persisted : { ok: false };
+      try {
+        if (result.submission && !result.duplicate) {
+          const portalStore = hubClientPortal.readStore();
+          hubPoshaOps.emitEvent(portalStore, {
+            type: 'PRODUCT_SUBMISSION_CREATED',
+            clientEmail: result.submission.ownerEmail,
+            actorId: result.submission.ownerEmail,
+            actorRole: result.submission.ownerType === 'Customer' ? 'client' : 'guest',
+            title: 'طلب إضافة منتج',
+            message: `طلب ${result.submission.requestId} — ${result.submission.title}`,
+            metadata: {
+              requestId: result.submission.requestId,
+              productId: result.submission.productId,
+              ownerType: result.submission.ownerType,
+              customerId: result.submission.customerId,
+              guestContactId: result.submission.guestContactId,
+            },
+            forceClient: result.submission.ownerType === 'Customer',
+            forceAdmin: true,
+          });
+          hubClientPortal.writeStore(portalStore);
+        }
+      } catch {
+        /* notification must not fail submit */
+      }
+      sendJson(res, result.duplicate ? 200 : 201, {
+        ok: true,
+        duplicate: !!result.duplicate,
+        dbPersisted: !!(persistResults && persistResults.ok),
+        submission: result.submission,
+        request: productSubmissions.toAdminRequest(result.submission),
+      });
+    } catch (err) {
+      sendJson(res, err.status || 400, {
+        ok: false,
+        error: err.message || 'تعذر إرسال المنتج.',
+        field: err.field,
+        code: err.code,
+      });
+    }
+    return true;
+  }
+
+  const prdSubMatch = pathname.match(/^\/api\/hub\/product-submissions\/([^/]+)(?:\/(status))?$/);
+  if (prdSubMatch) {
+    const subId = decodeURIComponent(prdSubMatch[1]);
+    const isStatus = prdSubMatch[2] === 'status';
+
+    if (req.method === 'GET' && !isStatus) {
+      let session;
+      try {
+        session = hubSession.requireAuth(req);
+      } catch (err) {
+        sendJson(res, err.status || 401, { ok: false, error: err.message || 'مطلوب تسجيل الدخول' });
+        return true;
+      }
+      try {
+        const submission = productSubmissions.getSubmission(subId);
+        productSubmissions.assertCanView(submission, session);
+        sendJson(res, 200, {
+          ok: true,
+          submission,
+          request: productSubmissions.toAdminRequest(submission),
+        });
+      } catch (err) {
+        sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحميل الطلب' });
+      }
+      return true;
+    }
+
+    if (isStatus && (req.method === 'PATCH' || req.method === 'POST')) {
+      let session;
+      try {
+        session = hubSession.requireStaff(req);
+      } catch (err) {
+        sendJson(res, err.status || 403, { ok: false, error: err.message || 'Forbidden' });
+        return true;
+      }
+      const body = await readBody(req);
+      try {
+        const submission = productSubmissions.updateStatus(subId, String(body?.status || ''), session, {
+          reason: body?.reason || body?.note || '',
+        });
+        sendJson(res, 200, {
+          ok: true,
+          submission,
+          request: productSubmissions.toAdminRequest(submission),
+        });
+      } catch (err) {
+        sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحديث الحالة' });
+      }
+      return true;
+    }
+  }
+
   if (pathname === '/api/hub/uploads' && req.method === 'POST') {
+    if (!requireHubAuthOrReject(req, res)) return true;
     try {
       const saved = await hubUploads.saveRequestToFile(req);
       sendJson(res, 201, { ok: true, ...saved, maxBytes: hubUploads.MAX_UPLOAD_BYTES, maxMb: hubUploads.MAX_UPLOAD_MB });
@@ -589,54 +1084,261 @@ async function handleHubApi(req, res, pathname) {
       ok: true,
       maxMb: hubUploads.MAX_UPLOAD_MB,
       maxBytes: hubUploads.MAX_UPLOAD_BYTES,
+      videoMaxMb: hubUploads.MAX_UPLOAD_MB,
+      videoMaxBytes: hubUploads.MAX_UPLOAD_BYTES,
     });
     return true;
   }
 
-  const rentalsPath = path.join(ROOT, 'data', 'system-rentals.json');
-  const ensureRentalsFile = () => {
-    const dir = path.dirname(rentalsPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    if (!fs.existsSync(rentalsPath)) {
-      fs.writeFileSync(
-        rentalsPath,
-        JSON.stringify({ version: 1, visibility: {}, rentals: [] }, null, 2),
-        'utf8'
-      );
+  // —— طلبات «سجل معنا» + المرفقات المرتبطة بنفس Request ID ——
+  if (pathname === '/api/hub/register-requests' && req.method === 'POST') {
+    const body = await readBody(req);
+    const adminName = String(body?.adminName || body?.fullName || '').trim();
+    const adminPhone = String(body?.adminPhone || body?.phone || '').trim();
+    const adminEmail = String(body?.adminEmail || body?.email || '').trim().toLowerCase();
+    const adminPassword = String(body?.adminPassword || body?.password || '');
+    const subdomain = String(body?.subdomain || body?.slug || '').trim().toLowerCase();
+    if (!adminName || !adminPhone || !adminEmail || !adminPassword) {
+      sendJson(res, 400, { ok: false, error: 'يرجى ملء جميع الحقول المطلوبة' });
+      return true;
     }
-  };
-  const readRentalsFile = () => {
-    ensureRentalsFile();
+    if (adminPassword.length < 8) {
+      sendJson(res, 400, { ok: false, error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' });
+      return true;
+    }
+    if (!subdomain || subdomain.length < 2) {
+      sendJson(res, 400, { ok: false, error: 'النطاق الفرعي غير صالح' });
+      return true;
+    }
+    const { request, uploadToken } = hubRegisterAttachments.createRegisterRequest({
+      ...body,
+      adminName,
+      adminPhone,
+      adminEmail,
+      adminPassword,
+      subdomain,
+      slug: subdomain,
+      host: body?.host || `${subdomain}.naiosh.app`,
+    });
+    sendJson(res, 201, {
+      ok: true,
+      requestId: request.id,
+      status: request.status,
+      statusLabel: request.statusLabel,
+      uploadToken,
+      request: hubRegisterAttachments.publicRequest(request),
+    });
+    return true;
+  }
+
+  const registerReqMatch = pathname.match(/^\/api\/hub\/register-requests\/([^/]+)(?:\/(attachments(?:\/([^/]+))?)?)?$/);
+  if (registerReqMatch) {
+    const requestId = decodeURIComponent(registerReqMatch[1]);
+    const sub = registerReqMatch[2] || '';
+    const attachmentId = registerReqMatch[3] ? decodeURIComponent(registerReqMatch[3]) : '';
+
+    if (req.method === 'GET' && !sub) {
+      const token = String(req.headers['x-register-upload-token'] || '').trim();
+      let staff = false;
+      try {
+        const session = hubSession.requireStaff(req);
+        staff = !!session;
+      } catch {
+        staff = false;
+      }
+      const bundle = hubRegisterAttachments.getRequestBundle(requestId, { uploadToken: token, staff });
+      if (!bundle.ok) {
+        sendJson(res, bundle.status || 403, { ok: false, error: bundle.error });
+        return true;
+      }
+      sendJson(res, 200, bundle);
+      return true;
+    }
+
+    if (req.method === 'POST' && sub === 'attachments') {
+      const token = String(req.headers['x-register-upload-token'] || '').trim();
+      const category = String(req.headers['x-attachment-category'] || req.headers['x-file-category'] || '').trim().toLowerCase();
+      try {
+        const attachment = await hubRegisterAttachments.saveAttachmentFromRequest(req, {
+          requestId,
+          uploadToken: token,
+          category: category || undefined,
+        });
+        sendJson(res, 201, {
+          ok: true,
+          attachment,
+          contentUrl: `/api/hub/register-attachments/${encodeURIComponent(attachment.id)}/content`,
+          maxBytes: hubUploads.MAX_UPLOAD_BYTES,
+          maxMb: hubUploads.MAX_UPLOAD_MB,
+        });
+      } catch (error) {
+        if (!res.headersSent) {
+          sendJson(res, error.status || 500, { ok: false, error: error.message || 'فشل رفع المرفق', code: error.code });
+        }
+        try {
+          req.resume();
+          // أغلق فقط عند رفض الحجم حتى لا يعلق السيرفر بانتظار باقي Content-Length
+          if (error.status === 413) req.destroy();
+        } catch {
+          /* ignore */
+        }
+      }
+      return true;
+    }
+
+    if (req.method === 'DELETE' && attachmentId) {
+      const token = String(req.headers['x-register-upload-token'] || '').trim();
+      let staff = false;
+      try {
+        hubSession.requireStaff(req);
+        staff = true;
+      } catch {
+        staff = false;
+      }
+      const result = hubRegisterAttachments.deleteAttachment(attachmentId, { uploadToken: token, staff });
+      if (!result.ok) {
+        sendJson(res, result.status || 403, { ok: false, error: result.error });
+        return true;
+      }
+      sendJson(res, 200, { ok: true });
+      return true;
+    }
+  }
+
+  const registerAttMatch = pathname.match(/^\/api\/hub\/register-attachments\/([^/]+)(?:\/(content))?$/);
+  if (registerAttMatch) {
+    const attachmentId = decodeURIComponent(registerAttMatch[1]);
+    const wantContent = registerAttMatch[2] === 'content';
+    const token = String(req.headers['x-register-upload-token'] || '').trim();
+    let session = null;
     try {
-      return JSON.parse(fs.readFileSync(rentalsPath, 'utf8'));
+      session = hubSession.resolveSession(req);
+      if (!session.ok) session = null;
     } catch {
-      return { version: 1, visibility: {}, rentals: [] };
+      session = null;
     }
-  };
-  const writeRentalsFile = (state) => {
-    ensureRentalsFile();
-    fs.writeFileSync(
-      rentalsPath,
-      JSON.stringify({ ...state, updatedAt: new Date().toISOString() }, null, 2),
-      'utf8'
-    );
-  };
+    const access = hubRegisterAttachments.canAccessAttachment(attachmentId, session, token);
+    if (!access.ok) {
+      sendJson(res, access.status || 403, { ok: false, error: access.error });
+      return true;
+    }
+    if (req.method === 'GET' && !wantContent) {
+      sendJson(res, 200, {
+        ok: true,
+        attachment: access.attachment,
+        contentUrl: `/api/hub/register-attachments/${encodeURIComponent(attachmentId)}/content`,
+      });
+      return true;
+    }
+    if (req.method === 'GET' && wantContent) {
+      const filePath = hubUploads.resolveUploadPath(access.attachment.storageRef);
+      if (!filePath || !fs.existsSync(filePath)) {
+        sendJson(res, 404, { ok: false, error: 'الملف غير موجود في التخزين' });
+        return true;
+      }
+      const stat = fs.statSync(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      const mime = access.attachment.mimeType || hubUploads.mimeForExt(ext) || 'application/octet-stream';
+      const disposition =
+        access.attachment.category === 'image' || access.attachment.category === 'video' || mime === 'application/pdf'
+          ? 'inline'
+          : 'attachment';
+      const original = String(access.attachment.originalFileName || access.attachment.fileName || 'file').replace(/"/g, '');
+      streamFile(
+        filePath,
+        res,
+        {
+          'Content-Type': mime,
+          'Content-Length': String(stat.size),
+          'Cache-Control': 'private, no-store',
+          'Content-Disposition': `${disposition}; filename="${original}"`,
+          'X-Content-Type-Options': 'nosniff',
+        },
+        false
+      );
+      return true;
+    }
+  }
 
   if (pathname === '/api/hub/system-rentals' && req.method === 'GET') {
-    const state = readRentalsFile();
-    sendJson(res, 200, { ok: true, state });
+    const session = hubSession.resolveSession(req);
+    const state = systemRentals.listForSession(session.ok ? session : null);
+    sendJson(res, 200, { ok: true, state, staff: !!(session.ok && hubSession.isStaffLane(session.lane)) });
+    return true;
+  }
+
+  if (pathname === '/api/hub/system-rentals/submit' && req.method === 'POST') {
+    const body = await readBody(req);
+    const session = hubSession.resolveSession(req);
+    const authed = session.ok ? session : null;
+    try {
+      const result = systemRentals.createRental({
+        session: authed,
+        contact: body?.owner || body?.contact || {
+          name: body?.adminName || body?.rental?.adminName,
+          email: body?.adminEmail || body?.rental?.adminEmail,
+          phone: body?.adminPhone || body?.rental?.adminPhone,
+        },
+        rental: body?.rental || body || {},
+        idempotencyKey: body?.idempotencyKey || '',
+        claimedCustomerId: body?.customerId || body?.claimedCustomerId || '',
+      });
+      sendJson(res, result.duplicate ? 200 : 201, {
+        ok: true,
+        duplicate: !!result.duplicate,
+        rental: result.rental,
+      });
+    } catch (err) {
+      sendJson(res, err.status || 400, {
+        ok: false,
+        error: err.message || 'تعذر إرسال طلب الاستئجار.',
+        field: err.field,
+        code: err.code,
+      });
+    }
+    return true;
+  }
+
+  const rentStatusMatch = pathname.match(/^\/api\/hub\/system-rentals\/([^/]+)\/status$/);
+  if (rentStatusMatch && (req.method === 'PATCH' || req.method === 'POST')) {
+    let session;
+    try {
+      session = hubSession.requireStaff(req);
+    } catch (err) {
+      sendJson(res, err.status || 403, { ok: false, error: err.message || 'Forbidden' });
+      return true;
+    }
+    const body = await readBody(req);
+    try {
+      const rental = systemRentals.updateRentalStatus(
+        decodeURIComponent(rentStatusMatch[1]),
+        String(body?.status || ''),
+        session,
+        { reason: body?.reason || body?.note || '' }
+      );
+      sendJson(res, 200, { ok: true, rental });
+    } catch (err) {
+      sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحديث الحالة' });
+    }
     return true;
   }
 
   if (pathname === '/api/hub/system-rentals' && req.method === 'POST') {
+    // Staff-only full-store replace (legacy admin sync)
+    let session;
+    try {
+      session = hubSession.requireStaff(req);
+    } catch (err) {
+      sendJson(res, err.status || 403, { ok: false, error: err.message || 'Forbidden' });
+      return true;
+    }
     const body = await readBody(req);
-    const state = {
-      version: 1,
-      visibility: body?.visibility && typeof body.visibility === 'object' ? body.visibility : {},
-      rentals: Array.isArray(body?.rentals) ? body.rentals : [],
-    };
-    writeRentalsFile(state);
-    sendJson(res, 200, { ok: true, count: state.rentals.length });
+    try {
+      const state = systemRentals.replaceStoreForStaff(body, session);
+      sendJson(res, 200, { ok: true, count: state.rentals.length, state });
+    } catch (err) {
+      sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر الحفظ' });
+    }
     return true;
   }
 
@@ -672,6 +1374,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/platform-grants' && req.method === 'POST') {
+    if (!requireHubStaffOrReject(req, res)) return true;
     const body = await readBody(req);
     const state = {
       version: 1,
@@ -728,11 +1431,18 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/my-grant' && req.method === 'GET') {
+    const session = requireHubAuthOrReject(req, res);
+    if (!session) return true;
     const email = String(new URL(req.url, 'http://localhost').searchParams.get('email') || '')
       .trim()
       .toLowerCase();
     if (!email) {
       sendJson(res, 400, { ok: false, error: 'أدخل الإيميل' });
+      return true;
+    }
+    // Prevent IDOR: clients may only query their own email; staff may query any
+    if (hubSession.isClientLane(session.lane) && session.email !== email) {
+      sendJson(res, 403, { ok: false, error: 'لا يمكنك الاطلاع على طلبات عميل آخر' });
       return true;
     }
     const state = readPlatformGrantsFile();
@@ -777,6 +1487,7 @@ async function handleHubApi(req, res, pathname) {
   };
 
   if (pathname === '/api/hub/tenant-accounts' && req.method === 'POST') {
+    if (!requireHubStaffOrReject(req, res)) return true;
     const body = await readBody(req);
     const accounts = Array.isArray(body?.accounts) ? body.accounts : [];
     writeTenantAccountsFile({ version: 1, accounts });
@@ -785,6 +1496,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/tenant-account' && req.method === 'POST') {
+    if (!requireHubStaffOrReject(req, res)) return true;
     const body = await readBody(req);
     const email = String(body?.email || '').trim().toLowerCase();
     const password = String(body?.password || '');
@@ -1098,7 +1810,14 @@ const server = http.createServer((req, res) => {
         if (result.ok && result.user?.email) {
           try {
             const store = hubClientPortal.readStore();
-            hubClientPortal.ensureClient(store, result.user.email, result.user.name || result.user.fullName);
+            const portalClient = hubClientPortal.ensureClient(
+              store,
+              result.user.email,
+              result.user.name || result.user.fullName
+            );
+            if (result.user.phone) portalClient.phone = result.user.phone;
+            portalClient.status = portalClient.status === 'pending' ? 'active' : portalClient.status;
+            portalClient.lastLoginAt = portalClient.lastLoginAt || new Date().toISOString();
             hubPoshaOps.emitEvent(store, {
               type: 'CLIENT_REGISTERED',
               clientEmail: result.user.email,
@@ -1113,17 +1832,22 @@ const server = http.createServer((req, res) => {
             /* ignore */
           }
         }
-        sendJson(res, result.status || (result.ok ? 201 : 400), {
-          success: !!result.ok,
-          ok: !!result.ok,
-          message: result.message || result.error || '',
-          error: result.ok ? undefined : result.error,
-          field: result.field,
-          strength: result.strength,
-          token: result.token,
-          user: result.user,
-          destination: result.ok ? 'client.html' : undefined,
-        });
+        sendJson(
+          res,
+          result.status || (result.ok ? 201 : 400),
+          {
+            success: !!result.ok,
+            ok: !!result.ok,
+            message: result.message || result.error || '',
+            error: result.ok ? undefined : result.error,
+            field: result.field,
+            strength: result.strength,
+            token: result.token,
+            user: result.user,
+            destination: result.ok ? 'client.html' : undefined,
+          },
+          result.ok && result.token ? { 'Set-Cookie': hubSession.sessionCookieHeader(result.token) } : {}
+        );
       })
       .catch((error) => {
         const status = error.status || 400;
@@ -1155,15 +1879,20 @@ const server = http.createServer((req, res) => {
             /* ignore */
           }
         }
-        sendJson(res, result.status || (result.ok ? 200 : 401), {
-          success: !!result.ok,
-          ok: !!result.ok,
-          message: result.message || result.error || '',
-          error: result.ok ? undefined : result.error,
-          token: result.token,
-          user: result.user,
-          destination: result.ok ? hubSession.postLoginDestination(result.user?.role || 'customer') : undefined,
-        });
+        sendJson(
+          res,
+          result.status || (result.ok ? 200 : 401),
+          {
+            success: !!result.ok,
+            ok: !!result.ok,
+            message: result.message || result.error || '',
+            error: result.ok ? undefined : result.error,
+            token: result.token,
+            user: result.user,
+            destination: result.ok ? hubSession.postLoginDestination(result.user?.role || 'customer') : undefined,
+          },
+          result.ok && result.token ? { 'Set-Cookie': hubSession.sessionCookieHeader(result.token) } : {}
+        );
       })
       .catch((error) => {
         const status = error.status || 400;
@@ -1241,6 +1970,11 @@ const server = http.createServer((req, res) => {
       send(res, 400, 'Bad request');
       return;
     }
+    // مرفقات التسجيل / العميل خاصة — لا تُخدم عبر الرابط العام
+    if (hubRegisterAttachments.isPrivateStorageRef(id) || require('./lib/hub-client-attachments').isPrivateStorageRef(id)) {
+      sendJson(res, 403, { ok: false, error: 'هذا المرفق خاص — استخدم واجهة الإدارة أو رابط المرفقات المصرّح' });
+      return;
+    }
     fs.stat(filePath, (err, stat) => {
       if (err || !stat.isFile()) {
         send(res, 404, 'Not Found');
@@ -1285,8 +2019,29 @@ async function boot() {
     }
   }
 
-  try {
-    await hubClientPortal.ensureDemoClientAccount();
+    try {
+      const hyd = await productOrders.hydrateFromDb();
+      if (hyd?.ok) console.log(`hub_orders hydrated from database (${hyd.count || 0})`);
+    } catch (error) {
+      console.error('hub_orders hydrate skipped:', error.message);
+    }
+
+    try {
+      const adHyd = await adSubmissions.hydrateFromDb();
+      if (adHyd?.ok) console.log(`hub_ad_submissions hydrated from database (${adHyd.count || 0})`);
+    } catch (error) {
+      console.error('hub_ad_submissions hydrate skipped:', error.message);
+    }
+
+    try {
+      const prdHyd = await productSubmissions.hydrateFromDb();
+      if (prdHyd?.ok) console.log(`hub_product_submissions hydrated from database (${prdHyd.count || 0})`);
+    } catch (error) {
+      console.error('hub_product_submissions hydrate skipped:', error.message);
+    }
+
+    try {
+      await hubClientPortal.ensureDemoClientAccount();
     console.log('Demo client ready: client@naiosh.com');
   } catch (error) {
     console.error('Demo client seed skipped:', error.message);

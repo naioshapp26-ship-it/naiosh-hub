@@ -240,7 +240,12 @@
     );
   }
 
-  function section(id, icon, title, desc, affect, body, helpKey) {
+  function section(id, icon, title, desc, affect, body, helpKey, opts) {
+    opts = opts || {};
+    var saveFoot =
+      opts.noSave
+        ? ''
+        : '<footer class="sac-section-save"><span class="sac-section-save-hint">احفظ لتثبيت التغييرات في قاعدة البيانات</span><button type="button" class="btn btn-primary" data-action="save-settings"><i class="fas fa-floppy-disk"></i> حفظ التغييرات</button></footer>';
     return (
       '<section class="sac-section card" id="sac-' +
       esc(id) +
@@ -262,7 +267,9 @@
         : '') +
       '</header><div class="sac-section-body">' +
       body +
-      '</div></section>'
+      '</div>' +
+      saveFoot +
+      '</section>'
     );
   }
 
@@ -353,9 +360,11 @@
       .join('');
 
     return (
-      '<div class="sac" id="settings-admin-center" data-dirty="0">' +
-      '<header class="sac-hero"><div><div class="empire-banner-kicker"><i class="fas fa-sliders"></i> إعدادات النظام</div><h2>إعدادات النظام</h2><p>تحكم في هوية المنصة، المظهر، المحتوى المرئي، اللغة، والإعدادات العامة من مكان واحد.</p></div><div class="sac-hero-actions"><button type="button" class="btn btn-primary" data-action="save-settings"><i class="fas fa-floppy-disk"></i> حفظ التغييرات</button><button type="button" class="btn btn-ghost" data-action="export-settings"><i class="fas fa-download"></i> تصدير</button></div></header>' +
-      '<div class="sac-dirty hidden" id="sac-dirty-bar" role="status"><strong>لديك تغييرات غير محفوظة</strong><div><button type="button" class="btn btn-primary" data-action="save-settings">حفظ التغييرات</button><button type="button" class="btn btn-ghost" data-action="discard-settings">تجاهل التغييرات</button></div></div>' +
+      '<div class="sac" id="settings-admin-center" data-dirty="0" data-save-status="clean">' +
+      '<header class="sac-hero"><div><div class="empire-banner-kicker"><i class="fas fa-sliders"></i> إعدادات النظام</div><h2>إعدادات النظام</h2><p>تحكم في هوية المنصة، المظهر، المحتوى المرئي، اللغة، والإعدادات العامة من مكان واحد.</p></div><div class="sac-hero-actions"><button type="button" class="btn btn-primary" data-action="save-settings" id="sac-save-main"><i class="fas fa-floppy-disk"></i> حفظ التغييرات</button><button type="button" class="btn btn-ghost" data-action="export-settings"><i class="fas fa-download"></i> تصدير</button></div></header>' +
+      '<div class="sac-dirty hidden" id="sac-dirty-bar" role="status"><strong id="sac-dirty-text">لديك تغييرات غير محفوظة</strong><div><button type="button" class="btn btn-primary" data-action="save-settings">حفظ التغييرات</button><button type="button" class="btn btn-ghost" data-action="discard-settings">تجاهل التغييرات</button></div></div>' +
+      '<div class="sac-saved-bar hidden" id="sac-saved-bar" role="status"><strong>تم حفظ جميع التغييرات</strong></div>' +
+      '<div class="sac-sticky-save" id="sac-sticky-save"><button type="button" class="btn btn-primary" data-action="save-settings"><i class="fas fa-floppy-disk"></i> حفظ التغييرات</button><span id="sac-sticky-status">لا توجد تغييرات غير محفوظة</span></div>' +
       '<div class="sac-summary"><article><span>المنشأة</span><strong data-sum-org>' +
       esc(s.orgNameAr) +
       '</strong><small data-sum-org-en>' +
@@ -391,7 +400,7 @@
       '<div class="sac-layout"><nav class="sac-nav" aria-label="أقسام الإعدادات">' +
       nav +
       '</nav><div class="sac-main">' +
-      section('overview', 'fa-gauge-high', 'نظرة عامة', 'ملخص سريع ومعاينة حية للتغييرات.', 'كل أجزاء المنصة بعد الحفظ', previewBlock(s)) +
+      section('overview', 'fa-gauge-high', 'نظرة عامة', 'ملخص سريع ومعاينة حية للتغييرات.', 'كل أجزاء المنصة بعد الحفظ', previewBlock(s), null, { noSave: true }) +
       section(
         'identity',
         'fa-building',
@@ -781,17 +790,23 @@
           .map(function (c) {
             return (
               '<tr data-search="سجل ' +
-              esc(c.key) +
+              esc(c.label || c.key) +
+              ' ' +
+              esc(c.section || '') +
               '"><td>' +
               esc(c.actor || '—') +
-              '</td><td dir="ltr">' +
+              '<br><small dir="ltr">' +
               esc(c.employeeNo || '—') +
+              '</small></td><td>' +
+              esc(c.section || 'إعدادات النظام') +
               '</td><td>' +
-              esc(c.key) +
+              esc(c.label || c.key) +
+              '<br><small>' +
+              esc(c.operation || 'تعديل إعداد') +
+              '</small></td><td dir="ltr">' +
+              esc(String(c.oldValue || '').slice(0, 60)) +
               '</td><td dir="ltr">' +
-              esc(String(c.oldValue || '').slice(0, 40)) +
-              '</td><td dir="ltr">' +
-              esc(String(c.newValue || '').slice(0, 40)) +
+              esc(String(c.newValue || '').slice(0, 60)) +
               '</td><td dir="ltr">' +
               esc(fmt(c.at)) +
               '</td></tr>'
@@ -890,9 +905,9 @@
         'content',
         'fa-newspaper',
         'المحتوى',
-        'المقالات والإعلانات والفعاليات والمشاريع.',
+        'المدونة والإعلانات والفعاليات والمشاريع.',
         'محتوى قابل للنشر',
-        '<div class="settings-links" data-search="مقالات إعلانات فعاليات"><a class="btn btn-ghost" href="#articles">المقالات</a><a class="btn btn-ghost" href="#ads">الإعلانات</a><a class="btn btn-ghost" href="#events">الفعاليات</a></div>',
+        '<div class="settings-links" data-search="مدونة مقالات إعلانات فعاليات"><a class="btn btn-ghost" href="#articles">المدونة</a><a class="btn btn-ghost" href="#ads">الإعلانات</a><a class="btn btn-ghost" href="#events">الفعاليات</a></div>',
         'content'
       ) +
       section(
@@ -922,10 +937,11 @@
         'سجل التغييرات',
         'من عدّل ماذا — بالقيمة السابقة والجديدة.',
         'سجل تغييرات الإعدادات',
-        '<div class="table-wrap"><table class="data-table"><thead><tr><th>المنفّذ</th><th>رقم الموظف</th><th>العنصر</th><th>السابق</th><th>الجديد</th><th>التاريخ</th></tr></thead><tbody>' +
+        '<div class="table-wrap"><table class="data-table"><thead><tr><th>المنفّذ / الموظف</th><th>القسم</th><th>الإعداد / العملية</th><th>السابق</th><th>الجديد</th><th>التاريخ والوقت</th></tr></thead><tbody>' +
           changeRows +
           '</tbody></table></div>',
-        'changelog'
+        'changelog',
+        { noSave: true }
       )
     );
   }
@@ -963,6 +979,52 @@
     center.dataset.dirty = dirty ? '1' : '0';
     var bar = root.querySelector('#sac-dirty-bar');
     if (bar) bar.classList.toggle('hidden', !dirty);
+    var savedBar = root.querySelector('#sac-saved-bar');
+    if (savedBar) savedBar.classList.toggle('hidden', !!dirty);
+    var sticky = root.querySelector('#sac-sticky-status');
+    if (sticky) sticky.textContent = dirty ? 'تغييرات غير محفوظة' : 'تم حفظ جميع التغييرات';
+    if (dirty) center.dataset.saveStatus = 'dirty';
+    else if (center.dataset.saveStatus !== 'saved') center.dataset.saveStatus = 'clean';
+    root.querySelectorAll('[data-action="save-settings"]').forEach(function (btn) {
+      if (btn.dataset.saving === '1') return;
+      btn.classList.toggle('is-dirty-active', !!dirty);
+    });
+  }
+
+  function isDirty(root) {
+    var center = (root && root.querySelector('#settings-admin-center')) || document.getElementById('settings-admin-center');
+    return !!(center && center.dataset.dirty === '1');
+  }
+
+  function setSaveStatus(root, status) {
+    var center = root.querySelector('#settings-admin-center') || root;
+    center.dataset.saveStatus = status || 'clean';
+    var dirtyBar = root.querySelector('#sac-dirty-bar');
+    var savedBar = root.querySelector('#sac-saved-bar');
+    var sticky = root.querySelector('#sac-sticky-status');
+    var dirtyText = root.querySelector('#sac-dirty-text');
+    if (status === 'saving') {
+      if (dirtyBar) dirtyBar.classList.remove('hidden');
+      if (dirtyText) dirtyText.textContent = 'جارٍ الحفظ...';
+      if (savedBar) savedBar.classList.add('hidden');
+      if (sticky) sticky.textContent = 'جارٍ الحفظ...';
+      return;
+    }
+    if (status === 'saved') {
+      center.dataset.dirty = '0';
+      if (dirtyBar) dirtyBar.classList.add('hidden');
+      if (savedBar) savedBar.classList.remove('hidden');
+      if (dirtyText) dirtyText.textContent = 'لديك تغييرات غير محفوظة';
+      if (sticky) sticky.textContent = 'تم حفظ جميع التغييرات';
+      return;
+    }
+    if (status === 'dirty') {
+      markDirty(root, true);
+      if (dirtyText) dirtyText.textContent = 'لديك تغييرات غير محفوظة';
+      return;
+    }
+    markDirty(root, false);
+    if (dirtyText) dirtyText.textContent = 'لديك تغييرات غير محفوظة';
   }
 
   function readBanners(root) {
@@ -1377,6 +1439,9 @@
     bind: bind,
     collectDraft: collectDraft,
     applyLiveChrome: applyLiveChrome,
+    markDirty: markDirty,
+    isDirty: isDirty,
+    setSaveStatus: setSaveStatus,
     HELP: HELP,
   };
 })();
