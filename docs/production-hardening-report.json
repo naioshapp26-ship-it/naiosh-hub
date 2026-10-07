@@ -1,0 +1,192 @@
+{
+  "PRODUCTION_READINESS": "PASS",
+  "pass": 36,
+  "fail": 0,
+  "checks": [
+    {
+      "check": "Quick Login removed",
+      "result": "PASS",
+      "evidence": "login.html bytes=8842"
+    },
+    {
+      "check": "Demo credentials removed from UI/JS",
+      "result": "PASS",
+      "evidence": "login.js scanned"
+    },
+    {
+      "check": "No hardcoded production password",
+      "result": "PASS",
+      "evidence": "frontend scanned"
+    },
+    {
+      "check": "Customer registration",
+      "result": "PASS",
+      "evidence": "status=201"
+    },
+    {
+      "check": "Customer ID",
+      "result": "PASS",
+      "evidence": "CL-E9B43884"
+    },
+    {
+      "check": "Register returns no token",
+      "result": "PASS",
+      "evidence": "isolation"
+    },
+    {
+      "check": "Customer login",
+      "result": "PASS",
+      "evidence": "role=customer"
+    },
+    {
+      "check": "Customer session CLIENT",
+      "result": "PASS",
+      "evidence": "CLIENT"
+    },
+    {
+      "check": "Customer dashboard denied",
+      "result": "PASS",
+      "evidence": "status=403"
+    },
+    {
+      "check": "Customer password change",
+      "result": "PASS",
+      "evidence": "تم تغيير كلمة المرور بنجاح."
+    },
+    {
+      "check": "Customer old password rejected",
+      "result": "PASS",
+      "evidence": "status=401"
+    },
+    {
+      "check": "Customer new password works",
+      "result": "PASS",
+      "evidence": "status=200"
+    },
+    {
+      "check": "naioshhub@example.com login",
+      "result": "PASS",
+      "evidence": "status=200 emp=EMP-0001"
+    },
+    {
+      "check": "Employee ID",
+      "result": "PASS",
+      "evidence": "EMP-0001"
+    },
+    {
+      "check": "Super Admin role",
+      "result": "PASS",
+      "evidence": "supreme_leader"
+    },
+    {
+      "check": "Super Admin permissions",
+      "result": "PASS",
+      "evidence": "count=54"
+    },
+    {
+      "check": "Secure cookies",
+      "result": "PASS",
+      "evidence": "hub_session=hub360.bmFpb3NoaHViQGV4YW1wbGUuY29t.1791407647390.e1; Path=/; HttpOn"
+    },
+    {
+      "check": "Super Admin account page API",
+      "result": "PASS",
+      "evidence": "EMP-0001"
+    },
+    {
+      "check": "Super Admin password change",
+      "result": "PASS",
+      "evidence": "تم تغيير كلمة المرور بنجاح."
+    },
+    {
+      "check": "Old token revoked",
+      "result": "PASS",
+      "evidence": "status=403"
+    },
+    {
+      "check": "Old password rejected",
+      "result": "PASS",
+      "evidence": "status=401"
+    },
+    {
+      "check": "New password works",
+      "result": "PASS",
+      "evidence": "status=200"
+    },
+    {
+      "check": "Add Admin",
+      "result": "PASS",
+      "evidence": "EMP-0100"
+    },
+    {
+      "check": "New Admin Employee ID",
+      "result": "PASS",
+      "evidence": "EMP-0100"
+    },
+    {
+      "check": "Assign permissions / admin login",
+      "result": "PASS",
+      "evidence": "perms=clients.view,orders.view"
+    },
+    {
+      "check": "Unauthorized section denied (no clients.create)",
+      "result": "PASS",
+      "evidence": "perm list"
+    },
+    {
+      "check": "Unauthorized API denied",
+      "result": "PASS",
+      "evidence": "status=403"
+    },
+    {
+      "check": "Permission revoke",
+      "result": "PASS",
+      "evidence": "status=401"
+    },
+    {
+      "check": "Disable Admin login denied",
+      "result": "PASS",
+      "evidence": "status=403"
+    },
+    {
+      "check": "Disable Admin session denied",
+      "result": "PASS",
+      "evidence": "status=403"
+    },
+    {
+      "check": "Admin cannot modify Super Admin",
+      "result": "PASS",
+      "evidence": "status=403"
+    },
+    {
+      "check": "Admin cannot grant self Super Admin",
+      "result": "PASS",
+      "evidence": "status=403"
+    },
+    {
+      "check": "Audit log",
+      "result": "PASS",
+      "evidence": "entries=6"
+    },
+    {
+      "check": "Forgot password",
+      "result": "PASS",
+      "evidence": "token exposed (staging)"
+    },
+    {
+      "check": "Rate limiting",
+      "result": "PASS",
+      "evidence": "429 received"
+    },
+    {
+      "check": "Legacy leader login blocked",
+      "result": "PASS",
+      "evidence": "status=401"
+    }
+  ],
+  "migration": {
+    "leaderFate": "Migrated EMP-0001 identity to naioshhub@example.com; leader@naiosh.com disabled/legacy",
+    "primaryEmployeeId": "EMP-0001",
+    "primaryEmail": "naioshhub@example.com"
+  }
+}

@@ -806,12 +806,13 @@
     sec = sec || {};
     var sessions = sec.sessions || [];
     var failed = sec.failedLogins || [];
-    return '<section class="cp-card"><div class="cp-card-head"><h3>الأمان</h3></div>' +
+    return '<section class="cp-card"><div class="cp-card-head"><h3>الأمان وكلمة المرور</h3></div>' +
       '<form class="cp-form" id="cp-password-form">' +
         '<h4 style="margin:0">تغيير كلمة المرور</h4>' +
         '<div class="cp-field"><label>كلمة المرور الحالية</label><input type="password" name="currentPassword" required autocomplete="current-password"></div>' +
         '<div class="cp-field"><label>كلمة المرور الجديدة</label><input type="password" name="newPassword" required minlength="8" autocomplete="new-password"></div>' +
-        '<button type="submit" class="cp-btn cp-btn-primary">تحديث كلمة المرور</button>' +
+        '<div class="cp-field"><label>تأكيد كلمة المرور الجديدة</label><input type="password" name="confirmPassword" required minlength="8" autocomplete="new-password"></div>' +
+        '<button type="submit" class="cp-btn cp-btn-primary">حفظ</button>' +
       '</form>' +
       '<div style="margin-top:18px;border-top:1px solid var(--cp-line);padding-top:14px">' +
         '<h4 style="margin:0 0 8px">آخر تسجيل دخول</h4>' +
@@ -1145,14 +1146,21 @@
           e.preventDefault();
           var fd = new FormData(sf);
           try {
-            await api('/api/client/security/password', {
+            var data = await api('/api/client/security/password', {
               method: 'POST',
               body: {
                 currentPassword: fd.get('currentPassword'),
-                newPassword: fd.get('newPassword')
+                newPassword: fd.get('newPassword'),
+                confirmPassword: fd.get('confirmPassword')
               }
             });
-            toast('تم تحديث كلمة المرور');
+            if (data && data.token && window.HubAuth?.setSession) {
+              var u = window.HubAuth.getUser?.() || {};
+              window.HubAuth.setSession(u, data.token, { remember: true });
+            } else if (data && data.token) {
+              localStorage.setItem('hubAuthToken', data.token);
+            }
+            toast(data?.message || 'تم تغيير كلمة المرور بنجاح.');
             sf.reset();
           } catch (err) {
             toast(err.message || 'تعذر التحديث');

@@ -6,6 +6,8 @@
     { key: 'site-settings', icon: 'fa-gear', label: 'إعدادات الموقع' },
     { key: 'clients-mgmt', icon: 'fa-user-tie', label: 'إدارة العملاء' },
     { key: 'roles-permissions', icon: 'fa-shield-halved', label: 'إدارة فريق العمل والصلاحيات' },
+    { key: 'staff-admins', icon: 'fa-user-shield', label: 'إدارة الإداريين' },
+    { key: 'my-account', icon: 'fa-user-gear', label: 'حسابي' },
     { key: 'notifications', icon: 'fa-bell', label: 'مركز إشعارات نايوش هوب' },
     { key: 'side-project-regs', icon: 'fa-inbox', label: 'طلبات تسجيل المشاريع' },
     { key: 'content-articles', icon: 'fa-newspaper', label: 'المقالات الواردة' },
@@ -48,6 +50,8 @@
     'site-settings': ['إعدادات الموقع', 'إدارة إعدادات المنصة والمتاجر والطلبات والدفع والإعلانات والتكاملات والأمان من مكان واحد'],
     'clients-mgmt': ['إدارة العملاء', 'العملاء 360 · إدارة كاملة · مصدر · ملاحظات داخلية · تدقيق'],
     'roles-permissions': ['إدارة فريق العمل والصلاحيات', 'عيّن المسؤولين عن إدارة نايوش هوب وأنظمتها، وحدد لكل شخص مكان عمله ودوره والصلاحيات المسموح بها.'],
+    'staff-admins': ['إدارة الإداريين', 'إضافة إداريين · Employee ID · أدوار · صلاحيات حقيقية · تدقيق'],
+    'my-account': ['حسابي', 'بيانات الحساب الإداري · الأمان وكلمة المرور'],
     notifications: ['مركز إشعارات نايوش هوب', 'مصدر واضح · سبب · إجراء · طلب مرتبط'],
     'side-project-regs': ['طلبات تسجيل المشاريع', 'صندوق الوارد · متابعة · تواصل · تدقيق'],
     'content-articles': ['المقالات الواردة', 'مراجعة · اعتماد · نشر · تشغيلات سير العمل'],
@@ -361,6 +365,8 @@
     'site-settings',
     'clients-mgmt',
     'roles-permissions',
+    'staff-admins',
+    'my-account',
     'rent-admin',
     'identity',
     'search-admin',
@@ -1465,6 +1471,8 @@
         ? HubSearchAdminWS.render({ user, toast, esc, bar, badgeStatus, fmtTime })
         : `<div class="empty">تعذر تحميل إدارة محرك بحث نايوش</div>`,
     'roles-permissions': () => (window.HubRolesWS?.render ? HubRolesWS.render({ user, toast, esc, bar, badgeStatus, fmtTime }) : '<div class="empty">تعذر تحميل الأدوار</div>'),
+    'staff-admins': () => `<div id="staff-admins-mount"></div>`,
+    'my-account': () => `<div id="my-account-mount"></div>`,
     'rent-admin': () => (window.HubRentAdminWS?.render ? HubRentAdminWS.render({ user, toast, esc, bar, badgeStatus, fmtTime }) : '<div class="empty">تعذر تحميل موافقات المدير الأعلى</div>'),
     blueprint: renderBlueprint,
     platforms: renderPlatforms,
@@ -1658,6 +1666,12 @@
           render();
         },
       });
+    }
+    if (current === 'my-account' && window.HubStaffAdmin?.mountAccount) {
+      window.HubStaffAdmin.mountAccount(document.getElementById('my-account-mount'), { toast });
+    }
+    if (current === 'staff-admins' && window.HubStaffAdmin?.mountStaffAdmin) {
+      window.HubStaffAdmin.mountStaffAdmin(document.getElementById('staff-admins-mount'), { toast });
     }
   };
   window.hubRerender = () => render();

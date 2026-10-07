@@ -1,46 +1,7 @@
-const DEMO_USERS = {
-  'leader@naiosh.com': {
-    password: 'Hub@360',
-    name: 'القائد الأعلى',
-    role: 'supreme_leader',
-  },
-  'malika@naiosh.com': {
-    password: 'Hub@360',
-    name: 'المهندسة مليكة',
-    role: 'chief_engineer',
-  },
-  'viewer@naiosh.com': {
-    password: 'Hub@360',
-    name: 'موظف عرض العملاء',
-    role: 'admin',
-  },
-  'client@naiosh.com': {
-    password: 'Hub@360',
-    name: 'أحمد العميل',
-    role: 'customer',
-  },
-};
-
-function fillLogin(email, password, autoSubmit = true) {
-  const emailInput = document.getElementById('email');
-  const passwordInput = document.getElementById('password');
-  if (!emailInput || !passwordInput) return;
-  emailInput.value = email;
-  passwordInput.value = password;
-  emailInput.dispatchEvent(new Event('input', { bubbles: true }));
-  passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
-  emailInput.parentElement?.classList.add('ring-2', 'ring-primary/20');
-  setTimeout(() => {
-    emailInput.parentElement?.classList.remove('ring-2', 'ring-primary/20');
-  }, 500);
-  document.getElementById('rememberMe') && (document.getElementById('rememberMe').checked = true);
-  document.getElementById('loginBtn')?.focus();
-  if (autoSubmit) {
-    document.getElementById('loginForm')?.requestSubmit?.() ||
-      document.getElementById('loginBtn')?.click();
-  }
-}
-
+/**
+ * Production login — server authentication only.
+ * No demo users, quick login, or client-side password checks.
+ */
 (() => {
   const loginForm = document.getElementById('loginForm');
   const alertMessage = document.getElementById('alertMessage');
@@ -109,8 +70,7 @@ function fillLogin(email, password, autoSubmit = true) {
         new Promise((resolve) => setTimeout(() => resolve(fallback), ms)),
       ]);
 
-    // End any prior identity (customer/admin) before accepting a new login —
-    // clears HttpOnly hub_session so the next account is not mixed with the last.
+    // End any prior identity before accepting a new login.
     if (window.HubAuth?.clearSessionAsync) {
       await withTimeout(window.HubAuth.clearSessionAsync(), 5000, null);
     } else if (window.HubAuth?.clearSession) {
@@ -118,30 +78,6 @@ function fillLogin(email, password, autoSubmit = true) {
     }
     await withTimeout(window.HubPlatformGrants?.hydrate?.(), 4000, null);
     await new Promise((resolve) => setTimeout(resolve, 120));
-
-    const demo = DEMO_USERS[email];
-    const localTenant = (() => {
-      try {
-        const list = JSON.parse(localStorage.getItem('naiosh_hub_tenant_accounts_v1') || '[]');
-        return (Array.isArray(list) ? list : []).find((a) => String(a.email || '').toLowerCase() === email) || null;
-      } catch {
-        return null;
-      }
-    })();
-    const pendingGrant =
-      window.HubPlatformGrants?.listGrants?.()?.find(
-        (g) => String(g.adminEmail || '').toLowerCase() === email && g.status === 'pending'
-      ) ||
-      (() => {
-        try {
-          const grants = JSON.parse(localStorage.getItem('naiosh_hub_platform_grants_v1') || '{}')?.grants || [];
-          return (Array.isArray(grants) ? grants : []).find(
-            (g) => String(g.adminEmail || '').toLowerCase() === email && g.status === 'pending'
-          );
-        } catch {
-          return null;
-        }
-      })();
 
     let authPayload = null;
     let tenantUser = null;
@@ -171,7 +107,7 @@ function fillLogin(email, password, autoSubmit = true) {
       const data = await res.json().catch(() => ({}));
       if (data?.ok && data?.user) tenantUser = data.user;
     } catch {
-      /* offline — local fallback below */
+      /* offline tenant path optional */
     }
 
     let user = null;
@@ -180,16 +116,16 @@ function fillLogin(email, password, autoSubmit = true) {
     const serverRole = String(authPayload?.user?.role || '').toLowerCase();
     const serverIsStaff = ['supreme_leader', 'chief_engineer', 'admin', 'super_admin'].includes(serverRole);
 
-    // Prefer server authentication (staff + customer) — same secure endpoint.
     if (serverOk && serverIsStaff) {
       user = {
         email: authPayload.user.email || email,
-        name: authPayload.user.name || demo?.name || email,
+        name: authPayload.user.name || email,
         role: authPayload.user.role,
         platform: authPayload.user.platform || 'naiosh-hub-360',
         employeeNo: authPayload.user.employeeNo || authPayload.employeeNo || null,
         naioshId: authPayload.user.naioshId || null,
         status: authPayload.user.status || 'active',
+        mustChangePassword: !!authPayload.mustChangePassword || !!authPayload.user?.mustChangePassword,
       };
       token = authPayload.token;
     } else if (serverOk && !serverIsStaff) {
@@ -207,42 +143,14 @@ function fillLogin(email, password, autoSubmit = true) {
       };
       delete user.employeeNo;
       token = authPayload.token;
-    } else if (demo && demo.password === password) {
-      // Offline / older-server fallback for built-in staff only
-      user = {
-        email,
-        name: demo.name,
-        role: demo.role,
-        platform: 'naiosh-hub-360',
-      };
-      token = `hub360.${btoa(email)}.${Date.now()}`;
     } else if (tenantUser) {
+      // Tenant platform owners only — server-validated tenant-login payload
       user = tenantUser;
-      token = `hub360.${btoa(email)}.${Date.now()}`;
-    } else if (localTenant && localTenant.status === 'active' && localTenant.password === password) {
-      user = {
-        email,
-        name: localTenant.name || email,
-        role: localTenant.role || 'platform_owner',
-        platform: 'naiosh-hub-360',
-        systemCode: localTenant.systemCode || '',
-        host: localTenant.host || '',
-      };
-      token = `hub360.${btoa(email)}.${Date.now()}`;
-    } else if (
-      !demo &&
-      !serverOk &&
-      !tenantUser &&
-      (pendingGrant || (localTenant && localTenant.status === 'pending'))
-    ) {
-      showAlert(
-        'طلبك بانتظار موافقة السوبر أدمن. بعد الاعتماد ادخل من login.html ثم افتح صفحة «منصتي» لترى الدومين والنظام.'
-      );
-      setLoading(false);
-      return;
+      token = authPayload?.token || `hub360.${btoa(email)}.${Date.now()}`;
     } else {
       const errMsg =
-        (authPayload && !authPayload.ok && authPayload.error) || 'بيانات الدخول غير صحيحة.';
+        (authPayload && !authPayload.ok && (authPayload.error || authPayload.message)) ||
+        'بيانات الدخول غير صحيحة.';
       showAlert(errMsg);
       setLoading(false);
       return;
@@ -273,10 +181,10 @@ function fillLogin(email, password, autoSubmit = true) {
     const isClientRole =
       role === 'customer' || role === 'client' || role === 'client_user' || role === 'platform_owner';
     let dest = 'client.html';
-    if (destGate?.ok || isStaff) dest = 'dashboard.html';
-    else if (isClientRole) dest = role === 'platform_owner' ? 'my-platform.html' : 'client.html';
+    if (destGate?.ok || isStaff) {
+      dest = user.mustChangePassword ? 'dashboard.html#my-account' : 'dashboard.html';
+    } else if (isClientRole) dest = role === 'platform_owner' ? 'my-platform.html' : 'client.html';
 
-    // CLIENT: allow safe public next (e.g. solutions resume), never admin/ops
     const isSafePublicNext = (n) => {
       if (!n || n.startsWith('http') || n.includes('://') || n.includes('..')) return false;
       if (/dashboard\.html/i.test(n)) return false;
@@ -326,8 +234,6 @@ function fillLogin(email, password, autoSubmit = true) {
       const emailInput = document.getElementById('email');
       if (emailInput && !emailInput.value) emailInput.value = prefillEmail;
     }
-    // Coming from incomplete/complete registration: stay on the form so another
-    // account can sign in. Registration draft keys are left untouched.
     if (switchAccount && window.HubAuth?.clearSessionAsync) {
       window.HubAuth.clearSessionAsync().catch(() => null);
       return;
@@ -335,11 +241,8 @@ function fillLogin(email, password, autoSubmit = true) {
 
     const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
     if (!token) return;
-    // If arriving from registration with ?email=, prefer the login form over auto-redirect
-    // so the new customer (or another account) can authenticate cleanly.
     if (prefillEmail || fromRegistration) return;
 
-    // If the user starts typing credentials, cancel auto-redirect (account switch intent).
     let redirectTimer = null;
     const cancelRedirect = () => {
       if (redirectTimer) {
@@ -371,7 +274,9 @@ function fillLogin(email, password, autoSubmit = true) {
     if (next && !next.startsWith('http') && !next.includes('://')) {
       const role = (() => {
         try {
-          return String(JSON.parse(localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser') || '{}').role || '').toLowerCase();
+          return String(
+            JSON.parse(localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser') || '{}').role || ''
+          ).toLowerCase();
         } catch {
           return '';
         }

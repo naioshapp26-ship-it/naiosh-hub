@@ -1649,8 +1649,21 @@ async function handleHubApi(req, res, pathname) {
   return false;
 }
 
-const server = http.createServer((req, res) => {
+const hubStaffAccount = require('./lib/hub-staff-account');
+
+const server = http.createServer(async (req, res) => {
   const pathname = new URL(req.url, 'http://localhost').pathname;
+
+  // Staff account / forgot-password / admin staff APIs (before generic /api/admin)
+  try {
+    const url = new URL(req.url, 'http://localhost');
+    if (await hubStaffAccount.handle(req, res, url)) return;
+  } catch (err) {
+    if (!res.headersSent) {
+      sendJson(res, err.status || 500, { ok: false, error: err.message || 'خطأ في معالجة الطلب' });
+    }
+    return;
+  }
 
   if (pathname === '/api/health') {
     Promise.all([checkDatabase(), Promise.resolve(checkEnvironment())])
@@ -1883,13 +1896,26 @@ const server = http.createServer((req, res) => {
     readBody(req)
       .then(async (body) => {
         const hubStaffAuth = require('./lib/hub-staff-auth');
-        // Built-in staff (EMP-0001 / EMP-0003 / …) authenticate on the same endpoint.
-        // No email hard-bypass: password + active assignment required server-side.
-        const staffResult = hubStaffAuth.login({
+        const loginRate = require('./lib/hub-login-rate-limit');
+        const email = String(body?.email || '').trim().toLowerCase();
+        const rate = loginRate.check(req, email);
+        if (!rate.ok) {
+          sendJson(res, rate.status || 429, {
+            success: false,
+            ok: false,
+            error: rate.error || 'محاولات كثيرة. أعد المحاولة لاحقًا.',
+          });
+          return;
+        }
+
+        // Staff authenticate on the same endpoint — hashed credentials only.
+        const staffResult = await hubStaffAuth.login({
           email: body?.email,
           password: body?.password,
         });
         if (staffResult) {
+          if (!staffResult.ok) loginRate.fail(req, email);
+          else loginRate.success(req, email);
           sendJson(
             res,
             staffResult.status || (staffResult.ok ? 200 : 401),
@@ -1898,10 +1924,13 @@ const server = http.createServer((req, res) => {
               ok: !!staffResult.ok,
               message: staffResult.message || staffResult.error || '',
               error: staffResult.ok ? undefined : staffResult.error,
-              token: staffResult.token,
-              user: staffResult.user,
-              employeeNo: staffResult.employeeNo || staffResult.user?.employeeNo || null,
-              permissions: staffResult.permissions || [],
+              token: staffResult.ok ? staffResult.token : undefined,
+              user: staffResult.ok ? staffResult.user : undefined,
+              employeeNo: staffResult.ok
+                ? staffResult.employeeNo || staffResult.user?.employeeNo || null
+                : undefined,
+              permissions: staffResult.ok ? staffResult.permissions || [] : undefined,
+              mustChangePassword: staffResult.ok ? !!staffResult.mustChangePassword : undefined,
               destination: staffResult.ok
                 ? hubSession.postLoginDestination(staffResult.user?.role || 'supreme_leader')
                 : undefined,
@@ -1917,6 +1946,8 @@ const server = http.createServer((req, res) => {
           email: body?.email,
           password: body?.password,
         });
+        if (!result.ok) loginRate.fail(req, email);
+        else loginRate.success(req, email);
         if (result.ok && result.user?.email) {
           try {
             hubClientPortal.touchLogin(result.user.email, result.user.name || result.user.fullName);
@@ -1932,8 +1963,8 @@ const server = http.createServer((req, res) => {
             ok: !!result.ok,
             message: result.message || result.error || '',
             error: result.ok ? undefined : result.error,
-            token: result.token,
-            user: result.user,
+            token: result.ok ? result.token : undefined,
+            user: result.ok ? result.user : undefined,
             destination: result.ok ? hubSession.postLoginDestination(result.user?.role || 'customer') : undefined,
           },
           result.ok && result.token ? { 'Set-Cookie': hubSession.sessionCookieHeader(result.token) } : {}
@@ -2085,11 +2116,28 @@ async function boot() {
       console.error('hub_product_submissions hydrate skipped:', error.message);
     }
 
+  try {
+    const staffCreds = require('./lib/hub-staff-credentials');
+    const bootSa = await staffCreds.ensureSuperAdminBootstrap();
+    if (bootSa.created) console.log(`Super Admin bootstrapped: ${bootSa.email} (${bootSa.employeeNo})`);
+    else if (bootSa.ok) console.log(`Super Admin ready: ${bootSa.email} (${bootSa.employeeNo})`);
+    else if (bootSa.reason === 'missing_env') {
+      console.warn('Super Admin password not set — set HUB_SUPER_ADMIN_INITIAL_PASSWORD once to bootstrap');
+    }
+    const legacy = await staffCreds.ensureLegacyDemoBootstrap();
+    if (legacy.ok && legacy.created) console.log(`Legacy demo staff seeded: ${legacy.created}`);
+  } catch (error) {
+    console.error('Staff credentials bootstrap skipped:', error.message);
+  }
+
+  // Demo client seed only when explicitly allowed (never in default production)
+  if (String(process.env.HUB_ALLOW_LEGACY_DEMO || '') === '1') {
     try {
       await hubClientPortal.ensureDemoClientAccount();
-    console.log('Demo client ready: client@naiosh.com');
-  } catch (error) {
-    console.error('Demo client seed skipped:', error.message);
+      console.log('Legacy demo client seed enabled (HUB_ALLOW_LEGACY_DEMO=1)');
+    } catch (error) {
+      console.error('Demo client seed skipped:', error.message);
+    }
   }
 
   server.requestTimeout = 30 * 60 * 1000;
