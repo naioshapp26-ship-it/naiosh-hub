@@ -109,8 +109,8 @@
           <p class="hub-field-error" data-err-for="phone" hidden></p>
 
           <label for="book-email">الإيميل <span class="hub-req" aria-hidden="true">*</span></label>
-          <input id="book-email" name="email" type="email" required aria-required="true" autocomplete="email" dir="ltr" />
-          <p class="hub-field-error" data-err-for="email" hidden></p>
+          <input id="book-email" name="email" type="email" required aria-required="true" autocomplete="email" dir="ltr" aria-describedby="book-err-email" />
+          <p class="hub-field-error" id="book-err-email" data-err-for="email" hidden></p>
 
           <label for="book-country">الدولة <span class="hub-req" aria-hidden="true">*</span></label>
           <select id="book-country" name="country" required aria-required="true"></select>
@@ -195,13 +195,13 @@
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-system-ops-spec.js"></script>
   <script src="js/hub-system-ops-engine.js"></script>
-  <script src="js/hub-client-platforms.js?v=4"></script>
+  <script src="js/hub-client-platforms.js?v=5"></script>
   <script src="js/hub-client-branches.js?v=1"></script>
   <script src="js/hub-ops-catalog.js?v=1"></script>
   <script src="js/hub-ops-picker.js?v=1"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=22"></script>
-  <script src="js/hub-booking.js?v=16"></script>
+  <script src="js/hub-booking.js?v=17"></script>
   <script src="js/hub-control-nav.js?v=5"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>

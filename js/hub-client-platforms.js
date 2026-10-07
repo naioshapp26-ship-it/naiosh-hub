@@ -215,7 +215,14 @@
     if (!slug) return { ok: false, error: 'الدومين الفرعي مطلوب.', field: 'subdomain' };
     if (!fullName) return { ok: false, error: 'الاسم مطلوب.', field: 'fullName' };
     if (!phone) return { ok: false, error: 'رقم الجوال مطلوب.', field: 'phone' };
-    if (!email) return { ok: false, error: 'الإيميل مطلوب.', field: 'email' };
+    if (!email) return { ok: false, error: 'البريد الإلكتروني مطلوب.', field: 'email' };
+    const emailOk =
+      !/\s/.test(email) &&
+      !/\.\./.test(email) &&
+      /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/.test(
+        email
+      );
+    if (!emailOk) return { ok: false, error: 'يرجى إدخال بريد إلكتروني صحيح.', field: 'email' };
     if (!country) return { ok: false, error: 'الدولة مطلوبة.', field: 'country' };
     const isHq = String(payload.source || '').toLowerCase() === 'hq';
     if (!isHq) {
