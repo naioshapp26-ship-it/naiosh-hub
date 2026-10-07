@@ -3836,36 +3836,50 @@ const HubStore = (() => {
       payload.code ||
       payload.notificationCode ||
       `NTF-${year}-${seq}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+    const enriched =
+      typeof window.HubNotificationRouter?.enrichNotificationPayload === 'function'
+        ? window.HubNotificationRouter.enrichNotificationPayload(payload)
+        : payload;
     const item = {
-      id: payload.id || uid('n'),
+      id: enriched.id || uid('n'),
       code,
-      source: (payload.source || 'HUB').toString(),
-      sourceName: payload.sourceName || payload.source || 'نايوش هوب',
-      section: payload.section || payload.sourceName || payload.source || 'عام',
-      title: payload.title || 'إشعار هوب',
-      body: payload.body || payload.message || '',
-      reason: payload.reason || payload.body || payload.message || '',
-      type: payload.type || category || 'system',
-      typeLabel: payload.typeLabel || '',
-      level: payload.level || 'info',
-      category: payload.category || 'system',
-      priority: payload.priority || (level === 'critical' || level === 'error' ? 'high' : level === 'warning' ? 'medium' : 'low'),
-      link: payload.link || payload.href || '',
-      sourceLink: payload.sourceLink || payload.link || '',
-      actionLabel: payload.actionLabel || '',
-      actionLink: payload.actionLink || payload.link || '',
-      needsAction: payload.needsAction === true || !!payload.actionLabel,
-      status: payload.status || 'new',
-      requestId: payload.requestId || payload.meta?.requestId || null,
-      customerId: payload.customerId || payload.meta?.customerId || null,
-      customerName: payload.customerName || payload.meta?.customerName || null,
-      actorName: payload.actorName || payload.meta?.actorName || null,
-      referenceType: payload.referenceType || payload.meta?.referenceType || null,
-      referenceId: payload.referenceId || payload.meta?.referenceId || null,
-      read: payload.read === true,
-      archived: payload.archived === true,
-      at: payload.at || nowIso(),
-      meta: payload.meta || null,
+      source: (enriched.source || 'HUB').toString(),
+      sourceName: enriched.sourceName || enriched.source || 'نايوش هوب',
+      section: enriched.section || enriched.sourceName || enriched.source || 'عام',
+      title: enriched.title || 'إشعار هوب',
+      body: enriched.body || enriched.message || '',
+      reason: enriched.reason || enriched.body || enriched.message || '',
+      type: enriched.type || category || 'system',
+      typeLabel: enriched.typeLabel || '',
+      level: enriched.level || 'info',
+      category: enriched.category || 'system',
+      priority:
+        enriched.priority ||
+        (level === 'critical' || level === 'error' ? 'high' : level === 'warning' ? 'medium' : 'low'),
+      link: enriched.link || enriched.href || '',
+      sourceLink: enriched.sourceLink || enriched.link || '',
+      actionLabel: enriched.actionLabel || '',
+      actionLink: enriched.actionLink || enriched.link || '',
+      targetUrl: enriched.targetUrl || enriched.actionLink || enriched.link || '',
+      needsAction: enriched.needsAction === true || !!enriched.actionLabel,
+      status: enriched.status || 'new',
+      requestId: enriched.requestId || enriched.meta?.requestId || null,
+      customerId: enriched.customerId || enriched.meta?.customerId || null,
+      customerName: enriched.customerName || enriched.meta?.customerName || null,
+      customerEmail: enriched.customerEmail || enriched.meta?.customerEmail || null,
+      actorName: enriched.actorName || enriched.meta?.actorName || null,
+      referenceType: enriched.referenceType || enriched.meta?.referenceType || null,
+      referenceId: enriched.referenceId || enriched.meta?.referenceId || null,
+      relatedEntityType: enriched.relatedEntityType || enriched.referenceType || enriched.meta?.referenceType || null,
+      relatedEntityId:
+        enriched.relatedEntityId || enriched.referenceId || enriched.meta?.referenceId || enriched.requestId || null,
+      recipientType: enriched.recipientType || enriched.meta?.recipientType || 'all',
+      recipientId: enriched.recipientId || enriched.meta?.recipientId || enriched.customerId || null,
+      recipientEmail: enriched.recipientEmail || enriched.customerEmail || enriched.meta?.customerEmail || null,
+      read: enriched.read === true,
+      archived: enriched.archived === true,
+      at: enriched.at || nowIso(),
+      meta: enriched.meta || null,
     };
     s.notifications.unshift(item);
     if (s.notifications.length > 300) s.notifications.length = 300;
@@ -3878,6 +3892,31 @@ const HubStore = (() => {
   const listNotifications = (opts = {}) => {
     let rows = get().notifications || [];
     if (opts.includeArchived !== true) rows = rows.filter((n) => !n.archived);
+    // Audience filter — customers must not see staff-only inbox items
+    if (opts.forViewer !== false) {
+      try {
+        const user = window.HubAuth?.getUser?.();
+        const email = String(user?.email || '').toLowerCase();
+        const staff = !!window.HubAuth?.isStaff?.(user);
+        const client = !!window.HubAuth?.isClient?.(user) && !staff;
+        if (client) {
+          rows = rows.filter((n) => {
+            const lane = String(n.recipientType || n.meta?.recipientType || 'all').toLowerCase();
+            if (lane === 'staff') return false;
+            const owner = String(n.recipientEmail || n.customerEmail || n.meta?.customerEmail || '').toLowerCase();
+            if (owner && email && owner !== email) return false;
+            return true;
+          });
+        } else if (staff) {
+          rows = rows.filter((n) => {
+            const lane = String(n.recipientType || n.meta?.recipientType || 'all').toLowerCase();
+            return lane === 'staff' || lane === 'all' || !lane;
+          });
+        }
+      } catch {
+        /* ignore */
+      }
+    }
     return rows;
   };
 

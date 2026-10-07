@@ -1086,7 +1086,10 @@
       document.querySelectorAll('#cp-root [data-nid]').forEach(function (btn) {
         btn.addEventListener('click', async function () {
           var id = btn.getAttribute('data-nid');
+          var note = null;
           try {
+            var list = (state.cache && state.cache.notifications && state.cache.notifications.notifications) || [];
+            note = list.find(function (n) { return n.id === id; }) || null;
             await api('/api/client/notifications/read', { method: 'POST', body: { id: id } });
             btn.style.background = '#fff';
             if (state.home && state.home.summary) {
@@ -1094,6 +1097,25 @@
               updateChrome();
             }
           } catch (e) {}
+          // Prefer unified router when HubStore mirror exists; else stay in client portal
+          if (window.HubNotificationRouter && window.HubNotificationRouter.openNotification) {
+            var local = null;
+            try {
+              local = (window.HubStore && window.HubStore.listNotifications)
+                ? window.HubStore.listNotifications({ includeArchived: true }).find(function (n) { return n.id === id; })
+                : null;
+            } catch (_) {}
+            if (local || note) {
+              window.HubNotificationRouter.openNotification(local || note);
+              return;
+            }
+          }
+          if (note && (note.link || note.actionLink || note.targetUrl)) {
+            var href = note.actionLink || note.link || note.targetUrl;
+            if (href && !/^dashboard\.html/i.test(href) && href !== '#') {
+              window.location.href = href;
+            }
+          }
         });
       });
     }

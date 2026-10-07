@@ -355,25 +355,50 @@
       });
       try {
         const typeAr = TYPE_LABELS_AR[item.requestType] || item.requestType || 'طلب';
-        pushCustomerNotification({
+        const staffLink = `dashboard.html#posha-clients?req=${encodeURIComponent(item.id)}`;
+        // Staff inbox — not a customer notification
+        window.HubStore?.pushNotification?.({
           title: `طلب ${typeAr} جديد`,
-          message: `قام ${item.company || item.customerName || 'عميل'} بإرسال «${item.title}» للمراجعة.`,
+          body: `قام ${item.company || item.customerName || 'عميل'} بإرسال «${item.title}» للمراجعة.`,
           reason: `تم إنشاء طلب جديد من ${item.sourceModule || 'المنصة'} ويحتاج مراجعة.`,
           source: item.sourceModule || 'طلبات العملاء',
+          sourceName: item.sourceModule || 'طلبات العملاء',
           section: item.sourceModule || 'طلبات العملاء',
           type: 'customer_request',
           typeLabel: 'طلبات العملاء',
-          link: `dashboard.html#posha-clients`,
-          actionLabel: 'مراجعة الطلب',
-          actionLink: `dashboard.html#posha-clients`,
-          needsAction: true,
+          category: 'ops',
+          level: 'info',
           priority: 'medium',
+          needsAction: true,
+          actionLabel: 'مراجعة الطلب',
+          actionLink: staffLink,
+          link: staffLink,
+          targetUrl: staffLink,
           requestId: item.id,
           customerId: item.customerNaioshId || item.customerId || null,
           customerName: item.company || item.customerName || null,
-          referenceType: item.referenceType || null,
-          referenceId: item.referenceId || null,
-          meta: { requestId: item.id, requestType: item.requestType },
+          customerEmail: item.email || null,
+          referenceType: item.referenceType || item.requestType || 'customer_request',
+          referenceId: item.referenceId || item.id,
+          relatedEntityType: item.referenceType || item.requestType || 'customer_request',
+          relatedEntityId: item.referenceId || item.id,
+          recipientType: 'staff',
+          meta: { requestId: item.id, requestType: item.requestType, recipientType: 'staff' },
+        });
+        // Customer confirmation copy
+        pushCustomerNotification({
+          title: `تم استلام طلبك: ${typeAr}`,
+          message: `طلبك «${item.title}» قيد المراجعة · ${item.id}`,
+          reason: 'تأكيد استلام الطلب',
+          source: item.sourceModule || 'طلبات العملاء',
+          requestId: item.id,
+          customerId: item.customerNaioshId || item.customerId || null,
+          customerName: item.company || item.customerName || null,
+          customerEmail: item.email || null,
+          referenceType: item.referenceType || item.requestType || 'customer_request',
+          referenceId: item.referenceId || item.id,
+          needsAction: false,
+          actionLabel: 'متابعة الطلب',
         });
       } catch (_) {}
     }
@@ -1074,7 +1099,14 @@
     const title = payload.title || 'إشعار';
     const body = payload.message || payload.body || '';
     const source = payload.source || 'طلبات العملاء';
-    const link = payload.link || 'dashboard.html#posha-clients';
+    const requestId = payload.requestId || null;
+    // Customer-facing default — never dashboard (staff-only gate)
+    const link =
+      payload.link && !/^dashboard\.html/i.test(payload.link)
+        ? payload.link
+        : requestId
+          ? `client.html#requests?id=${encodeURIComponent(requestId)}`
+          : 'client.html#requests';
     if (window.HubStore?.pushNotification) {
       return window.HubStore.pushNotification({
         title,
@@ -1092,15 +1124,23 @@
         actionLabel: payload.actionLabel || 'فتح الطلب',
         actionLink: link,
         link,
-        requestId: payload.requestId || null,
+        targetUrl: link,
+        requestId,
         customerId: payload.customerId || null,
         customerName: payload.customerName || null,
+        customerEmail: payload.customerEmail || payload.email || null,
         actorName: payload.actorName || null,
-        referenceType: payload.referenceType || null,
-        referenceId: payload.referenceId || null,
+        referenceType: payload.referenceType || 'customer_request',
+        referenceId: payload.referenceId || requestId || null,
+        relatedEntityType: payload.relatedEntityType || payload.referenceType || 'customer_request',
+        relatedEntityId: payload.relatedEntityId || payload.referenceId || requestId || null,
+        recipientType: 'customer',
+        recipientEmail: payload.customerEmail || payload.email || null,
+        recipientId: payload.customerId || null,
         meta: {
-          requestId: payload.requestId || null,
+          requestId,
           customerId: payload.customerId || null,
+          recipientType: 'customer',
           ...(payload.meta || {}),
         },
       });

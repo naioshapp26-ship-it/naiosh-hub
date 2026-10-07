@@ -162,7 +162,7 @@
         </div>
         <ul class="hub-notify-list"></ul>
         <div class="hub-notify-empty">لا إشعارات بعد — ستظهر هنا من كل الأنظمة</div>
-        <div class="hub-notify-foot"><a href="dashboard.html#notifications">عرض كل الإشعارات</a></div>
+        <div class="hub-notify-foot"><a data-notify-center href="#">عرض كل الإشعارات</a></div>
       </div>`;
     host.prepend(wrap);
 
@@ -170,7 +170,13 @@
     const panel = wrap.querySelector('.hub-notify-panel');
     if (panel && panel.parentElement !== document.body) document.body.appendChild(panel);
     wrap._hubNotifyPanel = panel;
+    const centerHref = () =>
+      window.HubNotificationRouter?.notificationsCenterFor?.(window.HubAuth?.getUser?.()) ||
+      'client.html#notifications';
+    const foot = panel.querySelector('[data-notify-center]');
+    if (foot) foot.setAttribute('href', centerHref());
     const openPanel = () => {
+      if (foot) foot.setAttribute('href', centerHref());
       panel.classList.add('open');
       placePanel(btn, panel);
       paint(wrap);
@@ -189,11 +195,17 @@
     panel.querySelector('.hub-notify-list')?.addEventListener('click', (e) => {
       const li = e.target.closest('li[data-id]');
       if (!li) return;
-      window.HubStore?.markNotificationRead?.(li.dataset.id);
-      paint(wrap);
+      e.preventDefault();
       closePanel();
-      if (li.dataset.link) window.location.href = li.dataset.link;
-      else window.location.href = `dashboard.html#notifications`;
+      if (window.HubNotificationRouter?.openNotification) {
+        window.HubNotificationRouter.openNotification(li.dataset.id);
+        return;
+      }
+      // Fallback (legacy)
+      window.HubStore?.markNotificationRead?.(li.dataset.id);
+      const link = li.dataset.link;
+      if (link && !/^dashboard\.html/i.test(link)) window.location.href = link;
+      else window.location.href = centerHref();
     });
     document.addEventListener('click', (e) => {
       if (e.target.closest('.hub-notify-panel') || e.target.closest('.hub-notify-wrap')) return;
