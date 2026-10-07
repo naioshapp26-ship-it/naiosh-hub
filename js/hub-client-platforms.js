@@ -200,19 +200,33 @@
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, '');
+    const sectorName = String(payload.sectorName || '').trim();
+    const fullName = String(payload.fullName || '').trim();
+    const phone = String(payload.phone || '').trim();
+    const country = String(payload.country || '').trim();
+    const summary = String(payload.summary || '').trim();
     const systemsIn = Array.isArray(payload.systems) ? payload.systems : [];
     let entitlements = payload.opsEntitlements || null;
     if (!entitlements && payload.opsSelection && window.HubOpsCatalog?.resolveEntitlements) {
       entitlements = window.HubOpsCatalog.resolveEntitlements(payload.opsSelection);
     }
-    if (!email || !platformName) return { ok: false, error: 'الإيميل واسم المنصة مطلوبان' };
+    if (!platformName) return { ok: false, error: 'اسم المنصة مطلوب.', field: 'platformName' };
+    if (!sectorName) return { ok: false, error: 'اسم القطاع مطلوب.', field: 'sectorName' };
+    if (!slug) return { ok: false, error: 'الدومين الفرعي مطلوب.', field: 'subdomain' };
+    if (!fullName) return { ok: false, error: 'الاسم مطلوب.', field: 'fullName' };
+    if (!phone) return { ok: false, error: 'رقم الجوال مطلوب.', field: 'phone' };
+    if (!email) return { ok: false, error: 'الإيميل مطلوب.', field: 'email' };
+    if (!country) return { ok: false, error: 'الدولة مطلوبة.', field: 'country' };
     const isHq = String(payload.source || '').toLowerCase() === 'hq';
     if (!isHq) {
-      if (!payload.branch) return { ok: false, error: 'اختر الفرع' };
-      if (!payload.incubator) return { ok: false, error: 'اختر حاضنة تابعة للفرع' };
+      if (!payload.branch) return { ok: false, error: 'الفرع مطلوب.', field: 'branch' };
+      if (!payload.incubator) return { ok: false, error: 'الحاضنة مطلوبة.', field: 'incubator' };
     }
     const hasEnt = Array.isArray(entitlements?.grants) && entitlements.grants.length;
-    if (!systemsIn.length && !hasEnt) return { ok: false, error: 'اختر الأنظمة أو الوحدات التشغيلية حسب حاجة العمل' };
+    if (!systemsIn.length && !hasEnt) {
+      return { ok: false, error: 'اختر نظامًا تشغيليًا واحدًا على الأقل حسب حاجة العمل.', field: 'systems' };
+    }
+    if (!summary) return { ok: false, error: 'الشرح المختصر مطلوب.', field: 'summary' };
 
     const systems = grantSystems(email, systemsIn, entitlements);
     const primary =

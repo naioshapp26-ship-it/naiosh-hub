@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=20" />
   <link rel="stylesheet" href="css/hub-ops-catalog.css?v=1" />
-  <link rel="stylesheet" href="css/hub-booking.css?v=8" />
+  <link rel="stylesheet" href="css/hub-booking.css?v=9" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -80,60 +80,73 @@
         <p data-from-generic>أكمل البيانات التالية — الطلب يُسجَّل في هوب ويُتابع من غرفة العمليات حتى التفعيل.</p>
         <p data-from-incubator hidden>المنحة تتم عبر حاضنة تابعة للفرع المختار، ثم تُربط بمنصتي وتُشغَّل الأنظمة التي يحتاجها العمل فقط.</p>
         <p data-from-hq hidden>المنحة من المكتب الرئيسي مباشرة — بدون فروع ولا حاضنات — ثم تُربط بمنصتي مع الأنظمة حسب حاجة العمل.</p>
-        <form class="hub-book-form" data-book-form>
+        <form class="hub-book-form" data-book-form novalidate>
           <input type="hidden" name="platform" value="" data-book-platform-hidden />
 
-          <label for="book-platform-name">اسم المنصة</label>
-          <input id="book-platform-name" name="platformName" type="text" autocomplete="organization" placeholder="مثال: منصة التعليم الرقمي" />
+          <p class="hub-req-legend" data-req-legend>الحقول المميزة بعلامة <span class="hub-req">*</span> مطلوبة.</p>
 
-          <label for="book-sector">اسم القطاع</label>
-          <select id="book-sector" name="sectorName" required></select>
+          <label for="book-platform-name">اسم المنصة <span class="hub-req" aria-hidden="true">*</span></label>
+          <input id="book-platform-name" name="platformName" type="text" required aria-required="true" autocomplete="organization" placeholder="مثال: منصة التعليم الرقمي" />
+          <p class="hub-field-error" data-err-for="platformName" hidden></p>
 
-          <label for="book-subdomain">الدومين الفرعي</label>
+          <label for="book-sector">اسم القطاع <span class="hub-req" aria-hidden="true">*</span></label>
+          <select id="book-sector" name="sectorName" required aria-required="true"></select>
+          <p class="hub-field-error" data-err-for="sectorName" hidden></p>
+
+          <label for="book-subdomain">الدومين الفرعي <span class="hub-req" aria-hidden="true">*</span></label>
           <div class="hub-book-subdomain-row">
-            <input id="book-subdomain" name="subdomain" type="text" required autocomplete="off" dir="ltr" placeholder="my-platform" pattern="[a-zA-Z0-9\-]+" title="حروف إنجليزية وأرقام وشرطة فقط" />
+            <input id="book-subdomain" name="subdomain" type="text" required aria-required="true" autocomplete="off" dir="ltr" placeholder="my-platform" pattern="[a-zA-Z0-9\-]+" title="حروف إنجليزية وأرقام وشرطة فقط" />
             <span class="hub-book-subdomain-suffix">.naiosh.app</span>
           </div>
+          <p class="hub-field-error" data-err-for="subdomain" hidden></p>
 
-          <label for="book-name">الاسم</label>
-          <input id="book-name" name="fullName" type="text" required autocomplete="name" />
+          <label for="book-name">الاسم <span class="hub-req" aria-hidden="true">*</span></label>
+          <input id="book-name" name="fullName" type="text" required aria-required="true" autocomplete="name" />
+          <p class="hub-field-error" data-err-for="fullName" hidden></p>
 
-          <label for="book-phone">رقم الجوال</label>
-          <input id="book-phone" name="phone" type="tel" required autocomplete="tel" />
+          <label for="book-phone">رقم الجوال <span class="hub-req" aria-hidden="true">*</span></label>
+          <input id="book-phone" name="phone" type="tel" required aria-required="true" autocomplete="tel" dir="ltr" />
+          <p class="hub-field-error" data-err-for="phone" hidden></p>
 
-          <label for="book-email">الإيميل</label>
-          <input id="book-email" name="email" type="email" required autocomplete="email" />
+          <label for="book-email">الإيميل <span class="hub-req" aria-hidden="true">*</span></label>
+          <input id="book-email" name="email" type="email" required aria-required="true" autocomplete="email" dir="ltr" />
+          <p class="hub-field-error" data-err-for="email" hidden></p>
 
-          <label for="book-country">الدولة</label>
-          <select id="book-country" name="country" required></select>
+          <label for="book-country">الدولة <span class="hub-req" aria-hidden="true">*</span></label>
+          <select id="book-country" name="country" required aria-required="true"></select>
+          <p class="hub-field-error" data-err-for="country" hidden></p>
 
-          <label for="book-branch" data-not-hq>الفرع</label>
-          <select id="book-branch" name="branch" required disabled data-not-hq></select>
+          <label for="book-branch" data-not-hq>الفرع <span class="hub-req" aria-hidden="true">*</span></label>
+          <select id="book-branch" name="branch" required disabled data-not-hq aria-required="true"></select>
+          <p class="hub-field-error" data-err-for="branch" data-not-hq hidden></p>
 
-          <label for="book-incubator" data-from-generic>الحاضنة</label>
-          <label for="book-incubator" data-from-incubator hidden>الحاضنة التابعة للفرع</label>
-          <select id="book-incubator" name="incubator" required data-not-hq></select>
+          <label for="book-incubator" data-from-generic>الحاضنة <span class="hub-req" aria-hidden="true">*</span></label>
+          <label for="book-incubator" data-from-incubator hidden>الحاضنة التابعة للفرع <span class="hub-req" aria-hidden="true">*</span></label>
+          <select id="book-incubator" name="incubator" required data-not-hq aria-required="true"></select>
+          <p class="hub-field-error" data-err-for="incubator" data-not-hq hidden></p>
           <p class="hub-book-hint" data-from-incubator hidden>تظهر هنا فقط الحاضنات التابعة للفرع الذي اخترته.</p>
 
           <fieldset class="hub-book-systems" data-work-systems data-book-systems hidden>
-            <legend>الأنظمة التشغيلية حسب حاجة العميل</legend>
+            <legend>الأنظمة التشغيلية حسب حاجة العميل <span class="hub-req" aria-hidden="true">*</span></legend>
             <p class="hub-book-systems-lead">نايوش هوب هو المظلة. اختر تشغيلًا شموليًا أو أنظمة/وحدات حسب الحاجة — يمكن منح وحدة واحدة دون تفعيل النظام الأب كاملًا.</p>
             <div class="hub-book-systems-list" data-book-systems-list data-ops-picker></div>
+            <p class="hub-field-error" data-err-for="systems" hidden></p>
             <p class="hub-book-hint" style="margin-top:10px"><a href="ops-catalog-admin.html">إدارة الأنظمة والوحدات</a></p>
           </fieldset>
 
-          <label for="book-profile">ارفع ملف تعريفي</label>
+          <label for="book-profile">ارفع ملف تعريفي <span class="hub-optional">(اختياري)</span></label>
           <input id="book-profile" name="profileFile" type="file" accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.zip" />
 
-          <label for="book-image">ارفع صورة</label>
+          <label for="book-image">ارفع صورة <span class="hub-optional">(اختياري)</span></label>
           <input id="book-image" name="imageFile" type="file" accept="image/*" />
 
-          <label for="book-video">ارفع فيديو</label>
+          <label for="book-video">ارفع فيديو <span class="hub-optional">(اختياري)</span></label>
           <input id="book-video" name="videoFile" type="file" accept="video/*" />
           <p class="hub-book-hint">الحد الأقصى للصورة والملف والفيديو: 150 ميجابايت</p>
 
-          <label for="book-summary">اكتب شرح مختصر</label>
-          <textarea id="book-summary" name="summary" rows="4" required placeholder="اشرح باختصار احتياجك من المنصة ونطاق التشغيل"></textarea>
+          <label for="book-summary">اكتب شرح مختصر <span class="hub-req" aria-hidden="true">*</span></label>
+          <textarea id="book-summary" name="summary" rows="4" required aria-required="true" placeholder="اشرح باختصار احتياجك من المنصة ونطاق التشغيل"></textarea>
+          <p class="hub-field-error" data-err-for="summary" hidden></p>
 
           <button class="btn btn-primary" type="submit"><i class="fas fa-calendar-check"></i> إرسال طلب الحجز</button>
           <p class="hub-book-feedback" data-book-feedback role="status" aria-live="polite" hidden></p>
@@ -182,13 +195,13 @@
   <script src="js/hub-auth.js"></script>
   <script src="js/hub-system-ops-spec.js"></script>
   <script src="js/hub-system-ops-engine.js"></script>
-  <script src="js/hub-client-platforms.js?v=3"></script>
+  <script src="js/hub-client-platforms.js?v=4"></script>
   <script src="js/hub-client-branches.js?v=1"></script>
   <script src="js/hub-ops-catalog.js?v=1"></script>
   <script src="js/hub-ops-picker.js?v=1"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=22"></script>
-  <script src="js/hub-booking.js?v=15"></script>
+  <script src="js/hub-booking.js?v=16"></script>
   <script src="js/hub-control-nav.js?v=5"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>

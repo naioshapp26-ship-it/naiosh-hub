@@ -425,13 +425,118 @@
   const kindLabel =
     kind === 'incubator' ? 'حاضنة' : kind === 'platform' ? 'منصة' : 'مكتب';
 
+  const FIELD_ERROR_MSG = {
+    platformName: 'اسم المنصة مطلوب.',
+    sectorName: 'اسم القطاع مطلوب.',
+    subdomain: 'الدومين الفرعي مطلوب.',
+    fullName: 'الاسم مطلوب.',
+    phone: 'رقم الجوال مطلوب.',
+    email: 'الإيميل مطلوب.',
+    country: 'الدولة مطلوبة.',
+    branch: 'الفرع مطلوب.',
+    incubator: 'الحاضنة مطلوبة.',
+    summary: 'الشرح المختصر مطلوب.',
+    systems: 'اختر نظامًا تشغيليًا واحدًا على الأقل حسب حاجة العمل.',
+  };
+
+  const clearFieldErrors = () => {
+    form?.querySelectorAll('.hub-field-error').forEach((el) => {
+      el.hidden = true;
+      el.textContent = '';
+    });
+    form?.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
+  };
+
+  const showFieldError = (name, message) => {
+    const errEl = form?.querySelector(`[data-err-for="${name}"]`);
+    if (errEl) {
+      errEl.hidden = false;
+      errEl.textContent = message || FIELD_ERROR_MSG[name] || 'هذا الحقل مطلوب.';
+    }
+    const control =
+      name === 'systems'
+        ? form?.querySelector('[data-work-systems]')
+        : form?.querySelector(`[name="${name}"]`);
+    control?.classList.add('is-invalid');
+    if (control && typeof control.focus === 'function' && name !== 'systems') {
+      try {
+        control.focus({ preventScroll: false });
+      } catch {
+        control.focus();
+      }
+    }
+  };
+
+  const validateRequiredFields = () => {
+    clearFieldErrors();
+    syncSystemsRequired();
+
+    const valueOf = (name) => String(form?.querySelector(`[name="${name}"]`)?.value || '').trim();
+    const checks = [];
+
+    if (kind === 'platform') {
+      checks.push(['platformName', valueOf('platformName')]);
+      checks.push(['sectorName', valueOf('sectorName')]);
+      checks.push(['subdomain', valueOf('subdomain')]);
+    } else if (kind === 'incubator') {
+      checks.push(['sectorName', valueOf('sectorName')]);
+      checks.push(['subdomain', valueOf('subdomain')]);
+    }
+
+    checks.push(['fullName', valueOf('fullName')]);
+    checks.push(['phone', valueOf('phone')]);
+    checks.push(['email', valueOf('email')]);
+    checks.push(['country', valueOf('country')]);
+
+    if (!isHqPlatform) {
+      const branchEl = form?.querySelector('[name="branch"]');
+      const incubatorEl = form?.querySelector('[name="incubator"]');
+      if (branchEl && !branchEl.hidden && branchEl.required !== false) {
+        checks.push(['branch', valueOf('branch')]);
+      }
+      if (incubatorEl && !incubatorEl.hidden && incubatorEl.required !== false) {
+        checks.push(['incubator', valueOf('incubator')]);
+      }
+    }
+
+    checks.push(['summary', valueOf('summary')]);
+
+    for (const [name, val] of checks) {
+      if (!val) {
+        showFieldError(name, FIELD_ERROR_MSG[name]);
+        return false;
+      }
+    }
+
+    if (needsWorkSystems) {
+      const systems = selectedSystems();
+      const ent = selectedOpsBundle();
+      const hasEnt = Array.isArray(ent?.grants) && ent.grants.length > 0;
+      if (!systems.length && !hasEnt) {
+        showFieldError('systems', FIELD_ERROR_MSG.systems);
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  form?.querySelectorAll('input, select, textarea').forEach((el) => {
+    el.addEventListener('input', () => {
+      const name = el.getAttribute('name');
+      if (!name) return;
+      const errEl = form.querySelector(`[data-err-for="${name}"]`);
+      if (errEl) {
+        errEl.hidden = true;
+        errEl.textContent = '';
+      }
+      el.classList.remove('is-invalid');
+    });
+  });
+
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
-    syncSystemsRequired();
-    if (!form.checkValidity()) {
-      form.reportValidity();
-      return;
-    }
+    if (!validateRequiredFields()) return;
 
     const data = new FormData(form);
     const subdomain = String(data.get('subdomain') || '')
@@ -489,6 +594,35 @@
       at: new Date().toISOString(),
     };
 
+    if (kind === 'platform') {
+      try {
+        const res = await fetch('/api/hub/platform-bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || json.ok === false) {
+          if (json.field) showFieldError(json.field, json.error);
+          if (feedback) {
+            feedback.hidden = false;
+            feedback.classList.add('is-error');
+            feedback.classList.remove('is-ok');
+            feedback.textContent = json.error || 'تعذر التحقق من بيانات الحجز.';
+          }
+          return;
+        }
+      } catch {
+        if (feedback) {
+          feedback.hidden = false;
+          feedback.classList.add('is-error');
+          feedback.classList.remove('is-ok');
+          feedback.textContent = 'تعذر الاتصال بالخادم للتحقق من الحجز.';
+        }
+        return;
+      }
+    }
+
     let grant = null;
     if (isBranchIncubator && window.HubClientIncubators?.grantFromBooking) {
       const allowed = incubatorOptionsForBranch(payload.branch).some((o) => String(o.id) === String(payload.incubator));
@@ -515,6 +649,7 @@
     if ((isIncubatorPlatform || isHqPlatform) && window.HubClientPlatforms?.grantFromBooking) {
       grant = window.HubClientPlatforms.grantFromBooking(payload);
       if (!grant?.ok) {
+        if (grant?.field) showFieldError(grant.field, grant.error);
         if (feedback) {
           feedback.hidden = false;
           feedback.classList.add('is-error');

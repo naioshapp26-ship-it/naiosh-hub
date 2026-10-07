@@ -19,6 +19,7 @@ const hubPoshaOps = require('./lib/hub-posha-ops');
 const hubPoshaOs = require('./lib/hub-posha-os');
 const productCategories = require('./lib/hub-product-categories');
 const productOrders = require('./lib/hub-product-orders');
+const platformBooking = require('./lib/hub-platform-booking');
 const adSubmissions = require('./lib/hub-ad-submissions');
 const productSubmissions = require('./lib/hub-product-submissions');
 const systemRentals = require('./lib/hub-system-rentals');
@@ -1381,6 +1382,51 @@ async function handleHubApi(req, res, pathname) {
     };
     writePlatformGrantsFile(state);
     sendJson(res, 200, { ok: true, count: state.grants.length });
+    return true;
+  }
+
+  const platformBookingsPath = path.join(ROOT, 'data', 'platform-bookings.json');
+  const ensurePlatformBookingsFile = () => {
+    const dir = path.dirname(platformBookingsPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(platformBookingsPath)) {
+      fs.writeFileSync(platformBookingsPath, JSON.stringify({ version: 1, bookings: [] }, null, 2), 'utf8');
+    }
+  };
+  const readPlatformBookingsFile = () => {
+    ensurePlatformBookingsFile();
+    try {
+      return JSON.parse(fs.readFileSync(platformBookingsPath, 'utf8'));
+    } catch {
+      return { version: 1, bookings: [] };
+    }
+  };
+  const writePlatformBookingsFile = (state) => {
+    ensurePlatformBookingsFile();
+    fs.writeFileSync(
+      platformBookingsPath,
+      JSON.stringify({ ...state, updatedAt: new Date().toISOString() }, null, 2),
+      'utf8'
+    );
+  };
+
+  if (pathname === '/api/hub/platform-bookings' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { booking } = platformBooking.validateAndNormalize(body || {});
+      const state = readPlatformBookingsFile();
+      state.bookings = Array.isArray(state.bookings) ? state.bookings : [];
+      state.bookings.unshift(booking);
+      state.bookings = state.bookings.slice(0, 500);
+      writePlatformBookingsFile(state);
+      sendJson(res, 201, { ok: true, booking });
+    } catch (err) {
+      sendJson(res, err.status || 400, {
+        ok: false,
+        error: err.message || 'تعذر تسجيل حجز المنصة.',
+        field: err.field,
+      });
+    }
     return true;
   }
 
