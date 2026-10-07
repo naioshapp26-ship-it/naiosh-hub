@@ -9,6 +9,11 @@ const DEMO_USERS = {
     name: 'المهندسة مليكة',
     role: 'chief_engineer',
   },
+  'viewer@naiosh.com': {
+    password: 'Hub@360',
+    name: 'موظف عرض العملاء',
+    role: 'admin',
+  },
   'client@naiosh.com': {
     password: 'Hub@360',
     name: 'أحمد العميل',

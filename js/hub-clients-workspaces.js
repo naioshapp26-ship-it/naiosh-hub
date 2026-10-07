@@ -20,6 +20,116 @@
     editId: null,
     kpiFocus: '',
     detailTab: 'overview',
+    permissions: null,
+    permissionsLoaded: false,
+    saving: false,
+    idemKey: null,
+    loadError: '',
+  };
+
+  const authHeaders = () => {
+    const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken') || '';
+    const userRaw = localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser');
+    let role = '';
+    try {
+      role = userRaw ? JSON.parse(userRaw).role || '' : '';
+    } catch {
+      role = '';
+    }
+    const h = { Accept: 'application/json', 'Content-Type': 'application/json' };
+    if (token) h.Authorization = `Bearer ${token}`;
+    if (role) h['X-Hub-User-Role'] = role;
+    return h;
+  };
+
+  const ensurePermissions = (user) => {
+    if (clUi.permissionsLoaded && Array.isArray(clUi.permissions)) return Promise.resolve(clUi.permissions);
+    return fetch('/api/auth/me', { headers: authHeaders(), cache: 'no-store' })
+      .then((r) => r.json().catch(() => ({})))
+      .then((data) => {
+        if (data?.ok && Array.isArray(data.permissions)) {
+          clUi.permissions = data.permissions;
+        } else {
+          // Fallback: chief_engineer / admin operational create (pre-session hydrate)
+          const role = String(user?.role || '').toLowerCase();
+          clUi.permissions =
+            role === 'supreme_leader' || role === 'super_admin'
+              ? ['clients.create', 'clients.view', 'clients.edit', 'permissions.manage']
+              : role === 'chief_engineer' || role === 'admin'
+                ? ['clients.create', 'clients.view', 'clients.edit']
+                : [];
+        }
+        clUi.permissionsLoaded = true;
+        return clUi.permissions;
+      })
+      .catch(() => {
+        clUi.permissions = [];
+        clUi.permissionsLoaded = true;
+        return clUi.permissions;
+      });
+  };
+
+  const canCreateClient = (user) => {
+    if (Array.isArray(clUi.permissions)) return clUi.permissions.includes('clients.create');
+    const role = String(user?.role || '').toLowerCase();
+    return ['supreme_leader', 'super_admin', 'chief_engineer', 'admin'].includes(role);
+  };
+
+  const syncClientsFromApi = () => {
+    return fetch('/api/admin/clients', { headers: authHeaders(), cache: 'no-store' })
+      .then((r) => r.json().catch(() => ({})))
+      .then((data) => {
+        if (!data?.ok || !Array.isArray(data.clients)) return;
+        const bag = store().clientsBag?.();
+        if (!bag) return;
+        if (!Array.isArray(bag.clients)) bag.clients = [];
+        data.clients.forEach((apiRow) => {
+          const email = String(apiRow.email || '').toLowerCase();
+          if (!email) return;
+          let row = bag.clients.find((c) => String(c.email || '').toLowerCase() === email);
+          if (!row) {
+            row = {
+              id: `cli-api-${apiRow.clientId || email}`,
+              clientId: apiRow.clientId || '',
+              name: apiRow.name || email,
+              email,
+              status: apiRow.status || 'pending',
+              company: apiRow.company || '',
+              country: apiRow.country || '',
+              phone: apiRow.phone || '',
+              accountLevel: apiRow.accountLevel || 'standard',
+              systems: [],
+              orders: [],
+              subscriptions: [],
+              invoices: [],
+              wallet: { paid: 0, free: 0, total: Number(apiRow.walletTotal) || 0, ledger: [] },
+              tickets: [],
+              internalNotes: [],
+              lastLoginAt: apiRow.lastLoginAt || '',
+              source: apiRow.source || 'API',
+              createdAt: apiRow.createdAt || '',
+              updatedAt: apiRow.createdAt || '',
+              createdByEmployeeId: apiRow.createdByEmployeeId || '',
+              createdByEmail: apiRow.createdByEmail || '',
+              systemsCount: apiRow.systemsCount || 0,
+              openOrders: apiRow.openOrders || 0,
+              walletTotal: apiRow.walletTotal || 0,
+            };
+            bag.clients.unshift(row);
+          } else {
+            row.clientId = apiRow.clientId || row.clientId;
+            row.name = apiRow.name || row.name;
+            row.status = apiRow.status || row.status;
+            row.createdByEmployeeId = apiRow.createdByEmployeeId || row.createdByEmployeeId || '';
+            row.createdByEmail = apiRow.createdByEmail || row.createdByEmail || '';
+            if (apiRow.company) row.company = apiRow.company;
+            if (apiRow.country) row.country = apiRow.country;
+            if (apiRow.phone) row.phone = apiRow.phone;
+          }
+        });
+        store().save?.();
+      })
+      .catch(() => null);
   };
   const CL_TABS = [
     { id: 'list', label: 'العملاء', icon: 'fa-users' },
@@ -44,20 +154,23 @@
 
   const clientForm = (item = {}) => {
     const K = Kit();
+    const creating = !clUi.editId;
     return `
       <div class="grid-2">
-        <div class="field"><label>الاسم *</label><input id="cl-name" value="${K.esc(item.name || '')}" /></div>
-        <div class="field"><label>البريد *</label><input id="cl-email" type="email" value="${K.esc(item.email || '')}" /></div>
-        <div class="field"><label>رقم العميل</label><input id="cl-clientId" value="${K.esc(item.clientId || '')}" /></div>
+        <div class="field"><label>الاسم *</label><input id="cl-name" value="${K.esc(item.name || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
+        <div class="field"><label>البريد *</label><input id="cl-email" type="email" value="${K.esc(item.email || '')}" ${clUi.saving || !!clUi.editId ? 'disabled' : ''} /></div>
+        <div class="field"><label>الهاتف ${creating ? '' : ''}</label><input id="cl-phone" value="${K.esc(item.phone || '')}" placeholder="05xxxxxxxx" ${clUi.saving ? 'disabled' : ''} /></div>
+        <div class="field"><label>رقم العميل</label><input id="cl-clientId" value="${K.esc(item.clientId || '')}" placeholder="يُنشأ تلقائيًا" ${creating ? 'disabled' : ''} /></div>
         <div class="field"><label>الحالة</label>
-          <select id="cl-status">${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${item.status === s ? 'selected' : ''}>${K.esc(window.HubI18n?.status?.(s) || s)}</option>`).join('')}</select>
+          <select id="cl-status" ${clUi.saving ? 'disabled' : ''}>${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${item.status === s ? 'selected' : ''}>${K.esc(window.HubI18n?.status?.(s) || s)}</option>`).join('')}</select>
         </div>
-        <div class="field"><label>الشركة</label><input id="cl-company" value="${K.esc(item.company || '')}" /></div>
-        <div class="field"><label>الدولة</label><input id="cl-country" value="${K.esc(item.country || '')}" /></div>
+        <div class="field"><label>الشركة</label><input id="cl-company" value="${K.esc(item.company || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
+        <div class="field"><label>الدولة</label><input id="cl-country" value="${K.esc(item.country || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
         <div class="field"><label>المصدر</label>
-          <select id="cl-source">${['إدخال يدوي', 'System Generated', 'Integration', 'POSHA', 'Register'].map((s) => `<option value="${K.esc(s)}" ${(item.source || 'إدخال يدوي') === s ? 'selected' : ''}>${K.esc(window.HubI18n?.label?.(s) || s)}</option>`).join('')}</select>
+          <select id="cl-source" ${clUi.saving ? 'disabled' : ''}>${['إدخال يدوي', 'System Generated', 'Integration', 'POSHA', 'Register'].map((s) => `<option value="${K.esc(s)}" ${(item.source || 'إدخال يدوي') === s ? 'selected' : ''}>${K.esc(window.HubI18n?.label?.(s) || s)}</option>`).join('')}</select>
         </div>
-      </div>`;
+      </div>
+      ${item.createdByEmployeeId ? `<p class="muted" style="margin-top:8px">أُنشئ بواسطة: <strong>${K.esc(item.createdByEmployeeId)}</strong></p>` : ''}`;
   };
 
   const renderClientDrawer = (c) => {
@@ -106,7 +219,14 @@
   };
 
   const renderClients = (ctx = {}) => {
+    const { user } = ctx;
     const K = Kit();
+    if (!clUi.permissionsLoaded) {
+      ensurePermissions(user).then(() => {
+        syncClientsFromApi().finally(() => window.hubRerender?.());
+      });
+    }
+    const allowCreate = canCreateClient(user);
     const bag = store().clientsBag?.() || store().get()?.clientsMgmt || { clients: [], auditLog: [], settings: {} };
     const filtered = filterClients(bag.clients || []);
     const pg = K.paginate(filtered, clUi.page, clUi.pageSize);
@@ -124,6 +244,13 @@
       { key: 'needs', label: 'يتطلب إجراء', value: needs.length, tab: 'list' },
     ];
 
+    const createBtn = allowCreate
+      ? `<button type="button" class="btn btn-primary" data-action="cl-create"><i class="fas fa-plus"></i> إضافة عميل جديد</button>`
+      : `<button type="button" class="btn btn-ghost" disabled title="ليست لديك صلاحية إنشاء عميل">إضافة عميل جديد</button>`;
+    const createBtnSm = allowCreate
+      ? `<button type="button" class="btn btn-primary btn-sm" data-action="cl-create"><i class="fas fa-plus"></i> إضافة عميل جديد</button>`
+      : `<button type="button" class="btn btn-ghost btn-sm" disabled title="ليست لديك صلاحية إنشاء عميل">إضافة عميل جديد</button>`;
+
     let body = '';
     if (clUi.tab === 'list') {
       body = `${K.renderNeeds('cl', needs)}
@@ -135,10 +262,10 @@
                 ${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${clUi.filters.status === s ? 'selected' : ''}>${window.HubI18n?.status?.(s) || s}</option>`).join('')}
               </select>
             </div>
-            <button type="button" class="btn btn-primary" data-action="cl-create"><i class="fas fa-plus"></i> عميل جديد</button>
+            ${createBtn}
           </div>
           <div class="table-wrap"><table class="data">
-            <thead><tr><th>العميل</th><th>الحالة</th><th>أنظمة</th><th>طلبات</th><th>المحفظة</th><th>المصدر</th><th></th></tr></thead>
+            <thead><tr><th>العميل</th><th>الحالة</th><th>أنظمة</th><th>طلبات</th><th>المحفظة</th><th>المصدر</th><th>بواسطة</th><th></th></tr></thead>
             <tbody>${
               pg.rows.length
                 ? pg.rows
@@ -150,6 +277,7 @@
                         <td>${c.openOrders ?? (c.orders || []).length}</td>
                         <td>${Number(c.walletTotal ?? c.wallet?.total ?? 0).toLocaleString('en-US')}</td>
                         <td>${K.sourceBadge(c.source)}</td>
+                        <td><small>${K.esc(c.createdByEmployeeId || '—')}</small></td>
                         <td class="toolbar" style="margin:0;gap:4px">
                           <button type="button" class="btn btn-sm btn-primary" data-action="cl-open" data-id="${c.id}">360</button>
                           <button type="button" class="btn btn-sm btn-ghost" data-action="cl-edit" data-id="${c.id}">تعديل</button>
@@ -157,7 +285,7 @@
                       </tr>`
                     )
                     .join('')
-                : '<tr><td colspan="7" class="empty">لا عملاء — أنشئ عميلاً جديدًا</td></tr>'
+                : '<tr><td colspan="8" class="empty">لا عملاء — أنشئ عميلاً جديدًا</td></tr>'
             }</tbody>
           </table></div>
           ${K.renderPager('cl', pg.page, pg.pages, pg.total)}
@@ -165,15 +293,15 @@
     } else if (clUi.tab === 'audit') {
       body = `<article class="card">${K.renderAuditTable(bag.auditLog || [])}</article>`;
     } else {
-      body = `<article class="card"><p>إدارة العملاء تعمل محليًا في هوب مع مصدر وتدقيق. يمكن مزامنة API لاحقًا دون كسر الواجهة.</p></article>`;
+      body = `<article class="card"><p>إدارة العملاء مربوطة بواجهة الإدارة والصلاحية <code>clients.create</code> لإنشاء عملاء حقيقيين في الخادم مع سجل تدقيق.</p></article>`;
     }
 
     const modal = clUi.modal
       ? K.renderModal('cl', {
-          title: clUi.editId ? 'تعديل عميل' : 'عميل جديد',
+          title: clUi.editId ? 'تعديل عميل' : 'إضافة عميل جديد',
           bodyHtml: clientForm(clUi.modal.data || {}),
-          footerHtml: `<button type="button" class="btn btn-ghost" data-action="cl-modal-close">إلغاء</button>
-            <button type="button" class="btn btn-primary" data-action="cl-save">حفظ</button>`,
+          footerHtml: `<button type="button" class="btn btn-ghost" data-action="cl-modal-close" ${clUi.saving ? 'disabled' : ''}>إلغاء</button>
+            <button type="button" class="btn btn-primary" data-action="cl-save" ${clUi.saving ? 'disabled' : ''}>${clUi.saving ? 'جاري الحفظ…' : 'إنشاء / حفظ'}</button>`,
         })
       : '';
     const drawer = clUi.drawer
@@ -186,7 +314,7 @@
         title: 'إدارة العملاء',
         subtitle: 'العملاء 360 · أنظمة · طلبات · محفظة · ملاحظات داخلية · تدقيق',
         icon: 'fa-user-tie',
-        actionsHtml: `<button type="button" class="btn btn-primary btn-sm" data-action="cl-create"><i class="fas fa-plus"></i> جديد</button>
+        actionsHtml: `${createBtnSm}
           <button type="button" class="btn btn-ghost btn-sm" data-action="cl-help-open"><i class="fas fa-circle-question"></i></button>`,
       })}
       ${K.renderKpis('cl', kpis, clUi.kpiFocus)}
@@ -196,7 +324,7 @@
         title: 'دليل إدارة العملاء',
         dismissed: !!bag.settings?.helpDismissed,
         open: clUi.helpOpen,
-        bodyHtml: `<p>أنشئ عميلاً، افتح ملف 360، عيّن نظامًا، وأضف ملاحظات داخلية. كل إجراء يُسجَّل في سجل التدقيق مع المصدر.</p>`,
+        bodyHtml: `<p>أنشئ عميلاً بصلاحية clients.create، افتح ملف 360، وعيّن نظامًا. كل إنشاء يُسجَّل في التدقيق مع رقم الموظف المنشئ.</p>`,
       })}
       ${modal}${drawer}
     </div>`;
@@ -205,7 +333,7 @@
   const handleClients = (action, btn, ctx = {}) => {
     const { toast, user } = ctx;
     const K = Kit();
-    const actor = K.actorName(user);
+    const actor = user?.employeeNo || K.actorName(user);
     if (action === 'cl-tab') {
       clUi.tab = btn.dataset.tab || 'list';
       return true;
@@ -221,7 +349,13 @@
       return true;
     }
     if (action === 'cl-create') {
+      if (!canCreateClient(user)) {
+        toast?.('ليست لديك صلاحية إنشاء عميل جديد.');
+        return true;
+      }
       clUi.editId = null;
+      clUi.saving = false;
+      clUi.idemKey = `cl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
       clUi.modal = { data: { status: 'pending', source: 'إدخال يدوي' } };
       return true;
     }
@@ -229,6 +363,7 @@
       const row = (store().clientsBag()?.clients || []).find((x) => x.id === btn.dataset.id);
       if (!row) return true;
       clUi.editId = row.id;
+      clUi.saving = false;
       clUi.modal = { data: { ...row } };
       return true;
     }
@@ -246,15 +381,21 @@
       return true;
     }
     if (action === 'cl-modal-close' || action === 'cl-drawer-close') {
-      if (action === 'cl-modal-close') clUi.modal = null;
+      if (clUi.saving) return true;
+      if (action === 'cl-modal-close') {
+        clUi.modal = null;
+        clUi.idemKey = null;
+      }
       if (action === 'cl-drawer-close') clUi.drawer = null;
       return true;
     }
     if (action === 'cl-save') {
+      if (clUi.saving) return true;
       const payload = {
         id: clUi.editId || undefined,
         name: K.qVal('cl-name'),
         email: K.qVal('cl-email'),
+        phone: K.qVal('cl-phone'),
         clientId: K.qVal('cl-clientId'),
         status: K.qVal('cl-status'),
         company: K.qVal('cl-company'),
@@ -265,10 +406,76 @@
         toast?.('الاسم والبريد مطلوبان');
         return true;
       }
-      store().upsertClient?.(payload, actor);
-      clUi.modal = null;
-      clUi.editId = null;
-      toast?.('تم حفظ العميل');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+        toast?.('صيغة البريد الإلكتروني غير صحيحة.');
+        return true;
+      }
+
+      // Edit stays local (profile patch); create must go through Backend + clients.create
+      if (clUi.editId) {
+        store().upsertClient?.(payload, actor);
+        clUi.modal = null;
+        clUi.editId = null;
+        toast?.('تم حفظ العميل');
+        return true;
+      }
+
+      if (!canCreateClient(user)) {
+        toast?.('ليست لديك صلاحية إنشاء عميل جديد.');
+        return true;
+      }
+
+      clUi.saving = true;
+      clUi.modal = { data: { ...payload } };
+      const idem = clUi.idemKey || `cl-${Date.now().toString(36)}`;
+      (async () => {
+        try {
+          const res = await fetch('/api/admin/clients', {
+            method: 'POST',
+            headers: { ...authHeaders(), 'X-Idempotency-Key': idem },
+            body: JSON.stringify({
+              name: payload.name,
+              email: payload.email,
+              phone: payload.phone,
+              status: payload.status,
+              company: payload.company,
+              country: payload.country,
+              source: payload.source,
+              idempotencyKey: idem,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || 'تعذر إنشاء العميل');
+          }
+          const c = data.client || {};
+          store().upsertClient?.(
+            {
+              name: c.name || payload.name,
+              email: c.email || payload.email,
+              clientId: c.clientId,
+              status: c.status || payload.status,
+              company: c.company || payload.company,
+              country: c.country || payload.country,
+              phone: c.phone || payload.phone,
+              source: payload.source || 'إدخال يدوي',
+              createdByEmployeeId: c.createdByEmployeeId || data.createdByEmployeeId || user?.employeeNo || '',
+              createdByEmail: c.createdByEmail || user?.email || '',
+            },
+            actor
+          );
+          clUi.modal = null;
+          clUi.editId = null;
+          clUi.idemKey = null;
+          toast?.(`تم إنشاء العميل بنجاح. ${c.clientId || ''}`.trim());
+          await syncClientsFromApi();
+        } catch (err) {
+          toast?.(err.message || 'تعذر إنشاء العميل');
+        } finally {
+          clUi.saving = false;
+          window.hubRerender?.();
+        }
+      })();
       return true;
     }
     if (action === 'cl-status') {

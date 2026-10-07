@@ -48,7 +48,8 @@
     return `<span class="badge ${cls}">${esc(shown)}</span>`;
   };
 
-  const actorName = (user) => user?.name || user?.email || user?.displayName || 'مشغّل هوب';
+  const actorName = (user) =>
+    user?.employeeNo || user?.name || user?.email || user?.displayName || 'مشغّل هوب';
 
   const canAdmin = (user) => {
     const role = String(user?.role || '').toLowerCase();
@@ -161,8 +162,9 @@
     </div>`;
 
   const renderModal = (prefix, { title, bodyHtml, footerHtml }) => `
-    <div class="hub-ws-modal-overlay" data-action="${esc(prefix)}-modal-close" style="position:fixed;inset:0;background:rgba(10,10,10,.45);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px">
-      <article class="card hub-ws-modal" style="width:min(640px,96vw);max-height:90vh;overflow:auto;margin:0" onclick="event.stopPropagation()">
+    <div class="hub-ws-modal-overlay" data-modal-prefix="${esc(prefix)}" style="position:fixed;inset:0;background:rgba(10,10,10,.45);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px">
+      <button type="button" class="hub-ws-modal-backdrop" data-action="${esc(prefix)}-modal-close" aria-label="إغلاق" style="position:absolute;inset:0;border:0;padding:0;margin:0;background:transparent;cursor:pointer"></button>
+      <article class="card hub-ws-modal" role="dialog" aria-modal="true" style="position:relative;z-index:1;width:min(640px,96vw);max-height:90vh;overflow:auto;margin:0">
         <h3><span class="title-left">${esc(title)}</span>
           <button type="button" class="btn btn-sm btn-ghost" data-action="${esc(prefix)}-modal-close"><i class="fas fa-xmark"></i></button>
         </h3>

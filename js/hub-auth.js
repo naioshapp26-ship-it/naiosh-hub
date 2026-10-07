@@ -15,6 +15,7 @@
   const DEMO_STAFF = {
     'leader@naiosh.com': { role: 'supreme_leader', employeeNo: 'EMP-0001', naioshId: 'NAI-LEADER-001' },
     'malika@naiosh.com': { role: 'chief_engineer', employeeNo: 'EMP-0003', naioshId: 'NAI-MALIKA-001' },
+    'viewer@naiosh.com': { role: 'admin', employeeNo: 'EMP-0099', naioshId: 'NAI-VIEWER-099' },
   };
 
   const storageOf = () => {

@@ -6145,7 +6145,7 @@ const HubStore = (() => {
     let row = payload.id ? bag.clients.find((x) => x.id === payload.id) : null;
     const stamp = nowIso();
     if (row) {
-      ['name', 'email', 'clientId', 'status', 'company', 'country', 'accountLevel', 'source'].forEach((k) => {
+      ['name', 'email', 'clientId', 'status', 'company', 'country', 'accountLevel', 'source', 'phone', 'createdByEmployeeId', 'createdByEmail'].forEach((k) => {
         if (payload[k] !== undefined) row[k] = payload[k];
       });
       if (payload.systems) row.systems = payload.systems;
@@ -6168,6 +6168,7 @@ const HubStore = (() => {
         status: payload.status || 'pending',
         company: payload.company || '',
         country: payload.country || '',
+        phone: payload.phone || '',
         accountLevel: payload.accountLevel || 'standard',
         systems: payload.systems || [],
         orders: payload.orders || [],
@@ -6178,6 +6179,8 @@ const HubStore = (() => {
         internalNotes: payload.internalNotes || [],
         lastLoginAt: payload.lastLoginAt || '',
         source: payload.source || 'إدخال يدوي',
+        createdByEmployeeId: payload.createdByEmployeeId || (String(actor || '').startsWith('EMP-') ? actor : ''),
+        createdByEmail: payload.createdByEmail || '',
         createdAt: stamp,
         updatedAt: stamp,
       });
@@ -6185,7 +6188,7 @@ const HubStore = (() => {
       pushDomainAudit(bag, {
         action: 'create',
         detail: `عميل جديد: ${row.name}`,
-        by: actor,
+        by: row.createdByEmployeeId || actor,
         source: row.source,
         entityId: row.id,
       });
