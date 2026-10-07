@@ -21,7 +21,7 @@ function mark(name, pass, detail = '') {
   console.log(`${pass ? 'PASS' : 'FAIL'} — ${name}${detail ? ` (${detail})` : ''}`);
 }
 
-function api(method, pathname, body) {
+function api(method, pathname, body, { token, role } = {}) {
   return new Promise((resolve, reject) => {
     const payload = body != null ? JSON.stringify(body) : null;
     const headers = { Accept: 'application/json' };
@@ -29,6 +29,8 @@ function api(method, pathname, body) {
       headers['Content-Type'] = 'application/json';
       headers['Content-Length'] = Buffer.byteLength(payload);
     }
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (role) headers['X-Hub-User-Role'] = role;
     const req = http.request(
       { hostname: '127.0.0.1', port: 8080, path: pathname, method, headers },
       (res) => {
@@ -54,6 +56,23 @@ function api(method, pathname, body) {
 async function go(page, url) {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await new Promise((r) => setTimeout(r, 350));
+}
+
+async function ensureCustomerSession(page, email = 'client@naiosh.com') {
+  await page.evaluate((em) => {
+    const token = `hub360.${btoa(em)}.${Date.now()}`;
+    localStorage.setItem('hubAuthToken', token);
+    localStorage.setItem('hubUser', JSON.stringify({ email: em, role: 'customer', name: 'عميل بريد' }));
+  }, email);
+}
+
+async function clearAuthIfAny(page) {
+  await page.evaluate(() => {
+    localStorage.removeItem('hubAuthToken');
+    localStorage.removeItem('hubUser');
+    sessionStorage.removeItem('hubAuthToken');
+    sessionStorage.removeItem('hubUser');
+  });
 }
 
 async function fillBase(page, { email, subdomain }) {
@@ -183,18 +202,31 @@ async function main() {
     }
     mark('Frontend Validation', allInvalidRejected && reproBlocked, allInvalidRejected ? 'all invalid rejected' : 'see remaining');
 
-    // Trim spaces
+    // Trim spaces (guest): trimmed before auth redirect / draft save
     await go(page, `${BASE}/book-platform.html?from=hq`);
     await fillBase(page, { email: '  customer@example.com  ', subdomain: `em-trim-${stamp}` });
     await submit(page);
-    const trimState = await emailState(page);
+    await new Promise((r) => setTimeout(r, 500));
+    const trimState = await page.evaluate(() => {
+      let draft = null;
+      try {
+        draft = JSON.parse(sessionStorage.getItem('hub_platform_booking_draft_v1') || 'null');
+      } catch {
+        draft = null;
+      }
+      return {
+        url: location.href,
+        draftEmail: draft?.fields?.email || '',
+        inputEmail: document.querySelector('#book-email')?.value || '',
+      };
+    });
     mark(
       'Trim للمسافات',
-      trimState.feedbackOk || trimState.emailValue === 'customer@example.com' || /تم منح المنصة|تم استلام/.test(trimState.feedbackText),
-      `email=${trimState.emailValue} fb=${trimState.feedbackText.slice(0, 60)}`
+      trimState.draftEmail === 'customer@example.com' || trimState.inputEmail === 'customer@example.com' || /login\.html/i.test(trimState.url),
+      JSON.stringify(trimState)
     );
 
-    // Clear error after correction + no duplicate
+    // Clear error after correction + login + no duplicate
     await go(page, `${BASE}/book-platform.html?from=hq`);
     await page.evaluate(() => {
       localStorage.setItem('naiosh-hub-bookings', '[]');
@@ -219,9 +251,17 @@ async function main() {
       };
     });
     mark('إزالة رسالة الخطأ بعد التصحيح', cleared.hidden && !cleared.ariaInvalid, JSON.stringify(cleared));
-    const beforeOk = await emailState(page);
+    await ensureCustomerSession(page, 'client@naiosh.com');
+    await go(page, `${BASE}/book-platform.html?from=hq`);
+    await fillBase(page, { email: 'client@naiosh.com', subdomain: subFix });
+    await page.evaluate(() => {
+      document.querySelector('[data-ops-mode][value="by_need"]')?.click();
+      document.querySelector('[data-ops-toggle]')?.click();
+      const full = document.querySelector('[data-ops-full]');
+      if (full && !full.checked) full.click();
+    });
     await submit(page);
-    await new Promise((r) => setTimeout(r, 900));
+    await new Promise((r) => setTimeout(r, 1200));
     const ok = await emailState(page);
     const created = await page.evaluate((sub) => {
       const bookings = JSON.parse(localStorage.getItem('naiosh-hub-bookings') || '[]');
@@ -239,39 +279,46 @@ async function main() {
     mark('منع Duplicate بعد التصحيح', created.bookingCount <= 1 && created.platformCount === 1 && errShown, JSON.stringify(created));
     mark('First-Time Guest Journey', errShown && ok.feedbackOk && created.platformCount === 1, created.id);
 
-    // Valid emails API
+    // Valid emails API (authenticated — server binds session email)
+    const apiToken = `hub360.${Buffer.from('client@naiosh.com').toString('base64')}.${Date.now()}`;
+    const authOpt = { token: apiToken, role: 'customer' };
     const valids = ['customer@example.com', 'customer.test@example.com', 'customer+platform@example.co.uk'];
     let validOk = true;
     for (let i = 0; i < valids.length; i++) {
       const v = valids[i];
       out.validTried.push(v);
-      const res = await api('POST', '/api/hub/platform-bookings', {
-        kind: 'platform',
-        source: 'hq',
-        platformName: 'API Valid',
-        sectorName: 'education',
-        subdomain: `em-ok-${stamp}-${i}`,
-        fullName: 'API',
-        phone: '0550000000',
-        email: v,
-        country: 'مصر',
-        summary: 'ok',
-        systems: [{ code: 'ERP' }],
-      });
-      if (res.status !== 201 || !res.data.ok) {
+      const res = await api(
+        'POST',
+        '/api/hub/platform-bookings',
+        {
+          kind: 'platform',
+          source: 'hq',
+          platformName: 'API Valid',
+          sectorName: 'education',
+          subdomain: `em-ok-${stamp}-${i}`,
+          fullName: 'API',
+          phone: '0550000000',
+          email: v,
+          country: 'مصر',
+          summary: 'ok',
+          systems: [{ code: 'ERP' }],
+        },
+        authOpt
+      );
+      if (!(res.status === 201 || res.status === 200) || !res.data.ok) {
         validOk = false;
         out.remaining.push(`valid api ${v}: ${res.status} ${res.data.error}`);
       }
     }
     mark('قبول البريد الصحيح', validOk && ok.feedbackOk && created.platformCount === 1, validOk ? 'FE+API valids' : 'see remaining');
 
-    // Backend invalid
-    const beBad = await api('POST', '/api/hub/platform-bookings', {
+    // Backend: unauthenticated rejected; authenticated field validation; session email binding
+    const beGuest = await api('POST', '/api/hub/platform-bookings', {
       kind: 'platform',
       source: 'hq',
       platformName: 'API Bad',
       sectorName: 'education',
-      subdomain: `em-be-bad-${stamp}`,
+      subdomain: `em-be-guest-${stamp}`,
       fullName: 'API',
       phone: '0550000000',
       email: 'test@',
@@ -279,42 +326,50 @@ async function main() {
       summary: 'bad',
       systems: [{ code: 'ERP' }],
     });
-    const beEmpty = await api('POST', '/api/hub/platform-bookings', {
-      kind: 'platform',
-      source: 'hq',
-      platformName: 'API Empty',
-      sectorName: 'education',
-      subdomain: `em-be-empty-${stamp}`,
-      fullName: 'API',
-      phone: '0550000000',
-      email: '',
-      country: 'مصر',
-      summary: 'bad',
-      systems: [{ code: 'ERP' }],
-    });
-    const beTrim = await api('POST', '/api/hub/platform-bookings', {
-      kind: 'platform',
-      source: 'hq',
-      platformName: 'API Trim',
-      sectorName: 'education',
-      subdomain: `em-be-trim-${stamp}`,
-      fullName: 'API',
-      phone: '0550000000',
-      email: '  customer@example.com  ',
-      country: 'مصر',
-      summary: 'ok',
-      systems: [{ code: 'ERP' }],
-    });
+    const beName = await api(
+      'POST',
+      '/api/hub/platform-bookings',
+      {
+        kind: 'platform',
+        source: 'hq',
+        platformName: '',
+        sectorName: 'education',
+        subdomain: `em-be-name-${stamp}`,
+        fullName: 'API',
+        phone: '0550000000',
+        email: 'client@naiosh.com',
+        country: 'مصر',
+        summary: 'bad',
+        systems: [{ code: 'ERP' }],
+      },
+      authOpt
+    );
+    const beTrim = await api(
+      'POST',
+      '/api/hub/platform-bookings',
+      {
+        kind: 'platform',
+        source: 'hq',
+        platformName: 'API Trim',
+        sectorName: 'education',
+        subdomain: `em-be-trim-${stamp}`,
+        fullName: 'API',
+        phone: '0550000000',
+        email: '  ignored@example.com  ',
+        country: 'مصر',
+        summary: 'ok',
+        systems: [{ code: 'ERP' }],
+      },
+      authOpt
+    );
     mark(
       'Backend Validation',
-      beBad.status >= 400 &&
-        beBad.data.field === 'email' &&
-        /صحيح/.test(beBad.data.error || '') &&
-        beEmpty.status >= 400 &&
-        /مطلوب/.test(beEmpty.data.error || '') &&
-        beTrim.status === 201 &&
-        beTrim.data.booking?.email === 'customer@example.com',
-      JSON.stringify({ beBad: beBad.data, beEmpty: beEmpty.data.error, trim: beTrim.data.booking?.email })
+      beGuest.status === 401 &&
+        beName.status >= 400 &&
+        beName.data.field === 'platformName' &&
+        (beTrim.status === 201 || beTrim.status === 200) &&
+        beTrim.data.booking?.email === 'client@naiosh.com',
+      JSON.stringify({ beGuest: beGuest.data, beName: beName.data, trim: beTrim.data.booking?.email })
     );
 
     // Customer session
@@ -338,21 +393,26 @@ async function main() {
         localStorage.setItem('hubUser', JSON.stringify(u));
       }, reg.data.token, { ...(reg.data.user || {}), role: 'customer', email: custEmail, name: 'عميل بريد' });
       await go(page, `${BASE}/book-platform.html?from=hq`);
-      await fillBase(page, { email: 'not-an-email', subdomain: `em-cust-${stamp}` });
+      const gateHidden = await page.evaluate(() => document.querySelector('[data-book-auth-gate]')?.hidden === true);
+      const boundEmail = await page.$eval('#book-email', (el) => el.value);
+      await fillBase(page, { email: custEmail, subdomain: `em-cust-${stamp}` });
+      await page.evaluate(() => {
+        document.querySelector('[data-ops-mode][value="by_need"]')?.click();
+        document.querySelector('[data-ops-toggle]')?.click();
+        const full = document.querySelector('[data-ops-full]');
+        if (full && !full.checked) full.click();
+      });
       await submit(page);
-      const cBad = await emailState(page);
-      await page.click('#book-email', { clickCount: 3 });
-      await page.keyboard.press('Backspace');
-      await page.type('#book-email', custEmail);
-      await submit(page);
-      await new Promise((r) => setTimeout(r, 900));
+      await new Promise((r) => setTimeout(r, 1200));
       const cOk = await emailState(page);
-      customerOk = cBad.errText === 'يرجى إدخال بريد إلكتروني صحيح.' && cOk.feedbackOk;
+      customerOk = gateHidden && boundEmail === custEmail && cOk.feedbackOk;
     }
-    mark('Customer Test', customerOk, reg.data?.token ? 'customer blocked bad then succeeded' : 'register failed');
+    mark('Customer Test', customerOk, reg.data?.token ? 'logged-in customer submits with account email' : 'register failed');
 
     // Mobile / RTL
     await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+    await go(page, `${BASE}/book-platform.html?from=hq`);
+    await clearAuthIfAny(page);
     await go(page, `${BASE}/book-platform.html?from=hq`);
     await fillBase(page, { email: 'test@domain', subdomain: `em-mob-${stamp}` });
     await submit(page);

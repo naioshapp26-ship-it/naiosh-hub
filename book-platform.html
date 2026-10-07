@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=20" />
   <link rel="stylesheet" href="css/hub-ops-catalog.css?v=1" />
-  <link rel="stylesheet" href="css/hub-booking.css?v=9" />
+  <link rel="stylesheet" href="css/hub-booking.css?v=10" />
 </head>
 <body class="homepage">
   <header class="top-nav">
@@ -82,6 +82,17 @@
         <p data-from-hq hidden>المنحة من المكتب الرئيسي مباشرة — بدون فروع ولا حاضنات — ثم تُربط بمنصتي مع الأنظمة حسب حاجة العمل.</p>
         <form class="hub-book-form" data-book-form novalidate>
           <input type="hidden" name="platform" value="" data-book-platform-hidden />
+
+          <aside class="hub-book-auth-gate" data-book-auth-gate hidden role="region" aria-label="شرط الحساب">
+            <p class="hub-book-auth-gate-text">
+              يتطلب إرسال طلب حجز المنصة حسابًا في نايوش هوب حتى تتمكن من متابعة الطلب وحالته.
+            </p>
+            <div class="hub-book-auth-gate-actions">
+              <a class="btn btn-primary" data-book-login href="login.html">تسجيل الدخول</a>
+              <a class="btn btn-secondary" data-book-register href="create-account.html">إنشاء حساب جديد</a>
+            </div>
+            <p class="hub-book-auth-gate-hint">يمكنك الاطلاع على النموذج الآن؛ سنحفظ مسودتك ونُعيدك لمتابعة حجز المنصة بعد الدخول.</p>
+          </aside>
 
           <p class="hub-req-legend" data-req-legend>الحقول المميزة بعلامة <span class="hub-req">*</span> مطلوبة.</p>
 
@@ -201,7 +212,7 @@
   <script src="js/hub-ops-picker.js?v=1"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=22"></script>
-  <script src="js/hub-booking.js?v=17"></script>
+  <script src="js/hub-booking.js?v=18"></script>
   <script src="js/hub-control-nav.js?v=5"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>

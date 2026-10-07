@@ -21,7 +21,7 @@ function mark(name, pass, detail = '') {
   console.log(`${pass ? 'PASS' : 'FAIL'} — ${name}${detail ? ` (${detail})` : ''}`);
 }
 
-function api(method, pathname, body) {
+function api(method, pathname, body, { token, role } = {}) {
   return new Promise((resolve, reject) => {
     const payload = body != null ? JSON.stringify(body) : null;
     const headers = { Accept: 'application/json' };
@@ -29,6 +29,8 @@ function api(method, pathname, body) {
       headers['Content-Type'] = 'application/json';
       headers['Content-Length'] = Buffer.byteLength(payload);
     }
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (role) headers['X-Hub-User-Role'] = role;
     const req = http.request(
       { hostname: '127.0.0.1', port: 8080, path: pathname, method, headers },
       (res) => {
@@ -54,6 +56,15 @@ function api(method, pathname, body) {
 async function go(page, url) {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await new Promise((r) => setTimeout(r, 350));
+}
+
+async function ensureCustomerSession(page, email = 'client@naiosh.com') {
+  await page.evaluate((em) => {
+    const token = `hub360.${btoa(em)}.${Date.now()}`;
+    localStorage.setItem('hubAuthToken', token);
+    localStorage.setItem('hubUser', JSON.stringify({ email: em, role: 'customer', name: 'عميل اختبار' }));
+    document.cookie = 'hub_session=' + encodeURIComponent(token) + '; Path=/; SameSite=Lax; Max-Age=2592000';
+  }, email);
 }
 
 async function fillValidExcept(page, blankField) {
@@ -127,12 +138,13 @@ async function main() {
     const page = await browser.newPage();
     page.on('pageerror', (e) => consoleErrors.push(String(e.message || e)));
 
-    // Fresh guest session
+    // Customer session (platform booking submit requires account — problem #8)
     await go(page, `${BASE}/index.html`);
     await page.evaluate(() => {
       localStorage.clear();
       sessionStorage.clear();
     });
+    await ensureCustomerSession(page);
     await go(page, `${BASE}/book-platform.html?from=hq`);
 
     const ui = await page.evaluate(() => {
@@ -191,6 +203,7 @@ async function main() {
     mark('تمييز Optional Fields', optOk, JSON.stringify(ui.optionals));
 
     // Empty submit
+    await ensureCustomerSession(page);
     await page.click('[data-book-form] button[type="submit"]');
     await new Promise((r) => setTimeout(r, 400));
     const emptyErr = await page.evaluate(() => {
@@ -212,13 +225,13 @@ async function main() {
     await page.screenshot({ path: path.join(ART, 'book-platform-required-empty.png') });
 
     // Per-field blanks
+    // email blank is enforced for guests; logged-in customers bind session email automatically
     const fields = [
       'platformName',
       'sectorName',
       'subdomain',
       'fullName',
       'phone',
-      'email',
       'country',
       'systems',
       'summary',
@@ -226,7 +239,20 @@ async function main() {
     let perFieldOk = true;
     for (const field of fields) {
       await go(page, `${BASE}/book-platform.html?from=hq`);
+      await ensureCustomerSession(page);
+      await go(page, `${BASE}/book-platform.html?from=hq`);
       await fillValidExcept(page, field);
+      if (field === 'systems') {
+        // Ensure ops picker has no selection
+        await page.evaluate(() => {
+          const mount = document.querySelector('[data-book-systems-list]');
+          if (mount?._opsPick) {
+            mount._opsPick.mode = '';
+            mount._opsPick.selected = {};
+            window.HubOpsPicker?.render?.(mount);
+          }
+        });
+      }
       await page.click('[data-book-form] button[type="submit"]');
       await new Promise((r) => setTimeout(r, 450));
       const err = await page.evaluate((f) => {
@@ -243,12 +269,17 @@ async function main() {
 
     // Optional empty + all required filled → success
     await go(page, `${BASE}/book-platform.html?from=hq`);
+    await ensureCustomerSession(page);
+    await go(page, `${BASE}/book-platform.html?from=hq`);
     await fillValidExcept(page, null);
-    await Promise.all([
-      page.waitForSelector('[data-book-feedback].is-ok, [data-book-feedback]:not([hidden])', { timeout: 15000 }).catch(() => {}),
-      page.click('[data-book-form] button[type="submit"]'),
-    ]);
-    await new Promise((r) => setTimeout(r, 800));
+    await page.evaluate(() => {
+      document.querySelector('[data-ops-mode][value="by_need"]')?.click();
+      document.querySelector('[data-ops-toggle]')?.click();
+      const full = document.querySelector('[data-ops-full]');
+      if (full && !full.checked) full.click();
+    });
+    await page.click('[data-book-form] button[type="submit"]');
+    await new Promise((r) => setTimeout(r, 1200));
     const okFeedback = await page.$eval('[data-book-feedback]', (el) => ({
       text: el.textContent,
       ok: el.classList.contains('is-ok'),
@@ -261,7 +292,9 @@ async function main() {
     );
     await page.screenshot({ path: path.join(ART, 'book-platform-required-success.png') });
 
-    // Backend API missing fields
+    // Backend API missing fields (authenticated customer)
+    const apiToken = `hub360.${Buffer.from('client@naiosh.com').toString('base64')}.${Date.now()}`;
+    const authOpt = { token: apiToken, role: 'customer' };
     const baseBody = {
       kind: 'platform',
       source: 'hq',
@@ -270,14 +303,24 @@ async function main() {
       subdomain: `api-${Date.now().toString(36)}`,
       fullName: 'API Guest',
       phone: '0550001111',
-      email: `api.guest.${Date.now().toString(36)}@naiosh-test.com`,
+      email: 'client@naiosh.com',
       country: 'مصر',
       summary: 'api test',
       systems: [{ code: 'ERP', label: 'ERP' }],
     };
-    const missingName = await api('POST', '/api/hub/platform-bookings', { ...baseBody, platformName: '' });
-    const missingSystems = await api('POST', '/api/hub/platform-bookings', { ...baseBody, systems: [] });
-    const okApi = await api('POST', '/api/hub/platform-bookings', baseBody);
+    const missingName = await api('POST', '/api/hub/platform-bookings', { ...baseBody, platformName: '' }, authOpt);
+    const missingSystems = await api(
+      'POST',
+      '/api/hub/platform-bookings',
+      { ...baseBody, systems: [], subdomain: `api-sys-${Date.now().toString(36)}` },
+      authOpt
+    );
+    const okApi = await api(
+      'POST',
+      '/api/hub/platform-bookings',
+      { ...baseBody, subdomain: `api-ok-${Date.now().toString(36)}` },
+      authOpt
+    );
     const beOk =
       missingName.status >= 400 &&
       /اسم المنصة/.test(missingName.data.error || '') &&
@@ -294,6 +337,8 @@ async function main() {
 
     // Mobile / RTL
     await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+    await go(page, `${BASE}/book-platform.html?from=hq`);
+    await ensureCustomerSession(page);
     await go(page, `${BASE}/book-platform.html?from=hq`);
     const mobile = await page.evaluate(() => {
       const dir = document.documentElement.getAttribute('dir');
