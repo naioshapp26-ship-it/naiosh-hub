@@ -121,12 +121,18 @@
     } catch (_) {}
   };
 
-  const endServerSession = () => {
+  const endServerSession = (tokenOverride = '') => {
     try {
+      const token = String(tokenOverride || getToken() || '');
+      const headers = { Accept: 'application/json', 'Content-Type': 'application/json' };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+        headers['X-Hub-Token'] = token;
+      }
       return fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        headers,
         keepalive: true,
       }).catch(() => null);
     } catch (_) {
@@ -207,14 +213,16 @@
   };
 
   const clearSession = () => {
+    const token = getToken();
+    // Revoke on server first (Bearer), then drop local auth keys only.
+    endServerSession(token);
     clearLocalAuthKeys();
-    endServerSession();
   };
 
-  /** Awaitable logout — clears HttpOnly hub_session via API, then auth keys only. */
+  /** Awaitable logout — revokes token server-side, clears HttpOnly cookie, auth keys only. */
   const clearSessionAsync = async () => {
-    clearLocalAuthKeys();
-    await endServerSession();
+    const token = getToken();
+    await endServerSession(token);
     clearLocalAuthKeys();
   };
 

@@ -1862,6 +1862,18 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname === '/api/auth/me' && req.method === 'OPTIONS') {
+    sendJson(res, 204, {});
+    return;
+  }
+
+  if (pathname === '/api/auth/me' && req.method === 'GET') {
+    const session = hubSession.resolveSession(req);
+    const view = hubSession.publicSessionView(session);
+    sendJson(res, session.ok ? 200 : session.status || 401, view);
+    return;
+  }
+
   if (pathname === '/api/auth/login' && req.method === 'OPTIONS') {
     sendJson(res, 204, {});
     return;
