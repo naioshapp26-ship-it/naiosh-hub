@@ -217,15 +217,22 @@ async function main() {
       fullName: 'عميل إعلان',
       username: `adcust${stamp}`.slice(0, 32),
       email: `ad.cust.${stamp}@naiosh-test.com`,
-      phone: '+966533334444',
+      phone: `+9665${String(Date.now()).slice(-8)}`,
       password: 'Test360',
       confirmPassword: 'Test360',
       termsAccepted: true,
     };
     const reg = await api('POST', '/api/auth/register', { body: cust });
     assert.ok(reg.data.ok || reg.data.success, JSON.stringify(reg.data));
-    const tokenC = reg.data.token;
-    const userC = reg.data.user;
+    let tokenC = reg.data.token;
+    let userC = reg.data.user;
+    if (!tokenC) {
+      const loginC = await api('POST', '/api/auth/login', { body: { email: cust.email, password: cust.password } });
+      assert.ok(loginC.data.ok || loginC.data.success || loginC.data.token, JSON.stringify(loginC.data));
+      tokenC = loginC.data.token;
+      userC = loginC.data.user || userC;
+    }
+    assert.ok(tokenC, 'customer login token missing after register');
 
     await page.evaluate(() => {
       localStorage.clear();

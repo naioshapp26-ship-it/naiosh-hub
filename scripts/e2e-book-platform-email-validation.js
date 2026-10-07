@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const http = require('http');
+const https = require('https');
 const path = require('path');
 const puppeteer = require('puppeteer-core');
 
@@ -331,12 +332,19 @@ async function main() {
       termsAccepted: true,
     });
     let customerOk = false;
-    if (reg.data?.token) {
+    let custToken = reg.data?.token || '';
+    let custUser = reg.data?.user || null;
+    if (!custToken && (reg.data?.ok || reg.data?.success || reg.status === 200 || reg.status === 201)) {
+      const loginC = await api('POST', '/api/auth/login', { email: custEmail, password: 'Test360!!' });
+      custToken = loginC.data?.token || '';
+      custUser = loginC.data?.user || custUser;
+    }
+    if (custToken) {
       await go(page, `${BASE}/book-platform.html?from=hq`);
       await page.evaluate((t, u) => {
         localStorage.setItem('hubAuthToken', t);
         localStorage.setItem('hubUser', JSON.stringify(u));
-      }, reg.data.token, { ...(reg.data.user || {}), role: 'customer', email: custEmail, name: 'عميل بريد' });
+      }, custToken, { ...(custUser || {}), role: 'customer', email: custEmail, name: 'عميل بريد' });
       await go(page, `${BASE}/book-platform.html?from=hq`);
       await fillBase(page, { email: 'not-an-email', subdomain: `em-cust-${stamp}` });
       await submit(page);
@@ -349,7 +357,7 @@ async function main() {
       const cOk = await emailState(page);
       customerOk = cBad.errText === 'يرجى إدخال بريد إلكتروني صحيح.' && cOk.feedbackOk;
     }
-    mark('Customer Test', customerOk, reg.data?.token ? 'customer blocked bad then succeeded' : 'register failed');
+    mark('Customer Test', customerOk, custToken ? 'customer blocked bad then succeeded' : 'register/login failed');
 
     // Mobile / RTL
     await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });

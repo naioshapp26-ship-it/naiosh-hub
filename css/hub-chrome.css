@@ -201,21 +201,23 @@ body.hub-guide-open .hub-guide-panel {
   .hub-back-button:not(.hub-back-button--inline) {
     top: 12px;
     right: 12px;
+    bottom: auto;
     min-width: 86px;
     padding: 6px 11px;
     font-size: 11px;
   }
 
+  /* Stay under sticky top-nav — never dock to bottom over form fields */
   body:has(.top-nav) .hub-back-button:not(.hub-back-button--inline) {
-    top: auto;
-    bottom: 16px;
+    top: 72px;
+    bottom: auto;
     right: 12px;
     left: auto;
   }
 
   body:has(.sidebar) .hub-back-button:not(.hub-back-button--inline) {
-    top: auto;
-    bottom: 16px;
+    top: 12px;
+    bottom: auto;
     right: 12px;
   }
 
@@ -236,11 +238,15 @@ body.hub-guide-open .hub-guide-panel {
     padding: 16px;
   }
 
-  /* Keep floating chrome clear of page content */
+  /* Keep floating chrome clear of page content / CTAs */
   body:has(.top-nav) main,
   body:has(.top-nav) .shop-page,
-  body:has(.top-nav) .market-page {
-    padding-bottom: 72px;
+  body:has(.top-nav) .market-page,
+  body:has(.top-nav) form,
+  body:has(.top-nav) [data-book-form],
+  body:has(.top-nav) .auth-card,
+  body:has(.top-nav) .hub-feature-hero {
+    padding-bottom: 88px;
   }
 }
 

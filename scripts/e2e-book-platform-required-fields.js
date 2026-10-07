@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const http = require('http');
+const https = require('https');
 const path = require('path');
 const puppeteer = require('puppeteer-core');
 
