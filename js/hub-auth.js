@@ -12,12 +12,6 @@
   const STAFF_ROLES = new Set(['supreme_leader', 'chief_engineer', 'admin', 'super_admin']);
   const CLIENT_ROLES = new Set(['customer', 'client', 'client_user', 'platform_owner']);
 
-  const DEMO_STAFF = {
-    'leader@naiosh.com': { role: 'supreme_leader', employeeNo: 'EMP-0001', naioshId: 'NAI-LEADER-001' },
-    'malika@naiosh.com': { role: 'chief_engineer', employeeNo: 'EMP-0003', naioshId: 'NAI-MALIKA-001' },
-    'viewer@naiosh.com': { role: 'admin', employeeNo: 'EMP-0099', naioshId: 'NAI-VIEWER-099' },
-  };
-
   const storageOf = () => {
     if (localStorage.getItem(TOKEN_KEY)) return localStorage;
     if (sessionStorage.getItem(TOKEN_KEY)) return sessionStorage;
@@ -154,7 +148,6 @@
     clearLocalAuthKeys();
     const role = String(user?.role || '').toLowerCase();
     const customerOnly = CLIENT_ROLES.has(role) && !STAFF_ROLES.has(role);
-    const emailKey = String(user?.email || '').toLowerCase();
     if (customerOnly) {
       user = { ...user };
       delete user.employeeNo;
@@ -164,26 +157,20 @@
       if (!user.customerId && user.clientId) user.customerId = user.clientId;
       if (!user.clientId && user.customerId) user.clientId = user.customerId;
     } else {
-      const demo = DEMO_STAFF[emailKey];
-      if (demo) {
-        user = {
-          ...user,
-          role: STAFF_ROLES.has(role) ? role : demo.role,
-          employeeNo: demo.employeeNo,
-          naioshId: demo.naioshId,
-          status: user.status || 'active',
-        };
-      } else {
-        try {
-          const id =
-            window.HubAccessGov?.findIdentity?.(user?.email) ||
-            window.HubAccessGov?.findIdentity?.(user?.naioshId) ||
-            null;
-          if (id?.employeeNo && id.userType === 'STAFF') {
-            user = { ...user, employeeNo: id.employeeNo, naioshId: id.naioshId || user.naioshId };
-          }
-        } catch (_) {}
-      }
+      // Staff identity comes from the server login response — never invent roles/IDs client-side.
+      try {
+        const id =
+          window.HubAccessGov?.findIdentity?.(user?.email) ||
+          window.HubAccessGov?.findIdentity?.(user?.naioshId) ||
+          null;
+        if (id?.employeeNo && id.userType === 'STAFF') {
+          user = {
+            ...user,
+            employeeNo: user.employeeNo || id.employeeNo,
+            naioshId: user.naioshId || id.naioshId || null,
+          };
+        }
+      } catch (_) {}
       // Staff must not carry customer portal IDs from a previous browser account
       if (user) {
         user = { ...user };

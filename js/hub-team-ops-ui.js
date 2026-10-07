@@ -200,6 +200,8 @@
       'overview',
       'operating',
       'roles-permissions',
+      'staff-admins',
+      'my-account',
       'notifications',
       'site-settings',
       'settings',
@@ -1750,11 +1752,14 @@
     const grants = (detail?.grants || []).filter((g) => String(g.status).toUpperCase() === 'ACTIVE');
     if (!grants.length) return null;
     if (grants.some((g) => g.roleCode === 'SUPER_ADMIN' || (g.permissions || []).includes('access_governance.manage'))) return null;
-    const panels = new Set(['overview']);
+    const panels = new Set(['overview', 'my-account']);
     grants.forEach((g) => {
       (PANEL_BY_SYSTEM[g.system] || PANEL_BY_SYSTEM.HUB).forEach((p) => panels.add(p));
       if ((g.permissions || []).includes('access_governance.manage') || (g.permissions || []).includes('roles.assign')) {
         panels.add('roles-permissions');
+      }
+      if ((g.permissions || []).includes('permissions.manage')) {
+        panels.add('staff-admins');
       }
     });
     return panels;
