@@ -347,6 +347,21 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  if (pathname === '/api/hub/apps' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const result = hubRuntime.registerApp(body || {});
+      sendJson(res, 201, { ok: true, app: result.app });
+    } catch (err) {
+      sendJson(res, err.status || 400, {
+        ok: false,
+        error: err.message || 'تعذر إضافة النظام.',
+        field: err.field,
+      });
+    }
+    return true;
+  }
+
   // —— منتجات الكتالوج + طلبات الشراء (Checkout) ——
   const productMatch = pathname.match(/^\/api\/hub\/products\/([^/]+)$/);
   if (productMatch && req.method === 'GET') {

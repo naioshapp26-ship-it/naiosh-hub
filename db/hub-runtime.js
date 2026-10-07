@@ -203,6 +203,82 @@ function getSynced(code) {
   return store.synced?.[String(code).toUpperCase()] || null;
 }
 
+/** Validate + register an app from «إضافة نظام» — required fields must match the guest form. */
+function registerApp(payload = {}) {
+  const nameAr = String(payload.nameAr || payload.name || '').trim();
+  const code = String(payload.code || '')
+    .trim()
+    .toUpperCase();
+  const companyName = String(payload.companyName || '').trim();
+  const companyAddress = String(payload.companyAddress || '').trim();
+  const party1Name = String(payload.party1Name || '').trim();
+  const party1Phone = String(payload.party1Phone || '').trim();
+  const party2Name = String(payload.party2Name || '').trim();
+  const party2Phone = String(payload.party2Phone || '').trim();
+  const branch = String(payload.branch || '').trim();
+  const incubator = String(payload.incubator || '').trim();
+  const platform = String(payload.platform || '').trim();
+  const office = String(payload.office || '').trim();
+
+  const fail = (error, field) => {
+    const err = new Error(error);
+    err.status = 400;
+    err.field = field;
+    throw err;
+  };
+
+  if (!nameAr) fail('اسم النظام مطلوب.', 'nameAr');
+  if (!code) fail('رمز النظام مطلوب.', 'code');
+  if (!/^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(code)) {
+    fail('رمز النظام غير صالح. استخدم أحرفًا إنجليزية وأرقامًا فقط.', 'code');
+  }
+  if (!companyName) fail('اسم الشركة مطلوب.', 'companyName');
+  if (!companyAddress) fail('عنوان الشركة مطلوب.', 'companyAddress');
+  if (!party1Name) fail('طرف أول مطلوب.', 'party1Name');
+  if (!party1Phone) fail('رقم جوال الطرف الأول مطلوب.', 'party1Phone');
+  if (!party2Name) fail('طرف ثاني مطلوب.', 'party2Name');
+  if (!party2Phone) fail('رقم جوال الطرف الثاني مطلوب.', 'party2Phone');
+  if (!branch) fail('الفرع مطلوب.', 'branch');
+  if (!incubator) fail('الحاضنة مطلوبة.', 'incubator');
+  if (!platform) fail('المنصة مطلوبة.', 'platform');
+  if (!office) fail('المكتب مطلوب.', 'office');
+
+  const store = readStore();
+  store.apps = store.apps || [];
+  const launchUrl =
+    String(payload.url || payload.launchUrl || '').trim() || `systems/${code.toLowerCase()}.html`;
+  const appRow = {
+    id: uid('app'),
+    code,
+    nameAr,
+    kind: 'system',
+    category: String(payload.category || 'أنظمة نايوش').trim() || 'أنظمة نايوش',
+    url: launchUrl,
+    launchUrl,
+    icon: payload.icon || 'fa-cube',
+    status: 'active',
+    health: 88,
+    companyName,
+    companyAddress,
+    party1Name,
+    party1Phone,
+    party2Name,
+    party2Phone,
+    branch,
+    incubator,
+    platform,
+    office,
+    registeredAt: new Date().toISOString(),
+    source: 'add-system-form',
+  };
+  const idx = store.apps.findIndex((a) => String(a.code).toUpperCase() === code);
+  if (idx >= 0) store.apps[idx] = { ...store.apps[idx], ...appRow, id: store.apps[idx].id || appRow.id };
+  else store.apps.unshift(appRow);
+  writeStore(store);
+  mirrorSyncToDb(payload, appRow).catch(() => {});
+  return { ok: true, app: appRow };
+}
+
 module.exports = {
   listNotifications,
   addNotification,
@@ -210,5 +286,6 @@ module.exports = {
   ingestSync,
   listApps,
   getSynced,
+  registerApp,
   readStore,
 };

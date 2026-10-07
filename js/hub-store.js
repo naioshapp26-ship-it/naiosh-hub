@@ -7038,14 +7038,33 @@ const HubStore = (() => {
     return item;
   };
 
-  const registerApp = (manifest) => {
+  const registerApp = (manifest = {}) => {
     const empire = get().empire;
     if (!empire.apps) empire.apps = [];
-    const code = (manifest.code || '').trim().toUpperCase();
-    if (!code || !manifest.nameAr) return null;
+    const nameAr = String(manifest.nameAr || '').trim();
+    const code = String(manifest.code || '')
+      .trim()
+      .toUpperCase();
+    registerApp.lastError = null;
+    if (!nameAr) {
+      registerApp.lastError = { ok: false, error: 'اسم النظام مطلوب.', field: 'nameAr' };
+      return null;
+    }
+    if (!code) {
+      registerApp.lastError = { ok: false, error: 'رمز النظام مطلوب.', field: 'code' };
+      return null;
+    }
+    if (!/^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(code)) {
+      registerApp.lastError = {
+        ok: false,
+        error: 'رمز النظام غير صالح. استخدم أحرفًا إنجليزية وأرقامًا فقط.',
+        field: 'code',
+      };
+      return null;
+    }
     const existing = empire.apps.find((a) => a.code === code);
     if (existing) {
-      Object.assign(existing, manifest, { code, status: manifest.status || existing.status });
+      Object.assign(existing, manifest, { code, nameAr, status: manifest.status || existing.status });
       pushFeed('architecture', `تحديث نظام في هوب: ${existing.nameAr}`);
       save();
       return existing;
@@ -7053,7 +7072,7 @@ const HubStore = (() => {
     const app = {
       id: uid('app'),
       code,
-      nameAr: manifest.nameAr,
+      nameAr,
       kind: manifest.kind || 'system',
       category: manifest.category || 'أنظمة نايوش',
       url: manifest.url || manifest.launchUrl || 'apps.html',
