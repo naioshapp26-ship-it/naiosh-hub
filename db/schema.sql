@@ -348,6 +348,30 @@ CREATE TABLE IF NOT EXISTS hub_ad_submissions (
 CREATE INDEX IF NOT EXISTS hub_ad_submissions_email_idx ON hub_ad_submissions (lower(owner_email));
 CREATE INDEX IF NOT EXISTS hub_ad_submissions_request_idx ON hub_ad_submissions (request_id);
 CREATE INDEX IF NOT EXISTS hub_ad_submissions_customer_idx ON hub_ad_submissions (customer_id);
+
+CREATE TABLE IF NOT EXISTS hub_product_submissions (
+  id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL UNIQUE,
+  product_id TEXT NOT NULL,
+  owner_type TEXT NOT NULL DEFAULT 'Guest',
+  customer_id TEXT,
+  guest_contact_id TEXT,
+  owner_name TEXT NOT NULL,
+  owner_email TEXT NOT NULL,
+  owner_phone TEXT NOT NULL,
+  owner_company TEXT,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending_review',
+  source TEXT,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS hub_product_submissions_email_idx ON hub_product_submissions (lower(owner_email));
+CREATE INDEX IF NOT EXISTS hub_product_submissions_request_idx ON hub_product_submissions (request_id);
+CREATE INDEX IF NOT EXISTS hub_product_submissions_product_idx ON hub_product_submissions (product_id);
+CREATE INDEX IF NOT EXISTS hub_product_submissions_customer_idx ON hub_product_submissions (customer_id);
 CREATE INDEX IF NOT EXISTS idx_hub_events_date ON hub_events(event_date);
 CREATE INDEX IF NOT EXISTS idx_hub_employees_status ON hub_employees(status);
 CREATE INDEX IF NOT EXISTS idx_hub_feed_created ON hub_feed(created_at DESC);

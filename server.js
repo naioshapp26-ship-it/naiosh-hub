@@ -20,6 +20,7 @@ const hubPoshaOs = require('./lib/hub-posha-os');
 const productCategories = require('./lib/hub-product-categories');
 const productOrders = require('./lib/hub-product-orders');
 const adSubmissions = require('./lib/hub-ad-submissions');
+const productSubmissions = require('./lib/hub-product-submissions');
 const hubSystemSettings = require('./lib/hub-system-settings');
 const hubMarketingCampaigns = require('./lib/hub-marketing-campaigns');
 const hubEvents = require('./lib/hub-events');
@@ -900,6 +901,151 @@ async function handleHubApi(req, res, pathname) {
       sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحميل الطلب' });
     }
     return true;
+  }
+
+  if (pathname === '/api/hub/product-submissions/published' && req.method === 'GET') {
+    const list = productSubmissions.listPublished();
+    sendJson(res, 200, {
+      ok: true,
+      count: list.length,
+      items: list.map((s) => productSubmissions.toStoreItem(s)).filter(Boolean),
+      submissions: list.map((s) => ({
+        productId: s.productId,
+        requestId: s.requestId,
+        title: s.title,
+        status: s.status,
+        publishedAt: s.publishedAt || s.approvedAt || s.updatedAt,
+      })),
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/product-submissions' && req.method === 'GET') {
+    let session;
+    try {
+      session = hubSession.requireAuth(req);
+    } catch (err) {
+      sendJson(res, err.status || 401, { ok: false, error: err.message || 'مطلوب تسجيل الدخول' });
+      return true;
+    }
+    const staff = hubSession.isStaffLane(session.lane);
+    const list = productSubmissions.listSubmissions({ email: session.email, staff });
+    sendJson(res, 200, {
+      ok: true,
+      staff,
+      count: list.length,
+      submissions: list,
+      requests: list.map((s) => productSubmissions.toAdminRequest(s)),
+    });
+    return true;
+  }
+
+  if (pathname === '/api/hub/product-submissions' && req.method === 'POST') {
+    const body = await readBody(req);
+    const session = hubSession.resolveSession(req);
+    const authed = session.ok ? session : null;
+    try {
+      const result = productSubmissions.createSubmission({
+        session: authed,
+        guestContact: body?.owner || body?.guestContact || body?.contact || null,
+        product: body?.product || body || {},
+        idempotencyKey: body?.idempotencyKey || '',
+        claimedCustomerId: body?.customerId || body?.claimedCustomerId || '',
+      });
+      const persistResults = result.persisted ? await result.persisted : { ok: false };
+      try {
+        if (result.submission && !result.duplicate) {
+          const portalStore = hubClientPortal.readStore();
+          hubPoshaOps.emitEvent(portalStore, {
+            type: 'PRODUCT_SUBMISSION_CREATED',
+            clientEmail: result.submission.ownerEmail,
+            actorId: result.submission.ownerEmail,
+            actorRole: result.submission.ownerType === 'Customer' ? 'client' : 'guest',
+            title: 'طلب إضافة منتج',
+            message: `طلب ${result.submission.requestId} — ${result.submission.title}`,
+            metadata: {
+              requestId: result.submission.requestId,
+              productId: result.submission.productId,
+              ownerType: result.submission.ownerType,
+              customerId: result.submission.customerId,
+              guestContactId: result.submission.guestContactId,
+            },
+            forceClient: result.submission.ownerType === 'Customer',
+            forceAdmin: true,
+          });
+          hubClientPortal.writeStore(portalStore);
+        }
+      } catch {
+        /* notification must not fail submit */
+      }
+      sendJson(res, result.duplicate ? 200 : 201, {
+        ok: true,
+        duplicate: !!result.duplicate,
+        dbPersisted: !!(persistResults && persistResults.ok),
+        submission: result.submission,
+        request: productSubmissions.toAdminRequest(result.submission),
+      });
+    } catch (err) {
+      sendJson(res, err.status || 400, {
+        ok: false,
+        error: err.message || 'تعذر إرسال المنتج.',
+        field: err.field,
+        code: err.code,
+      });
+    }
+    return true;
+  }
+
+  const prdSubMatch = pathname.match(/^\/api\/hub\/product-submissions\/([^/]+)(?:\/(status))?$/);
+  if (prdSubMatch) {
+    const subId = decodeURIComponent(prdSubMatch[1]);
+    const isStatus = prdSubMatch[2] === 'status';
+
+    if (req.method === 'GET' && !isStatus) {
+      let session;
+      try {
+        session = hubSession.requireAuth(req);
+      } catch (err) {
+        sendJson(res, err.status || 401, { ok: false, error: err.message || 'مطلوب تسجيل الدخول' });
+        return true;
+      }
+      try {
+        const submission = productSubmissions.getSubmission(subId);
+        productSubmissions.assertCanView(submission, session);
+        sendJson(res, 200, {
+          ok: true,
+          submission,
+          request: productSubmissions.toAdminRequest(submission),
+        });
+      } catch (err) {
+        sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحميل الطلب' });
+      }
+      return true;
+    }
+
+    if (isStatus && (req.method === 'PATCH' || req.method === 'POST')) {
+      let session;
+      try {
+        session = hubSession.requireStaff(req);
+      } catch (err) {
+        sendJson(res, err.status || 403, { ok: false, error: err.message || 'Forbidden' });
+        return true;
+      }
+      const body = await readBody(req);
+      try {
+        const submission = productSubmissions.updateStatus(subId, String(body?.status || ''), session, {
+          reason: body?.reason || body?.note || '',
+        });
+        sendJson(res, 200, {
+          ok: true,
+          submission,
+          request: productSubmissions.toAdminRequest(submission),
+        });
+      } catch (err) {
+        sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحديث الحالة' });
+      }
+      return true;
+    }
   }
 
   if (pathname === '/api/hub/uploads' && req.method === 'POST') {
@@ -1790,6 +1936,13 @@ async function boot() {
       if (adHyd?.ok) console.log(`hub_ad_submissions hydrated from database (${adHyd.count || 0})`);
     } catch (error) {
       console.error('hub_ad_submissions hydrate skipped:', error.message);
+    }
+
+    try {
+      const prdHyd = await productSubmissions.hydrateFromDb();
+      if (prdHyd?.ok) console.log(`hub_product_submissions hydrated from database (${prdHyd.count || 0})`);
+    } catch (error) {
+      console.error('hub_product_submissions hydrate skipped:', error.message);
     }
 
     try {
