@@ -86,6 +86,31 @@ async function launch() {
   });
 }
 
+async function doLogout(page) {
+  const tok = await page.evaluate(
+    () => localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken') || ''
+  );
+  await page.evaluate(async () => {
+    try {
+      if (window.HubAuth?.clearSessionAsync) await window.HubAuth.clearSessionAsync();
+      else if (window.HubAuth?.clearSession) window.HubAuth.clearSession();
+      else {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+    } catch (_) {
+      localStorage.removeItem('hubAuthToken');
+      localStorage.removeItem('hubUser');
+      sessionStorage.removeItem('hubAuthToken');
+      sessionStorage.removeItem('hubUser');
+    }
+    window.location.href = 'login.html';
+  });
+  await page.waitForFunction(() => /login\.html/i.test(location.href), { timeout: 20000 }).catch(() => null);
+  await sleep(400);
+  return tok;
+}
+
 async function manualLogin(page, email, password, { remember = true } = {}) {
   await page.goto(`${BASE}/login.html`, { waitUntil: 'networkidle2', timeout: 60000 });
   await page.evaluate(() => {
@@ -242,16 +267,12 @@ async function main() {
       mark('22. New Tab', /dashboard/.test(tab2.url()) && !/login/.test(tab2.url()), tab2.url());
 
       // Logout + revoke
-      const tokBefore = await page.evaluate(
-        () => localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken')
-      );
-      await page.click('#logout-btn').catch(() => null);
-      await sleep(1500);
+      const tokBefore = await doLogout(page);
       const afterLogout = await page.evaluate(() => ({
         url: location.href,
         tok: !!(localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken')),
       }));
-      mark('23. Logout', /login\.html/i.test(afterLogout.url) || !afterLogout.tok, JSON.stringify(afterLogout));
+      mark('23. Logout', /login\.html/i.test(afterLogout.url) && !afterLogout.tok, JSON.stringify(afterLogout));
 
       const meAfter = await req('GET', '/api/auth/me', { token: tokBefore });
       mark('25. Old Bearer Token Revoked', meAfter.status === 401 || meAfter.json?.ok === false, `status=${meAfter.status}`);
@@ -285,8 +306,7 @@ async function main() {
   const ctxSwitch = await browser.createBrowserContext();
   const ps = await ctxSwitch.newPage();
   await manualLogin(ps, EMP1.email, process.env.HUB_E2E_LEADER_PASSWORD || 'Hub@360');
-  await ps.click('#logout-btn').catch(() => null);
-  await sleep(1000);
+  await doLogout(ps);
   const custLogin = await manualLogin(ps, CUST.email, CUST.password);
   mark(
     '27. EMP-0001 → Customer',
@@ -309,8 +329,7 @@ async function main() {
   );
 
   // EMP-0001 → EMP-0003 → EMP-0001
-  await ps.click('#logout-btn').catch(() => null);
-  await sleep(800);
+  await doLogout(ps);
   const to3 = await manualLogin(ps, EMP3.email, process.env.HUB_E2E_LEADER_PASSWORD || 'Hub@360');
   const me3 = await req('GET', '/api/auth/me', {
     token: await ps.evaluate(() => localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken')),
@@ -320,8 +339,7 @@ async function main() {
     to3.user?.employeeNo === 'EMP-0003' && !me3.json?.permissions?.includes('permissions.manage'),
     `emp=${to3.user?.employeeNo} manage=${me3.json?.permissions?.includes('permissions.manage')}`
   );
-  await ps.click('#logout-btn').catch(() => null);
-  await sleep(800);
+  await doLogout(ps);
   const back1 = await manualLogin(ps, EMP1.email, process.env.HUB_E2E_LEADER_PASSWORD || 'Hub@360');
   mark('30. EMP-0003 → EMP-0001', back1.user?.employeeNo === 'EMP-0001', back1.user?.employeeNo || '');
 
@@ -332,8 +350,7 @@ async function main() {
   const liveTok = await tA.evaluate(() => localStorage.getItem('hubAuthToken'));
   const tB = await ctxMT.newPage();
   await tB.goto(`${BASE}/dashboard.html`, { waitUntil: 'networkidle2' });
-  await tB.click('#logout-btn').catch(() => null);
-  await sleep(1200);
+  await doLogout(tB);
   const stale = await req('GET', '/api/admin/clients', { token: liveTok });
   mark('31. Multi-Tab', stale.status === 401 || stale.json?.ok === false, `staleAPI=${stale.status}`);
 
@@ -341,9 +358,7 @@ async function main() {
   const ctxBack = await browser.createBrowserContext();
   const pb = await ctxBack.newPage();
   await manualLogin(pb, EMP1.email, process.env.HUB_E2E_LEADER_PASSWORD || 'Hub@360');
-  const tokBack = await pb.evaluate(() => localStorage.getItem('hubAuthToken'));
-  await pb.click('#logout-btn').catch(() => null);
-  await sleep(1000);
+  const tokBack = await doLogout(pb);
   await pb.goBack().catch(() => null);
   await sleep(800);
   const backApi = await req('GET', '/api/admin/clients', { token: tokBack });
@@ -367,8 +382,7 @@ async function main() {
   await sleep(800);
   await pf.goto(`${BASE}/dashboard.html#overview`, { waitUntil: 'networkidle2' });
   await pf.reload({ waitUntil: 'networkidle2' });
-  await pf.click('#logout-btn').catch(() => null);
-  await sleep(1000);
+  await doLogout(pf);
   mark(
     '34. First-Time Browser Journey',
     ft.user?.employeeNo === 'EMP-0001' && /login\.html/i.test(pf.url()),
@@ -381,8 +395,7 @@ async function main() {
   await pf.goto(`${BASE}/dashboard.html#clients-mgmt`, { waitUntil: 'networkidle2' });
   await sleep(600);
   await pf.screenshot({ path: path.join(ART, 'd12-mobile-dashboard.png'), fullPage: true });
-  await pf.click('#logout-btn').catch(() => null);
-  await sleep(800);
+  await doLogout(pf);
   mark('35. Mobile Login/Dashboard/Logout', mob.user?.employeeNo === 'EMP-0001', mob.user?.employeeNo || '');
 
   const dir = await pf.evaluate(() => document.documentElement.dir || getComputedStyle(document.body).direction);

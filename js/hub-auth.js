@@ -234,8 +234,12 @@
   /** Awaitable logout — revokes token server-side, clears HttpOnly cookie, auth keys only. */
   const clearSessionAsync = async () => {
     const token = getToken();
-    await endServerSession(token);
-    clearLocalAuthKeys();
+    try {
+      await endServerSession(token);
+    } finally {
+      // Always clear local keys even if logout network call is slow/aborted.
+      clearLocalAuthKeys();
+    }
   };
 
   const loginUrl = ({ next = '', system = '' } = {}) => {
