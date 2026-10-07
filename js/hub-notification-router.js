@@ -195,22 +195,28 @@
     if (staff) url = staffTarget(n);
     else if (client) url = customerTarget(n);
     else {
-      // Guest / unknown: never send to dashboard; prefer public target or login+next
+      // Guest / unknown: never send to dashboard; always preserve return target via login?next=
+      const customerish = customerTarget(n);
       const raw = safePath(n.actionLink || n.link || n.sourceLink || '');
-      if (raw && !isDashboardUrl(raw)) url = raw;
-      else {
-        const customerish = customerTarget(n);
-        if (customerish) {
-          return {
-            url: 'login.html?next=' + encodeURIComponent(customerish),
-            informational: false,
-            requiresAuth: true,
-            lane: 'guest',
-            reason: 'login-then-target',
-          };
-        }
-        return { url: '', informational: true, requiresAuth: false, lane: 'guest', reason: 'no-target' };
+      const dest =
+        customerish ||
+        (raw && !isDashboardUrl(raw) ? raw : '') ||
+        '';
+      if (dest) {
+        const needsLogin =
+          isDashboardUrl(dest) ||
+          /^client\.html/i.test(dest) ||
+          /#(requests|orders|invoices|support|notifications)/i.test(dest) ||
+          /mine|my-systems|platforms-mine/i.test(dest);
+        return {
+          url: needsLogin ? 'login.html?next=' + encodeURIComponent(dest) : dest,
+          informational: false,
+          requiresAuth: needsLogin,
+          lane: 'guest',
+          reason: needsLogin ? 'login-then-target' : 'public-target',
+        };
       }
+      return { url: '', informational: true, requiresAuth: false, lane: 'guest', reason: 'no-target' };
     }
 
     if (!url) {

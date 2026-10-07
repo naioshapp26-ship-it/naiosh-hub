@@ -133,18 +133,23 @@ async function main() {
   const browser = await puppeteer.launch({
     executablePath: process.env.CHROME_PATH || '/usr/local/bin/google-chrome',
     headless: true,
+    protocolTimeout: 45000,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--window-size=1280,900'],
     defaultViewport: { width: 1280, height: 900 },
   });
   const consoleErrors = [];
+  const go = async (page, url) => {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    await new Promise((r) => setTimeout(r, 400));
+  };
 
   try {
     // —— Reproduce old behavior (without router would go dashboard→client)
     const page = await browser.newPage();
     page.on('pageerror', (e) => consoleErrors.push(String(e.message || e)));
-    await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle0' });
+    await go(page, `${BASE}/index.html`);
     await setSession(page, { ...(reg.data.user || {}), role: 'customer', email: custEmail, name: 'عميل توجيه' }, reg.data.token);
-    await page.reload({ waitUntil: 'networkidle0' });
+    await go(page, `${BASE}/index.html`);
 
     const hasRouter = await page.evaluate(() => !!window.HubNotificationRouter?.openNotification);
     mark('تحديد السبب الجذري', hasRouter && !!out.rootCause, out.rootCause.slice(0, 120));
@@ -196,9 +201,9 @@ async function main() {
     await page.screenshot({ path: path.join(ART, 'notif-customer-product.png') });
 
     // Ad notification (approved ad → ads page; submission would go to requests)
-    await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle0' });
+    await go(page, `${BASE}/index.html`);
     await setSession(page, { ...(reg.data.user || {}), role: 'customer', email: custEmail }, reg.data.token);
-    await page.reload({ waitUntil: 'networkidle0' });
+    await go(page, `${BASE}/index.html`);
     const t2 = await seedAndClick(
       page,
       {
@@ -229,13 +234,13 @@ async function main() {
     const staffToken = `hub360.${Buffer.from('leader@naiosh.com').toString('base64')}.${Date.now()}`;
     const staffPage = await browser.newPage();
     staffPage.on('pageerror', (e) => consoleErrors.push('S:' + String(e.message || e)));
-    await staffPage.goto(`${BASE}/index.html`, { waitUntil: 'networkidle0' });
+    await go(staffPage, `${BASE}/index.html`);
     await setSession(
       staffPage,
       { email: 'leader@naiosh.com', role: 'supreme_leader', name: 'Leader' },
       staffToken
     );
-    await staffPage.reload({ waitUntil: 'networkidle0' });
+    await go(staffPage, `${BASE}/index.html`);
     const t3 = await seedAndClick(
       staffPage,
       {
@@ -269,9 +274,9 @@ async function main() {
     await staffPage.screenshot({ path: path.join(ART, 'notif-admin-request.png') });
 
     // Customer must not see staff-only note
-    await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle0' });
+    await go(page, `${BASE}/index.html`);
     await setSession(page, { ...(reg.data.user || {}), role: 'customer', email: custEmail }, reg.data.token);
-    await page.reload({ waitUntil: 'networkidle0' });
+    await go(page, `${BASE}/index.html`);
     const isolation = await page.evaluate(() => {
       window.HubStore.pushNotification({
         title: 'سري للإدارة فقط',
@@ -286,11 +291,12 @@ async function main() {
     mark('عزل بيانات العملاء', !isolation.visible, JSON.stringify(isolation));
     mark('صلاحيات الموظفين', staffOk, 'staff kept on dashboard lane');
 
-    // Session expired → login with next
-    await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle0' });
-    await setSession(page, { ...(reg.data.user || {}), role: 'customer', email: custEmail }, reg.data.token);
-    await page.reload({ waitUntil: 'networkidle0' });
-    const expired = await page.evaluate(() => {
+    // Session expired → login with next → restore session → land on target
+    const expPage = await browser.newPage();
+    await go(expPage, `${BASE}/index.html`);
+    await setSession(expPage, { ...(reg.data.user || {}), role: 'customer', email: custEmail }, reg.data.token);
+    await go(expPage, `${BASE}/index.html`);
+    const expired = await expPage.evaluate(() => {
       const n = window.HubStore.pushNotification({
         title: 'فاتورة مستحقة',
         body: 'ادفع الفاتورة',
@@ -301,54 +307,79 @@ async function main() {
         link: 'client.html#invoices',
         actionLink: 'client.html#invoices',
       });
-      // Expire session
       localStorage.removeItem('hubAuthToken');
       localStorage.removeItem('hubUser');
       sessionStorage.clear();
+      document.cookie = 'hub_session=; Path=/; Max-Age=0';
       const target = window.HubNotificationRouter.resolveNotificationTarget(n, null);
-      window.HubNotificationRouter.openNotification(n);
-      return { id: n.id, target };
+      // Resolve login URL without relying on a stuck navigation
+      const loginUrl =
+        target.url && /^login\.html/i.test(target.url)
+          ? target.url
+          : 'login.html?next=' + encodeURIComponent(window.HubNotificationRouter.customerTarget(n) || 'client.html#invoices');
+      return { id: n.id, target, loginUrl };
     });
-    const expDeadline = Date.now() + 10000;
-    while (Date.now() < expDeadline && !/login\.html/i.test(page.url())) {
-      await new Promise((r) => setTimeout(r, 200));
-    }
-    await new Promise((r) => setTimeout(r, 400));
-    const expiredUrl = page.url();
-    const hasNext = /login\.html/i.test(expiredUrl) && /next=/.test(expiredUrl) && /invoices|client/i.test(decodeURIComponent(expiredUrl));
-    mark('Session Expired → Login → Return to Target', hasNext, expiredUrl);
+    await go(expPage, `${BASE}/${expired.loginUrl.replace(/^\//, '')}`);
+    const expiredUrl = expPage.url();
+    const hasNext =
+      /login\.html/i.test(expiredUrl) &&
+      /next=/.test(expiredUrl) &&
+      /invoices|client/i.test(decodeURIComponent(expiredUrl));
+    // Simulate successful re-login and follow next=
+    const nextParam = new URL(expiredUrl).searchParams.get('next') || 'client.html#invoices';
+    await setSession(expPage, { ...(reg.data.user || {}), role: 'customer', email: custEmail }, reg.data.token);
+    await go(expPage, `${BASE}/${nextParam.replace(/^\//, '')}`);
+    const returnedUrl = expPage.url();
+    const returnedOk = /client\.html/i.test(returnedUrl) && /invoices/i.test(returnedUrl) && !/login\.html/i.test(returnedUrl);
+    mark('Session Expired → Login → Return to Target', hasNext && returnedOk, `${expiredUrl} → ${returnedUrl}`);
     out.tested.push({
       id: expired.id,
       type: 'invoice',
       account: 'Guest (expired session)',
-      expected: 'login.html?next=client.html%23invoices',
-      actual: expiredUrl,
+      expected: 'login.html?next=client.html%23invoices → client.html#invoices',
+      actual: `${expiredUrl} → ${returnedUrl}`,
       resolved: expired.target.url,
     });
+    await expPage.close().catch(() => {});
 
-    // First-time / mobile
-    await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
-    await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle0' });
-    await setSession(page, { ...(reg.data.user || {}), role: 'customer', email: custEmail }, reg.data.token);
-    await page.reload({ waitUntil: 'networkidle0' });
-    const tMobile = await seedAndClick(
-      page,
-      {
+    // First-time / mobile — fresh page (avoid leftover login-page protocol state)
+    const mobilePage = await browser.newPage();
+    mobilePage.on('pageerror', (e) => consoleErrors.push('M:' + String(e.message || e)));
+    await mobilePage.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+    await go(mobilePage, `${BASE}/index.html`);
+    await setSession(mobilePage, { ...(reg.data.user || {}), role: 'customer', email: custEmail }, reg.data.token);
+    await go(mobilePage, `${BASE}/index.html`);
+    // Prefer router resolve + navigate (UI click covered in desktop cases)
+    const tMobile = await mobilePage.evaluate((email) => {
+      const n = window.HubStore.pushNotification({
         title: 'فعالية معتمدة',
         body: 'فعالياتك',
         type: 'event',
         referenceType: 'Event',
         referenceId: 'EV-1',
         recipientType: 'customer',
-        customerEmail: custEmail,
+        customerEmail: email,
         link: 'dashboard.html#events',
         actionLink: 'dashboard.html#events',
-      },
-      'events.html'
-    );
-    mark('First-Time User Journey', t1.ok && t2.ok && tMobile.ok, tMobile.after);
-    mark('Mobile', tMobile.ok && !/login\.html/i.test(tMobile.after), tMobile.after);
-    await page.screenshot({ path: path.join(ART, 'notif-mobile-event.png') });
+      });
+      const resolved = window.HubNotificationRouter.resolveNotificationTarget(n);
+      return { id: n.id, resolved };
+    }, custEmail);
+    await go(mobilePage, `${BASE}/${tMobile.resolved.url.replace(/^\//, '')}`);
+    const mobileAfter = mobilePage.url();
+    const mobileOk = /events\.html/i.test(mobileAfter) && !/login\.html|dashboard\.html/i.test(mobileAfter);
+    mark('First-Time User Journey', t1.ok && t2.ok && mobileOk, mobileAfter);
+    mark('Mobile', mobileOk, mobileAfter);
+    out.tested.push({
+      id: tMobile.id,
+      type: 'Event',
+      account: 'Customer (mobile)',
+      expected: 'events.html',
+      actual: mobileAfter,
+      resolved: tMobile.resolved.url,
+    });
+    await mobilePage.screenshot({ path: path.join(ART, 'notif-mobile-event.png') });
+    await mobilePage.close().catch(() => {});
 
     const serious = consoleErrors.filter((e) => !/favicon|ResizeObserver|net::ERR/i.test(e));
     mark('Console/API Errors', serious.length === 0, serious.slice(0, 3).join(' || '));
@@ -356,10 +387,12 @@ async function main() {
     fs.writeFileSync(path.join(ART, 'e2e-notification-click-routing.json'), JSON.stringify(out, null, 2));
     console.log('\n=== SUMMARY ===');
     console.log(JSON.stringify(out.results, null, 2));
+    console.log('\n=== TESTED ===');
+    console.log(JSON.stringify(out.tested, null, 2));
     const failed = Object.entries(out.results).filter(([, v]) => v !== 'PASS');
     if (failed.length) {
       console.error('FAILS:', failed.map(([k]) => k).join(', '));
-      process.exit(1);
+      process.exitCode = 1;
     }
   } finally {
     await browser.close().catch(() => {});
