@@ -48,8 +48,17 @@ const RECOMMENDED = [
   },
   {
     key: 'HUB_DEMO_AUTH',
-    description: 'تفعيل الدخول التجريبي (true/false)',
-    defaultValue: 'true',
+    description: 'قديم — اتركه false/فارغ في Production (لا تفعيل Quick Login)',
+    defaultValue: 'false',
+  },
+  {
+    key: 'HUB_SUPER_ADMIN_INITIAL_PASSWORD',
+    description: 'تهيئة مرة واحدة لكلمة مرور naioshhub@example.com (EMP-0001) — احذفها بعد الإقلاع',
+  },
+  {
+    key: 'HUB_ALLOW_LEGACY_DEMO',
+    description: 'السماح بدخول حسابات الاختبار القديمة (1=نعم) — ممنوع في Production',
+    defaultValue: '',
   },
   {
     key: 'HUB_AUTO_MIGRATE',
