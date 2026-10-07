@@ -1882,6 +1882,37 @@ const server = http.createServer((req, res) => {
   if (pathname === '/api/auth/login' && req.method === 'POST') {
     readBody(req)
       .then(async (body) => {
+        const hubStaffAuth = require('./lib/hub-staff-auth');
+        // Built-in staff (EMP-0001 / EMP-0003 / …) authenticate on the same endpoint.
+        // No email hard-bypass: password + active assignment required server-side.
+        const staffResult = hubStaffAuth.login({
+          email: body?.email,
+          password: body?.password,
+        });
+        if (staffResult) {
+          sendJson(
+            res,
+            staffResult.status || (staffResult.ok ? 200 : 401),
+            {
+              success: !!staffResult.ok,
+              ok: !!staffResult.ok,
+              message: staffResult.message || staffResult.error || '',
+              error: staffResult.ok ? undefined : staffResult.error,
+              token: staffResult.token,
+              user: staffResult.user,
+              employeeNo: staffResult.employeeNo || staffResult.user?.employeeNo || null,
+              permissions: staffResult.permissions || [],
+              destination: staffResult.ok
+                ? hubSession.postLoginDestination(staffResult.user?.role || 'supreme_leader')
+                : undefined,
+            },
+            staffResult.ok && staffResult.token
+              ? { 'Set-Cookie': hubSession.sessionCookieHeader(staffResult.token) }
+              : { 'Set-Cookie': hubSession.clearSessionCookieHeader() }
+          );
+          return;
+        }
+
         const result = await customerAuth.login({
           email: body?.email,
           password: body?.password,

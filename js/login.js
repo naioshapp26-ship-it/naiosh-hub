@@ -103,15 +103,21 @@ function fillLogin(email, password, autoSubmit = true) {
     }
 
     setLoading(true);
+    const withTimeout = (promise, ms, fallback = null) =>
+      Promise.race([
+        Promise.resolve(promise).catch(() => fallback),
+        new Promise((resolve) => setTimeout(() => resolve(fallback), ms)),
+      ]);
+
     // End any prior identity (customer/admin) before accepting a new login —
     // clears HttpOnly hub_session so the next account is not mixed with the last.
     if (window.HubAuth?.clearSessionAsync) {
-      await window.HubAuth.clearSessionAsync().catch(() => null);
+      await withTimeout(window.HubAuth.clearSessionAsync(), 5000, null);
     } else if (window.HubAuth?.clearSession) {
       window.HubAuth.clearSession();
     }
-    await window.HubPlatformGrants?.hydrate?.().catch?.(() => null);
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await withTimeout(window.HubPlatformGrants?.hydrate?.(), 4000, null);
+    await new Promise((resolve) => setTimeout(resolve, 120));
 
     const demo = DEMO_USERS[email];
     const localTenant = (() => {
@@ -137,31 +143,23 @@ function fillLogin(email, password, autoSubmit = true) {
         }
       })();
 
-    let serverUser = null;
-    let customerUser = null;
+    let authPayload = null;
+    let tenantUser = null;
     try {
-      const customerRes = await fetch('/api/auth/login', {
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
+      const authRes = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ email, password }),
+        signal: ctrl?.signal,
       });
-      const customerData = await customerRes.json().catch(() => ({}));
-      if (customerData?.ok && customerData?.user) {
-        customerUser = {
-          ...customerData.user,
-          role: 'customer',
-          name: customerData.user.name || customerData.user.fullName || email,
-          customerId: customerData.user.customerId || customerData.user.clientId || customerData.user.id,
-          clientId: customerData.user.clientId || customerData.user.customerId || '',
-        };
-        delete customerUser.employeeNo;
-        if (customerData.token) {
-          // Prefer server token when present
-          window.__hubCustomerToken = customerData.token;
-        }
-      }
+      if (timer) clearTimeout(timer);
+      authPayload = await authRes.json().catch(() => ({}));
+      authPayload = { ...authPayload, httpStatus: authRes.status };
     } catch {
-      /* offline — fall through */
+      authPayload = null;
     }
 
     try {
@@ -171,36 +169,56 @@ function fillLogin(email, password, autoSubmit = true) {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json().catch(() => ({}));
-      if (data?.ok && data?.user) serverUser = data.user;
+      if (data?.ok && data?.user) tenantUser = data.user;
     } catch {
       /* offline — local fallback below */
     }
 
     let user = null;
-    // Demo/staff identities win over customer API so Admin/Employee switching
-    // cannot be poisoned by a customer row or stale cookie for the same email.
-    if (demo && demo.password === password) {
+    let token = '';
+    const serverOk = !!(authPayload?.ok && authPayload?.user && authPayload?.token);
+    const serverRole = String(authPayload?.user?.role || '').toLowerCase();
+    const serverIsStaff = ['supreme_leader', 'chief_engineer', 'admin', 'super_admin'].includes(serverRole);
+
+    // Prefer server authentication (staff + customer) — same secure endpoint.
+    if (serverOk && serverIsStaff) {
+      user = {
+        email: authPayload.user.email || email,
+        name: authPayload.user.name || demo?.name || email,
+        role: authPayload.user.role,
+        platform: authPayload.user.platform || 'naiosh-hub-360',
+        employeeNo: authPayload.user.employeeNo || authPayload.employeeNo || null,
+        naioshId: authPayload.user.naioshId || null,
+        status: authPayload.user.status || 'active',
+      };
+      token = authPayload.token;
+    } else if (serverOk && !serverIsStaff) {
+      user = {
+        email: authPayload.user.email,
+        name: authPayload.user.name || authPayload.user.fullName || email,
+        fullName: authPayload.user.fullName || authPayload.user.name,
+        username: authPayload.user.username,
+        phone: authPayload.user.phone,
+        role: 'customer',
+        platform: authPayload.user.platform || 'naiosh-hub-360',
+        id: authPayload.user.id,
+        customerId: authPayload.user.customerId || authPayload.user.clientId || authPayload.user.id,
+        clientId: authPayload.user.clientId || authPayload.user.customerId || '',
+      };
+      delete user.employeeNo;
+      token = authPayload.token;
+    } else if (demo && demo.password === password) {
+      // Offline / older-server fallback for built-in staff only
       user = {
         email,
         name: demo.name,
         role: demo.role,
         platform: 'naiosh-hub-360',
       };
-    } else if (customerUser && !demo) {
-      user = {
-        email: customerUser.email,
-        name: customerUser.name,
-        fullName: customerUser.fullName || customerUser.name,
-        username: customerUser.username,
-        phone: customerUser.phone,
-        role: 'customer',
-        platform: customerUser.platform || 'naiosh-hub-360',
-        id: customerUser.id,
-        customerId: customerUser.customerId || customerUser.clientId || customerUser.id,
-        clientId: customerUser.clientId || customerUser.customerId || '',
-      };
-    } else if (serverUser) {
-      user = serverUser;
+      token = `hub360.${btoa(email)}.${Date.now()}`;
+    } else if (tenantUser) {
+      user = tenantUser;
+      token = `hub360.${btoa(email)}.${Date.now()}`;
     } else if (localTenant && localTenant.status === 'active' && localTenant.password === password) {
       user = {
         email,
@@ -210,12 +228,11 @@ function fillLogin(email, password, autoSubmit = true) {
         systemCode: localTenant.systemCode || '',
         host: localTenant.host || '',
       };
+      token = `hub360.${btoa(email)}.${Date.now()}`;
     } else if (
-      // Pending platform signup applies only to that email — never blocks other accounts,
-      // demo staff, or an existing customer API match (handled above).
       !demo &&
-      !customerUser &&
-      !serverUser &&
+      !serverOk &&
+      !tenantUser &&
       (pendingGrant || (localTenant && localTenant.status === 'pending'))
     ) {
       showAlert(
@@ -224,14 +241,13 @@ function fillLogin(email, password, autoSubmit = true) {
       setLoading(false);
       return;
     } else {
-      showAlert('بيانات الدخول غير صحيحة.');
+      const errMsg =
+        (authPayload && !authPayload.ok && authPayload.error) || 'بيانات الدخول غير صحيحة.';
+      showAlert(errMsg);
       setLoading(false);
       return;
     }
-    const token =
-      (user.role === 'customer' && window.__hubCustomerToken) ||
-      `hub360.${btoa(email)}.${Date.now()}`;
-    delete window.__hubCustomerToken;
+
     if (window.HubAuth?.setSession) {
       window.HubAuth.setSession(user, token, { remember: !!rememberMe });
     } else {
@@ -239,7 +255,10 @@ function fillLogin(email, password, autoSubmit = true) {
       localStorage.removeItem('hubUser');
       sessionStorage.removeItem('hubAuthToken');
       sessionStorage.removeItem('hubUser');
-      const storage = rememberMe ? localStorage : sessionStorage;
+      const isStaffRole = ['supreme_leader', 'chief_engineer', 'admin', 'super_admin'].includes(
+        String(user.role || '').toLowerCase()
+      );
+      const storage = isStaffRole || rememberMe ? localStorage : sessionStorage;
       storage.setItem('hubAuthToken', token);
       storage.setItem('hubUser', JSON.stringify(user));
     }

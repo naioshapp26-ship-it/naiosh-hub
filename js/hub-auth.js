@@ -130,12 +130,19 @@
         headers.Authorization = `Bearer ${token}`;
         headers['X-Hub-Token'] = token;
       }
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 4000) : null;
       return fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'same-origin',
         headers,
         keepalive: true,
-      }).catch(() => null);
+        signal: ctrl?.signal,
+      })
+        .catch(() => null)
+        .finally(() => {
+          if (timer) clearTimeout(timer);
+        });
     } catch (_) {
       return Promise.resolve(null);
     }
@@ -143,7 +150,6 @@
 
   const setSession = (user, token, { remember = true } = {}) => {
     clearLocalAuthKeys();
-    const storage = remember ? localStorage : sessionStorage;
     const role = String(user?.role || '').toLowerCase();
     const customerOnly = CLIENT_ROLES.has(role) && !STAFF_ROLES.has(role);
     const emailKey = String(user?.email || '').toLowerCase();
@@ -163,6 +169,7 @@
           role: STAFF_ROLES.has(role) ? role : demo.role,
           employeeNo: demo.employeeNo,
           naioshId: demo.naioshId,
+          status: user.status || 'active',
         };
       } else {
         try {
@@ -182,6 +189,10 @@
         delete user.clientId;
       }
     }
+    // Staff sessions persist in localStorage so New Tab / multi-window keep EMP identity.
+    // Customers still honor the Remember-me checkbox (sessionStorage when unchecked).
+    const staffSession = STAFF_ROLES.has(String(user?.role || '').toLowerCase()) || !!user?.employeeNo;
+    const storage = staffSession || remember ? localStorage : sessionStorage;
     storage.setItem(TOKEN_KEY, token);
     storage.setItem(USER_KEY, JSON.stringify(user));
     try {
