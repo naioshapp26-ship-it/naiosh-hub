@@ -44,6 +44,43 @@
   color: #1f2937;
 }
 
+.hub-book-auth-gate {
+  margin: 0 0 12px;
+  padding: 14px 14px 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+}
+
+.hub-book-auth-gate-text {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.7;
+  color: #1e3a8a;
+}
+
+.hub-book-auth-gate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hub-book-auth-gate-actions .btn {
+  margin-top: 0;
+  justify-self: auto;
+}
+
+.hub-book-auth-gate-hint {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1.6;
+}
+
 .hub-req-legend {
   margin: 0 0 4px;
   padding: 8px 12px;
@@ -54,6 +91,16 @@
   font-size: 13px;
   font-weight: 700;
   line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .hub-book-auth-gate-actions {
+    flex-direction: column;
+  }
+  .hub-book-auth-gate-actions .btn {
+    width: 100%;
+    text-align: center;
+  }
 }
 
 .hub-req {

@@ -425,6 +425,178 @@
   const kindLabel =
     kind === 'incubator' ? 'حاضنة' : kind === 'platform' ? 'منصة' : 'مكتب';
 
+  /** Platform booking submit requires a customer account (problem #8). */
+  const requiresAccount = kind === 'platform';
+  const DRAFT_KEY = 'hub_platform_booking_draft_v1';
+
+  const bookingReturnPath = () => {
+    const file = (window.location.pathname || '').split('/').pop() || 'book-platform.html';
+    const search = window.location.search || (isHqPlatform ? '?from=hq' : isIncubatorPlatform ? '?from=incubator' : '');
+    return `${file}${search}`;
+  };
+
+  const isLoggedIn = () => !!window.HubAuth?.isLoggedIn?.();
+
+  const sessionUser = () => window.HubAuth?.getUser?.() || null;
+
+  const collectDraftFields = () => {
+    if (!form) return {};
+    const fields = {};
+    form.querySelectorAll('input, select, textarea').forEach((el) => {
+      const name = el.getAttribute('name');
+      if (!name || el.type === 'file' || el.type === 'hidden') return;
+      if (el.type === 'checkbox' || el.type === 'radio') return;
+      fields[name] = String(el.value || '');
+    });
+    let opsSelection = null;
+    try {
+      if (opsPickerApi?.getSelection) opsSelection = opsPickerApi.getSelection();
+    } catch {
+      /* ignore */
+    }
+    return {
+      v: 1,
+      at: Date.now(),
+      returnPath: bookingReturnPath(),
+      fields,
+      opsSelection,
+    };
+  };
+
+  const savePlatformDraft = () => {
+    if (!requiresAccount) return null;
+    try {
+      const draft = collectDraftFields();
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      return draft;
+    } catch {
+      return null;
+    }
+  };
+
+  const clearPlatformDraft = () => {
+    try {
+      sessionStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const readPlatformDraft = () => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (!raw) return null;
+      const draft = JSON.parse(raw);
+      return draft && draft.v === 1 ? draft : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const restorePlatformDraft = () => {
+    if (!requiresAccount || !form) return false;
+    const draft = readPlatformDraft();
+    if (!draft?.fields) return false;
+    Object.entries(draft.fields).forEach(([name, value]) => {
+      const el = form.querySelector(`[name="${name}"]`);
+      if (!el || el.type === 'file') return;
+      el.value = String(value ?? '');
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    // Bind identity to the authenticated customer — never trust draft customer ids
+    const user = sessionUser();
+    const emailEl = form.querySelector('[name="email"]');
+    if (user?.email && emailEl) {
+      emailEl.value = String(user.email);
+      emailEl.readOnly = true;
+    }
+    if (user?.name || user?.fullName) {
+      const nameEl = form.querySelector('[name="fullName"]');
+      if (nameEl && !String(nameEl.value || '').trim()) {
+        nameEl.value = String(user.fullName || user.name || '');
+      }
+    }
+    // Re-apply branch/incubator unlocks after country restore
+    const country = String(form.querySelector('[name="country"]')?.value || '').trim();
+    if (!isHqPlatform && country) {
+      unlockBranch(country, draft.fields.branch);
+      const branchNow = String(form.querySelector('[name="branch"]')?.value || '').trim();
+      if (needsBranchScopedIncubators && branchNow) unlockIncubator(branchNow, draft.fields.incubator);
+    }
+    if (draft.opsSelection && opsPickerApi && window.HubOpsCatalog) {
+      try {
+        const mount = form.querySelector('[data-book-systems-list]');
+        if (mount) {
+          mount._opsPick = {
+            mode: draft.opsSelection.mode || 'by_need',
+            openSystemId: '',
+            selected: {},
+          };
+          (draft.opsSelection.items || []).forEach((item) => {
+            if (!item?.systemId) return;
+            if (!mount._opsPick.selected[item.systemId]) {
+              mount._opsPick.selected[item.systemId] = { full: false, modules: new Set() };
+            }
+            const row = mount._opsPick.selected[item.systemId];
+            if (item.full || item.kind === 'system') row.full = true;
+            else if (item.moduleId) row.modules.add(item.moduleId);
+          });
+          window.HubOpsPicker?.render?.(mount);
+          syncSystemsRequired();
+        }
+      } catch {
+        /* ignore ops restore failures */
+      }
+    }
+    return true;
+  };
+
+  const syncAuthGate = () => {
+    if (!requiresAccount) return;
+    const gate = root.querySelector('[data-book-auth-gate]');
+    const next = encodeURIComponent(bookingReturnPath());
+    const loginHref = `login.html?next=${next}`;
+    const registerHref = `create-account.html?next=${next}`;
+    const loggedIn = isLoggedIn();
+    if (gate) {
+      gate.hidden = loggedIn;
+      const loginA = gate.querySelector('[data-book-login]');
+      const regA = gate.querySelector('[data-book-register]');
+      if (loginA) loginA.href = loginHref;
+      if (regA) regA.href = registerHref;
+    }
+    const wireSave = (sel) => {
+      root.querySelectorAll(sel).forEach((a) => {
+        a.addEventListener('click', () => {
+          savePlatformDraft();
+        });
+      });
+    };
+    wireSave('[data-book-login], [data-book-register]');
+    if (loggedIn) {
+      const user = sessionUser();
+      const emailEl = form?.querySelector('[name="email"]');
+      if (user?.email && emailEl) {
+        emailEl.value = String(user.email);
+        emailEl.readOnly = true;
+      }
+    }
+  };
+
+  const redirectToLoginForBooking = () => {
+    savePlatformDraft();
+    const next = bookingReturnPath();
+    const href =
+      window.HubAuth?.loginUrl?.({ next }) || `login.html?next=${encodeURIComponent(next)}`;
+    if (feedback) {
+      feedback.hidden = false;
+      feedback.classList.remove('is-ok');
+      feedback.classList.add('is-error');
+      feedback.textContent = 'يلزم تسجيل الدخول لمتابعة حجز المنصة. جاري تحويلك...';
+    }
+    window.location.href = href;
+  };
+
   const FIELD_ERROR_MSG = {
     platformName: 'اسم المنصة مطلوب.',
     sectorName: 'اسم القطاع مطلوب.',
@@ -495,6 +667,14 @@
     const emailEl = form?.querySelector('[name="email"]');
     if (emailEl && typeof emailEl.value === 'string') {
       emailEl.value = emailEl.value.trim();
+    }
+    // Authenticated customers always use session email (readonly field must not be left empty)
+    if (requiresAccount && isLoggedIn()) {
+      const user = sessionUser();
+      if (user?.email && emailEl) {
+        emailEl.value = String(user.email).trim();
+        emailEl.readOnly = true;
+      }
     }
 
     const valueOf = (name) => String(form?.querySelector(`[name="${name}"]`)?.value || '').trim();
@@ -574,6 +754,12 @@
     event.preventDefault();
     if (!validateRequiredFields()) return;
 
+    // Auth required before creating a final platform booking (problem #8)
+    if (requiresAccount && !isLoggedIn()) {
+      redirectToLoginForBooking();
+      return;
+    }
+
     const data = new FormData(form);
     const subdomain = String(data.get('subdomain') || '')
       .trim()
@@ -582,6 +768,8 @@
 
     const platformName = String(data.get('platformName') || '').trim();
     const systems = selectedSystems();
+    const user = sessionUser();
+    const sessionEmail = String(user?.email || '').trim().toLowerCase();
 
     if (feedback) {
       feedback.hidden = false;
@@ -615,7 +803,9 @@
       branchLabel: isHqPlatform ? 'المكتب الرئيسي' : selectedLabel('branch'),
       fullName: String(data.get('fullName') || '').trim(),
       phone: String(data.get('phone') || '').trim(),
-      email: String(data.get('email') || '').trim(),
+      // Prefer authenticated customer email — never invent guest customer ids from the form alone
+      email: sessionEmail || String(data.get('email') || '').trim(),
+      customerId: sessionEmail || undefined,
       country: String(data.get('country') || '').trim(),
       platform: String(data.get('platform') || platformName || params.get('platform') || params.get('code') || '').trim(),
       platformName: platformName || String(data.get('platform') || '').trim(),
@@ -632,12 +822,21 @@
 
     if (kind === 'platform') {
       try {
+        const headers = {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(window.HubAuth?.authHeaders?.() || {}),
+        };
         const res = await fetch('/api/hub/platform-bookings', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          headers,
           body: JSON.stringify(payload),
         });
         const json = await res.json().catch(() => ({}));
+        if (res.status === 401 || json.code === 'login_required') {
+          redirectToLoginForBooking();
+          return;
+        }
         if (!res.ok || json.ok === false) {
           if (json.field) showFieldError(json.field, json.error);
           if (feedback) {
@@ -648,6 +847,8 @@
           }
           return;
         }
+        payload.bookingId = json.booking?.id || '';
+        payload.requestId = json.booking?.id || '';
       } catch {
         if (feedback) {
           feedback.hidden = false;
@@ -744,9 +945,27 @@
         feedback.textContent = `تم استلام طلب حجز ال${kindLabel}. فريق هوب بيتواصل معك خلال 24 ساعة لتأكيد الموعد والمسار.`;
       }
     }
+    if (requiresAccount) clearPlatformDraft();
     form.reset();
     fillForm();
+    syncAuthGate();
   });
 
+  // Autosave draft while a guest fills the platform form
+  if (requiresAccount && form) {
+    let draftTimer = null;
+    const scheduleDraft = () => {
+      if (isLoggedIn()) return;
+      clearTimeout(draftTimer);
+      draftTimer = setTimeout(() => savePlatformDraft(), 400);
+    };
+    form.addEventListener('input', scheduleDraft);
+    form.addEventListener('change', scheduleDraft);
+  }
+
   fillForm();
+  syncAuthGate();
+  if (requiresAccount && isLoggedIn()) {
+    restorePlatformDraft();
+  }
 })();

@@ -1411,11 +1411,42 @@ async function handleHubApi(req, res, pathname) {
   };
 
   if (pathname === '/api/hub/platform-bookings' && req.method === 'POST') {
+    let session;
+    try {
+      session = hubSession.requireAuth(req);
+    } catch (err) {
+      sendJson(res, err.status || 401, {
+        ok: false,
+        error: 'يلزم تسجيل الدخول لإرسال طلب حجز المنصة.',
+        code: 'login_required',
+      });
+      return true;
+    }
     const body = await readBody(req);
     try {
+      // Bind booking to the authenticated identity — never trust client-supplied customerId
+      const sessionEmail = String(session.email || '').trim().toLowerCase();
+      if (sessionEmail) {
+        body.email = sessionEmail;
+        body.customerId = session.userId || sessionEmail;
+      }
       const { booking } = platformBooking.validateAndNormalize(body || {});
+      booking.customerId = body.customerId || session.userId || sessionEmail;
+      booking.customerEmail = sessionEmail;
       const state = readPlatformBookingsFile();
       state.bookings = Array.isArray(state.bookings) ? state.bookings : [];
+      // Idempotency: same authenticated customer + subdomain within a short window → one booking
+      const subdomain = String(booking.subdomain || '');
+      const recent = state.bookings.find(
+        (b) =>
+          String(b.customerEmail || b.email || '').toLowerCase() === sessionEmail &&
+          String(b.subdomain || '') === subdomain &&
+          Date.now() - Date.parse(b.createdAt || 0) < 2 * 60 * 1000
+      );
+      if (recent) {
+        sendJson(res, 200, { ok: true, booking: recent, duplicate: true });
+        return true;
+      }
       state.bookings.unshift(booking);
       state.bookings = state.bookings.slice(0, 500);
       writePlatformBookingsFile(state);
