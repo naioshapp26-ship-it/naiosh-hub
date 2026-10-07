@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تهيئة حساب الإدارة | نايوش هوب</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>body{font-family:Cairo,Tahoma,sans-serif}</style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-50 to-red-50 flex items-center justify-center p-4">
+  <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+    <h1 class="text-2xl font-extrabold mb-2">تهيئة حساب الإدارة</h1>
+    <p class="text-sm text-gray-600 mb-4">
+      هذه الصفحة تعمل <strong>مرة واحدة فقط</strong> عندما لا يكون حساب
+      <span dir="ltr" class="font-mono text-xs">naioshhub@example.com</span>
+      مهيأً بعد.
+    </p>
+    <div id="status" class="mb-4 text-sm font-bold"></div>
+    <div id="readyBox" class="hidden space-y-3">
+      <p class="text-green-700 font-bold">الحساب مهيأ بالفعل.</p>
+      <a href="login.html" class="inline-block px-4 py-2 bg-red-700 text-white rounded-lg font-bold">الذهاب لتسجيل الدخول</a>
+    </div>
+    <div id="formBox" class="hidden space-y-4">
+      <ol class="text-sm text-gray-700 list-decimal pr-5 space-y-2 mb-4">
+        <li>افتح Railway → الخدمة → <strong>Variables</strong></li>
+        <li>الأسهل: أضيفي <code class="bg-gray-100 px-1">HUB_SUPER_ADMIN_INITIAL_PASSWORD</code> ثم <strong>Redeploy</strong> — بعدها ارجعي لصفحة الدخول مباشرة.</li>
+        <li>أو من <strong>Deployments → View Logs</strong> انسخي سطر
+          <code class="bg-gray-100 px-1 text-xs">[HUB BOOTSTRAP] One-time setup code</code>
+          والصقيه أدناه.</li>
+      </ol>
+      <form id="bootForm" class="space-y-3">
+        <input id="setupCode" required class="w-full border rounded-lg px-3 py-3" placeholder="رمز التهيئة من السجلات" dir="ltr" autocomplete="one-time-code" />
+        <input id="password" type="password" required minlength="8" class="w-full border rounded-lg px-3 py-3" placeholder="كلمة المرور الأولية" autocomplete="new-password" />
+        <input id="confirmPassword" type="password" required minlength="8" class="w-full border rounded-lg px-3 py-3" placeholder="تأكيد كلمة المرور" autocomplete="new-password" />
+        <button type="submit" class="w-full py-3 bg-red-700 text-white font-bold rounded-lg">تهيئة الحساب</button>
+      </form>
+      <p id="msg" class="text-sm font-bold"></p>
+    </div>
+  </div>
+  <script>
+    (async () => {
+      const status = document.getElementById('status');
+      const readyBox = document.getElementById('readyBox');
+      const formBox = document.getElementById('formBox');
+      try {
+        const res = await fetch('/api/auth/bootstrap-status');
+        const data = await res.json();
+        if (!data.needsBootstrap) {
+          readyBox.classList.remove('hidden');
+          status.textContent = '';
+        } else {
+          formBox.classList.remove('hidden');
+          status.textContent = 'بانتظار التهيئة · ' + (data.email || '');
+          status.className = 'mb-4 text-sm font-bold text-red-700';
+        }
+      } catch {
+        status.textContent = 'تعذر التحقق من حالة التهيئة.';
+        formBox.classList.remove('hidden');
+      }
+      document.getElementById('bootForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById('msg');
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        if (password !== confirmPassword) {
+          msg.className = 'text-sm font-bold text-red-700';
+          msg.textContent = 'تأكيد كلمة المرور غير متطابق.';
+          return;
+        }
+        const res = await fetch('/api/auth/bootstrap-super-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            setupCode: document.getElementById('setupCode').value.trim(),
+            password,
+            confirmPassword,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          msg.className = 'text-sm font-bold text-red-700';
+          msg.textContent = data.error || 'فشلت التهيئة';
+          return;
+        }
+        msg.className = 'text-sm font-bold text-green-700';
+        msg.textContent = data.message || 'تم بنجاح';
+        setTimeout(() => { location.href = 'login.html'; }, 1200);
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -152,6 +152,18 @@
         (authPayload && !authPayload.ok && (authPayload.error || authPayload.message)) ||
         'بيانات الدخول غير صحيحة.';
       showAlert(errMsg);
+      if (authPayload?.needsBootstrap || /غير مهيأ|bootstrap/i.test(String(errMsg))) {
+        setTimeout(() => {
+          if (alertMessage && !alertMessage.querySelector('[data-bootstrap-link]')) {
+            const a = document.createElement('a');
+            a.href = 'admin-bootstrap.html';
+            a.dataset.bootstrapLink = '1';
+            a.className = 'block mt-2 underline font-bold';
+            a.textContent = 'افتح صفحة تهيئة حساب الإدارة';
+            alertMessage.appendChild(a);
+          }
+        }, 50);
+      }
       setLoading(false);
       return;
     }

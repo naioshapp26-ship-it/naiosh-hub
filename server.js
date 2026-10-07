@@ -2118,11 +2118,14 @@ async function boot() {
 
   try {
     const staffCreds = require('./lib/hub-staff-credentials');
+    await staffCreds.hydrateFromDb();
     const bootSa = await staffCreds.ensureSuperAdminBootstrap();
     if (bootSa.created) console.log(`Super Admin bootstrapped: ${bootSa.email} (${bootSa.employeeNo})`);
     else if (bootSa.ok) console.log(`Super Admin ready: ${bootSa.email} (${bootSa.employeeNo})`);
     else if (bootSa.reason === 'missing_env') {
-      console.warn('Super Admin password not set — set HUB_SUPER_ADMIN_INITIAL_PASSWORD once to bootstrap');
+      console.warn(
+        'Super Admin password not set — set HUB_SUPER_ADMIN_INITIAL_PASSWORD on Railway Variables and Redeploy (credentials persist in Postgres hub_meta).'
+      );
     }
     const legacy = await staffCreds.ensureLegacyDemoBootstrap();
     if (legacy.ok && legacy.created) console.log(`Legacy demo staff seeded: ${legacy.created}`);
