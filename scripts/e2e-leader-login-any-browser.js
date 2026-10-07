@@ -95,8 +95,10 @@ async function doLogout(page) {
       if (window.HubAuth?.clearSessionAsync) await window.HubAuth.clearSessionAsync();
       else if (window.HubAuth?.clearSession) window.HubAuth.clearSession();
       else {
-        localStorage.clear();
-        sessionStorage.clear();
+        localStorage.removeItem('hubAuthToken');
+        localStorage.removeItem('hubUser');
+        sessionStorage.removeItem('hubAuthToken');
+        sessionStorage.removeItem('hubUser');
       }
     } catch (_) {
       localStorage.removeItem('hubAuthToken');
@@ -104,10 +106,10 @@ async function doLogout(page) {
       sessionStorage.removeItem('hubAuthToken');
       sessionStorage.removeItem('hubUser');
     }
-    window.location.href = 'login.html';
   });
-  await page.waitForFunction(() => /login\.html/i.test(location.href), { timeout: 20000 }).catch(() => null);
-  await sleep(400);
+  // Navigate from Puppeteer (avoid location.href inside evaluate hanging the CDP session).
+  await page.goto(`${BASE}/login.html`, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => null);
+  await sleep(300);
   return tok;
 }
 
@@ -279,9 +281,11 @@ async function main() {
       const adminAfter = await req('GET', '/api/admin/clients', { token: tokBefore });
       mark('24. hub_session Revoked', adminAfter.status === 401 || adminAfter.json?.ok === false, `status=${adminAfter.status}`);
 
-      // Re-login
-      const again = await manualLogin(page, EMP1.email, process.env.HUB_E2E_LEADER_PASSWORD || 'Hub@360');
+      // Re-login (fresh page in same context to avoid stale CDP after logout)
+      const pageRelog = await ctx.newPage();
+      const again = await manualLogin(pageRelog, EMP1.email, process.env.HUB_E2E_LEADER_PASSWORD || 'Hub@360');
       mark('26. Re-login', again.user?.employeeNo === 'EMP-0001' && /dashboard/.test(again.url), again.user?.employeeNo || '');
+      await pageRelog.close().catch(() => null);
     }
   }
 
