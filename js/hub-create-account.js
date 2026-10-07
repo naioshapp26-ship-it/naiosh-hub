@@ -246,27 +246,30 @@
         return;
       }
 
-      const user = {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.name || data.user.fullName,
-        fullName: data.user.fullName || data.user.name,
-        username: data.user.username,
-        phone: data.user.phone,
-        role: 'customer',
-        platform: data.user.platform || 'naiosh-hub-360',
-      };
-      const token = data.token || `hub360.${btoa(user.email)}.${Date.now()}`;
-      if (window.HubAuth?.setSession) {
-        window.HubAuth.setSession(user, token, { remember: true });
+      // Registration must NOT leave an authenticated session.
+      // Clear any prior identity so a later Admin/Employee login is not blocked.
+      if (window.HubAuth?.clearSessionAsync) {
+        await window.HubAuth.clearSessionAsync().catch(() => null);
+      } else if (window.HubAuth?.clearSession) {
+        window.HubAuth.clearSession();
       } else {
-        localStorage.setItem('hubAuthToken', token);
-        localStorage.setItem('hubUser', JSON.stringify(user));
+        try {
+          localStorage.removeItem('hubAuthToken');
+          localStorage.removeItem('hubUser');
+          sessionStorage.removeItem('hubAuthToken');
+          sessionStorage.removeItem('hubUser');
+        } catch (_) {}
       }
 
       form?.classList.add('hidden');
       successPanel?.classList.remove('hidden');
-      showAlert('تم إنشاء الحساب بنجاح', 'success');
+      const customerId = data.user.customerId || data.user.clientId || data.user.id || '';
+      showAlert(
+        customerId
+          ? `تم إنشاء الحساب بنجاح. رقم العميل: ${customerId}. سيتم تحويلك لتسجيل الدخول.`
+          : 'تم إنشاء الحساب بنجاح. سيتم تحويلك لتسجيل الدخول.',
+        'success'
+      );
       const params = new URLSearchParams(location.search);
       const next = params.get('next') || '';
       const safeNext =
@@ -277,8 +280,14 @@
         /^[a-zA-Z0-9_\-./?#=&%]+$/.test(next)
           ? next
           : '';
+      window.HubRegistrationGuard?.clearCreateAccountDraft?.();
+      const loginUrl = new URL('login.html', location.href);
+      loginUrl.searchParams.set('switch', '1');
+      loginUrl.searchParams.set('from', 'create-account');
+      if (data.user.email) loginUrl.searchParams.set('email', data.user.email);
+      if (safeNext) loginUrl.searchParams.set('next', safeNext);
       setTimeout(() => {
-        window.location.href = safeNext || data.destination || 'client.html';
+        window.location.href = loginUrl.pathname + loginUrl.search;
       }, 900);
     } catch {
       showAlert('حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.');
@@ -286,11 +295,55 @@
     }
   }
 
+  const collectDraftFields = () => ({
+    fullName: document.getElementById('fullName')?.value || '',
+    username: document.getElementById('username')?.value || '',
+    email: document.getElementById('email')?.value || '',
+    phone: document.getElementById('phone')?.value || '',
+    governorate: document.getElementById('governorate')?.value || '',
+    city: document.getElementById('city')?.value || '',
+    address: document.getElementById('address')?.value || '',
+  });
+
+  const persistDraft = () => {
+    // Draft only — never creates Customer ID, Role, Token, or hub_session
+    window.HubRegistrationGuard?.saveCreateAccountDraft?.(collectDraftFields());
+  };
+
+  const restoreDraft = () => {
+    const fields = window.HubRegistrationGuard?.loadCreateAccountDraft?.();
+    if (!fields) return;
+    Object.entries(fields).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el && value != null && el.type !== 'password' && el.type !== 'checkbox') {
+        el.value = String(value);
+      }
+    });
+  };
+
   wireToggle('togglePassword', 'password', 'togglePasswordIcon');
   wireToggle('toggleConfirmPassword', 'confirmPassword', 'toggleConfirmPasswordIcon');
   passwordInput?.addEventListener('input', updatePasswordUI);
   confirmInput?.addEventListener('input', updatePasswordUI);
+  ['fullName', 'username', 'email', 'phone', 'governorate', 'city', 'address'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('input', persistDraft);
+  });
   form?.addEventListener('submit', onSubmit);
+
+  // Incomplete registration must never mint auth. Draft restore is UI-only.
+  window.HubRegistrationGuard?.assertNoAuthSideEffects?.();
+  restoreDraft();
+
+  // "لديك حساب بالفعل؟" → login with switch so a draft visit cannot trap another account
+  document.querySelectorAll('a[href="login.html"], a[href="./login.html"]').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const href =
+        window.HubRegistrationGuard?.loginUrlFromRegistration?.({ from: 'create-account' }) ||
+        'login.html?switch=1&from=create-account';
+      window.location.href = href;
+    });
+  });
 
   if (window.HubAuth?.isLoggedIn?.()) {
     const user = window.HubAuth.getUser();

@@ -98,8 +98,15 @@ function fillLogin(email, password, autoSubmit = true) {
     }
 
     setLoading(true);
+    // End any prior identity (customer/admin) before accepting a new login —
+    // clears HttpOnly hub_session so the next account is not mixed with the last.
+    if (window.HubAuth?.clearSessionAsync) {
+      await window.HubAuth.clearSessionAsync().catch(() => null);
+    } else if (window.HubAuth?.clearSession) {
+      window.HubAuth.clearSession();
+    }
     await window.HubPlatformGrants?.hydrate?.().catch?.(() => null);
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     const demo = DEMO_USERS[email];
     const localTenant = (() => {
@@ -139,7 +146,10 @@ function fillLogin(email, password, autoSubmit = true) {
           ...customerData.user,
           role: 'customer',
           name: customerData.user.name || customerData.user.fullName || email,
+          customerId: customerData.user.customerId || customerData.user.clientId || customerData.user.id,
+          clientId: customerData.user.clientId || customerData.user.customerId || '',
         };
+        delete customerUser.employeeNo;
         if (customerData.token) {
           // Prefer server token when present
           window.__hubCustomerToken = customerData.token;
@@ -162,6 +172,8 @@ function fillLogin(email, password, autoSubmit = true) {
     }
 
     let user = null;
+    // Demo/staff identities win over customer API so Admin/Employee switching
+    // cannot be poisoned by a customer row or stale cookie for the same email.
     if (demo && demo.password === password) {
       user = {
         email,
@@ -169,7 +181,7 @@ function fillLogin(email, password, autoSubmit = true) {
         role: demo.role,
         platform: 'naiosh-hub-360',
       };
-    } else if (customerUser) {
+    } else if (customerUser && !demo) {
       user = {
         email: customerUser.email,
         name: customerUser.name,
@@ -179,6 +191,8 @@ function fillLogin(email, password, autoSubmit = true) {
         role: 'customer',
         platform: customerUser.platform || 'naiosh-hub-360',
         id: customerUser.id,
+        customerId: customerUser.customerId || customerUser.clientId || customerUser.id,
+        clientId: customerUser.clientId || customerUser.customerId || '',
       };
     } else if (serverUser) {
       user = serverUser;
@@ -191,7 +205,14 @@ function fillLogin(email, password, autoSubmit = true) {
         systemCode: localTenant.systemCode || '',
         host: localTenant.host || '',
       };
-    } else if (pendingGrant || (localTenant && localTenant.status === 'pending')) {
+    } else if (
+      // Pending platform signup applies only to that email — never blocks other accounts,
+      // demo staff, or an existing customer API match (handled above).
+      !demo &&
+      !customerUser &&
+      !serverUser &&
+      (pendingGrant || (localTenant && localTenant.status === 'pending'))
+    ) {
       showAlert(
         'طلبك بانتظار موافقة السوبر أدمن. بعد الاعتماد ادخل من login.html ثم افتح صفحة «منصتي» لترى الدومين والنظام.'
       );
@@ -264,9 +285,49 @@ function fillLogin(email, password, autoSubmit = true) {
   });
 
   window.addEventListener('load', () => {
+    const params = new URLSearchParams(window.location.search);
+    const prefillEmail = (params.get('email') || '').trim().toLowerCase();
+    const fromParam = String(params.get('from') || '').toLowerCase();
+    const referrer = String(document.referrer || '');
+    const fromRegistration =
+      fromParam === 'register' ||
+      fromParam === 'create-account' ||
+      fromParam === 'signup' ||
+      /create-account\.html|register\.html|register-freelancer\.html/i.test(referrer);
+    const switchAccount =
+      params.get('switch') === '1' ||
+      params.get('switch') === 'true' ||
+      fromRegistration;
+    if (prefillEmail) {
+      const emailInput = document.getElementById('email');
+      if (emailInput && !emailInput.value) emailInput.value = prefillEmail;
+    }
+    // Coming from incomplete/complete registration: stay on the form so another
+    // account can sign in. Registration draft keys are left untouched.
+    if (switchAccount && window.HubAuth?.clearSessionAsync) {
+      window.HubAuth.clearSessionAsync().catch(() => null);
+      return;
+    }
+
     const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
     if (!token) return;
-    const params = new URLSearchParams(window.location.search);
+    // If arriving from registration with ?email=, prefer the login form over auto-redirect
+    // so the new customer (or another account) can authenticate cleanly.
+    if (prefillEmail || fromRegistration) return;
+
+    // If the user starts typing credentials, cancel auto-redirect (account switch intent).
+    let redirectTimer = null;
+    const cancelRedirect = () => {
+      if (redirectTimer) {
+        clearTimeout(redirectTimer);
+        redirectTimer = null;
+      }
+    };
+    ['email', 'password'].forEach((id) => {
+      document.getElementById(id)?.addEventListener('input', cancelRedirect, { once: true });
+      document.getElementById(id)?.addEventListener('focus', cancelRedirect, { once: true });
+    });
+
     const next = params.get('next') || '';
     let dest = 'dashboard.html';
     try {
@@ -302,7 +363,7 @@ function fillLogin(email, password, autoSubmit = true) {
       else dest = next;
     }
     showAlert('لديك جلسة نشطة. جاري تحويلك...', 'success');
-    setTimeout(() => {
+    redirectTimer = setTimeout(() => {
       window.location.replace(dest.startsWith('http') ? 'dashboard.html' : dest);
     }, 500);
   });

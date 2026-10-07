@@ -224,11 +224,17 @@
             ? 'صاحب منصة'
             : user.role || 'عضو');
 
-  $('#logout-btn').onclick = () => {
-    localStorage.removeItem('hubAuthToken');
-    localStorage.removeItem('hubUser');
-    sessionStorage.removeItem('hubAuthToken');
-    sessionStorage.removeItem('hubUser');
+  $('#logout-btn').onclick = async () => {
+    try {
+      if (window.HubAuth?.clearSessionAsync) await window.HubAuth.clearSessionAsync();
+      else if (window.HubAuth?.clearSession) window.HubAuth.clearSession();
+      else {
+        localStorage.removeItem('hubAuthToken');
+        localStorage.removeItem('hubUser');
+        sessionStorage.removeItem('hubAuthToken');
+        sessionStorage.removeItem('hubUser');
+      }
+    } catch (_) {}
     window.location.href = 'login.html';
   };
 

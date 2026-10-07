@@ -1832,6 +1832,8 @@ const server = http.createServer((req, res) => {
             /* ignore */
           }
         }
+        // Registration must NOT establish a browser session cookie.
+        // Auth state starts only after an explicit login (account isolation).
         sendJson(
           res,
           result.status || (result.ok ? 201 : 400),
@@ -1842,11 +1844,11 @@ const server = http.createServer((req, res) => {
             error: result.ok ? undefined : result.error,
             field: result.field,
             strength: result.strength,
-            token: result.token,
+            token: undefined,
             user: result.user,
-            destination: result.ok ? 'client.html' : undefined,
+            destination: result.ok ? 'login.html' : undefined,
           },
-          result.ok && result.token ? { 'Set-Cookie': hubSession.sessionCookieHeader(result.token) } : {}
+          result.ok ? { 'Set-Cookie': hubSession.clearSessionCookieHeader() } : {}
         );
       })
       .catch((error) => {
@@ -1857,6 +1859,18 @@ const server = http.createServer((req, res) => {
           error: status === 413 ? 'حجم الطلب أكبر من المسموح' : 'حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.',
         });
       });
+    return;
+  }
+
+  if (pathname === '/api/auth/me' && req.method === 'OPTIONS') {
+    sendJson(res, 204, {});
+    return;
+  }
+
+  if (pathname === '/api/auth/me' && req.method === 'GET') {
+    const session = hubSession.resolveSession(req);
+    const view = hubSession.publicSessionView(session);
+    sendJson(res, session.ok ? 200 : session.status || 401, view);
     return;
   }
 

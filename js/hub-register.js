@@ -592,6 +592,8 @@
       form.reset();
       subdomainOk = false;
       fillForm();
+      window.HubRegistrationGuard?.clearPlatformRegisterDraft?.();
+      // Successful platform request is NOT an authenticated Hub session
       if (statusEl) {
         statusEl.textContent = 'أدخل النطاق الفرعي للتحقق من توفره';
         statusEl.className = 'hub-book-subdomain-status';
@@ -599,6 +601,7 @@
     } catch (err) {
       toast(err?.message || 'تعذّر إرسال الطلب', false);
       // لا تمسح بيانات النموذج أو المرفقات عند فشل رفع ملف واحد
+      // API failure must not leave auth residue that blocks later Login
     } finally {
       if (submitBtn) submitBtn.disabled = false;
     }
@@ -662,9 +665,47 @@
     });
   };
 
+  const collectRegisterDraft = () => {
+    if (!form) return {};
+    const fd = new FormData(form);
+    return {
+      fullName: String(fd.get('fullName') || ''),
+      phone: String(fd.get('phone') || ''),
+      email: String(fd.get('email') || ''),
+      country: String(fd.get('country') || ''),
+      branch: String(fd.get('branch') || ''),
+      incubator: String(fd.get('incubator') || ''),
+      platform: String(fd.get('platform') || ''),
+      requestedSystem: String(fd.get('requestedSystem') || ''),
+      subdomain: String(fd.get('subdomain') || ''),
+      notes: String(fd.get('notes') || ''),
+    };
+  };
+
+  const persistRegisterDraft = () => {
+    // Draft ≠ Auth: never creates Customer/Employee/session/token
+    window.HubRegistrationGuard?.savePlatformRegisterDraft?.(collectRegisterDraft());
+  };
+
+  const restoreRegisterDraft = () => {
+    const fields = window.HubRegistrationGuard?.loadPlatformRegisterDraft?.();
+    if (!fields || !form) return;
+    Object.entries(fields).forEach(([name, value]) => {
+      const el = form.querySelector(`[name="${name}"]`);
+      if (!el || el.type === 'password' || value == null || value === '') return;
+      if (name === 'country') {
+        el.value = String(value);
+        unlockBranch(String(value), fields.branch || '');
+        return;
+      }
+      el.value = String(value);
+    });
+  };
+
   const bind = async () => {
     fillForm();
     bindAttachments();
+    window.HubRegistrationGuard?.assertNoAuthSideEffects?.();
 
     const suffix = root.querySelector('[data-subdomain-suffix]');
     if (suffix && grants()) suffix.textContent = `.${grants().BASE_DOMAIN}`;
@@ -673,6 +714,7 @@
       const country = String(event.target.value || '').trim();
       if (!country) lockBranch('اختر الدولة أولاً');
       else unlockBranch(country);
+      persistRegisterDraft();
     });
 
     let timer = null;
@@ -684,6 +726,25 @@
         statusEl.className = 'hub-book-subdomain-status';
       }
       timer = setTimeout(checkSubdomain, 400);
+      persistRegisterDraft();
+    });
+
+    form?.querySelectorAll('input, select, textarea').forEach((el) => {
+      if (el.name === 'password' || el.name === 'subdomain' || el.name === 'country') return;
+      el.addEventListener('input', persistRegisterDraft);
+      el.addEventListener('change', persistRegisterDraft);
+    });
+
+    // Login links from this page must allow any existing account (defect #10)
+    root.querySelectorAll('a[href="login.html"], a[href="./login.html"]').forEach((a) => {
+      a.setAttribute(
+        'href',
+        window.HubRegistrationGuard?.loginUrlFromRegistration?.({ from: 'register' }) ||
+          'login.html?switch=1&from=register'
+      );
+    });
+    document.querySelectorAll('header a[href="login.html"], header a[href="./login.html"]').forEach((a) => {
+      a.setAttribute('href', 'login.html?switch=1&from=register');
     });
 
     form?.addEventListener('submit', onSubmit);
@@ -692,6 +753,7 @@
     } catch {
       /* local ok */
     }
+    restoreRegisterDraft();
   };
 
   if (document.readyState === 'loading') {
