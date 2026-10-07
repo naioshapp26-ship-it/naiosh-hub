@@ -60,8 +60,8 @@
           <h4>الأمان وكلمة المرور</h4>
           <form id="sa-pwd-form" class="cp-form" style="display:grid;gap:10px;max-width:420px">
             <label>كلمة المرور الحالية<input type="password" name="currentPassword" required autocomplete="current-password" class="form-control" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>
-            <label>كلمة المرور الجديدة<input type="password" name="newPassword" required minlength="8" autocomplete="new-password" class="form-control" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>
-            <label>تأكيد كلمة المرور الجديدة<input type="password" name="confirmPassword" required minlength="8" autocomplete="new-password" class="form-control" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>
+            <label>كلمة المرور الجديدة<input type="password" name="newPassword" required autocomplete="new-password" class="form-control" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>
+            <label>تأكيد كلمة المرور الجديدة<input type="password" name="confirmPassword" required autocomplete="new-password" class="form-control" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>
             <button type="submit" class="btn btn-primary">حفظ</button>
             <p id="sa-pwd-msg" style="margin:0;font-weight:700"></p>
           </form>
@@ -193,7 +193,7 @@
               .map((r) => `<option value="${esc(r.code)}">${esc(r.label)}</option>`)
               .join('')}
           </select>
-          <input name="temporaryPassword" type="password" required minlength="8" placeholder="كلمة مرور مؤقتة (سيُطلب تغييرها)" autocomplete="new-password" style="padding:8px;border:1px solid #ddd;border-radius:8px"/>
+          <input name="temporaryPassword" type="password" required placeholder="كلمة مرور مؤقتة (سيُطلب تغييرها)" autocomplete="new-password" style="padding:8px;border:1px solid #ddd;border-radius:8px"/>
           <fieldset style="border:1px solid #eee;border-radius:8px;padding:10px">
             <legend>الصلاحيات</legend>
             <div style="max-height:180px;overflow:auto">${permChecks([])}</div>

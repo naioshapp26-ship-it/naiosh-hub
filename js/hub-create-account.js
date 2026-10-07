@@ -101,12 +101,11 @@
     ['fullName', 'username', 'email', 'phone', 'password', 'confirmPassword', 'terms'].forEach(clearFieldError);
   }
 
-  const MIN_PASSWORD_LENGTH = 4;
-
+  /** Owner policy: no complexity — any non-empty password (numeric OK). */
   function passwordStrength(password) {
     const p = String(password || '');
-    const rules = { minLength: p.length >= MIN_PASSWORD_LENGTH };
-    return { ok: rules.minLength, rules };
+    const rules = { notEmpty: p.length > 0 && p.trim().length > 0 };
+    return { ok: rules.notEmpty, rules };
   }
 
   function updatePasswordUI() {
@@ -120,16 +119,15 @@
       if (icon) icon.className = met ? 'fa-solid fa-circle-check ml-1' : 'fa-solid fa-circle-xmark ml-1';
     });
     if (meterFill) {
-      const pct = Math.min(100, (value.length / MIN_PASSWORD_LENGTH) * 100);
-      meterFill.style.width = `${pct}%`;
+      meterFill.style.width = ok ? '100%' : value ? '40%' : '0%';
       meterFill.style.backgroundColor = ok ? '#16a34a' : value ? '#d97706' : '#dc2626';
     }
     if (meterLabel) {
       meterLabel.textContent = !value
-        ? 'اختاري أي كلمة مرور أو رقم (4 أحرف على الأقل)'
+        ? 'اختاري أي كلمة مرور — أرقام أو حروف، بدون شروط تركيب'
         : ok
           ? 'كلمة المرور مقبولة ✓'
-          : `أضيفي ${MIN_PASSWORD_LENGTH - value.length} حرفًا أو رقمًا على الأقل`;
+          : 'كلمة المرور مطلوبة';
     }
     if (passwordInput && value) {
       passwordInput.classList.toggle('field-ok', ok);
@@ -188,11 +186,11 @@
       ok = false;
     }
     if (!passwordStrength(password).ok) {
-      setFieldError('password', `كلمة المرور قصيرة جدًا — ${MIN_PASSWORD_LENGTH} أحرف أو أرقام على الأقل.`);
+      setFieldError('password', 'كلمة المرور مطلوبة.');
       ok = false;
     }
     if (password !== confirmPassword) {
-      setFieldError('confirmPassword', 'كلمتا المرور غير متطابقتين.');
+      setFieldError('confirmPassword', 'تأكيد كلمة المرور غير متطابق.');
       ok = false;
     }
     if (!termsAccepted) {
