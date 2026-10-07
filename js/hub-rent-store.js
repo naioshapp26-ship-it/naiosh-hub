@@ -5,12 +5,27 @@
   'use strict';
 
   const KEY = 'naiosh_hub_system_rentals_v1';
+  const GUEST_SCOPE_KEY = 'naiosh_hub_rent_guest_scope';
   const API = '/api/hub/system-rentals';
   const ERP_VALIDATE = '/api/hub/adapters/erp/validate-subdomain';
   const ERP_PROVISION = '/api/hub/adapters/erp/provision';
   const BASE_DOMAIN = 'naiosh.app';
   const RESERVED = new Set(['www', 'app', 'api', 'admin', 'saas', 'hub', 'mail', 'ftp']);
   const SUBDOMAIN_RE = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
+
+  /** Per-tab guest scope so Guest B never inherits Guest A localStorage PII */
+  const guestBrowserScope = () => {
+    try {
+      let scope = sessionStorage.getItem(GUEST_SCOPE_KEY);
+      if (!scope) {
+        scope = `gs-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        sessionStorage.setItem(GUEST_SCOPE_KEY, scope);
+      }
+      return scope;
+    } catch {
+      return `gs-ephemeral-${Date.now().toString(36)}`;
+    }
+  };
 
   const PLAN_META = {
     basic: { label: 'Basic (مجاني)', amount: 'مجاني', price: 0 },
@@ -59,13 +74,26 @@
     }),
   });
 
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+  const isValidPhone = (phone) => {
+    const raw = String(phone || '').trim();
+    const digits = raw.replace(/\D/g, '');
+    return digits.length >= 8 && digits.length <= 15 && /^\+?[0-9]+$/.test(raw);
+  };
+
+  const authHeaders = (extra = {}) =>
+    window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json', ...extra }) || {
+      'Content-Type': 'application/json',
+      ...extra,
+    };
+
+  /** Staff-only full sync — guests must never overwrite the shared store */
   const syncRemote = async (state) => {
+    if (!window.HubAuth?.isStaff?.()) return;
     try {
       await fetch(API, {
         method: 'POST',
-        headers: window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders(),
         body: JSON.stringify(publicState(state)),
       });
     } catch {
@@ -73,28 +101,77 @@
     }
   };
 
+  const pushRentalToServer = async (rental, { idempotencyKey = '' } = {}) => {
+    const res = await fetch(`${API}/submit`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        idempotencyKey,
+        customerId: '',
+        owner: {
+          name: rental.adminName,
+          email: rental.adminEmail,
+          phone: rental.adminPhone,
+        },
+        rental: {
+          companyName: rental.companyName,
+          slug: rental.slug,
+          subdomain: rental.slug,
+          adminName: rental.adminName,
+          adminPhone: rental.adminPhone,
+          adminEmail: rental.adminEmail,
+          plan: rental.plan,
+          systems: rental.systems,
+          payMethod: rental.payMethod,
+        },
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      const err = new Error(data.error || 'تعذر حفظ طلب الاستئجار على الخادم');
+      err.status = res.status;
+      err.field = data.field;
+      err.code = data.code;
+      throw err;
+    }
+    return data;
+  };
+
   const hydrate = async () => {
+    const logged = !!window.HubAuth?.isLoggedIn?.();
+    const sessionEmail = String(window.HubAuth?.getUser?.()?.email || '')
+      .trim()
+      .toLowerCase();
+    const scope = guestBrowserScope();
     try {
-      const res = await fetch(API, { cache: 'no-store' });
+      const res = await fetch(API, { cache: 'no-store', headers: authHeaders({ Accept: 'application/json' }) });
       if (!res.ok) return readLocal();
       const data = await res.json();
       if (data?.ok && data?.state) {
         const local = readLocal();
         const remoteRentals = Array.isArray(data.state.rentals) ? data.state.rentals : [];
-        // حافظ على كلمات المرور المحلية إن وُجدت لنفس الـ id
         const pwdMap = Object.fromEntries(
           (local.rentals || []).filter((r) => r.adminPassword).map((r) => [r.id, r.adminPassword])
         );
+        // Anonymous/public responses intentionally omit other guests' rentals.
+        // Keep only THIS tab's guest-scoped local rentals (or the logged-in customer's own).
+        const remoteIds = new Set(remoteRentals.map((r) => r.id));
+        const localMine = (local.rentals || []).filter((r) => {
+          if (remoteIds.has(r.id)) return false;
+          if (!r.adminEmail && !r.guestContactId && !r.requestId) return false;
+          if (logged && sessionEmail) {
+            return String(r.adminEmail || '').toLowerCase() === sessionEmail;
+          }
+          return r.guestBrowserScope === scope;
+        });
         const merged = {
           ...blank(),
-          ...data.state,
-          rentals: remoteRentals.map((r) => (pwdMap[r.id] ? { ...r, adminPassword: pwdMap[r.id] } : r)),
+          visibility: data.state.visibility || local.visibility || {},
+          rentals: [
+            ...remoteRentals.map((r) => (pwdMap[r.id] ? { ...r, adminPassword: pwdMap[r.id] } : r)),
+            ...localMine,
+          ],
         };
-        // أبقِ الطلبات المحلية الأحدث غير الموجودة في السيرفر
-        const remoteIds = new Set(merged.rentals.map((r) => r.id));
-        (local.rentals || []).forEach((r) => {
-          if (!remoteIds.has(r.id)) merged.rentals.unshift(r);
-        });
         return saveLocal(merged);
       }
     } catch {
@@ -229,7 +306,7 @@
 
   const getRental = (id) => listRentals().find((r) => String(r.id) === String(id)) || null;
 
-  const submitRental = (payload = {}) => {
+  const submitRental = async (payload = {}) => {
     const companyName = String(payload.companyName || '').trim();
     const slugCheck = validateSubdomainLocal(payload.slug || payload.subdomain);
     const adminName = String(payload.adminName || '').trim();
@@ -241,10 +318,13 @@
       RENTABLE_CODES.includes(c)
     );
     const payMethod = String(payload.payMethod || 'hub').trim();
+    const idempotencyKey = String(payload.idempotencyKey || '').trim();
 
-    if (!companyName || !adminName || !adminPhone || !adminPassword) {
-      return { ok: false, error: 'يرجى ملء جميع الحقول المطلوبة *' };
+    if (!companyName || !adminName || !adminPhone || !adminEmail || !adminPassword) {
+      return { ok: false, error: 'يرجى ملء جميع الحقول المطلوبة *', field: !adminEmail ? 'email' : !adminPhone ? 'phone' : 'name' };
     }
+    if (!isValidEmail(adminEmail)) return { ok: false, error: 'البريد الإلكتروني غير صالح', field: 'email' };
+    if (!isValidPhone(adminPhone)) return { ok: false, error: 'رقم الهاتف غير صالح', field: 'phone' };
     if (adminPassword.length < 8) return { ok: false, error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' };
     if (!slugCheck.available) return { ok: false, error: slugCheck.message || 'النطاق الفرعي غير صالح' };
     if (!systems.length) return { ok: false, error: 'اختر نظامًا واحدًا على الأقل' };
@@ -255,32 +335,69 @@
       return { ok: false, error: `الأنظمة غير مسموحة لصلاحياتك: ${blocked.join(', ')}` };
     }
 
+    const logged = !!window.HubAuth?.isLoggedIn?.();
+    const sessionUser = window.HubAuth?.getUser?.() || {};
+    const isCustomer = logged && ['customer', 'client'].includes(String(sessionUser.role || '').toLowerCase());
+
+    let serverRental = null;
+    try {
+      const pushed = await pushRentalToServer(
+        {
+          companyName,
+          slug: slugCheck.slug,
+          adminName,
+          adminPhone,
+          adminEmail,
+          plan,
+          systems,
+          payMethod,
+        },
+        { idempotencyKey }
+      );
+      serverRental = pushed.rental;
+    } catch (err) {
+      return { ok: false, error: err.message || 'تعذر إرسال الطلب', field: err.field, code: err.code };
+    }
+
     const now = new Date().toISOString();
+    const ownerType = serverRental.ownerType || (isCustomer ? 'Customer' : 'Guest');
     const rental = {
-      id: uid('rent'),
+      id: serverRental.id,
+      requestId: serverRental.requestId,
+      ownerType,
+      customerId: serverRental.customerId || '',
+      guestContactId: serverRental.guestContactId || '',
+      guestBrowserScope: ownerType === 'Guest' ? guestBrowserScope() : '',
+      isGuest: ownerType === 'Guest',
       companyName,
       slug: slugCheck.slug,
       host: slugCheck.host,
-      adminName,
-      adminPhone,
-      adminEmail,
+      adminName: serverRental.adminName || adminName,
+      adminPhone: serverRental.adminPhone || adminPhone,
+      adminEmail: serverRental.adminEmail || adminEmail,
       adminPassword,
       plan,
       planLabel: PLAN_META[plan].label,
       amount: PLAN_META[plan].amount,
       systems,
       payMethod,
-      status: plan === 'basic' ? 'provisioning' : 'pending',
+      status: serverRental.status || 'pending',
+      statusLabel: serverRental.statusLabel || 'بانتظار المراجعة',
       erp: null,
-      createdAt: now,
+      sourceModule: 'سجل أنظمة هوب',
+      requestType: 'System Rental',
+      createdAt: serverRental.createdAt || now,
       updatedAt: now,
+      submittedAt: serverRental.submittedAt || now,
+      idempotencyKey: idempotencyKey || null,
     };
 
     const state = readLocal();
-    state.rentals.unshift(rental);
+    const idx = state.rentals.findIndex((r) => r.id === rental.id || r.requestId === rental.requestId);
+    if (idx >= 0) state.rentals[idx] = { ...state.rentals[idx], ...rental };
+    else state.rentals.unshift(rental);
     saveLocal(state);
-    syncRemote(state);
-    return { ok: true, rental };
+    return { ok: true, rental, duplicate: false };
   };
 
   const applyLocalActivation = (row) => {
@@ -365,6 +482,21 @@
     };
   };
 
+  const patchRentalStatus = async (id, status, { reason = '' } = {}) => {
+    const res = await fetch(`${API}/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ status, reason }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      const err = new Error(data.error || 'تعذر تحديث حالة الطلب');
+      err.status = res.status;
+      throw err;
+    }
+    return data.rental;
+  };
+
   const activateRental = (id) => {
     const state = readLocal();
     const row = state.rentals.find((r) => String(r.id) === String(id));
@@ -377,18 +509,34 @@
 
   const activateRentalAsync = async (id) => {
     const state = readLocal();
-    const row = state.rentals.find((r) => String(r.id) === String(id));
+    const row = state.rentals.find((r) => String(r.id) === String(id) || String(r.requestId) === String(id));
     if (!row) return { ok: false, error: 'الطلب غير موجود' };
 
     row.status = 'provisioning';
     row.updatedAt = new Date().toISOString();
     saveLocal(state);
 
+    try {
+      await patchRentalStatus(row.id || id, 'provisioning');
+    } catch (err) {
+      // Staff-only on server; local provision may still proceed for legacy flows
+      if (err.status && err.status !== 403) {
+        row.status = 'pending';
+        saveLocal(state);
+        return { ok: false, error: err.message };
+      }
+    }
+
     const erp = await provisionErp(row);
     if (!erp.ok) {
-      row.status = row.plan === 'basic' ? 'provisioning' : 'pending';
+      row.status = 'pending';
       row.erpError = erp.error;
       saveLocal(state);
+      try {
+        await patchRentalStatus(row.id || id, 'pending');
+      } catch {
+        /* ignore */
+      }
       syncRemote(state);
       return { ok: false, error: erp.error, pendingPayment: erp.pendingPayment, paymentUrl: erp.paymentUrl };
     }
@@ -396,16 +544,44 @@
     if (erp.erp) row.erp = erp.erp;
     applyLocalActivation(row);
     saveLocal(state);
+    try {
+      const serverRow = await patchRentalStatus(row.id || id, 'active');
+      if (serverRow) {
+        row.status = serverRow.status || row.status;
+        row.statusLabel = serverRow.statusLabel || row.statusLabel;
+        row.approvedAt = serverRow.approvedAt || row.approvedAt;
+        row.adminEmail = serverRow.adminEmail || row.adminEmail;
+        row.adminPhone = serverRow.adminPhone || row.adminPhone;
+        row.adminName = serverRow.adminName || row.adminName;
+        row.guestContactId = serverRow.guestContactId || row.guestContactId;
+        row.requestId = serverRow.requestId || row.requestId;
+        saveLocal(state);
+      }
+    } catch (err) {
+      if (err.status === 403) {
+        syncRemote(state);
+      } else {
+        return { ok: false, error: err.message || 'تم التجهيز محليًا لكن فشل اعتماد الخادم' };
+      }
+    }
     syncRemote(state);
     return { ok: true, rental: row };
   };
 
-  const rejectRental = (id, reason = '') => {
+  const rejectRental = async (id, reason = '') => {
     const state = readLocal();
-    const row = state.rentals.find((r) => String(r.id) === String(id));
+    const row = state.rentals.find((r) => String(r.id) === String(id) || String(r.requestId) === String(id));
     if (!row) return { ok: false, error: 'الطلب غير موجود' };
-    row.status = 'rejected';
-    row.rejectReason = String(reason || '').trim();
+    try {
+      const serverRow = await patchRentalStatus(row.id || id, 'rejected', { reason });
+      row.status = serverRow.status || 'rejected';
+      row.statusLabel = serverRow.statusLabel || 'مرفوض';
+      row.rejectReason = serverRow.rejectReason || String(reason || '').trim();
+    } catch (err) {
+      if (err.status !== 403) return { ok: false, error: err.message };
+      row.status = 'rejected';
+      row.rejectReason = String(reason || '').trim();
+    }
     row.updatedAt = new Date().toISOString();
     delete row.adminPassword;
     saveLocal(state);
@@ -418,8 +594,10 @@
       .trim()
       .toLowerCase();
     const all = listRentals().filter((r) => r.status === 'active' || r.status === 'pending' || r.status === 'provisioning');
-    if (!key) return all;
-    return all.filter((r) => String(r.adminEmail || '').toLowerCase() === key);
+    if (key) return all.filter((r) => String(r.adminEmail || '').toLowerCase() === key);
+    // Guests without login: only this tab's scoped bookings — never other guests' PII
+    const scope = guestBrowserScope();
+    return all.filter((r) => r.guestBrowserScope === scope);
   };
 
   /** رابط فتح النظام المستأجر عبر جسر SSO في هوب */
@@ -455,18 +633,8 @@
       viaExpected = window.HubLiveSystems?.url?.(code) ? 'hub-sso-bridge' : 'hub-catalog';
     }
 
-    // جلسة هوب خفيفة إن لم يكن مسجلاً — من بيانات الاستئجار
-    if (!window.HubAuth?.isLoggedIn?.() && rental.adminEmail) {
-      window.HubAuth?.setSession?.(
-        {
-          email: rental.adminEmail,
-          name: rental.adminName || rental.companyName,
-          role: 'tenant_admin',
-        },
-        `rent-${rental.id}`,
-        { remember: true }
-      );
-    }
+    // لا تزرع جلسة دائمة من بيانات الحجز — ذلك يسرّب هوية زائر لزائر لاحق في نفس المتصفح.
+    // SSO ticket أدناه يكفي لفتح النظام دون تلوث نموذج الحجز التالي.
 
     const ticket = await window.HubAuth?.issueHubTicket?.({
       email: rental.adminEmail || window.HubAuth?.getUser?.()?.email,
@@ -542,5 +710,10 @@
     rejectRental,
     provisionErp,
     buildOpenUrl,
+    isValidEmail,
+    isValidPhone,
+    pushRentalToServer,
+    guestBrowserScope,
+    patchRentalStatus,
   };
 })();

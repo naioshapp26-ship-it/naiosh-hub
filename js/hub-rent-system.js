@@ -169,6 +169,115 @@
       });
     };
 
+    const clearFieldErrors = () => {
+      $$('.hub-rent-field-error').forEach((el) => {
+        el.hidden = true;
+        el.textContent = '';
+      });
+      $$('.hub-rent-fields input.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
+    };
+
+    const showFieldError = (fieldId, message) => {
+      const input = $(`#${fieldId}`);
+      if (input) {
+        input.classList.add('is-invalid');
+        input.focus();
+      }
+      const err = $(`[data-err-for="${fieldId}"]`);
+      if (err) {
+        err.hidden = false;
+        err.textContent = message;
+      }
+    };
+
+    const isCustomerSession = () => {
+      const logged = !!window.HubAuth?.isLoggedIn?.();
+      if (!logged) return false;
+      const user = window.HubAuth?.getUser?.() || {};
+      const role = String(user.role || '').toLowerCase();
+      if (window.HubAuth?.isStaff?.(user)) return false;
+      // Drop legacy rent-flow fake sessions (tenant_admin) — never prefill from them
+      if (role === 'tenant_admin') {
+        try {
+          window.HubAuth?.clearSession?.();
+        } catch {
+          /* ignore */
+        }
+        return false;
+      }
+      return window.HubAuth?.isClient?.(user) || ['customer', 'client', 'platform_owner'].includes(role);
+    };
+
+    /** Guests always start blank; customers prefill from trusted session only */
+    const initContactFields = () => {
+      const nameEl = $('#adminName');
+      const phoneEl = $('#adminPhone');
+      const emailEl = $('#adminEmail');
+      const hint = $('[data-rent-account-hint]');
+      if (!nameEl || !phoneEl || !emailEl) return;
+
+      // Always wipe first — prevents browser/session leftovers from prior guests
+      nameEl.value = '';
+      phoneEl.value = '';
+      emailEl.value = '';
+      if ($('#adminPassword')) $('#adminPassword').value = '';
+      if ($('#companyName')) $('#companyName').value = '';
+      if ($('#subdomain')) $('#subdomain').value = '';
+
+      if (!isCustomerSession()) {
+        if (hint) hint.hidden = true;
+        emailEl.readOnly = false;
+        return;
+      }
+
+      const user = window.HubAuth.getUser() || {};
+      nameEl.value = String(user.name || user.fullName || '').trim();
+      phoneEl.value = String(user.phone || user.mobile || user.account?.phone || '').trim();
+      emailEl.value = String(user.email || '').trim().toLowerCase();
+      emailEl.readOnly = true;
+      if (hint) hint.hidden = false;
+    };
+
+    const validateContactStep = () => {
+      clearFieldErrors();
+      const f = readForm();
+      let ok = true;
+      if (!f.companyName) {
+        showFieldError('companyName', 'اسم الشركة مطلوب');
+        ok = false;
+      }
+      if (!f.subdomain) {
+        showFieldError('subdomain', 'النطاق الفرعي مطلوب');
+        ok = false;
+      }
+      if (!f.adminName) {
+        showFieldError('adminName', 'الاسم الكامل مطلوب');
+        ok = false;
+      }
+      if (!f.adminPhone) {
+        showFieldError('adminPhone', 'رقم الهاتف مطلوب');
+        ok = false;
+      } else if (!store().isValidPhone(f.adminPhone)) {
+        showFieldError('adminPhone', 'رقم الهاتف غير صالح');
+        ok = false;
+      }
+      if (!f.adminEmail) {
+        showFieldError('adminEmail', 'البريد الإلكتروني مطلوب');
+        ok = false;
+      } else if (!store().isValidEmail(f.adminEmail)) {
+        showFieldError('adminEmail', 'البريد الإلكتروني غير صالح');
+        ok = false;
+      }
+      if (!f.adminPassword) {
+        showFieldError('adminPassword', 'كلمة المرور مطلوبة');
+        ok = false;
+      } else if (f.adminPassword.length < 8) {
+        showFieldError('adminPassword', 'كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+        ok = false;
+      }
+      return ok;
+    };
+
     const currentEmail = () => String($('#adminEmail')?.value || '').trim().toLowerCase();
 
     const renderSystems = () => {
@@ -252,9 +361,8 @@
     });
 
     const goStep2 = () => {
-      const f = readForm();
-      if (!f.companyName || !f.subdomain || !f.adminName || !f.adminPhone || !f.adminPassword) {
-        return toast('يرجى ملء جميع الحقول المطلوبة *');
+      if (!validateContactStep()) {
+        return toast('يرجى تصحيح الحقول المطلوبة *');
       }
       if (!state.subdomainOk) return toast('تحقق من توفر النطاق الفرعي أولًا');
       setStep(2);
@@ -355,16 +463,26 @@
     };
 
     const submitPayment = async () => {
+      clearFieldErrors();
       const f = readForm();
-      const res = store().submitRental(f);
-      if (!res.ok) return toast(res.error || 'تعذّر إرسال الطلب');
+      if (!validateContactStep()) {
+        setStep(1);
+        return toast('يرجى تصحيح الحقول المطلوبة *');
+      }
+      const res = await store().submitRental(f);
+      if (!res.ok) {
+        if (res.field === 'email') showFieldError('adminEmail', res.error);
+        else if (res.field === 'phone') showFieldError('adminPhone', res.error);
+        else if (res.field === 'name') showFieldError('adminName', res.error);
+        return toast(res.error || 'تعذّر إرسال الطلب');
+      }
       if (res.rental.status === 'pending') {
         fillSuccess(
           res.rental,
           'الطلب بانتظار اعتماد غرفة العمليات في هوب — بعد الموافقة يُجهَّز مستأجر ERP ويُمنح الصب دومين.'
         );
         const openBtn = $('[data-success-open]');
-        if (openBtn) openBtn.href = 'rent-admin.html';
+        if (openBtn) openBtn.href = 'my-systems.html';
         setStep(5);
         toast('تم إرسال طلب الاستئجار للمراجعة');
         return;
@@ -409,6 +527,7 @@
     if (pre) state.systems.add(pre);
     const suffix = $('[data-subdomain-suffix]');
     if (suffix) suffix.textContent = `.${store().BASE_DOMAIN}`;
+    initContactFields();
     setStep(1);
   };
 
