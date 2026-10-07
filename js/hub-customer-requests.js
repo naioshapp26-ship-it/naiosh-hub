@@ -30,6 +30,7 @@
     'Cost Reduction Assessment': { department: 'Financial Consulting', assignedTo: 'Financial Consulting Team' },
     'Cost Reduction Request': { department: 'Financial Consulting', assignedTo: 'Financial Consulting Team' },
     'Product Request': { department: 'Sales', assignedTo: 'Sales Desk' },
+    'Product Submission': { department: 'Sales', assignedTo: 'Sales Desk' },
     'Service Request': { department: 'Sales', assignedTo: 'Sales Desk' },
     'System Request': { department: 'Systems', assignedTo: 'Systems Team' },
     'Integration Request': { department: 'Systems', assignedTo: 'Systems Team' },
@@ -89,6 +90,7 @@
     'Quote Request': 'طلب عرض سعر لحل',
     'Quotation Request': 'طلب تسعير',
     'Product Request': 'طلب منتج',
+    'Product Submission': 'طلب إضافة منتج',
     'Service Request': 'طلب خدمة',
     'System Request': 'طلب نظام',
     'Integration Request': 'طلب تكامل',
@@ -135,7 +137,7 @@
     Assigned: 'قيد المراجعة',
     'Pending Review': 'بانتظار المراجعة',
     'Under Review': 'قيد المراجعة',
-    'Needs Changes': 'يحتاج معلومات إضافية',
+    'Needs Changes': 'يحتاج إلى تعديل',
     'Need More Information': 'يحتاج معلومات إضافية',
     'Waiting For Customer': 'يحتاج معلومات إضافية',
     'Pending Approval': 'بانتظار الموافقة',
@@ -306,6 +308,8 @@
       costMeta: r.costMeta || null,
       articleSnapshot: r.articleSnapshot || null,
       adSnapshot: r.adSnapshot || null,
+      productSnapshot: r.productSnapshot || null,
+      productId: r.productId || r.productSnapshot?.productId || '',
       eventSnapshot: r.eventSnapshot || null,
       platformDraft: r.platformDraft || null,
       platformName: r.platformName || '',
@@ -1189,7 +1193,78 @@
     row.updatedAt = stamp;
     row.timeline = row.timeline || [];
 
-    if (row.referenceType === 'Ad' || row.requestType === 'Ad Submission') {
+    if (row.referenceType === 'Product' || row.requestType === 'Product Submission') {
+      try {
+        if (window.HubStoresRegistry?.approveSubmission) {
+          window.HubStoresRegistry.approveSubmission(row.requestId || row.id, actor);
+        }
+        const items = window.HubStore?.get?.()?.empire?.salesStore?.items || [];
+        const item = items.find(
+          (x) =>
+            x.submissionId === row.requestId ||
+            x.submissionId === row.id ||
+            x.productId === row.productId ||
+            x.productId === row.referenceId
+        );
+        if (item) {
+          item.status = 'active';
+          item.published = true;
+          window.HubStore?.save?.();
+        } else if (window.HubStore?.addStoreItem && row.productSnapshot) {
+          const snap = row.productSnapshot;
+          window.HubStore.addStoreItem({
+            title: snap.title,
+            name: snap.title,
+            marketplace: snap.storeId,
+            storeId: snap.storeId,
+            storeName: snap.storeName,
+            url: snap.productUrl || '',
+            productUrl: snap.productUrl || '',
+            price: snap.priceUsd,
+            currency: 'USD',
+            category: snap.category,
+            brand: snap.brand,
+            sku: snap.sku,
+            description: snap.summary,
+            quantity: snap.quantity || 1,
+            stock: snap.quantity || 1,
+            submissionId: row.requestId || row.id,
+            productId: snap.productId || row.referenceId,
+            images: snap.images || [],
+            imageDataUrl: (snap.images && snap.images[0] && snap.images[0].dataUrl) || '',
+            purchaseType: snap.purchaseType || 'INTERNAL',
+            status: 'active',
+            mirrorToCatalog: true,
+          });
+        }
+      } catch (_) {}
+      row.status = 'Approved';
+      row.publishedAt = stamp;
+      row.timeline.push({
+        at: stamp,
+        by: actor,
+        text: 'موافقة ونشر المنتج',
+        key: 'approved_product',
+      });
+      pushAudit({
+        action: 'Approved',
+        requestId: row.id,
+        performedBy: actor,
+        oldStatus: old,
+        newStatus: row.status,
+        customer: row.company || row.customerName,
+        sourceModule: row.sourceModule,
+        detail: row.referenceId || row.productId || '',
+      });
+      pushCustomerNotification({
+        title: 'تمت الموافقة على منتجك ونشره',
+        message: `${row.title || row.referenceId} · ${row.id}`,
+        source: 'المتجر',
+        link: 'store.html',
+      });
+      save();
+      return row;
+    } else if (row.referenceType === 'Ad' || row.requestType === 'Ad Submission') {
       let adStatus = 'active';
       try {
         if (window.HubStore?.setAdWorkflowStatus && row.referenceId) {
@@ -1885,6 +1960,152 @@
     return state.requests.filter((r) => r.requestType === 'Ad Submission');
   };
 
+  const upsertServerProductRequest = (req) => {
+    if (!req?.id && !req?.requestId) return null;
+    const id = req.requestId || req.id;
+    let row = get(id) || findByReference('Product', req.referenceId || req.productId);
+    if (row) {
+      Object.assign(row, {
+        ...req,
+        id: row.id || id,
+        requestId: row.requestId || id,
+        updatedAt: nowIso(),
+      });
+      save();
+      return row;
+    }
+    const item = normalizeFromSolutions({
+      ...req,
+      id,
+      requestId: id,
+      status: req.status || 'Pending Review',
+      createdAt: req.createdAt || nowIso(),
+      updatedAt: req.updatedAt || nowIso(),
+    });
+    state.requests.unshift(item);
+    save();
+    return item;
+  };
+
+  const mergeServerProductRequests = (requests = []) => {
+    (requests || []).forEach((r) => upsertServerProductRequest(r));
+    return state.requests.filter((r) => r.requestType === 'Product Submission');
+  };
+
+  const ensureForProduct = (product, actor = 'عميل', { silent } = {}) => {
+    if (!product?.productId && !product?.id) return null;
+    const productId = product.productId || product.id;
+    let row = findByReference('Product', productId) || (product.requestId ? get(product.requestId) : null);
+    const ownerType = product.ownerType || (product.isGuest ? 'Guest' : product.customerId ? 'Customer' : 'Guest');
+    const ownerName = product.ownerName || product.customer || actor;
+    const ownerEmail = product.ownerEmail || '';
+    const ownerPhone = product.ownerPhone || '';
+    const ownerCompany = product.ownerCompany || product.storeName || '';
+    const snapshot = {
+      productId,
+      title: product.title || product.productName || '',
+      category: product.category || '',
+      brand: product.brand || '',
+      sku: product.sku || '',
+      summary: product.summary || product.shortDesc || '',
+      description: product.description || '',
+      priceUsd: product.priceUsd || product.price || 0,
+      currency: product.currency || 'USD',
+      purchaseType: product.purchaseType || 'INTERNAL',
+      storeId: product.storeId || '',
+      storeName: product.storeName || '',
+      productUrl: product.productUrl || '',
+      images: product.images || [],
+      attachments: product.attachments || [],
+      status: product.status || 'pending_review',
+    };
+    const status =
+      product.status === 'published' || product.status === 'approved'
+        ? 'Approved'
+        : product.status === 'rejected'
+          ? 'Rejected'
+          : product.status === 'needs_changes'
+            ? 'Needs Changes'
+            : 'Pending Review';
+    if (row) {
+      Object.assign(row, {
+        title: `طلب إضافة منتج: ${snapshot.title || productId}`,
+        description: snapshot.summary,
+        status: silent ? row.status : status,
+        requestType: 'Product Submission',
+        requestTypeLabel: 'طلب إضافة منتج',
+        referenceType: 'Product',
+        referenceId: productId,
+        productId,
+        sourceModule: 'المتجر',
+        sourcePage: 'المتجر',
+        sourceUrl: 'store.html#upload',
+        sourceAction: 'إضافة منتج',
+        ownerType,
+        isGuest: ownerType === 'Guest',
+        customerId: ownerType === 'Customer' ? product.customerId || '' : '',
+        guestContactId: ownerType === 'Guest' ? product.guestContactId || '' : '',
+        customerName: ownerName,
+        email: ownerEmail,
+        phone: ownerPhone,
+        company: ownerCompany,
+        productSnapshot: snapshot,
+        serverSubmissionId: product.serverSubmissionId || product.id || row.serverSubmissionId || '',
+        updatedAt: nowIso(),
+      });
+      if (!silent) save();
+      return row;
+    }
+    return create(
+      {
+        id: product.requestId || undefined,
+        requestId: product.requestId || undefined,
+        requestType: 'Product Submission',
+        requestTypeLabel: 'طلب إضافة منتج',
+        title: `طلب إضافة منتج: ${snapshot.title || productId}`,
+        description: snapshot.summary,
+        status: 'Pending Review',
+        priority: 'متوسطة',
+        sourceModule: 'المتجر',
+        sourcePage: 'المتجر',
+        sourceUrl: 'store.html#upload',
+        sourceAction: 'إضافة منتج',
+        referenceType: 'Product',
+        referenceId: productId,
+        productId,
+        ownerType,
+        isGuest: ownerType === 'Guest',
+        customerId: ownerType === 'Customer' ? product.customerId || '' : '',
+        guestContactId: ownerType === 'Guest' ? product.guestContactId || '' : '',
+        customerName: ownerName,
+        email: ownerEmail,
+        phone: ownerPhone,
+        company: ownerCompany,
+        customer: {
+          name: ownerName,
+          email: ownerEmail,
+          phone: ownerPhone,
+          company: ownerCompany,
+          customerId: ownerType === 'Customer' ? product.customerId || '' : '',
+          ownerType,
+          guestContactId: ownerType === 'Guest' ? product.guestContactId || '' : '',
+        },
+        assignedTo: 'Sales Desk',
+        department: 'Sales',
+        channel: 'Web',
+        productSnapshot: snapshot,
+        attachments: [
+          ...(snapshot.images || []).map((img) => ({ name: img.name || 'image', at: nowIso() })),
+          ...(snapshot.attachments || []).map((f) => ({ name: f.name || 'file', at: nowIso() })),
+        ],
+        serverSubmissionId: product.serverSubmissionId || product.id || '',
+        createdAt: product.createdAt || nowIso(),
+        updatedAt: nowIso(),
+      },
+      ownerName || actor
+    );
+  };
+
   syncFromModules();
 
   window.HubCustomerRequests = {
@@ -1923,6 +2144,9 @@
     ensureForAd,
     upsertServerAdRequest,
     mergeServerAdRequests,
+    ensureForProduct,
+    upsertServerProductRequest,
+    mergeServerProductRequests,
     ensureForEvent,
     ingestHubEventRequest,
     mapArticleStatus,

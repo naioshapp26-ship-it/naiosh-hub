@@ -909,12 +909,15 @@
 
   function openRejectModal(r) {
     document.getElementById('posha-reject-modal')?.remove();
+    const kind = requestKind(r);
     const title =
-      requestKind(r) === 'ad'
+      kind === 'ad'
         ? 'رفض طلب نشر الإعلان'
-        : requestKind(r) === 'article'
+        : kind === 'article'
           ? 'رفض طلب نشر المقال'
-          : 'رفض الطلب';
+          : kind === 'product'
+            ? 'رفض طلب إضافة منتج'
+            : 'رفض الطلب';
     const modal = document.createElement('div');
     modal.id = 'posha-reject-modal';
     modal.className = 'posha-modal-overlay';
@@ -943,7 +946,7 @@
         return;
       }
       const allow = !!modal.querySelector('#posha-reject-resubmit')?.checked;
-      if (requestKind(r) === 'event' && isHubEventReq(r)) {
+      if (kind === 'event' && isHubEventReq(r)) {
         try {
           await hubEventDecision(r, 'reject', reason);
         } catch (err) {
@@ -951,7 +954,7 @@
           return;
         }
       }
-      if (requestKind(r) === 'article' && isHubArticleReq(r)) {
+      if (kind === 'article' && isHubArticleReq(r)) {
         try {
           await hubArticleDecision(r, 'reject', reason);
           await window.HubArticles?.refreshFromApi?.();
@@ -960,10 +963,25 @@
           return;
         }
       }
-      cr()?.rejectRequest?.(r.id, actor(), reason, { allowResubmit: allow }) ||
-        cr()?.updateStatus?.(r.id, 'Rejected', actor(), reason);
+      if (kind === 'product') {
+        try {
+          await api(`/api/hub/product-submissions/${encodeURIComponent(r.requestId || r.id)}/status`, {
+            method: 'POST',
+            body: { status: allow ? 'needs_changes' : 'rejected', reason },
+          });
+        } catch (err) {
+          alert(errText(err));
+          return;
+        }
+      }
+      if (kind === 'product' && allow) {
+        cr()?.updateStatus?.(r.id, 'Needs Changes', actor(), reason);
+      } else {
+        cr()?.rejectRequest?.(r.id, actor(), reason, { allowResubmit: allow }) ||
+          cr()?.updateStatus?.(r.id, 'Rejected', actor(), reason);
+      }
       close();
-      state.reqView = 'rejected';
+      state.reqView = allow && kind === 'product' ? 'waiting' : 'rejected';
       state.reqId = null;
       state.moreId = null;
       paintBody();
@@ -1117,6 +1135,7 @@
   function requestKind(r) {
     if (!r) return 'general';
     if (r.referenceType === 'Ad' || r.requestType === 'Ad Submission') return 'ad';
+    if (r.referenceType === 'Product' || r.requestType === 'Product Submission') return 'product';
     if (r.referenceType === 'Event' || r.requestType === 'Event Submission') return 'event';
     if (r.referenceType === 'Article' || r.requestType === 'Article Submission') return 'article';
     if (
@@ -1186,7 +1205,7 @@
     const approveLabel =
       kind === 'platform' && r.requestType === 'Platform Access Request'
         ? '✓ منح الوصول'
-        : kind === 'ad' || kind === 'article' || kind === 'event'
+        : kind === 'ad' || kind === 'article' || kind === 'event' || kind === 'product'
           ? '✓ قبول ونشر'
           : '✓ قبول';
     const previewBtn =
@@ -1194,13 +1213,17 @@
         ? `<a class="btn btn-ghost btn-sm" href="${esc(r.previewUrl || r.sourceUrl || `events.html#event=${r.referenceId || ''}`)}" target="_blank" rel="noopener">معاينة</a>`
         : kind === 'article'
           ? `<a class="btn btn-ghost btn-sm" href="${esc(r.previewUrl || `blog.html#mine/${r.referenceId || ''}`)}" target="_blank" rel="noopener">معاينة المقال</a>`
-          : '';
+          : kind === 'product'
+            ? `<a class="btn btn-ghost btn-sm" href="${esc(r.sourceUrl || 'store.html')}" target="_blank" rel="noopener">معاينة</a>`
+            : '';
     const changesBtn =
       kind === 'event'
         ? `<button type="button" class="btn btn-ghost btn-sm" data-req-event-changes="${esc(r.id)}">طلب تعديل</button>`
         : kind === 'article'
           ? `<button type="button" class="btn btn-ghost btn-sm" data-req-art-changes="${esc(r.id)}">طلب تعديل</button>`
-          : '';
+          : kind === 'product'
+            ? `<button type="button" class="btn btn-ghost btn-sm" data-req-product-changes="${esc(r.id)}">طلب تعديل</button>`
+            : '';
     return `<div class="posha-req-actions-inner">${openBtn}${previewBtn}
       <button type="button" class="btn btn-primary btn-sm" data-req-approve="${esc(r.id)}">${approveLabel}</button>
       ${changesBtn}
@@ -1330,6 +1353,7 @@
       ['source', 'مصدر الطلب'],
       ...(isArt ? [['article', 'المقال']] : []),
       ...(isAd ? [['ad', 'الإعلان']] : []),
+      ...(kind === 'product' ? [['product', 'المنتج']] : []),
       ...(isPlatform ? [['platform', 'المنصة']] : []),
       ...(isSolution ? [['quote', 'عرض السعر']] : []),
       ...(kind === 'event' ? [['event', 'الفعالية']] : []),
@@ -1438,6 +1462,39 @@
           </ul>
           <div class="posha-req-actions" style="margin-top:12px">
             <a class="btn btn-dark btn-sm" href="ads.html" target="_blank" rel="noopener">فتح إدارة الإعلانات</a>
+          </div>
+        </article>
+      </div>`;
+    } else if (tab === 'product' && kind === 'product') {
+      const pSnap = r.productSnapshot || {};
+      const imgs = Array.isArray(pSnap.images) ? pSnap.images : [];
+      const media = imgs.length
+        ? imgs
+            .slice(0, 4)
+            .map((img) =>
+              img.dataUrl
+                ? `<img src="${esc(img.dataUrl)}" alt="" style="max-width:160px;max-height:120px;border-radius:10px;object-fit:contain;margin:4px" />`
+                : `<span class="posha-muted">${esc(img.name || 'صورة')}</span>`
+            )
+            .join('')
+        : '<p class="posha-muted">لا توجد صور</p>';
+      body = `<div class="posha-req-grid">
+        <article style="grid-column:1/-1">
+          <h4>معاينة المنتج قبل القرار</h4>
+          <div style="margin:10px 0;display:flex;flex-wrap:wrap;gap:6px">${media}</div>
+          <ul class="feed">
+            <li><b>رقم الطلب:</b> <code>${esc(r.requestId || r.id || '—')}</code></li>
+            <li><b>رقم المنتج:</b> <code>${esc(pSnap.productId || r.productId || r.referenceId || '—')}</code></li>
+            <li><b>اسم المنتج:</b> ${esc(pSnap.title || '—')}</li>
+            <li><b>الفئة:</b> ${esc(pSnap.category || '—')}</li>
+            <li><b>السعر:</b> ${esc(pSnap.priceUsd != null ? `$${pSnap.priceUsd} ${pSnap.currency || 'USD'}` : '—')}</li>
+            <li><b>المتجر:</b> ${esc(pSnap.storeName || '—')}</li>
+            <li><b>الرابط:</b> ${pSnap.productUrl ? `<a href="${esc(pSnap.productUrl)}" target="_blank" rel="noopener">${esc(pSnap.productUrl)}</a>` : '—'}</li>
+            <li><b>الوصف:</b> ${esc(pSnap.summary || pSnap.description || '—')}</li>
+            <li><b>الحالة:</b> ${esc(pSnap.status || r.statusLabel || r.status || '—')}</li>
+          </ul>
+          <div class="posha-req-actions" style="margin-top:12px">
+            <a class="btn btn-dark btn-sm" href="store.html" target="_blank" rel="noopener">فتح المتجر</a>
           </div>
         </article>
       </div>`;
@@ -1797,6 +1854,8 @@
               ? `الموافقة على نشر الفعالية؟\n\nالطلب: ${r.requestId || r.id}\nالفعالية: ${r.eventId || r.referenceId || '—'}\n${r.title || ''}\nالعميل: ${r.customerName || '—'}`
               : kind === 'article'
                 ? `هل تريد اعتماد ونشر هذا المقال؟\n\nRequest: ${r.id}\nArticle: ${r.referenceId || '—'}\nالعنوان: ${r.title || ''}\nالعميل: ${r.customerName || ''}`
+                : kind === 'product'
+                  ? `الموافقة على نشر المنتج؟\n\nالطلب: ${r.requestId || r.id}\nالمنتج: ${r.productId || r.referenceId || '—'}\n${r.title || ''}\nالعميل: ${r.customerName || '—'}`
                 : kind === 'platform'
                   ? r.requestType === 'Platform Access Request'
                     ? `منح الوصول للمنصة؟\n\nالمنصة: ${r.referenceId || '—'}\nالعميل: ${r.customerName || '—'}\n${r.title || ''}`
@@ -1816,6 +1875,17 @@
           try {
             await hubArticleDecision(r, 'publish');
             await window.HubArticles?.refreshFromApi?.();
+          } catch (err) {
+            alert(errText(err));
+            return;
+          }
+        }
+        if (kind === 'product') {
+          try {
+            await api(`/api/hub/product-submissions/${encodeURIComponent(r.requestId || r.id)}/status`, {
+              method: 'POST',
+              body: { status: 'published' },
+            });
           } catch (err) {
             alert(errText(err));
             return;
@@ -1846,7 +1916,29 @@
         const id = btn.getAttribute('data-req-open-ref');
         state.reqId = id;
         const r = cr()?.get(id);
-        state.reqTab = requestKind(r) === 'ad' ? 'ad' : requestKind(r) === 'article' ? 'article' : 'overview';
+        const k = requestKind(r);
+        state.reqTab =
+          k === 'ad' ? 'ad' : k === 'article' ? 'article' : k === 'product' ? 'product' : k === 'event' ? 'event' : 'overview';
+        paintBody();
+      };
+    });
+    body.querySelectorAll('[data-req-product-changes]').forEach((btn) => {
+      btn.onclick = async () => {
+        const id = btn.getAttribute('data-req-product-changes');
+        const r = cr()?.get(id);
+        if (!r) return;
+        const note = window.prompt('سبب طلب التعديل؟');
+        if (!note) return;
+        try {
+          await api(`/api/hub/product-submissions/${encodeURIComponent(r.requestId || r.id)}/status`, {
+            method: 'POST',
+            body: { status: 'needs_changes', reason: note },
+          });
+        } catch (err) {
+          alert(errText(err));
+          return;
+        }
+        cr()?.updateStatus(id, 'Needs Changes', actor(), note);
         paintBody();
       };
     });
@@ -2463,7 +2555,7 @@
             apiWarn = apiWarn || errText(e);
             return null;
           });
-        const [clients, tickets, events, issues, notifs, hubEventReqs, hubArticleReqs, hubAdSubs] = await Promise.all([
+        const [clients, tickets, events, issues, notifs, hubEventReqs, hubArticleReqs, hubAdSubs, hubPrdSubs] = await Promise.all([
           soft('/api/admin/posha/clients'),
           soft('/api/admin/posha/tickets'),
           soft('/api/admin/posha/events'),
@@ -2472,6 +2564,7 @@
           soft('/api/hub/events/requests'),
           soft('/api/hub/articles/requests'),
           soft('/api/hub/ad-submissions'),
+          soft('/api/hub/product-submissions'),
         ]);
         if (clients) {
           state.clients = clients.clients || [];
@@ -2501,6 +2594,11 @@
         if (hubAdSubs && Array.isArray(hubAdSubs.requests)) {
           try {
             cr()?.mergeServerAdRequests?.(hubAdSubs.requests);
+          } catch (_) {}
+        }
+        if (hubPrdSubs && Array.isArray(hubPrdSubs.requests)) {
+          try {
+            cr()?.mergeServerProductRequests?.(hubPrdSubs.requests);
           } catch (_) {}
         }
         _lastApiWarn = apiWarn;

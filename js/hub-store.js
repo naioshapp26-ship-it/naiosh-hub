@@ -7194,6 +7194,12 @@ const HubStore = (() => {
       storeId: normalized.storeId || '',
       storeName: normalized.storeName || '',
       submissionId: normalized.submissionId || '',
+      productId: normalized.productId || '',
+      images: Array.isArray(normalized.images) ? normalized.images : [],
+      imageDataUrl:
+        normalized.imageDataUrl ||
+        (Array.isArray(normalized.images) && normalized.images[0] && normalized.images[0].dataUrl) ||
+        '',
       mirrorToCatalog: normalized.mirrorToCatalog !== false,
       ...pickCommonMeta(normalized),
     };
