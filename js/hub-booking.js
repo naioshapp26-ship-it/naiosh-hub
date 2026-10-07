@@ -431,7 +431,8 @@
     subdomain: 'الدومين الفرعي مطلوب.',
     fullName: 'الاسم مطلوب.',
     phone: 'رقم الجوال مطلوب.',
-    email: 'الإيميل مطلوب.',
+    email: 'البريد الإلكتروني مطلوب.',
+    emailInvalid: 'يرجى إدخال بريد إلكتروني صحيح.',
     country: 'الدولة مطلوبة.',
     branch: 'الفرع مطلوب.',
     incubator: 'الحاضنة مطلوبة.',
@@ -439,12 +440,26 @@
     systems: 'اختر نظامًا تشغيليًا واحدًا على الأقل حسب حاجة العمل.',
   };
 
+  /** Practical email check — aligned with lib/hub-platform-booking.js */
+  const isValidEmail = (email) => {
+    const e = String(email || '').trim();
+    if (!e) return false;
+    if (/\s/.test(e)) return false;
+    if (/\.\./.test(e)) return false;
+    return /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/.test(
+      e
+    );
+  };
+
   const clearFieldErrors = () => {
     form?.querySelectorAll('.hub-field-error').forEach((el) => {
       el.hidden = true;
       el.textContent = '';
     });
-    form?.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
+    form?.querySelectorAll('.is-invalid').forEach((el) => {
+      el.classList.remove('is-invalid');
+      if (el.removeAttribute) el.removeAttribute('aria-invalid');
+    });
   };
 
   const showFieldError = (name, message) => {
@@ -452,12 +467,17 @@
     if (errEl) {
       errEl.hidden = false;
       errEl.textContent = message || FIELD_ERROR_MSG[name] || 'هذا الحقل مطلوب.';
+      if (!errEl.id) errEl.id = `book-err-${name}`;
     }
     const control =
       name === 'systems'
         ? form?.querySelector('[data-work-systems]')
         : form?.querySelector(`[name="${name}"]`);
     control?.classList.add('is-invalid');
+    if (control && name !== 'systems') {
+      control.setAttribute('aria-invalid', 'true');
+      if (errEl?.id) control.setAttribute('aria-describedby', errEl.id);
+    }
     if (control && typeof control.focus === 'function' && name !== 'systems') {
       try {
         control.focus({ preventScroll: false });
@@ -470,6 +490,12 @@
   const validateRequiredFields = () => {
     clearFieldErrors();
     syncSystemsRequired();
+
+    // Trim email field in-place (leading/trailing spaces only)
+    const emailEl = form?.querySelector('[name="email"]');
+    if (emailEl && typeof emailEl.value === 'string') {
+      emailEl.value = emailEl.value.trim();
+    }
 
     const valueOf = (name) => String(form?.querySelector(`[name="${name}"]`)?.value || '').trim();
     const checks = [];
@@ -485,7 +511,6 @@
 
     checks.push(['fullName', valueOf('fullName')]);
     checks.push(['phone', valueOf('phone')]);
-    checks.push(['email', valueOf('email')]);
     checks.push(['country', valueOf('country')]);
 
     if (!isHqPlatform) {
@@ -506,6 +531,16 @@
         showFieldError(name, FIELD_ERROR_MSG[name]);
         return false;
       }
+    }
+
+    const email = valueOf('email');
+    if (!email) {
+      showFieldError('email', FIELD_ERROR_MSG.email);
+      return false;
+    }
+    if (!isValidEmail(email)) {
+      showFieldError('email', FIELD_ERROR_MSG.emailInvalid);
+      return false;
     }
 
     if (needsWorkSystems) {
@@ -531,6 +566,7 @@
         errEl.textContent = '';
       }
       el.classList.remove('is-invalid');
+      el.removeAttribute('aria-invalid');
     });
   });
 
