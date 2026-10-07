@@ -205,7 +205,14 @@ function fillLogin(email, password, autoSubmit = true) {
         systemCode: localTenant.systemCode || '',
         host: localTenant.host || '',
       };
-    } else if (pendingGrant || (localTenant && localTenant.status === 'pending')) {
+    } else if (
+      // Pending platform signup applies only to that email — never blocks other accounts,
+      // demo staff, or an existing customer API match (handled above).
+      !demo &&
+      !customerUser &&
+      !serverUser &&
+      (pendingGrant || (localTenant && localTenant.status === 'pending'))
+    ) {
       showAlert(
         'طلبك بانتظار موافقة السوبر أدمن. بعد الاعتماد ادخل من login.html ثم افتح صفحة «منصتي» لترى الدومين والنظام.'
       );
@@ -280,12 +287,23 @@ function fillLogin(email, password, autoSubmit = true) {
   window.addEventListener('load', () => {
     const params = new URLSearchParams(window.location.search);
     const prefillEmail = (params.get('email') || '').trim().toLowerCase();
-    const switchAccount = params.get('switch') === '1' || params.get('switch') === 'true';
+    const fromParam = String(params.get('from') || '').toLowerCase();
+    const referrer = String(document.referrer || '');
+    const fromRegistration =
+      fromParam === 'register' ||
+      fromParam === 'create-account' ||
+      fromParam === 'signup' ||
+      /create-account\.html|register\.html|register-freelancer\.html/i.test(referrer);
+    const switchAccount =
+      params.get('switch') === '1' ||
+      params.get('switch') === 'true' ||
+      fromRegistration;
     if (prefillEmail) {
       const emailInput = document.getElementById('email');
       if (emailInput && !emailInput.value) emailInput.value = prefillEmail;
     }
-    // Explicit account switch: end prior session and stay on the form.
+    // Coming from incomplete/complete registration: stay on the form so another
+    // account can sign in. Registration draft keys are left untouched.
     if (switchAccount && window.HubAuth?.clearSessionAsync) {
       window.HubAuth.clearSessionAsync().catch(() => null);
       return;
@@ -295,7 +313,20 @@ function fillLogin(email, password, autoSubmit = true) {
     if (!token) return;
     // If arriving from registration with ?email=, prefer the login form over auto-redirect
     // so the new customer (or another account) can authenticate cleanly.
-    if (prefillEmail) return;
+    if (prefillEmail || fromRegistration) return;
+
+    // If the user starts typing credentials, cancel auto-redirect (account switch intent).
+    let redirectTimer = null;
+    const cancelRedirect = () => {
+      if (redirectTimer) {
+        clearTimeout(redirectTimer);
+        redirectTimer = null;
+      }
+    };
+    ['email', 'password'].forEach((id) => {
+      document.getElementById(id)?.addEventListener('input', cancelRedirect, { once: true });
+      document.getElementById(id)?.addEventListener('focus', cancelRedirect, { once: true });
+    });
 
     const next = params.get('next') || '';
     let dest = 'dashboard.html';
@@ -332,7 +363,7 @@ function fillLogin(email, password, autoSubmit = true) {
       else dest = next;
     }
     showAlert('لديك جلسة نشطة. جاري تحويلك...', 'success');
-    setTimeout(() => {
+    redirectTimer = setTimeout(() => {
       window.location.replace(dest.startsWith('http') ? 'dashboard.html' : dest);
     }, 500);
   });
