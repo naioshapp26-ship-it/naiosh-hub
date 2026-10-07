@@ -295,7 +295,8 @@
       .map(
         (r) => `<article class="hub-rent-admin-item" data-id="${r.id}">
         <h3>${escapeHtml(r.companyName)} <span class="hub-rent-status ${statusClass(r.status)}">${statusAr[r.status] || r.status}</span></h3>
-        <p>المسؤول: ${escapeHtml(r.adminName)} · ${escapeHtml(r.adminEmail || '—')}</p>
+        <p>رقم الطلب: <span dir="ltr">${escapeHtml(r.requestId || r.id || '—')}</span>${r.guestContactId ? ` · Guest: <span dir="ltr">${escapeHtml(r.guestContactId)}</span>` : r.customerId ? ` · عميل: <span dir="ltr">${escapeHtml(r.customerId)}</span>` : ''}</p>
+        <p>المسؤول: ${escapeHtml(r.adminName)} · <span dir="ltr">${escapeHtml(r.adminEmail || '—')}</span> · <span dir="ltr">${escapeHtml(r.adminPhone || '—')}</span></p>
         <p>النطاق: <span dir="ltr">${escapeHtml(r.host)}</span></p>
         ${r.erp?.loginUrl ? `<p>ERP: <a href="${escapeHtml(r.erp.loginUrl)}" target="_blank" rel="noopener" dir="ltr">${escapeHtml(r.erp.loginUrl)}</a></p>` : r.erpError ? `<p style="color:#b91c1c">ERP: ${escapeHtml(r.erpError)}</p>` : ''}
         <p>الخطة: ${escapeHtml(r.planLabel || r.plan)} · الأنظمة: ${escapeHtml((r.systems || []).join(' · '))}</p>
@@ -323,8 +324,8 @@
       });
     });
     root.querySelectorAll('[data-reject]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const res = store().rejectRental(btn.getAttribute('data-reject'));
+      btn.addEventListener('click', async () => {
+        const res = await store().rejectRental(btn.getAttribute('data-reject'), 'مرفوض من إدارة الاستئجار');
         if (!res.ok) return toastMsg(res.error || 'فشل الرفض');
         renderList();
       });

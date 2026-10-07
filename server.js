@@ -21,6 +21,7 @@ const productCategories = require('./lib/hub-product-categories');
 const productOrders = require('./lib/hub-product-orders');
 const adSubmissions = require('./lib/hub-ad-submissions');
 const productSubmissions = require('./lib/hub-product-submissions');
+const systemRentals = require('./lib/hub-system-rentals');
 const hubSystemSettings = require('./lib/hub-system-settings');
 const hubMarketingCampaigns = require('./lib/hub-marketing-campaigns');
 const hubEvents = require('./lib/hub-events');
@@ -1243,52 +1244,85 @@ async function handleHubApi(req, res, pathname) {
     }
   }
 
-  const rentalsPath = path.join(ROOT, 'data', 'system-rentals.json');
-  const ensureRentalsFile = () => {
-    const dir = path.dirname(rentalsPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    if (!fs.existsSync(rentalsPath)) {
-      fs.writeFileSync(
-        rentalsPath,
-        JSON.stringify({ version: 1, visibility: {}, rentals: [] }, null, 2),
-        'utf8'
-      );
-    }
-  };
-  const readRentalsFile = () => {
-    ensureRentalsFile();
-    try {
-      return JSON.parse(fs.readFileSync(rentalsPath, 'utf8'));
-    } catch {
-      return { version: 1, visibility: {}, rentals: [] };
-    }
-  };
-  const writeRentalsFile = (state) => {
-    ensureRentalsFile();
-    fs.writeFileSync(
-      rentalsPath,
-      JSON.stringify({ ...state, updatedAt: new Date().toISOString() }, null, 2),
-      'utf8'
-    );
-  };
-
   if (pathname === '/api/hub/system-rentals' && req.method === 'GET') {
-    const state = readRentalsFile();
-    sendJson(res, 200, { ok: true, state });
+    const session = hubSession.resolveSession(req);
+    const state = systemRentals.listForSession(session.ok ? session : null);
+    sendJson(res, 200, { ok: true, state, staff: !!(session.ok && hubSession.isStaffLane(session.lane)) });
+    return true;
+  }
+
+  if (pathname === '/api/hub/system-rentals/submit' && req.method === 'POST') {
+    const body = await readBody(req);
+    const session = hubSession.resolveSession(req);
+    const authed = session.ok ? session : null;
+    try {
+      const result = systemRentals.createRental({
+        session: authed,
+        contact: body?.owner || body?.contact || {
+          name: body?.adminName || body?.rental?.adminName,
+          email: body?.adminEmail || body?.rental?.adminEmail,
+          phone: body?.adminPhone || body?.rental?.adminPhone,
+        },
+        rental: body?.rental || body || {},
+        idempotencyKey: body?.idempotencyKey || '',
+        claimedCustomerId: body?.customerId || body?.claimedCustomerId || '',
+      });
+      sendJson(res, result.duplicate ? 200 : 201, {
+        ok: true,
+        duplicate: !!result.duplicate,
+        rental: result.rental,
+      });
+    } catch (err) {
+      sendJson(res, err.status || 400, {
+        ok: false,
+        error: err.message || 'تعذر إرسال طلب الاستئجار.',
+        field: err.field,
+        code: err.code,
+      });
+    }
+    return true;
+  }
+
+  const rentStatusMatch = pathname.match(/^\/api\/hub\/system-rentals\/([^/]+)\/status$/);
+  if (rentStatusMatch && (req.method === 'PATCH' || req.method === 'POST')) {
+    let session;
+    try {
+      session = hubSession.requireStaff(req);
+    } catch (err) {
+      sendJson(res, err.status || 403, { ok: false, error: err.message || 'Forbidden' });
+      return true;
+    }
+    const body = await readBody(req);
+    try {
+      const rental = systemRentals.updateRentalStatus(
+        decodeURIComponent(rentStatusMatch[1]),
+        String(body?.status || ''),
+        session,
+        { reason: body?.reason || body?.note || '' }
+      );
+      sendJson(res, 200, { ok: true, rental });
+    } catch (err) {
+      sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحديث الحالة' });
+    }
     return true;
   }
 
   if (pathname === '/api/hub/system-rentals' && req.method === 'POST') {
-    // Authenticated write — prevents anonymous wipe/overwrite of rentals store
-    if (!requireHubAuthOrReject(req, res)) return true;
+    // Staff-only full-store replace (legacy admin sync)
+    let session;
+    try {
+      session = hubSession.requireStaff(req);
+    } catch (err) {
+      sendJson(res, err.status || 403, { ok: false, error: err.message || 'Forbidden' });
+      return true;
+    }
     const body = await readBody(req);
-    const state = {
-      version: 1,
-      visibility: body?.visibility && typeof body.visibility === 'object' ? body.visibility : {},
-      rentals: Array.isArray(body?.rentals) ? body.rentals : [],
-    };
-    writeRentalsFile(state);
-    sendJson(res, 200, { ok: true, count: state.rentals.length });
+    try {
+      const state = systemRentals.replaceStoreForStaff(body, session);
+      sendJson(res, 200, { ok: true, count: state.rentals.length, state });
+    } catch (err) {
+      sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر الحفظ' });
+    }
     return true;
   }
 

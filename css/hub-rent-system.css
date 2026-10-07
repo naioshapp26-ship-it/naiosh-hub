@@ -854,3 +854,15 @@
   text-decoration: underline;
   font-weight: 800;
 }
+
+.hub-rent-field-error {
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+.hub-rent-fields input.is-invalid {
+  border-color: #dc2626 !important;
+  background: #fef2f2 !important;
+}
