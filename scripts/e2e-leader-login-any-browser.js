@@ -318,10 +318,12 @@ async function main() {
     url: location.href,
     denied: /ليس لديك صلاحية|فريق التشغيل فقط|مركز العميل/i.test(document.body?.innerText || ''),
   }));
-  const custTok = await ps.evaluate(
+  const custBrowserTok = await ps.evaluate(
     () => localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken') || ''
   );
-  const custAdmin = custTok ? await req('GET', '/api/admin/clients', { token: custTok }) : { status: 0 };
+  const custAdmin = custBrowserTok
+    ? await req('GET', '/api/admin/clients', { token: custBrowserTok })
+    : { status: 0 };
   mark(
     '27b. Customer Dashboard Denied',
     (/client\.html|login\.html/i.test(custDash.url) || custDash.denied) &&
