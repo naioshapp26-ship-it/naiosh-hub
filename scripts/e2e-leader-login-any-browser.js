@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const http = require('http');
+const https = require('https');
 const path = require('path');
 const puppeteer = require('puppeteer-core');
 
@@ -43,8 +44,9 @@ function req(method, pathname, { token, body, cookieJar, headers: extra } = {}) 
     }
     if (token) headers.Authorization = `Bearer ${token}`;
     if (cookieJar?.cookieHeader) headers.Cookie = cookieJar.cookieHeader;
-    const r = http.request(
-      { hostname: url.hostname, port: url.port || 80, path: url.pathname + url.search, method, headers },
+    const lib = (typeof url !== 'undefined' && url.protocol === 'https:') ? https : http;
+    const r = lib.request(
+      { hostname: url.hostname, port: url.port || (url.protocol === 'https:' ? 443 : 80), path: url.pathname + url.search, method, headers },
       (res) => {
         const chunks = [];
         res.on('data', (c) => chunks.push(c));

@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const http = require('http');
+const https = require('https');
 const path = require('path');
 const puppeteer = require('puppeteer-core');
 
@@ -43,10 +44,11 @@ function req(method, pathname, { token, role, body, headers: extra } = {}) {
     }
     if (token) headers.Authorization = `Bearer ${token}`;
     if (role) headers['X-Hub-User-Role'] = role;
-    const r = http.request(
+    const lib = url.protocol === 'https:' ? https : http;
+    const r = lib.request(
       {
         hostname: url.hostname,
-        port: url.port || 80,
+        port: url.port || (url.protocol === 'https:' ? 443 : 80),
         path: url.pathname + url.search,
         method,
         headers,

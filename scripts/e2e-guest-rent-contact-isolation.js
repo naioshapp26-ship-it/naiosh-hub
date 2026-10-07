@@ -161,14 +161,14 @@ async function main() {
   const guestA = {
     name: 'اختبار زائر A',
     email: `guest-a-rent-${stamp}@naiosh-test.com`,
-    phone: '+966511110001',
+    phone: `+966511${String(Date.now()).slice(-6)}`,
     company: `شركة زائر أ ${stamp}`,
     slug: `gsta${stamp}`.slice(0, 20),
   };
   const guestB = {
     name: 'اختبار زائر B',
     email: `guest-b-rent-${stamp}@naiosh-test.com`,
-    phone: '+966522220002',
+    phone: `+966522${String(Date.now()).slice(-6)}`,
     company: `شركة زائر ب ${stamp}`,
     slug: `gstb${stamp}`.slice(0, 20),
   };
@@ -397,15 +397,22 @@ async function main() {
       fullName: 'عميل استئجار',
       username: `rentcust${stamp}`.slice(0, 32),
       email: `rent.cust.${stamp}@naiosh-test.com`,
-      phone: '+966533330003',
+      phone: `+966522${String(Date.now()).slice(-6)}`,
       password: 'Test360!!',
       confirmPassword: 'Test360!!',
       termsAccepted: true,
     };
     const reg = await api('POST', '/api/auth/register', { body: cust });
     assert.ok(reg.data.ok || reg.data.success, JSON.stringify(reg.data));
-    const tokenC = reg.data.token;
-    const userC = reg.data.user || { email: cust.email, fullName: cust.fullName, role: 'customer' };
+    let tokenC = reg.data.token;
+    let userC = reg.data.user || { email: cust.email, fullName: cust.fullName, role: 'customer' };
+    if (!tokenC) {
+      const loginC = await api('POST', '/api/auth/login', { body: { email: cust.email, password: cust.password } });
+      assert.ok(loginC.data.ok || loginC.data.success || loginC.data.token, JSON.stringify(loginC.data));
+      tokenC = loginC.data.token;
+      userC = loginC.data.user || userC;
+    }
+    assert.ok(tokenC, 'customer login token missing after register');
 
     const ctxC = await browser.createBrowserContext();
     const pageC = await ctxC.newPage();
@@ -431,7 +438,8 @@ async function main() {
     const pref = await readContactFields(pageC);
     mark(
       'اختبار Customer مسجل',
-      pref.email.toLowerCase() === cust.email.toLowerCase() && pref.phone.replace(/\D/g, '').endsWith('33330003'),
+      pref.email.toLowerCase() === cust.email.toLowerCase() &&
+        pref.phone.replace(/\D/g, '').endsWith(cust.phone.replace(/\D/g, '').slice(-8)),
       JSON.stringify(pref)
     );
 

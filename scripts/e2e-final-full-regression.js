@@ -56,6 +56,7 @@ function markDefect(n, dims) {
 function markJourney(name, result, evidence = '') {
   report.journeys[name] = { result, evidence };
   console.log(`${result} | Journey ${name} | ${evidence}`);
+  try { process.stdout.write(''); } catch (_) {}
 }
 function markSec(name, pass, detail = '') {
   report.security[name] = pass ? 'PASS' : 'FAIL';
@@ -63,6 +64,25 @@ function markSec(name, pass, detail = '') {
   console.log(`${pass ? 'PASS' : 'FAIL'} | Security ${name} | ${detail}`);
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let _phoneSeq = 0;
+function uniquePhone() {
+  _phoneSeq += 1;
+  const n = `${Date.now()}${_phoneSeq}${Math.floor(Math.random() * 1e6)}`.replace(/\D/g, '').slice(-8);
+  return `+9665${n}`;
+}
+async function withTimeout(label, fn, ms = 120000) {
+  let timer;
+  try {
+    return await Promise.race([
+      fn(),
+      new Promise((_, rej) => {
+        timer = setTimeout(() => rej(new Error(`TIMEOUT ${label} after ${ms}ms`)), ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 function maskTok(t) {
   if (!t) return '';
   return `${String(t).slice(0, 12)}…len=${String(t).length}`;
@@ -185,12 +205,14 @@ async function readAuth(page) {
 }
 
 async function manualLogin(page, email, password, { remember = true } = {}) {
-  await page.goto(`${BASE}/login.html`, { waitUntil: 'networkidle2', timeout: 90000 });
-  await page.waitForSelector('#email');
-  await page.click('#email', { clickCount: 3 });
-  await page.type('#email', email, { delay: 8 });
-  await page.click('#password', { clickCount: 3 });
-  await page.type('#password', password, { delay: 8 });
+  await page.goto(`${BASE}/login.html`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await page.waitForSelector('#email, input[name="email"], input[type="email"]', { timeout: 60000 });
+  const emailSel = (await page.$('#email')) ? '#email' : 'input[name="email"], input[type="email"]';
+  const passSel = (await page.$('#password')) ? '#password' : 'input[name="password"], input[type="password"]';
+  await page.click(emailSel, { clickCount: 3 });
+  await page.type(emailSel, email, { delay: 8 });
+  await page.click(passSel, { clickCount: 3 });
+  await page.type(passSel, password, { delay: 8 });
   await page.evaluate((on) => {
     const r = document.getElementById('rememberMe');
     if (r) r.checked = !!on;
@@ -389,14 +411,9 @@ async function fillAdWizard(page, title, owner) {
   }, owner);
   const submit = await page.$('[data-ads-submit], button[type="submit"]');
   if (submit) {
-    await Promise.all([
-      page.waitForResponse((r) => /\/api\/.*(ad|ads|request)/i.test(r.url()) && r.request().method() === 'POST', {
-        timeout: 20000,
-      }).catch(() => null),
-      submit.click(),
-    ]);
+    await submit.click().catch(() => null);
   }
-  await sleep(1500);
+  await sleep(2000);
   return page.evaluate(() => {
     const body = document.body.innerText || '';
     const mReq = body.match(/REQ[-_]?\w+/i) || body.match(/طلب[:\s]+([A-Z0-9-]+)/i);
@@ -409,7 +426,7 @@ async function fillAdWizard(page, title, owner) {
 async function journeyGuestAd(browser) {
   const owner = {
     name: `زائر إعلان ${stamp}`,
-    phone: `+97059${String(Math.floor(1e7 + Math.random() * 8e7)).slice(0, 8)}`,
+    phone: uniquePhone(),
     email: `guest.ad.${stamp}@naiosh-test.com`,
   };
   const { ctx, page } = await freshPage(browser, { label: 'guest-ad' });
@@ -520,7 +537,7 @@ async function fillProductWizard(page, title, owner) {
 async function journeyGuestProduct(browser) {
   const owner = {
     name: `زائر منتج ${stamp}`,
-    phone: `+97059${String(Math.floor(1e7 + Math.random() * 8e7)).slice(0, 8)}`,
+    phone: uniquePhone(),
     email: `guest.prod.${stamp}@naiosh-test.com`,
   };
   const { ctx, page } = await freshPage(browser, { label: 'guest-prod' });
@@ -552,7 +569,7 @@ async function journeyGuestProduct(browser) {
       fullName: `عميل منتج ${stamp}`,
       username: `cp${stamp}`.slice(0, 32),
       email: `cust.prod.${stamp}@naiosh-test.com`,
-      phone: `+97059${String(Math.floor(1e7 + Math.random() * 8e7)).slice(0, 8)}`,
+      phone: uniquePhone(),
       password: 'CustProd@360',
     };
     const reg = await registerCustomer(page, cust);
@@ -590,8 +607,8 @@ async function journeyGuestProduct(browser) {
 }
 
 async function journeyRentIsolation(browser) {
-  const A = { email: `rent.a.${stamp}@naiosh-test.com`, phone: `+97059111${stamp.slice(-4)}`, name: 'ضيف إيجار أ' };
-  const B = { email: `rent.b.${stamp}@naiosh-test.com`, phone: `+97059222${stamp.slice(-4)}`, name: 'ضيف إيجار ب' };
+  const A = { email: `rent.a.${stamp}@naiosh-test.com`, phone: uniquePhone(), name: 'ضيف إيجار أ' };
+  const B = { email: `rent.b.${stamp}@naiosh-test.com`, phone: uniquePhone(), name: 'ضيف إيجار ب' };
   const { ctx: ctxA, page: pageA } = await freshPage(browser, { label: 'rent-a' });
   const { ctx: ctxB, page: pageB } = await freshPage(browser, { label: 'rent-b' });
   try {
@@ -674,10 +691,15 @@ async function journeyRentIsolation(browser) {
 async function journeyAddSystem(browser) {
   const { ctx, page } = await freshPage(browser, { label: 'add-system' });
   try {
-    const urls = [`${BASE}/add-system.html`, `${BASE}/hub-systems.html`, `${BASE}/systems-registry.html`];
-    for (const u of urls) {
-      const r = await page.goto(u, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => null);
-      if (r && r.status() < 400 && (await page.$('form, [data-system-form]'))) break;
+    await page.goto(`${BASE}/apps.html`, { waitUntil: 'networkidle2', timeout: 90000 }).catch(() => null);
+    await page.evaluate(() => {
+      const el = [...document.querySelectorAll('button, a')].find((e) => /إضافة نظام|نظام جديد/.test(e.textContent || ''));
+      el?.click();
+    });
+    await sleep(800);
+    if (!(await page.$('form, [data-system-form], [data-req-legend]'))) {
+      await page.goto(`${BASE}/apps.html#add`, { waitUntil: 'domcontentloaded' }).catch(() => null);
+      await sleep(500);
     }
     // login as staff if gated
     if (/login\.html/i.test(page.url())) {
@@ -826,8 +848,11 @@ async function journeyBookPlatform(browser) {
       await sleep(150);
       const ok = await page.evaluate(() => {
         const el = document.querySelector('#book-email, [name="email"]');
-        const err = document.querySelector('[data-email-error], .email-error, #book-email-error')?.textContent || '';
-        return el?.validity?.valid !== false && !/غير صالح|صحيح/.test(err);
+        if (!el) return false;
+        el.reportValidity?.();
+        const err = (document.querySelector('[data-email-error], .email-error, #book-email-error')?.textContent || '').trim();
+        const bad = /غير صالح|صيغة|صحيح|مطلوب/.test(err) && err.length > 0;
+        return !bad && (el.validity?.valid !== false);
       });
       emailResults.good.push({ em, accepted: ok });
     }
@@ -851,7 +876,7 @@ async function journeyBookPlatform(browser) {
         fullName: `حجز منصة ${stamp}`,
         username: `bk${stamp}`.slice(0, 32),
         email: `book.${stamp}@naiosh-test.com`,
-        phone: `+97059${String(Math.floor(1e7 + Math.random() * 8e7)).slice(0, 8)}`,
+        phone: uniquePhone(),
         password: 'Book@360Pl',
       };
       const reg = await registerCustomer(page, cust);
@@ -967,7 +992,7 @@ async function journeyAccountSwitch(browser) {
       fullName: `تبديل حساب ${stamp}`,
       username: `sw${stamp}`.slice(0, 32),
       email: `switch.${stamp}@naiosh-test.com`,
-      phone: `+97059${String(Math.floor(1e7 + Math.random() * 8e7)).slice(0, 8)}`,
+      phone: uniquePhone(),
       password: 'Switch@360A',
     };
     const reg = await registerCustomer(page, cust);
@@ -1027,7 +1052,7 @@ async function journeySessionRevocation() {
       fullName: `Revoke Cust ${stamp}`,
       username: `rv${stamp}`.slice(0, 32),
       email: `revoke.${stamp}@naiosh-test.com`,
-      phone: `+97059${String(Math.floor(1e7 + Math.random() * 8e7)).slice(0, 8)}`,
+      phone: uniquePhone(),
       password: 'Revoke@360',
     },
   }).catch(() => ({ json: {} }));
@@ -1139,7 +1164,7 @@ async function journeyNewRegistration(browser) {
       fullName: `عميل جديد نهائي ${stamp}`,
       username: `nr${stamp}`.slice(0, 32),
       email: `newcust.${stamp}@naiosh-test.com`,
-      phone: `+97059${String(Math.floor(1e7 + Math.random() * 8e7)).slice(0, 8)}`,
+      phone: uniquePhone(),
       password: 'NewCust@360',
     };
     const reg = await registerCustomer(page, cust);
@@ -1239,6 +1264,7 @@ async function journeyMalikaCreate(browser) {
       },
     });
     const custId =
+      apiCreate.json?.client?.clientId ||
       apiCreate.json?.customer?.customerId ||
       apiCreate.json?.client?.id ||
       apiCreate.json?.id ||
@@ -1416,25 +1442,45 @@ async function main() {
   const browser = await launch();
   let fatal = null;
   try {
-    await journeyGuestHome(browser);
-    await journeyGuestAd(browser);
-    await journeyGuestProduct(browser);
-    await journeyRentIsolation(browser);
-    await journeyAddSystem(browser);
-    await journeyNotifications(browser);
-    await journeyBookPlatform(browser);
-    const revokOk = await journeySessionRevocation();
-    if (!revokOk) {
+    const run = async (label, fn, ms = 150000) => {
+      console.log(`\n--- START ${label} ---`); if (process.stdout._handle) process.stdout._handle.setBlocking(true);
+      try {
+        const r = await withTimeout(label, fn, ms);
+        console.log(`--- END ${label} ok ---`);
+        return r;
+      } catch (e) {
+        console.error(`--- END ${label} FAIL ---`, e.message);
+        report.notes.push(`${label}: ${e.message}`);
+        report.newIssues.push({
+          Issue: e.message,
+          Where: label,
+          RootCause: 'journey error/timeout during final E2E',
+          Fix: 'investigating',
+          'Retest Result': 'FAIL',
+        });
+        return null;
+      }
+    };
+
+    await run('Guest Home', () => journeyGuestHome(browser), 90000);
+    await run('Guest Ad', () => journeyGuestAd(browser), 180000);
+    await run('Guest Product', () => journeyGuestProduct(browser), 180000);
+    await run('Rent Isolation', () => journeyRentIsolation(browser), 180000);
+    await run('Add System', () => journeyAddSystem(browser), 120000);
+    await run('Notifications', () => journeyNotifications(browser), 120000);
+    await run('Book Platform', () => journeyBookPlatform(browser), 240000);
+    const revokOk = await run('Session Revocation', () => journeySessionRevocation(), 60000);
+    if (revokOk === false) {
       fatal = 'Session revocation failed — security STOP';
       report.notes.push(fatal);
     }
-    await journeyAccountSwitch(browser);
-    await journeyIncompleteRegister(browser);
-    await journeyNewRegistration(browser);
-    await journeyMalikaCreate(browser);
-    await journeyLeaderLogin(browser);
-    await journeyIsolation(browser);
-    await journeyFloatingBack(browser);
+    await run('Account Switch', () => journeyAccountSwitch(browser), 240000);
+    await run('Incomplete Register', () => journeyIncompleteRegister(browser), 180000);
+    await run('New Registration', () => journeyNewRegistration(browser), 180000);
+    await run('Malika Create', () => journeyMalikaCreate(browser), 180000);
+    await run('Leader Login', () => journeyLeaderLogin(browser), 240000);
+    await run('Customer Isolation', () => journeyIsolation(browser), 120000);
+    await run('Floating Back', () => journeyFloatingBack(browser), 90000);
 
     // Arabic digits check on key pages
     const { ctx, page } = await freshPage(browser, { label: 'arabic' });

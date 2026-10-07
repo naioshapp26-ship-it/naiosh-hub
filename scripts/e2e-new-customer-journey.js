@@ -71,7 +71,7 @@ function req(method, pathname, { token, role, name, body } = {}) {
     const r = http.request(
       {
         hostname: url.hostname,
-        port: url.port || 80,
+        port: url.port || (url.protocol === 'https:' ? 443 : 80),
         path: url.pathname + url.search,
         method,
         headers,
