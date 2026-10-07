@@ -189,6 +189,7 @@
         <article class="kpi"><span>تذاكر</span><strong>${(c.tickets || []).length}</strong></article>
       </div>
       <p class="muted">${K.esc(c.company || '—')} · ${K.esc(c.country || '—')} · مصدر: ${K.esc(window.HubI18n?.label?.(c.source) || c.source || '—')}</p>
+      <p class="muted">رقم العميل: <strong>${K.esc(c.clientId || '—')}</strong> · أُنشئ بواسطة: <strong>${K.esc(c.createdByEmployeeId || '—')}</strong></p>
       <div class="toolbar">
         <button type="button" class="btn btn-sm btn-dark" data-action="cl-status" data-id="${c.id}" data-status="active">تفعيل</button>
         <button type="button" class="btn btn-sm btn-ghost" data-action="cl-status" data-id="${c.id}" data-status="suspended">تعطيل</button>
