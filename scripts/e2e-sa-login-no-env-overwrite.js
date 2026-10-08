@@ -297,7 +297,7 @@ async function prodProbeAndBrowser() {
       await page.goto(`${BASE}/dashboard.html#account`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout?.(1200).catch(() => new Promise((r) => setTimeout(r, 1200)));
       const accountOk = await page.evaluate(() => /account|حسابي/i.test(location.hash + document.body.innerText));
-      mark('فتح حسابي', accountOk, locationHash(page));
+      mark('فتح حسابي', accountOk, await page.evaluate(() => location.hash));
 
       await page.goto(`${BASE}/dashboard.html#admins`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout?.(1200).catch(() => new Promise((r) => setTimeout(r, 1200)));
@@ -349,19 +349,31 @@ async function prodProbeAndBrowser() {
         await page.evaluate(() => location.pathname)
       );
 
-      // Mobile viewport login in fresh page
+      // Mobile viewport login in fresh context
       const mob = await browser.newPage();
-      await mob.setViewport({ width: 390, height: 844, isMobile: true });
-      await mob.goto(`${BASE}/login.html`, { waitUntil: 'networkidle2', timeout: 60000 });
-      await mob.waitForSelector('#email, input[type="email"]', { timeout: 20000 });
-      await mob.type('#email, input[type="email"]', SA, { delay: 15 });
-      await mob.type('#password, input[type="password"]', ENV_PASS, { delay: 15 });
-      await Promise.all([
-        mob.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => null),
-        mob.click('button[type="submit"], #loginBtn, .btn-primary'),
-      ]);
-      await mob.waitForFunction(() => /dashboard\.html/i.test(location.pathname), { timeout: 25000 }).catch(() => null);
-      mark('Mobile Login', await mob.evaluate(() => /dashboard\.html/i.test(location.pathname)), await mob.evaluate(() => location.pathname));
+      await mob.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+      await mob.goto(`${BASE}/login.html`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      const emailSel = await mob.waitForSelector('#email, input[name="email"], input[type="email"]', { timeout: 25000 }).catch(() => null);
+      const passSel = await mob.$('#password, input[name="password"], input[type="password"]');
+      if (!emailSel || !passSel) {
+        mark('Mobile Login', false, `selectors missing email=${!!emailSel} pass=${!!passSel} url=${mob.url()}`);
+      } else {
+        await emailSel.click({ clickCount: 3 });
+        await emailSel.type(SA, { delay: 15 });
+        await passSel.click({ clickCount: 3 });
+        await passSel.type(ENV_PASS, { delay: 15 });
+        const btn = (await mob.$('button[type="submit"]')) || (await mob.$('#loginBtn')) || (await mob.$('.btn-primary'));
+        await Promise.all([
+          mob.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => null),
+          btn ? btn.click() : Promise.resolve(),
+        ]);
+        await mob.waitForFunction(() => /dashboard\.html/i.test(location.pathname), { timeout: 25000 }).catch(() => null);
+        mark(
+          'Mobile Login',
+          await mob.evaluate(() => /dashboard\.html/i.test(location.pathname)),
+          await mob.evaluate(() => location.pathname)
+        );
+      }
 
       // Direct dashboard.html while logged out should not show permission-denied as primary for guests
       await mob.evaluate(() => {
