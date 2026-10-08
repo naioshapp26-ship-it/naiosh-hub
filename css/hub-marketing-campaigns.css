@@ -14,7 +14,14 @@ html[dir="rtl"] body.mcs-body {
   color: var(--mcs-text);
   margin: 0;
 }
-.mcs-wrap { max-width: 1500px; margin: 0 auto; padding: 16px; }
+/* Match events studio (.ev-wrap): full available width, no narrow centered column. */
+.mcs-wrap {
+  max-width: none;
+  width: 100%;
+  margin: 0 auto;
+  padding: 14px 18px 28px;
+  box-sizing: border-box;
+}
 .mcs-hero {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #7f1d1d 100%);
   color: #fff;
@@ -114,4 +121,5 @@ html[dir="rtl"] body.mcs-body {
   .mcs-nav, .mcs-kpis, .mcs-cal { grid-template-columns: 1fr 1fr; }
   .mcs-hero h1 { font-size: 22px; }
   .mcs-table { display: block; overflow-x: auto; }
+  .mcs-wrap { padding: 10px; }
 }
