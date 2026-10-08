@@ -275,7 +275,7 @@ async function main() {
     );
     await saAdmin.close();
 
-    mark('لقطة ضيف', fs.existsSync(path.join(ART, 'events-back-guest-before-after.png')), 'guest shot');
+    mark('لقطة ضيف', fs.existsSync(path.join(ART, 'events-back-guest-after.png')), 'guest shot');
     mark('لقطة دخول إداري', fs.existsSync(path.join(ART, 'events-back-sa-admin-entry.png')), 'admin shot');
     mark('لقطة دخول عام لسوبر أدمن', fs.existsSync(path.join(ART, 'events-back-sa-public-entry.png')), 'sa public shot');
   } catch (err) {
