@@ -1,0 +1,106 @@
+{
+  "at": "2026-10-08T22:04:37.909Z",
+  "base": "http://127.0.0.1:8080",
+  "checks": [
+    {
+      "check": "دخول القائد الأعلى",
+      "result": "PASS",
+      "evidence": "EMP-0001"
+    },
+    {
+      "check": "ظهور القائد وبياناته",
+      "result": "PASS",
+      "evidence": "{\"emp\":\"EMP-0001\",\"acc\":\"NAI-LEADER-001\",\"role\":\"القائد الأعلى\",\"aff\":\"نايوش\"}"
+    },
+    {
+      "check": "دور عربي للقائد",
+      "result": "PASS",
+      "evidence": "القائد الأعلى"
+    },
+    {
+      "check": "إحصاءات حقيقية",
+      "result": "PASS",
+      "evidence": "{\"total\":2,\"active\":2,\"suspended\":0,\"revoked\":0,\"naiosh\":2,\"external\":0}"
+    },
+    {
+      "check": "إضافة إداري نايوش",
+      "result": "PASS",
+      "evidence": "EMP-0101|NAI-STAFF-0101|نايوش"
+    },
+    {
+      "check": "إضافة إداري جهة خارجية",
+      "result": "PASS",
+      "evidence": "مؤسسة الأفق|"
+    },
+    {
+      "check": "تحديد صلاحيات",
+      "result": "PASS",
+      "evidence": "3"
+    },
+    {
+      "check": "دخول الإداري الجديد",
+      "result": "PASS",
+      "evidence": "EMP-0101"
+    },
+    {
+      "check": "يرى الصلاحيات الممنوحة فقط في الجلسة",
+      "result": "PASS",
+      "evidence": "3"
+    },
+    {
+      "check": "API مرفوض بدون permissions.manage",
+      "result": "PASS",
+      "evidence": "403"
+    },
+    {
+      "check": "تعديل بيانات إداري",
+      "result": "PASS",
+      "evidence": "التطوير"
+    },
+    {
+      "check": "إيقاف إداري",
+      "result": "PASS",
+      "evidence": "تم إيقاف الإداري."
+    },
+    {
+      "check": "منع الجلسة القديمة بعد الإيقاف",
+      "result": "PASS",
+      "evidence": "401"
+    },
+    {
+      "check": "إعادة تفعيل",
+      "result": "PASS",
+      "evidence": "تم إعادة تفعيل الإداري."
+    },
+    {
+      "check": "دخول بعد التفعيل",
+      "result": "PASS",
+      "evidence": "EMP-0101"
+    },
+    {
+      "check": "إلغاء تكليف مع بقاء السجل",
+      "result": "PASS",
+      "evidence": "تم إلغاء التكليف الإداري مع الحفاظ على السجل."
+    },
+    {
+      "check": "السجل محفوظ بعد إلغاء التكليف",
+      "result": "PASS",
+      "evidence": "ملغى التكليف"
+    },
+    {
+      "check": "سجل تدقيق",
+      "result": "PASS",
+      "evidence": "16"
+    },
+    {
+      "check": "واجهة الكمبيوتر",
+      "result": "PASS",
+      "evidence": "{\"stats\":true,\"search\":true,\"leader\":true,\"cols\":true,\"teamLink\":true}"
+    },
+    {
+      "check": "واجهة الموبايل",
+      "result": "PASS",
+      "evidence": "admins-mgmt-mobile.png"
+    }
+  ]
+}
