@@ -60,6 +60,7 @@ async function ensureCustomer(page) {
   const email = `evt.back.${stamp}@naiosh-test.com`;
   const pass = 'Test360';
   const phone = `+9665${String(Date.now()).slice(-8)}`;
+  await page.goto(`${BASE}/index.html`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   const reg = await page.evaluate(
     async (body) => {
       const res = await fetch('/api/auth/register', {
