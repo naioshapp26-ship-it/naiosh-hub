@@ -611,31 +611,26 @@
       });
   };
 
-  const entityOptionsForType = (type) => {
-    if (type === 'none' || !type) return [];
-    if (type === 'branch') {
+  const orgPool = (kind) => {
+    if (kind === 'branch') {
       return (window.HubBranchesData?.BRANCHES || []).map((b) => ({
-        id: b.code || b.id || b.nameAr,
-        name: b.nameAr || b.name || b.code,
+        id: String(b.code || b.id || b.nameAr || ''),
+        name: b.nameAr || b.name || b.code || '',
+        num: b.code || b.id || '',
       }));
     }
-    if (type === 'incubator') {
+    if (kind === 'incubator') {
       return (window.HubIncubatorsData?.INCUBATORS || []).map((i) => ({
-        id: i.code || i.id || i.nameAr,
-        name: i.nameAr || i.name || i.code,
+        id: String(i.id || i.code || i.num || i.name || ''),
+        name: i.name || i.nameAr || i.code || '',
+        num: i.num != null ? String(i.num) : i.id || '',
       }));
     }
-    if (type === 'platform') {
+    if (kind === 'platform') {
       return (window.HubSovereignPlatforms?.list || []).map((p) => ({
-        id: p.code || p.id || p.nameAr,
-        name: p.nameAr || p.name || p.code,
-      }));
-    }
-    if (type === 'office') {
-      const offices = store()?.get?.()?.empire?.operating?.offices || [];
-      return offices.map((o) => ({
-        id: o.id || o.code || o.name,
-        name: o.name || o.nameAr || o.code || o.id,
+        id: String(p.code || p.id || p.nameAr || ''),
+        name: p.nameAr || p.name || p.code || '',
+        num: p.code || p.id || '',
       }));
     }
     return [];
@@ -652,7 +647,8 @@
       const assigneeLabel = t.assigneeLabel || t.assignee?.name || t.assignee || '';
       if (f.assignee && assigneeLabel !== f.assignee) return false;
       if (f.q) {
-        const hay = `${t.title} ${t.details || ''} ${assigneeLabel} ${t.project || ''} ${t.taskNo || ''} ${t.entityLabel || ''}`.toLowerCase();
+        const orgHay = `${t.entityLabel || ''} ${t.branch?.name || ''} ${t.incubator?.name || ''} ${t.platform?.name || ''} ${t.branchId || ''} ${t.incubatorId || ''} ${t.platformId || ''}`;
+        const hay = `${t.title} ${t.details || ''} ${assigneeLabel} ${t.project || ''} ${t.taskNo || ''} ${orgHay}`.toLowerCase();
         if (!hay.includes(f.q.toLowerCase())) return false;
       }
       return true;
@@ -663,7 +659,6 @@
     const K = Kit();
     const cat = tkUi.catalog || {};
     const assigneeType = item.assignee?.type || item.assigneeType || '';
-    const entityType = item.entity?.type || item.entityType || 'none';
     const att = tkUi.pendingAttachments || item.attachments || [];
     const typeOptions = (cat.assigneeTypes || [
       { code: 'staff_naiosh', label: 'موظف في نايوش' },
@@ -673,33 +668,27 @@
     ])
       .map((t) => `<option value="${K.esc(t.code)}" ${assigneeType === t.code ? 'selected' : ''}>${K.esc(t.label)}</option>`)
       .join('');
-    const entityTypeOpts = (cat.entityTypes || [
-      { code: 'none', label: 'مهمة عامة' },
-      { code: 'branch', label: 'فرع' },
-      { code: 'office', label: 'مكتب' },
-      { code: 'platform', label: 'منصة' },
-      { code: 'incubator', label: 'حاضنة' },
-    ])
-      .map((t) => `<option value="${K.esc(t.code)}" ${entityType === t.code ? 'selected' : ''}>${K.esc(t.label)}</option>`)
-      .join('');
     const taskTypeOpts = (cat.taskTypes || [{ code: 'operational', label: 'تشغيلية' }])
       .map((t) => `<option value="${K.esc(t.code)}" ${(item.taskType || 'operational') === t.code ? 'selected' : ''}>${K.esc(t.label)}</option>`)
       .join('');
 
     return `
       <style>
-        .hub-ws-modal[data-tk-wide="1"], .hub-tasks-form-wrap { width: min(920px,96vw) !important; }
+        .hub-ws-modal[data-tk-wide="1"], .hub-tasks-form-wrap { width: min(960px,96vw) !important; }
         .tk-form-section{border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px;background:#f8fafc}
         .tk-form-section h4{margin:0 0 10px;font-size:15px}
         .tk-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-        .tk-form-grid .full{grid-column:1/-1}
+        .tk-org-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+        .tk-form-grid .full,.tk-org-grid .full{grid-column:1/-1}
         .tk-req{color:#b91c1c}
         .tk-opt{color:#64748b;font-size:12px;font-weight:500}
+        .tk-org-field select{width:100%;min-height:38px;max-height:38px}
+        .tk-org-field input[type="search"]{width:100%;margin-bottom:6px}
         .tk-att-list{display:grid;gap:8px;margin-top:8px}
         .tk-att-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;font-size:13px}
         .tk-att-bar{height:6px;background:#e2e8f0;border-radius:999px;overflow:hidden;flex:1;min-width:120px}
         .tk-att-bar>i{display:block;height:100%;background:#b91c1c;width:0}
-        @media(max-width:720px){.tk-form-grid{grid-template-columns:1fr}}
+        @media(max-width:820px){.tk-org-grid{grid-template-columns:1fr}.tk-form-grid{grid-template-columns:1fr}}
       </style>
       <div class="tk-form-wrap" data-tk-wide="1">
         <section class="tk-form-section">
@@ -714,14 +703,14 @@
         </section>
 
         <section class="tk-form-section">
-          <h4>2) المسؤول والجهة المرتبطة</h4>
+          <h4>2) المسؤول عن المهمة</h4>
           <div class="tk-form-grid">
             <div class="field"><label>نوع المسؤول عن المهمة <span class="tk-req">*</span></label>
               <select id="tk-assignee-type" data-tk-change="assigneeType"><option value="">— اختر النوع —</option>${typeOptions}</select>
             </div>
             <div class="field"><label>المسؤول عن المهمة <span class="tk-req">*</span></label>
               <input id="tk-assignee-q" data-tk-change="assigneeQ" type="search" placeholder="ابحث بالاسم / البريد / رقم الموظف…" value="" />
-              <select id="tk-assignee-id" size="5" style="width:100%;margin-top:6px;min-height:110px">
+              <select id="tk-assignee-id" style="width:100%;margin-top:6px;min-height:38px">
                 <option value="">اختر نوع المسؤول أولًا ثم ابحث</option>
               </select>
               <small id="tk-assignee-hint" class="tk-opt"></small>
@@ -730,14 +719,27 @@
               <label>شخص المتابعة داخل الشركة <span class="tk-opt">(مطلوب عند الإمكان)</span></label>
               <select id="tk-contact-id"><option value="">— بدون تحديد —</option></select>
             </div>
-            <div class="field"><label>نوع الجهة / الوحدة المرتبطة <span class="tk-req">*</span></label>
-              <select id="tk-entity-type" data-tk-change="entityType">${entityTypeOpts}</select>
+          </div>
+        </section>
+
+        <section class="tk-form-section">
+          <h4>الجهات المرتبطة بالمهمة</h4>
+          <p class="tk-opt" style="margin:0 0 10px">يمكن ربط المهمة بفرع و/أو حاضنة و/أو منصة معًا. اترك الكل فارغًا لمهمة عامة.</p>
+          <div class="tk-org-grid">
+            <div class="field tk-org-field">
+              <label>الفرع <span class="tk-opt">(اختياري)</span></label>
+              <input id="tk-branch-q" data-tk-change="branchQ" type="search" placeholder="ابحث باسم الفرع أو رقمه…" />
+              <select id="tk-branch-id"><option value="">— بدون فرع —</option></select>
             </div>
-            <div class="field"><label>الجهة أو الوحدة المرتبطة</label>
-              <input id="tk-entity-q" data-tk-change="entityQ" type="search" placeholder="ابحث عن الجهة…" ${entityType === 'none' ? 'disabled' : ''} />
-              <select id="tk-entity-id" size="4" style="width:100%;margin-top:6px;min-height:90px" ${entityType === 'none' ? 'disabled' : ''}>
-                <option value="">${entityType === 'none' ? 'مهمة عامة — بلا جهة محددة' : 'اختر الجهة'}</option>
-              </select>
+            <div class="field tk-org-field">
+              <label>الحاضنة <span class="tk-opt">(اختياري)</span></label>
+              <input id="tk-incubator-q" data-tk-change="incubatorQ" type="search" placeholder="ابحث باسم الحاضنة أو رقمها…" />
+              <select id="tk-incubator-id"><option value="">— بدون حاضنة —</option></select>
+            </div>
+            <div class="field tk-org-field">
+              <label>المنصة <span class="tk-opt">(اختياري)</span></label>
+              <input id="tk-platform-q" data-tk-change="platformQ" type="search" placeholder="ابحث باسم المنصة أو رمزها…" />
+              <select id="tk-platform-id"><option value="">— بدون منصة —</option></select>
             </div>
           </div>
         </section>
@@ -862,45 +864,66 @@
       contacts.map((c) => `<option value="${Kit().esc(c.id)}">${Kit().esc(c.name)} · ${Kit().esc(c.email)}</option>`).join('');
   };
 
-  const fillEntitySelect = () => {
-    const typeEl = document.getElementById('tk-entity-type');
-    const sel = document.getElementById('tk-entity-id');
-    const qEl = document.getElementById('tk-entity-q');
-    if (!typeEl || !sel) return;
-    const type = typeEl.value || 'none';
-    const preferred = tkUi.modal?.data?.entity?.id || tkUi.modal?.data?.entityId || sel.value || '';
-    const disabled = type === 'none';
-    sel.disabled = disabled;
-    if (qEl) qEl.disabled = disabled;
-    if (disabled) {
-      sel.innerHTML = '<option value="">مهمة عامة — بلا جهة محددة</option>';
-      return;
-    }
+  const preferredOrgId = (kind) => {
+    const d = tkUi.modal?.data || {};
+    if (kind === 'branch') return d.branchId || d.branch?.id || d.orgLinks?.branch?.id || '';
+    if (kind === 'incubator') return d.incubatorId || d.incubator?.id || d.orgLinks?.incubator?.id || '';
+    if (kind === 'platform') return d.platformId || d.platform?.id || d.orgLinks?.platform?.id || '';
+    // legacy single-entity edit
+    if (d.entity?.type === kind) return d.entity.id || '';
+    return '';
+  };
+
+  const fillOrgSelect = (kind) => {
+    const sel = document.getElementById(`tk-${kind}-id`);
+    const qEl = document.getElementById(`tk-${kind}-q`);
+    if (!sel) return;
     const q = String(qEl?.value || '')
       .trim()
       .toLowerCase();
-    let pool = entityOptionsForType(type);
-    if (q) pool = pool.filter((p) => `${p.name} ${p.id}`.toLowerCase().includes(q));
-    sel.innerHTML = pool.length
-      ? pool
-          .slice(0, 120)
-          .map(
-            (p) =>
-              `<option value="${Kit().esc(p.id)}" data-name="${Kit().esc(p.name)}" ${
-                preferred && preferred === p.id ? 'selected' : ''
-              }>${Kit().esc(p.name)}</option>`
-          )
-          .join('')
-      : '<option value="">لا جهات مسجّلة لهذا النوع</option>';
+    const preferred = preferredOrgId(kind) || sel.value || '';
+    let pool = orgPool(kind);
+    if (q) {
+      pool = pool.filter((p) => `${p.name} ${p.id} ${p.num || ''}`.toLowerCase().includes(q));
+    }
+    const emptyLabel =
+      kind === 'branch' ? '— بدون فرع —' : kind === 'incubator' ? '— بدون حاضنة —' : '— بدون منصة —';
+    const opts = pool.slice(0, 200).map((p) => {
+      const label = p.num && p.num !== p.name ? `${p.name} · ${p.num}` : p.name;
+      return `<option value="${Kit().esc(p.id)}" data-name="${Kit().esc(p.name)}" ${
+        preferred && preferred === p.id ? 'selected' : ''
+      }>${Kit().esc(label)}</option>`;
+    });
+    sel.innerHTML = `<option value="">${emptyLabel}</option>` + (opts.join('') || '');
+    if (preferred && ![...sel.options].some((o) => o.value === preferred)) {
+      // keep previously saved id visible even if not in current filter
+      const d = tkUi.modal?.data || {};
+      const name =
+        kind === 'branch'
+          ? d.branch?.name || d.orgLinks?.branch?.name || preferred
+          : kind === 'incubator'
+            ? d.incubator?.name || d.orgLinks?.incubator?.name || preferred
+            : d.platform?.name || d.orgLinks?.platform?.name || preferred;
+      sel.insertAdjacentHTML(
+        'beforeend',
+        `<option value="${Kit().esc(preferred)}" data-name="${Kit().esc(name)}" selected>${Kit().esc(name)}</option>`
+      );
+    }
+  };
+
+  const fillOrgSelects = () => {
+    fillOrgSelect('branch');
+    fillOrgSelect('incubator');
+    fillOrgSelect('platform');
   };
 
   const bindTaskFormWidgets = () => {
     // Widen modal
     document.querySelector('.hub-ws-modal')?.setAttribute('data-tk-wide', '1');
     const modal = document.querySelector('.hub-ws-modal');
-    if (modal) modal.style.width = 'min(920px,96vw)';
+    if (modal) modal.style.width = 'min(960px,96vw)';
     fillAssigneeSelect();
-    fillEntitySelect();
+    fillOrgSelects();
     document.getElementById('tk-assignee-id')?.addEventListener('change', fillCompanyContacts);
     document.getElementById('tk-files')?.addEventListener('change', async (ev) => {
       const files = [...(ev.target.files || [])];
@@ -967,8 +990,12 @@
     const assigneeType = K.qVal('tk-assignee-type');
     const assigneeId = K.qVal('tk-assignee-id');
     const assigneeOpt = document.getElementById('tk-assignee-id')?.selectedOptions?.[0];
-    const entityType = K.qVal('tk-entity-type') || 'none';
-    const entityOpt = document.getElementById('tk-entity-id')?.selectedOptions?.[0];
+    const branchOpt = document.getElementById('tk-branch-id')?.selectedOptions?.[0];
+    const incubatorOpt = document.getElementById('tk-incubator-id')?.selectedOptions?.[0];
+    const platformOpt = document.getElementById('tk-platform-id')?.selectedOptions?.[0];
+    const branchId = K.qVal('tk-branch-id');
+    const incubatorId = K.qVal('tk-incubator-id');
+    const platformId = K.qVal('tk-platform-id');
     return {
       title: K.qVal('tk-title'),
       details: K.qVal('tk-details'),
@@ -983,13 +1010,18 @@
       assigneeId,
       companyName: assigneeOpt?.getAttribute('data-org') || assigneeOpt?.textContent || '',
       contactPersonId: K.qVal('tk-contact-id'),
-      entityType,
-      entityId: entityType === 'none' ? '' : K.qVal('tk-entity-id'),
-      entityName: entityType === 'none' ? 'مهمة عامة' : entityOpt?.getAttribute('data-name') || entityOpt?.textContent || '',
+      branchId,
+      branchName: branchId ? branchOpt?.getAttribute('data-name') || branchOpt?.textContent || '' : '',
+      incubatorId,
+      incubatorName: incubatorId
+        ? incubatorOpt?.getAttribute('data-name') || incubatorOpt?.textContent || ''
+        : '',
+      platformId,
+      platformName: platformId
+        ? platformOpt?.getAttribute('data-name') || platformOpt?.textContent || ''
+        : '',
       attachments: tkUi.pendingAttachments.slice(),
-      // legacy mirror for local store fallback
       assignee: assigneeOpt?.textContent || '',
-      branch: entityType === 'branch' ? entityOpt?.textContent || '' : '',
     };
   };
 
@@ -1038,7 +1070,7 @@
             <button type="button" class="btn btn-primary" data-action="tk-create"><i class="fas fa-plus"></i> مهمة جديدة</button>
           </div>
           <div class="table-wrap"><table class="data">
-            <thead><tr><th>رقم المهمة</th><th>المهمة</th><th>المسؤول</th><th>الجهة</th><th>الأولوية</th><th>الحالة</th><th>الموعد</th><th>مرفقات</th><th>إجراءات</th></tr></thead>
+            <thead><tr><th>رقم المهمة</th><th>المهمة</th><th>المسؤول</th><th>الفرع / الحاضنة / المنصة</th><th>الأولوية</th><th>الحالة</th><th>الموعد</th><th>مرفقات</th><th>إجراءات</th></tr></thead>
             <tbody>${
               pg.rows.length
                 ? pg.rows
@@ -1131,7 +1163,7 @@
         title: 'دليل المهام',
         dismissed: !!bag.settings?.helpDismissed,
         open: tkUi.helpOpen,
-        bodyHtml: `<p>اختر نوع المسؤول من السجلات الحقيقية، اربط المهمة بفرع/مكتب/منصة/حاضنة أو اجعلها عامة، وارفع المرفقات عبر نظام الرفع الموحّد (حتى 1500MB). الإسناد لا يمنح دخولًا للوحة الإدارة.</p>`,
+        bodyHtml: `<p>اختر نوع المسؤول من السجلات الحقيقية، واربط المهمة بفرع و/أو حاضنة و/أو منصة معًا (أو اتركها عامة)، وارفع المرفقات عبر نظام الرفع الموحّد (حتى 1500MB). الإسناد لا يمنح دخولًا للوحة الإدارة.</p>`,
       })}
       ${modal}${drawer}
     </div>`;
@@ -1158,7 +1190,17 @@
     if (action === 'tk-create') {
       tkUi.editId = null;
       tkUi.pendingAttachments = [];
-      tkUi.modal = { data: { priority: 'متوسط', status: 'todo', source: 'إدخال يدوي', entityType: 'none', taskType: 'operational' } };
+      tkUi.modal = {
+        data: {
+          priority: 'متوسط',
+          status: 'todo',
+          source: 'إدخال يدوي',
+          taskType: 'operational',
+          branchId: '',
+          incubatorId: '',
+          platformId: '',
+        },
+      };
       if (!tkUi.catalog) {
         fetch('/api/hub/tasks/catalog', { credentials: 'same-origin', headers: tkAuthHeaders() })
           .then((r) => r.json())
@@ -1195,7 +1237,9 @@
           <p>${K.esc(item.details || '—')}</p>
           ${item.notes ? `<p><b>تعليمات:</b> ${K.esc(item.notes)}</p>` : ''}
           <p><b>المسؤول:</b> ${K.esc(item.assigneeLabel || item.assignee?.name || '—')} (${K.esc(item.assignee?.typeLabel || '—')})</p>
-          <p><b>الجهة:</b> ${K.esc(item.entityLabel || '—')}</p>
+          <p><b>الفرع:</b> ${K.esc(item.branch?.name || item.orgLinks?.branch?.name || item.branchId || '—')}</p>
+          <p><b>الحاضنة:</b> ${K.esc(item.incubator?.name || item.orgLinks?.incubator?.name || item.incubatorId || '—')}</p>
+          <p><b>المنصة:</b> ${K.esc(item.platform?.name || item.orgLinks?.platform?.name || item.platformId || '—')}</p>
           <p><b>الحالة:</b> ${statusTaskLabel(item.status)} · <b>الأولوية:</b> ${K.esc(item.priority || '—')}</p>
           <p><b>الموعد:</b> ${K.esc(item.dueDate || '—')} · <b>المنشئ:</b> ${K.esc(item.createdBy?.name || item.createdBy?.email || '—')}</p>
           <p><b>أُنشئت:</b> ${K.fmtTime(item.createdAt)} · <b>حدّثت:</b> ${K.fmtTime(item.updatedAt)}</p>
@@ -1252,10 +1296,6 @@
       }
       if (!data.assigneeType || !data.assigneeId) {
         toast?.('اختر نوع المسؤول والمسؤول من قاعدة البيانات');
-        return true;
-      }
-      if (data.entityType && data.entityType !== 'none' && !data.entityId) {
-        toast?.('اختر الجهة المرتبطة أو حوّل النوع إلى مهمة عامة');
         return true;
       }
       toast?.('جاري حفظ المهمة على الخادم…');
@@ -1371,8 +1411,16 @@
       fillAssigneeSelect();
       return false; // don't full re-render (keeps modal state)
     }
-    if (key === 'entityType' || key === 'entityQ') {
-      fillEntitySelect();
+    if (key === 'branchQ') {
+      fillOrgSelect('branch');
+      return false;
+    }
+    if (key === 'incubatorQ') {
+      fillOrgSelect('incubator');
+      return false;
+    }
+    if (key === 'platformQ') {
+      fillOrgSelect('platform');
       return false;
     }
     tkUi.filters[key] = el.type === 'checkbox' ? el.checked : el.value;
