@@ -120,6 +120,9 @@ function listNotifications(limit = 100) {
 
 function addNotification(input = {}) {
   const store = readStore();
+  const targetEmail = String(input.targetEmail || input.meta?.targetEmail || '')
+    .trim()
+    .toLowerCase();
   const item = {
     id: uid('n'),
     source: String(input.source || 'HUB').toUpperCase(),
@@ -129,6 +132,7 @@ function addNotification(input = {}) {
     level: input.level || 'info',
     category: input.category || 'system',
     link: input.link || '',
+    targetEmail: targetEmail || null,
     read: false,
     at: new Date().toISOString(),
     meta: input.meta || null,

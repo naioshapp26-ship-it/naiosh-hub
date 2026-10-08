@@ -25,6 +25,7 @@ const productSubmissions = require('./lib/hub-product-submissions');
 const systemRentals = require('./lib/hub-system-rentals');
 const hubSystemSettings = require('./lib/hub-system-settings');
 const hubMarketingCampaigns = require('./lib/hub-marketing-campaigns');
+const hubTasks = require('./lib/hub-tasks');
 const hubEvents = require('./lib/hub-events');
 const hubArticles = require('./lib/hub-articles');
 
@@ -327,8 +328,38 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  if (pathname.startsWith('/api/hub/tasks')) {
+    const taskUrl = new URL(req.url, 'http://local');
+    if (await hubTasks.handle(req, res, taskUrl)) return true;
+  }
+
   if (pathname === '/api/hub/notifications' && req.method === 'GET') {
-    const items = hubRuntime.listNotifications(100);
+    const session = hubSession.resolveSession(req);
+    let items = hubRuntime.listNotifications(100);
+    if (session?.ok) {
+      const email = String(session.email || '')
+        .trim()
+        .toLowerCase();
+      if (session.lane === 'CLIENT') {
+        // Clients only see notifications addressed to them — assignment never grants admin inbox access.
+        items = items.filter((n) => {
+          const target = String(n.targetEmail || n.meta?.targetEmail || '')
+            .trim()
+            .toLowerCase();
+          return target && target === email;
+        });
+      } else if (hubSession.isStaffLane(session.lane) && session.lane !== 'SUPER_ADMIN') {
+        // Staff see unscoped ops notices + those addressed to them.
+        items = items.filter((n) => {
+          const target = String(n.targetEmail || n.meta?.targetEmail || '')
+            .trim()
+            .toLowerCase();
+          return !target || target === email;
+        });
+      }
+    } else {
+      items = [];
+    }
     sendJson(res, 200, { ok: true, count: items.length, unread: items.filter((n) => !n.read).length, items });
     return true;
   }
