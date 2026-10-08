@@ -101,11 +101,69 @@
     document.body.appendChild(el);
     setTimeout(function () { el.remove(); }, 2800);
   }
+  var HUB_HOME_URL = 'https://www.naioshai.com/';
+
   function isStaff() {
     return !!(state.me && state.me.staff);
   }
   function loggedIn() {
     return !!(window.HubAuth && HubAuth.isLoggedIn && HubAuth.isLoggedIn());
+  }
+
+  /**
+   * Navigation context for the back button only — never grants admin powers.
+   * Admin entry is set by the dashboard before opening the studio; public
+   * referrers (home/hero/nav) force the external "back to home" path.
+   */
+  function resolveStudioEntry() {
+    try {
+      var ref = document.referrer || '';
+      var fromDash = false;
+      if (ref) {
+        var u = new URL(ref, location.href);
+        if (u.origin === location.origin && /\/dashboard\.html$/i.test(u.pathname)) {
+          fromDash = true;
+          sessionStorage.setItem('hubStudioEntry', 'admin');
+        } else if (u.origin === location.origin || /naioshai\.com$/i.test(u.hostname)) {
+          // Public site / hero / general nav → external studio
+          sessionStorage.setItem('hubStudioEntry', 'public');
+        }
+      }
+      if (fromDash) return 'admin';
+      var entry = sessionStorage.getItem('hubStudioEntry') || '';
+      if (entry === 'admin') return 'admin';
+      return 'public';
+    } catch (_) {
+      return 'public';
+    }
+  }
+
+  function isAdminStudioEntry() {
+    return resolveStudioEntry() === 'admin' && isStaff();
+  }
+
+  function adminReturnHref() {
+    var ret = 'dashboard.html#overview';
+    try {
+      var stored = sessionStorage.getItem('hubStudioReturn') || localStorage.getItem('hubStudioReturn') || '';
+      if (/^dashboard\.html(#|$)/i.test(stored)) ret = stored;
+    } catch (_) {}
+    return ret;
+  }
+
+  function heroBackHtml() {
+    if (isAdminStudioEntry()) {
+      return (
+        '<a class="ev-btn ghost" data-ev-back="admin" href="' +
+        esc(adminReturnHref()) +
+        '"><i class="fas fa-arrow-right"></i> رجوع إلى لوحة التحكم</a>'
+      );
+    }
+    return (
+      '<a class="ev-btn ghost" data-ev-back="home" href="' +
+      esc(HUB_HOME_URL) +
+      '"><i class="fas fa-house"></i> العودة للرئيسية</a>'
+    );
   }
   function headers(extra) {
     return (window.HubAuth && HubAuth.authHeaders && HubAuth.authHeaders(extra || {})) || extra || {};
@@ -253,10 +311,7 @@
 
   function hero() {
     var staff = isStaff();
-    var back = staff
-      ? '<a class="ev-btn ghost" href="dashboard.html#overview"><i class="fas fa-arrow-right"></i> رجوع إلى لوحة التحكم</a>'
-      : '<a class="ev-btn ghost" href="client.html"><i class="fas fa-user"></i> حسابي</a>' +
-        '<a class="ev-btn ghost" href="events.html#section=explore"><i class="fas fa-calendar-days"></i> الفعاليات</a>';
+    var adminEntry = isAdminStudioEntry();
     return (
       '<header class="ev-hero">' +
         '<div><h1>استوديو الفعاليات الذكي</h1>' +
@@ -265,12 +320,15 @@
           : 'استكشف الفعاليات المنشورة، أنشئ فعاليتك، وتابع تسجيلاتك من حسابك.') +
         '</p></div>' +
         '<div class="ev-hero-actions">' +
-          back +
+          heroBackHtml() +
           (loggedIn()
             ? '<button class="ev-btn primary" data-ev="new"><i class="fas fa-plus"></i> إنشاء فعالية</button>'
             : '<button class="ev-btn primary" data-ev="login"><i class="fas fa-plus"></i> إنشاء فعالية</button>') +
           (staff ? '<button class="ev-btn ghost" data-sec="manage"><i class="fas fa-layer-group"></i> إدارة الفعاليات</button>' : '') +
           (staff ? '<button class="ev-btn ghost" data-ev="upload-video"><i class="fas fa-video"></i> رفع فيديو</button>' : '') +
+          (!adminEntry && loggedIn() && !staff
+            ? '<a class="ev-btn ghost" href="client.html"><i class="fas fa-user"></i> حسابي</a>'
+            : '') +
         '</div></header>'
     );
   }
@@ -1101,6 +1159,9 @@
       render();
     }
   });
+
+  // Resolve public vs admin back-button context before first paint.
+  resolveStudioEntry();
 
   refreshAll().then(function () {
     var h = location.hash.replace(/^#/, '');
