@@ -1,6 +1,6 @@
 {
-  "at": "2026-10-08T22:04:37.909Z",
-  "base": "http://127.0.0.1:8080",
+  "at": "2026-10-08T22:07:00.838Z",
+  "base": "https://www.naioshai.com",
   "checks": [
     {
       "check": "دخول القائد الأعلى",
@@ -90,7 +90,7 @@
     {
       "check": "سجل تدقيق",
       "result": "PASS",
-      "evidence": "16"
+      "evidence": "15"
     },
     {
       "check": "واجهة الكمبيوتر",
@@ -102,5 +102,11 @@
       "result": "PASS",
       "evidence": "admins-mgmt-mobile.png"
     }
-  ]
+  ],
+  "production": {
+    "base": "https://www.naioshai.com",
+    "e2e": "20/20 PASS",
+    "deployed": true,
+    "pr": "https://github.com/naioshapp26-ship-it/naiosh-hub/pull/187"
+  }
 }
