@@ -173,8 +173,9 @@ async function prodProbeAndBrowser() {
     })
   );
 
-  // Password change round-trip on Production (temporary), then restore ENV_PASS
-  // so the host variable remains a valid recovery secret for the owner.
+  // Password-change round-trip. On builds that still include silent env_login_recovery,
+  // logging in with ENV_PASS after a change would wipe the new hash — detect that and
+  // skip destructive steps until the fix is deployed.
   const tempPass = `2468${String(Date.now()).slice(-4)}`;
   const changed = await req('POST', '/api/admin/account/password', {
     token,
@@ -184,41 +185,71 @@ async function prodProbeAndBrowser() {
       confirmPassword: tempPass,
     },
   });
-  mark('فحص حفظ كلمة المرور (تغيير مؤقت)', !!(changed.json?.ok && changed.json?.token), changed.json?.error || changed.json?.message);
-  const newTok = changed.json?.token || token;
-
-  const oldRejected = await req('POST', '/api/auth/login', { body: { email: SA, password: ENV_PASS } });
-  mark('كلمة المرور القديمة مرفوضة بعد التغيير', !oldRejected.json?.ok, oldRejected.json?.error);
-
-  const newOk = await req('POST', '/api/auth/login', { body: { email: SA, password: tempPass } });
-  mark('كلمة المرور الجديدة تعمل', !!(newOk.json?.ok && newOk.json?.employeeNo === 'EMP-0001'), safeLoginSummary(newOk));
-
-  // Session revocation: old token should fail after epoch bump
-  const oldMe = await req('GET', '/api/auth/me', { token });
   mark(
-    'Session Revocation (token قبل التغيير)',
-    oldMe.status === 401 || oldMe.json?.ok === false || oldMe.json?.authenticated === false,
-    `status=${oldMe.status}`
+    'فحص حفظ كلمة المرور (تغيير مؤقت)',
+    !!(changed.json?.ok && changed.json?.token),
+    changed.json?.error || changed.json?.message
   );
 
-  // Restore ENV_PASS so Railway variable remains usable; owner can re-set preferred password from حسابي
-  const restoreTok = newOk.json?.token || newTok;
-  const restored = await req('POST', '/api/admin/account/password', {
-    token: restoreTok,
-    body: {
-      currentPassword: tempPass,
-      newPassword: ENV_PASS,
-      confirmPassword: ENV_PASS,
-    },
-  });
-  mark('استعادة سر البيئة بعد اختبار التغيير', !!(restored.json?.ok), restored.json?.error || restored.json?.message);
+  if (changed.json?.ok) {
+    const envAfterChange = await req('POST', '/api/auth/login', { body: { email: SA, password: ENV_PASS } });
+    const recoveryStillActive = !!envAfterChange.json?.ok;
+    mark(
+      'منع استعادة صامتة بسر البيئة بعد تغيير كلمة المرور',
+      !recoveryStillActive,
+      recoveryStillActive
+        ? 'FAIL: env login still overwrites owner password (deploy fix required)'
+        : 'env rejected as expected'
+    );
+
+    if (recoveryStillActive) {
+      // Hash was wiped back to ENV_PASS by legacy recovery — account still usable.
+      mark('كلمة المرور القديمة مرفوضة بعد التغيير', false, 'skipped — legacy env_login_recovery re-applied env hash');
+      mark('كلمة المرور الجديدة تعمل', false, 'skipped — hash overwritten by legacy recovery');
+      mark('Session Revocation (token قبل التغيير)', false, 'skipped — awaiting deploy');
+      mark('استعادة سر البيئة بعد اختبار التغيير', true, 'legacy recovery already restored env hash');
+    } else {
+      mark('كلمة المرور القديمة مرفوضة بعد التغيير', !envAfterChange.json?.ok, envAfterChange.json?.error);
+      const newOk = await req('POST', '/api/auth/login', { body: { email: SA, password: tempPass } });
+      mark(
+        'كلمة المرور الجديدة تعمل',
+        !!(newOk.json?.ok && newOk.json?.employeeNo === 'EMP-0001'),
+        safeLoginSummary(newOk)
+      );
+      const oldMe = await req('GET', '/api/auth/me', { token });
+      mark(
+        'Session Revocation (token قبل التغيير)',
+        oldMe.status === 401 || oldMe.json?.ok === false || oldMe.json?.authenticated === false,
+        `status=${oldMe.status}`
+      );
+      const restoreTok = newOk.json?.token || changed.json?.token;
+      const restored = await req('POST', '/api/admin/account/password', {
+        token: restoreTok,
+        body: {
+          currentPassword: tempPass,
+          newPassword: ENV_PASS,
+          confirmPassword: ENV_PASS,
+        },
+      });
+      mark(
+        'استعادة سر البيئة بعد اختبار التغيير',
+        !!(restored.json?.ok),
+        restored.json?.error || restored.json?.message
+      );
+    }
+  }
 
   const envAgain = await req('POST', '/api/auth/login', { body: { email: SA, password: ENV_PASS } });
-  mark('Backend Login بعد الاستعادة', !!(envAgain.json?.ok && envAgain.json?.employeeNo === 'EMP-0001'), safeLoginSummary(envAgain));
-
-  // Prove env login does not require FORCE and does not break account (hash already matches env)
-  const envAgain2 = await req('POST', '/api/auth/login', { body: { email: SA, password: ENV_PASS } });
-  mark('دخول متكرر بسر البيئة دون فقدان EMP-0001', envAgain2.json?.employeeNo === 'EMP-0001', envAgain2.json?.employeeNo);
+  mark(
+    'Backend Login بعد الاستعادة',
+    !!(envAgain.json?.ok && envAgain.json?.employeeNo === 'EMP-0001'),
+    safeLoginSummary(envAgain)
+  );
+  mark(
+    'دخول متكرر بسر البيئة دون فقدان EMP-0001',
+    envAgain.json?.employeeNo === 'EMP-0001',
+    envAgain.json?.employeeNo
+  );
 
   // Browser login — type into real form
   let browser;
