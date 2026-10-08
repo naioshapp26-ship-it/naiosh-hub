@@ -1,8 +1,21 @@
 {
-  "at": "2026-10-08T21:25:45.424Z",
-  "base": "http://127.0.0.1:8080",
-  "accountIdForLeader": "NAI-LEADER-001",
-  "employeeNo": "EMP-0001",
+  "at": "2026-10-08T21:31:13.237Z",
+  "base": "https://www.naioshai.com",
+  "deployed": true,
+  "pr": "https://github.com/naioshapp26-ship-it/naiosh-hub/pull/185",
+  "leader": {
+    "email": "naioshhub@example.com",
+    "employeeNo": "EMP-0001",
+    "accountId": "NAI-LEADER-001",
+    "roleLabel": "القائد الأعلى",
+    "statusLabel": "نشط"
+  },
+  "phoneEditableAndPersisted": true,
+  "persistsAfterRefreshAndRelogin": true,
+  "backendApiTested": true,
+  "mobileTested": true,
+  "remainingErrors": null,
+  "productionE2E": "16/16 PASS",
   "checks": [
     {
       "check": "تسجيل دخول القائد الأعلى",
@@ -32,12 +45,12 @@
     {
       "check": "حفظ رقم الجوال",
       "result": "PASS",
-      "evidence": "+970594739044"
+      "evidence": "+970595038779"
     },
     {
       "check": "استمرارية الجوال بعد GET",
       "result": "PASS",
-      "evidence": "+970594739044"
+      "evidence": "+970595038779"
     },
     {
       "check": "رفض تعديل رقم الموظف",
@@ -57,7 +70,7 @@
     {
       "check": "استمرارية بعد Logout/Login",
       "result": "PASS",
-      "evidence": "+970594739044"
+      "evidence": "+970595038779"
     },
     {
       "check": "إنشاء إداري آخر",
@@ -67,7 +80,7 @@
     {
       "check": "حساب إداري آخر يعرض بياناته فقط",
       "result": "PASS",
-      "evidence": "acct.admin.mv01pnkq@example.com|EMP-0100|NAI-STAFF-0100"
+      "evidence": "acct.admin.mv01w34n@example.com|EMP-0100|NAI-STAFF-0100"
     },
     {
       "check": "رقم حساب الإداري مختلف عن الموظف",
