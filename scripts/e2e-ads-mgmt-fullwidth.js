@@ -145,46 +145,42 @@ async function main() {
 
     const smokeStats = await smoke.evaluate(async () => {
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-      const navBtns = Array.from(document.querySelectorAll('.ads-ws-nav button'));
+      const navCount = document.querySelectorAll('.ads-ws-nav [data-ads-section]').length;
       let tabsOk = 0;
-      for (let i = 0; i < navBtns.length; i++) {
-        const btn = document.querySelectorAll('.ads-ws-nav button')[i];
+      for (let i = 0; i < navCount; i++) {
+        const btn = document.querySelectorAll('.ads-ws-nav [data-ads-section]')[i];
         if (!btn) continue;
-        btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        await sleep(220);
-        const cur = document.querySelectorAll('.ads-ws-nav button')[i];
-        if (cur?.classList.contains('is-on') || cur?.getAttribute('aria-current') === 'true') {
-          tabsOk += 1;
-        } else if (cur?.classList.contains('active')) {
-          tabsOk += 1;
-        } else {
-          // Some builds use data-tab active via parent section visibility
-          const panelId = cur?.getAttribute('data-ads-tab') || cur?.dataset?.tab;
-          if (panelId && document.getElementById(panelId)) tabsOk += 1;
-          else if (document.body.innerText.length > 80) tabsOk += 1;
-        }
+        const want = btn.getAttribute('data-ads-section');
+        btn.click();
+        await sleep(280);
+        const cur = document.querySelector('.ads-ws-nav [data-ads-section].is-on');
+        if (cur && cur.getAttribute('data-ads-section') === want) tabsOk += 1;
       }
+
+      // Return to mine for grids
+      const mine = document.querySelector('.ads-ws-nav [data-ads-section="mine"]');
+      if (mine) mine.click();
+      await sleep(280);
 
       const headActions = document.querySelectorAll('.ads-ws-head-actions .ads-ws-btn').length;
       const createBtn = document.querySelector('[data-ads-create]');
-      if (createBtn) createBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      await sleep(500);
+      if (createBtn) createBtn.click();
+      await sleep(600);
       const formOk = !!(
-        document.querySelector('.ads-modal, .ads-drawer, .ads-wizard, [data-ads-field], #ads-form') ||
-        /إضافة إعلان|عنوان الإعلان|مكان الظهور|مسودة/.test(document.body.innerText || '')
+        document.querySelector('.ads-modal, .ads-drawer, .ads-wizard, [data-ads-field], .ads-form, #ads-form') ||
+        /إضافة إعلان|عنوان الإعلان|مكان الظهور|مسودة|محتوى الإعلان/.test(document.body.innerText || '')
       );
 
-      // Close modal if open
       const closeBtn = document.querySelector(
-        '.ads-modal [data-ads-close], .ads-drawer [data-ads-close], .ads-modal .ads-ws-btn.ghost, button[data-close]'
+        '[data-ads-close], .ads-modal-close, .ads-overlay [data-close], button[aria-label="إغلاق"]'
       );
-      if (closeBtn) closeBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      if (closeBtn) closeBtn.click();
       await sleep(200);
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       await sleep(200);
 
       const previewBtn = document.querySelector('[data-ads-preview-placements]');
-      if (previewBtn) previewBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      if (previewBtn) previewBtn.click();
       await sleep(400);
       const previewOk = !!(
         document.querySelector('.ads-places-preview, .ads-places-grid') ||
@@ -205,7 +201,7 @@ async function main() {
       ).length;
 
       return {
-        navCount: navBtns.length,
+        navCount,
         tabsOk,
         headActions,
         formOk,
