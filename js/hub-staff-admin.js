@@ -45,27 +45,97 @@
     try {
       const data = await api('/api/admin/account');
       const a = data.account || {};
+      const accountId = a.accountId || a.naioshId || '—';
       el.innerHTML = `
-        <div class="panel-card" style="max-width:640px">
-          <h3 style="margin-top:0">حسابي</h3>
-          <dl class="hto-staff-dl" style="display:grid;gap:8px;margin:12px 0 20px">
-            <div><dt>الاسم</dt><dd>${esc(a.name)}</dd></div>
-            <div><dt>البريد الإلكتروني</dt><dd dir="ltr">${esc(a.email)}</dd></div>
-            <div><dt>رقم الموظف</dt><dd dir="ltr">${esc(a.employeeNo || '—')}</dd></div>
-            <div><dt>الدور</dt><dd>${esc(a.role)}</dd></div>
-            <div><dt>الحالة</dt><dd>${esc(a.status)}</dd></div>
-            <div><dt>مكان العمل</dt><dd>${esc(a.workplace || '—')}</dd></div>
-          </dl>
+        <div class="panel-card sa-account-panel" style="max-width:960px;width:100%">
+          <section class="sa-profile-section" style="margin-bottom:28px">
+            <h3 style="margin:0 0 6px">بيانات حسابي</h3>
+            <p style="margin:0 0 16px;color:#64748b;font-size:14px">بيانات الحساب الإداري المرتبط بجلستك الحالية.</p>
+            <form id="sa-profile-form" class="sa-profile-form" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px">
+              <div class="sa-field">
+                <label style="display:block;font-weight:700;margin-bottom:6px">الاسم</label>
+                <div class="sa-readonly" style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc">${esc(a.name || '—')}</div>
+              </div>
+              <div class="sa-field">
+                <label style="display:block;font-weight:700;margin-bottom:6px">البريد الإلكتروني</label>
+                <div class="sa-readonly" dir="ltr" style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc;text-align:left">${esc(a.email || '—')}</div>
+              </div>
+              <div class="sa-field">
+                <label for="sa-phone" style="display:block;font-weight:700;margin-bottom:6px">رقم الجوال</label>
+                <input id="sa-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr"
+                  value="${esc(a.phone || '')}" placeholder="+97059XXXXXXX"
+                  style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;text-align:left;box-sizing:border-box" />
+                <small style="display:block;margin-top:4px;color:#64748b">يمكن إضافة رمز الدولة. مثال: +97059XXXXXXX</small>
+              </div>
+              <div class="sa-field">
+                <label style="display:block;font-weight:700;margin-bottom:6px">رقم الموظف</label>
+                <div class="sa-readonly" dir="ltr" style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc;text-align:left">${esc(a.employeeNo || '—')}</div>
+              </div>
+              <div class="sa-field">
+                <label style="display:block;font-weight:700;margin-bottom:6px">رقم الحساب</label>
+                <div class="sa-readonly" dir="ltr" style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc;text-align:left">${esc(accountId)}</div>
+              </div>
+              <div class="sa-field">
+                <label style="display:block;font-weight:700;margin-bottom:6px">الدور</label>
+                <div class="sa-readonly" style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc">${esc(a.roleLabel || a.role || '—')}</div>
+              </div>
+              <div class="sa-field">
+                <label style="display:block;font-weight:700;margin-bottom:6px">الحالة</label>
+                <div class="sa-readonly" style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc">${esc(a.statusLabel || a.status || '—')}</div>
+              </div>
+              <div class="sa-field">
+                <label style="display:block;font-weight:700;margin-bottom:6px">مكان العمل</label>
+                <div class="sa-readonly" style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc">${esc(a.workplace || '—')}</div>
+              </div>
+              <div class="sa-field" style="grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:4px">
+                <button type="submit" class="btn btn-primary" id="sa-profile-save">حفظ التغييرات</button>
+                <p id="sa-profile-msg" style="margin:0;font-weight:700"></p>
+              </div>
+            </form>
+          </section>
           ${a.mustChangePassword ? '<p class="alert alert-warn" style="color:#991b1b;font-weight:700">يُفضَّل تغيير كلمة المرور الأولية قبل الإطلاق العام.</p>' : ''}
-          <h4>الأمان وكلمة المرور</h4>
-          <form id="sa-pwd-form" class="cp-form" style="display:grid;gap:10px;max-width:420px">
-            <label>كلمة المرور الحالية<input type="password" name="currentPassword" required autocomplete="current-password" class="form-control" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>
-            <label>كلمة المرور الجديدة<input type="password" name="newPassword" required autocomplete="new-password" class="form-control" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>
-            <label>تأكيد كلمة المرور الجديدة<input type="password" name="confirmPassword" required autocomplete="new-password" class="form-control" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>
-            <button type="submit" class="btn btn-primary">حفظ</button>
-            <p id="sa-pwd-msg" style="margin:0;font-weight:700"></p>
-          </form>
-        </div>`;
+          <section class="sa-security-section" style="border-top:1px solid #e5e7eb;padding-top:22px">
+            <h3 style="margin:0 0 6px">الأمان وكلمة المرور</h3>
+            <p style="margin:0 0 14px;color:#64748b;font-size:14px">تغيير كلمة المرور منفصل عن حفظ بيانات الحساب.</p>
+            <form id="sa-pwd-form" class="cp-form" style="display:grid;gap:10px;max-width:480px">
+              <label style="font-weight:700">كلمة المرور الحالية<input type="password" name="currentPassword" required autocomplete="current-password" class="form-control" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;margin-top:6px;box-sizing:border-box"></label>
+              <label style="font-weight:700">كلمة المرور الجديدة<input type="password" name="newPassword" required autocomplete="new-password" class="form-control" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;margin-top:6px;box-sizing:border-box"></label>
+              <label style="font-weight:700">تأكيد كلمة المرور الجديدة<input type="password" name="confirmPassword" required autocomplete="new-password" class="form-control" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;margin-top:6px;box-sizing:border-box"></label>
+              <button type="submit" class="btn btn-primary">تغيير كلمة المرور</button>
+              <p id="sa-pwd-msg" style="margin:0;font-weight:700"></p>
+            </form>
+          </section>
+        </div>
+        <style>
+          @media (max-width:720px){
+            .sa-profile-form{grid-template-columns:1fr !important}
+          }
+        </style>`;
+
+      const profileForm = el.querySelector('#sa-profile-form');
+      const profileMsg = el.querySelector('#sa-profile-msg');
+      profileForm?.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const phone = String(new FormData(profileForm).get('phone') || '').trim();
+        profileMsg.style.color = '#475569';
+        profileMsg.textContent = 'جاري الحفظ…';
+        try {
+          const result = await api('/api/admin/account', {
+            method: 'PATCH',
+            body: { phone },
+          });
+          profileMsg.style.color = '#166534';
+          profileMsg.textContent = result.message || 'تم حفظ بيانات الحساب بنجاح.';
+          toast?.(profileMsg.textContent);
+          const input = el.querySelector('#sa-phone');
+          if (input && result.account) input.value = result.account.phone || '';
+        } catch (err) {
+          profileMsg.style.color = '#991b1b';
+          profileMsg.textContent = err.message || 'تعذر الحفظ';
+          toast?.(profileMsg.textContent);
+        }
+      });
+
       const form = el.querySelector('#sa-pwd-form');
       const msg = el.querySelector('#sa-pwd-msg');
       form?.addEventListener('submit', async (ev) => {
