@@ -545,7 +545,7 @@
     return false;
   };
 
-  /* ───────── Tasks ───────── */
+  /* ───────── Tasks (server-backed) ───────── */
   const tkUi = {
     tab: 'list',
     page: 1,
@@ -556,6 +556,12 @@
     helpOpen: false,
     kpiFocus: '',
     editId: null,
+    serverItems: null,
+    serverAudit: [],
+    catalog: null,
+    pendingAttachments: [],
+    loading: false,
+    loaded: false,
   };
   const TK_TABS = [
     { id: 'list', label: 'قائمة المهام', icon: 'fa-list-check' },
@@ -563,6 +569,77 @@
     { id: 'audit', label: 'سجل العمليات', icon: 'fa-clock-rotate-left' },
     { id: 'settings', label: 'الإعدادات', icon: 'fa-gear' },
   ];
+
+  const tkAuthHeaders = () => {
+    const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken') || '';
+    return {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}`, 'X-Hub-Token': token } : {}),
+    };
+  };
+
+  const tkRefreshDash = () => {
+    try {
+      document.dispatchEvent(new CustomEvent('hub-panel-refresh'));
+    } catch {
+      /* */
+    }
+  };
+
+  const ensureTasksLoaded = () => {
+    if (tkUi.loading || tkUi.loaded) return;
+    tkUi.loading = true;
+    Promise.all([
+      fetch('/api/hub/tasks', { credentials: 'same-origin', headers: tkAuthHeaders() }).then((r) => r.json()),
+      fetch('/api/hub/tasks/catalog', { credentials: 'same-origin', headers: tkAuthHeaders() }).then((r) => r.json()),
+    ])
+      .then(([list, cat]) => {
+        if (list?.ok) {
+          tkUi.serverItems = list.items || [];
+          tkUi.serverAudit = list.audit || [];
+        }
+        if (cat?.ok) tkUi.catalog = cat.catalog;
+        tkUi.loaded = true;
+      })
+      .catch(() => {
+        tkUi.loaded = true;
+      })
+      .finally(() => {
+        tkUi.loading = false;
+        tkRefreshDash();
+      });
+  };
+
+  const entityOptionsForType = (type) => {
+    if (type === 'none' || !type) return [];
+    if (type === 'branch') {
+      return (window.HubBranchesData?.BRANCHES || []).map((b) => ({
+        id: b.code || b.id || b.nameAr,
+        name: b.nameAr || b.name || b.code,
+      }));
+    }
+    if (type === 'incubator') {
+      return (window.HubIncubatorsData?.INCUBATORS || []).map((i) => ({
+        id: i.code || i.id || i.nameAr,
+        name: i.nameAr || i.name || i.code,
+      }));
+    }
+    if (type === 'platform') {
+      return (window.HubSovereignPlatforms?.list || []).map((p) => ({
+        id: p.code || p.id || p.nameAr,
+        name: p.nameAr || p.name || p.code,
+      }));
+    }
+    if (type === 'office') {
+      const offices = store()?.get?.()?.empire?.operating?.offices || [];
+      return offices.map((o) => ({
+        id: o.id || o.code || o.name,
+        name: o.name || o.nameAr || o.code || o.id,
+      }));
+    }
+    return [];
+  };
 
   const filterTasks = (items) => {
     const f = tkUi.filters;
@@ -572,9 +649,10 @@
       if (tkUi.kpiFocus === 'done' && t.status !== 'done') return false;
       if (f.status && t.status !== f.status) return false;
       if (f.priority && t.priority !== f.priority) return false;
-      if (f.assignee && t.assignee !== f.assignee) return false;
+      const assigneeLabel = t.assigneeLabel || t.assignee?.name || t.assignee || '';
+      if (f.assignee && assigneeLabel !== f.assignee) return false;
       if (f.q) {
-        const hay = `${t.title} ${t.details} ${t.assignee} ${t.project}`.toLowerCase();
+        const hay = `${t.title} ${t.details || ''} ${assigneeLabel} ${t.project || ''} ${t.taskNo || ''} ${t.entityLabel || ''}`.toLowerCase();
         if (!hay.includes(f.q.toLowerCase())) return false;
       }
       return true;
@@ -583,49 +661,344 @@
 
   const taskFormHtml = (item = {}) => {
     const K = Kit();
-    const people = peopleNames();
+    const cat = tkUi.catalog || {};
+    const assigneeType = item.assignee?.type || item.assigneeType || '';
+    const entityType = item.entity?.type || item.entityType || 'none';
+    const att = tkUi.pendingAttachments || item.attachments || [];
+    const typeOptions = (cat.assigneeTypes || [
+      { code: 'staff_naiosh', label: 'موظف في نايوش' },
+      { code: 'staff_external', label: 'موظف أو شخص من جهة خارجية' },
+      { code: 'customer', label: 'عميل' },
+      { code: 'company', label: 'شركة أو مؤسسة' },
+    ])
+      .map((t) => `<option value="${K.esc(t.code)}" ${assigneeType === t.code ? 'selected' : ''}>${K.esc(t.label)}</option>`)
+      .join('');
+    const entityTypeOpts = (cat.entityTypes || [
+      { code: 'none', label: 'مهمة عامة' },
+      { code: 'branch', label: 'فرع' },
+      { code: 'office', label: 'مكتب' },
+      { code: 'platform', label: 'منصة' },
+      { code: 'incubator', label: 'حاضنة' },
+    ])
+      .map((t) => `<option value="${K.esc(t.code)}" ${entityType === t.code ? 'selected' : ''}>${K.esc(t.label)}</option>`)
+      .join('');
+    const taskTypeOpts = (cat.taskTypes || [{ code: 'operational', label: 'تشغيلية' }])
+      .map((t) => `<option value="${K.esc(t.code)}" ${(item.taskType || 'operational') === t.code ? 'selected' : ''}>${K.esc(t.label)}</option>`)
+      .join('');
+
     return `
-      <div class="grid-2">
-        <div class="field"><label>العنوان *</label><input id="tk-title" value="${K.esc(item.title || '')}" /></div>
-        <div class="field"><label>المشروع</label><input id="tk-project" value="${K.esc(item.project || 'تشغيل يومي')}" /></div>
-        <div class="field"><label>المسؤول</label>
-          <select id="tk-assignee">${(people.length ? people : ['مشغّل هوب']).map((p) => `<option ${item.assignee === p ? 'selected' : ''}>${K.esc(p)}</option>`).join('')}</select>
-        </div>
-        <div class="field"><label>الأولوية</label>
-          <select id="tk-priority">${['عاجل', 'عالي', 'متوسط', 'منخفض'].map((p) => `<option ${ (item.priority || 'متوسط') === p ? 'selected' : ''}>${p}</option>`).join('')}</select>
-        </div>
-        <div class="field"><label>الحالة</label>
-          <select id="tk-status">${['todo', 'in_progress', 'blocked', 'done'].map((s) => `<option value="${s}" ${item.status === s ? 'selected' : ''}>${statusTaskLabel(s)}</option>`).join('')}</select>
-        </div>
-        <div class="field"><label>الموعد</label><input id="tk-due" type="date" value="${K.esc(item.dueDate || '')}" /></div>
-        <div class="field"><label>المصدر</label>
-          <select id="tk-source">${['إدخال يدوي', 'Integration', 'Automation', 'Governance', 'System Generated'].map((s) => `<option value="${s}" ${(item.source || 'إدخال يدوي') === s ? 'selected' : ''}>${window.HubI18n?.label?.(s) || s}</option>`).join('')}</select>
-        </div>
-        <div class="field"><label>الفرع</label><input id="tk-branch" value="${K.esc(item.branch || '')}" /></div>
-      </div>
-      <div class="field"><label>التفاصيل</label><textarea id="tk-details" rows="3">${K.esc(item.details || '')}</textarea></div>`;
+      <style>
+        .hub-ws-modal[data-tk-wide="1"], .hub-tasks-form-wrap { width: min(920px,96vw) !important; }
+        .tk-form-section{border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px;background:#f8fafc}
+        .tk-form-section h4{margin:0 0 10px;font-size:15px}
+        .tk-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+        .tk-form-grid .full{grid-column:1/-1}
+        .tk-req{color:#b91c1c}
+        .tk-opt{color:#64748b;font-size:12px;font-weight:500}
+        .tk-att-list{display:grid;gap:8px;margin-top:8px}
+        .tk-att-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;font-size:13px}
+        .tk-att-bar{height:6px;background:#e2e8f0;border-radius:999px;overflow:hidden;flex:1;min-width:120px}
+        .tk-att-bar>i{display:block;height:100%;background:#b91c1c;width:0}
+        @media(max-width:720px){.tk-form-grid{grid-template-columns:1fr}}
+      </style>
+      <div class="tk-form-wrap" data-tk-wide="1">
+        <section class="tk-form-section">
+          <h4>1) بيانات المهمة</h4>
+          <div class="tk-form-grid">
+            <div class="field full"><label>عنوان المهمة <span class="tk-req">*</span></label><input id="tk-title" value="${K.esc(item.title || '')}" placeholder="مثال: متابعة تفعيل اشتراك العميل" /></div>
+            <div class="field"><label>نوع / تصنيف المهمة <span class="tk-req">*</span></label>
+              <select id="tk-task-type">${taskTypeOpts}</select>
+            </div>
+            <div class="field"><label>المشروع <span class="tk-opt">(اختياري)</span></label><input id="tk-project" value="${K.esc(item.project || '')}" placeholder="تشغيل يومي / مشروع…" /></div>
+          </div>
+        </section>
+
+        <section class="tk-form-section">
+          <h4>2) المسؤول والجهة المرتبطة</h4>
+          <div class="tk-form-grid">
+            <div class="field"><label>نوع المسؤول عن المهمة <span class="tk-req">*</span></label>
+              <select id="tk-assignee-type" data-tk-change="assigneeType"><option value="">— اختر النوع —</option>${typeOptions}</select>
+            </div>
+            <div class="field"><label>المسؤول عن المهمة <span class="tk-req">*</span></label>
+              <input id="tk-assignee-q" data-tk-change="assigneeQ" type="search" placeholder="ابحث بالاسم / البريد / رقم الموظف…" value="" />
+              <select id="tk-assignee-id" size="5" style="width:100%;margin-top:6px;min-height:110px">
+                <option value="">اختر نوع المسؤول أولًا ثم ابحث</option>
+              </select>
+              <small id="tk-assignee-hint" class="tk-opt"></small>
+            </div>
+            <div class="field full" id="tk-contact-wrap" style="display:none">
+              <label>شخص المتابعة داخل الشركة <span class="tk-opt">(مطلوب عند الإمكان)</span></label>
+              <select id="tk-contact-id"><option value="">— بدون تحديد —</option></select>
+            </div>
+            <div class="field"><label>نوع الجهة / الوحدة المرتبطة <span class="tk-req">*</span></label>
+              <select id="tk-entity-type" data-tk-change="entityType">${entityTypeOpts}</select>
+            </div>
+            <div class="field"><label>الجهة أو الوحدة المرتبطة</label>
+              <input id="tk-entity-q" data-tk-change="entityQ" type="search" placeholder="ابحث عن الجهة…" ${entityType === 'none' ? 'disabled' : ''} />
+              <select id="tk-entity-id" size="4" style="width:100%;margin-top:6px;min-height:90px" ${entityType === 'none' ? 'disabled' : ''}>
+                <option value="">${entityType === 'none' ? 'مهمة عامة — بلا جهة محددة' : 'اختر الجهة'}</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="tk-form-section">
+          <h4>3) الأولوية والمواعيد</h4>
+          <div class="tk-form-grid">
+            <div class="field"><label>الأولوية <span class="tk-req">*</span></label>
+              <select id="tk-priority">${['عاجل', 'عالي', 'متوسط', 'منخفض'].map((p) => `<option ${(item.priority || 'متوسط') === p ? 'selected' : ''}>${p}</option>`).join('')}</select>
+            </div>
+            <div class="field"><label>الحالة <span class="tk-req">*</span></label>
+              <select id="tk-status">${['todo', 'in_progress', 'blocked', 'done'].map((s) => `<option value="${s}" ${(item.status || 'todo') === s ? 'selected' : ''}>${statusTaskLabel(s)}</option>`).join('')}</select>
+            </div>
+            <div class="field"><label>تاريخ الاستحقاق <span class="tk-opt">(اختياري)</span></label><input id="tk-due" type="date" value="${K.esc(item.dueDate || '')}" /></div>
+            <div class="field"><label>المصدر</label>
+              <select id="tk-source">${['إدخال يدوي', 'Integration', 'Automation', 'Governance', 'System Generated'].map((s) => `<option value="${s}" ${(item.source || 'إدخال يدوي') === s ? 'selected' : ''}>${window.HubI18n?.label?.(s) || s}</option>`).join('')}</select>
+            </div>
+          </div>
+        </section>
+
+        <section class="tk-form-section">
+          <h4>4) الوصف والتعليمات</h4>
+          <div class="tk-form-grid">
+            <div class="field full"><label>وصف المهمة وتفاصيلها <span class="tk-req">*</span></label><textarea id="tk-details" rows="4" placeholder="اشرح المطلوب بوضوح…">${K.esc(item.details || '')}</textarea></div>
+            <div class="field full"><label>الملاحظات والتعليمات <span class="tk-opt">(اختياري)</span></label><textarea id="tk-notes" rows="3" placeholder="تعليمات إضافية للمكلّف…">${K.esc(item.notes || '')}</textarea></div>
+          </div>
+        </section>
+
+        <section class="tk-form-section">
+          <h4>5) مرفقات المهمة</h4>
+          <p class="tk-opt" style="margin:0 0 8px">صور · مستندات · فيديو — حتى 1500 ميجابايت للملف عبر نظام الرفع الموحّد. لا يُعتبر الملف مرفوعًا إلا بعد اكتمال الحفظ على الخادم.</p>
+          <input id="tk-files" type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt" />
+          <div class="tk-att-list" id="tk-att-list">
+            ${
+              att.length
+                ? att
+                    .map(
+                      (a, i) => `<div class="tk-att-row" data-att="${i}">
+                        <span><b>${K.esc(a.name)}</b> · ${(Number(a.size || 0) / 1024 / 1024).toFixed(2)}MB · ${K.esc(a.kind || 'ملف')} · <span style="color:#166534">محفوظ</span></span>
+                        <a href="${K.esc(a.url || '#')}" target="_blank" rel="noopener">فتح</a>
+                        <button type="button" class="btn btn-sm btn-ghost" data-action="tk-att-remove" data-idx="${i}">حذف</button>
+                      </div>`
+                    )
+                    .join('')
+                : '<p class="tk-opt">لا مرفقات بعد.</p>'
+            }
+          </div>
+        </section>
+      </div>`;
+  };
+
+  const assigneePool = (type) => {
+    const cat = tkUi.catalog || {};
+    if (type === 'staff_naiosh') return cat.staffNaiosh || [];
+    if (type === 'staff_external') return cat.staffExternal || [];
+    if (type === 'customer') return cat.customers || [];
+    if (type === 'company') return cat.companies || [];
+    return [];
+  };
+
+  const fillAssigneeSelect = () => {
+    const typeEl = document.getElementById('tk-assignee-type');
+    const sel = document.getElementById('tk-assignee-id');
+    const q = String(document.getElementById('tk-assignee-q')?.value || '')
+      .trim()
+      .toLowerCase();
+    const hint = document.getElementById('tk-assignee-hint');
+    const contactWrap = document.getElementById('tk-contact-wrap');
+    if (!typeEl || !sel) return;
+    const type = typeEl.value;
+    const preferred =
+      tkUi.modal?.data?.assignee?.id ||
+      tkUi.modal?.data?.assigneeId ||
+      sel.value ||
+      '';
+    let pool = assigneePool(type);
+    if (q) {
+      pool = pool.filter((p) => `${p.label || ''} ${p.name || ''} ${p.email || ''} ${p.employeeNo || ''}`.toLowerCase().includes(q));
+    }
+    if (!type) {
+      sel.innerHTML = '<option value="">اختر نوع المسؤول أولًا ثم ابحث</option>';
+      if (hint) hint.textContent = '';
+      if (contactWrap) contactWrap.style.display = 'none';
+      return;
+    }
+    if (!pool.length) {
+      const notes = tkUi.catalog?.notes || {};
+      sel.innerHTML = '<option value="">لا سجلات مطابقة في قاعدة البيانات</option>';
+      if (hint) {
+        hint.textContent =
+          type === 'customer'
+            ? notes.customers || 'لا عملاء مسجّلين.'
+            : type === 'company'
+              ? notes.companies || 'لا شركات مسجّلة عبر إداريين بجهة خارجية.'
+              : 'لا نتائج.';
+      }
+    } else {
+      sel.innerHTML = pool
+        .slice(0, 80)
+        .map(
+          (p) =>
+            `<option value="${Kit().esc(p.id)}" data-org="${Kit().esc(p.orgName || p.name || '')}" ${
+              preferred && preferred === p.id ? 'selected' : ''
+            }>${Kit().esc(p.label || p.name)}</option>`
+        )
+        .join('');
+      if (hint) hint.textContent = `${pool.length} نتيجة من السجلات الحقيقية`;
+    }
+    if (contactWrap) contactWrap.style.display = type === 'company' ? '' : 'none';
+    if (type === 'company') fillCompanyContacts();
+  };
+
+  const fillCompanyContacts = () => {
+    const sel = document.getElementById('tk-assignee-id');
+    const contact = document.getElementById('tk-contact-id');
+    if (!sel || !contact) return;
+    const orgId = sel.value;
+    const company = (tkUi.catalog?.companies || []).find((c) => c.id === orgId);
+    const contacts = company?.contacts || [];
+    contact.innerHTML =
+      '<option value="">— بدون تحديد —</option>' +
+      contacts.map((c) => `<option value="${Kit().esc(c.id)}">${Kit().esc(c.name)} · ${Kit().esc(c.email)}</option>`).join('');
+  };
+
+  const fillEntitySelect = () => {
+    const typeEl = document.getElementById('tk-entity-type');
+    const sel = document.getElementById('tk-entity-id');
+    const qEl = document.getElementById('tk-entity-q');
+    if (!typeEl || !sel) return;
+    const type = typeEl.value || 'none';
+    const preferred = tkUi.modal?.data?.entity?.id || tkUi.modal?.data?.entityId || sel.value || '';
+    const disabled = type === 'none';
+    sel.disabled = disabled;
+    if (qEl) qEl.disabled = disabled;
+    if (disabled) {
+      sel.innerHTML = '<option value="">مهمة عامة — بلا جهة محددة</option>';
+      return;
+    }
+    const q = String(qEl?.value || '')
+      .trim()
+      .toLowerCase();
+    let pool = entityOptionsForType(type);
+    if (q) pool = pool.filter((p) => `${p.name} ${p.id}`.toLowerCase().includes(q));
+    sel.innerHTML = pool.length
+      ? pool
+          .slice(0, 120)
+          .map(
+            (p) =>
+              `<option value="${Kit().esc(p.id)}" data-name="${Kit().esc(p.name)}" ${
+                preferred && preferred === p.id ? 'selected' : ''
+              }>${Kit().esc(p.name)}</option>`
+          )
+          .join('')
+      : '<option value="">لا جهات مسجّلة لهذا النوع</option>';
+  };
+
+  const bindTaskFormWidgets = () => {
+    // Widen modal
+    document.querySelector('.hub-ws-modal')?.setAttribute('data-tk-wide', '1');
+    const modal = document.querySelector('.hub-ws-modal');
+    if (modal) modal.style.width = 'min(920px,96vw)';
+    fillAssigneeSelect();
+    fillEntitySelect();
+    document.getElementById('tk-assignee-id')?.addEventListener('change', fillCompanyContacts);
+    document.getElementById('tk-files')?.addEventListener('change', async (ev) => {
+      const files = [...(ev.target.files || [])];
+      if (!files.length) return;
+      const list = document.getElementById('tk-att-list');
+      for (const file of files) {
+        const row = document.createElement('div');
+        row.className = 'tk-att-row';
+        row.innerHTML = `<span><b></b></span><div class="tk-att-bar"><i></i></div><span class="tk-att-status">جاري الرفع…</span>`;
+        row.querySelector('b').textContent = file.name;
+        list?.appendChild(row);
+        const bar = row.querySelector('.tk-att-bar > i');
+        const status = row.querySelector('.tk-att-status');
+        try {
+          const uploaded = await window.HubUploadLimits.uploadFile(file, {
+            onProgress: (pct) => {
+              if (bar) bar.style.width = `${pct}%`;
+            },
+          });
+          const att = {
+            id: uploaded.id || uploaded.attachment?.id || `up_${Date.now()}`,
+            name: file.name,
+            url: uploaded.url || uploaded.attachment?.url,
+            size: file.size,
+            mime: file.type,
+            kind: (file.type || '').startsWith('image/')
+              ? 'image'
+              : (file.type || '').startsWith('video/')
+                ? 'video'
+                : 'document',
+            uploadedAt: new Date().toISOString(),
+          };
+          if (!att.url) throw new Error('لم يُرجع الخادم رابط المرفق');
+          tkUi.pendingAttachments.push(att);
+          status.textContent = 'محفوظ';
+          status.style.color = '#166534';
+          if (bar) bar.style.width = '100%';
+        } catch (err) {
+          status.textContent = err.message || 'فشل الرفع';
+          status.style.color = '#991b1b';
+          const retry = document.createElement('button');
+          retry.type = 'button';
+          retry.className = 'btn btn-sm btn-ghost';
+          retry.textContent = 'إعادة المحاولة';
+          retry.onclick = () => {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            const input = document.getElementById('tk-files');
+            if (input) {
+              input.files = dt.files;
+              input.dispatchEvent(new Event('change'));
+            }
+            row.remove();
+          };
+          row.appendChild(retry);
+        }
+      }
+      ev.target.value = '';
+    });
   };
 
   const readTaskForm = () => {
     const K = Kit();
+    const assigneeType = K.qVal('tk-assignee-type');
+    const assigneeId = K.qVal('tk-assignee-id');
+    const assigneeOpt = document.getElementById('tk-assignee-id')?.selectedOptions?.[0];
+    const entityType = K.qVal('tk-entity-type') || 'none';
+    const entityOpt = document.getElementById('tk-entity-id')?.selectedOptions?.[0];
     return {
       title: K.qVal('tk-title'),
+      details: K.qVal('tk-details'),
+      notes: K.qVal('tk-notes'),
+      taskType: K.qVal('tk-task-type') || 'operational',
       project: K.qVal('tk-project'),
-      assignee: K.qVal('tk-assignee'),
-      priority: K.qVal('tk-priority'),
+      priority: K.qVal('tk-priority') || 'متوسط',
       status: K.qVal('tk-status') || 'todo',
       dueDate: K.qVal('tk-due'),
-      source: K.qVal('tk-source'),
-      branch: K.qVal('tk-branch'),
-      details: K.qVal('tk-details'),
+      source: K.qVal('tk-source') || 'إدخال يدوي',
+      assigneeType,
+      assigneeId,
+      companyName: assigneeOpt?.getAttribute('data-org') || assigneeOpt?.textContent || '',
+      contactPersonId: K.qVal('tk-contact-id'),
+      entityType,
+      entityId: entityType === 'none' ? '' : K.qVal('tk-entity-id'),
+      entityName: entityType === 'none' ? 'مهمة عامة' : entityOpt?.getAttribute('data-name') || entityOpt?.textContent || '',
+      attachments: tkUi.pendingAttachments.slice(),
+      // legacy mirror for local store fallback
+      assignee: assigneeOpt?.textContent || '',
+      branch: entityType === 'branch' ? entityOpt?.textContent || '' : '',
     };
   };
 
   const renderTasks = (ctx = {}) => {
     const { user } = ctx;
     const K = Kit();
+    ensureTasksLoaded();
     const bag = store().get().tasks || { items: [], auditLog: [], settings: {} };
-    const items = bag.items || [];
+    const items = tkUi.serverItems || bag.items || [];
     const filtered = filterTasks(items);
     const pg = K.paginate(filtered, tkUi.page, tkUi.pageSize);
     tkUi.page = pg.page;
@@ -665,18 +1038,20 @@
             <button type="button" class="btn btn-primary" data-action="tk-create"><i class="fas fa-plus"></i> مهمة جديدة</button>
           </div>
           <div class="table-wrap"><table class="data">
-            <thead><tr><th>المهمة</th><th>المسؤول</th><th>الأولوية</th><th>الحالة</th><th>الموعد</th><th>المصدر</th><th>إجراءات</th></tr></thead>
+            <thead><tr><th>رقم المهمة</th><th>المهمة</th><th>المسؤول</th><th>الجهة</th><th>الأولوية</th><th>الحالة</th><th>الموعد</th><th>مرفقات</th><th>إجراءات</th></tr></thead>
             <tbody>${
               pg.rows.length
                 ? pg.rows
                     .map(
                       (t) => `<tr>
+                        <td dir="ltr"><code>${K.esc(t.taskNo || t.id)}</code></td>
                         <td><strong>${K.esc(t.title)}</strong><br/><small>${K.esc((t.details || '').slice(0, 80))}</small></td>
-                        <td>${K.esc(t.assignee || '—')}</td>
+                        <td>${K.esc(t.assigneeLabel || t.assignee?.name || t.assignee || '—')}<br/><small>${K.esc(t.assignee?.typeLabel || '')}</small></td>
+                        <td>${K.esc(t.entityLabel || '—')}</td>
                         <td>${K.badge(t.priority, t.priority === 'عاجل' ? 'badge-red' : 'badge-outline')}</td>
                         <td>${statusTaskBadge(t.status)}</td>
                         <td>${K.esc(t.dueDate || '—')}</td>
-                        <td>${K.sourceBadge(t.source)}</td>
+                        <td>${Array.isArray(t.attachments) ? t.attachments.length : 0}</td>
                         <td class="toolbar" style="margin:0;gap:4px;flex-wrap:wrap">
                           <button type="button" class="btn btn-sm btn-ghost" data-action="tk-open" data-id="${t.id}">عرض</button>
                           <button type="button" class="btn btn-sm btn-dark" data-action="tk-edit" data-id="${t.id}">تعديل</button>
@@ -687,7 +1062,7 @@
                       </tr>`
                     )
                     .join('')
-                : '<tr><td colspan="7" class="empty">لا مهام مطابقة — أنشئ مهمة جديدة</td></tr>'
+                : `<tr><td colspan="9" class="empty">${tkUi.loading ? 'جاري تحميل المهام من الخادم…' : 'لا مهام مطابقة — أنشئ مهمة جديدة'}</td></tr>`
             }</tbody>
           </table></div>
           ${K.renderPager('tk', pg.page, pg.pages, pg.total)}
@@ -699,16 +1074,25 @@
           const list = items.filter((t) => t.status === st).slice(0, 8);
           return `<article class="card"><h3>${statusTaskLabel(st)} · ${list.length}</h3>
             ${list.map((t) => `<div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:6px">
-              <b>${K.esc(t.title)}</b><br/><small>${K.esc(t.assignee || '')}</small>
+              <b>${K.esc(t.title)}</b><br/><small>${K.esc(t.assigneeLabel || t.assignee?.name || '')}</small>
               <div class="toolbar" style="margin-top:6px"><button type="button" class="btn btn-sm btn-ghost" data-action="tk-open" data-id="${t.id}">فتح</button></div>
             </div>`).join('') || '<p class="empty">—</p>'}
           </article>`;
         })
         .join('')}</div>`;
     } else if (tkUi.tab === 'audit') {
-      body = `<article class="card">${K.renderAuditTable(bag.auditLog || [])}</article>`;
+      const auditRows = (tkUi.serverAudit || []).length
+        ? tkUi.serverAudit.map((a) => ({
+            at: a.at,
+            action: a.action,
+            detail: a.detail,
+            by: a.actorEmail,
+            source: 'TASKS',
+          }))
+        : bag.auditLog || [];
+      body = `<article class="card">${K.renderAuditTable(auditRows)}</article>`;
     } else {
-      body = `<article class="card"><p>حجم الصفحة: ${tkUi.pageSize}. الأولوية الافتراضية: ${K.esc(bag.settings?.defaultPriority || 'متوسط')}</p></article>`;
+      body = `<article class="card"><p>المهام تُحفظ على الخادم مع رقم فريد ومسؤول وجهة ومرفقات. حجم الصفحة: ${tkUi.pageSize}.</p></article>`;
     }
 
     const modal = tkUi.modal
@@ -716,7 +1100,7 @@
           title: tkUi.editId ? 'تعديل مهمة' : 'مهمة جديدة',
           bodyHtml: taskFormHtml(tkUi.modal.data || {}),
           footerHtml: `<button type="button" class="btn btn-ghost" data-action="tk-modal-close">إلغاء</button>
-            <button type="button" class="btn btn-primary" data-action="tk-save">حفظ</button>`,
+            <button type="button" class="btn btn-primary" data-action="tk-save">حفظ المهمة</button>`,
         })
       : '';
 
@@ -727,14 +1111,17 @@
         })
       : '';
 
+    // Bind form widgets after paint
+    if (tkUi.modal) setTimeout(() => bindTaskFormWidgets(), 0);
+
     return `<div class="hub-ops-ws hub-tasks-ws">
       ${K.renderHeader({
         prefix: 'tk',
         title: 'إدارة المهام',
-        subtitle: 'إدارة كاملة · مصدر · تدقيق · يتطلب إجراء · بدون أزرار ميتة',
+        subtitle: 'مسؤولون حقيقيون · جهات تنظيمية · مرفقات · إشعارات · تدقيق على الخادم',
         icon: 'fa-clipboard-list',
         actionsHtml: `
-          <button type="button" class="btn btn-primary btn-sm" data-action="tk-create"><i class="fas fa-plus"></i> جديد</button>
+          <button type="button" class="btn btn-primary btn-sm" data-action="tk-create"><i class="fas fa-plus"></i> مهمة جديدة</button>
           <button type="button" class="btn btn-ghost btn-sm" data-action="tk-help-open"><i class="fas fa-circle-question"></i></button>`,
       })}
       ${K.renderKpis('tk', kpis, tkUi.kpiFocus)}
@@ -744,7 +1131,7 @@
         title: 'دليل المهام',
         dismissed: !!bag.settings?.helpDismissed,
         open: tkUi.helpOpen,
-        bodyHtml: `<p>أنشئ مهمة، عدّلها، غيّر حالتها، واحذفها. كل إجراء يظهر في سجل العمليات مع المصدر والمنفّذ.</p>`,
+        bodyHtml: `<p>اختر نوع المسؤول من السجلات الحقيقية، اربط المهمة بفرع/مكتب/منصة/حاضنة أو اجعلها عامة، وارفع المرفقات عبر نظام الرفع الموحّد (حتى 1500MB). الإسناد لا يمنح دخولًا للوحة الإدارة.</p>`,
       })}
       ${modal}${drawer}
     </div>`;
@@ -770,38 +1157,87 @@
     }
     if (action === 'tk-create') {
       tkUi.editId = null;
-      tkUi.modal = { data: { priority: 'متوسط', status: 'todo', source: 'إدخال يدوي' } };
+      tkUi.pendingAttachments = [];
+      tkUi.modal = { data: { priority: 'متوسط', status: 'todo', source: 'إدخال يدوي', entityType: 'none', taskType: 'operational' } };
+      if (!tkUi.catalog) {
+        fetch('/api/hub/tasks/catalog', { credentials: 'same-origin', headers: tkAuthHeaders() })
+          .then((r) => r.json())
+          .then((d) => {
+            if (d?.ok) {
+              tkUi.catalog = d.catalog;
+              tkRefreshDash();
+            }
+          })
+          .catch(() => null);
+      }
       return true;
     }
     if (action === 'tk-edit') {
-      const item = store().get().tasks.items.find((x) => x.id === btn.dataset.id);
+      const item = (tkUi.serverItems || store().get().tasks.items || []).find((x) => x.id === btn.dataset.id);
       if (!item) {
         toast?.('المهمة غير موجودة');
         return true;
       }
       tkUi.editId = item.id;
+      tkUi.pendingAttachments = Array.isArray(item.attachments) ? item.attachments.slice() : [];
       tkUi.modal = { data: { ...item } };
       return true;
     }
     if (action === 'tk-open') {
-      const item = store().get().tasks.items.find((x) => x.id === btn.dataset.id);
+      const item = (tkUi.serverItems || store().get().tasks.items || []).find((x) => x.id === btn.dataset.id);
       if (!item) return true;
+      const atts = Array.isArray(item.attachments) ? item.attachments : [];
+      const comments = Array.isArray(item.comments) ? item.comments : [];
       tkUi.drawer = {
-        title: item.title,
-        bodyHtml: `<p>${K.esc(item.details || '—')}</p>
-          <p><b>المسؤول:</b> ${K.esc(item.assignee || '—')} · <b>الحالة:</b> ${statusTaskLabel(item.status)}</p>
-          <p><b>المصدر:</b> ${K.esc(item.source || '—')} · <b>الموعد:</b> ${K.esc(item.dueDate || '—')}</p>
+        title: `${item.taskNo || ''} · ${item.title}`,
+        bodyHtml: `
+          <p><b>رقم المهمة:</b> <code dir="ltr">${K.esc(item.taskNo || item.id)}</code></p>
+          <p>${K.esc(item.details || '—')}</p>
+          ${item.notes ? `<p><b>تعليمات:</b> ${K.esc(item.notes)}</p>` : ''}
+          <p><b>المسؤول:</b> ${K.esc(item.assigneeLabel || item.assignee?.name || '—')} (${K.esc(item.assignee?.typeLabel || '—')})</p>
+          <p><b>الجهة:</b> ${K.esc(item.entityLabel || '—')}</p>
+          <p><b>الحالة:</b> ${statusTaskLabel(item.status)} · <b>الأولوية:</b> ${K.esc(item.priority || '—')}</p>
+          <p><b>الموعد:</b> ${K.esc(item.dueDate || '—')} · <b>المنشئ:</b> ${K.esc(item.createdBy?.name || item.createdBy?.email || '—')}</p>
           <p><b>أُنشئت:</b> ${K.fmtTime(item.createdAt)} · <b>حدّثت:</b> ${K.fmtTime(item.updatedAt)}</p>
-          <div class="toolbar">
+          <h4 style="margin:12px 0 6px">المرفقات (${atts.length})</h4>
+          ${
+            atts.length
+              ? `<ul>${atts.map((a) => `<li><a href="${K.esc(a.url)}" target="_blank" rel="noopener">${K.esc(a.name)}</a> · ${(Number(a.size || 0) / 1024 / 1024).toFixed(2)}MB</li>`).join('')}</ul>`
+              : '<p class="empty">لا مرفقات</p>'
+          }
+          <h4 style="margin:12px 0 6px">التحديثات</h4>
+          ${
+            comments.length
+              ? comments
+                  .map((c) => `<div style="border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:6px"><small>${K.esc(c.by?.name || '')} · ${K.fmtTime(c.at)}</small><div>${K.esc(c.text)}</div></div>`)
+                  .join('')
+              : '<p class="empty">لا تحديثات بعد</p>'
+          }
+          <div class="field" style="margin-top:10px"><label>إضافة تحديث</label><textarea id="tk-comment" rows="2"></textarea>
+            <button type="button" class="btn btn-sm btn-primary" data-action="tk-comment" data-id="${item.id}" style="margin-top:6px">إرسال</button>
+          </div>
+          <div class="toolbar" style="margin-top:12px">
             <button type="button" class="btn btn-dark" data-action="tk-edit" data-id="${item.id}">تعديل</button>
             ${item.status !== 'done' ? `<button type="button" class="btn btn-primary" data-action="tk-status" data-id="${item.id}" data-status="done">إتمام</button>` : ''}
+            ${item.status !== 'blocked' && item.status !== 'done' ? `<button type="button" class="btn btn-ghost" data-action="tk-status" data-id="${item.id}" data-status="blocked">إيقاف / اختناق</button>` : ''}
           </div>`,
       };
       return true;
     }
     if (action === 'tk-modal-close' || action === 'tk-drawer-close') {
-      if (action === 'tk-modal-close') tkUi.modal = null;
+      if (action === 'tk-modal-close') {
+        tkUi.modal = null;
+        tkUi.pendingAttachments = [];
+      }
       if (action === 'tk-drawer-close') tkUi.drawer = null;
+      return true;
+    }
+    if (action === 'tk-att-remove') {
+      const idx = Number(btn.dataset.idx);
+      if (Number.isFinite(idx)) {
+        tkUi.pendingAttachments.splice(idx, 1);
+        if (tkUi.modal) tkUi.modal = { data: { ...(tkUi.modal.data || {}), attachments: tkUi.pendingAttachments.slice() } };
+      }
       return true;
     }
     if (action === 'tk-save') {
@@ -810,30 +1246,110 @@
         toast?.('عنوان المهمة مطلوب');
         return true;
       }
-      if (tkUi.editId) {
-        store().updateTask?.(tkUi.editId, data, actor);
-        toast?.('تم تحديث المهمة');
-      } else {
-        store().addTask?.(data.title, data.assignee, data.priority, data.project, {
-          ...data,
-          createdBy: actor,
-        });
-        toast?.('تم إنشاء المهمة');
+      if (!data.details) {
+        toast?.('وصف المهمة مطلوب');
+        return true;
       }
-      tkUi.modal = null;
-      tkUi.editId = null;
+      if (!data.assigneeType || !data.assigneeId) {
+        toast?.('اختر نوع المسؤول والمسؤول من قاعدة البيانات');
+        return true;
+      }
+      if (data.entityType && data.entityType !== 'none' && !data.entityId) {
+        toast?.('اختر الجهة المرتبطة أو حوّل النوع إلى مهمة عامة');
+        return true;
+      }
+      toast?.('جاري حفظ المهمة على الخادم…');
+      const url = tkUi.editId ? `/api/hub/tasks/${encodeURIComponent(tkUi.editId)}` : '/api/hub/tasks';
+      const method = tkUi.editId ? 'PATCH' : 'POST';
+      fetch(url, {
+        method,
+        credentials: 'same-origin',
+        headers: tkAuthHeaders(),
+        body: JSON.stringify(data),
+      })
+        .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
+        .then(({ ok, j }) => {
+          if (!ok || j?.ok === false) throw new Error(j?.error || 'فشل الحفظ');
+          toast?.(j.message || (tkUi.editId ? 'تم تحديث المهمة' : `تم إنشاء المهمة ${j.task?.taskNo || ''}`));
+          if (j.task) {
+            const list = Array.isArray(tkUi.serverItems) ? tkUi.serverItems.slice() : [];
+            const idx = list.findIndex((x) => x.id === j.task.id);
+            if (idx >= 0) list[idx] = j.task;
+            else list.unshift(j.task);
+            tkUi.serverItems = list;
+          }
+          tkUi.modal = null;
+          tkUi.editId = null;
+          tkUi.pendingAttachments = [];
+          tkUi.loaded = false;
+          ensureTasksLoaded();
+          tkRefreshDash();
+        })
+        .catch((err) => toast?.(err.message || 'تعذر الحفظ'));
       return true;
     }
     if (action === 'tk-status') {
-      store().updateTaskStatus?.(btn.dataset.id, btn.dataset.status);
-      toast?.('تحدّثت حالة المهمة');
+      fetch(`/api/hub/tasks/${encodeURIComponent(btn.dataset.id)}/status`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: tkAuthHeaders(),
+        body: JSON.stringify({ status: btn.dataset.status }),
+      })
+        .then((r) => r.json())
+        .then((j) => {
+          if (!j?.ok) throw new Error(j?.error || 'فشل التحديث');
+          toast?.('تحدّثت حالة المهمة');
+          tkUi.loaded = false;
+          ensureTasksLoaded();
+          tkRefreshDash();
+        })
+        .catch((err) => toast?.(err.message));
+      return true;
+    }
+    if (action === 'tk-comment') {
+      const text = document.getElementById('tk-comment')?.value || '';
+      fetch(`/api/hub/tasks/${encodeURIComponent(btn.dataset.id)}/comments`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: tkAuthHeaders(),
+        body: JSON.stringify({ text }),
+      })
+        .then((r) => r.json())
+        .then((j) => {
+          if (!j?.ok) throw new Error(j?.error || 'فشل');
+          toast?.('تم إضافة التحديث');
+          tkUi.loaded = false;
+          ensureTasksLoaded();
+          // reopen drawer with fresh data after load
+          setTimeout(() => {
+            const item = (tkUi.serverItems || []).find((x) => x.id === btn.dataset.id);
+            if (item) {
+              const fakeBtn = { dataset: { id: item.id } };
+              handleTasks('tk-open', fakeBtn, ctx);
+              tkRefreshDash();
+            }
+          }, 400);
+        })
+        .catch((err) => toast?.(err.message));
       return true;
     }
     if (action === 'tk-delete') {
       if (!confirm('حذف هذه المهمة؟')) return true;
-      store().removeTask?.(btn.dataset.id, actor);
-      toast?.('حُذفت المهمة');
-      tkUi.drawer = null;
+      fetch(`/api/hub/tasks/${encodeURIComponent(btn.dataset.id)}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: tkAuthHeaders(),
+      })
+        .then((r) => r.json())
+        .then((j) => {
+          if (!j?.ok) throw new Error(j?.error || 'فشل الحذف');
+          toast?.('حُذفت المهمة');
+          tkUi.drawer = null;
+          tkUi.loaded = false;
+          ensureTasksLoaded();
+          tkRefreshDash();
+        })
+        .catch((err) => toast?.(err.message));
       return true;
     }
     if (action === 'tk-help-open') {
@@ -851,6 +1367,14 @@
   const handleTasksChange = (el) => {
     const key = el.getAttribute('data-tk-change');
     if (!key) return false;
+    if (key === 'assigneeType' || key === 'assigneeQ') {
+      fillAssigneeSelect();
+      return false; // don't full re-render (keeps modal state)
+    }
+    if (key === 'entityType' || key === 'entityQ') {
+      fillEntitySelect();
+      return false;
+    }
     tkUi.filters[key] = el.type === 'checkbox' ? el.checked : el.value;
     tkUi.page = 1;
     return true;
