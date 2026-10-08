@@ -82,8 +82,9 @@
 
   const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
   const rawUser = localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser');
+  const dashNext = 'dashboard.html' + (location.hash || '');
   if (!token || !rawUser) {
-    window.location.href = 'login.html';
+    window.location.replace('login.html?next=' + encodeURIComponent(dashNext));
     return;
   }
 
@@ -91,7 +92,7 @@
   try {
     user = JSON.parse(rawUser);
   } catch {
-    window.location.href = 'login.html';
+    window.location.replace('login.html?next=' + encodeURIComponent(dashNext));
     return;
   }
 
@@ -102,6 +103,12 @@
       ? { ok: false, redirect: 'client.html', message: 'ليس لديك صلاحية للوصول إلى هذه الصفحة.' }
       : { ok: true });
   if (!dashGate.ok) {
+    const reason = dashGate.reason || '';
+    // No session / login required → Login, not the permission page
+    if (reason === 'login' || !token) {
+      window.location.replace('login.html?next=' + encodeURIComponent(dashNext));
+      return;
+    }
     try {
       sessionStorage.setItem('hubAuthFlash', dashGate.message || 'ليس لديك صلاحية للوصول إلى هذه الصفحة.');
     } catch (_) {}
