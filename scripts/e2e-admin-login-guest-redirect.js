@@ -215,14 +215,22 @@ async function main() {
         denied: /ليس لديك صلاحية|فريق التشغيل فقط/i.test(document.body?.innerText || ''),
         hasSidebar: !!document.querySelector('.sidebar'),
       }));
+      const onDashboard = (url) => {
+        try {
+          const u = new URL(url);
+          return /\/dashboard\.html$/i.test(u.pathname);
+        } catch {
+          return false;
+        }
+      };
       mark(
         'فتح Dashboard بعد Login',
-        /dashboard\.html/i.test(afterAdmin.url) && !afterAdmin.denied,
+        onDashboard(afterAdmin.url) && !afterAdmin.denied,
         afterAdmin.url
       );
       mark(
         'رابط داخلي بعد Login',
-        /my-account|dashboard\.html/i.test(afterAdmin.url) && !afterAdmin.denied,
+        onDashboard(afterAdmin.url) && /#my-account/i.test(afterAdmin.url) && !afterAdmin.denied,
         afterAdmin.url
       );
       await page.reload({ waitUntil: 'networkidle2' });
@@ -230,7 +238,7 @@ async function main() {
         url: location.href,
         denied: /ليس لديك صلاحية/i.test(document.body?.innerText || ''),
       }));
-      mark('Refresh', /dashboard\.html/i.test(afterRefresh.url) && !afterRefresh.denied, afterRefresh.url);
+      mark('Refresh', onDashboard(afterRefresh.url) && !afterRefresh.denied, afterRefresh.url);
 
       const art = '/opt/cursor/artifacts/screenshots';
       fs.mkdirSync(art, { recursive: true });
