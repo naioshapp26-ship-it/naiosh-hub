@@ -408,6 +408,7 @@
       if (a.dataset.external === '1') {
         try {
           const ret = studioReturnTarget();
+          sessionStorage.setItem('hubStudioEntry', 'admin');
           sessionStorage.setItem('hubStudioReturn', ret);
           localStorage.setItem('hubStudioReturn', ret);
         } catch (_) {}
@@ -450,6 +451,7 @@
             return;
           }
           const ret = studioReturnTarget();
+          sessionStorage.setItem('hubStudioEntry', 'admin');
           sessionStorage.setItem('hubStudioReturn', ret);
           localStorage.setItem('hubStudioReturn', ret);
           window.location.href = key === 'ads-studio' ? 'marketing-campaigns-studio.html' : 'events.html';
