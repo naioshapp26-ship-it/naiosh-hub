@@ -233,6 +233,7 @@
     const prefillEmail = (params.get('email') || '').trim().toLowerCase();
     const fromParam = String(params.get('from') || '').toLowerCase();
     const referrer = String(document.referrer || '');
+    const nextParam = params.get('next') || '';
     const fromRegistration =
       fromParam === 'register' ||
       fromParam === 'create-account' ||
@@ -251,12 +252,11 @@
       return;
     }
 
-    const token = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
-    if (!token) return;
-    if (prefillEmail || fromRegistration) return;
-
+    // Always keep the form usable — cancel any pending bounce when the user focuses fields.
     let redirectTimer = null;
+    let redirectCancelled = false;
     const cancelRedirect = () => {
+      redirectCancelled = true;
       if (redirectTimer) {
         clearTimeout(redirectTimer);
         redirectTimer = null;
@@ -267,45 +267,92 @@
       document.getElementById(id)?.addEventListener('focus', cancelRedirect, { once: true });
     });
 
-    const next = params.get('next') || '';
-    let dest = 'dashboard.html';
-    try {
-      const raw = localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser');
-      const sessionUser = raw ? JSON.parse(raw) : null;
-      const role = String(sessionUser?.role || '').toLowerCase();
-      if (role === 'customer' || role === 'client' || role === 'client_user') {
-        dest = 'client.html';
-      } else if (window.HubAuth?.postLoginDestination) {
-        dest = window.HubAuth.postLoginDestination(sessionUser);
-      } else if (sessionUser?.role === 'platform_owner') {
-        dest = 'my-platform.html';
+    const localToken = localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken');
+    // No local token: stay on the login form (do not bounce). Cookie-only stale
+    // sessions are cleared server-side when hitting admin pages.
+    if (!localToken) return;
+    if (prefillEmail || fromRegistration) return;
+
+    // Verify session with the server before any redirect — never trust localStorage alone.
+    (async () => {
+      let me = null;
+      try {
+        const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = ctrl ? setTimeout(() => ctrl.abort(), 6000) : null;
+        const res = await fetch('/api/auth/me', {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${localToken}`,
+            'X-Hub-Token': localToken,
+          },
+          signal: ctrl?.signal,
+        });
+        if (timer) clearTimeout(timer);
+        me = await res.json().catch(() => null);
+        if (!res.ok || !me?.ok) me = null;
+      } catch {
+        me = null;
       }
-    } catch {
-      /* ignore */
-    }
-    if (next && !next.startsWith('http') && !next.includes('://')) {
-      const role = (() => {
-        try {
-          return String(
-            JSON.parse(localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser') || '{}').role || ''
-          ).toLowerCase();
-        } catch {
-          return '';
+      if (redirectCancelled) return;
+
+      if (!me?.ok) {
+        // Stale local session — clear and keep the login form visible
+        if (window.HubAuth?.clearSessionAsync) {
+          await window.HubAuth.clearSessionAsync().catch(() => null);
+        } else if (window.HubAuth?.clearSession) {
+          window.HubAuth.clearSession();
+        } else {
+          localStorage.removeItem('hubAuthToken');
+          localStorage.removeItem('hubUser');
+          sessionStorage.removeItem('hubAuthToken');
+          sessionStorage.removeItem('hubUser');
         }
-      })();
-      const isClientRole = role === 'customer' || role === 'client' || role === 'client_user';
-      const safePublic =
-        next &&
-        !next.includes('..') &&
-        !/dashboard\.html/i.test(next) &&
-        /^[a-zA-Z0-9_\-./?#=&%]+$/.test(next);
-      if (isClientRole && safePublic) dest = next;
-      else if (isClientRole) dest = 'client.html';
-      else dest = next;
-    }
-    showAlert('لديك جلسة نشطة. جاري تحويلك...', 'success');
-    redirectTimer = setTimeout(() => {
-      window.location.replace(dest.startsWith('http') ? 'dashboard.html' : dest);
-    }, 500);
+        return;
+      }
+
+      const role = String(me.role || me.user?.role || '').toLowerCase();
+      const isStaff =
+        role === 'supreme_leader' ||
+        role === 'chief_engineer' ||
+        role === 'admin' ||
+        role === 'super_admin' ||
+        me.lane === 'SUPER_ADMIN' ||
+        me.lane === 'ADMIN';
+      const isClientRole =
+        role === 'customer' || role === 'client' || role === 'client_user' || role === 'platform_owner';
+      const wantsAdmin =
+        !nextParam ||
+        /dashboard\.html|roles-permissions|search-admin|rent-admin/i.test(nextParam);
+
+      // Customer with an admin next target: stay on login so an admin can sign in
+      // (do not flash permission-denied via dashboard).
+      if (isClientRole && !isStaff && wantsAdmin) {
+        return;
+      }
+
+      let dest = isStaff ? 'dashboard.html' : isClientRole ? 'client.html' : 'client.html';
+      if (role === 'platform_owner') dest = 'my-platform.html';
+      if (nextParam && !nextParam.startsWith('http') && !nextParam.includes('://')) {
+        if (isStaff) dest = nextParam;
+        else if (
+          isClientRole &&
+          !/dashboard\.html/i.test(nextParam) &&
+          !nextParam.includes('..') &&
+          /^[a-zA-Z0-9_\-./?#=&%]+$/.test(nextParam)
+        ) {
+          dest = nextParam;
+        } else if (isClientRole) {
+          dest = 'client.html';
+        }
+      }
+
+      showAlert('لديك جلسة نشطة. جاري تحويلك...', 'success');
+      redirectTimer = setTimeout(() => {
+        if (redirectCancelled) return;
+        window.location.replace(dest.startsWith('http') ? (isStaff ? 'dashboard.html' : 'client.html') : dest);
+      }, 500);
+    })();
   });
 })();

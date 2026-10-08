@@ -153,7 +153,21 @@ function serveStatic(req, res) {
   const base = path.basename(filePath).toLowerCase();
   if (adminPages.has(base)) {
     const session = hubSession.resolveSession(req);
-    if (session.ok && hubSession.isClientLane(session.lane) && !hubSession.isStaffLane(session.lane)) {
+    const nextTarget = pathname.replace(/^\//, '') || base;
+    // Guest / expired / invalid session → Login (401), never the "no permission" page
+    if (!session.ok) {
+      const loc = `/login.html?next=${encodeURIComponent(nextTarget)}`;
+      res.writeHead(302, {
+        Location: loc,
+        'Cache-Control': 'no-store',
+        // Drop bad/stale cookie so the login form is not immediately bounced again
+        'Set-Cookie': hubSession.clearSessionCookieHeader(),
+      });
+      res.end();
+      return;
+    }
+    // Authenticated customer (not staff) → explicit 403 with client-center link
+    if (hubSession.isClientLane(session.lane) && !hubSession.isStaffLane(session.lane)) {
       const html =
         '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
         '<title>غير مصرح</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&display=swap" rel="stylesheet">' +
