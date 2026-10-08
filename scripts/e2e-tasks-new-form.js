@@ -169,7 +169,7 @@ async function main() {
     { entityType: 'branch', entityId: 'HQ', entityName: 'المقر الرئيسي' },
     { entityType: 'office', entityId: 'off-hq', entityName: 'مكتب التشغيل الرئيسي' },
     { entityType: 'platform', entityId: 'UOS', entityName: 'منصة UOS' },
-    { entityType: 'incubator', entityId: 'inc-edu', entityName: 'التعليم والتعلم' },
+    { entityType: 'incubator', entityId: 'inc-001', entityName: 'التعليم والتعلم' },
     { entityType: 'none', entityId: '', entityName: 'مهمة عامة' },
   ];
 
