@@ -2434,4 +2434,14 @@
       } catch (_) {}
     }
   });
+
+  // Async workspace updates (e.g. tasks saved after fetch) ask the dashboard to repaint.
+  const onHubPanelRefresh = () => {
+    try {
+      renderNav();
+      render();
+    } catch (_) {}
+  };
+  document.addEventListener('hub-panel-refresh', onHubPanelRefresh);
+  window.addEventListener('hub-panel-refresh', onHubPanelRefresh);
 })();

@@ -224,8 +224,18 @@ async function main() {
     });
   }
 
+  // Prefer demo client with known password for ACL; else first catalog customer.
+  const demoCustLogin = await req('POST', '/api/auth/login', {
+    body: { email: 'client@naiosh.com', password: process.env.HUB_LEGACY_DEMO_PASSWORD || 'Hub@360' },
+  });
+  const aclCustomerEmail =
+    demoCustLogin.json?.token && (cat2.json?.catalog?.customers || []).some((c) => c.email === 'client@naiosh.com')
+      ? 'client@naiosh.com'
+      : customer?.email || null;
+  const aclCustomerPass = aclCustomerEmail === 'client@naiosh.com' ? process.env.HUB_LEGACY_DEMO_PASSWORD || 'Hub@360' : '';
+
   let customerTask = null;
-  if (customer) {
+  if (aclCustomerEmail) {
     customerTask = await createOne('عميل', {
       title: `مهمة عميل ${stamp}`,
       details: 'متابعة طلب عميل — اختبار E2E',
@@ -233,7 +243,7 @@ async function main() {
       priority: 'عاجل',
       status: 'in_progress',
       assigneeType: 'customer',
-      assigneeId: customer.email,
+      assigneeId: aclCustomerEmail,
       ...entities[2],
       attachments: [att(upVid, 'video', `task-vid-${stamp}.mp4`)],
     });
@@ -335,39 +345,55 @@ async function main() {
   const guestList = await req('GET', '/api/hub/tasks');
   mark('منع قائمة المهام بدون جلسة', guestList.status === 401 || guestList.json?.ok === false, `status=${guestList.status}`);
 
-  if (customerTask && customer?.email) {
-    // Customer session — try login if we know password is unavailable; use CLIENT token forge is not allowed.
-    // Instead verify: another staff-assigned task is not visible when filtering as customer via direct canView.
-    // Use /api/auth/login only if demo client exists.
-    const custLogin = await req('POST', '/api/auth/login', {
-      body: { email: customer.email, password: process.env.HUB_E2E_CUSTOMER_PASSWORD || 'Client@123456' },
-    });
+  if (customerTask && aclCustomerEmail) {
+    const custLogin = aclCustomerPass
+      ? await req('POST', '/api/auth/login', { body: { email: aclCustomerEmail, password: aclCustomerPass } })
+      : { json: {} };
     if (custLogin.json?.token) {
       const cTok = custLogin.json.token;
       const mine = await req('GET', '/api/hub/tasks', { token: cTok });
-      const ids = (mine.json?.items || []).map((t) => t.id);
-      mark('العميل يرى مهمته فقط', ids.includes(customerTask.id) && ids.every((id) => {
-        const t = (mine.json.items || []).find((x) => x.id === id);
-        return t?.assignee?.email === customer.email || t?.assignee?.id === customer.email;
-      }), `seen=${ids.length} hasOwn=${ids.includes(customerTask.id)}`);
+      const items = mine.json?.items || [];
+      const ids = items.map((t) => t.id);
+      mark(
+        'العميل يرى مهمته فقط',
+        ids.includes(customerTask.id) &&
+          items.every((t) => t.assignee?.email === aclCustomerEmail || t.assignee?.id === aclCustomerEmail),
+        `seen=${ids.length} hasOwn=${ids.includes(customerTask.id)}`
+      );
 
       const other = created.find((c) => c.id !== customerTask.id);
       if (other) {
         const deny = await req('GET', `/api/hub/tasks/${encodeURIComponent(other.id)}`, { token: cTok });
-        mark('منع اطلاع العميل على مهمة غيره', deny.status === 403 || deny.json?.ok === false, `status=${deny.status} err=${deny.json?.error}`);
+        mark(
+          'منع اطلاع العميل على مهمة غيره',
+          deny.status === 403 || deny.json?.ok === false,
+          `status=${deny.status} err=${deny.json?.error}`
+        );
       }
 
-      // Assignment must not grant admin dashboard
       const dash = await req('GET', '/api/admin/staff', { token: cTok });
-      mark('الإسناد لا يمنح دخول لوحة الإدارة', dash.status === 401 || dash.status === 403 || dash.json?.ok === false, `status=${dash.status}`);
+      mark(
+        'الإسناد لا يمنح دخول لوحة الإدارة',
+        dash.status === 401 || dash.status === 403 || dash.json?.ok === false,
+        `status=${dash.status}`
+      );
 
       const cNotes = await req('GET', '/api/hub/notifications', { token: cTok });
-      const ownNote = (cNotes.json?.items || []).find((n) => n.meta?.taskId === customerTask.id || (n.link || '').includes(customerTask.id));
+      const ownNote = (cNotes.json?.items || []).find(
+        (n) => n.meta?.taskId === customerTask.id || (n.link || '').includes(customerTask.id)
+      );
       mark('إشعار العميل لمهمته', !!ownNote, ownNote?.link || `count=${cNotes.json?.count}`);
     } else {
-      mark('دخول العميل لاختبار ACL', false, `تعذر دخول ${customer.email} — ${custLogin.json?.error || custLogin.status} (اختبار واجهة API للإسناد تم؛ كلمة مرور العميل غير متاحة)`);
-      // Still verify create path stored real id
-      mark('معرف المسؤول الحقيقي محفوظ (عميل)', customerTask.assignee?.id === customer.email || customerTask.assignee?.email === customer.email, customerTask.assignee?.id);
+      mark(
+        'دخول العميل لاختبار ACL',
+        false,
+        `تعذر دخول ${aclCustomerEmail} — ${custLogin.json?.error || custLogin.status}`
+      );
+      mark(
+        'معرف المسؤول الحقيقي محفوظ (عميل)',
+        customerTask.assignee?.id === aclCustomerEmail || customerTask.assignee?.email === aclCustomerEmail,
+        customerTask.assignee?.id
+      );
     }
   }
 
@@ -424,26 +450,116 @@ async function main() {
 
       // Fill and save via UI for one naiosh task
       if (staffN) {
+        const uiTitle = `مهمة واجهة ${stamp}`;
+        await page.waitForFunction(
+          () => (window.HubTasksWS?.ui?.catalog?.staffNaiosh || []).length > 0,
+          { timeout: 10000 }
+        ).catch(() => null);
         await page.select('#tk-assignee-type', 'staff_naiosh');
+        await page.waitForTimeout?.(400).catch(() => new Promise((r) => setTimeout(r, 400)));
+        await page.waitForFunction(
+          (email) => {
+            const sel = document.getElementById('tk-assignee-id');
+            return sel && [...sel.options].some((o) => o.value === email);
+          },
+          { timeout: 8000 },
+          staffN.email
+        ).catch(() => null);
+
+        const saveWait = page.waitForResponse(
+          (r) => r.url().includes('/api/hub/tasks') && r.request().method() === 'POST',
+          { timeout: 15000 }
+        ).catch(() => null);
+
+        await page.evaluate(
+          (email, title) => {
+            document.getElementById('tk-title').value = title;
+            document.getElementById('tk-details').value = 'أنشئت من واجهة المتصفح — اختبار';
+            const typeEl = document.getElementById('tk-assignee-type');
+            if (typeEl) {
+              typeEl.value = 'staff_naiosh';
+              typeEl.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            const sel = document.getElementById('tk-assignee-id');
+            if (sel) {
+              const opt = [...sel.options].find((o) => o.value === email);
+              if (opt) sel.value = email;
+              else if (sel.options.length > 1) sel.selectedIndex = 1;
+            }
+            const ent = document.getElementById('tk-entity-type');
+            if (ent) {
+              ent.value = 'none';
+              ent.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          },
+          staffN.email,
+          uiTitle
+        );
+        // Re-select assignee after change handlers refill lists
         await page.waitForTimeout?.(300).catch(() => new Promise((r) => setTimeout(r, 300)));
         await page.evaluate((email) => {
-          document.getElementById('tk-title').value = 'مهمة واجهة ' + Date.now().toString(36);
-          document.getElementById('tk-details').value = 'أنشئت من واجهة المتصفح — اختبار';
           const sel = document.getElementById('tk-assignee-id');
           if (sel) {
             const opt = [...sel.options].find((o) => o.value === email);
             if (opt) sel.value = email;
-            else if (sel.options.length) sel.selectedIndex = 0;
           }
-          document.getElementById('tk-entity-type').value = 'none';
         }, staffN.email);
+
         await page.click('[data-action="tk-save"]');
-        await page.waitForTimeout?.(2000).catch(() => new Promise((r) => setTimeout(r, 2000)));
-        const uiCreated = await page.evaluate(() => {
-          const rows = [...document.querySelectorAll('table.data tbody tr')];
-          return rows.some((tr) => (tr.textContent || '').includes('مهمة واجهة'));
-        });
-        mark('حفظ مهمة من الواجهة وظهورها في القائمة', uiCreated, uiCreated ? 'visible in table' : 'not visible');
+        const saveRes = await saveWait;
+        let saveJson = null;
+        try {
+          saveJson = saveRes ? await saveRes.json() : null;
+        } catch {
+          /* */
+        }
+        const apiOk = !!(saveJson?.ok && saveJson?.task?.taskNo);
+        // Wait for list refresh (hub-panel-refresh + ensureTasksLoaded)
+        let uiCreated = false;
+        try {
+          await page.waitForFunction(
+            (title, taskNo) => {
+              const text = document.body?.innerText || '';
+              return text.includes(title) || (taskNo && text.includes(taskNo));
+            },
+            { timeout: 10000 },
+            uiTitle,
+            saveJson?.task?.taskNo || ''
+          );
+          uiCreated = true;
+        } catch {
+          // Force hash re-entry to re-render panel
+          await page.goto(`${BASE}/dashboard.html#tasks`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          await page.waitForTimeout?.(1500).catch(() => new Promise((r) => setTimeout(r, 1500)));
+          uiCreated = await page.evaluate(
+            (title, taskNo) => {
+              const text = document.body?.innerText || '';
+              return text.includes(title) || (taskNo && text.includes(taskNo));
+            },
+            uiTitle,
+            saveJson?.task?.taskNo || ''
+          );
+        }
+        mark(
+          'حفظ مهمة من الواجهة وظهورها في القائمة',
+          apiOk && uiCreated,
+          apiOk
+            ? `${saveJson.task.taskNo} visible=${uiCreated}`
+            : `api=${JSON.stringify(saveJson || null)?.slice(0, 180)} visible=${uiCreated}`
+        );
+        if (apiOk) {
+          created.push({
+            label: 'واجهة متصفح',
+            taskNo: saveJson.task.taskNo,
+            id: saveJson.task.id,
+            assigneeType: saveJson.task.assignee?.type,
+            assigneeId: saveJson.task.assignee?.id,
+            entityType: saveJson.task.entity?.type,
+            entityId: saveJson.task.entity?.id,
+            attachments: (saveJson.task.attachments || []).length,
+            notified: !!saveJson.notified,
+          });
+        }
       }
     }
 
