@@ -1,10 +1,14 @@
 /* Advertising Management Workspace */
+/* Match events studio (.ev-wrap): full available width, no narrow centered column. */
 
 .ads-workspace {
-  width: min(1500px, calc(100% - 24px));
-  margin: 18px auto 80px;
+  max-width: none;
+  width: 100%;
+  margin: 0 auto;
+  padding: 14px 18px 28px;
+  box-sizing: border-box;
   display: grid;
-  gap: 24px;
+  gap: 18px;
 }
 
 .ads-ws-head {
@@ -132,7 +136,7 @@
 
 .ads-places-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -244,7 +248,7 @@
 
 .ads-cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -594,8 +598,14 @@
   font-weight: 800;
 }
 
+@media (max-width: 1400px) {
+  .ads-places-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ads-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 @media (max-width: 1100px) {
   .ads-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ads-places-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ads-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ads-perf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -604,5 +614,6 @@
   .ads-summary-grid,
   .ads-cards,
   .ads-perf-grid { grid-template-columns: 1fr; }
-  .ads-workspace { width: calc(100% - 16px); }
+  .ads-places-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ads-workspace { padding: 10px; }
 }
