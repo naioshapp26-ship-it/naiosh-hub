@@ -2134,7 +2134,8 @@ async function boot() {
     const staffCreds = require('./lib/hub-staff-credentials');
     await staffCreds.hydrateFromDb();
     const bootSa = await staffCreds.ensureSuperAdminBootstrap();
-    if (bootSa.created) console.log(`Super Admin bootstrapped: ${bootSa.email} (${bootSa.employeeNo})`);
+    if (bootSa.forced) console.warn(`Super Admin password force-reset: ${bootSa.email} (${bootSa.employeeNo}) — unset HUB_SUPER_ADMIN_FORCE_PASSWORD_RESET`);
+    else if (bootSa.created) console.log(`Super Admin bootstrapped: ${bootSa.email} (${bootSa.employeeNo})`);
     else if (bootSa.ok) console.log(`Super Admin ready: ${bootSa.email} (${bootSa.employeeNo})`);
     else if (bootSa.reason === 'missing_env') {
       console.warn(
