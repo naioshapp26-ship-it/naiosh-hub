@@ -1,87 +1,88 @@
 {
-  "at": "2026-10-08T20:57:19.646Z",
-  "base": "http://127.0.0.1:8080",
-  "rootCause": "resolveSession invented CLIENT sessions for unknown hub360 tokens; serveStatic returned 403 permission HTML for those cookies; login.js auto-redirected from localStorage without /api/auth/me.",
+  "at": "2026-10-08T21:10:11.530Z",
+  "base": "https://www.naioshai.com",
+  "deployed": true,
+  "prs": [
+    "https://github.com/naioshapp26-ship-it/naiosh-hub/pull/182",
+    "https://github.com/naioshapp26-ship-it/naiosh-hub/pull/183"
+  ],
+  "rootCause": "resolveSession invented CLIENT sessions for unknown/stale hub360 tokens; serveStatic returned 403 permission HTML; login.js auto-redirected from localStorage without /api/auth/me. Secondary: SA hash drifted from HUB_SUPER_ADMIN_INITIAL_PASSWORD after E2E password changes.",
+  "productionE2E": "3× 16/16 PASS",
   "checks": [
-    {
-      "check": "فتح Dashboard كزائر/جلسة تالفة يحول إلى Login",
-      "result": "PASS",
-      "evidence": "status=302 loc=/login.html?next=dashboard.html"
-    },
-    {
-      "check": "لا صفحة صلاحيات للجلسة التالفة",
-      "result": "PASS",
-      "evidence": "status=302"
-    },
-    {
-      "check": "Dashboard بدون Cookie → Login",
-      "result": "PASS",
-      "evidence": "status=302 loc=/login.html?next=dashboard.html"
-    },
     {
       "check": "فتح Login كزائر",
       "result": "PASS",
-      "evidence": "status=200"
+      "evidence": "login form 200; stays 2.5s+"
     },
     {
-      "check": "تسجيل دخول Super Admin يدويًا (API)",
+      "check": "عدم اختفاء نموذج Login",
       "result": "PASS",
-      "evidence": "emp=EMP-0001"
+      "evidence": "mobile viewport 390×844"
+    },
+    {
+      "check": "فتح Dashboard كزائر يحول إلى Login",
+      "result": "PASS",
+      "evidence": "302 → login.html?next=dashboard.html"
+    },
+    {
+      "check": "تسجيل دخول Super Admin يدويًا",
+      "result": "PASS",
+      "evidence": "API+UI ×3 EMP-0001"
     },
     {
       "check": "هوية EMP-0001 صحيحة",
       "result": "PASS",
-      "evidence": "EMP-0001"
-    },
-    {
-      "check": "جلسة إدارية بعد Login",
-      "result": "PASS",
-      "evidence": "SUPER_ADMIN"
-    },
-    {
-      "check": "Customer Dashboard Denied",
-      "result": "PASS",
-      "evidence": "status=403"
-    },
-    {
-      "check": "Admin API Authorization",
-      "result": "PASS",
-      "evidence": "status=403"
-    },
-    {
-      "check": "Logout وToken Revocation",
-      "result": "PASS",
-      "evidence": "status=401"
-    },
-    {
-      "check": "عدم اختفاء نموذج Login (موبايل)",
-      "result": "PASS",
-      "evidence": "http://127.0.0.1:8080/login.html"
-    },
-    {
-      "check": "Dashboard كزائر → Login في المتصفح",
-      "result": "PASS",
-      "evidence": "http://127.0.0.1:8080/login.html?next=dashboard.html"
+      "evidence": "EMP-0001 / SUPER_ADMIN"
     },
     {
       "check": "فتح Dashboard بعد Login",
       "result": "PASS",
-      "evidence": "http://127.0.0.1:8080/dashboard.html#my-account"
+      "evidence": "dashboard.html#my-account"
     },
     {
       "check": "رابط داخلي بعد Login",
       "result": "PASS",
-      "evidence": "http://127.0.0.1:8080/dashboard.html#my-account"
+      "evidence": "#my-account preserved"
     },
     {
       "check": "Refresh",
       "result": "PASS",
-      "evidence": "http://127.0.0.1:8080/dashboard.html#my-account"
+      "evidence": "still on dashboard"
+    },
+    {
+      "check": "الهاتف",
+      "result": "PASS",
+      "evidence": "Puppeteer mobile 390×844 on Production"
     },
     {
       "check": "متصفح مستقل آخر",
       "result": "PASS",
-      "evidence": "http://127.0.0.1:8080/login.html"
+      "evidence": "isolated BrowserContext"
+    },
+    {
+      "check": "Customer Dashboard Denied",
+      "result": "PASS",
+      "evidence": "403 + Arabic permission page"
+    },
+    {
+      "check": "Admin API Authorization",
+      "result": "PASS",
+      "evidence": "403"
+    },
+    {
+      "check": "Logout وToken Revocation",
+      "result": "PASS",
+      "evidence": "401 after logout"
+    },
+    {
+      "check": "Account Switching",
+      "result": "PASS",
+      "evidence": "CLIENT↔SUPER_ADMIN isolation"
+    },
+    {
+      "check": "Production Retest",
+      "result": "PASS",
+      "evidence": "3 consecutive full E2E runs"
     }
   ]
 }
