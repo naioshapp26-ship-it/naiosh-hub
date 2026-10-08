@@ -1,0 +1,88 @@
+{
+  "at": "2026-10-08T21:25:45.424Z",
+  "base": "http://127.0.0.1:8080",
+  "accountIdForLeader": "NAI-LEADER-001",
+  "employeeNo": "EMP-0001",
+  "checks": [
+    {
+      "check": "تسجيل دخول القائد الأعلى",
+      "result": "PASS",
+      "evidence": "emp=EMP-0001"
+    },
+    {
+      "check": "رقم الموظف EMP-0001",
+      "result": "PASS",
+      "evidence": "EMP-0001"
+    },
+    {
+      "check": "رقم الحساب الحقيقي ومختلف عن الموظف",
+      "result": "PASS",
+      "evidence": "NAI-LEADER-001"
+    },
+    {
+      "check": "الدور بالعربية",
+      "result": "PASS",
+      "evidence": "القائد الأعلى"
+    },
+    {
+      "check": "الحالة بالعربية",
+      "result": "PASS",
+      "evidence": "نشط"
+    },
+    {
+      "check": "حفظ رقم الجوال",
+      "result": "PASS",
+      "evidence": "+970594739044"
+    },
+    {
+      "check": "استمرارية الجوال بعد GET",
+      "result": "PASS",
+      "evidence": "+970594739044"
+    },
+    {
+      "check": "رفض تعديل رقم الموظف",
+      "result": "PASS",
+      "evidence": "403"
+    },
+    {
+      "check": "رفض تعديل رقم الحساب",
+      "result": "PASS",
+      "evidence": "403"
+    },
+    {
+      "check": "رفض جوال غير صالح",
+      "result": "PASS",
+      "evidence": "رقم الجوال غير صالح. استخدم أرقامًا فقط مع رمز الدولة إن لزم (مثال: +97059XXXXXXX)."
+    },
+    {
+      "check": "استمرارية بعد Logout/Login",
+      "result": "PASS",
+      "evidence": "+970594739044"
+    },
+    {
+      "check": "إنشاء إداري آخر",
+      "result": "PASS",
+      "evidence": "EMP-0100"
+    },
+    {
+      "check": "حساب إداري آخر يعرض بياناته فقط",
+      "result": "PASS",
+      "evidence": "acct.admin.mv01pnkq@example.com|EMP-0100|NAI-STAFF-0100"
+    },
+    {
+      "check": "رقم حساب الإداري مختلف عن الموظف",
+      "result": "PASS",
+      "evidence": "NAI-STAFF-0100"
+    },
+    {
+      "check": "واجهة بيانات حسابي (كمبيوتر)",
+      "result": "PASS",
+      "evidence": "{\"hasSection\":true,\"hasEmp\":true,\"hasAccount\":true,\"hasRoleAr\":true,\"hasStatusAr\":true,\"hasPhoneInput\":true,\"hasSave\":true,\"hasPwdSection\":true}"
+    },
+    {
+      "check": "واجهة الموبايل",
+      "result": "PASS",
+      "evidence": "my-account-mobile.png"
+    }
+  ]
+}
