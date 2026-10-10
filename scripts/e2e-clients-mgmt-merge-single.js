@@ -367,10 +367,19 @@ async function main() {
     });
     mark('14 روابط الإشعارات (تحويل قديم)', legacy.hash === '#clients-mgmt' && notifLinkOk, 'legacy redirect + new defaults');
 
-    // 15) Customer blocked from admin
+    // 16) Staff perms — SA can access; panel still staff-gated (before customer session pollution)
+    const staffGate = await page.evaluate(() => {
+      const u = JSON.parse(localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser') || '{}');
+      const gate = window.HubAuth?.canAccessDashboard?.(u);
+      return { role: u.role, gate };
+    });
+    mark('16 صلاحيات القائد/الموظف', staffGate.gate?.ok !== false && /supreme|chief|platform|admin|staff/i.test(String(staffGate.role || '')), JSON.stringify(staffGate));
+
+    // 15) Customer blocked from admin (isolated browser context)
     const custEmail = `merge.cust.${stamp}@naiosh-test.com`;
     const custPass = 'Test360!';
-    const custPage = await browser.newPage();
+    const custCtx = await browser.createBrowserContext();
+    const custPage = await custCtx.newPage();
     await custPage.setViewport({ width: 1280, height: 800 });
     await custPage.goto(`${BASE}/index.html`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     const reg = await custPage.evaluate(
@@ -413,15 +422,7 @@ async function main() {
       return /login\.html|client\.html/i.test(url) || /ليس لديك صلاحية/.test(document.body.innerText || '');
     });
     mark('15 منع العميل من الإدارة', custBlocked, JSON.stringify({ regOk: reg.ok, status: reg.status, err: reg.err, custBlocked, url: custPage.url() }));
-    await custPage.close();
-
-    // 16) Staff perms — SA can access; panel still staff-gated
-    const staffGate = await page.evaluate(() => {
-      const u = JSON.parse(localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser') || '{}');
-      const gate = window.HubAuth?.canAccessDashboard?.(u);
-      return { role: u.role, gate };
-    });
-    mark('16 صلاحيات القائد/الموظف', staffGate.gate?.ok !== false, JSON.stringify(staffGate));
+    await custCtx.close().catch(() => custPage.close());
 
     // 17) Mobile
     const mob = await browser.newPage();
