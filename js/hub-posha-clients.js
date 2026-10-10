@@ -320,6 +320,8 @@
       ['إجمالي العملاء', s.totalClients || state.clients.length || 0],
       ['النشطون', s.activeClients || 0],
       ['الموقوفون', s.suspendedClients || 0],
+      ['الأفراد', s.individualClients || 0],
+      ['المؤسسات', s.organizationClients || 0],
       ['الجدد', s.newClients || 0],
       ['طلبات تحتاج مراجعة', pendingReview],
       ['تذاكر مفتوحة', s.openTickets || state.tickets.length || 0],
@@ -766,25 +768,51 @@
           <article><span>الطلبات المقبولة</span><strong>${num(crList.filter((r) => /Approved|Published|accepted/i.test(r.status)).length)}</strong></article>
           <article><span>المحفظة</span><strong>${num(c.wallet?.total ?? 0)}</strong></article>
         </div>
-        <div class="posha-drawer-overview posha-drawer-profile">
-          <p><strong>الاسم:</strong> ${esc(displayVal(c.name))}</p>
-          <p><strong>رقم العميل:</strong> <code>${esc(displayVal(c.clientId))}</code></p>
-          <p><strong>رقم نايوش:</strong> <code>${esc(displayVal(c.naioshId))}</code></p>
-          <p><strong>البريد الإلكتروني:</strong> ${esc(displayVal(c.email))}</p>
-          <p><strong>الهاتف:</strong> ${esc(displayVal(c.phone))}</p>
-          <p><strong>الدولة:</strong> ${esc(displayVal(c.country))}</p>
-          <p><strong>المدينة:</strong> ${esc(displayVal(c.city))}</p>
-          <p><strong>العنوان:</strong> ${esc(displayVal(c.address))}</p>
-          <p><strong>نوع العميل:</strong> ${esc(displayVal(c.clientType))}</p>
-          <p><strong>نوع النشاط:</strong> ${esc(displayVal(c.activityType))}</p>
-          <p><strong>المؤسسة / الشركة:</strong> ${esc(displayVal(c.company))}</p>
+        <form id="posha-profile-form" class="posha-drawer-overview posha-drawer-profile posha-profile-form">
+          <p><strong>رقم العميل:</strong> <code>${esc(displayVal(c.clientId))}</code> <span class="posha-muted">(غير قابل للتعديل)</span></p>
+          <p><strong>البريد الإلكتروني:</strong> ${esc(displayVal(c.email))} <span class="posha-muted">(هوية الحساب)</span></p>
+          <label>الاسم<input name="name" value="${esc(c.name || '')}" required /></label>
+          <label>رقم نايوش<input name="naioshId" value="${esc(c.naioshId || '')}" placeholder="NAI-CLIENT-…" /></label>
+          <label>الهاتف<input name="phone" value="${esc(c.phone || '')}" placeholder="05xxxxxxxx" /></label>
+          <label>الدولة<input name="country" value="${esc(c.country || '')}" /></label>
+          <label>المدينة<input name="city" value="${esc(c.city || '')}" /></label>
+          <label>العنوان<input name="address" value="${esc(c.address || '')}" /></label>
+          <label>نوع العميل
+            <select name="clientType">
+              <option value="">—</option>
+              ${['فرد', 'مؤسسة'].map((t) => `<option value="${t}" ${c.clientType === t ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+          </label>
+          <label>نوع النشاط<input name="activityType" value="${esc(c.activityType || '')}" placeholder="تعليم / تجارة…" /></label>
+          <label>المؤسسة / الشركة<input name="company" value="${esc(c.company || '')}" /></label>
           <p><strong>تاريخ التسجيل:</strong> ${esc(c.createdAt ? fmtDateParts(c.createdAt).date : 'غير مسجل')}</p>
           <p><strong>الحالة:</strong> ${esc(clientStatusAr(c.status))}</p>
           <p><strong>آخر تسجيل دخول:</strong> ${esc(c.lastLoginAt ? `${fmtDateParts(c.lastLoginAt).date} ${fmtDateParts(c.lastLoginAt).time}` : 'غير مسجل')}</p>
           <p><strong>آخر نشاط:</strong> ${esc(lastActivityIso(c) ? `${fmtDateParts(lastActivityIso(c)).date} ${fmtDateParts(lastActivityIso(c)).time}` : 'غير مسجل')}</p>
-        </div>
+          <p><strong>آخر تعديل:</strong> ${esc(c.updatedAt ? `${fmtDateParts(c.updatedAt).date} ${fmtDateParts(c.updatedAt).time}` : 'غير مسجل')}</p>
+          <div class="posha-actions"><button type="submit" class="btn btn-primary btn-sm">حفظ بيانات العميل</button></div>
+        </form>
         <h4>آخر الأنشطة</h4>
         <ul class="posha-timeline">${tl.map((e) => `<li><strong>${esc(e.type || e.title)}</strong> — ${esc(e.message || e.title || '')}<small>${esc(fmtDateParts(e.at).date)} ${esc(fmtDateParts(e.at).time)}</small></li>`).join('') || '<li>لا أحداث</li>'}</ul>`;
+        document.getElementById('posha-profile-form')?.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const fd = new FormData(e.target);
+          const payload = {};
+          ['name', 'naioshId', 'phone', 'country', 'city', 'address', 'clientType', 'activityType', 'company'].forEach((k) => {
+            payload[k] = String(fd.get(k) || '').trim();
+          });
+          try {
+            await api(`/api/admin/posha/clients/${encodeURIComponent(c.email)}/profile`, {
+              method: 'PATCH',
+              body: payload,
+            });
+            showToast('تم حفظ بيانات العميل');
+            await open360(c.email, 'overview');
+            refresh();
+          } catch (err) {
+            showToast(errText(err));
+          }
+        });
       } else if (tab === 'systems') {
         body.innerHTML = `<div class="posha-actions">
           <input id="ps-code" placeholder="ERP" /><input id="ps-name" placeholder="اسم النظام" />
@@ -2671,9 +2699,10 @@
     setBadge('posha-top-badge', n);
   }
 
-  function mount(root) {
+  function mount(root, opts = {}) {
     if (!root) return;
-    const keepTab = state.tab || 'overview';
+    const keepTab = opts.initialTab || state.tab || 'overview';
+    state.mode = opts.mode || state.mode || 'ops';
     root.innerHTML = shell();
     state.tab = keepTab;
     document.querySelectorAll('#posha-subnav [data-ptab]').forEach((b) => {
