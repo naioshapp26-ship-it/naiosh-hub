@@ -308,15 +308,14 @@ async function main() {
     if (adReq) {
       approvedOk = await page.evaluate((id) => {
         try {
-          const fn = window.HubCustomerRequests?.approve || window.HubCustomerRequests?.setStatus;
-          if (window.HubCustomerRequests?.approve) {
-            window.HubCustomerRequests.approve(id, 'e2e-merge', 'قبول اختبار الدمج');
-          } else if (window.HubCustomerRequests?.setStatus) {
-            window.HubCustomerRequests.setStatus(id, 'Approved', 'e2e-merge', 'قبول اختبار الدمج');
+          if (window.HubCustomerRequests?.approveRequest) {
+            window.HubCustomerRequests.approveRequest(id, 'e2e-merge', 'قبول اختبار الدمج');
+          } else if (window.HubCustomerRequests?.updateStatus) {
+            window.HubCustomerRequests.updateStatus(id, 'Approved', 'e2e-merge', 'قبول اختبار الدمج');
           } else return false;
           const row = window.HubCustomerRequests.get?.(id);
           const st = String(row?.status || '');
-          return /Approved|Accepted|In Progress|قيد/i.test(st) || st === 'Approved';
+          return /Approved|Accepted|Published|In Progress|قيد/i.test(st);
         } catch (e) {
           return false;
         }
