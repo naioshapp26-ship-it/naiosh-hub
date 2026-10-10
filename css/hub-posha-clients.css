@@ -1198,3 +1198,49 @@
   }
 }
 
+/* Unified CRM (إدارة العملاء) mounts the same Posha clients model */
+.hub-clients-ws--unified {
+  width: 100%;
+  max-width: none;
+}
+.hub-clients-unified-mount,
+.hub-clients-ws--unified .posha-ws-mount {
+  width: 100%;
+  max-width: none;
+}
+.cl-unified-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+.cl-form-grid {
+  gap: 12px;
+}
+.posha-profile-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+.posha-profile-form label {
+  display: grid;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 13px;
+}
+.posha-profile-form input,
+.posha-profile-form select {
+  min-height: 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+}
+.posha-profile-form > p,
+.posha-profile-form .posha-actions {
+  grid-column: 1 / -1;
+}
+@media (max-width: 700px) {
+  .posha-profile-form {
+    grid-template-columns: 1fr;
+  }
+}
+

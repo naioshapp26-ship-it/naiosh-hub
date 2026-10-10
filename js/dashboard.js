@@ -1624,7 +1624,11 @@
     window.HubI18n?.applyDisplayLayer?.(root);
     if (current === 'posha-clients' && window.HubPoshaClients?.mount) {
       const mount = document.getElementById('posha-mount');
-      if (mount) window.HubPoshaClients.mount(mount);
+      if (mount) window.HubPoshaClients.mount(mount, { initialTab: 'overview', mode: 'ops' });
+    }
+    if (current === 'clients-mgmt' && window.HubPoshaClients?.mount) {
+      const mount = document.getElementById('clients-mgmt-mount');
+      if (mount) window.HubPoshaClients.mount(mount, { initialTab: 'clients', mode: 'crm' });
     }
     if (current === 'site-settings' && window.HubSiteSettingsUI?.mount) {
       const mount = document.getElementById('site-settings-mount');

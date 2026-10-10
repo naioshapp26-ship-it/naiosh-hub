@@ -96,37 +96,63 @@
               status: apiRow.status || 'pending',
               company: apiRow.company || '',
               country: apiRow.country || '',
+              city: apiRow.city || '',
+              address: apiRow.address || '',
               phone: apiRow.phone || '',
+              clientType: apiRow.clientType || '',
+              activityType: apiRow.activityType || '',
+              naioshId: apiRow.naioshId || '',
               accountLevel: apiRow.accountLevel || 'standard',
-              systems: [],
-              orders: [],
-              subscriptions: [],
-              invoices: [],
-              wallet: { paid: 0, free: 0, total: Number(apiRow.walletTotal) || 0, ledger: [] },
-              tickets: [],
-              internalNotes: [],
+              systems: apiRow.systems || [],
+              orders: apiRow.orders || [],
+              subscriptions: apiRow.subscriptions || [],
+              invoices: apiRow.invoices || [],
+              wallet: apiRow.wallet || { paid: 0, free: 0, total: Number(apiRow.walletTotal) || 0, ledger: [] },
+              tickets: apiRow.tickets || [],
+              internalNotes: apiRow.internalNotes || [],
               lastLoginAt: apiRow.lastLoginAt || '',
+              lastActivityAt: apiRow.lastActivityAt || '',
               source: apiRow.source || 'API',
               createdAt: apiRow.createdAt || '',
-              updatedAt: apiRow.createdAt || '',
+              updatedAt: apiRow.updatedAt || apiRow.createdAt || '',
               createdByEmployeeId: apiRow.createdByEmployeeId || '',
               createdByEmail: apiRow.createdByEmail || '',
               systemsCount: apiRow.systemsCount || 0,
               openOrders: apiRow.openOrders || 0,
               walletTotal: apiRow.walletTotal || 0,
+              fromApi: true,
             };
             bag.clients.unshift(row);
           } else {
-            row.clientId = apiRow.clientId || row.clientId;
-            row.name = apiRow.name || row.name;
-            row.status = apiRow.status || row.status;
-            row.createdByEmployeeId = apiRow.createdByEmployeeId || row.createdByEmployeeId || '';
-            row.createdByEmail = apiRow.createdByEmail || row.createdByEmail || '';
-            if (apiRow.company) row.company = apiRow.company;
-            if (apiRow.country) row.country = apiRow.country;
-            if (apiRow.phone) row.phone = apiRow.phone;
+            Object.assign(row, {
+              clientId: apiRow.clientId || row.clientId,
+              name: apiRow.name || row.name,
+              status: apiRow.status || row.status,
+              company: apiRow.company ?? row.company,
+              country: apiRow.country ?? row.country,
+              city: apiRow.city ?? row.city,
+              address: apiRow.address ?? row.address,
+              phone: apiRow.phone ?? row.phone,
+              clientType: apiRow.clientType ?? row.clientType,
+              activityType: apiRow.activityType ?? row.activityType,
+              naioshId: apiRow.naioshId ?? row.naioshId,
+              lastLoginAt: apiRow.lastLoginAt || row.lastLoginAt,
+              lastActivityAt: apiRow.lastActivityAt || row.lastActivityAt,
+              updatedAt: apiRow.updatedAt || row.updatedAt,
+              systemsCount: apiRow.systemsCount ?? row.systemsCount,
+              openOrders: apiRow.openOrders ?? row.openOrders,
+              walletTotal: apiRow.walletTotal ?? row.walletTotal,
+              createdByEmployeeId: apiRow.createdByEmployeeId || row.createdByEmployeeId || '',
+              createdByEmail: apiRow.createdByEmail || row.createdByEmail || '',
+              fromApi: true,
+            });
+            if (apiRow.systems) row.systems = apiRow.systems;
+            if (apiRow.orders) row.orders = apiRow.orders;
+            if (apiRow.wallet) row.wallet = apiRow.wallet;
           }
         });
+        // Prefer API truth: drop seed-only demos not present on the server.
+        bag.clients = (bag.clients || []).filter((c) => c.fromApi || data.clients.some((a) => String(a.email || '').toLowerCase() === String(c.email || '').toLowerCase()));
         store().save?.();
       })
       .catch(() => null);
@@ -156,21 +182,32 @@
     const K = Kit();
     const creating = !clUi.editId;
     return `
-      <div class="grid-2">
+      <div class="grid-2 cl-form-grid">
         <div class="field"><label>الاسم *</label><input id="cl-name" value="${K.esc(item.name || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
         <div class="field"><label>البريد *</label><input id="cl-email" type="email" value="${K.esc(item.email || '')}" ${clUi.saving || !!clUi.editId ? 'disabled' : ''} /></div>
-        <div class="field"><label>الهاتف ${creating ? '' : ''}</label><input id="cl-phone" value="${K.esc(item.phone || '')}" placeholder="05xxxxxxxx" ${clUi.saving ? 'disabled' : ''} /></div>
-        <div class="field"><label>رقم العميل</label><input id="cl-clientId" value="${K.esc(item.clientId || '')}" placeholder="يُنشأ تلقائيًا" ${creating ? 'disabled' : ''} /></div>
+        <div class="field"><label>الجوال</label><input id="cl-phone" value="${K.esc(item.phone || '')}" placeholder="05xxxxxxxx" ${clUi.saving ? 'disabled' : ''} /></div>
+        <div class="field"><label>رقم العميل</label><input id="cl-clientId" value="${K.esc(item.clientId || '')}" placeholder="يُنشأ تلقائيًا" disabled /></div>
+        <div class="field"><label>رقم نايوش</label><input id="cl-naioshId" value="${K.esc(item.naioshId || '')}" placeholder="يُنشأ تلقائيًا إن تُرك فارغًا" ${clUi.saving ? 'disabled' : ''} /></div>
         <div class="field"><label>الحالة</label>
           <select id="cl-status" ${clUi.saving ? 'disabled' : ''}>${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${item.status === s ? 'selected' : ''}>${K.esc(window.HubI18n?.status?.(s) || s)}</option>`).join('')}</select>
         </div>
-        <div class="field"><label>الشركة</label><input id="cl-company" value="${K.esc(item.company || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
+        <div class="field"><label>نوع العميل</label>
+          <select id="cl-clientType" ${clUi.saving ? 'disabled' : ''}>
+            <option value="">—</option>
+            ${['فرد', 'مؤسسة'].map((t) => `<option value="${t}" ${item.clientType === t ? 'selected' : ''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>نوع النشاط</label><input id="cl-activityType" value="${K.esc(item.activityType || '')}" placeholder="تعليم / تجارة…" ${clUi.saving ? 'disabled' : ''} /></div>
+        <div class="field"><label>المؤسسة / الشركة</label><input id="cl-company" value="${K.esc(item.company || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
         <div class="field"><label>الدولة</label><input id="cl-country" value="${K.esc(item.country || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
+        <div class="field"><label>المدينة</label><input id="cl-city" value="${K.esc(item.city || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
+        <div class="field"><label>العنوان</label><input id="cl-address" value="${K.esc(item.address || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
         <div class="field"><label>المصدر</label>
           <select id="cl-source" ${clUi.saving ? 'disabled' : ''}>${['إدخال يدوي', 'System Generated', 'Integration', 'POSHA', 'Register'].map((s) => `<option value="${K.esc(s)}" ${(item.source || 'إدخال يدوي') === s ? 'selected' : ''}>${K.esc(window.HubI18n?.label?.(s) || s)}</option>`).join('')}</select>
         </div>
       </div>
-      ${item.createdByEmployeeId ? `<p class="muted" style="margin-top:8px">أُنشئ بواسطة: <strong>${K.esc(item.createdByEmployeeId)}</strong></p>` : ''}`;
+      <p class="muted" style="margin-top:8px">يُحفظ في نفس مصدر بيانات «عملاء نايوش». رقم العميل والبريد هوية ثابتة بعد الإنشاء.</p>
+      ${item.createdByEmployeeId ? `<p class="muted">أُنشئ بواسطة: <strong>${K.esc(item.createdByEmployeeId)}</strong></p>` : ''}`;
   };
 
   const renderClientDrawer = (c) => {
@@ -229,22 +266,8 @@
     }
     const allowCreate = canCreateClient(user);
     const bag = store().clientsBag?.() || store().get()?.clientsMgmt || { clients: [], auditLog: [], settings: {} };
-    const filtered = filterClients(bag.clients || []);
-    const pg = K.paginate(filtered, clUi.page, clUi.pageSize);
-    clUi.page = pg.page;
-    const needs = (bag.clients || [])
-      .filter((c) => c.status === 'pending' || c.status === 'suspended' || (c.tickets || []).some((t) => t.status === 'open'))
-      .slice(0, 8)
-      .map((c) => ({ text: `${c.status === 'pending' ? 'بانتظار التفعيل' : c.status === 'suspended' ? 'موقوف' : 'تذكرة مفتوحة'}: ${c.name}`, tab: 'list', id: c.id }));
-
-    const kpis = [
-      { key: 'total', label: 'العملاء', value: (bag.clients || []).length, tab: 'list' },
-      { key: 'active', label: 'نشط', value: (bag.clients || []).filter((c) => c.status === 'active').length, tab: 'list' },
-      { key: 'pending', label: 'معلّق', value: (bag.clients || []).filter((c) => c.status === 'pending').length, tab: 'list' },
-      { key: 'suspended', label: 'موقوف', value: (bag.clients || []).filter((c) => c.status === 'suspended').length, tab: 'list' },
-      { key: 'needs', label: 'يتطلب إجراء', value: needs.length, tab: 'list' },
-    ];
-
+    const live = window.HubPoshaClients?.state || {};
+    const summary = live.summary || {};
     const createBtn = allowCreate
       ? `<button type="button" class="btn btn-primary" data-action="cl-create"><i class="fas fa-plus"></i> إضافة عميل جديد</button>`
       : `<button type="button" class="btn btn-ghost" disabled title="ليست لديك صلاحية إنشاء عميل">إضافة عميل جديد</button>`;
@@ -252,49 +275,23 @@
       ? `<button type="button" class="btn btn-primary btn-sm" data-action="cl-create"><i class="fas fa-plus"></i> إضافة عميل جديد</button>`
       : `<button type="button" class="btn btn-ghost btn-sm" disabled title="ليست لديك صلاحية إنشاء عميل">إضافة عميل جديد</button>`;
 
+    const kpis = [
+      { key: 'total', label: 'إجمالي العملاء', value: summary.totalClients ?? (bag.clients || []).length, tab: 'list' },
+      { key: 'active', label: 'النشطون', value: summary.activeClients ?? 0, tab: 'list' },
+      { key: 'suspended', label: 'الموقوفون', value: summary.suspendedClients ?? 0, tab: 'list' },
+      { key: 'individuals', label: 'الأفراد', value: summary.individualClients ?? 0, tab: 'list' },
+      { key: 'orgs', label: 'المؤسسات', value: summary.organizationClients ?? 0, tab: 'list' },
+      { key: 'new', label: 'الجدد', value: summary.newClients ?? 0, tab: 'list' },
+    ];
+
     let body = '';
     if (clUi.tab === 'list') {
-      body = `${K.renderNeeds('cl', needs)}
-        <article class="card" style="margin-top:12px">
-          <div class="toolbar" style="flex-wrap:wrap">
-            <div class="field"><label>بحث</label><input data-cl-change="q" value="${K.esc(clUi.filters.q)}" placeholder="اسم / بريد / رقم" /></div>
-            <div class="field"><label>الحالة</label>
-              <select data-cl-change="status"><option value="">الكل</option>
-                ${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${clUi.filters.status === s ? 'selected' : ''}>${window.HubI18n?.status?.(s) || s}</option>`).join('')}
-              </select>
-            </div>
-            ${createBtn}
-          </div>
-          <div class="table-wrap"><table class="data">
-            <thead><tr><th>العميل</th><th>الحالة</th><th>أنظمة</th><th>طلبات</th><th>المحفظة</th><th>المصدر</th><th>بواسطة</th><th></th></tr></thead>
-            <tbody>${
-              pg.rows.length
-                ? pg.rows
-                    .map(
-                      (c) => `<tr>
-                        <td><strong>${K.esc(c.name)}</strong><br/><small>${K.esc(c.email)} · ${K.esc(c.clientId || '')}</small></td>
-                        <td>${K.badge(window.HubI18n?.status?.(c.status) || c.status, c.status === 'active' ? 'badge-black' : c.status === 'pending' ? 'badge-gray' : 'badge-red')}</td>
-                        <td>${c.systemsCount || (c.systems || []).length}</td>
-                        <td>${c.openOrders ?? (c.orders || []).length}</td>
-                        <td>${Number(c.walletTotal ?? c.wallet?.total ?? 0).toLocaleString('en-US')}</td>
-                        <td>${K.sourceBadge(c.source)}</td>
-                        <td><small>${K.esc(c.createdByEmployeeId || '—')}</small></td>
-                        <td class="toolbar" style="margin:0;gap:4px">
-                          <button type="button" class="btn btn-sm btn-primary" data-action="cl-open" data-id="${c.id}">360</button>
-                          <button type="button" class="btn btn-sm btn-ghost" data-action="cl-edit" data-id="${c.id}">تعديل</button>
-                        </td>
-                      </tr>`
-                    )
-                    .join('')
-                : '<tr><td colspan="8" class="empty">لا عملاء — أنشئ عميلاً جديدًا</td></tr>'
-            }</tbody>
-          </table></div>
-          ${K.renderPager('cl', pg.page, pg.pages, pg.total)}
-        </article>`;
+      body = `<div id="clients-mgmt-mount" class="posha-ws-mount hub-clients-unified-mount" data-clients-unified="1"></div>
+        <p class="muted cl-unified-note">نفس نموذج وبيانات «عملاء نايوش» — مصدر واحد حقيقي. استخدم «عرض» لفتح الملف الشامل.</p>`;
     } else if (clUi.tab === 'audit') {
       body = `<article class="card">${K.renderAuditTable(bag.auditLog || [])}</article>`;
     } else {
-      body = `<article class="card"><p>إدارة العملاء مربوطة بواجهة الإدارة والصلاحية <code>clients.create</code> لإنشاء عملاء حقيقيين في الخادم مع سجل تدقيق.</p></article>`;
+      body = `<article class="card"><p>إدارة العملاء تستخدم نفس مصدر بيانات عملاء نايوش. إنشاء عميل جديد يتطلب صلاحية <code>clients.create</code>.</p></article>`;
     }
 
     const modal = clUi.modal
@@ -305,29 +302,29 @@
             <button type="button" class="btn btn-primary" data-action="cl-save" ${clUi.saving ? 'disabled' : ''}>${clUi.saving ? 'جاري الحفظ…' : 'إنشاء / حفظ'}</button>`,
         })
       : '';
-    const drawer = clUi.drawer
-      ? K.renderDrawer('cl', { title: clUi.drawer.title, bodyHtml: clUi.drawer.bodyHtml })
-      : '';
 
-    return `<div class="hub-ops-ws hub-clients-ws">
+    return `<div class="hub-ops-ws hub-clients-ws hub-clients-ws--unified">
       ${K.renderHeader({
         prefix: 'cl',
         title: 'إدارة العملاء',
-        subtitle: 'العملاء 360 · أنظمة · طلبات · محفظة · ملاحظات داخلية · تدقيق',
+        subtitle: 'نموذج شامل موحّد مع عملاء نايوش · ملف 360 · طلبات · محفظة · مرفقات · تدقيق',
         icon: 'fa-user-tie',
         actionsHtml: `${createBtnSm}
           <button type="button" class="btn btn-ghost btn-sm" data-action="cl-help-open"><i class="fas fa-circle-question"></i></button>`,
       })}
       ${K.renderKpis('cl', kpis, clUi.kpiFocus)}
+      <div class="toolbar cl-unified-toolbar" style="flex-wrap:wrap;margin:8px 0 12px;gap:8px">
+        ${createBtn}
+      </div>
       ${K.renderTabs('cl', CL_TABS, clUi.tab)}
       ${body}
       ${K.renderHelp('cl', {
         title: 'دليل إدارة العملاء',
         dismissed: !!bag.settings?.helpDismissed,
         open: clUi.helpOpen,
-        bodyHtml: `<p>أنشئ عميلاً بصلاحية clients.create، افتح ملف 360، وعيّن نظامًا. كل إنشاء يُسجَّل في التدقيق مع رقم الموظف المنشئ.</p>`,
+        bodyHtml: `<p>هذه الصفحة تعرض نفس النموذج الشامل لعملاء نايوش من مصدر واحد. أنشئ عميلاً بصلاحية clients.create، وافتح الملف الشامل من «عرض». التعديلات تظهر فورًا في القسمين.</p>`,
       })}
-      ${modal}${drawer}
+      ${modal}
     </div>`;
   };
 
@@ -361,15 +358,21 @@
       return true;
     }
     if (action === 'cl-edit') {
-      const row = (store().clientsBag()?.clients || []).find((x) => x.id === btn.dataset.id);
+      const row = (store().clientsBag()?.clients || []).find((x) => x.id === btn.dataset.id || x.email === btn.dataset.email);
       if (!row) return true;
       clUi.editId = row.id;
+      clUi.editEmail = row.email;
       clUi.saving = false;
       clUi.modal = { data: { ...row } };
       return true;
     }
     if (action === 'cl-open') {
-      const row = (store().clientsBag()?.clients || []).find((x) => x.id === btn.dataset.id);
+      const row = (store().clientsBag()?.clients || []).find((x) => x.id === btn.dataset.id || x.email === btn.dataset.email);
+      const email = row?.email || btn.dataset.email;
+      if (email && window.HubPoshaClients?.open360) {
+        window.HubPoshaClients.open360(email, 'overview');
+        return true;
+      }
       if (!row) return true;
       clUi.detailTab = 'overview';
       clUi.drawer = { title: `${row.name} · ${row.clientId || ''}`, bodyHtml: renderClientDrawer(row), id: row.id };
@@ -398,9 +401,14 @@
         email: K.qVal('cl-email'),
         phone: K.qVal('cl-phone'),
         clientId: K.qVal('cl-clientId'),
+        naioshId: K.qVal('cl-naioshId'),
         status: K.qVal('cl-status'),
+        clientType: K.qVal('cl-clientType'),
+        activityType: K.qVal('cl-activityType'),
         company: K.qVal('cl-company'),
         country: K.qVal('cl-country'),
+        city: K.qVal('cl-city'),
+        address: K.qVal('cl-address'),
         source: K.qVal('cl-source'),
       };
       if (!payload.name || !payload.email) {
@@ -412,12 +420,44 @@
         return true;
       }
 
-      // Edit stays local (profile patch); create must go through Backend + clients.create
-      if (clUi.editId) {
-        store().upsertClient?.(payload, actor);
-        clUi.modal = null;
-        clUi.editId = null;
-        toast?.('تم حفظ العميل');
+      // Edit + create both go through Backend (same portal store as عملاء نايوش).
+      if (clUi.editId || clUi.editEmail) {
+        const email = clUi.editEmail || payload.email;
+        clUi.saving = true;
+        (async () => {
+          try {
+            const res = await fetch(`/api/admin/clients/${encodeURIComponent(email)}/profile`, {
+              method: 'PATCH',
+              headers: authHeaders(),
+              body: JSON.stringify({
+                name: payload.name,
+                phone: payload.phone,
+                status: payload.status,
+                company: payload.company,
+                country: payload.country,
+                city: payload.city,
+                address: payload.address,
+                clientType: payload.clientType,
+                activityType: payload.activityType,
+                naioshId: payload.naioshId,
+                source: payload.source,
+              }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.ok) throw new Error(data.error || 'تعذر حفظ العميل');
+            clUi.modal = null;
+            clUi.editId = null;
+            clUi.editEmail = null;
+            toast?.('تم حفظ بيانات العميل');
+            await syncClientsFromApi();
+            await window.HubPoshaClients?.refresh?.();
+          } catch (err) {
+            toast?.(err.message || 'تعذر حفظ العميل');
+          } finally {
+            clUi.saving = false;
+            window.hubRerender?.();
+          }
+        })();
         return true;
       }
 
@@ -441,6 +481,11 @@
               status: payload.status,
               company: payload.company,
               country: payload.country,
+              city: payload.city,
+              address: payload.address,
+              clientType: payload.clientType,
+              activityType: payload.activityType,
+              naioshId: payload.naioshId,
               source: payload.source,
               idempotencyKey: idem,
             }),
@@ -455,21 +500,30 @@
               name: c.name || payload.name,
               email: c.email || payload.email,
               clientId: c.clientId,
+              naioshId: c.naioshId || payload.naioshId,
               status: c.status || payload.status,
               company: c.company || payload.company,
               country: c.country || payload.country,
+              city: c.city || payload.city,
+              address: c.address || payload.address,
+              clientType: c.clientType || payload.clientType,
+              activityType: c.activityType || payload.activityType,
               phone: c.phone || payload.phone,
               source: payload.source || 'إدخال يدوي',
               createdByEmployeeId: c.createdByEmployeeId || data.createdByEmployeeId || user?.employeeNo || '',
               createdByEmail: c.createdByEmail || user?.email || '',
+              fromApi: true,
             },
             actor
           );
           clUi.modal = null;
           clUi.editId = null;
+          clUi.editEmail = null;
           clUi.idemKey = null;
+          clUi.lastCreatedClientId = c.clientId || '';
           toast?.(`تم إنشاء العميل بنجاح. ${c.clientId || ''}`.trim());
           await syncClientsFromApi();
+          await window.HubPoshaClients?.refresh?.();
         } catch (err) {
           toast?.(err.message || 'تعذر إنشاء العميل');
         } finally {
