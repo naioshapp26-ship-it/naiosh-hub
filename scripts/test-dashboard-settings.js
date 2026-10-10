@@ -26,8 +26,9 @@ assert(navMatch, 'NAV array must exist');
 const navItems = [...navMatch[1].matchAll(/label:\s*'([^']+)'/g)].map((m) => m[1]);
 assert(navItems.length > 5, 'sidebar must keep existing items');
 assert.strictEqual(navItems[navItems.length - 1], 'إعدادات النظام', 'settings must be the last sidebar item before Home');
-assert(navItems.includes('التكامل'), 'integration item remains');
-assert(navItems.indexOf('التكامل') === navItems.length - 2, 'settings sits after التكامل');
+assert(navItems.includes('بوابات التكامل'), 'integration item remains as بوابات التكامل');
+assert(navItems.indexOf('بوابات التكامل') === navItems.length - 2, 'settings sits after بوابات التكامل');
+assert(!dashJs.includes('التكامل والبوابة'), 'old integration page title must be removed');
 
 assert(dashJs.includes("key: 'settings'"), 'NAV has settings key');
 assert(dashJs.includes("settings: ['إعدادات النظام'"), 'TITLES has settings');

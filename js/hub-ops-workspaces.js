@@ -40,9 +40,9 @@
       .filter((a) => a.status !== 'closed')
       .slice(0, 2)
       .forEach((a) => items.push({ text: `شذوذ مفتوح: ${a.signal}`, tab: 'board' }));
-    if ((k.systemsHealth || 0) < 90) items.push({ text: `صحة الأنظمة ${k.systemsHealth}% — مراجعة التكامل`, tab: 'layers' });
+    if ((k.systemsHealth || 0) < 90) items.push({ text: `صحة الأنظمة ${k.systemsHealth}% — مراجعة بوابات التكامل`, tab: 'layers' });
     if ((s.integration?.connectors || []).some((c) => c.status !== 'connected'))
-      items.push({ text: 'موصل غير متصل — افتح التكامل', tab: 'board' });
+      items.push({ text: 'موصل غير متصل — افتح بوابات التكامل', tab: 'board' });
     return items;
   };
 
@@ -96,7 +96,7 @@
             <div class="toolbar" style="margin-top:8px;flex-wrap:wrap">
               <button type="button" class="btn btn-dark btn-sm" data-nav="tasks">المهام</button>
               <button type="button" class="btn btn-dark btn-sm" data-nav="core">العقل المركزي</button>
-              <button type="button" class="btn btn-dark btn-sm" data-nav="integration">التكامل</button>
+              <button type="button" class="btn btn-dark btn-sm" data-nav="integration">بوابات التكامل</button>
               <button type="button" class="btn btn-dark btn-sm" data-nav="clients-mgmt">العملاء</button>
             </div>
           </article>
@@ -2019,7 +2019,7 @@
     return `<div class="hub-ops-ws hub-integration-ws">
       ${K.renderHeader({
         prefix: 'ig',
-        title: 'التكامل والبوابة',
+        title: 'بوابات التكامل',
         subtitle: 'موصلات · مزامنة · بوابة واجهات · تدقيق',
         icon: 'fa-plug',
         actionsHtml: `<button type="button" class="btn btn-primary btn-sm" data-action="ig-ping"><i class="fas fa-satellite-dish"></i> فحص</button>`,
