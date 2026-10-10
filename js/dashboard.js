@@ -133,7 +133,7 @@
   // Rewrite bookmark/notification hashes so the URL matches the single page
   if ((location.hash || '').replace(/^#/, '').split('?')[0] === 'posha-clients') {
     try {
-      history.replaceState(null, '', 'dashboard.html#clients-mgmt');
+      history.replaceState(null, '', '#clients-mgmt');
     } catch (_) {
       location.hash = 'clients-mgmt';
     }
@@ -2437,6 +2437,15 @@
   bootDashboard();
 
   window.addEventListener('hashchange', () => {
+    const rawKey = (window.location.hash || '').replace(/^#/, '').split('?')[0].split('&')[0];
+    // Always rewrite legacy hash even when already on the unified panel
+    if (rawKey === 'posha-clients') {
+      try {
+        history.replaceState(null, '', '#clients-mgmt');
+      } catch (_) {
+        location.hash = 'clients-mgmt';
+      }
+    }
     const next = panelFromHash();
     if (next !== current) activate(next);
   });

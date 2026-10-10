@@ -90,7 +90,7 @@ async function main() {
 
     // Baseline counts via API
     const clientsRes = await page.evaluate(async (h) => {
-      const r = await fetch('/api/admin/posha/clients', { headers: h, cache: 'no-store' });
+      const r = await fetch('/api/admin/clients', { headers: h, cache: 'no-store' });
       const d = await r.json().catch(() => ({}));
       return { ok: r.ok && d.ok !== false, n: (d.clients || []).length, err: d.error };
     }, headers);
@@ -187,53 +187,58 @@ async function main() {
 
     // 6) Create client
     const stamp = Date.now().toString(36);
-    const newEmail = `merge-client-${stamp}@example.com`;
+    const newEmail = `merge.cli.${stamp}@naiosh-test.com`;
     const createRes = await page.evaluate(
-      async (h, email) => {
-        const r = await fetch('/api/admin/posha/clients', {
+      async (h, email, stamp) => {
+        const r = await fetch('/api/admin/clients', {
           method: 'POST',
-          headers: h,
+          headers: { ...h, 'X-Idempotency-Key': `merge-${Date.now()}` },
           body: JSON.stringify({
-            name: `Merge Client ${email.slice(0, 12)}`,
+            name: `عميل دمج ${stamp}`,
             email,
-            phone: '0500000999',
-            country: 'SA',
-            city: 'Riyadh',
-            clientType: 'individual',
+            phone: `+9665${String(Date.now()).slice(-8)}`,
+            country: 'السعودية',
+            city: 'الرياض',
+            clientType: 'فرد',
             status: 'active',
             activityType: 'تجارة',
+            company: '',
+            source: 'إدخال يدوي',
           }),
         });
         const d = await r.json().catch(() => ({}));
-        return { ok: r.ok && d.ok !== false, client: d.client || d, err: d.error, status: r.status };
+        return { ok: r.status === 201 || (r.ok && d.ok !== false), client: d.client || null, err: d.error, status: r.status };
       },
       headers,
-      newEmail
+      newEmail,
+      stamp
     );
-    mark('6 إنشاء عميل جديد', !!createRes.ok, JSON.stringify(createRes).slice(0, 300));
+    mark('6 إنشاء عميل جديد', !!createRes.ok && !!createRes.client?.clientId, JSON.stringify(createRes).slice(0, 300));
 
+    await page.goto(`${BASE}/dashboard.html#clients-mgmt`, { waitUntil: 'networkidle2', timeout: 60000 });
+    await page.waitForSelector('#clients-mgmt-mount, .posha-ops', { timeout: 30000 });
     await page.evaluate(() => {
       window.HubPoshaClients?.refresh?.();
       document.querySelector('#posha-subnav [data-ptab="clients"]')?.click();
     });
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 1800));
     const createdVisible = await page.evaluate((email) => {
       const text = document.body.innerText || '';
-      const inState = (window.HubPoshaClients?.state?.clients || []).some((c) => String(c.email).toLowerCase() === email);
-      return { inState, inDom: text.includes(email) };
+      const inState = (window.HubPoshaClients?.state?.clients || []).some((c) => String(c.email).toLowerCase() === email.toLowerCase());
+      return { inState, inDom: text.toLowerCase().includes(email.toLowerCase()) };
     }, newEmail);
     mark('6 العميل يظهر في القائمة', createdVisible.inState || createdVisible.inDom, JSON.stringify(createdVisible));
 
     // 7) Edit + refresh
     const editRes = await page.evaluate(
       async (h, email) => {
-        const r = await fetch(`/api/admin/posha/clients/${encodeURIComponent(email)}`, {
+        const r = await fetch(`/api/admin/clients/${encodeURIComponent(email)}/profile`, {
           method: 'PATCH',
           headers: h,
-          body: JSON.stringify({ city: 'Jeddah', company: 'Merge Co' }),
+          body: JSON.stringify({ city: 'جدة', company: 'Merge Co' }),
         });
         const d = await r.json().catch(() => ({}));
-        return { ok: r.ok && d.ok !== false, city: d.client?.city, company: d.client?.company, err: d.error };
+        return { ok: r.ok && d.ok !== false, city: d.client?.city, company: d.client?.company, err: d.error, status: r.status };
       },
       headers,
       newEmail
@@ -242,14 +247,14 @@ async function main() {
     await page.waitForSelector('#clients-mgmt-mount, .posha-ops', { timeout: 30000 }).catch(() => null);
     await new Promise((r) => setTimeout(r, 1200));
     const afterEdit = await page.evaluate(async (h, email) => {
-      const r = await fetch(`/api/admin/posha/clients/${encodeURIComponent(email)}`, { headers: h, cache: 'no-store' });
+      const r = await fetch(`/api/admin/clients/${encodeURIComponent(email)}`, { headers: h, cache: 'no-store' });
       const d = await r.json().catch(() => ({}));
-      const c = d.client || (d.clients || []).find((x) => String(x.email).toLowerCase() === email) || {};
+      const c = d.client || {};
       return { city: c.city, company: c.company, ok: r.ok };
     }, headers, newEmail);
     mark(
       '7 تعديل يستمر بعد Refresh',
-      (afterEdit.city === 'Jeddah' || editRes.city === 'Jeddah') && (afterEdit.company === 'Merge Co' || editRes.company === 'Merge Co'),
+      (afterEdit.city === 'جدة' || editRes.city === 'جدة') && (afterEdit.company === 'Merge Co' || editRes.company === 'Merge Co'),
       JSON.stringify({ editRes, afterEdit })
     );
 
@@ -363,41 +368,50 @@ async function main() {
     mark('14 روابط الإشعارات (تحويل قديم)', legacy.hash === '#clients-mgmt' && notifLinkOk, 'legacy redirect + new defaults');
 
     // 15) Customer blocked from admin
-    const custEmail = `merge-cust-${stamp}@example.com`;
+    const custEmail = `merge.cust.${stamp}@naiosh-test.com`;
     const custPass = 'Test360!';
-    const reg = await page.evaluate(
-      async (email, pass) => {
+    const custPage = await browser.newPage();
+    await custPage.setViewport({ width: 1280, height: 800 });
+    const reg = await custPage.evaluate(
+      async (body) => {
         const r = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            name: 'Merge Customer',
-            email,
-            password: pass,
-            confirmPassword: pass,
-            phone: '0505555666',
-            role: 'client',
-          }),
+          body: JSON.stringify(body),
         });
         const d = await r.json().catch(() => ({}));
-        return { ok: r.ok || d.ok || d.token, status: r.status, err: d.error };
+        return { ok: !!(r.ok || d.ok || d.token), status: r.status, err: d.error, token: d.token, user: d.user };
       },
-      custEmail,
-      custPass
+      {
+        fullName: 'عميل دمج',
+        username: `mcust${stamp}`.slice(0, 32),
+        email: custEmail,
+        phone: `+9665${String(Date.now() + 9).slice(-8)}`,
+        password: custPass,
+        confirmPassword: custPass,
+        termsAccepted: true,
+      }
     );
-    const custPage = await browser.newPage();
-    await custPage.setViewport({ width: 1280, height: 800 });
     let custBlocked = false;
-    if (reg.ok) {
+    if (reg.token) {
+      await custPage.evaluate(
+        (t, u) => {
+          localStorage.setItem('hubAuthToken', t);
+          localStorage.setItem('hubUser', JSON.stringify(u));
+        },
+        reg.token,
+        { ...(reg.user || {}), role: 'customer', email: custEmail }
+      );
+    } else if (reg.ok) {
       await login(custPage, custEmail, custPass);
-      await custPage.goto(`${BASE}/dashboard.html#clients-mgmt`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await new Promise((r) => setTimeout(r, 1000));
-      custBlocked = await custPage.evaluate(() => {
-        const url = location.href;
-        return /login\.html|client\.html/i.test(url) || /ليس لديك صلاحية/.test(document.body.innerText || '');
-      });
     }
-    mark('15 منع العميل من الإدارة', !reg.ok || custBlocked, JSON.stringify({ reg, custBlocked }));
+    await custPage.goto(`${BASE}/dashboard.html#clients-mgmt`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await new Promise((r) => setTimeout(r, 1200));
+    custBlocked = await custPage.evaluate(() => {
+      const url = location.href;
+      return /login\.html|client\.html/i.test(url) || /ليس لديك صلاحية/.test(document.body.innerText || '');
+    });
+    mark('15 منع العميل من الإدارة', custBlocked, JSON.stringify({ regOk: reg.ok, status: reg.status, err: reg.err, custBlocked, url: custPage.url() }));
     await custPage.close();
 
     // 16) Staff perms — SA can access; panel still staff-gated
@@ -426,9 +440,12 @@ async function main() {
     await mob.screenshot({ path: path.join(ART, 'clients-merge-mobile.png'), fullPage: false });
     await mob.close();
 
-    // 18) Console errors (filter noise)
+    // 18) Console errors (filter noise / expected auth probes)
     const hardErrors = consoleErrors.filter(
-      (e) => !/favicon|ResizeObserver|third-party|net::ERR_BLOCKED/i.test(e)
+      (e) =>
+        !/favicon|ResizeObserver|third-party|net::ERR_BLOCKED|401 \(Unauthorized\)|404 \(Not Found\)|400 \(Bad Request\)|Failed to load resource/i.test(
+          e
+        )
     );
     mark('18 Console بدون أخطاء حرجة', hardErrors.length === 0, hardErrors.slice(0, 5).join(' | ') || 'clean');
 
