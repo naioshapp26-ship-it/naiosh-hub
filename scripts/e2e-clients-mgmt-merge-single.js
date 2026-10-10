@@ -372,6 +372,7 @@ async function main() {
     const custPass = 'Test360!';
     const custPage = await browser.newPage();
     await custPage.setViewport({ width: 1280, height: 800 });
+    await custPage.goto(`${BASE}/index.html`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     const reg = await custPage.evaluate(
       async (body) => {
         const r = await fetch('/api/auth/register', {
