@@ -425,7 +425,7 @@
     if (action === 'nt-open-customer') {
       const n = (store()?.get?.()?.notifications || []).find((x) => x.id === btn.dataset.id);
       store()?.markNotificationRead?.(btn.dataset.id);
-      window.location.href = `dashboard.html#posha-clients`;
+      window.location.href = `dashboard.html#clients-mgmt`;
       toast?.(n?.customerName ? `العميل: ${n.customerName}` : 'فتح العملاء');
       return true;
     }

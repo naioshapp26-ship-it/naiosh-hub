@@ -63,7 +63,7 @@
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px">
         <span class="chip">مقالات في الصندوق: ${k.articles || rows.length}</span>
         <span class="chip">بانتظار المراجعة: ${k.pendingReview || 0}</span>
-        <a class="btn btn-ghost btn-sm" href="#posha-clients">فتح طلبات العملاء</a>
+        <a class="btn btn-ghost btn-sm" href="#clients-mgmt">فتح طلبات العملاء</a>
       </div>
       <div class="table-wrap"><table class="data" style="width:100%">
         <thead><tr>
@@ -147,7 +147,7 @@
         ${!closed ? `<button type="button" class="btn btn-primary" data-apub="${esc(r.id)}">قبول ونشر</button>` : ''}
         ${!closed ? `<button type="button" class="btn btn-dark" data-achg="${esc(r.id)}">طلب تعديل</button>` : ''}
         ${!closed ? `<button type="button" class="btn btn-ghost" data-arej="${esc(r.id)}">رفض</button>` : ''}
-        <a class="btn btn-ghost" href="#posha-clients">فتح في طلبات العملاء</a>
+        <a class="btn btn-ghost" href="#clients-mgmt">فتح في طلبات العملاء</a>
       </div>
     </div>`;
   }

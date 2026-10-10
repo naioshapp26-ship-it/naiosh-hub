@@ -1,7 +1,7 @@
 /**
  * NAIOSH HUB — Central Customer Requests Inbox
  * One record shared by Customer View (e.g. حلول نايوش → طلباتي)
- * and Admin View (عملاء هوب → طلبات العملاء).
+ * and Admin View (إدارة العملاء → طلبات العملاء).
  */
 (() => {
   'use strict';
@@ -363,9 +363,9 @@
           section: item.sourceModule || 'طلبات العملاء',
           type: 'customer_request',
           typeLabel: 'طلبات العملاء',
-          link: `dashboard.html#posha-clients`,
+          link: `dashboard.html#clients-mgmt`,
           actionLabel: 'مراجعة الطلب',
-          actionLink: `dashboard.html#posha-clients`,
+          actionLink: `dashboard.html#clients-mgmt`,
           needsAction: true,
           priority: 'medium',
           requestId: item.id,
@@ -1074,7 +1074,7 @@
     const title = payload.title || 'إشعار';
     const body = payload.message || payload.body || '';
     const source = payload.source || 'طلبات العملاء';
-    const link = payload.link || 'dashboard.html#posha-clients';
+    const link = payload.link || 'dashboard.html#clients-mgmt';
     if (window.HubStore?.pushNotification) {
       return window.HubStore.pushNotification({
         title,
@@ -1399,7 +1399,7 @@
       title: 'تمت الموافقة على طلبك',
       message: `${row.title || row.id}`,
       source: row.sourceModule || 'طلبات العملاء',
-      link: row.sourceUrl || 'dashboard.html#posha-clients',
+      link: row.sourceUrl || 'dashboard.html#clients-mgmt',
     });
     save();
     return row;

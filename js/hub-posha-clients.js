@@ -1,13 +1,16 @@
 /**
- * عملاء هوب — Client Operations Center (Admin UI)
+ * إدارة العملاء — Client Operations Center (Admin UI)
+ * Unified page for clients, requests, support, invoices, and activity.
  */
 (function () {
   'use strict';
 
-  /** توحيد اسم الوحدة للعرض (بيانات قديمة قد تحمل «عملاء بوشا») */
+  /** توحيد اسم الوحدة للعرض (بيانات قديمة قد تحمل «عملاء بوشا» / «عملاء هوب») */
   function displaySourceModule(v) {
     const s = String(v || '');
-    if (s === 'عملاء بوشا' || s === 'عملاء بوشا 360') return 'عملاء هوب';
+    if (s === 'عملاء بوشا' || s === 'عملاء بوشا 360' || s === 'عملاء هوب' || s === 'عملاء هوب 360') {
+      return 'إدارة العملاء';
+    }
     return s;
   }
 
@@ -261,6 +264,8 @@
       ['support', 'الدعم', 'badge-support'],
     ];
     const more = [
+      ['invoices', 'الفواتير والمعاملات'],
+      ['activity', 'سجل النشاط'],
       ['new', 'العملاء الجدد', 'badge-new'],
       ['issues', 'المشاكل والتنبيهات', 'badge-issues'],
       ['events', 'مركز الأحداث'],
@@ -2224,10 +2229,10 @@
             title,
             description: title,
             need: title,
-            sourceModule: 'عملاء هوب',
+            sourceModule: 'إدارة العملاء',
             sourcePage: 'إنشاء يدوي',
             sourceAction: 'Admin Create',
-            sourceUrl: 'dashboard.html#posha-clients',
+            sourceUrl: 'dashboard.html#clients-mgmt',
             channel,
             customer: { name, company, email, phone: '', branch: '' },
             customerName: name,
@@ -2255,10 +2260,10 @@
             title,
             description: title,
             need: title,
-            sourceModule: 'عملاء هوب',
+            sourceModule: 'إدارة العملاء',
             sourcePage: 'إنشاء يدوي',
             sourceAction: 'Admin Create',
-            sourceUrl: 'dashboard.html#posha-clients',
+            sourceUrl: 'dashboard.html#clients-mgmt',
             channel,
             customer: { name, company, email, phone: '', branch: '' },
             customerName: name,
@@ -2299,7 +2304,7 @@
     const toggle = document.getElementById('posha-more-toggle');
     if (panel) panel.hidden = true;
     if (toggle) {
-      const moreIds = ['new', 'issues', 'events', 'notifications', 'req-settings'];
+      const moreIds = ['invoices', 'activity', 'new', 'issues', 'events', 'notifications', 'req-settings'];
       toggle.classList.toggle('is-current', moreIds.includes(state.tab));
       toggle.classList.remove('is-open');
       toggle.setAttribute('aria-expanded', 'false');
@@ -2391,6 +2396,64 @@
     } else if (state.tab === 'req-settings') {
       body.innerHTML = `<section class="posha-panel">${renderReqSettings()}</section>`;
       wireRequestsUi(body);
+    } else if (state.tab === 'invoices') {
+      const rows = [];
+      (state.clients || []).forEach((c) => {
+        (c.invoices || []).forEach((inv) => {
+          rows.push({
+            ...inv,
+            clientName: c.name,
+            clientEmail: c.email,
+            clientId: c.clientId || c.naioshId,
+          });
+        });
+        (c.wallet?.ledger || []).slice(0, 5).forEach((l) => {
+          rows.push({
+            id: l.id || `${c.email}-w`,
+            number: l.ref || l.id || 'محفظة',
+            amount: l.amount,
+            status: l.type || 'ledger',
+            clientName: c.name,
+            clientEmail: c.email,
+            clientId: c.clientId || c.naioshId,
+            kind: 'wallet',
+          });
+        });
+      });
+      body.innerHTML = `<section class="posha-panel">
+        <div class="posha-panel-head"><h3>الفواتير والمعاملات</h3></div>
+        <div class="posha-clients-table-wrap"><table class="posha-clients-table" role="table">
+          <thead><tr>
+            <th>العميل</th><th>رقم / مرجع</th><th>المبلغ</th><th>الحالة / النوع</th><th>الإجراءات</th>
+          </tr></thead>
+          <tbody>${
+            rows.length
+              ? rows
+                  .slice(0, 200)
+                  .map(
+                    (r) => `<tr>
+              <td data-label="العميل"><div class="posha-stack"><strong>${esc(r.clientName || '—')}</strong><small>${esc(r.clientEmail || '')}</small></div></td>
+              <td data-label="مرجع"><code>${esc(r.number || r.id || '—')}</code></td>
+              <td data-label="المبلغ">${num(r.amount)}</td>
+              <td data-label="الحالة">${esc(r.status || '—')}</td>
+              <td data-label="إجراءات">${
+                r.clientEmail
+                  ? `<button type="button" class="btn btn-ghost btn-sm" data-open-posha="${esc(r.clientEmail)}" data-ctab-pref="invoices">ملف العميل</button>`
+                  : '—'
+              }</td>
+            </tr>`
+                  )
+                  .join('')
+              : '<tr><td colspan="5" class="posha-muted">لا فواتير أو معاملات مسجّلة حالياً.</td></tr>'
+          }</tbody>
+        </table></div>
+      </section>`;
+    } else if (state.tab === 'activity') {
+      const acts = (state.events || []).slice(0, 120);
+      body.innerHTML = `<section class="posha-panel">
+        <div class="posha-panel-head"><h3>سجل النشاط</h3></div>
+        <ul class="feed posha-activity">${acts.map(evHtml).join('') || '<li class="posha-muted">لا نشاط مسجّل.</li>'}</ul>
+      </section>`;
     } else if (state.tab === 'issues') {
       const sev = (x) => String(x || '').toUpperCase();
       const groups = [
@@ -2688,7 +2751,7 @@
       bell.className = 'btn btn-ghost btn-sm';
       bell.innerHTML = `<i class="fas fa-bell"></i> هوب <span class="posha-badge" id="posha-top-badge" hidden>0</span>`;
       bell.onclick = () => {
-        location.hash = 'posha-clients';
+        location.hash = 'clients-mgmt';
         state.tab = 'notifications';
         if (window.HubPoshaClients?.mount) {
           /* dashboard will remount on hash */

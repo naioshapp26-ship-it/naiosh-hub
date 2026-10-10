@@ -170,7 +170,7 @@
   }
 
   function renderClients(list) {
-    return '<section class="pos-card"><h3>عملاء هوب</h3>' +
+    return '<section class="pos-card"><h3>إدارة العملاء</h3>' +
       '<div class="pos-table-wrap"><table class="pos-table"><thead><tr>' +
       '<th>العميل</th><th>الحالة</th><th>Lifecycle</th><th>Health</th><th>تهيئة</th><th>أنظمة</th><th>طلبات</th><th>شكاوى</th><th></th>' +
       '</tr></thead><tbody>' +
@@ -186,7 +186,7 @@
           '<td>' + esc(c.openComplaints || 0) + '</td>' +
           '<td class="pos-actions">' +
             (c.status === 'pending' ? '<button type="button" class="pos-btn primary" data-approve="' + esc(c.email) + '">اعتماد</button>' : '') +
-            '<a class="pos-btn" href="dashboard.html#posha-clients" target="_blank">360</a>' +
+            '<a class="pos-btn" href="dashboard.html#clients-mgmt" target="_blank">360</a>' +
           '</td></tr>';
       }).join('') +
       '</tbody></table></div></section>';
@@ -210,7 +210,7 @@
           '<div class="pos-actions">' +
           '<button type="button" class="pos-btn primary" data-assign="' + esc(i.id) + '">تعيين لي</button>' +
           '<button type="button" class="pos-btn" data-inbox-resolve="' + esc(i.id) + '">حل</button>' +
-          (i.clientEmail ? '<a class="pos-btn" href="dashboard.html#posha-clients" target="_blank">العميل</a>' : '') +
+          (i.clientEmail ? '<a class="pos-btn" href="dashboard.html#clients-mgmt" target="_blank">العميل</a>' : '') +
           (i.related_entity_type === 'request' ? '<button type="button" class="pos-btn" data-nav-jump="requests">الطلب</button>' : '') +
           (i.related_entity_type === 'complaint' ? '<button type="button" class="pos-btn" data-nav-jump="complaints">الشكوى</button>' : '') +
           '</div></div></div>';

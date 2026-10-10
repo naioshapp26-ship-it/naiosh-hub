@@ -1002,8 +1002,19 @@
     return false;
   };
 
-  /* ───────── Posha clients (wrap existing ops center) ───────── */
+  /* ───────── Unified clients admin (formerly عملاء هوب + إدارة العملاء) ───────── */
   const psUi = { tab: 'ops', helpOpen: false, openInnerTab: '' };
+
+  const renderCreateModal = () => {
+    if (!clUi.modal) return '';
+    const K = Kit();
+    return K.renderModal('cl', {
+      title: clUi.editId ? 'تعديل عميل' : 'إضافة عميل جديد',
+      bodyHtml: clientForm(clUi.modal.data || {}),
+      footerHtml: `<button type="button" class="btn btn-ghost" data-action="cl-modal-close" ${clUi.saving ? 'disabled' : ''}>إلغاء</button>
+        <button type="button" class="btn btn-primary" data-action="cl-save" ${clUi.saving ? 'disabled' : ''}>${clUi.saving ? 'جاري الحفظ…' : 'إنشاء / حفظ'}</button>`,
+    });
+  };
 
   const renderPoshaNeeds = (needs) => {
     const esc = Kit().esc;
@@ -1043,14 +1054,21 @@
     </section>`;
   };
 
-  const renderPosha = () => {
+  const renderPosha = (ctx = {}) => {
     const K = Kit();
     const esc = K.esc;
+    const { user } = ctx;
+    if (!clUi.permissionsLoaded) {
+      ensurePermissions(user).then(() => {
+        syncClientsFromApi().finally(() => window.hubRerender?.());
+      });
+    }
+    const allowCreate = canCreateClient(user);
     const meta = store().get()?.poshaClientsWs || { auditLog: [], settings: {} };
     const clients = store().clientsBag?.()?.clients || [];
-    const poshaish = clients.filter((c) => (c.systems || []).some((s) => String(s.code || '').toUpperCase() === 'POSHA') || c.source === 'POSHA');
-    const activeN = poshaish.filter((c) => c.status === 'active').length;
-    const inactiveN = poshaish.filter((c) => c.status !== 'active').length;
+    const allClients = clients.length ? clients : window.HubPoshaClients?.state?.clients || [];
+    const activeN = allClients.filter((c) => c.status === 'active').length;
+    const inactiveN = allClients.filter((c) => c.status && c.status !== 'active').length;
     const reqK = window.HubCustomerRequests?.kpis?.() || { neu: 0, open: 0, pendingReview: 0, needsAction: 0 };
     const pendingReqs = reqK.needsAction || reqK.pendingReview || reqK.neu || 0;
     const live = window.HubPoshaClients?.state || {};
@@ -1058,12 +1076,14 @@
     const openTickets = summary.openTickets || (live.tickets || []).length || 0;
     const openIssues = summary.openIssues || (live.issues || []).length || 0;
     const paymentIssues = summary.paymentIssues || 0;
+    const totalClients = summary.totalClients ?? allClients.length;
 
     const needs = [
-      ...poshaish
-        .filter((c) => c.status !== 'active')
+      ...allClients
+        .filter((c) => c.status === 'pending' || c.status === 'suspended')
+        .slice(0, 5)
         .map((c) => ({
-          text: `عميل هوب يحتاج متابعة: ${c.name}`,
+          text: `عميل يحتاج متابعة: ${c.name}`,
           kind: 'عميل',
           client: c.name,
           priority: 'عالية',
@@ -1085,7 +1105,7 @@
     ];
     if (!window.HubPoshaClients) {
       needs.push({
-        text: 'وحدة عملاء هوب غير محمّلة',
+        text: 'وحدة إدارة العملاء غير محمّلة',
         kind: 'نظام',
         client: '—',
         priority: 'حرج',
@@ -1095,27 +1115,31 @@
     }
 
     const kpisRow1 = [
-      { label: 'إجمالي العملاء', value: poshaish.length || summary.totalClients || 0, inner: 'clients' },
-      { label: 'العملاء النشطون', value: activeN || summary.activeClients || 0, inner: 'clients' },
+      { label: 'إجمالي العملاء', value: totalClients, inner: 'clients' },
+      { label: 'العملاء النشطون', value: summary.activeClients ?? activeN, inner: 'clients' },
       { label: 'العملاء غير النشطين', value: inactiveN, inner: 'clients' },
       { label: 'طلبات جديدة', value: reqK.neu || 0, inner: 'orders' },
     ];
     const kpisRow2 = [
       { label: 'يحتاج إلى إجراء', value: needs.length, inner: 'orders' },
       { label: 'تذاكر مفتوحة', value: openTickets, inner: 'support' },
-      { label: 'فواتير تحتاج مراجعة', value: paymentIssues, inner: 'overview' },
+      { label: 'فواتير تحتاج مراجعة', value: paymentIssues, inner: 'invoices' },
       { label: 'مشاكل تحتاج تدخل', value: openIssues, inner: 'issues' },
     ];
 
+    const createBtn = allowCreate
+      ? `<button type="button" class="btn btn-primary btn-sm" data-action="cl-create"><i class="fas fa-plus"></i> إضافة عميل</button>`
+      : `<button type="button" class="btn btn-ghost btn-sm" disabled title="ليست لديك صلاحية إنشاء عميل">إضافة عميل</button>`;
+
     let body = '';
     if (psUi.tab === 'ops') {
-      body = `<div id="posha-mount" class="posha-ws-mount"></div>`;
+      body = `<div id="clients-mgmt-mount" class="posha-ws-mount hub-clients-unified-mount" data-clients-unified="1"></div>`;
     } else if (psUi.tab === 'audit') {
-      body = `<section class="posha-ws-section"><div class="posha-ws-section-head"><h3>سجل العمليات</h3></div>${K.renderAuditTable(meta.auditLog || [])}</section>`;
+      body = `<section class="posha-ws-section"><div class="posha-ws-section-head"><h3>سجل النشاط</h3></div>${K.renderAuditTable(meta.auditLog || [])}</section>`;
     } else {
       body = `<section class="posha-ws-section">
         <div class="posha-ws-section-head"><h3>الإعدادات</h3></div>
-        <p>مركز عمليات عملاء هوب يعمل داخل المنصة. سجّل أي تدخل يدوي في سجل العمليات عند الحاجة.</p>
+        <p>مركز إدارة العملاء الموحّد يعمل داخل المنصة. سجّل أي تدخل يدوي في سجل العمليات عند الحاجة.</p>
         <div class="posha-ws-actions">
           <button type="button" class="btn btn-primary" data-action="ps-audit-note">تسجيل مراجعة يدوية</button>
           <button type="button" class="btn btn-ghost" data-action="ps-open-inner" data-inner="req-settings" data-tab="ops">إعدادات الطلبات</button>
@@ -1123,17 +1147,18 @@
       </section>`;
     }
 
-    return `<div class="hub-ops-ws hub-posha-ws hub-posha-ws--v2">
+    return `<div class="hub-ops-ws hub-posha-ws hub-posha-ws--v2 hub-clients-ws--unified">
       <header class="posha-ws-header">
         <div class="posha-ws-header-text">
-          <p class="posha-ws-kicker"><i class="fas fa-building-user"></i> NAIOSH HUB</p>
-          <h1 class="posha-ws-title">عملاء هوب</h1>
-          <p class="posha-ws-sub">إدارة العملاء والطلبات والدعم والتنبيهات من مكان واحد</p>
+          <p class="posha-ws-kicker"><i class="fas fa-user-tie"></i> NAIOSH HUB</p>
+          <h1 class="posha-ws-title">إدارة العملاء</h1>
+          <p class="posha-ws-sub">العملاء · الطلبات · الدعم · الفواتير · التنبيهات من مكان واحد</p>
         </div>
         <div class="posha-ws-header-actions">
+          ${createBtn}
           <button type="button" class="btn btn-primary btn-sm" data-action="ps-refresh"><i class="fas fa-rotate"></i> تحديث</button>
           <button type="button" class="btn btn-ghost btn-sm" data-action="ps-tab" data-tab="settings"><i class="fas fa-gear"></i> الإعدادات</button>
-          <button type="button" class="btn btn-ghost btn-sm" data-action="ps-tab" data-tab="audit"><i class="fas fa-clock-rotate-left"></i> سجل العمليات</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="ps-tab" data-tab="audit"><i class="fas fa-clock-rotate-left"></i> سجل النشاط</button>
           <button type="button" class="btn btn-ghost btn-sm" data-action="ps-help-open" title="دليل"><i class="fas fa-circle-question"></i></button>
         </div>
       </header>
@@ -1157,10 +1182,10 @@
       ${psUi.tab === 'ops' ? renderPoshaNeeds(needs) : ''}
       ${body}
       ${K.renderHelp('ps', {
-        title: 'دليل عملاء هوب',
+        title: 'دليل إدارة العملاء',
         dismissed: !!meta.settings?.helpDismissed,
         open: psUi.helpOpen,
-        bodyHtml: `<p>استخدم التبويبات للتنقل بين العملاء والطلبات والدعم. «يحتاج إلى إجراء» يجمع ما يستحق تدخلك أولاً.</p>`,
+        bodyHtml: `<p>صفحة موحّدة للعملاء والطلبات والدعم والفواتير. «يحتاج إلى إجراء» يجمع ما يستحق تدخلك أولاً. إنشاء عميل يتطلب صلاحية clients.create.</p>`,
       })}
     </div>`;
   };
@@ -1200,9 +1225,9 @@
     if (action === 'ps-audit-note') {
       store().pushDomainAudit?.(meta(), {
         action: 'manual_review',
-        detail: 'مراجعة يدوية لمركز عملاء هوب',
+        detail: 'مراجعة يدوية لمركز إدارة العملاء',
         by: K.actorName(user),
-        source: 'POSHA Ops',
+        source: 'Clients Mgmt',
       });
       store().save?.();
       toast?.('سُجّلت المراجعة');
@@ -1222,7 +1247,13 @@
     return false;
   };
 
-  window.HubClientsWS = { render: renderClients, handle: handleClients, handleChange: handleClientsChange, ui: clUi };
+  window.HubClientsWS = {
+    render: renderClients,
+    renderModal: renderCreateModal,
+    handle: handleClients,
+    handleChange: handleClientsChange,
+    ui: clUi,
+  };
   window.HubNotificationsWS = {
     render: renderNotifications,
     handle: handleNotifications,
