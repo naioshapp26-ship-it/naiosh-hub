@@ -2,7 +2,6 @@
   const NAV = [
     { key: 'overview', icon: 'fa-satellite-dish', label: 'مركز التحكم' },
     { key: 'operating', icon: 'fa-gears', label: 'آلية تشغيل نايوش هوب | نايوش هوب 360' },
-    { key: 'posha-clients', icon: 'fa-building-user', label: 'عملاء هوب' },
     { key: 'site-settings', icon: 'fa-gear', label: 'إعدادات الموقع' },
     { key: 'clients-mgmt', icon: 'fa-user-tie', label: 'إدارة العملاء' },
     { key: 'roles-permissions', icon: 'fa-shield-halved', label: 'إدارة فريق العمل والصلاحيات' },
@@ -46,9 +45,10 @@
     measurement: ['القياس الموحّد', 'درجات · مؤشرات بصيغة · إعادة حساب موثّقة'],
     reports: ['مركز التقارير', 'توليد · عرض · تصدير JSON · جدول · تدقيق'],
     integration: ['بوابات التكامل', 'موصلات · مزامنة · بوابة واجهات · فحص · تدقيق'],
-    'posha-clients': ['عملاء هوب', 'إدارة العملاء والطلبات والدعم والتنبيهات من مكان واحد'],
+    // Legacy alias kept for old links/notifications → normalized to clients-mgmt
+    'posha-clients': ['إدارة العملاء', 'العملاء · الطلبات · الدعم · الفواتير · التنبيهات من مكان واحد'],
     'site-settings': ['إعدادات الموقع', 'إدارة إعدادات المنصة والمتاجر والطلبات والدفع والإعلانات والتكاملات والأمان من مكان واحد'],
-    'clients-mgmt': ['إدارة العملاء', 'العملاء 360 · إدارة كاملة · مصدر · ملاحظات داخلية · تدقيق'],
+    'clients-mgmt': ['إدارة العملاء', 'العملاء · الطلبات · الدعم · الفواتير · التنبيهات من مكان واحد'],
     'roles-permissions': ['إدارة فريق العمل والصلاحيات', 'عيّن المسؤولين عن إدارة نايوش هوب وأنظمتها، وحدد لكل شخص مكان عمله ودوره والصلاحيات المسموح بها.'],
     'staff-admins': ['إدارة الإداريين', 'إدارة من لديهم صلاحيات تشغيلية · نايوش وجهات خارجية · صلاحيات حقيقية · تدقيق'],
     'my-account': ['حسابي', 'بيانات حسابي · الأمان وكلمة المرور'],
@@ -119,11 +119,25 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const root = $('#panel-root');
   const toastEl = $('#toast');
+  const normalizePanelKey = (key) => {
+    // Merge legacy «عملاء هوب» (#posha-clients) into unified «إدارة العملاء»
+    if (key === 'posha-clients') return 'clients-mgmt';
+    return key;
+  };
   let current = (() => {
     const raw = (location.hash || '').replace(/^#/, '') || 'overview';
-    return raw.split('?')[0].split('&')[0] || 'overview';
+    const key = raw.split('?')[0].split('&')[0] || 'overview';
+    return normalizePanelKey(key);
   })();
   if (!TITLES[current]) current = 'overview';
+  // Rewrite bookmark/notification hashes so the URL matches the single page
+  if ((location.hash || '').replace(/^#/, '').split('?')[0] === 'posha-clients') {
+    try {
+      history.replaceState(null, '', '#clients-mgmt');
+    } catch (_) {
+      location.hash = 'clients-mgmt';
+    }
+  }
   let reportTab = 'daily';
   let govTab = 'policies';
 
@@ -368,7 +382,6 @@
 
   // —— Nav
   const STAFF_ONLY_NAV = new Set([
-    'posha-clients',
     'site-settings',
     'clients-mgmt',
     'roles-permissions',
@@ -439,6 +452,7 @@
   };
 
   const activate = (key) => {
+    key = normalizePanelKey(key);
     // الاستوديوهات تُفتح صفحات كاملة — لا تُعرض داخل لوحة التحكم
     if (key === 'ads-studio' || key === 'events-studio') {
       try {
@@ -1434,6 +1448,14 @@
   };
 
   const renderClientsMgmt = () => {
+    // Unified admin page: full ops center (formerly عملاء هوب) + create-client modal
+    const ops = window.HubPoshaWS?.render
+      ? HubPoshaWS.render({ user, toast, esc, bar, badgeStatus, fmtTime })
+      : '';
+    const modal = window.HubClientsWS?.renderModal
+      ? HubClientsWS.renderModal({ user, toast, esc, bar, badgeStatus, fmtTime })
+      : '';
+    if (ops || modal) return `${ops}${modal || ''}`;
     if (window.HubClientsWS?.render) {
       return HubClientsWS.render({ user, toast, esc, bar, badgeStatus, fmtTime });
     }
@@ -1469,7 +1491,8 @@
   const renderers = {
     overview: renderOverview,
     operating: renderOperating,
-    'posha-clients': () => (window.HubPoshaWS?.render ? HubPoshaWS.render({ user, toast, esc, bar, badgeStatus, fmtTime }) : '<div class="empty">تعذر تحميل عملاء هوب</div>'),
+    // Legacy hash kept for bookmarks; normalizePanelKey maps it to clients-mgmt
+    'posha-clients': renderClientsMgmt,
     'site-settings': () => (window.HubSiteSettingsUI?.render ? HubSiteSettingsUI.render() : '<div class="empty">تعذر تحميل إعدادات الموقع</div>'),
     'clients-mgmt': renderClientsMgmt,
     notifications: renderNotifications,
@@ -1622,13 +1645,14 @@
   const render = () => {
     root.innerHTML = `<section class="panel active">${renderers[current]()}</section>`;
     window.HubI18n?.applyDisplayLayer?.(root);
-    if (current === 'posha-clients' && window.HubPoshaClients?.mount) {
-      const mount = document.getElementById('posha-mount');
-      if (mount) window.HubPoshaClients.mount(mount, { initialTab: 'overview', mode: 'ops' });
-    }
     if (current === 'clients-mgmt' && window.HubPoshaClients?.mount) {
-      const mount = document.getElementById('clients-mgmt-mount');
-      if (mount) window.HubPoshaClients.mount(mount, { initialTab: 'clients', mode: 'crm' });
+      const mount =
+        document.getElementById('clients-mgmt-mount') || document.getElementById('posha-mount');
+      if (mount) {
+        const inner = window.HubPoshaWS?.ui?.openInnerTab || 'overview';
+        if (window.HubPoshaWS?.ui) window.HubPoshaWS.ui.openInnerTab = '';
+        window.HubPoshaClients.mount(mount, { initialTab: inner, mode: 'ops' });
+      }
     }
     if (current === 'site-settings' && window.HubSiteSettingsUI?.mount) {
       const mount = document.getElementById('site-settings-mount');
@@ -2387,7 +2411,7 @@
 
   const panelFromHash = () => {
     const raw = (window.location.hash || '#overview').replace(/^#/, '');
-    const key = raw.split('?')[0].split('&')[0] || 'overview';
+    const key = normalizePanelKey(raw.split('?')[0].split('&')[0] || 'overview');
     return TITLES[key] ? key : 'overview';
   };
 
@@ -2413,6 +2437,15 @@
   bootDashboard();
 
   window.addEventListener('hashchange', () => {
+    const rawKey = (window.location.hash || '').replace(/^#/, '').split('?')[0].split('&')[0];
+    // Always rewrite legacy hash even when already on the unified panel
+    if (rawKey === 'posha-clients') {
+      try {
+        history.replaceState(null, '', '#clients-mgmt');
+      } catch (_) {
+        location.hash = 'clients-mgmt';
+      }
+    }
     const next = panelFromHash();
     if (next !== current) activate(next);
   });

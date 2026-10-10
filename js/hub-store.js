@@ -2827,7 +2827,7 @@ const HubStore = (() => {
             'مخاطر على بيانات العملاء إذا استمر التكامل بدون فلترة.',
           ],
           recommendation: 'تعليق المزامنة مؤقتًا وفتح تحقيق أمني.',
-          sourceModules: ['التكامل', 'أمن المعلومات', 'عملاء هوب'],
+          sourceModules: ['التكامل', 'أمن المعلومات', 'إدارة العملاء'],
           dataUsed: 'آخر 7 أيام',
           model: 'Anomaly Detector v1',
           evidence: [
@@ -3075,7 +3075,7 @@ const HubStore = (() => {
           { id: uid('src'), name: 'Measurement', module: 'القياس', type: 'Internal Module', status: 'Connected', lastSync: stamp, records: 96, owner: 'Analytics' },
           { id: uid('src'), name: 'Security', module: 'أمن المعلومات', type: 'Internal Module', status: 'Connected', lastSync: stamp, records: 54, owner: 'SecOps' },
           { id: uid('src'), name: 'External ERP', module: 'ERP', type: 'API', status: 'Connected', lastSync: stamp, records: 2200, owner: 'Integration' },
-          { id: uid('src'), name: 'POSHA Feed', module: 'عملاء هوب', type: 'API', status: 'Degraded', lastSync: stamp, records: 880, owner: 'POSHA' },
+          { id: uid('src'), name: 'POSHA Feed', module: 'إدارة العملاء', type: 'API', status: 'Degraded', lastSync: stamp, records: 880, owner: 'POSHA' },
         ];
       }
 

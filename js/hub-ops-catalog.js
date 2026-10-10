@@ -145,7 +145,7 @@
       { code: 'ADS', name: 'استوديو الإعلانات', shortName: 'ADS', description: 'إدارة الإعلانات والحملات الإعلانية.', icon: 'fa-rectangle-ad', type: 'system', status: 'active', sortOrder: 140, classification: 'independent' },
       { code: 'STORE', name: 'متجر المبيعات', shortName: 'STORE', description: 'متجر المبيعات | نايوش هوب 360 — المنتجات والباقات.', icon: 'fa-store', type: 'system', status: 'active', sortOrder: 150, classification: 'independent' },
       { code: 'CONTENT', name: 'المحتوى والمدونة', shortName: 'CONTENT', description: 'المقالات والمدونة والمحتوى المنشور.', icon: 'fa-newspaper', type: 'system', status: 'active', sortOrder: 160, classification: 'independent' },
-      { code: 'POSHA', name: 'عملاء هوب / بوشا', shortName: 'POSHA', description: 'عمليات العملاء والطلبات والدعم.', icon: 'fa-building-user', type: 'system', status: 'active', sortOrder: 25, classification: 'independent' },
+      { code: 'POSHA', name: 'إدارة العملاء', shortName: 'CRM', description: 'عمليات العملاء والطلبات والدعم.', icon: 'fa-user-tie', type: 'system', status: 'active', sortOrder: 25, classification: 'independent' },
     ].map((s) => ({ ...s, id: s.code || s.id, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', isUmbrella: !!s.isUmbrella, classification: s.classification || (s.parentCode ? 'sub' : s.isUmbrella ? 'umbrella' : 'independent'), parentCode: s.parentCode || null }));
 
   const SEED_MODULES = [

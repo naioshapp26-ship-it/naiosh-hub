@@ -546,7 +546,7 @@
     }
     if (id === 'orders') {
       return (
-        `<div class="ss-card"><h2>إعدادات الطلبات</h2><p class="ss-lead">ترتبط مباشرة بـ عملاء هوب ← طلبات العملاء.</p></div>` +
+        `<div class="ss-card"><h2>إعدادات الطلبات</h2><p class="ss-lead">ترتبط مباشرة بـ إدارة العملاء ← طلبات العملاء.</p></div>` +
         sectionFormHtml('orders', [
           { key: 'requestIdFormat', label: 'صيغة رقم الطلب', desc: 'مثال YYYY-#####' },
           { key: 'requireAdminApproval', label: 'يتطلب موافقة الإدارة', type: 'toggle' },
