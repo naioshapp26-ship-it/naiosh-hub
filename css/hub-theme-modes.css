@@ -68,12 +68,16 @@ body.dark-mode {
   --homepage-paragraph-color: var(--theme-text-muted);
   --homepage-link-color: #d0d4de;
 
-  /* Dashboard tokens */
+  /* Dashboard tokens — keep --black/--white as absolute contrast anchors.
+     Remapping them to theme text/surface breaks fills (tab.active, btn-dark)
+     and any hardcoded #fff surfaces that inherit body text color. */
   --gray: var(--theme-bg-muted);
-  --black: var(--theme-text);
-  --white: var(--theme-surface);
+  --black: #0a0a0a;
+  --white: #ffffff;
   --muted: var(--theme-text-muted);
   --border: var(--theme-border);
+  --ws-line: var(--theme-border);
+  --ws-muted: var(--theme-text-muted);
 
   /* Client portal tokens */
   --cp-bg: var(--theme-bg-muted);
@@ -847,7 +851,7 @@ body.dark-mode .hero-sidebar-item[aria-expanded='true'] {
   color: #ffffff !important;
 }
 
-/* —— Tabs —— */
+/* —— Tabs (public + dashboard hub-ws / .tab pills) —— */
 html[data-theme='dark'] :is(.products-tabs, .incubators-tabs, .posha-mainnav) button,
 body.dark-mode :is(.products-tabs, .incubators-tabs, .posha-mainnav) button {
   background: #1c1e26 !important;
@@ -860,6 +864,116 @@ body.dark-mode :is(.products-tabs, .incubators-tabs, .posha-mainnav) button:is(.
   background: #e50914 !important;
   color: #ffffff !important;
   border-color: transparent !important;
+}
+
+/* Dashboard workspace tab bar: never white pills + light text */
+html[data-theme='dark'] :is(.tabs, .hub-ws-tabs, .hub-ops-ws .hub-ws-tabs, .hub-ci-ws .hub-ws-tabs),
+body.dark-mode :is(.tabs, .hub-ws-tabs, .hub-ops-ws .hub-ws-tabs, .hub-ci-ws .hub-ws-tabs) {
+  background: #15161c !important;
+  border-color: #2e3140 !important;
+}
+
+html[data-theme='dark'] :is(.tab, .hub-ws-tab, button.tab, button.hub-ws-tab),
+body.dark-mode :is(.tab, .hub-ws-tab, button.tab, button.hub-ws-tab) {
+  background: #22242e !important;
+  border-color: #3a3f4d !important;
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] :is(.tab, .hub-ws-tab, button.tab, button.hub-ws-tab) :is(i, svg, span),
+body.dark-mode :is(.tab, .hub-ws-tab, button.tab, button.hub-ws-tab) :is(i, svg, span) {
+  color: inherit !important;
+}
+
+html[data-theme='dark'] :is(.tab, .hub-ws-tab, button.tab, button.hub-ws-tab):is(:hover, :focus-visible),
+body.dark-mode :is(.tab, .hub-ws-tab, button.tab, button.hub-ws-tab):is(:hover, :focus-visible) {
+  background: #2a2d38 !important;
+  color: #ffffff !important;
+  border-color: rgba(215, 0, 0, 0.45) !important;
+}
+
+html[data-theme='dark'] :is(.tab.active, .hub-ws-tab.active, .tab.is-active, .hub-ws-tab.is-active, button.tab.active, button.hub-ws-tab.active),
+body.dark-mode :is(.tab.active, .hub-ws-tab.active, .tab.is-active, .hub-ws-tab.is-active, button.tab.active, button.hub-ws-tab.active) {
+  background: #0a0a0a !important;
+  border-color: #222 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] :is(.tab, .hub-ws-tab)[disabled],
+html[data-theme='dark'] :is(.tab, .hub-ws-tab).is-disabled,
+body.dark-mode :is(.tab, .hub-ws-tab)[disabled],
+body.dark-mode :is(.tab, .hub-ws-tab).is-disabled {
+  background: #2a2d36 !important;
+  color: #9ca3af !important;
+  border-color: #3a3f4d !important;
+  opacity: 0.7;
+}
+
+/* Dashboard «يتطلب إجراء» / needs cards — dark surface + light text */
+html[data-theme='dark'] :is(
+  .hub-ws-needs,
+  .hub-ops-ws .hub-ws-needs,
+  .hub-ws-needs.is-alert,
+  .hub-ws-needs.is-clear,
+  .needs-list,
+  .hub-ws-help
+),
+body.dark-mode :is(
+  .hub-ws-needs,
+  .hub-ops-ws .hub-ws-needs,
+  .hub-ws-needs.is-alert,
+  .hub-ws-needs.is-clear,
+  .needs-list,
+  .hub-ws-help
+) {
+  background: #1a1b22 !important;
+  border-color: #2e3140 !important;
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] :is(.hub-ws-needs-list li, .needs-list li, .ov-need, .feed li),
+body.dark-mode :is(.hub-ws-needs-list li, .needs-list li, .ov-need, .feed li) {
+  background: #22242e !important;
+  border-color: #3a3f4d !important;
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] :is(.hub-ws-needs-list li, .needs-list li, .ov-need, .feed li) > :is(div, span, strong, b, p),
+html[data-theme='dark'] :is(.hub-ws-needs-list li, .needs-list li, .ov-need, .feed li) > div :is(strong, b, span, p),
+body.dark-mode :is(.hub-ws-needs-list li, .needs-list li, .ov-need, .feed li) > :is(div, span, strong, b, p),
+body.dark-mode :is(.hub-ws-needs-list li, .needs-list li, .ov-need, .feed li) > div :is(strong, b, span, p) {
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] :is(.hub-ws-needs-list small, .needs-list small, .feed li small, .hub-ws-needs .muted),
+body.dark-mode :is(.hub-ws-needs-list small, .needs-list small, .feed li small, .hub-ws-needs .muted) {
+  color: #b4b9c6 !important;
+}
+
+/* Action buttons inside needs rows keep intentional fills; ghost/outline stay readable */
+html[data-theme='dark'] :is(.hub-ws-needs-list, .needs-list) :is(button.btn-ghost, a.btn-ghost, .btn-outline, button.btn-outline),
+body.dark-mode :is(.hub-ws-needs-list, .needs-list) :is(button.btn-ghost, a.btn-ghost, .btn-outline, button.btn-outline) {
+  background: #0a0a0a !important;
+  color: #ffffff !important;
+  border-color: #222 !important;
+}
+
+/* KPI cards — primary + secondary labels readable on dark surface */
+html[data-theme='dark'] :is(.kpi, .hub-ws-kpi, .stat-card, .posha-ws-kpi),
+body.dark-mode :is(.kpi, .hub-ws-kpi, .stat-card, .posha-ws-kpi) {
+  background: #1a1b22 !important;
+  border-color: #2e3140 !important;
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] :is(.kpi, .hub-ws-kpi, .stat-card) :is(strong, b),
+body.dark-mode :is(.kpi, .hub-ws-kpi, .stat-card) :is(strong, b) {
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] :is(.kpi, .hub-ws-kpi, .stat-card) :is(span, small, .muted, label),
+body.dark-mode :is(.kpi, .hub-ws-kpi, .stat-card) :is(span, small, .muted, label) {
+  color: #c5cad6 !important;
 }
 
 /* —— Inputs on dark —— */
