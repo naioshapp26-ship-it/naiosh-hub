@@ -11,23 +11,52 @@ function sslFor(url) {
   return { rejectUnauthorized: false };
 }
 
-async function withClient(fn) {
+let pool = null;
+let poolUrl = '';
+
+function getPool() {
   const databaseUrl = getDatabaseUrl();
   if (!databaseUrl) {
     const err = new Error('DATABASE_URL غير موجودة');
     err.code = 'NO_DATABASE_URL';
     throw err;
   }
-  const { Client } = require('pg');
-  const client = new Client({
+  if (pool && poolUrl === databaseUrl) return pool;
+  if (pool) {
+    pool.end().catch(() => {});
+    pool = null;
+  }
+  const { Pool } = require('pg');
+  const max = Math.max(4, Number(process.env.HUB_PG_POOL_MAX || 20));
+  pool = new Pool({
     connectionString: databaseUrl,
     ssl: sslFor(databaseUrl),
+    max,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 15_000,
   });
-  await client.connect();
+  pool.on('error', (err) => {
+    console.warn('[db] pool error:', err.message);
+  });
+  poolUrl = databaseUrl;
+  return pool;
+}
+
+async function withClient(fn) {
+  const p = getPool();
+  const client = await p.connect();
   try {
     return await fn(client);
   } finally {
-    await client.end().catch(() => {});
+    client.release();
+  }
+}
+
+async function closePool() {
+  if (pool) {
+    await pool.end().catch(() => {});
+    pool = null;
+    poolUrl = '';
   }
 }
 
@@ -99,4 +128,6 @@ module.exports = {
   migrate,
   listTables,
   withClient,
+  getPool,
+  closePool,
 };

@@ -25,9 +25,19 @@ CREATE TABLE IF NOT EXISTS hub_users (
   role TEXT NOT NULL DEFAULT 'user',
   platform TEXT NOT NULL DEFAULT 'naiosh-hub-360',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  customer_id TEXT,
+  customer_uid TEXT,
+  status TEXT DEFAULT 'active',
+  password_epoch INT DEFAULT 0,
+  governorate TEXT,
+  city TEXT,
+  address TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS hub_users_role_email_idx ON hub_users (role, email);
+CREATE INDEX IF NOT EXISTS hub_users_customer_id_idx ON hub_users (customer_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS hub_users_username_uidx
   ON hub_users (username)

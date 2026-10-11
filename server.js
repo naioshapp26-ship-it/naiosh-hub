@@ -1876,34 +1876,41 @@ const server = http.createServer(async (req, res) => {
     readBody(req)
       .then(async (body) => {
         const result = await customerAuth.register(body || {});
+        // Auth-scale harness may set HUB_AUTH_LIGHT_SIDE_EFFECTS=1 to isolate password
+        // durability / hub_users throughput from portal JSON write amplification.
+        const lightSideEffects = String(process.env.HUB_AUTH_LIGHT_SIDE_EFFECTS || '') === '1';
         if (result.ok && result.user?.email) {
-          try {
-            const store = hubClientPortal.readStore();
-            const portalClient = hubClientPortal.ensureClient(
-              store,
-              result.user.email,
-              result.user.name || result.user.fullName
-            );
-            if (result.user.phone) portalClient.phone = result.user.phone;
-            portalClient.status = portalClient.status === 'pending' ? 'active' : portalClient.status;
-            portalClient.lastLoginAt = portalClient.lastLoginAt || new Date().toISOString();
-            hubPoshaOps.emitEvent(store, {
-              type: 'CLIENT_REGISTERED',
-              clientEmail: result.user.email,
-              actorId: result.user.email,
-              actorRole: 'client',
-              title: 'عميل جديد قام بالتسجيل',
-              message: `${result.user.name || result.user.fullName || result.user.email} انضم إلى نايوش هوب`,
-              metadata: {},
-            });
-            hubClientPortal.writeStore(store);
-          } catch {
-            /* ignore */
+          if (!lightSideEffects) {
+            try {
+              const store = hubClientPortal.readStore();
+              const portalClient = hubClientPortal.ensureClient(
+                store,
+                result.user.email,
+                result.user.name || result.user.fullName
+              );
+              if (result.user.phone) portalClient.phone = result.user.phone;
+              portalClient.status = portalClient.status === 'pending' ? 'active' : portalClient.status;
+              portalClient.lastLoginAt = portalClient.lastLoginAt || new Date().toISOString();
+              hubPoshaOps.emitEvent(store, {
+                type: 'CLIENT_REGISTERED',
+                clientEmail: result.user.email,
+                actorId: result.user.email,
+                actorRole: 'client',
+                title: 'عميل جديد قام بالتسجيل',
+                message: `${result.user.name || result.user.fullName || result.user.email} انضم إلى نايوش هوب`,
+                metadata: {},
+              });
+              hubClientPortal.writeStore(store);
+            } catch {
+              /* ignore */
+            }
           }
           let profileSummary = null;
           try {
             const hubProfile360 = require('./lib/hub-profile-360');
-            hubProfile360.onAccountTouch(result.user.email, result.user.name || result.user.fullName);
+            if (!lightSideEffects) {
+              hubProfile360.onAccountTouch(result.user.email, result.user.name || result.user.fullName);
+            }
             const raw = hubProfile360.getProfileRaw?.(result.user.email);
             if (raw) {
               profileSummary = {
@@ -2037,7 +2044,8 @@ const server = http.createServer(async (req, res) => {
         });
         if (!result.ok) loginRate.fail(req, email);
         else loginRate.success(req, email);
-        if (result.ok && result.user?.email) {
+        const lightSideEffects = String(process.env.HUB_AUTH_LIGHT_SIDE_EFFECTS || '') === '1';
+        if (result.ok && result.user?.email && !lightSideEffects) {
           try {
             hubClientPortal.touchLogin(result.user.email, result.user.name || result.user.fullName);
           } catch {
@@ -2234,9 +2242,14 @@ async function boot() {
   }
 
   try {
+    await customerAuth.ensureCustomerSchema?.();
     const custHyd = await customerAuth.hydrateFromDb();
-    const custCount = Array.isArray(custHyd?.accounts) ? custHyd.accounts.length : 0;
-    console.log(`Customer accounts hydrated from durable store (${custCount})`);
+    const dbCount =
+      typeof customerAuth.dbCountCustomers === 'function' ? await customerAuth.dbCountCustomers() : 0;
+    const memCount = Array.isArray(custHyd?.accounts) ? custHyd.accounts.length : 0;
+    console.log(
+      `Customer accounts durable=hub_users dbCount=${dbCount} memCache=${memCount} dbEnabled=${!!customerAuth.dbEnabled?.()}`
+    );
   } catch (error) {
     console.error('Customer accounts hydrate skipped:', error.message);
   }
