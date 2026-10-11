@@ -46,14 +46,39 @@
     return j;
   }
 
-  function toast(msg) {
+  function toast(msg, kind) {
     var el = document.getElementById('p360-toast');
-    if (!el) return;
-    el.textContent = msg;
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'p360-toast';
+      el.className = 'p360-toast';
+      el.setAttribute('role', 'status');
+      document.body.appendChild(el);
+    }
+    el.textContent = msg || '';
+    el.classList.remove('is-error', 'is-ok', 'show');
+    if (kind === 'error') el.classList.add('is-error');
+    if (kind === 'ok') el.classList.add('is-ok');
     el.classList.add('show');
+    // Also surface in client portal toast when embedded
+    try {
+      if (window.HubClientPortal?.toast) window.HubClientPortal.toast(msg);
+      else {
+        var cp = document.getElementById('cp-toast');
+        if (cp) {
+          cp.textContent = msg || '';
+          cp.classList.add('show');
+          setTimeout(function () {
+            cp.classList.remove('show');
+          }, 2600);
+        }
+      }
+    } catch (e) {
+      /* ignore */
+    }
     setTimeout(function () {
       el.classList.remove('show');
-    }, 2600);
+    }, 2800);
   }
 
   function esc(s) {
@@ -110,12 +135,29 @@
     return '<div class="p360-empty" style="border-style:solid">' + esc(String(v)) + '</div>';
   }
 
+  function avatarSrc(header) {
+    var url = header.avatarUrl || '';
+    if (!url) return '';
+    // Cache-bust when server did not already add ?v=
+    if (url.indexOf('?') === -1 && header.avatarUpdatedAt) {
+      return url + '?v=' + encodeURIComponent(String(header.avatarUpdatedAt));
+    }
+    return url;
+  }
+
   function avatarHtml(header) {
-    if (header.avatarUrl) {
-      return '<div class="p360-avatar"><img src="' + esc(header.avatarUrl) + '" alt="" /></div>';
+    var src = avatarSrc(header);
+    if (src) {
+      return (
+        '<div class="p360-avatar" data-has-photo="1">' +
+        '<img src="' +
+        esc(src) +
+        '" alt="الصورة الشخصية" loading="eager" decoding="async" />' +
+        '</div>'
+      );
     }
     var initial = (header.fullName || header.email || '؟').trim().charAt(0);
-    return '<div class="p360-avatar" aria-hidden="true">' + esc(initial) + '</div>';
+    return '<div class="p360-avatar" aria-hidden="true" data-has-photo="0">' + esc(initial) + '</div>';
   }
 
   function kpisFor(persona, sections) {
@@ -248,9 +290,10 @@
       '<div class="p360-avatar-wrap">' +
       avatarHtml(header) +
       (header.canEdit
-        ? '<button type="button" class="p360-avatar-edit" id="p360-avatar-btn" title="تغيير الصورة"><i class="fas fa-camera"></i></button>'
+        ? '<button type="button" class="p360-avatar-edit" id="p360-avatar-btn" title="تغيير الصورة الشخصية" aria-label="تغيير الصورة الشخصية"><i class="fas fa-camera"></i></button>'
         : '') +
-      '<input type="file" id="p360-avatar-file" accept="image/*" hidden />' +
+      '<input type="file" id="p360-avatar-file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" hidden data-hub-skip-limit />' +
+      '<div class="p360-avatar-status" id="p360-avatar-status" hidden></div>' +
       '</div>' +
       '<div class="p360-identity">' +
       '<p class="p360-eyebrow">ملفي الشخصي 360</p>' +
@@ -492,35 +535,123 @@
       if (!window.HubUploadLimits || !window.HubUploadLimits.uploadFile) {
         throw new Error('نظام الرفع غير متاح');
       }
-      return window.HubUploadLimits.uploadFile(file, { token: token() });
+      return window.HubUploadLimits.uploadFile(file, {
+        token: token(),
+        headers: authHeaders(),
+      });
+    }
+
+    function setAvatarStatus(text, kind) {
+      var st = root.querySelector('#p360-avatar-status');
+      if (!st) return;
+      if (!text) {
+        st.hidden = true;
+        st.textContent = '';
+        st.className = 'p360-avatar-status';
+        return;
+      }
+      st.hidden = false;
+      st.textContent = text;
+      st.className = 'p360-avatar-status' + (kind ? ' is-' + kind : '');
+    }
+
+    function previewAvatarLocal(file) {
+      var wrap = root.querySelector('.p360-avatar');
+      if (!wrap || !file) return null;
+      var url = URL.createObjectURL(file);
+      wrap.setAttribute('data-has-photo', '1');
+      wrap.innerHTML = '<img src="' + url + '" alt="معاينة الصورة" />';
+      return url;
+    }
+
+    async function uploadAvatarDurable(file, onProgress) {
+      var allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+      var type = String(file.type || '').toLowerCase();
+      var name = String(file.name || '').toLowerCase();
+      var okExt = /\.(jpe?g|png|webp)$/i.test(name);
+      if (type && allowed.indexOf(type) === -1 && !okExt) {
+        throw new Error('يُسمح فقط بصور JPG أو PNG أو WEBP');
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('حجم الصورة أكبر من 5 ميجابايت — صغّرها ثم أعد المحاولة');
+      }
+      var endpoint = opts.adminEmail
+        ? '/api/hub/profiles/by-email/' + encodeURIComponent(opts.adminEmail) + '/avatar'
+        : '/api/hub/profiles/me/avatar';
+      return await new Promise(function (resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', endpoint);
+        xhr.responseType = 'json';
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name || 'avatar.jpg'));
+        xhr.setRequestHeader('X-File-Type', file.type || 'application/octet-stream');
+        var h = authHeaders();
+        Object.keys(h).forEach(function (k) {
+          if (h[k] != null && h[k] !== '') xhr.setRequestHeader(k, String(h[k]));
+        });
+        xhr.upload.onprogress = function (ev) {
+          if (!onProgress || !ev.lengthComputable) return;
+          onProgress(Math.round((ev.loaded / ev.total) * 100));
+        };
+        xhr.onload = function () {
+          var data = xhr.response && typeof xhr.response === 'object' ? xhr.response : null;
+          if (xhr.status >= 200 && xhr.status < 300 && data && data.ok && (data.avatarUrl || data.url)) {
+            resolve(data);
+            return;
+          }
+          reject(new Error((data && data.error) || 'فشل رفع الصورة الشخصية'));
+        };
+        xhr.onerror = function () {
+          reject(new Error('تعذر الاتصال بخادم رفع الصور'));
+        };
+        xhr.send(file);
+      });
     }
 
     var avBtn = root.querySelector('#p360-avatar-btn');
     var avFile = root.querySelector('#p360-avatar-file');
     if (avBtn && avFile) {
       avBtn.addEventListener('click', function () {
+        avFile.value = '';
         avFile.click();
       });
       avFile.addEventListener('change', async function () {
         var file = avFile.files && avFile.files[0];
         if (!file) return;
+        var previewUrl = null;
         try {
-          var up = await uploadFile(file);
-          var url = up.url || up.path || up.publicUrl;
-          if (!url) throw new Error('لم يُرجع مسار الصورة');
+          previewUrl = previewAvatarLocal(file);
+          setAvatarStatus('جاري رفع الصورة… 0%', 'progress');
+          avBtn.disabled = true;
+          var up = await uploadAvatarDurable(file, function (pct) {
+            setAvatarStatus('جاري رفع الصورة… ' + pct + '%', 'progress');
+          });
+          var url = up.avatarUrl || up.url;
+          if (!url) throw new Error('لم يُرجع الخادم رابط الصورة');
+          setAvatarStatus('تم حفظ الصورة بنجاح', 'ok');
+          toast('تم حفظ الصورة الشخصية بنجاح', 'ok');
           if (opts.adminEmail) {
-            await api('/api/hub/profiles/by-email/' + encodeURIComponent(opts.adminEmail), {
-              method: 'PATCH',
-              body: { avatarUrl: url },
-            });
             renderPage(root, await api('/api/hub/profiles/by-email/' + encodeURIComponent(opts.adminEmail)), opts);
           } else {
-            await api('/api/hub/profiles/me', { method: 'PATCH', body: { avatarUrl: url } });
             renderPage(root, await api('/api/hub/profiles/me'), opts);
           }
-          toast('تم تحديث الصورة');
+          try {
+            window.dispatchEvent(new CustomEvent('hub-profile-avatar-updated', { detail: { avatarUrl: url } }));
+          } catch (e2) {
+            /* ignore */
+          }
         } catch (e) {
-          toast(e.message || 'فشل رفع الصورة');
+          setAvatarStatus(e.message || 'فشل رفع الصورة', 'error');
+          toast(e.message || 'فشل رفع الصورة', 'error');
+        } finally {
+          avBtn.disabled = false;
+          if (previewUrl) {
+            try {
+              URL.revokeObjectURL(previewUrl);
+            } catch (e3) {
+              /* ignore */
+            }
+          }
         }
       });
     }

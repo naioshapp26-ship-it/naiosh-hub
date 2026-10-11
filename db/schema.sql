@@ -469,6 +469,17 @@ CREATE TABLE IF NOT EXISTS hub_profile_audit (
 );
 CREATE INDEX IF NOT EXISTS idx_hub_profile_audit_email ON hub_profile_audit(email);
 
+-- Durable avatar blobs (survive ephemeral container disk / redeploys)
+CREATE TABLE IF NOT EXISTS hub_profile_avatars (
+  email TEXT PRIMARY KEY,
+  account_no TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  bytes BYTEA NOT NULL,
+  size_bytes INTEGER NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_hub_profile_avatars_account_no ON hub_profile_avatars(account_no);
+
 -- Idempotent column upgrades for store marketplace linking
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS brand TEXT;
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS item_kind TEXT DEFAULT 'منتج';

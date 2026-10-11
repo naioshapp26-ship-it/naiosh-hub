@@ -431,6 +431,20 @@
     });
   }
 
+  function setChipAvatar(url, name) {
+    var av = $('cp-user-avatar');
+    if (!av) return;
+    if (url) {
+      state.avatarUrl = url;
+      av.innerHTML = '<img src="' + esc(url) + '" alt="" />';
+      av.classList.add('has-photo');
+      return;
+    }
+    var initial = String(name || '؟').trim().charAt(0) || '؟';
+    av.textContent = initial;
+    av.classList.remove('has-photo');
+  }
+
   function updateChrome() {
     var page = state.page;
     var title = TITLES[page] || TITLES.home;
@@ -443,6 +457,7 @@
     var user = getUser() || {};
     if ($('cp-user-name')) $('cp-user-name').textContent = welcome.name || user.name || 'عميل';
     if ($('cp-user-id')) $('cp-user-id').textContent = welcome.clientId || user.email || '';
+    setChipAvatar(welcome.avatarUrl || state.avatarUrl || '', welcome.name || user.name || 'عميل');
     var unread = (state.home && state.home.summary && state.home.summary.unreadNotifications) || 0;
     var badge = $('cp-badge');
     if (badge) {
@@ -1246,6 +1261,18 @@
     }
   }
 
+  function refreshAvatarFromProfile() {
+    api('/api/hub/profiles/me')
+      .then(function (d) {
+        var url = (d.header && d.header.avatarUrl) || '';
+        if (!url) return;
+        state.avatarUrl = url;
+        if (state.home && state.home.welcome) state.home.welcome.avatarUrl = url;
+        updateChrome();
+      })
+      .catch(function () {});
+  }
+
   function boot() {
     if (!ensureClient()) return;
     try {
@@ -1267,7 +1294,18 @@
       document.body.classList.remove('cp-nav-open');
     });
     window.addEventListener('hashchange', render);
+    window.addEventListener('hub-profile-avatar-updated', function (ev) {
+      var url = ev && ev.detail && ev.detail.avatarUrl;
+      if (url) {
+        state.avatarUrl = url;
+        if (state.home && state.home.welcome) state.home.welcome.avatarUrl = url;
+        updateChrome();
+      } else {
+        refreshAvatarFromProfile();
+      }
+    });
     render();
+    refreshAvatarFromProfile();
     setInterval(function () {
       api('/api/client/notifications').then(function (d) {
         var unread = d.unread || (d.notifications || []).filter(function (n) { return !n.read; }).length;
