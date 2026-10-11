@@ -1909,16 +1909,8 @@ const server = http.createServer(async (req, res) => {
               metadata: {},
             });
             hubClientPortal.writeStore(store);
-            const portalFlush = await hubClientPortal.flushDurable();
-            if (getDatabaseUrl() && portalFlush && portalFlush.ok === false) {
-              sendJson(res, 503, {
-                success: false,
-                ok: false,
-                error: 'تعذر حفظ بيانات مركز العميل في قاعدة البيانات. حاول مرة أخرى.',
-              });
-              return;
-            }
-            // Normalized per-customer rows (fail-closed when DATABASE_URL set)
+            // Normalized per-customer rows are the fail-closed durable path.
+            // hub_meta blob flush is async mirror only (avoids rewriting the whole portal blob on every register).
             try {
               const rel = require('./lib/hub-customer-relational');
               if (rel.dbEnabled()) {
@@ -1938,6 +1930,17 @@ const server = http.createServer(async (req, res) => {
                   });
                   return;
                 }
+                hubClientPortal.flushDurable().catch(() => {});
+              } else {
+                const portalFlush = await hubClientPortal.flushDurable();
+                if (portalFlush && portalFlush.ok === false) {
+                  sendJson(res, 503, {
+                    success: false,
+                    ok: false,
+                    error: 'تعذر حفظ بيانات مركز العميل في قاعدة البيانات. حاول مرة أخرى.',
+                  });
+                  return;
+                }
               }
             } catch (err) {
               sendJson(res, 503, {
@@ -1952,14 +1955,32 @@ const server = http.createServer(async (req, res) => {
           const hubProfile360 = require('./lib/hub-profile-360');
           if (!lightSideEffects) {
             hubProfile360.onAccountTouch(result.user.email, result.user.name || result.user.fullName);
-            const profFlush = await hubProfile360.flushDurable();
-            if (getDatabaseUrl() && profFlush && profFlush.ok === false) {
-              sendJson(res, 503, {
-                success: false,
-                ok: false,
-                error: 'تعذر حفظ الملف الشخصي 360 في قاعدة البيانات. حاول مرة أخرى.',
-              });
-              return;
+            try {
+              const rel = require('./lib/hub-customer-relational');
+              if (rel.dbEnabled()) {
+                // Profile row already provisioned above; blob mirror async
+                hubProfile360.flushDurable().catch(() => {});
+              } else {
+                const profFlush = await hubProfile360.flushDurable();
+                if (profFlush && profFlush.ok === false) {
+                  sendJson(res, 503, {
+                    success: false,
+                    ok: false,
+                    error: 'تعذر حفظ الملف الشخصي 360 في قاعدة البيانات. حاول مرة أخرى.',
+                  });
+                  return;
+                }
+              }
+            } catch {
+              const profFlush = await hubProfile360.flushDurable();
+              if (getDatabaseUrl() && profFlush && profFlush.ok === false) {
+                sendJson(res, 503, {
+                  success: false,
+                  ok: false,
+                  error: 'تعذر حفظ الملف الشخصي 360 في قاعدة البيانات. حاول مرة أخرى.',
+                });
+                return;
+              }
             }
           }
           const raw = hubProfile360.getProfileRaw?.(result.user.email);
