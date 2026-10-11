@@ -162,10 +162,13 @@ async function main() {
   const customers = [];
   let createOk = 0;
   for (let i = 0; i < N; i++) {
-    const id = `full_${Date.now().toString(36)}_${i}_${crypto.randomBytes(2).toString('hex')}`;
+    const id = `full_${Date.now().toString(36)}_${i}_${crypto.randomBytes(3).toString('hex')}`;
     const password = `Full${1000 + (i % 8000)}!${id.slice(-4)}`;
     const email = `${id}@full-data.naiosh.local`;
-    const phone = `054${String(10000000 + ((i * 17) % 89999999)).padStart(8, '0')}`;
+    // 10-digit local mobile; include run salt so re-runs never collide with prior seeds
+    const phone = `05${String((Date.now() % 100000000) + i * 97 + (crypto.randomBytes(2).readUInt16BE(0) % 50))
+      .padStart(8, '0')
+      .slice(-8)}`;
     const reg = await req(port, 'POST', '/api/auth/register', {
       fullName: `عميل بيانات ${i}`,
       email,
