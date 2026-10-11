@@ -6,6 +6,8 @@ const path = require('path');
 const puppeteer = require('puppeteer-core');
 
 const BASE = (process.env.HUB_E2E_BASE || 'http://127.0.0.1:8080').replace(/\/$/, '');
+const SA = process.env.HUB_SUPER_ADMIN_EMAIL || 'naioshhub@example.com';
+const SA_PASS = process.env.HUB_E2E_SA_PASSWORD || process.env.HUB_SUPER_ADMIN_INITIAL_PASSWORD || '';
 const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const ART = '/opt/cursor/artifacts';
 const rows = [];
@@ -13,6 +15,26 @@ const mark = (c, p, e) => {
   rows.push({ check: c, result: p ? 'PASS' : 'FAIL', evidence: String(e || '').slice(0, 400) });
   console.log(`${p ? 'PASS' : 'FAIL'} | ${c} | ${e}`);
 };
+
+async function login(page, email, pass) {
+  await page.goto(`${BASE}/login.html`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForSelector('#email, input[type="email"]', { timeout: 15000 });
+  await page.evaluate(
+    (e, p) => {
+      const em = document.querySelector('#email, input[type="email"]');
+      const pw = document.querySelector('#password, input[type="password"]');
+      if (em) em.value = e;
+      if (pw) pw.value = p;
+    },
+    email,
+    pass
+  );
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => null),
+    page.click('button[type="submit"], #loginBtn, .btn-primary'),
+  ]);
+  await new Promise((r) => setTimeout(r, 800));
+}
 
 function contrastHelpers() {
   return {
@@ -120,12 +142,26 @@ async function main() {
     }
 
     // Dashboard — tabs + needs + KPIs (the reported white-on-white failure)
-    await page.goto(`${BASE}/dashboard.html`, { waitUntil: 'networkidle2', timeout: 90000 });
+    if (!SA_PASS) {
+      mark('لوحة التحكم: تسجيل دخول القائد', false, 'missing HUB_SUPER_ADMIN_INITIAL_PASSWORD');
+    } else {
+      await login(page, SA, SA_PASS);
+    }
+    await page.goto(`${BASE}/dashboard.html#overview`, { waitUntil: 'networkidle2', timeout: 90000 });
+    await page.waitForFunction(() => document.querySelector('.hub-theme-toggle, .topbar, .kpi'), {
+      timeout: 25000,
+    }).catch(() => null);
     await page.evaluate(() => {
       localStorage.setItem('hubTheme', 'dark');
       window.HubTheme?.set?.('dark');
     });
-    await new Promise((r) => setTimeout(r, 1200));
+    await new Promise((r) => setTimeout(r, 1500));
+    // Ensure overview workspace is mounted
+    await page.evaluate(() => {
+      const ov = document.querySelector('[data-nav="overview"], a[href="#overview"], [data-panel="overview"]');
+      ov?.click?.();
+    });
+    await new Promise((r) => setTimeout(r, 800));
 
     const dashProbe = await page.evaluate(() => {
       function lum([r, g, b]) {
