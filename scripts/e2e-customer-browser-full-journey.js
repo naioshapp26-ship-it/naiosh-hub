@@ -312,12 +312,12 @@ async function main() {
     const reqCreate = await api('/api/client/requests', {
       method: 'POST',
       token,
-      body: { title: 'طلب رحلة متصفح', description: 'اختبار استمرارية', type: 'service', category: 'general' },
+      body: { subject: 'طلب رحلة متصفح', message: 'اختبار استمرارية', type: 'service', category: 'general' },
     });
     const ticket = await api('/api/client/tickets', {
       method: 'POST',
       token,
-      body: { subject: 'تذكرة رحلة متصفح', body: 'نص التذكرة', category: 'support' },
+      body: { subject: 'تذكرة رحلة متصفح', message: 'نص التذكرة', category: 'support' },
     });
     mark(
       'create_request_and_ticket',
