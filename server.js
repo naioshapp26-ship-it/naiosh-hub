@@ -328,7 +328,7 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
-  if (pathname.startsWith('/api/hub/profiles')) {
+  if (pathname.startsWith('/api/hub/profiles') || pathname.startsWith('/api/hub/avatars')) {
     const hubProfile360 = require('./lib/hub-profile-360');
     const handled = await hubProfile360.handleApi(req, res, pathname, {
       sendJson,
@@ -2136,7 +2136,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (pathname.startsWith(`${hubUploads.PUBLIC_PREFIX}/`) && req.method === 'GET') {
+  if (pathname.startsWith(`${hubUploads.PUBLIC_PREFIX}/`) && (req.method === 'GET' || req.method === 'HEAD')) {
     const id = path.basename(pathname);
     const filePath = hubUploads.resolveUploadPath(id);
     if (!filePath) {
@@ -2154,16 +2154,18 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       const ext = path.extname(filePath).toLowerCase();
-      streamFile(
-        filePath,
-        res,
-        {
-          'Content-Type': hubUploads.mimeForExt(ext) || MIME[ext] || 'application/octet-stream',
-          'Cache-Control': 'public, max-age=86400',
-          'Content-Length': String(stat.size),
-        },
-        false
-      );
+      const headers = {
+        'Content-Type': hubUploads.mimeForExt(ext) || MIME[ext] || 'application/octet-stream',
+        'Cache-Control': 'public, max-age=86400',
+        'Content-Length': String(stat.size),
+        'X-Content-Type-Options': 'nosniff',
+      };
+      if (req.method === 'HEAD') {
+        res.writeHead(200, headers);
+        res.end();
+        return;
+      }
+      streamFile(filePath, res, headers, false);
     });
     return;
   }

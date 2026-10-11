@@ -85,9 +85,43 @@ body.cp-body {
   background: var(--cp-red); color: #fff; font-size: 11px; font-weight: 800;
   display: inline-grid; place-items: center; padding: 0 4px;
 }
-.cp-userchip { text-align: left; }
+.cp-userchip {
+  text-align: left;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(280px, 52vw);
+}
+.cp-userchip-text { min-width: 0; }
 .cp-userchip strong { display: block; font-size: 13px; }
 .cp-userchip span { color: var(--cp-muted); font-size: 11px; font-weight: 700; }
+.cp-userchip small {
+  display: block;
+  font-weight: 800;
+  color: var(--cp-red, #d70000);
+  margin-top: 2px;
+  font-size: 11px;
+}
+.cp-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--cp-surface-2, #f3f4f6);
+  color: var(--cp-red, #d70000);
+  display: inline-grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 16px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 2px solid rgba(215, 0, 0, 0.25);
+}
+.cp-user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
 .cp-root { display: grid; gap: 14px; }
 .cp-welcome {

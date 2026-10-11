@@ -435,11 +435,51 @@ body.dark-mode .p360-persona-chip.is-active {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
-  z-index: 50;
+  z-index: 1200;
+  max-width: min(360px, calc(100vw - 32px));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .p360-toast.show {
   opacity: 1;
+}
+
+.p360-toast.is-error {
+  background: #7f1d1d;
+}
+
+.p360-toast.is-ok {
+  background: #14532d;
+}
+
+.p360-avatar-status {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--p360-muted);
+  max-width: 160px;
+  line-height: 1.4;
+}
+
+.p360-avatar-status.is-progress {
+  color: var(--p360-red);
+}
+
+.p360-avatar-status.is-ok {
+  color: #15803d;
+}
+
+.p360-avatar-status.is-error {
+  color: #b91c1c;
+}
+
+.p360-avatar-edit:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.p360-avatar img {
+  background: var(--p360-surface-2);
 }
 
 .p360-restricted {
