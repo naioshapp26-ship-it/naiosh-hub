@@ -176,17 +176,20 @@ async function main() {
         (t, u) => {
           localStorage.setItem('hubAuthToken', t);
           localStorage.setItem('hubUser', JSON.stringify(u));
-          localStorage.setItem('hubTheme', 'dark');
         },
         reg.j.token,
         { ...(reg.j.user || {}), role: 'customer', email: custEmail }
       );
     }
     await cust.goto(`${BASE}/client.html`, { waitUntil: 'networkidle2', timeout: 60000 });
-    await new Promise((r) => setTimeout(r, 1000));
-    const cst = await themeState(cust);
+    await cust.waitForFunction(() => window.HubTheme || document.querySelector('.hub-theme-toggle'), { timeout: 15000 }).catch(() => null);
+    await new Promise((r) => setTimeout(r, 600));
+    let cst = await themeState(cust);
     mark('مركز العميل: زر التبديل', cst.hasBtn, JSON.stringify({ ...cst, reg: reg.status }));
-    mark('مركز العميل: الوضع الليلي', cst.dataTheme === 'dark' || cst.bodyDark, JSON.stringify(cst));
+    await cust.evaluate(() => window.HubTheme?.set?.('dark'));
+    await new Promise((r) => setTimeout(r, 400));
+    cst = await themeState(cust);
+    mark('مركز العميل: الوضع الليلي', cst.dataTheme === 'dark' && cst.bodyDark, JSON.stringify(cst));
     await cust.screenshot({ path: path.join(ART, 'theme_client_dark.png'), fullPage: false });
     await ctx.close().catch(() => null);
 
