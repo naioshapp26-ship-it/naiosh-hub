@@ -176,10 +176,19 @@ async function main() {
       pass,
       custToken
     );
+    await json('/api/hub/profiles/me/persona', {
+      method: 'POST',
+      token: custToken,
+      body: { type: 'client', activate: true },
+    });
     await page.goto(BASE + '/profile-360.html', { waitUntil: 'networkidle2', timeout: 60000 });
     await new Promise((r) => setTimeout(r, 1000));
-    await page.evaluate(() => window.HubTheme?.set?.('light'));
-    await new Promise((r) => setTimeout(r, 400));
+    await page.evaluate(() => {
+      window.HubTheme?.set?.('light');
+      const btn = [...document.querySelectorAll('[data-persona]')].find((b) => b.dataset.persona === 'client');
+      btn?.click();
+    });
+    await new Promise((r) => setTimeout(r, 700));
     await page.screenshot({ path: path.join(ART, 'profile360_client_desktop_light.png'), fullPage: true });
     await page.evaluate(() => window.HubTheme?.set?.('dark'));
     await new Promise((r) => setTimeout(r, 400));
@@ -195,9 +204,17 @@ async function main() {
       await page.screenshot({ path: path.join(ART, `profile360_${persona}_desktop.png`), fullPage: true });
     }
 
+    // ensure client persona active for mobile client shots
+    await json('/api/hub/profiles/me/persona', {
+      method: 'POST',
+      token: custToken,
+      body: { type: 'client', activate: true },
+    });
+
     // mobile light + dark for client
     const mob = await browser.newPage();
     await mob.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+    await mob.goto(BASE + '/login.html', { waitUntil: 'domcontentloaded' });
     await mob.evaluate(
       (t, e) => {
         localStorage.setItem('hubAuthToken', t);
@@ -209,6 +226,12 @@ async function main() {
     );
     await mob.goto(BASE + '/profile-360.html', { waitUntil: 'networkidle2', timeout: 60000 });
     await new Promise((r) => setTimeout(r, 800));
+    await mob.evaluate(() => {
+      window.HubTheme?.set?.('light');
+      const btn = [...document.querySelectorAll('[data-persona]')].find((b) => b.dataset.persona === 'client');
+      btn?.click();
+    });
+    await new Promise((r) => setTimeout(r, 700));
     await mob.screenshot({ path: path.join(ART, 'profile360_client_mobile_light.png'), fullPage: true });
     await mob.evaluate(() => {
       localStorage.setItem('hubTheme', 'dark');
@@ -226,15 +249,72 @@ async function main() {
     await mob.close();
 
     if (staffOk) {
-      const sa = await json('/api/auth/login', { method: 'POST', body: { email: SA, password: SA_PASS } });
-      await page.evaluate((t, e) => {
+      // Cookie-backed login — dashboard.html is gated by hub_session HttpOnly cookie
+      const saRes = await fetch(BASE + '/api/auth/login', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: SA, password: SA_PASS }),
+      });
+      const saBody = await saRes.json().catch(() => ({}));
+      const saToken = saBody.token;
+      const setCookie = saRes.headers.getSetCookie?.() || [];
+      const cookieHeader = setCookie.join(',') || saRes.headers.get('set-cookie') || '';
+      const cookieMatch = cookieHeader.match(/hub_session=([^;]+)/);
+      const hubCookie = cookieMatch ? cookieMatch[1] : saToken;
+      mark('جلسة كوكي للإدارة', !!saToken && !!hubCookie, cookieMatch ? 'hub_session from Set-Cookie' : 'fallback token');
+
+      const empPage = await browser.newPage();
+      await empPage.setViewport({ width: 1440, height: 900 });
+      const u = new URL(BASE);
+      await empPage.setCookie({
+        name: 'hub_session',
+        value: hubCookie,
+        domain: u.hostname,
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      });
+      await empPage.goto(BASE + '/login.html', { waitUntil: 'domcontentloaded' });
+      await empPage.evaluate((t, user) => {
         localStorage.setItem('hubAuthToken', t);
-        localStorage.setItem('hubUser', JSON.stringify({ email: e, role: 'supreme_leader', name: 'القائد الأعلى' }));
-      }, sa.j.token, SA);
-      await page.goto(BASE + '/dashboard.html#profiles-360', { waitUntil: 'domcontentloaded', timeout: 120000 });
-      await page.waitForSelector('#profiles-360-mount, .sidebar', { timeout: 60000 }).catch(() => null);
+        localStorage.setItem('hubUser', JSON.stringify(user));
+        localStorage.setItem('hubTheme', 'light');
+      }, saToken, saBody.user || { email: SA, role: 'supreme_leader', name: 'القائد الأعلى' });
+
+      await empPage.goto(BASE + '/profile-360.html', { waitUntil: 'networkidle2', timeout: 60000 });
+      await new Promise((r) => setTimeout(r, 1000));
+      await empPage.evaluate(() => {
+        const btn = [...document.querySelectorAll('[data-persona]')].find((b) => b.dataset.persona === 'employee');
+        btn?.click();
+      });
+      await new Promise((r) => setTimeout(r, 900));
+      await empPage.screenshot({ path: path.join(ART, 'profile360_employee_desktop.png'), fullPage: true });
+      await empPage.evaluate(() => window.HubTheme?.set?.('dark'));
+      await new Promise((r) => setTimeout(r, 400));
+      await empPage.screenshot({ path: path.join(ART, 'profile360_employee_desktop_dark.png'), fullPage: true });
+
+      await empPage.goto(BASE + '/dashboard.html#profiles-360', { waitUntil: 'domcontentloaded', timeout: 120000 });
+      await empPage.waitForFunction(() => /dashboard\.html/i.test(location.href), { timeout: 30000 }).catch(() => null);
+      await empPage.evaluate(() => {
+        if (location.hash !== '#profiles-360') {
+          location.hash = 'profiles-360';
+          window.dispatchEvent(new HashChangeEvent('hashchange'));
+        }
+      });
+      await empPage.waitForSelector('#profiles-360-mount', { timeout: 60000 }).catch(() => null);
+      await empPage.evaluate(() => {
+        const link = [...document.querySelectorAll('a,button,[data-section],.nav-item,.sidebar a, .sidebar-nav *')].find((el) =>
+          /الملفات الشخصية 360|profiles-360/i.test(el.textContent + (el.getAttribute('href') || '') + (el.dataset?.section || ''))
+        );
+        link?.click();
+      });
       await new Promise((r) => setTimeout(r, 2500));
-      await page.screenshot({ path: path.join(ART, 'profile360_admin_desktop.png'), fullPage: false });
+      const adminHtml = await empPage.evaluate(
+        () => document.querySelector('#profiles-360-mount')?.innerHTML?.slice(0, 240) || document.body.innerText.slice(0, 240)
+      );
+      mark('لقطة إدارة الملفات الشخصية 360', /p360|بحث|ملف|profile|إدارة/i.test(adminHtml) && !/تسجيل الدخول/i.test(adminHtml), adminHtml);
+      await empPage.screenshot({ path: path.join(ART, 'profile360_admin_desktop.png'), fullPage: false });
+      await empPage.close();
     }
   } finally {
     await browser.close().catch(() => null);
