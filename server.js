@@ -1889,6 +1889,36 @@ const server = http.createServer(async (req, res) => {
         // durability / hub_users throughput from portal JSON write amplification.
         const lightSideEffects = String(process.env.HUB_AUTH_LIGHT_SIDE_EFFECTS || '') === '1';
         if (result.ok && result.user?.email) {
+          // Always provision normalized portal/profile rows (even under light auth harness).
+          // Light mode only skips heavy portal blob events / full Profile360 side-effects.
+          try {
+            const rel = require('./lib/hub-customer-relational');
+            if (rel.dbEnabled()) {
+              const prov = await rel.provisionCustomerBundle({
+                email: result.user.email,
+                name: result.user.name || result.user.fullName,
+                phone: result.user.phone,
+                customerId: result.user.customerId || result.user.clientId,
+              });
+              if (!prov.ok && !prov.skipped) {
+                sendJson(res, 503, {
+                  success: false,
+                  ok: false,
+                  error: 'تعذر إنشاء سجل العميل المنظم في قاعدة البيانات.',
+                });
+                return;
+              }
+            }
+          } catch (err) {
+            if (getDatabaseUrl()) {
+              sendJson(res, 503, {
+                success: false,
+                ok: false,
+                error: `تعذر تهيئة بيانات العميل: ${err.message}`,
+              });
+              return;
+            }
+          }
           if (!lightSideEffects) {
             const store = hubClientPortal.readStore();
             const portalClient = hubClientPortal.ensureClient(
@@ -1909,27 +1939,10 @@ const server = http.createServer(async (req, res) => {
               metadata: {},
             });
             hubClientPortal.writeStore(store);
-            // Normalized per-customer rows are the fail-closed durable path.
-            // hub_meta blob flush is async mirror only (avoids rewriting the whole portal blob on every register).
+            // hub_meta blob flush is async mirror only when relational rows already exist.
             try {
               const rel = require('./lib/hub-customer-relational');
               if (rel.dbEnabled()) {
-                const prov = await rel.provisionCustomerBundle({
-                  email: result.user.email,
-                  name: result.user.name || result.user.fullName,
-                  phone: result.user.phone || portalClient.phone,
-                  customerId: result.user.customerId || result.user.clientId,
-                  city: portalClient.city,
-                  country: portalClient.country,
-                });
-                if (!prov.ok && !prov.skipped) {
-                  sendJson(res, 503, {
-                    success: false,
-                    ok: false,
-                    error: 'تعذر إنشاء سجل العميل المنظم في قاعدة البيانات.',
-                  });
-                  return;
-                }
                 hubClientPortal.flushDurable().catch(() => {});
               } else {
                 const portalFlush = await hubClientPortal.flushDurable();
