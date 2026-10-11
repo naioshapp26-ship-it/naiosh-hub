@@ -66,14 +66,17 @@ export const options = {
 };
 
 function uid() {
-  return `${__VU}_${__ITER}_${Date.now().toString(36)}`;
+  return `${__VU}_${__ITER}_${Date.now().toString(36)}_${Math.random().toString(16).slice(2, 10)}`;
 }
 
 export default function () {
   const id = uid();
   const email = `k6cap_${id}@scale-test.naiosh.local`;
   const password = `K6cap${__VU}${__ITER}x!`;
-  const phone = `056${String(10000000 + ((__VU * 100000 + __ITER) % 89999999)).padStart(8, '0')}`;
+  // Globally unique mobile for dense re-runs against a shared test DB
+  const phone = `05${String(
+    (__VU * 1_000_003 + __ITER * 97 + Date.now() % 1_000_000 + Math.floor(Math.random() * 1e6)) % 10_000_000_000
+  ).padStart(10, '0')}`;
 
   const reg = http.post(
     `${BASE}/api/auth/register`,
