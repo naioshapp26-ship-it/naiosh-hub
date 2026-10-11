@@ -99,8 +99,10 @@ body.dark-mode p {
   color: #cccccc;
 }
 
-body.dark-mode a {
-  color: #c8ccd6;
+/* Do NOT force a light link color globally — it breaks white/light buttons & cards.
+   Surface-specific rules (nav, cards, buttons) set readable contrast instead. */
+body.dark-mode a:not([class]) {
+  color: #d1d5db;
 }
 
 body.dark-mode label {
@@ -119,33 +121,11 @@ body.dark-mode .top-nav {
   border-bottom-color: var(--dm-border);
 }
 
-body.dark-mode .top-nav .nav-links a {
-  color: #c8ccd6;
-}
-
-body.dark-mode .top-nav .nav-links a:hover,
-body.dark-mode .top-nav .nav-links a.active {
-  color: #fff;
-}
-
 body.dark-mode .logo-text {
   color: #f0f2f7;
 }
 
-/* ── Auth buttons ──────────────────────────────── */
-body.dark-mode .auth-btn {
-  color: #c8ccd6;
-  border-color: #3a3a3a;
-}
-
-body.dark-mode .auth-btn:hover {
-  background: var(--dm-bg-card);
-  color: #fff;
-}
-
-body.dark-mode .auth-btn.primary {
-  color: #fff;
-}
+/* Auth / nav contrast handled in hub-theme-modes.css (higher specificity) */
 
 /* Toggle visuals live in hub-theme-modes.css (.hub-theme-toggle) */
 
