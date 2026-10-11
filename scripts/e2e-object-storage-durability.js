@@ -218,9 +218,21 @@ async function main() {
     );
 
     // Adapter put/get roundtrip directly
-    const ref = `test/${id}.png`;
+    // Safe upload-id shape (matches hub-uploads) + nested S3-style key both must round-trip from DB
+    const ref = `${Date.now().toString(36)}-${crypto.randomBytes(6).toString('hex')}.png`;
+    const nestedRef = `test/${id}.png`;
     const put = await obj.putObject({ storageRef: ref, buffer: png, mime: 'image/png', originalName: 'durability.png' });
-    mark('adapter_put_db', (put.dualWritten || []).includes('db') || put.backend === 'db', JSON.stringify(put).slice(0, 200));
+    const putNested = await obj.putObject({
+      storageRef: nestedRef,
+      buffer: png,
+      mime: 'image/png',
+      originalName: 'nested.png',
+    });
+    mark(
+      'adapter_put_db',
+      (put.dualWritten || []).includes('db') && (putNested.dualWritten || []).includes('db'),
+      JSON.stringify({ put, putNested }).slice(0, 240)
+    );
 
     srv.stop();
     await new Promise((r) => setTimeout(r, 1500));
@@ -228,10 +240,14 @@ async function main() {
     await waitHealth(PORT);
 
     const got = await obj.getObject(ref);
+    const gotNested = await obj.getObject(nestedRef);
     mark(
       'adapter_get_after_restart',
-      !!got?.buffer && got.buffer.equals(png),
-      JSON.stringify({ source: got?.source, len: got?.buffer?.length }).slice(0, 160)
+      !!got?.buffer && got.buffer.equals(png) && !!gotNested?.buffer && gotNested.buffer.equals(png),
+      JSON.stringify({
+        safe: { source: got?.source, len: got?.buffer?.length },
+        nested: { source: gotNested?.source, len: gotNested?.buffer?.length },
+      }).slice(0, 220)
     );
 
     const login2 = await req(PORT, 'POST', '/api/auth/login', { email, password });

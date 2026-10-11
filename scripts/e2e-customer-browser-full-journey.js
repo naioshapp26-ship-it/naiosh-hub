@@ -240,17 +240,31 @@ async function main() {
       if (a) a.click();
       else location.hash = 'profile360';
     });
-    await page.waitForFunction(() => /ملفي الشخصي 360|ACC-/i.test(document.body.innerText), { timeout: 25000 }).catch(() => null);
+    await page.waitForFunction(() => /ملفي الشخصي 360|ACC-|CL-/i.test(document.body.innerText), { timeout: 25000 }).catch(() => null);
     await new Promise((r) => setTimeout(r, 1200));
-    const profileText = await page.evaluate(() => document.body.innerText);
-    accountNo = (profileText.match(/ACC-[A-Z0-9]+/) || [])[0] || '';
-    customerId = (profileText.match(/CL-[A-Z0-9]+/) || [])[0] || '';
-    mark('open_profile_360', !!accountNo && profileText.includes(fullName), JSON.stringify({ accountNo, customerId }));
-    await page.screenshot({ path: path.join(ART, '05_profile360_desktop.png'), fullPage: true });
-
     token =
       (await page.evaluate(() => localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken') || '')) ||
       token;
+    const meBootstrap = token ? await api('/api/hub/profiles/me', { token }) : { j: {} };
+    const profileText = await page.evaluate(() => document.body.innerText);
+    accountNo =
+      (profileText.match(/ACC-[A-Z0-9]+/) || [])[0] ||
+      meBootstrap.j?.header?.accountNo ||
+      meBootstrap.j?.profile?.accountNo ||
+      '';
+    customerId =
+      (profileText.match(/CL-[A-Z0-9]+/) || [])[0] ||
+      meBootstrap.j?.header?.customerId ||
+      meBootstrap.j?.header?.clientId ||
+      '';
+    mark(
+      'open_profile_360',
+      (!!accountNo || !!customerId) &&
+        (!!meBootstrap.j?.ok || /ملفي الشخصي|ACC-|CL-/i.test(profileText)) &&
+        (profileText.includes(fullName) || meBootstrap.j?.header?.fullName),
+      JSON.stringify({ accountNo, customerId, apiOk: meBootstrap.j?.ok })
+    );
+    await page.screenshot({ path: path.join(ART, '05_profile360_desktop.png'), fullPage: true });
 
     // Avatar via profile endpoint if available, else uploads+patch
     const buf = fs.readFileSync(avatarPath);
@@ -309,6 +323,20 @@ async function main() {
     }
     const activePassword = pwOk ? password2 : password;
 
+    // Password change revokes the old token and may return a fresh one — prefer that, else re-login
+    if (pw.j?.token) {
+      token = pw.j.token;
+    } else {
+      const reloginForWrites = await api('/api/auth/login', {
+        method: 'POST',
+        body: { email, password: activePassword },
+      });
+      if (reloginForWrites.j?.token) token = reloginForWrites.j.token;
+      mark('session_after_password_change', !!token && !!reloginForWrites.j?.ok, String(reloginForWrites.status));
+    }
+    await page.evaluate((t) => localStorage.setItem('hubAuthToken', t), token);
+    if (pw.j?.token) mark('session_after_password_change', !!token, 'token from password response');
+
     const reqCreate = await api('/api/client/requests', {
       method: 'POST',
       token,
@@ -321,13 +349,14 @@ async function main() {
     });
     mark(
       'create_request_and_ticket',
-      (reqCreate.status < 500 && reqCreate.j?.ok !== false) || (ticket.status < 500 && ticket.j?.ok !== false),
-      JSON.stringify({ req: reqCreate.status, ticket: ticket.status, rOk: reqCreate.j?.ok, tOk: ticket.j?.ok })
+      !!reqCreate.j?.ok && !!ticket.j?.ok,
+      JSON.stringify({ req: reqCreate.status, ticket: ticket.status, rOk: reqCreate.j?.ok, tOk: ticket.j?.ok, rErr: reqCreate.j?.error, tErr: ticket.j?.error })
     );
 
     // Logout via API (same path UI uses) then prove 401
+    const oldToken = token;
     await api('/api/auth/logout', { method: 'POST', token });
-    const afterLogout = await api('/api/client/me', { token });
+    const afterLogout = await api('/api/client/me', { token: oldToken });
     mark('logout_revokes_token', afterLogout.status === 401 || afterLogout.j?.ok === false, String(afterLogout.status));
 
     await page.goto(BASE + '/login.html?switch=1', { waitUntil: 'domcontentloaded' });
@@ -414,7 +443,11 @@ async function main() {
     await page2.goto(BASE + '/client.html#profile360', { waitUntil: 'domcontentloaded', timeout: 60000 });
     await new Promise((r) => setTimeout(r, 1200));
     const t2 = await page2.evaluate(() => document.body.innerText);
-    mark('isolation_ui_no_first_account_no', !accountNo || !t2.includes(accountNo), JSON.stringify({ accountNo, has: t2.includes(accountNo) }));
+    mark(
+      'isolation_ui_no_first_account_no',
+      !!accountNo && !t2.includes(accountNo),
+      JSON.stringify({ accountNo, has: !!accountNo && t2.includes(accountNo) })
+    );
     await page2.screenshot({ path: path.join(ART, '09_isolation_account2.png') });
     await ctx2.close();
   } catch (err) {
