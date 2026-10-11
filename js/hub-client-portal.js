@@ -1304,6 +1304,19 @@
         refreshAvatarFromProfile();
       }
     });
+    window.addEventListener('hub-profile-updated', function (ev) {
+      var header = ev && ev.detail && ev.detail.header;
+      if (!header) {
+        refreshAvatarFromProfile();
+        return;
+      }
+      if (state.home && state.home.welcome) {
+        state.home.welcome.name = header.fullName || state.home.welcome.name;
+        if (header.avatarUrl) state.home.welcome.avatarUrl = header.avatarUrl;
+      }
+      if (header.avatarUrl) state.avatarUrl = header.avatarUrl;
+      updateChrome();
+    });
     render();
     refreshAvatarFromProfile();
     setInterval(function () {
