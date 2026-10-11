@@ -3,7 +3,7 @@
 التاريخ: 2026-10-11T21:52:11.312Z
 الأساس: http://127.0.0.1:8870
 
-PASS: 33 · FAIL: 0
+PASS: 41 · FAIL: 0 (API 33 + UI 8)
 
 ## التكاملات
 
@@ -61,3 +61,17 @@ PASS: 33 · FAIL: 0
 | reel_error_missing_source | POST /reels/process | — | reel-processor | **PASS** | ملف المصدر غير موجود على القرص — ارفع الفيديو أولاً |
 | studio_pages_load | GET html shells | — | static | **PASS** | mcs=200 ev=200 |
 | idempotent_resubmit_safe | action=submit twice | CMP-2026-000003 | marketing-campaigns.json | **PASS** | لا يمكن نقل الحالة من نشطة إلى بانتظار المراجعة |
+
+## اختبار الواجهة (متصفح)
+
+| الوظيفة | العملية | رقم السجل | مكان الحفظ | النتيجة | ملاحظة |
+|---|---|---|---|---|---|
+| marketing_studio_desktop | تحميل RTL بعرض كامل + تبويبات | — | marketing-campaigns-studio.html | **PASS** | لقطة marketing-studio-desktop.webp |
+| marketing_reels_tab | data-sec=reels + alias clipmaker | — | js/hub-marketing-campaigns.js | **PASS** | hash #section=reels · ffmpeg UI |
+| marketing_publish_tab | data-sec=publish | — | js/hub-marketing-campaigns.js | **PASS** | قنوات داخلية + تصدير يدوي |
+| events_studio_desktop | تحميل RTL بعرض كامل | — | events.html | **PASS** | لقطة events-studio-desktop.webp |
+| events_clipmaker_tab | data-sec=clipmaker | — | js/hub-events-studio.js | **PASS** | صانع المقاطع الحقيقي |
+| events_videos_tab | data-sec=videos | — | js/hub-events-studio.js | **PASS** | مكتبة الفيديو |
+| events_mobile_390 | عرض هاتف 390×844 | — | events.html | **PASS** | لقطة events-studio-mobile.webp |
+| marketing_back_public | رجوع العامة للرئيسية | — | heroBackHtml | **PASS** | ليس لوحة القائد عند دخول عام |
+

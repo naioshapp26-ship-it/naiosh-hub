@@ -124,25 +124,45 @@
     if (!res.ok) throw new Error(data.error || 'تعذر تنفيذ العملية');
     return data;
   }
-  async function uploadFile(file) {
-    var buf = await file.arrayBuffer();
-    var h = headers({
-      'X-File-Name': encodeURIComponent(file.name),
-      'X-File-Type': file.type || 'application/octet-stream',
-      'Content-Type': file.type || 'application/octet-stream',
+  function uploadFile(file, onProgress) {
+    if (window.HubUploadLimits && HubUploadLimits.uploadFile) {
+      return HubUploadLimits.uploadFile(file, { onProgress: onProgress, headers: headers() });
+    }
+    return new Promise(function (resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/hub/uploads');
+      var h = headers({
+        'X-File-Name': encodeURIComponent(file.name),
+        'X-File-Type': file.type || 'application/octet-stream',
+        'Content-Type': file.type || 'application/octet-stream',
+      });
+      Object.keys(h).forEach(function (k) { xhr.setRequestHeader(k, h[k]); });
+      xhr.upload.onprogress = function (ev) {
+        if (ev.lengthComputable && typeof onProgress === 'function') {
+          onProgress(Math.round((ev.loaded / ev.total) * 100));
+        }
+      };
+      xhr.onload = function () {
+        var data = {};
+        try { data = JSON.parse(xhr.responseText || '{}'); } catch (_) {}
+        if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+        else reject(new Error(data.error || 'فشل رفع الملف'));
+      };
+      xhr.onerror = function () { reject(new Error('انقطع الاتصال أثناء الرفع — أعد المحاولة')); };
+      xhr.send(file);
     });
-    var res = await fetch('/api/hub/uploads', { method: 'POST', headers: h, body: buf });
-    var data = {};
-    try { data = await res.json(); } catch (_) {}
-    if (!res.ok) throw new Error(data.error || 'فشل رفع الملف');
-    return data;
   }
 
+  function normalizeSection(sec) {
+    var s = String(sec || '').trim();
+    if (s === 'clipmaker') return 'reels'; // alias shared with Events Studio wording
+    return s || 'dashboard';
+  }
   function setSection(sec) {
-    state.section = sec;
-    state.wizardOpen = sec === 'create';
-    if (sec !== 'detail') state.campaign = null;
-    location.hash = 'section=' + sec;
+    state.section = normalizeSection(sec);
+    state.wizardOpen = state.section === 'create';
+    if (state.section !== 'detail') state.campaign = null;
+    location.hash = 'section=' + state.section;
     render();
   }
 
@@ -198,14 +218,54 @@
     return '<span class="mcs-badge ' + cls + '">' + esc(label || status) + '</span>';
   }
 
+  var HUB_HOME_URL = 'https://www.naioshai.com/';
+  function isStaffRole() {
+    var role = String((window.HubAuth && HubAuth.getUser && HubAuth.getUser() && HubAuth.getUser().role) || '').toLowerCase();
+    return role === 'supreme_leader' || role === 'super_admin' || role === 'admin' || role === 'ops_admin' || role === 'marketing';
+  }
+  function resolveStudioEntry() {
+    try {
+      var ref = document.referrer || '';
+      if (ref) {
+        var u = new URL(ref, location.href);
+        if (u.origin === location.origin && /\/dashboard\.html$/i.test(u.pathname)) {
+          sessionStorage.setItem('hubStudioEntry', 'admin');
+          return 'admin';
+        }
+        if (u.origin === location.origin || /naioshai\.com$/i.test(u.hostname)) {
+          sessionStorage.setItem('hubStudioEntry', 'public');
+        }
+      }
+      if (sessionStorage.getItem('hubStudioEntry') === 'admin') return 'admin';
+      return 'public';
+    } catch (_) {
+      return 'public';
+    }
+  }
+  function adminReturnHref() {
+    var ret = 'dashboard.html#overview';
+    try {
+      var stored = sessionStorage.getItem('hubStudioReturn') || localStorage.getItem('hubStudioReturn') || '';
+      if (/^dashboard\.html(#|$)/i.test(stored)) ret = stored;
+    } catch (_) {}
+    return ret;
+  }
+  function heroBackHtml() {
+    if (window.__HUB_STUDIO_BACK__) {
+      return '<a class="mcs-btn ghost" href="' + esc(window.__HUB_STUDIO_BACK__) + '"><i class="fas fa-arrow-right"></i> رجوع</a>';
+    }
+    if (resolveStudioEntry() === 'admin' && isStaffRole()) {
+      return '<a class="mcs-btn ghost" href="' + esc(adminReturnHref()) + '"><i class="fas fa-arrow-right"></i> رجوع إلى لوحة التحكم</a>';
+    }
+    return '<a class="mcs-btn ghost" href="' + esc(HUB_HOME_URL) + '"><i class="fas fa-house"></i> العودة للرئيسية</a>';
+  }
   function hero() {
-    var back = window.__HUB_STUDIO_BACK__ || 'dashboard.html#overview';
     return (
       '<header class="mcs-hero">' +
         '<div><h1>استوديو الحملات التسويقية</h1>' +
         '<p>إنشاء الحملات وتشغيلها ومراجعتها وقياسها من مكان واحد — كل سجل مرتبط برقم الحملة.</p></div>' +
         '<div class="mcs-hero-actions">' +
-          '<a class="mcs-btn ghost" href="' + esc(back) + '"><i class="fas fa-arrow-right"></i> رجوع إلى لوحة التحكم</a>' +
+          heroBackHtml() +
           (can('campaigns.create') ? '<button class="mcs-btn primary" data-mcs="new"><i class="fas fa-plus"></i> حملة جديدة</button>' : '') +
           '<button class="mcs-btn ghost" data-mcs="upload-only"><i class="fas fa-cloud-arrow-up"></i> رفع محتوى</button>' +
         '</div></header>'
@@ -1581,11 +1641,12 @@
     var h = location.hash.replace(/^#/, '');
     if (h.indexOf('campaign=') === 0) openCampaign(h.split('=')[1]).catch(function () {});
     else if (h.indexOf('section=') === 0) {
-      state.section = h.split('=')[1];
+      state.section = normalizeSection(h.split('=')[1]);
       render();
     }
   });
 
+  resolveStudioEntry();
   refreshAll().then(function () {
     var h = location.hash.replace(/^#/, '');
     if (h.indexOf('campaign=') === 0) return openCampaign(h.split('=')[1]);

@@ -187,21 +187,33 @@
     return data;
   }
 
-  async function uploadFile(file) {
+  function uploadFile(file, onProgress) {
     if (window.HubUploadLimits && HubUploadLimits.uploadFile) {
-      return HubUploadLimits.uploadFile(file);
+      return HubUploadLimits.uploadFile(file, { onProgress: onProgress });
     }
-    var buf = await file.arrayBuffer();
-    var h = headers({
-      'X-File-Name': encodeURIComponent(file.name),
-      'X-File-Type': file.type || 'application/octet-stream',
-      'Content-Type': file.type || 'application/octet-stream',
+    return new Promise(function (resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/hub/uploads');
+      var h = headers({
+        'X-File-Name': encodeURIComponent(file.name),
+        'X-File-Type': file.type || 'application/octet-stream',
+        'Content-Type': file.type || 'application/octet-stream',
+      });
+      Object.keys(h).forEach(function (k) { xhr.setRequestHeader(k, h[k]); });
+      xhr.upload.onprogress = function (ev) {
+        if (ev.lengthComputable && typeof onProgress === 'function') {
+          onProgress(Math.round((ev.loaded / ev.total) * 100));
+        }
+      };
+      xhr.onload = function () {
+        var data = {};
+        try { data = JSON.parse(xhr.responseText || '{}'); } catch (_) {}
+        if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+        else reject(new Error(data.error || 'فشل رفع الملف'));
+      };
+      xhr.onerror = function () { reject(new Error('انقطع الاتصال أثناء الرفع — أعد المحاولة')); };
+      xhr.send(file);
     });
-    var res = await fetch('/api/hub/uploads', { method: 'POST', headers: h, body: buf });
-    var data = {};
-    try { data = await res.json(); } catch (_) {}
-    if (!res.ok) throw new Error(data.error || 'فشل رفع الملف');
-    return data;
   }
 
   function badge(status, label) {
