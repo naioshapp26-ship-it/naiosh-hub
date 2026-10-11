@@ -6,6 +6,8 @@ const path = require('path');
 const puppeteer = require('puppeteer-core');
 
 const BASE = (process.env.HUB_E2E_BASE || 'http://127.0.0.1:8080').replace(/\/$/, '');
+const SA = process.env.HUB_SUPER_ADMIN_EMAIL || 'naioshhub@example.com';
+const SA_PASS = process.env.HUB_E2E_SA_PASSWORD || process.env.HUB_SUPER_ADMIN_INITIAL_PASSWORD || '';
 const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const ART = '/opt/cursor/artifacts';
 const rows = [];
@@ -13,6 +15,26 @@ const mark = (c, p, e) => {
   rows.push({ check: c, result: p ? 'PASS' : 'FAIL', evidence: String(e || '').slice(0, 400) });
   console.log(`${p ? 'PASS' : 'FAIL'} | ${c} | ${e}`);
 };
+
+async function login(page, email, pass) {
+  await page.goto(`${BASE}/login.html`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForSelector('#email, input[type="email"]', { timeout: 15000 });
+  await page.evaluate(
+    (e, p) => {
+      const em = document.querySelector('#email, input[type="email"]');
+      const pw = document.querySelector('#password, input[type="password"]');
+      if (em) em.value = e;
+      if (pw) pw.value = p;
+    },
+    email,
+    pass
+  );
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => null),
+    page.click('button[type="submit"], #loginBtn, .btn-primary'),
+  ]);
+  await new Promise((r) => setTimeout(r, 800));
+}
 
 function contrastHelpers() {
   return {
@@ -119,6 +141,100 @@ async function main() {
       mark(`صفحة ${p}: تباين الأزرار`, bad.length === 0, JSON.stringify(bad.slice(0, 5)));
     }
 
+    // Dashboard — tabs + needs + KPIs (the reported white-on-white failure)
+    if (!SA_PASS) {
+      mark('لوحة التحكم: تسجيل دخول القائد', false, 'missing HUB_SUPER_ADMIN_INITIAL_PASSWORD');
+    } else {
+      await login(page, SA, SA_PASS);
+    }
+    await page.goto(`${BASE}/dashboard.html#overview`, { waitUntil: 'networkidle2', timeout: 90000 });
+    await page.waitForFunction(() => document.querySelector('.hub-theme-toggle, .topbar, .kpi'), {
+      timeout: 25000,
+    }).catch(() => null);
+    await page.evaluate(() => {
+      localStorage.setItem('hubTheme', 'dark');
+      window.HubTheme?.set?.('dark');
+    });
+    await new Promise((r) => setTimeout(r, 1500));
+    // Ensure overview workspace is mounted
+    await page.evaluate(() => {
+      const ov = document.querySelector('[data-nav="overview"], a[href="#overview"], [data-panel="overview"]');
+      ov?.click?.();
+    });
+    await new Promise((r) => setTimeout(r, 800));
+
+    const dashProbe = await page.evaluate(() => {
+      function lum([r, g, b]) {
+        const a = [r, g, b].map((v) => {
+          v /= 255;
+          return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+      }
+      function parse(c) {
+        const m = String(c || '').match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        return m ? [+m[1], +m[2], +m[3]] : null;
+      }
+      function contrast(fg, bg) {
+        if (!fg || !bg) return 0;
+        const L1 = lum(fg);
+        const L2 = lum(bg);
+        return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+      }
+      function sample(el) {
+        if (!el) return null;
+        const cs = getComputedStyle(el);
+        let bgEl = el;
+        let bg = cs.backgroundColor;
+        while (bgEl && (bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent')) {
+          bgEl = bgEl.parentElement;
+          if (!bgEl) break;
+          bg = getComputedStyle(bgEl).backgroundColor;
+        }
+        const fg = parse(cs.color);
+        const bgRgb = parse(bg);
+        return {
+          t: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40),
+          color: cs.color,
+          bg,
+          ratio: +contrast(fg, bgRgb).toFixed(2),
+        };
+      }
+      const tabs = [...document.querySelectorAll('.tab, .hub-ws-tab')].slice(0, 8).map(sample);
+      const needs = [...document.querySelectorAll('.hub-ws-needs-list li, .needs-list li')].slice(0, 6).map(sample);
+      const kpis = [...document.querySelectorAll('.kpi span, .kpi small, .hub-ws-kpi span, .hub-ws-kpi small')]
+        .slice(0, 8)
+        .map(sample);
+      return { tabs, needs, kpis, theme: document.documentElement.getAttribute('data-theme') };
+    });
+
+    const tabBad = (dashProbe.tabs || []).filter((t) => !t || t.ratio < 3);
+    const needBad = (dashProbe.needs || []).filter((t) => !t || t.ratio < 3);
+    const kpiBad = (dashProbe.kpis || []).filter((t) => !t || t.ratio < 3);
+    mark(
+      'لوحة التحكم: تبويبات مقروءة في الوضع الليلي',
+      (dashProbe.tabs || []).length > 0 && tabBad.length === 0,
+      JSON.stringify({ count: (dashProbe.tabs || []).length, bad: tabBad.slice(0, 4), sample: (dashProbe.tabs || []).slice(0, 2) })
+    );
+    mark(
+      'لوحة التحكم: بطاقات يتطلب إجراء مقروءة',
+      needBad.length === 0,
+      JSON.stringify({ count: (dashProbe.needs || []).length, bad: needBad.slice(0, 4), sample: (dashProbe.needs || []).slice(0, 2) })
+    );
+    mark(
+      'لوحة التحكم: تسميات KPI الثانوية مقروءة',
+      (dashProbe.kpis || []).length === 0 || kpiBad.length === 0,
+      JSON.stringify({ count: (dashProbe.kpis || []).length, bad: kpiBad.slice(0, 4), sample: (dashProbe.kpis || []).slice(0, 2) })
+    );
+
+    await page.screenshot({ path: path.join(ART, 'dashboard_dark_contrast_final.png'), fullPage: true });
+
+    await page.evaluate(() => window.HubTheme?.set?.('light'));
+    await new Promise((r) => setTimeout(r, 500));
+    const lightTabs = await scanBad(page, '.tab, .hub-ws-tab');
+    mark('لوحة التحكم نهاري: تبويبات مقروءة', lightTabs.length === 0, JSON.stringify(lightTabs.slice(0, 4)));
+    await page.screenshot({ path: path.join(ART, 'dashboard_light_contrast_final.png'), fullPage: true });
+
     // Light mode still OK
     await page.goto(`${BASE}/index.html`, { waitUntil: 'networkidle2', timeout: 60000 });
     await page.evaluate(() => window.HubTheme?.set?.('light'));
@@ -131,7 +247,7 @@ async function main() {
     mark('الوضع النهاري ما زال مقروءًا', !!lightNav.bg && !!lightNav.color, JSON.stringify(lightNav));
 
     const out = path.join(ART, `dark-contrast-e2e-${Date.now()}.json`);
-    fs.writeFileSync(out, JSON.stringify({ checks: rows }, null, 2));
+    fs.writeFileSync(out, JSON.stringify({ checks: rows, dashProbe }, null, 2));
     console.log('REPORT', out);
     process.exit(rows.some((r) => r.result === 'FAIL') ? 1 : 0);
   } catch (e) {

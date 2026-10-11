@@ -27,11 +27,11 @@ const EARLY = `  <script>
   </script>
 `;
 
-const CSS_BLOCK = `  <link rel="stylesheet" href="css/dark-mode.css?v=theme2" />
-  <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme2" />
+const CSS_BLOCK = `  <link rel="stylesheet" href="css/dark-mode.css?v=theme3" />
+  <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme3" />
 `;
 
-const JS_TAG = `  <script src="js/hub-theme.js?v=theme2" defer></script>
+const JS_TAG = `  <script src="js/hub-theme.js?v=theme3" defer></script>
 `;
 
 function listHtml(dir) {
@@ -53,7 +53,7 @@ function inject(file) {
     }
   }
 
-  if (!html.includes('hub-theme-modes.css') && !html.includes('dark-mode.css?v=theme2')) {
+  if (!html.includes('hub-theme-modes.css') && !html.includes('dark-mode.css?v=theme3')) {
     if (/<\/head>/i.test(html)) {
       html = html.replace(/<\/head>/i, CSS_BLOCK + '</head>');
       changed = true;
