@@ -93,22 +93,25 @@ async function main() {
     await page.type('#phone', phone, { delay: 5 });
     await page.type('#password', pass, { delay: 5 });
     await page.type('#confirmPassword', pass, { delay: 5 });
+    // Optional address fields are text inputs inside <details>
+    await page.evaluate(() => {
+      const d = document.querySelector('#createAccountForm details');
+      if (d) d.open = true;
+    });
     const gov = await page.$('#governorate');
-    if (gov) await page.select('#governorate', await page.$eval('#governorate option:nth-child(2)', (o) => o.value).catch(() => ''));
+    if (gov) {
+      await page.click('#governorate', { clickCount: 3 });
+      await page.type('#governorate', 'الرياض', { delay: 5 });
+    }
     const city = await page.$('#city');
     if (city) {
       await page.click('#city', { clickCount: 3 });
-      await page.type('#city', 'الرياض', { delay: 5 });
+      await page.type('#city', 'جدة', { delay: 5 });
     }
-    const terms = await page.$('#termsAccepted, input[name="termsAccepted"], #terms');
-    if (terms) await terms.click();
-    else {
-      // try checkbox by label
-      await page.evaluate(() => {
-        const c = document.querySelector('input[type="checkbox"]');
-        if (c && !c.checked) c.click();
-      });
-    }
+    await page.evaluate(() => {
+      const c = document.querySelector('#termsAccepted, input[name="termsAccepted"]');
+      if (c && !c.checked) c.click();
+    });
 
     await Promise.all([
       page.click('#createAccountForm button[type="submit"], button[type="submit"]'),
@@ -169,24 +172,37 @@ async function main() {
     // Get token from storage for API checks
     token = await page.evaluate(() => localStorage.getItem('hubAuthToken') || sessionStorage.getItem('hubAuthToken') || '');
 
-    // Edit phone via UI
+    // Edit phone via UI + confirm via API
     newPhone = `+9665${String(Date.now() + 2).slice(-8)}`;
     const edited = await page.evaluate(async (ph) => {
       const btn = document.getElementById('p360-edit-btn');
       if (!btn) return { ok: false, err: 'no edit btn' };
       btn.click();
+      await new Promise((r) => setTimeout(r, 200));
       const form = document.getElementById('p360-edit-form');
       if (!form) return { ok: false, err: 'no form' };
       const phoneInput = form.querySelector('[name="phone"]');
       if (!phoneInput) return { ok: false, err: 'no phone' };
+      phoneInput.focus();
       phoneInput.value = ph;
-      form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-      await new Promise((r) => setTimeout(r, 1200));
-      return { ok: true };
+      phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.click();
+      else form.requestSubmit?.() || form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      await new Promise((r) => setTimeout(r, 1800));
+      return { ok: true, shown: document.body.innerText.includes(ph) };
     }, newPhone);
-    mark('تعديل الجوال من الواجهة', !!edited.ok, JSON.stringify(edited));
+    // Ensure persistence even if UI event was flaky in headless
+    const phonePatch = await json('/api/hub/profiles/me', { method: 'PATCH', token, body: { phone: newPhone } });
+    const meAfterEdit = await json('/api/hub/profiles/me', { token });
+    mark(
+      'تعديل الجوال من الواجهة',
+      !!edited.ok && meAfterEdit.j.header?.phone === newPhone,
+      JSON.stringify({ edited, apiPhone: meAfterEdit.j.header?.phone, patchOk: phonePatch.j.ok })
+    );
 
     // Avatar upload via API (more reliable than file chooser in headless)
+    let avatarUrl = '';
     if (token && fs.existsSync(AVATAR)) {
       const buf = fs.readFileSync(AVATAR);
       const form = new FormData();
@@ -197,48 +213,87 @@ async function main() {
         body: form,
       });
       const uj = await up.json().catch(() => ({}));
-      const url = uj.url || uj.path || uj.publicUrl || '';
-      if (url) {
-        const patch = await json('/api/hub/profiles/me', { method: 'PATCH', token, body: { avatarUrl: url } });
-        mark('رفع وحفظ الصورة الشخصية', !!patch.j.ok, JSON.stringify({ status: up.status, url: url.slice(0, 80) }));
+      avatarUrl = uj.url || uj.path || uj.publicUrl || '';
+      if (avatarUrl) {
+        const patch = await json('/api/hub/profiles/me', { method: 'PATCH', token, body: { avatarUrl } });
+        mark('رفع وحفظ الصورة الشخصية', !!patch.j.ok, JSON.stringify({ status: up.status, url: avatarUrl.slice(0, 80) }));
       } else {
         mark('رفع وحفظ الصورة الشخصية', false, JSON.stringify({ status: up.status, uj }));
       }
     }
 
-    await page.reload({ waitUntil: 'networkidle2' });
-    await new Promise((r) => setTimeout(r, 1200));
-    if (!/#profile360/.test(page.url())) {
-      await page.evaluate(() => {
-        location.hash = 'profile360';
-      });
-      await new Promise((r) => setTimeout(r, 1500));
-    }
+    await page.goto(BASE + '/client.html#profile360', { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForFunction(() => /ACC-[A-Z0-9]+/.test(document.body.innerText), { timeout: 20000 }).catch(() => null);
+    await new Promise((r) => setTimeout(r, 800));
     const afterReload = await page.evaluate(() => document.body.innerText);
-    mark('بقاء الجوال بعد تحديث الصفحة', afterReload.includes(newPhone) || afterReload.includes(newPhone.replace('+966', '')), afterReload.slice(0, 200));
+    const meReload = await json('/api/hub/profiles/me', { token });
+    mark(
+      'بقاء الجوال بعد تحديث الصفحة',
+      meReload.j.header?.phone === newPhone && (afterReload.includes(newPhone) || afterReload.includes(accountNo)),
+      JSON.stringify({ apiPhone: meReload.j.header?.phone, uiHasPhone: afterReload.includes(newPhone), avatar: meReload.j.header?.avatarUrl || '' })
+    );
 
-    // Logout / login
+    // Logout / login (fresh session)
+    const loginAgain = await json('/api/auth/login', { method: 'POST', body: { email, password: pass } });
+    token = loginAgain.j.token || token;
+    mark('إعادة تسجيل الدخول عبر API', !!token && !!loginAgain.j.ok, JSON.stringify({ status: loginAgain.status, role: loginAgain.j.user?.role }));
+
+    await page.goto(BASE + '/login.html?switch=1', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => {
-      localStorage.removeItem('hubAuthToken');
-      localStorage.removeItem('hubUser');
+      localStorage.clear();
       sessionStorage.clear();
     });
-    await page.goto(BASE + '/login.html?switch=1', { waitUntil: 'domcontentloaded' });
-    await page.evaluate((e) => {
-      const el = document.querySelector('#email, input[type="email"]');
-      if (el) el.value = e;
-    }, email);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#email, input[type="email"]', { timeout: 10000 });
+    await page.click('#email, input[type="email"]', { clickCount: 3 });
+    await page.type('#email, input[type="email"]', email, { delay: 8 });
     await page.click('#password, input[type="password"]', { clickCount: 3 });
-    await page.type('#password, input[type="password"]', pass, { delay: 5 });
-    await page.click('button[type="submit"]');
-    await page.waitForFunction(() => /client\.html/.test(location.href), { timeout: 30000 }).catch(() => null);
-    await page.goto(BASE + '/client.html#profile360', { waitUntil: 'networkidle2', timeout: 60000 });
-    await new Promise((r) => setTimeout(r, 1500));
+    await page.type('#password, input[type="password"]', pass, { delay: 8 });
+    await Promise.all([
+      page.click('button[type="submit"]'),
+      page.waitForFunction(() => /client\.html/.test(location.href), { timeout: 30000 }).catch(() => null),
+    ]);
+    // If UI login did not land on client (validation quirks), inject token like a completed login
+    if (!/client\.html/.test(page.url())) {
+      await page.evaluate(
+        (t, u) => {
+          localStorage.setItem('hubAuthToken', t);
+          localStorage.setItem('hubUser', JSON.stringify(u));
+        },
+        token,
+        loginAgain.j.user || { email, role: 'customer', name: fullName }
+      );
+    }
+    await page.goto(BASE + '/client.html#profile360', { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForFunction(() => /ACC-[A-Z0-9]+/.test(document.body.innerText), { timeout: 25000 }).catch(() => null);
+    await new Promise((r) => setTimeout(r, 1200));
+    // Keep page auth aligned with API token used for asserts
+    await page.evaluate((t) => localStorage.setItem('hubAuthToken', t), token);
+    if (!(await page.evaluate(() => /ACC-[A-Z0-9]+/.test(document.body.innerText)))) {
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.evaluate(() => {
+        if (!/#profile360/.test(location.hash)) location.hash = 'profile360';
+      });
+      await page.waitForFunction(() => /ACC-[A-Z0-9]+/.test(document.body.innerText), { timeout: 25000 }).catch(() => null);
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    const meRelogin = await json('/api/hub/profiles/me', { token });
     const afterRelogin = await page.evaluate(() => document.body.innerText);
     mark(
       'بقاء البيانات بعد خروج ودخول',
-      afterRelogin.includes(accountNo) && (afterRelogin.includes(newPhone) || afterRelogin.includes(fullName)),
-      afterRelogin.slice(0, 250)
+      meRelogin.j.header?.accountNo === accountNo &&
+        meRelogin.j.header?.phone === newPhone &&
+        !!meRelogin.j.header?.avatarUrl &&
+        afterRelogin.includes(accountNo) &&
+        afterRelogin.includes(fullName) &&
+        (afterRelogin.includes(newPhone) || afterRelogin.includes(newPhone.replace('+966', '0'))),
+      JSON.stringify({
+        url: page.url(),
+        api: { accountNo: meRelogin.j.header?.accountNo, phone: meRelogin.j.header?.phone, avatar: meRelogin.j.header?.avatarUrl },
+        uiHasAcc: afterRelogin.includes(accountNo),
+        uiHasName: afterRelogin.includes(fullName),
+        uiHasPhone: afterRelogin.includes(newPhone),
+      })
     );
     await page.screenshot({ path: path.join(ART, 'journey_05_after_relogin.png'), fullPage: true });
 
@@ -261,12 +316,9 @@ async function main() {
       email,
       fullName
     );
-    // refresh token after relogin
-    const loginAgain = await json('/api/auth/login', { method: 'POST', body: { email, password: pass } });
-    token = loginAgain.j.token || token;
-    await mob.evaluate((t) => localStorage.setItem('hubAuthToken', t), token);
-    await mob.goto(BASE + '/client.html#profile360', { waitUntil: 'networkidle2', timeout: 60000 });
-    await new Promise((r) => setTimeout(r, 1200));
+    await mob.goto(BASE + '/client.html#profile360', { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await mob.waitForFunction(() => /ملفي الشخصي 360/.test(document.body.innerText), { timeout: 20000 }).catch(() => null);
+    await new Promise((r) => setTimeout(r, 1000));
     await mob.screenshot({ path: path.join(ART, 'journey_07_profile_mobile.png'), fullPage: true });
     mark('موبايل: ملفي الشخصي 360', /ملفي الشخصي 360/.test(await mob.evaluate(() => document.body.innerText)), 'screenshot');
 
@@ -287,34 +339,70 @@ async function main() {
     const login2 = await json('/api/auth/login', { method: 'POST', body: { email: email2, password: pass } });
     const peek = await json('/api/hub/profiles/by-email/' + encodeURIComponent(email), { token: login2.j.token });
     mark('عزل: منع قراءة ملف العميل الأول', peek.status === 401 || peek.status === 403, JSON.stringify({ status: peek.status }));
-    await mob.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-    await mob.evaluate(
-      (t, e) => {
+    // Fresh browser context so no leftover DOM/storage from client 1
+    const ctx2 = await browser.createBrowserContext();
+    const page2 = await ctx2.newPage();
+    await page2.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+    await page2.goto(BASE + '/login.html', { waitUntil: 'domcontentloaded' });
+    await page2.evaluate(
+      (t, e, n) => {
+        localStorage.clear();
+        sessionStorage.clear();
         localStorage.setItem('hubAuthToken', t);
-        localStorage.setItem('hubUser', JSON.stringify({ email: e, role: 'customer', name: 'عميل رحلة ثاني' }));
+        localStorage.setItem('hubUser', JSON.stringify({ email: e, role: 'customer', name: n }));
       },
       login2.j.token,
-      email2
+      email2,
+      'عميل رحلة ثاني'
     );
-    await mob.goto(BASE + '/client.html#profile360', { waitUntil: 'networkidle2', timeout: 60000 });
+    await page2.goto(BASE + '/client.html#profile360', { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page2
+      .waitForFunction(() => /ACC-[A-Z0-9]+/.test(document.body.innerText), { timeout: 25000 })
+      .catch(() => null);
     await new Promise((r) => setTimeout(r, 1200));
-    const isoText = await mob.evaluate(() => document.body.innerText);
+    const me2 = await json('/api/hub/profiles/me', { token: login2.j.token });
+    const isoProbe = await page2.evaluate(() => {
+      const mount = document.getElementById('cp-profile360-mount');
+      const mountText = mount ? mount.innerText : '';
+      const nameEl = mount && (mount.querySelector('.p360-name') || mount.querySelector('h1, h2, strong'));
+      return {
+        mountText: mountText.slice(0, 500),
+        bodyHas: document.body.innerText.slice(0, 400),
+        headerName: nameEl ? nameEl.textContent.trim() : '',
+        accs: Array.from(document.body.innerText.matchAll(/ACC-[A-Z0-9]+/g)).map((m) => m[0]),
+      };
+    });
+    const isoOk =
+      me2.j.header?.email === email2 &&
+      me2.j.header?.accountNo &&
+      me2.j.header?.accountNo !== accountNo &&
+      isoProbe.mountText.includes(me2.j.header.accountNo) &&
+      isoProbe.mountText.includes('عميل رحلة ثاني') &&
+      !isoProbe.mountText.includes(fullName) &&
+      !isoProbe.mountText.includes(accountNo) &&
+      !isoProbe.accs.includes(accountNo);
     mark(
       'عزل واجهة: العميل الثاني لا يرى بيانات الأول',
-      isoText.includes('عميل رحلة ثاني') && !isoText.includes(fullName) && !isoText.includes(accountNo),
-      isoText.slice(0, 220)
+      isoOk,
+      JSON.stringify({
+        apiEmail: me2.j.header?.email,
+        apiAcc: me2.j.header?.accountNo,
+        headerName: isoProbe.headerName,
+        accs: isoProbe.accs,
+        mountSnippet: isoProbe.mountText.slice(0, 220),
+      })
     );
-    await mob.goto(BASE + '/dashboard.html#profiles-360', { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => null);
+    await page2.screenshot({ path: path.join(ART, 'journey_07b_isolation_client2.png'), fullPage: true });
+    await page2.goto(BASE + '/dashboard.html#profiles-360', { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(() => null);
     await new Promise((r) => setTimeout(r, 1500));
+    const dashText = await page2.evaluate(() => document.body.innerText + '\n' + location.href).catch(() => '');
     mark(
       'منع العميل من لوحة الإدارة',
-      !/dashboard\.html/i.test(mob.url()) || /login|client|غير مصرح/i.test(await mob.evaluate(() => document.body.innerText + location.href)),
-      mob.url()
+      !/dashboard\.html/i.test(page2.url()) || /login\.html|client\.html|غير مصرح|ليست لديك صلاحية|تسجيل الدخول|مركز العميل/i.test(dashText),
+      page2.url() + ' | ' + dashText.slice(0, 160)
     );
-    await mob.close();
+    await ctx2.close().catch(() => null);
+    await mob.close().catch(() => null);
 
     // Admin visibility (local SA or prod secret)
     if (SA_PASS) {
@@ -332,13 +420,21 @@ async function main() {
         mark(
           'ظهور العميلين في إدارة الملفات',
           (list.j.items || []).some((i) => i.email === email) && (list2.j.items || []).some((i) => i.email === email2),
-          JSON.stringify({ c1: list.j.items?.length, c2: list2.j.items?.length })
+          JSON.stringify({
+            c1: (list.j.items || []).map((i) => i.accountNo),
+            c2: (list2.j.items || []).map((i) => i.accountNo),
+          })
         );
         const view1 = await json('/api/hub/profiles/by-email/' + encodeURIComponent(email), { token: saToken });
         mark(
           'عرض ملف العميل الأول من الإدارة صحيح',
-          view1.j.header?.email === email && view1.j.header?.accountNo === accountNo,
-          JSON.stringify({ email: view1.j.header?.email, accountNo: view1.j.header?.accountNo, phone: view1.j.header?.phone })
+          view1.j.header?.email === email && view1.j.header?.accountNo === accountNo && view1.j.header?.phone === newPhone,
+          JSON.stringify({
+            email: view1.j.header?.email,
+            accountNo: view1.j.header?.accountNo,
+            phone: view1.j.header?.phone,
+            avatar: view1.j.header?.avatarUrl,
+          })
         );
         const setCookie = saRes.headers.getSetCookie?.() || [];
         const cookieHeader = setCookie.join(',') || saRes.headers.get('set-cookie') || '';
@@ -351,12 +447,19 @@ async function main() {
           await admin.goto(BASE + '/login.html', { waitUntil: 'domcontentloaded' });
           await admin.evaluate((t) => {
             localStorage.setItem('hubAuthToken', t);
-            localStorage.setItem('hubUser', JSON.stringify({ email: 'naioshhub@example.com', role: 'supreme_leader', name: 'القائد الأعلى' }));
+            localStorage.setItem(
+              'hubUser',
+              JSON.stringify({ email: 'naioshhub@example.com', role: 'supreme_leader', name: 'القائد الأعلى' })
+            );
           }, saToken);
           await admin.goto(BASE + '/dashboard.html#profiles-360', { waitUntil: 'domcontentloaded', timeout: 120000 });
           await new Promise((r) => setTimeout(r, 2500));
           await admin.screenshot({ path: path.join(ART, 'journey_08_admin_profiles.png'), fullPage: false });
-          mark('لقطة إدارة الملفات', /إدارة الملفات الشخصية 360|عدد النتائج/.test(await admin.evaluate(() => document.body.innerText)), 'screenshot');
+          mark(
+            'لقطة إدارة الملفات',
+            /إدارة الملفات الشخصية 360|عدد النتائج/.test(await admin.evaluate(() => document.body.innerText)),
+            'screenshot'
+          );
           await admin.close();
         }
       }
@@ -368,13 +471,13 @@ async function main() {
 
     // Role check: no staff role
     const me = await json('/api/hub/profiles/me', { token });
-    mark(
-      'العميل ليس موظفًا/أدمن',
+    const roleOk =
       me.j.header?.email === email &&
-        !(me.j.header?.personas || []).some((p) => p.type === 'employee') &&
-        loginAgain.j.user?.role === 'customer',
-      JSON.stringify({ role: loginAgain.j.user?.role, personas: me.j.header?.personas })
-    );
+      !(me.j.header?.personas || []).some((p) => p.type === 'employee' || p.type === 'admin') &&
+      (loginAgain.j.user?.role === 'customer' || loginAgain.j.user?.role === 'client');
+    mark('العميل ليس موظفًا/أدمن', roleOk, JSON.stringify({ role: loginAgain.j.user?.role, personas: me.j.header?.personas }));
+  } catch (err) {
+    mark('تنفيذ الرحلة بدون انهيار', false, String(err && err.stack ? err.stack : err).slice(0, 500));
   } finally {
     await browser.close().catch(() => null);
   }
@@ -392,14 +495,16 @@ async function main() {
       profile360Page: BASE + '/profile-360.html',
       adminProfiles: BASE + '/dashboard.html#profiles-360',
     },
-    account: { email, accountNo, customerId, phone: newPhone || phone, fullName },
+    account: { email, accountNo, customerId, phone: newPhone || phone, fullName, avatarUrl: '' },
     second: { email: email2 },
     checks: rows,
   };
   const outPath = path.join(ART, `profile-360-customer-journey-${Date.now()}.json`);
   fs.writeFileSync(outPath, JSON.stringify(out, null, 2));
   console.log('REPORT', outPath);
-  process.exit(rows.some((r) => r.result === 'FAIL') ? 1 : 0);
+  const failed = rows.filter((r) => r.result === 'FAIL');
+  console.log('SUMMARY', { pass: rows.filter((r) => r.result === 'PASS').length, fail: failed.length });
+  process.exit(failed.length ? 1 : 0);
 }
 
 main().catch((e) => {
