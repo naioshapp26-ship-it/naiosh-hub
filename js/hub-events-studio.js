@@ -187,21 +187,33 @@
     return data;
   }
 
-  async function uploadFile(file) {
+  function uploadFile(file, onProgress) {
     if (window.HubUploadLimits && HubUploadLimits.uploadFile) {
-      return HubUploadLimits.uploadFile(file);
+      return HubUploadLimits.uploadFile(file, { onProgress: onProgress });
     }
-    var buf = await file.arrayBuffer();
-    var h = headers({
-      'X-File-Name': encodeURIComponent(file.name),
-      'X-File-Type': file.type || 'application/octet-stream',
-      'Content-Type': file.type || 'application/octet-stream',
+    return new Promise(function (resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/hub/uploads');
+      var h = headers({
+        'X-File-Name': encodeURIComponent(file.name),
+        'X-File-Type': file.type || 'application/octet-stream',
+        'Content-Type': file.type || 'application/octet-stream',
+      });
+      Object.keys(h).forEach(function (k) { xhr.setRequestHeader(k, h[k]); });
+      xhr.upload.onprogress = function (ev) {
+        if (ev.lengthComputable && typeof onProgress === 'function') {
+          onProgress(Math.round((ev.loaded / ev.total) * 100));
+        }
+      };
+      xhr.onload = function () {
+        var data = {};
+        try { data = JSON.parse(xhr.responseText || '{}'); } catch (_) {}
+        if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+        else reject(new Error(data.error || 'فشل رفع الملف'));
+      };
+      xhr.onerror = function () { reject(new Error('انقطع الاتصال أثناء الرفع — أعد المحاولة')); };
+      xhr.send(file);
     });
-    var res = await fetch('/api/hub/uploads', { method: 'POST', headers: h, body: buf });
-    var data = {};
-    try { data = await res.json(); } catch (_) {}
-    if (!res.ok) throw new Error(data.error || 'فشل رفع الملف');
-    return data;
   }
 
   function badge(status, label) {
@@ -647,6 +659,18 @@
       ((own || isStaff()) && (e.status === 'draft' || e.status === 'needs_changes' || isStaff())
         ? '<label class="ev-drop">إضافة مرفق للفعالية<input type="file" data-file hidden></label>'
         : '') +
+      '</article>' +
+      '<article class="ev-card"><h3>الحملات التسويقية المرتبطة</h3>' +
+      ((e.campaignLinks || []).length
+        ? (e.campaignLinks || []).map(function (l) {
+            return (
+              '<p><code>' + esc(l.campaignId) + '</code> · ' + esc(l.label || '') +
+              (l.url ? ' · <a href="' + esc(l.url) + '">فتح الحملة</a>' : '') +
+              '</p>'
+            );
+          }).join('')
+        : '<p class="ev-meta">لا توجد حملات مرتبطة. اربط من استوديو التسويق ← تبويب الربط ← نوع فعالية.</p>') +
+      '<p class="ev-meta"><a href="marketing-campaigns-studio.html">فتح استوديو التسويق</a></p>' +
       '</article></div>' +
       (isStaff() || own
         ? '<h3>التسجيلات</h3>' + regsTable(e.registrations || []) +
@@ -701,18 +725,22 @@
   function clipmakerHtml() {
     return (
       '<section class="ev-panel"><h2>صانع المقاطع القصيرة</h2>' +
-      '<div class="ev-alert">لا توجد معالجة فيديو أو ذكاء اصطناعي داخل النظام حالياً. يمكنك رفع مقطع جاهز وربطه بفعالية وفيديو مصدر، مع وقت البداية والنهاية.</div>' +
+      '<div class="ev-alert">المعالجة تتم فعليًا على الخادم عبر ffmpeg: قص المقطع، الأبعاد، عنوان اختياري، صورة غلاف، ثم الحفظ في المكتبة الموحدة. خصائص الذكاء الاصطناعي (ترجمة/تعليق صوتي/توليد) غير متصلة.</div>' +
       eventPick('clip') +
       '<div class="ev-form">' +
       field('clipTitle', 'عنوان المقطع', '') +
       field('clipStart', 'وقت البداية (ثوانٍ)', '0', 'number') +
       field('clipEnd', 'وقت النهاية (ثوانٍ)', '15', 'number') +
-      '<label>الفيديو المصدر<select data-clip-source>' +
-      (state.videos || []).map(function (v) { return '<option value="' + esc(v.id) + '">' + esc(v.id + ' — ' + v.name) + '</option>'; }).join('') +
-      '<option value="">بدون مصدر</option></select></label>' +
-      '<label class="ev-span-2">ملف المقطع (اختياري)<input type="file" accept="video/*" data-clip-file></label>' +
+      '<label>الأبعاد<select data-clip-aspect><option value="9:16">9:16 ريلز</option><option value="1:1">1:1</option><option value="16:9">16:9</option></select></label>' +
+      '<label>الفيديو المصدر (من مكتبة الفعالية)<select data-clip-source>' +
+      (state.videos || []).map(function (v) {
+        return '<option value="' + esc(v.uploadId || v.url || '') + '" data-vid="' + esc(v.id) + '">' + esc((v.id || '') + ' — ' + (v.name || '')) + '</option>';
+      }).join('') +
+      '</select></label>' +
+      '<label class="ev-span-2">أو ارفع فيديو مصدر جديد<input type="file" accept="video/*" data-clip-file></label>' +
       '</div>' +
-      '<button class="ev-btn primary" data-ev="make-clip">حفظ المقطع</button>' +
+      '<div class="ev-meta" data-clip-status aria-live="polite"></div>' +
+      '<button class="ev-btn primary" data-ev="make-clip"><i class="fas fa-scissors"></i> معالجة وحفظ الريلز</button>' +
       '</section>'
     );
   }
@@ -1011,27 +1039,65 @@
       if (t.getAttribute('data-ev') === 'make-clip') {
         var eid = (root.querySelector('[data-pick-event]') || {}).value;
         if (!eid) throw new Error('اختر فعالية');
+        var statusEl = root.querySelector('[data-clip-status]');
         var fileEl = root.querySelector('[data-clip-file]');
-        var assetId = '';
+        var sourceUploadId = String((root.querySelector('[data-clip-source]') || {}).value || '').replace(/^\/uploads\//, '');
+        var sourceVideoId = '';
+        var srcOpt = root.querySelector('[data-clip-source] option:checked');
+        if (srcOpt) sourceVideoId = srcOpt.getAttribute('data-vid') || '';
         if (fileEl && fileEl.files && fileEl.files[0]) {
+          if (statusEl) statusEl.textContent = 'جارٍ رفع المصدر…';
           var up = await uploadFile(fileEl.files[0]);
+          sourceUploadId = up.id || String(up.url || '').replace(/^\/uploads\//, '');
           var as = await api('/api/hub/events/' + encodeURIComponent(eid) + '/assets', {
             method: 'POST',
             body: { kind: 'video', name: fileEl.files[0].name, mime: fileEl.files[0].type, size: fileEl.files[0].size, url: up.url, uploadId: up.id },
           });
-          assetId = ((as.event.assets || []).slice(-1)[0] || {}).id;
+          sourceVideoId = ((as.event.assets || []).slice(-1)[0] || {}).id || sourceVideoId;
+          await api('/api/hub/media', {
+            method: 'POST',
+            body: {
+              uploadId: up.id,
+              url: up.url,
+              mime: fileEl.files[0].type,
+              originalName: fileEl.files[0].name,
+              sizeBytes: fileEl.files[0].size,
+              kind: 'video_long',
+              sourceStudio: 'events',
+              eventId: eid,
+            },
+          }).catch(function () {});
         }
+        if (!sourceUploadId) throw new Error('اختر فيديو مصدرًا أو ارفع ملفًا');
+        if (statusEl) statusEl.textContent = 'جارٍ معالجة الفيديو على الخادم (ffmpeg)…';
+        var title = (root.querySelector('[data-w="clipTitle"]') || {}).value || 'ريلز فعالية';
+        var reel = await api('/api/hub/reels/process', {
+          method: 'POST',
+          body: {
+            sourceUploadId: sourceUploadId,
+            startSec: Number((root.querySelector('[data-w="clipStart"]') || {}).value || 0),
+            endSec: Number((root.querySelector('[data-w="clipEnd"]') || {}).value || 15),
+            aspect: (root.querySelector('[data-clip-aspect]') || {}).value || '9:16',
+            title: title,
+            eventId: eid,
+          },
+        });
         await api('/api/hub/events/' + encodeURIComponent(eid) + '/clips', {
           method: 'POST',
           body: {
-            title: (root.querySelector('[data-w="clipTitle"]') || {}).value,
+            title: title,
             start: (root.querySelector('[data-w="clipStart"]') || {}).value,
             end: (root.querySelector('[data-w="clipEnd"]') || {}).value,
-            sourceVideoId: (root.querySelector('[data-clip-source]') || {}).value,
-            assetId: assetId,
+            sourceVideoId: sourceVideoId,
+            assetId: reel.reel && reel.reel.outputUploadId,
+            url: reel.reel && reel.reel.outputUrl,
+            mediaId: reel.reel && reel.reel.mediaId,
+            status: 'ready',
+            duration: reel.reel && reel.reel.duration,
           },
         });
-        toast('حُفظ المقطع');
+        if (statusEl) statusEl.textContent = 'جاهز · ' + ((reel.reel && reel.reel.mediaId) || '');
+        toast('عُولج الريلز وحُفظ · ' + ((reel.reel && reel.reel.mediaId) || reel.reel.outputUploadId));
         await refreshAll();
         setSection('clips');
         return;

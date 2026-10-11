@@ -337,6 +337,26 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  if (pathname.startsWith('/api/hub/media')) {
+    const hubMedia = require('./lib/hub-media-library');
+    await hubMedia.handleApi(req, res, pathname, {
+      sendJson,
+      readBody,
+      requireAuth: requireHubAuthOrReject,
+    });
+    return true;
+  }
+
+  if (pathname.startsWith('/api/hub/reels')) {
+    const hubReels = require('./lib/hub-reel-processor');
+    await hubReels.handleApi(req, res, pathname, {
+      sendJson,
+      readBody,
+      requireAuth: requireHubAuthOrReject,
+    });
+    return true;
+  }
+
   if (pathname.startsWith('/api/hub/profiles') || pathname.startsWith('/api/hub/avatars')) {
     const hubProfile360 = require('./lib/hub-profile-360');
     const handled = await hubProfile360.handleApi(req, res, pathname, {

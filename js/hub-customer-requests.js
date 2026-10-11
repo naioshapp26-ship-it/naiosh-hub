@@ -40,6 +40,7 @@
     'Article Submission': { department: 'Content', assignedTo: 'Content Desk' },
     'Ad Submission': { department: 'Marketing', assignedTo: 'Ads Desk' },
     'Event Submission': { department: 'Marketing', assignedTo: 'Events Desk' },
+    'Campaign Submission': { department: 'Marketing', assignedTo: 'Campaigns Desk' },
     'Platform Access Request': { department: 'Systems', assignedTo: 'Systems Team' },
     'Platform Add Request': { department: 'Systems', assignedTo: 'Platforms Desk' },
     مقال: { department: 'Content', assignedTo: 'Content Desk' },
@@ -79,6 +80,7 @@
     'Article Submission': 'طلب نشر مقال',
     'Ad Submission': 'طلب نشر إعلان',
     'Event Submission': 'طلب نشر فعالية',
+    'Campaign Submission': 'طلب نشر حملة تسويقية',
     'Platform Access Request': 'طلب وصول لمنصة',
     'Platform Add Request': 'طلب إضافة منصة',
     'Solution Request': 'طلب حل',
@@ -872,6 +874,59 @@
     }
     payload.timeline = [
       { at: payload.createdAt, by: payload.customerName || 'عميل', text: 'طلب نشر فعالية من الاستوديو', key: 'created' },
+    ];
+    state.requests = state.requests || [];
+    state.requests.unshift(payload);
+    save();
+    return payload;
+  };
+
+  const ingestHubCampaignRequest = (item) => {
+    if (!item) return null;
+    const id = item.requestId || item.id;
+    if (!id) return null;
+    const snap = item.campaignSnapshot || {};
+    const payload = {
+      id,
+      requestId: id,
+      requestType: 'Campaign Submission',
+      requestTypeLabel: item.requestTypeLabel || 'طلب نشر حملة تسويقية',
+      title: item.title || `طلب نشر حملة: ${snap.name || item.campaignId || ''}`,
+      description: item.description || '',
+      status: item.status || 'Pending Review',
+      statusLabel: item.statusLabel || '',
+      referenceType: 'Campaign',
+      referenceId: item.campaignId || item.referenceId || snap.campaignId || '',
+      campaignId: item.campaignId || item.referenceId || snap.campaignId || '',
+      sourceModule: item.sourceModule || 'التسويق',
+      sourcePage: item.sourcePage || 'استوديو الحملات التسويقية',
+      sourceUrl: item.sourceUrl || item.previewUrl || `marketing-campaigns-studio.html#campaign=${item.campaignId || ''}`,
+      sourceAction: item.sourceAction || 'نشر حملة',
+      customerName: item.customerName || '',
+      customerId: item.customerId || item.email || '',
+      email: item.email || '',
+      phone: item.phone || '',
+      assignedTo: item.assignedTo || 'Campaigns Desk',
+      department: item.department || 'Marketing',
+      createdAt: item.createdAt || nowIso(),
+      updatedAt: item.updatedAt || nowIso(),
+      changeRequestNote: item.changeRequestNote || '',
+      rejectionReason: item.rejectionReason || '',
+      previewUrl: item.previewUrl || `marketing-campaigns-studio.html#campaign=${item.campaignId || ''}`,
+      campaignSnapshot: snap,
+      attachments: item.attachments || item.media || [],
+      media: item.media || item.attachments || [],
+      channel: 'استوديو التسويق',
+      hubCampaignApi: true,
+    };
+    let row = get(id) || findByReference('Campaign', payload.referenceId);
+    if (row) {
+      Object.assign(row, payload, { id: row.id, timeline: row.timeline || [] });
+      save();
+      return row;
+    }
+    payload.timeline = [
+      { at: payload.createdAt, by: payload.customerName || 'مسوّق', text: 'طلب نشر حملة من استوديو التسويق', key: 'created' },
     ];
     state.requests = state.requests || [];
     state.requests.unshift(payload);
@@ -2149,6 +2204,7 @@
     mergeServerProductRequests,
     ensureForEvent,
     ingestHubEventRequest,
+    ingestHubCampaignRequest,
     mapArticleStatus,
     approveAndPublish,
     approveRequest,

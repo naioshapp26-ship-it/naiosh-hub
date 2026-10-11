@@ -124,25 +124,45 @@
     if (!res.ok) throw new Error(data.error || 'تعذر تنفيذ العملية');
     return data;
   }
-  async function uploadFile(file) {
-    var buf = await file.arrayBuffer();
-    var h = headers({
-      'X-File-Name': encodeURIComponent(file.name),
-      'X-File-Type': file.type || 'application/octet-stream',
-      'Content-Type': file.type || 'application/octet-stream',
+  function uploadFile(file, onProgress) {
+    if (window.HubUploadLimits && HubUploadLimits.uploadFile) {
+      return HubUploadLimits.uploadFile(file, { onProgress: onProgress, headers: headers() });
+    }
+    return new Promise(function (resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/hub/uploads');
+      var h = headers({
+        'X-File-Name': encodeURIComponent(file.name),
+        'X-File-Type': file.type || 'application/octet-stream',
+        'Content-Type': file.type || 'application/octet-stream',
+      });
+      Object.keys(h).forEach(function (k) { xhr.setRequestHeader(k, h[k]); });
+      xhr.upload.onprogress = function (ev) {
+        if (ev.lengthComputable && typeof onProgress === 'function') {
+          onProgress(Math.round((ev.loaded / ev.total) * 100));
+        }
+      };
+      xhr.onload = function () {
+        var data = {};
+        try { data = JSON.parse(xhr.responseText || '{}'); } catch (_) {}
+        if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+        else reject(new Error(data.error || 'فشل رفع الملف'));
+      };
+      xhr.onerror = function () { reject(new Error('انقطع الاتصال أثناء الرفع — أعد المحاولة')); };
+      xhr.send(file);
     });
-    var res = await fetch('/api/hub/uploads', { method: 'POST', headers: h, body: buf });
-    var data = {};
-    try { data = await res.json(); } catch (_) {}
-    if (!res.ok) throw new Error(data.error || 'فشل رفع الملف');
-    return data;
   }
 
+  function normalizeSection(sec) {
+    var s = String(sec || '').trim();
+    if (s === 'clipmaker') return 'reels'; // alias shared with Events Studio wording
+    return s || 'dashboard';
+  }
   function setSection(sec) {
-    state.section = sec;
-    state.wizardOpen = sec === 'create';
-    if (sec !== 'detail') state.campaign = null;
-    location.hash = 'section=' + sec;
+    state.section = normalizeSection(sec);
+    state.wizardOpen = state.section === 'create';
+    if (state.section !== 'detail') state.campaign = null;
+    location.hash = 'section=' + state.section;
     render();
   }
 
@@ -198,14 +218,54 @@
     return '<span class="mcs-badge ' + cls + '">' + esc(label || status) + '</span>';
   }
 
+  var HUB_HOME_URL = 'https://www.naioshai.com/';
+  function isStaffRole() {
+    var role = String((window.HubAuth && HubAuth.getUser && HubAuth.getUser() && HubAuth.getUser().role) || '').toLowerCase();
+    return role === 'supreme_leader' || role === 'super_admin' || role === 'admin' || role === 'ops_admin' || role === 'marketing';
+  }
+  function resolveStudioEntry() {
+    try {
+      var ref = document.referrer || '';
+      if (ref) {
+        var u = new URL(ref, location.href);
+        if (u.origin === location.origin && /\/dashboard\.html$/i.test(u.pathname)) {
+          sessionStorage.setItem('hubStudioEntry', 'admin');
+          return 'admin';
+        }
+        if (u.origin === location.origin || /naioshai\.com$/i.test(u.hostname)) {
+          sessionStorage.setItem('hubStudioEntry', 'public');
+        }
+      }
+      if (sessionStorage.getItem('hubStudioEntry') === 'admin') return 'admin';
+      return 'public';
+    } catch (_) {
+      return 'public';
+    }
+  }
+  function adminReturnHref() {
+    var ret = 'dashboard.html#overview';
+    try {
+      var stored = sessionStorage.getItem('hubStudioReturn') || localStorage.getItem('hubStudioReturn') || '';
+      if (/^dashboard\.html(#|$)/i.test(stored)) ret = stored;
+    } catch (_) {}
+    return ret;
+  }
+  function heroBackHtml() {
+    if (window.__HUB_STUDIO_BACK__) {
+      return '<a class="mcs-btn ghost" href="' + esc(window.__HUB_STUDIO_BACK__) + '"><i class="fas fa-arrow-right"></i> رجوع</a>';
+    }
+    if (resolveStudioEntry() === 'admin' && isStaffRole()) {
+      return '<a class="mcs-btn ghost" href="' + esc(adminReturnHref()) + '"><i class="fas fa-arrow-right"></i> رجوع إلى لوحة التحكم</a>';
+    }
+    return '<a class="mcs-btn ghost" href="' + esc(HUB_HOME_URL) + '"><i class="fas fa-house"></i> العودة للرئيسية</a>';
+  }
   function hero() {
-    var back = window.__HUB_STUDIO_BACK__ || 'dashboard.html#overview';
     return (
       '<header class="mcs-hero">' +
         '<div><h1>استوديو الحملات التسويقية</h1>' +
         '<p>إنشاء الحملات وتشغيلها ومراجعتها وقياسها من مكان واحد — كل سجل مرتبط برقم الحملة.</p></div>' +
         '<div class="mcs-hero-actions">' +
-          '<a class="mcs-btn ghost" href="' + esc(back) + '"><i class="fas fa-arrow-right"></i> رجوع إلى لوحة التحكم</a>' +
+          heroBackHtml() +
           (can('campaigns.create') ? '<button class="mcs-btn primary" data-mcs="new"><i class="fas fa-plus"></i> حملة جديدة</button>' : '') +
           '<button class="mcs-btn ghost" data-mcs="upload-only"><i class="fas fa-cloud-arrow-up"></i> رفع محتوى</button>' +
         '</div></header>'
@@ -683,21 +743,30 @@
   }
 
   function reelsHtml() {
+    var vids = state.videos || [];
     return (
       '<section class="mcs-panel"><h2>صانع المقاطع القصيرة</h2>' +
-      '<p>لا يوجد محرر فيديو داخلي. ارفع الفيديو المصدر ثم احفظ بيانات المقطع القصير واربطه بالحملة.</p>' +
+      '<p>معالجة حقيقية عبر ffmpeg على الخادم: قص · أبعاد · عنوان · غلاف · حفظ في المكتبة الموحدة. الذكاء الاصطناعي غير متصل.</p>' +
       '<div class="mcs-form">' +
       '<label>الحملة<select data-clip-campaign>' +
       (state.items || []).map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.id + ' — ' + c.name) + '</option>'; }).join('') +
       '</select></label>' +
       '<label>اسم المقطع<input data-clip-title></label>' +
-      '<label>المدة (ثوانٍ)<input data-clip-dur type="number"></label>' +
+      '<label>البداية (ث)<input data-clip-start type="number" value="0"></label>' +
+      '<label>النهاية (ث)<input data-clip-end type="number" value="15"></label>' +
+      '<label>الأبعاد<select data-clip-aspect><option value="9:16">9:16</option><option value="1:1">1:1</option><option value="16:9">16:9</option></select></label>' +
       '<label>المنصة المستهدفة<select data-clip-platform>' +
-      (state.meta.channels || []).map(function (ch) { return '<option value="' + esc(ch.id) + '">' + esc(ch.label) + '</option>'; }).join('') +
+      (state.meta.channels || []).map(function (ch) { return '<option value="' + esc(ch.id) + '">' + esc(ch.label) + (ch.connected ? '' : ' · يدوي') + '</option>'; }).join('') +
       '</select></label>' +
-      '<label class="mcs-span-2">ملف المقطع القصير<input type="file" accept="video/*" data-clip-file></label>' +
+      '<label>مصدر من مكتبة الحملة<select data-clip-source><option value="">— ارفع ملفًا —</option>' +
+      vids.map(function (v) {
+        return '<option value="' + esc(v.uploadId || String(v.url || '').replace(/^\/uploads\//, '')) + '">' + esc((v.id || '') + ' — ' + (v.name || '')) + '</option>';
+      }).join('') +
+      '</select></label>' +
+      '<label class="mcs-span-2">أو ارفع فيديو مصدر<input type="file" accept="video/*" data-clip-file></label>' +
       '</div>' +
-      '<button class="mcs-btn primary" data-mcs="make-clip"><i class="fas fa-scissors"></i> حفظ المقطع في المكتبة</button>' +
+      '<div class="mcs-meta" data-clip-status aria-live="polite"></div>' +
+      '<button class="mcs-btn primary" data-mcs="make-clip"><i class="fas fa-scissors"></i> معالجة وحفظ الريلز</button>' +
       '</section>'
     );
   }
@@ -1418,26 +1487,61 @@
         await refreshAll();
       } else if (t.getAttribute('data-mcs') === 'make-clip') {
         var camp = (root.querySelector('[data-clip-campaign]') || {}).value;
+        if (!camp) throw new Error('اختر حملة');
+        var statusEl = root.querySelector('[data-clip-status]');
         var fileEl = root.querySelector('[data-clip-file]');
-        var assetId = '';
+        var sourceUploadId = String((root.querySelector('[data-clip-source]') || {}).value || '').replace(/^\/uploads\//, '');
         if (fileEl && fileEl.files && fileEl.files[0]) {
+          if (statusEl) statusEl.textContent = 'جارٍ رفع المصدر…';
           var up = await uploadFile(fileEl.files[0]);
-          var as = await api('/api/hub/marketing-campaigns/' + encodeURIComponent(camp) + '/assets', {
+          sourceUploadId = up.id || String(up.url || '').replace(/^\/uploads\//, '');
+          await api('/api/hub/marketing-campaigns/' + encodeURIComponent(camp) + '/assets', {
             method: 'POST',
-            body: { kind: 'short', name: fileEl.files[0].name, mime: fileEl.files[0].type, size: fileEl.files[0].size, url: up.url, uploadId: up.id },
+            body: { kind: 'video', name: fileEl.files[0].name, mime: fileEl.files[0].type, size: fileEl.files[0].size, url: up.url, uploadId: up.id },
           });
-          assetId = (as.campaign.assets.slice(-1)[0] || {}).id;
+          await api('/api/hub/media', {
+            method: 'POST',
+            body: {
+              uploadId: up.id,
+              url: up.url,
+              mime: fileEl.files[0].type,
+              originalName: fileEl.files[0].name,
+              sizeBytes: fileEl.files[0].size,
+              kind: 'video_long',
+              sourceStudio: 'marketing',
+              campaignId: camp,
+            },
+          }).catch(function () {});
         }
+        if (!sourceUploadId) throw new Error('اختر فيديو مصدرًا أو ارفع ملفًا');
+        if (statusEl) statusEl.textContent = 'جارٍ معالجة الفيديو على الخادم (ffmpeg)…';
+        var title = (root.querySelector('[data-clip-title]') || {}).value || 'ريلز حملة';
+        var reel = await api('/api/hub/reels/process', {
+          method: 'POST',
+          body: {
+            sourceUploadId: sourceUploadId,
+            startSec: Number((root.querySelector('[data-clip-start]') || {}).value || 0),
+            endSec: Number((root.querySelector('[data-clip-end]') || {}).value || 15),
+            aspect: (root.querySelector('[data-clip-aspect]') || {}).value || '9:16',
+            title: title,
+            campaignId: camp,
+          },
+        });
         await api('/api/hub/marketing-campaigns/' + encodeURIComponent(camp) + '/clips', {
           method: 'POST',
           body: {
-            title: (root.querySelector('[data-clip-title]') || {}).value,
-            duration: (root.querySelector('[data-clip-dur]') || {}).value,
+            title: title,
+            duration: reel.reel && reel.reel.duration,
             platform: (root.querySelector('[data-clip-platform]') || {}).value,
-            assetId: assetId,
+            assetId: reel.reel && reel.reel.outputUploadId,
+            url: reel.reel && reel.reel.outputUrl,
+            thumbnail: reel.reel && reel.reel.coverUrl,
+            mediaId: reel.reel && reel.reel.mediaId,
+            status: 'ready',
           },
         });
-        toast('حُفظ المقطع');
+        if (statusEl) statusEl.textContent = 'جاهز · ' + ((reel.reel && reel.reel.mediaId) || '');
+        toast('عُولج الريلز وحُفظ · ' + ((reel.reel && reel.reel.mediaId) || ''));
         await refreshAll();
       } else if (t.getAttribute('data-mcs') === 'rec-start') {
         if (!navigator.mediaDevices || !window.MediaRecorder) { toast('التسجيل غير مدعوم في هذا المتصفح'); return; }
@@ -1537,11 +1641,12 @@
     var h = location.hash.replace(/^#/, '');
     if (h.indexOf('campaign=') === 0) openCampaign(h.split('=')[1]).catch(function () {});
     else if (h.indexOf('section=') === 0) {
-      state.section = h.split('=')[1];
+      state.section = normalizeSection(h.split('=')[1]);
       render();
     }
   });
 
+  resolveStudioEntry();
   refreshAll().then(function () {
     var h = location.hash.replace(/^#/, '');
     if (h.indexOf('campaign=') === 0) return openCampaign(h.split('=')[1]);
