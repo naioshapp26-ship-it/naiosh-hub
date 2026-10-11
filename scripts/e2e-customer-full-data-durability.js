@@ -403,8 +403,11 @@ async function main() {
     else failures.push({ email: c.email, step: 'portal', status: me.status });
 
     const prof = await req(port, 'GET', '/api/hub/profiles/me', null, auth);
-    if (prof.j?.ok && String(prof.j?.profile?.email || prof.j?.email || '').toLowerCase() === c.email) profileOk += 1;
-    else failures.push({ email: c.email, step: 'profile', status: prof.status });
+    const profEmail = String(
+      prof.j?.header?.email || prof.j?.profile?.email || prof.j?.email || ''
+    ).toLowerCase();
+    if (prof.j?.ok && profEmail === c.email) profileOk += 1;
+    else failures.push({ email: c.email, step: 'profile', status: prof.status, emailSeen: profEmail });
 
     const tickets = await req(port, 'GET', '/api/client/tickets', null, auth);
     const treqs = await req(port, 'GET', '/api/client/requests', null, auth);
@@ -480,10 +483,30 @@ async function main() {
       p.on('exit', (code) => (code === 0 ? resolve() : reject(new Error('pg_dump failed'))));
     });
     await new Promise((resolve, reject) => {
-      const p = spawn('psql', ['-h', '127.0.0.1', '-U', 'hubtest', '-d', 'postgres', '-c', 'DROP DATABASE IF EXISTS naiosh_hub_restore; CREATE DATABASE naiosh_hub_restore OWNER hubtest;'], {
-        env: { ...process.env, PGPASSWORD: 'hubtest' },
-        stdio: 'inherit',
-      });
+      const p = spawn(
+        'psql',
+        ['-h', '127.0.0.1', '-U', 'hubtest', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-c', 'DROP DATABASE IF EXISTS naiosh_hub_restore;'],
+        { env: { ...process.env, PGPASSWORD: 'hubtest' }, stdio: 'inherit' }
+      );
+      p.on('exit', (code) => (code === 0 ? resolve() : reject(new Error('drop restore db failed'))));
+    });
+    await new Promise((resolve, reject) => {
+      const p = spawn(
+        'psql',
+        [
+          '-h',
+          '127.0.0.1',
+          '-U',
+          'hubtest',
+          '-d',
+          'postgres',
+          '-v',
+          'ON_ERROR_STOP=1',
+          '-c',
+          "CREATE DATABASE naiosh_hub_restore OWNER hubtest;",
+        ],
+        { env: { ...process.env, PGPASSWORD: 'hubtest' }, stdio: 'inherit' }
+      );
       p.on('exit', (code) => (code === 0 ? resolve() : reject(new Error('create restore db failed'))));
     });
     await new Promise((resolve, reject) => {
