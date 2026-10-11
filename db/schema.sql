@@ -490,6 +490,19 @@ CREATE TABLE IF NOT EXISTS hub_profile_avatars (
 );
 CREATE INDEX IF NOT EXISTS idx_hub_profile_avatars_account_no ON hub_profile_avatars(account_no);
 
+-- Durable upload blobs for client attachments / private files (survive ephemeral disk)
+CREATE TABLE IF NOT EXISTS hub_upload_blobs (
+  storage_ref TEXT PRIMARY KEY,
+  mime TEXT NOT NULL DEFAULT 'application/octet-stream',
+  original_name TEXT,
+  owner_email TEXT,
+  bytes BYTEA NOT NULL,
+  size_bytes INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_hub_upload_blobs_owner ON hub_upload_blobs(owner_email);
+
 -- Idempotent column upgrades for store marketplace linking
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS brand TEXT;
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS item_kind TEXT DEFAULT 'منتج';

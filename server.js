@@ -1,3 +1,8 @@
+// Must be set before crypto/scrypt work begins (libuv threadpool).
+if (!process.env.UV_THREADPOOL_SIZE) {
+  process.env.UV_THREADPOOL_SIZE = String(Math.max(16, Number(process.env.HUB_UV_THREADPOOL_SIZE || 32)));
+}
+
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -1287,7 +1292,11 @@ async function handleHubApi(req, res, pathname) {
       return true;
     }
     if (req.method === 'GET' && wantContent) {
-      const filePath = hubUploads.resolveUploadPath(access.attachment.storageRef);
+      let filePath = hubUploads.resolveUploadPath(access.attachment.storageRef);
+      if (!filePath || !fs.existsSync(filePath)) {
+        await hubUploads.hydrateBlobFromDb(access.attachment.storageRef);
+        filePath = hubUploads.resolveUploadPath(access.attachment.storageRef);
+      }
       if (!filePath || !fs.existsSync(filePath)) {
         sendJson(res, 404, { ok: false, error: 'الملف غير موجود في التخزين' });
         return true;
@@ -1881,46 +1890,56 @@ const server = http.createServer(async (req, res) => {
         const lightSideEffects = String(process.env.HUB_AUTH_LIGHT_SIDE_EFFECTS || '') === '1';
         if (result.ok && result.user?.email) {
           if (!lightSideEffects) {
-            try {
-              const store = hubClientPortal.readStore();
-              const portalClient = hubClientPortal.ensureClient(
-                store,
-                result.user.email,
-                result.user.name || result.user.fullName
-              );
-              if (result.user.phone) portalClient.phone = result.user.phone;
-              portalClient.status = portalClient.status === 'pending' ? 'active' : portalClient.status;
-              portalClient.lastLoginAt = portalClient.lastLoginAt || new Date().toISOString();
-              hubPoshaOps.emitEvent(store, {
-                type: 'CLIENT_REGISTERED',
-                clientEmail: result.user.email,
-                actorId: result.user.email,
-                actorRole: 'client',
-                title: 'عميل جديد قام بالتسجيل',
-                message: `${result.user.name || result.user.fullName || result.user.email} انضم إلى نايوش هوب`,
-                metadata: {},
+            const store = hubClientPortal.readStore();
+            const portalClient = hubClientPortal.ensureClient(
+              store,
+              result.user.email,
+              result.user.name || result.user.fullName
+            );
+            if (result.user.phone) portalClient.phone = result.user.phone;
+            portalClient.status = portalClient.status === 'pending' ? 'active' : portalClient.status;
+            portalClient.lastLoginAt = portalClient.lastLoginAt || new Date().toISOString();
+            hubPoshaOps.emitEvent(store, {
+              type: 'CLIENT_REGISTERED',
+              clientEmail: result.user.email,
+              actorId: result.user.email,
+              actorRole: 'client',
+              title: 'عميل جديد قام بالتسجيل',
+              message: `${result.user.name || result.user.fullName || result.user.email} انضم إلى نايوش هوب`,
+              metadata: {},
+            });
+            hubClientPortal.writeStore(store);
+            const portalFlush = await hubClientPortal.flushDurable();
+            if (getDatabaseUrl() && portalFlush && portalFlush.ok === false) {
+              sendJson(res, 503, {
+                success: false,
+                ok: false,
+                error: 'تعذر حفظ بيانات مركز العميل في قاعدة البيانات. حاول مرة أخرى.',
               });
-              hubClientPortal.writeStore(store);
-            } catch {
-              /* ignore */
+              return;
             }
           }
           let profileSummary = null;
-          try {
-            const hubProfile360 = require('./lib/hub-profile-360');
-            if (!lightSideEffects) {
-              hubProfile360.onAccountTouch(result.user.email, result.user.name || result.user.fullName);
+          const hubProfile360 = require('./lib/hub-profile-360');
+          if (!lightSideEffects) {
+            hubProfile360.onAccountTouch(result.user.email, result.user.name || result.user.fullName);
+            const profFlush = await hubProfile360.flushDurable();
+            if (getDatabaseUrl() && profFlush && profFlush.ok === false) {
+              sendJson(res, 503, {
+                success: false,
+                ok: false,
+                error: 'تعذر حفظ الملف الشخصي 360 في قاعدة البيانات. حاول مرة أخرى.',
+              });
+              return;
             }
-            const raw = hubProfile360.getProfileRaw?.(result.user.email);
-            if (raw) {
-              profileSummary = {
-                accountNo: raw.accountNo || '',
-                customerId: result.user.customerId || result.user.clientId || '',
-                profileId: raw.profileId || '',
-              };
-            }
-          } catch {
-            /* ignore */
+          }
+          const raw = hubProfile360.getProfileRaw?.(result.user.email);
+          if (raw) {
+            profileSummary = {
+              accountNo: raw.accountNo || '',
+              customerId: result.user.customerId || result.user.clientId || '',
+              profileId: raw.profileId || '',
+            };
           }
           if (profileSummary && result.user) {
             result.user.accountNo = profileSummary.accountNo || result.user.accountNo;
@@ -2146,7 +2165,7 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname.startsWith(`${hubUploads.PUBLIC_PREFIX}/`) && (req.method === 'GET' || req.method === 'HEAD')) {
     const id = path.basename(pathname);
-    const filePath = hubUploads.resolveUploadPath(id);
+    let filePath = hubUploads.resolveUploadPath(id);
     if (!filePath) {
       send(res, 400, 'Bad request');
       return;
@@ -2156,25 +2175,42 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 403, { ok: false, error: 'هذا المرفق خاص — استخدم واجهة الإدارة أو رابط المرفقات المصرّح' });
       return;
     }
-    fs.stat(filePath, (err, stat) => {
-      if (err || !stat.isFile()) {
-        send(res, 404, 'Not Found');
-        return;
-      }
-      const ext = path.extname(filePath).toLowerCase();
-      const headers = {
-        'Content-Type': hubUploads.mimeForExt(ext) || MIME[ext] || 'application/octet-stream',
-        'Cache-Control': 'public, max-age=86400',
-        'Content-Length': String(stat.size),
-        'X-Content-Type-Options': 'nosniff',
-      };
-      if (req.method === 'HEAD') {
-        res.writeHead(200, headers);
-        res.end();
-        return;
-      }
-      streamFile(filePath, res, headers, false);
-    });
+    const serveUpload = (resolvedPath) => {
+      fs.stat(resolvedPath, (err, stat) => {
+        if (err || !stat.isFile()) {
+          send(res, 404, 'Not Found');
+          return;
+        }
+        const ext = path.extname(resolvedPath).toLowerCase();
+        const headers = {
+          'Content-Type': hubUploads.mimeForExt(ext) || MIME[ext] || 'application/octet-stream',
+          'Cache-Control': 'public, max-age=86400',
+          'Content-Length': String(stat.size),
+          'X-Content-Type-Options': 'nosniff',
+        };
+        if (req.method === 'HEAD') {
+          res.writeHead(200, headers);
+          res.end();
+          return;
+        }
+        streamFile(resolvedPath, res, headers, false);
+      });
+    };
+    if (!fs.existsSync(filePath)) {
+      hubUploads
+        .hydrateBlobFromDb(id)
+        .then((hyd) => {
+          const p = hyd?.path || hubUploads.resolveUploadPath(id);
+          if (!p || !fs.existsSync(p)) {
+            send(res, 404, 'Not Found');
+            return;
+          }
+          serveUpload(p);
+        })
+        .catch(() => send(res, 404, 'Not Found'));
+      return;
+    }
+    serveUpload(filePath);
     return;
   }
 
@@ -2253,6 +2289,36 @@ async function boot() {
   } catch (error) {
     console.error('Customer accounts hydrate skipped:', error.message);
   }
+
+  try {
+    const portalHyd = await hubClientPortal.hydrateFromDb();
+    console.log(
+      `Client portal hydrated from ${portalHyd?.source || '?'} (clients=${portalHyd?.clientCount || 0})`
+    );
+  } catch (error) {
+    console.error('Client portal hydrate skipped:', error.message);
+  }
+
+  try {
+    const hubProfile360 = require('./lib/hub-profile-360');
+    const profHyd = await hubProfile360.hydrateFromDb();
+    console.log(
+      `Profiles-360 hydrated from ${profHyd?.source || '?'} (profiles=${profHyd?.profileCount || 0})`
+    );
+  } catch (error) {
+    console.error('Profiles-360 hydrate skipped:', error.message);
+  }
+
+  try {
+    const clientAttachments = require('./lib/hub-client-attachments');
+    const attHyd = await clientAttachments.hydrateFromDb();
+    const n = Array.isArray(attHyd?.store?.attachments) ? attHyd.store.attachments.length : 0;
+    console.log(`Client attachments hydrated from ${attHyd?.source || '?'} (attachments=${n})`);
+  } catch (error) {
+    console.error('Client attachments hydrate skipped:', error.message);
+  }
+
+  console.log(`UV_THREADPOOL_SIZE=${process.env.UV_THREADPOOL_SIZE} (scrypt concurrency)`);
 
   // Demo client seed only when explicitly allowed (never in default production)
   if (String(process.env.HUB_ALLOW_LEGACY_DEMO || '') === '1') {
