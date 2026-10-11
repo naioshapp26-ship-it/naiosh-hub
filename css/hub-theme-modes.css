@@ -209,15 +209,46 @@ html[data-theme='dark'] .panel,
 html[data-theme='dark'] .kpi,
 html[data-theme='dark'] .stat-card,
 html[data-theme='dark'] article.card,
+html[data-theme='dark'] .feed,
+html[data-theme='dark'] .table-wrap,
+html[data-theme='dark'] .panel-root,
+html[data-theme='dark'] #panel-root > .panel,
+html[data-theme='dark'] .toolbar,
+html[data-theme='dark'] .hub-ws-section,
 body.dark-mode .card,
 body.dark-mode .panel,
 body.dark-mode .kpi,
 body.dark-mode .stat-card,
-body.dark-mode article.card {
+body.dark-mode article.card,
+body.dark-mode .feed,
+body.dark-mode .table-wrap,
+body.dark-mode .panel-root,
+body.dark-mode #panel-root > .panel,
+body.dark-mode .toolbar,
+body.dark-mode .hub-ws-section {
   background: var(--theme-surface);
   border-color: var(--theme-border);
   color: var(--theme-text);
   box-shadow: 0 2px 12px var(--theme-shadow);
+}
+
+html[data-theme='dark'] #panel-root,
+html[data-theme='dark'] .main .panel.active,
+body.dark-mode #panel-root,
+body.dark-mode .main .panel.active {
+  background: transparent;
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .feed li,
+html[data-theme='dark'] .needs-list li,
+html[data-theme='dark'] .ov-need,
+body.dark-mode .feed li,
+body.dark-mode .needs-list li,
+body.dark-mode .ov-need {
+  background: var(--theme-surface-2);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
 }
 
 html[data-theme='dark'] .btn-ghost,
