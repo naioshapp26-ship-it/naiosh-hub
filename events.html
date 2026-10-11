@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <script>
+    /* Hub theme FOUC guard — keep before paint */
+    (function () {
+      try {
+        var t = localStorage.getItem('hubTheme') || localStorage.getItem('theme');
+        if (t === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.style.colorScheme = 'dark';
+          document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('dark-mode');
+          });
+        } else {
+          document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>استوديو الفعاليات الذكي | نايوش هوب 360</title>
@@ -8,6 +26,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <link rel="stylesheet" href="css/hub-events-studio.css?v=2" />
+  <link rel="stylesheet" href="css/dark-mode.css?v=theme1" />
+  <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme1" />
 </head>
 <body class="ev-body">
   <div class="ev-wrap" id="ev-root">
@@ -18,5 +38,6 @@
   <script src="js/hub-auth.js?v=client2"></script>
   <script src="js/hub-upload-limits.js?v=2"></script>
   <script src="js/hub-events-studio.js?v=4"></script>
+  <script src="js/hub-theme.js?v=theme1" defer></script>
 </body>
 </html>

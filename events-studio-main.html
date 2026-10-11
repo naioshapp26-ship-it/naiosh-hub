@@ -1,14 +1,35 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <script>
+    /* Hub theme FOUC guard — keep before paint */
+    (function () {
+      try {
+        var t = localStorage.getItem('hubTheme') || localStorage.getItem('theme');
+        if (t === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.style.colorScheme = 'dark';
+          document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('dark-mode');
+          });
+        } else {
+          document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <meta charset="UTF-8" />
   <meta http-equiv="refresh" content="0; url=events.html" />
   <title>استوديو الفعاليات الذكي</title>
   <script>location.replace('events.html' + (location.hash || '') + (location.search || ''));</script>
   <script src="js/hub-i18n.js?v=ar13"></script>
   <script src="js/hub-i18n-display.js?v=ar13"></script>
+  <link rel="stylesheet" href="css/dark-mode.css?v=theme1" />
+  <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme1" />
 </head>
 <body>
   <p><a href="events.html">انتقال إلى استوديو الفعاليات الذكي</a></p>
+  <script src="js/hub-theme.js?v=theme1" defer></script>
 </body>
 </html>

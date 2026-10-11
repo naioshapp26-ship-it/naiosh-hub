@@ -1,6 +1,24 @@
 ﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <script>
+    /* Hub theme FOUC guard — keep before paint */
+    (function () {
+      try {
+        var t = localStorage.getItem('hubTheme') || localStorage.getItem('theme');
+        if (t === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.style.colorScheme = 'dark';
+          document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('dark-mode');
+          });
+        } else {
+          document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>نايوش هوب | Naiosh Hub 360</title>
@@ -51,6 +69,8 @@
   <link rel="stylesheet" href="css/hub-service-requests.css?v=3" />
   <link rel="stylesheet" href="css/hub-pwa.css?v=9" />
   <link rel="stylesheet" href="css/hub-mobile-home.css?v=6" />
+  <link rel="stylesheet" href="css/dark-mode.css?v=theme1" />
+  <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme1" />
 </head>
 <body class="homepage">
   <div class="announcement-bar" id="announcement-bar" role="status" aria-live="polite">
@@ -600,5 +620,6 @@
   <script src="js/hub-universal-search-ui.js?v=13" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
   <script src="js/hub-pwa.js?v=8" defer></script>
+  <script src="js/hub-theme.js?v=theme1" defer></script>
 </body>
 </html>

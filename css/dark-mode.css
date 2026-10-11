@@ -147,36 +147,7 @@ body.dark-mode .auth-btn.primary {
   color: #fff;
 }
 
-/* ── Dark mode toggle button ───────────────────── */
-.dark-mode-toggle {
-  background: none;
-  border: 1px solid #d0d4de;
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 18px;
-  color: #171a20;
-  padding: 0;
-  flex-shrink: 0;
-  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-}
-
-.dark-mode-toggle:hover {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-body.dark-mode .dark-mode-toggle {
-  border-color: #3a3a3a;
-  color: #f0f2f7;
-}
-
-body.dark-mode .dark-mode-toggle:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
+/* Toggle visuals live in hub-theme-modes.css (.hub-theme-toggle) */
 
 /* ── Buttons — primary red (stays visible) ─────── */
 body.dark-mode .btn-primary,
