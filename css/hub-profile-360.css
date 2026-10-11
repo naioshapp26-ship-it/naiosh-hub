@@ -450,7 +450,9 @@ body.dark-mode .p360-persona-chip.is-active {
 }
 
 .p360-hero .p360-inline-panel[hidden],
-.p360-inline-panel[hidden] {
+.p360-inline-panel[hidden],
+.p360-form label[hidden],
+#p360-email-confirm-wrap[hidden] {
   display: none !important;
 }
 
