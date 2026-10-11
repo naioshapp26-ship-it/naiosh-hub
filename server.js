@@ -1918,6 +1918,35 @@ const server = http.createServer(async (req, res) => {
               });
               return;
             }
+            // Normalized per-customer rows (fail-closed when DATABASE_URL set)
+            try {
+              const rel = require('./lib/hub-customer-relational');
+              if (rel.dbEnabled()) {
+                const prov = await rel.provisionCustomerBundle({
+                  email: result.user.email,
+                  name: result.user.name || result.user.fullName,
+                  phone: result.user.phone || portalClient.phone,
+                  customerId: result.user.customerId || result.user.clientId,
+                  city: portalClient.city,
+                  country: portalClient.country,
+                });
+                if (!prov.ok && !prov.skipped) {
+                  sendJson(res, 503, {
+                    success: false,
+                    ok: false,
+                    error: 'تعذر إنشاء سجل العميل المنظم في قاعدة البيانات.',
+                  });
+                  return;
+                }
+              }
+            } catch (err) {
+              sendJson(res, 503, {
+                success: false,
+                ok: false,
+                error: `تعذر تهيئة بيانات العميل: ${err.message}`,
+              });
+              return;
+            }
           }
           let profileSummary = null;
           const hubProfile360 = require('./lib/hub-profile-360');
@@ -2316,6 +2345,40 @@ async function boot() {
     console.log(`Client attachments hydrated from ${attHyd?.source || '?'} (attachments=${n})`);
   } catch (error) {
     console.error('Client attachments hydrate skipped:', error.message);
+  }
+
+  // Normalized customer tables: migrate hub_meta blobs synchronously; backfill hub_users in background.
+  if (getDatabaseUrl() && String(process.env.HUB_SKIP_CUSTOMER_RELATIONAL_MIGRATE || '') !== '1') {
+    try {
+      const rel = require('./lib/hub-customer-relational');
+      const mig = await rel.migrateFromBlobsAndBackfill({ skipBackfill: true });
+      console.log(
+        `[customer-relational] blob-migrate ok=${mig.ok} clients=${mig.stats?.after?.clientAccounts} profiles=${mig.stats?.after?.profiles}`
+      );
+      try {
+        const obj = require('./lib/hub-object-storage');
+        console.log('[object-storage]', JSON.stringify(obj.statusReport()));
+      } catch {
+        /* ignore */
+      }
+      // Background backfill so boot is not blocked for tens of thousands of users
+      if (String(process.env.HUB_CUSTOMER_BACKFILL_BG || '1') === '1') {
+        const limit = Number(process.env.HUB_CUSTOMER_BACKFILL_LIMIT || 0);
+        setImmediate(() => {
+          rel
+            .backfillMissingCustomers({ limit: limit > 0 ? limit : 0 })
+            .then(async (bf) => {
+              const v = await rel.verifyMigrationIntegrity();
+              console.log(
+                `[customer-relational] backfill done +${bf.backfilledUsers} gaps=${JSON.stringify(v.gaps || {})}`
+              );
+            })
+            .catch((err) => console.error('[customer-relational] backfill failed:', err.message));
+        });
+      }
+    } catch (error) {
+      console.error('Customer relational migrate skipped:', error.message);
+    }
   }
 
   console.log(`UV_THREADPOOL_SIZE=${process.env.UV_THREADPOOL_SIZE} (scrypt concurrency)`);

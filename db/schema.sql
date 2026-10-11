@@ -508,3 +508,151 @@ ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS brand TEXT;
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS item_kind TEXT DEFAULT 'منتج';
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS sku TEXT;
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS marketplaces JSONB DEFAULT '[]'::jsonb;
+
+-- ─── Normalized customer center (replaces shared hub_meta JSON blobs as SoT) ───
+-- Legacy hub_meta keys (client_portal_v1 / profiles-360 / client_attachments_v1)
+-- are retained as rollback mirrors until migration is verified.
+
+CREATE TABLE IF NOT EXISTS hub_client_accounts (
+  email TEXT PRIMARY KEY,
+  customer_id TEXT,
+  client_id TEXT NOT NULL,
+  account_no TEXT,
+  name TEXT NOT NULL DEFAULT '',
+  phone TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  lifecycle TEXT NOT NULL DEFAULT 'ONBOARDING',
+  account_level TEXT DEFAULT 'أساسي',
+  company TEXT DEFAULT '',
+  country TEXT DEFAULT '',
+  city TEXT DEFAULT '',
+  address TEXT DEFAULT '',
+  client_type TEXT DEFAULT '',
+  activity_type TEXT DEFAULT '',
+  language TEXT DEFAULT 'ar',
+  avatar_url TEXT DEFAULT '',
+  naiosh_id TEXT DEFAULT '',
+  wallet JSONB NOT NULL DEFAULT '{"paid":0,"free":0,"total":0,"ledger":[]}'::jsonb,
+  onboarding JSONB NOT NULL DEFAULT '{}'::jsonb,
+  systems JSONB NOT NULL DEFAULT '[]'::jsonb,
+  notifications JSONB NOT NULL DEFAULT '[]'::jsonb,
+  activity JSONB NOT NULL DEFAULT '[]'::jsonb,
+  internal_notes JSONB NOT NULL DEFAULT '[]'::jsonb,
+  extras JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_via TEXT DEFAULT '',
+  created_by_email TEXT DEFAULT '',
+  created_by_employee_id TEXT DEFAULT '',
+  last_login_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS hub_client_accounts_client_id_uidx ON hub_client_accounts (client_id);
+CREATE INDEX IF NOT EXISTS hub_client_accounts_customer_id_idx ON hub_client_accounts (customer_id);
+CREATE INDEX IF NOT EXISTS hub_client_accounts_status_idx ON hub_client_accounts (status);
+
+CREATE TABLE IF NOT EXISTS hub_client_tickets (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL REFERENCES hub_client_accounts(email) ON DELETE CASCADE,
+  customer_id TEXT,
+  client_id TEXT,
+  number TEXT NOT NULL,
+  subject TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT 'دعم فني',
+  department TEXT NOT NULL DEFAULT 'دعم فني',
+  priority TEXT NOT NULL DEFAULT 'NORMAL',
+  status TEXT NOT NULL DEFAULT 'OPEN',
+  related_system_id TEXT DEFAULT '',
+  assigned_admin_id TEXT,
+  messages JSONB NOT NULL DEFAULT '[]'::jsonb,
+  extras JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (email, number)
+);
+CREATE INDEX IF NOT EXISTS hub_client_tickets_email_idx ON hub_client_tickets (email);
+CREATE INDEX IF NOT EXISTS hub_client_tickets_status_idx ON hub_client_tickets (status);
+CREATE INDEX IF NOT EXISTS hub_client_tickets_number_idx ON hub_client_tickets (number);
+
+CREATE TABLE IF NOT EXISTS hub_client_service_requests (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL REFERENCES hub_client_accounts(email) ON DELETE CASCADE,
+  customer_id TEXT,
+  client_id TEXT,
+  number TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'OTHER',
+  subject TEXT NOT NULL DEFAULT '',
+  message TEXT NOT NULL DEFAULT '',
+  related_system TEXT DEFAULT '',
+  priority TEXT NOT NULL DEFAULT 'NORMAL',
+  status TEXT NOT NULL DEFAULT 'NEW',
+  assigned_to TEXT,
+  timeline JSONB NOT NULL DEFAULT '[]'::jsonb,
+  extras JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (email, number)
+);
+CREATE INDEX IF NOT EXISTS hub_client_service_requests_email_idx ON hub_client_service_requests (email);
+CREATE INDEX IF NOT EXISTS hub_client_service_requests_number_idx ON hub_client_service_requests (number);
+
+CREATE TABLE IF NOT EXISTS hub_client_complaints (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL REFERENCES hub_client_accounts(email) ON DELETE CASCADE,
+  customer_id TEXT,
+  client_id TEXT,
+  number TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'عام',
+  subject TEXT NOT NULL DEFAULT '',
+  message TEXT NOT NULL DEFAULT '',
+  related_system TEXT DEFAULT '',
+  priority TEXT NOT NULL DEFAULT 'NORMAL',
+  status TEXT NOT NULL DEFAULT 'OPEN',
+  assigned_to TEXT,
+  resolution TEXT DEFAULT '',
+  timeline JSONB NOT NULL DEFAULT '[]'::jsonb,
+  extras JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (email, number)
+);
+CREATE INDEX IF NOT EXISTS hub_client_complaints_email_idx ON hub_client_complaints (email);
+CREATE INDEX IF NOT EXISTS hub_client_complaints_number_idx ON hub_client_complaints (number);
+
+CREATE TABLE IF NOT EXISTS hub_client_attachment_refs (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'file',
+  storage_ref TEXT NOT NULL,
+  storage_backend TEXT NOT NULL DEFAULT 'db',
+  original_file_name TEXT,
+  mime_type TEXT,
+  file_size INTEGER NOT NULL DEFAULT 0,
+  extras JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hub_client_attachment_refs_email_idx ON hub_client_attachment_refs (email);
+CREATE INDEX IF NOT EXISTS hub_client_attachment_refs_entity_idx ON hub_client_attachment_refs (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS hub_client_attachment_refs_storage_idx ON hub_client_attachment_refs (storage_ref);
+
+CREATE TABLE IF NOT EXISTS hub_revoked_tokens (
+  token_hash TEXT PRIMARY KEY,
+  email TEXT,
+  revoked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS hub_revoked_tokens_expires_idx ON hub_revoked_tokens (expires_at);
+
+CREATE TABLE IF NOT EXISTS hub_customer_migrate_checkpoints (
+  name TEXT PRIMARY KEY,
+  stats JSONB NOT NULL DEFAULT '{}'::jsonb,
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Extra profile columns used by Profile 360 JSON that were not in hub_profiles yet
+ALTER TABLE hub_profiles ADD COLUMN IF NOT EXISTS city TEXT DEFAULT '';
+ALTER TABLE hub_profiles ADD COLUMN IF NOT EXISTS country TEXT DEFAULT '';
+ALTER TABLE hub_profiles ADD COLUMN IF NOT EXISTS personas JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE hub_profiles ADD COLUMN IF NOT EXISTS extras JSONB NOT NULL DEFAULT '{}'::jsonb;
