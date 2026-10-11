@@ -17,7 +17,7 @@
     { id: 'support', label: 'الدعم', icon: 'fa-headset' },
     { id: 'notifications', label: 'الإشعارات', icon: 'fa-bell' },
     { id: 'marketplace', label: 'استكشف الخدمات', icon: 'fa-store' },
-    { id: 'profile360', label: 'ملفي 360', icon: 'fa-id-badge' },
+    { id: 'profile360', label: 'ملفي الشخصي 360', icon: 'fa-id-badge' },
     { id: 'profile', label: 'حسابي', icon: 'fa-user' },
     { id: 'security', label: 'الأمان', icon: 'fa-shield-halved' }
   ];
@@ -34,7 +34,7 @@
     support: ['مركز الدعم', 'تذاكر ومساعدة'],
     notifications: ['الإشعارات', 'تنبيهات حسابك'],
     marketplace: ['استكشف الخدمات', 'منتجات وأنظمة نايوش'],
-    profile360: ['الملف الشخصي 360', 'هويتك وصفاتك وبياناتك الحقيقية عبر نايوش هوب'],
+    profile360: ['ملفي الشخصي 360', 'بياناتك وصفاتك وخدماتك المرتبطة بحسابك فقط'],
     profile: ['حسابي', 'بياناتك الشخصية'],
     security: ['الأمان', 'كلمة المرور والجلسات']
   };
@@ -1195,7 +1195,20 @@
         try { await load('home'); } catch (e) {}
       }
       if (state.page === 'profile360') {
-        location.href = 'profile-360.html';
+        root.innerHTML =
+          '<div class="cp-card" style="padding:0;overflow:hidden">' +
+          '<div style="padding:12px 16px;border-bottom:1px solid var(--cp-line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">' +
+          '<div><strong style="font-size:1.05rem">ملفي الشخصي 360</strong>' +
+          '<div style="font-size:12px;font-weight:700;color:var(--cp-muted);margin-top:2px">حسابك فقط — لا بيانات مستخدمين آخرين</div></div>' +
+          '<a class="cp-btn" href="profile-360.html" target="_blank" rel="noopener">فتح في صفحة كاملة</a>' +
+          '</div>' +
+          '<div id="cp-profile360-mount" class="p360-embed" style="padding:12px 14px 20px"></div></div>';
+        if (window.HubProfile360 && typeof window.HubProfile360.mountOwner === 'function') {
+          window.HubProfile360.mountOwner(document.getElementById('cp-profile360-mount'));
+        } else {
+          document.getElementById('cp-profile360-mount').innerHTML =
+            '<p style="font-weight:700;color:var(--cp-muted)">تعذّر تحميل واجهة الملف الشخصي. <a href="profile-360.html">افتح الصفحة المستقلة</a></p>';
+        }
         return;
       }
       var data = await load(state.page);
