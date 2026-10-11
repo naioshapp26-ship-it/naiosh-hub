@@ -65,6 +65,16 @@
     );
   }
 
+  function isHubCampaignReq(r) {
+    if (!r) return false;
+    return (
+      r.hubCampaignApi ||
+      r.requestType === 'Campaign Submission' ||
+      String(r.requestId || r.id || '').startsWith('CMP-REQ-') ||
+      String(r.campaignId || r.referenceId || '').startsWith('CMP-')
+    );
+  }
+
   function isHubArticleReq(r) {
     if (!r) return false;
     return (
@@ -78,6 +88,16 @@
     const eventId = r.eventId || r.referenceId;
     if (!eventId) throw new Error('رقم الفعالية غير موجود');
     return api(`/api/hub/events/${encodeURIComponent(eventId)}/action`, {
+      method: 'POST',
+      body: { action, note: note || '', reason: note || '' },
+      timeoutMs: 15000,
+    });
+  }
+
+  async function hubCampaignDecision(r, action, note) {
+    const campaignId = r.campaignId || r.referenceId;
+    if (!campaignId) throw new Error('رقم الحملة غير موجود');
+    return api(`/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/action`, {
       method: 'POST',
       body: { action, note: note || '', reason: note || '' },
       timeoutMs: 15000,
@@ -987,6 +1007,14 @@
           return;
         }
       }
+      if (kind === 'campaign' && isHubCampaignReq(r)) {
+        try {
+          await hubCampaignDecision(r, allow ? 'request_changes' : 'reject', reason);
+        } catch (err) {
+          alert(errText(err));
+          return;
+        }
+      }
       if (kind === 'article' && isHubArticleReq(r)) {
         try {
           await hubArticleDecision(r, 'reject', reason);
@@ -1170,6 +1198,8 @@
     if (r.referenceType === 'Ad' || r.requestType === 'Ad Submission') return 'ad';
     if (r.referenceType === 'Product' || r.requestType === 'Product Submission') return 'product';
     if (r.referenceType === 'Event' || r.requestType === 'Event Submission') return 'event';
+    if (r.referenceType === 'Campaign' || r.requestType === 'Campaign Submission' || isHubCampaignReq(r))
+      return 'campaign';
     if (r.referenceType === 'Article' || r.requestType === 'Article Submission') return 'article';
     if (
       r.referenceType === 'Platform' ||
@@ -1885,6 +1915,8 @@
             ? `الموافقة على نشر الإعلان؟\n\nالإعلان: ${ad?.title || r.title || '—'}\nالعميل: ${r.customerName || '—'}\nأماكن الظهور: ${places}\nالبداية: ${ad?.adStartDate || 'فور الموافقة'}\nالنهاية: ${ad?.adEndDate || '—'}`
             : kind === 'event'
               ? `الموافقة على نشر الفعالية؟\n\nالطلب: ${r.requestId || r.id}\nالفعالية: ${r.eventId || r.referenceId || '—'}\n${r.title || ''}\nالعميل: ${r.customerName || '—'}`
+              : kind === 'campaign'
+                ? `الموافقة على نشر الحملة التسويقية؟\n\nالطلب: ${r.requestId || r.id}\nالحملة: ${r.campaignId || r.referenceId || '—'}\n${r.title || ''}\nالمالك: ${r.customerName || '—'}`
               : kind === 'article'
                 ? `هل تريد اعتماد ونشر هذا المقال؟\n\nRequest: ${r.id}\nArticle: ${r.referenceId || '—'}\nالعنوان: ${r.title || ''}\nالعميل: ${r.customerName || ''}`
                 : kind === 'product'
@@ -1899,6 +1931,14 @@
         if (kind === 'event' && isHubEventReq(r)) {
           try {
             await hubEventDecision(r, 'approve');
+          } catch (err) {
+            alert(errText(err));
+            return;
+          }
+        }
+        if (kind === 'campaign' && isHubCampaignReq(r)) {
+          try {
+            await hubCampaignDecision(r, 'approve');
           } catch (err) {
             alert(errText(err));
             return;
@@ -2646,17 +2686,19 @@
             apiWarn = apiWarn || errText(e);
             return null;
           });
-        const [clients, tickets, events, issues, notifs, hubEventReqs, hubArticleReqs, hubAdSubs, hubPrdSubs] = await Promise.all([
-          soft('/api/admin/posha/clients'),
-          soft('/api/admin/posha/tickets'),
-          soft('/api/admin/posha/events'),
-          soft('/api/admin/posha/issues'),
-          soft('/api/admin/posha/notifications'),
-          soft('/api/hub/events/requests'),
-          soft('/api/hub/articles/requests'),
-          soft('/api/hub/ad-submissions'),
-          soft('/api/hub/product-submissions'),
-        ]);
+        const [clients, tickets, events, issues, notifs, hubEventReqs, hubCampaignReqs, hubArticleReqs, hubAdSubs, hubPrdSubs] =
+          await Promise.all([
+            soft('/api/admin/posha/clients'),
+            soft('/api/admin/posha/tickets'),
+            soft('/api/admin/posha/events'),
+            soft('/api/admin/posha/issues'),
+            soft('/api/admin/posha/notifications'),
+            soft('/api/hub/events/requests'),
+            soft('/api/hub/marketing-campaigns/requests'),
+            soft('/api/hub/articles/requests'),
+            soft('/api/hub/ad-submissions'),
+            soft('/api/hub/product-submissions'),
+          ]);
         if (clients) {
           state.clients = clients.clients || [];
           state.summary = clients.summary || {};
@@ -2672,6 +2714,13 @@
           hubEventReqs.items.forEach((item) => {
             try {
               cr()?.ingestHubEventRequest?.(item);
+            } catch (_) {}
+          });
+        }
+        if (hubCampaignReqs && Array.isArray(hubCampaignReqs.items)) {
+          hubCampaignReqs.items.forEach((item) => {
+            try {
+              cr()?.ingestHubCampaignRequest?.(item);
             } catch (_) {}
           });
         }

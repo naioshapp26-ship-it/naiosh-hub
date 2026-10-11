@@ -683,21 +683,30 @@
   }
 
   function reelsHtml() {
+    var vids = state.videos || [];
     return (
       '<section class="mcs-panel"><h2>صانع المقاطع القصيرة</h2>' +
-      '<p>لا يوجد محرر فيديو داخلي. ارفع الفيديو المصدر ثم احفظ بيانات المقطع القصير واربطه بالحملة.</p>' +
+      '<p>معالجة حقيقية عبر ffmpeg على الخادم: قص · أبعاد · عنوان · غلاف · حفظ في المكتبة الموحدة. الذكاء الاصطناعي غير متصل.</p>' +
       '<div class="mcs-form">' +
       '<label>الحملة<select data-clip-campaign>' +
       (state.items || []).map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.id + ' — ' + c.name) + '</option>'; }).join('') +
       '</select></label>' +
       '<label>اسم المقطع<input data-clip-title></label>' +
-      '<label>المدة (ثوانٍ)<input data-clip-dur type="number"></label>' +
+      '<label>البداية (ث)<input data-clip-start type="number" value="0"></label>' +
+      '<label>النهاية (ث)<input data-clip-end type="number" value="15"></label>' +
+      '<label>الأبعاد<select data-clip-aspect><option value="9:16">9:16</option><option value="1:1">1:1</option><option value="16:9">16:9</option></select></label>' +
       '<label>المنصة المستهدفة<select data-clip-platform>' +
-      (state.meta.channels || []).map(function (ch) { return '<option value="' + esc(ch.id) + '">' + esc(ch.label) + '</option>'; }).join('') +
+      (state.meta.channels || []).map(function (ch) { return '<option value="' + esc(ch.id) + '">' + esc(ch.label) + (ch.connected ? '' : ' · يدوي') + '</option>'; }).join('') +
       '</select></label>' +
-      '<label class="mcs-span-2">ملف المقطع القصير<input type="file" accept="video/*" data-clip-file></label>' +
+      '<label>مصدر من مكتبة الحملة<select data-clip-source><option value="">— ارفع ملفًا —</option>' +
+      vids.map(function (v) {
+        return '<option value="' + esc(v.uploadId || String(v.url || '').replace(/^\/uploads\//, '')) + '">' + esc((v.id || '') + ' — ' + (v.name || '')) + '</option>';
+      }).join('') +
+      '</select></label>' +
+      '<label class="mcs-span-2">أو ارفع فيديو مصدر<input type="file" accept="video/*" data-clip-file></label>' +
       '</div>' +
-      '<button class="mcs-btn primary" data-mcs="make-clip"><i class="fas fa-scissors"></i> حفظ المقطع في المكتبة</button>' +
+      '<div class="mcs-meta" data-clip-status aria-live="polite"></div>' +
+      '<button class="mcs-btn primary" data-mcs="make-clip"><i class="fas fa-scissors"></i> معالجة وحفظ الريلز</button>' +
       '</section>'
     );
   }
@@ -1418,26 +1427,61 @@
         await refreshAll();
       } else if (t.getAttribute('data-mcs') === 'make-clip') {
         var camp = (root.querySelector('[data-clip-campaign]') || {}).value;
+        if (!camp) throw new Error('اختر حملة');
+        var statusEl = root.querySelector('[data-clip-status]');
         var fileEl = root.querySelector('[data-clip-file]');
-        var assetId = '';
+        var sourceUploadId = String((root.querySelector('[data-clip-source]') || {}).value || '').replace(/^\/uploads\//, '');
         if (fileEl && fileEl.files && fileEl.files[0]) {
+          if (statusEl) statusEl.textContent = 'جارٍ رفع المصدر…';
           var up = await uploadFile(fileEl.files[0]);
-          var as = await api('/api/hub/marketing-campaigns/' + encodeURIComponent(camp) + '/assets', {
+          sourceUploadId = up.id || String(up.url || '').replace(/^\/uploads\//, '');
+          await api('/api/hub/marketing-campaigns/' + encodeURIComponent(camp) + '/assets', {
             method: 'POST',
-            body: { kind: 'short', name: fileEl.files[0].name, mime: fileEl.files[0].type, size: fileEl.files[0].size, url: up.url, uploadId: up.id },
+            body: { kind: 'video', name: fileEl.files[0].name, mime: fileEl.files[0].type, size: fileEl.files[0].size, url: up.url, uploadId: up.id },
           });
-          assetId = (as.campaign.assets.slice(-1)[0] || {}).id;
+          await api('/api/hub/media', {
+            method: 'POST',
+            body: {
+              uploadId: up.id,
+              url: up.url,
+              mime: fileEl.files[0].type,
+              originalName: fileEl.files[0].name,
+              sizeBytes: fileEl.files[0].size,
+              kind: 'video_long',
+              sourceStudio: 'marketing',
+              campaignId: camp,
+            },
+          }).catch(function () {});
         }
+        if (!sourceUploadId) throw new Error('اختر فيديو مصدرًا أو ارفع ملفًا');
+        if (statusEl) statusEl.textContent = 'جارٍ معالجة الفيديو على الخادم (ffmpeg)…';
+        var title = (root.querySelector('[data-clip-title]') || {}).value || 'ريلز حملة';
+        var reel = await api('/api/hub/reels/process', {
+          method: 'POST',
+          body: {
+            sourceUploadId: sourceUploadId,
+            startSec: Number((root.querySelector('[data-clip-start]') || {}).value || 0),
+            endSec: Number((root.querySelector('[data-clip-end]') || {}).value || 15),
+            aspect: (root.querySelector('[data-clip-aspect]') || {}).value || '9:16',
+            title: title,
+            campaignId: camp,
+          },
+        });
         await api('/api/hub/marketing-campaigns/' + encodeURIComponent(camp) + '/clips', {
           method: 'POST',
           body: {
-            title: (root.querySelector('[data-clip-title]') || {}).value,
-            duration: (root.querySelector('[data-clip-dur]') || {}).value,
+            title: title,
+            duration: reel.reel && reel.reel.duration,
             platform: (root.querySelector('[data-clip-platform]') || {}).value,
-            assetId: assetId,
+            assetId: reel.reel && reel.reel.outputUploadId,
+            url: reel.reel && reel.reel.outputUrl,
+            thumbnail: reel.reel && reel.reel.coverUrl,
+            mediaId: reel.reel && reel.reel.mediaId,
+            status: 'ready',
           },
         });
-        toast('حُفظ المقطع');
+        if (statusEl) statusEl.textContent = 'جاهز · ' + ((reel.reel && reel.reel.mediaId) || '');
+        toast('عُولج الريلز وحُفظ · ' + ((reel.reel && reel.reel.mediaId) || ''));
         await refreshAll();
       } else if (t.getAttribute('data-mcs') === 'rec-start') {
         if (!navigator.mediaDevices || !window.MediaRecorder) { toast('التسجيل غير مدعوم في هذا المتصفح'); return; }
