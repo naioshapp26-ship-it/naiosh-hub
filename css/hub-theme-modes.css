@@ -1,0 +1,526 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAIOSH HUB 360 — unified light / dark theme modes
+   Companion to dark-mode.css (public surfaces).
+   Applied via html[data-theme="dark"] and body.dark-mode
+   ═══════════════════════════════════════════════════════════════ */
+
+:root,
+html[data-theme='light'] {
+  --theme-bg: #ffffff;
+  --theme-bg-muted: #f5f6f8;
+  --theme-surface: #ffffff;
+  --theme-surface-2: #f3f4f6;
+  --theme-text: #111111;
+  --theme-text-muted: #555b6e;
+  --theme-border: #e5e7eb;
+  --theme-shadow: rgba(0, 0, 0, 0.08);
+  --theme-input-bg: #ffffff;
+  --theme-header-bg: #ffffff;
+  --theme-sidebar-bg: #0c0d10;
+  --theme-sidebar-text: #ffffff;
+  --theme-accent: #d70000;
+  --theme-overlay: rgba(0, 0, 0, 0.45);
+  --theme-danger: #b91c1c;
+  --theme-success: #059669;
+  --theme-warn: #d97706;
+  color-scheme: light;
+}
+
+html[data-theme='dark'],
+body.dark-mode {
+  --theme-bg: #0f0f12;
+  --theme-bg-muted: #15161c;
+  --theme-surface: #1a1b22;
+  --theme-surface-2: #22242e;
+  --theme-text: #f3f4f6;
+  --theme-text-muted: #a1a7b5;
+  --theme-border: #2e3140;
+  --theme-shadow: rgba(0, 0, 0, 0.45);
+  --theme-input-bg: #12131a;
+  --theme-header-bg: #12131a;
+  --theme-sidebar-bg: #08090c;
+  --theme-sidebar-text: #f3f4f6;
+  --theme-accent: #ff2a2a;
+  --theme-overlay: rgba(0, 0, 0, 0.65);
+  --theme-danger: #f87171;
+  --theme-success: #34d399;
+  --theme-warn: #fbbf24;
+
+  /* Align existing brand / dm tokens */
+  --dm-bg: var(--theme-bg);
+  --dm-bg-card: var(--theme-surface);
+  --dm-bg-input: var(--theme-input-bg);
+  --dm-text: var(--theme-text);
+  --dm-text-muted: var(--theme-text-muted);
+  --dm-border: var(--theme-border);
+  --dm-shadow: var(--theme-shadow);
+  --dm-btn-sec-bg: var(--theme-surface-2);
+  --dm-btn-sec-text: var(--theme-text);
+  --dm-hover-card: var(--theme-surface-2);
+  --dm-brand-red: var(--theme-accent);
+
+  --brand-gray: var(--theme-bg-muted);
+  --brand-border: var(--theme-border);
+  --brand-text-muted: var(--theme-text-muted);
+  --homepage-header-bg: var(--theme-header-bg);
+  --homepage-text-color: var(--theme-text);
+  --homepage-heading-color: var(--theme-text);
+  --homepage-paragraph-color: var(--theme-text-muted);
+  --homepage-link-color: #d0d4de;
+
+  /* Dashboard tokens */
+  --gray: var(--theme-bg-muted);
+  --black: var(--theme-text);
+  --white: var(--theme-surface);
+  --muted: var(--theme-text-muted);
+  --border: var(--theme-border);
+
+  /* Client portal tokens */
+  --cp-bg: var(--theme-bg-muted);
+  --cp-card: var(--theme-surface);
+  --cp-ink: var(--theme-text);
+  --cp-muted: var(--theme-text-muted);
+  --cp-line: var(--theme-border);
+  --cp-shadow: 0 12px 32px var(--theme-shadow);
+
+  color-scheme: dark;
+}
+
+/* ── Toggle button ─────────────────────────────────────────── */
+.hub-theme-toggle,
+.dark-mode-toggle.hub-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--theme-border, #d0d4de);
+  background: var(--theme-surface, #fff);
+  color: var(--theme-text, #171a20);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px var(--theme-shadow, rgba(0, 0, 0, 0.06));
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.hub-theme-toggle i {
+  font-size: 14px;
+  color: var(--theme-accent, #d70000);
+}
+
+.hub-theme-toggle:hover {
+  background: var(--theme-surface-2, #f3f4f6);
+  border-color: rgba(215, 0, 0, 0.35);
+}
+
+html[data-theme='dark'] .hub-theme-toggle,
+body.dark-mode .hub-theme-toggle {
+  background: var(--theme-surface-2);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+.hub-theme-toggle-wrap--auth {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 12px;
+}
+
+.hub-theme-toggle-wrap--fab {
+  position: fixed;
+  z-index: 9998;
+  inset-inline-end: 16px;
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 720px) {
+  .hub-theme-toggle__text {
+    /* Keep short label on mobile */
+    font-size: 12px;
+  }
+  .hub-theme-toggle {
+    padding: 0 10px;
+    gap: 6px;
+  }
+}
+
+/* ── Global surfaces ───────────────────────────────────────── */
+html[data-theme='dark'] body,
+body.dark-mode {
+  background: var(--theme-bg);
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] body.homepage,
+body.dark-mode.homepage {
+  background: var(--theme-bg);
+  background-image:
+    radial-gradient(circle at 10% 8%, rgba(215, 0, 0, 0.1), transparent 32%),
+    radial-gradient(circle at 90% 70%, rgba(0, 0, 0, 0.35), transparent 36%);
+}
+
+/* ── Dashboard (غرفة العمليات) ─────────────────────────────── */
+html[data-theme='dark'] body:has(.sidebar),
+body.dark-mode:has(.sidebar) {
+  background: var(--theme-bg-muted);
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .main,
+body.dark-mode .main {
+  background: transparent;
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .topbar,
+body.dark-mode .topbar {
+  background: var(--theme-surface);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .topbar h1,
+html[data-theme='dark'] #page-title,
+body.dark-mode .topbar h1,
+body.dark-mode #page-title {
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .topbar p,
+html[data-theme='dark'] #page-sub,
+body.dark-mode .topbar p,
+body.dark-mode #page-sub {
+  color: var(--theme-text-muted);
+}
+
+html[data-theme='dark'] .sidebar,
+body.dark-mode .sidebar {
+  background: linear-gradient(180deg, #08090c 0%, #0c0d10 45%, #140004 100%);
+  border-color: rgba(215, 0, 0, 0.35);
+}
+
+html[data-theme='dark'] .card,
+html[data-theme='dark'] .panel,
+html[data-theme='dark'] .kpi,
+html[data-theme='dark'] .stat-card,
+html[data-theme='dark'] article.card,
+html[data-theme='dark'] .feed,
+html[data-theme='dark'] .table-wrap,
+html[data-theme='dark'] .panel-root,
+html[data-theme='dark'] #panel-root > .panel,
+html[data-theme='dark'] .toolbar,
+html[data-theme='dark'] .hub-ws-section,
+body.dark-mode .card,
+body.dark-mode .panel,
+body.dark-mode .kpi,
+body.dark-mode .stat-card,
+body.dark-mode article.card,
+body.dark-mode .feed,
+body.dark-mode .table-wrap,
+body.dark-mode .panel-root,
+body.dark-mode #panel-root > .panel,
+body.dark-mode .toolbar,
+body.dark-mode .hub-ws-section {
+  background: var(--theme-surface);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+  box-shadow: 0 2px 12px var(--theme-shadow);
+}
+
+html[data-theme='dark'] #panel-root,
+html[data-theme='dark'] .main .panel.active,
+body.dark-mode #panel-root,
+body.dark-mode .main .panel.active {
+  background: transparent;
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .feed li,
+html[data-theme='dark'] .needs-list li,
+html[data-theme='dark'] .ov-need,
+body.dark-mode .feed li,
+body.dark-mode .needs-list li,
+body.dark-mode .ov-need {
+  background: var(--theme-surface-2);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .btn-ghost,
+html[data-theme='dark'] .btn-dark,
+body.dark-mode .btn-ghost {
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+  background: var(--theme-surface-2);
+}
+
+html[data-theme='dark'] .btn-dark,
+body.dark-mode .btn-dark {
+  background: #0a0a0a;
+  color: #fff;
+  border-color: #222;
+}
+
+html[data-theme='dark'] .data-table,
+html[data-theme='dark'] .hss-table,
+html[data-theme='dark'] table.data,
+html[data-theme='dark'] .posha-clients-table,
+body.dark-mode .data-table,
+body.dark-mode .hss-table,
+body.dark-mode table.data,
+body.dark-mode .posha-clients-table {
+  background: var(--theme-surface);
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .data-table th,
+html[data-theme='dark'] .hss-table th,
+html[data-theme='dark'] .posha-clients-table th,
+body.dark-mode .data-table th,
+body.dark-mode .hss-table th,
+body.dark-mode .posha-clients-table th {
+  background: var(--theme-surface-2);
+  color: var(--theme-text);
+  border-color: var(--theme-border);
+}
+
+html[data-theme='dark'] .data-table td,
+html[data-theme='dark'] .hss-table td,
+html[data-theme='dark'] .posha-clients-table td,
+body.dark-mode .data-table td,
+body.dark-mode .hss-table td,
+body.dark-mode .posha-clients-table td {
+  border-color: var(--theme-border);
+  color: var(--theme-text-muted);
+}
+
+html[data-theme='dark'] .empty,
+html[data-theme='dark'] .muted,
+html[data-theme='dark'] .posha-muted,
+body.dark-mode .empty,
+body.dark-mode .muted,
+body.dark-mode .posha-muted {
+  color: var(--theme-text-muted);
+}
+
+html[data-theme='dark'] .hub-ops-ws,
+html[data-theme='dark'] .posha-ws-section,
+html[data-theme='dark'] .posha-panel,
+html[data-theme='dark'] .ss-card,
+body.dark-mode .hub-ops-ws,
+body.dark-mode .posha-ws-section,
+body.dark-mode .posha-panel,
+body.dark-mode .ss-card {
+  background: var(--theme-surface);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .posha-ws-title,
+html[data-theme='dark'] .posha-ws-section-head h3,
+body.dark-mode .posha-ws-title,
+body.dark-mode .posha-ws-section-head h3 {
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .posha-ws-sub,
+html[data-theme='dark'] .posha-ws-kicker,
+body.dark-mode .posha-ws-sub,
+body.dark-mode .posha-ws-kicker {
+  color: var(--theme-text-muted);
+}
+
+html[data-theme='dark'] .posha-ws-kpi,
+html[data-theme='dark'] .posha-kpis article,
+body.dark-mode .posha-ws-kpi,
+body.dark-mode .posha-kpis article {
+  background: var(--theme-surface-2);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .posha-mainnav,
+html[data-theme='dark'] .posha-mainnav button,
+body.dark-mode .posha-mainnav,
+body.dark-mode .posha-mainnav button {
+  color: var(--theme-text-muted);
+  border-color: var(--theme-border);
+}
+
+html[data-theme='dark'] .posha-mainnav button.is-active,
+body.dark-mode .posha-mainnav button.is-active {
+  color: #fff;
+  background: var(--theme-accent);
+}
+
+html[data-theme='dark'] input,
+html[data-theme='dark'] select,
+html[data-theme='dark'] textarea,
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  background: var(--theme-input-bg);
+  color: var(--theme-text);
+  border-color: var(--theme-border);
+}
+
+html[data-theme='dark'] .modal,
+html[data-theme='dark'] [role='dialog'],
+html[data-theme='dark'] .drawer,
+html[data-theme='dark'] .posha-drawer,
+body.dark-mode .modal,
+body.dark-mode [role='dialog'],
+body.dark-mode .drawer,
+body.dark-mode .posha-drawer {
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  border-color: var(--theme-border);
+}
+
+html[data-theme='dark'] .toast,
+html[data-theme='dark'] #toast,
+body.dark-mode .toast,
+body.dark-mode #toast {
+  background: var(--theme-surface-2);
+  color: var(--theme-text);
+  border-color: var(--theme-border);
+}
+
+/* ── Client portal ─────────────────────────────────────────── */
+html[data-theme='dark'] body.cp-body,
+body.dark-mode.cp-body {
+  background: var(--theme-bg-muted);
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .cp-topbar,
+body.dark-mode .cp-topbar {
+  background: var(--theme-surface);
+  border-color: var(--theme-border);
+}
+
+html[data-theme='dark'] .cp-topbar h1,
+body.dark-mode .cp-topbar h1 {
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .cp-topbar p,
+body.dark-mode .cp-topbar p {
+  color: var(--theme-text-muted);
+}
+
+html[data-theme='dark'] .cp-menu,
+html[data-theme='dark'] .cp-bell,
+html[data-theme='dark'] .cp-userchip,
+body.dark-mode .cp-menu,
+body.dark-mode .cp-bell,
+body.dark-mode .cp-userchip {
+  background: var(--theme-surface-2);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .cp-card,
+html[data-theme='dark'] .cp-panel,
+html[data-theme='dark'] .cp-root .card,
+body.dark-mode .cp-card,
+body.dark-mode .cp-panel,
+body.dark-mode .cp-root .card {
+  background: var(--theme-surface);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+/* ── Auth pages (login / register / forgot) — Tailwind ─────── */
+html[data-theme='dark'] body.bg-white,
+body.dark-mode.bg-white {
+  background-color: var(--theme-bg) !important;
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .bg-white,
+body.dark-mode .bg-white {
+  background-color: var(--theme-surface) !important;
+}
+
+html[data-theme='dark'] .text-black,
+html[data-theme='dark'] .text-gray-600,
+html[data-theme='dark'] .text-gray-400,
+body.dark-mode .text-black {
+  color: var(--theme-text) !important;
+}
+
+html[data-theme='dark'] .text-gray-600,
+html[data-theme='dark'] .text-gray-400,
+body.dark-mode .text-gray-600,
+body.dark-mode .text-gray-400 {
+  color: var(--theme-text-muted) !important;
+}
+
+html[data-theme='dark'] .border-gray-100,
+html[data-theme='dark'] .border-gray-300,
+body.dark-mode .border-gray-100,
+body.dark-mode .border-gray-300 {
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme='dark'] .bg-gray-50,
+body.dark-mode .bg-gray-50 {
+  background-color: var(--theme-input-bg) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme='dark'] .shadow-xl,
+body.dark-mode .shadow-xl {
+  box-shadow: 0 20px 40px var(--theme-shadow) !important;
+}
+
+/* ── Studios / special pages ───────────────────────────────── */
+html[data-theme='dark'] .pos-top,
+html[data-theme='dark'] .evs-shell,
+html[data-theme='dark'] .mcs-shell,
+html[data-theme='dark'] .studio-shell,
+body.dark-mode .pos-top,
+body.dark-mode .evs-shell,
+body.dark-mode .mcs-shell,
+body.dark-mode .studio-shell {
+  background: var(--theme-bg);
+  color: var(--theme-text);
+}
+
+html[data-theme='dark'] .pos-card,
+html[data-theme='dark'] .evs-card,
+html[data-theme='dark'] .mcs-card,
+body.dark-mode .pos-card,
+body.dark-mode .evs-card,
+body.dark-mode .mcs-card {
+  background: var(--theme-surface);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+/* ── Dropdowns / menus ─────────────────────────────────────── */
+html[data-theme='dark'] .dropdown-menu,
+html[data-theme='dark'] .posha-more-panel,
+html[data-theme='dark'] .nav-links,
+body.dark-mode .dropdown-menu,
+body.dark-mode .posha-more-panel {
+  background: var(--theme-surface);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+/* ── Alerts ────────────────────────────────────────────────── */
+html[data-theme='dark'] .alert,
+html[data-theme='dark'] [class*='alert-'],
+body.dark-mode .alert,
+body.dark-mode [class*='alert-'] {
+  background: var(--theme-surface-2);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}

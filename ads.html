@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <script>
+    /* Hub theme FOUC guard — keep before paint */
+    (function () {
+      try {
+        var t = localStorage.getItem('hubTheme') || localStorage.getItem('theme');
+        if (t === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.style.colorScheme = 'dark';
+          document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('dark-mode');
+          });
+        } else {
+          document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>إدارة الإعلانات | نايوش هوب 360</title>
@@ -16,6 +34,8 @@
   <link rel="stylesheet" href="css/hub-marketplace.css" />
   <link rel="stylesheet" href="css/hub-ads-workspace.css?v=4" />
   <link rel="stylesheet" href="css/hub-user-facilitation.css?v=1" />
+  <link rel="stylesheet" href="css/dark-mode.css?v=theme1" />
+  <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme1" />
 </head>
 <body class="homepage" data-market-page="ads" data-ads-workspace="1" data-hub-page="ads">
   <header class="top-nav">
@@ -78,5 +98,6 @@
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js?v=3" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
+  <script src="js/hub-theme.js?v=theme1" defer></script>
 </body>
 </html>

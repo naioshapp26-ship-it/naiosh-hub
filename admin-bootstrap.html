@@ -1,12 +1,32 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <script>
+    /* Hub theme FOUC guard — keep before paint */
+    (function () {
+      try {
+        var t = localStorage.getItem('hubTheme') || localStorage.getItem('theme');
+        if (t === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.style.colorScheme = 'dark';
+          document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('dark-mode');
+          });
+        } else {
+          document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>تهيئة حساب الإدارة | نايوش هوب</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <style>body{font-family:Cairo,Tahoma,sans-serif}</style>
+  <link rel="stylesheet" href="css/dark-mode.css?v=theme1" />
+  <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme1" />
 </head>
 <body class="min-h-screen bg-gradient-to-br from-gray-50 to-red-50 flex items-center justify-center p-4">
   <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
@@ -89,5 +109,6 @@
       });
     })();
   </script>
+  <script src="js/hub-theme.js?v=theme1" defer></script>
 </body>
 </html>

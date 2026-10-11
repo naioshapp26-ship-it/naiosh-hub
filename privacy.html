@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <script>
+    /* Hub theme FOUC guard — keep before paint */
+    (function () {
+      try {
+        var t = localStorage.getItem('hubTheme') || localStorage.getItem('theme');
+        if (t === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.style.colorScheme = 'dark';
+          document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('dark-mode');
+          });
+        } else {
+          document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>سياسة الخصوصية — نايوش هوب</title>
@@ -12,6 +30,8 @@
   <link rel="stylesheet" href="css/hub-chrome.css" />
   <script>tailwind.config={theme:{extend:{colors:{primary:{DEFAULT:'#d70000',dark:'#8a000c'}},fontFamily:{sans:['Cairo','sans-serif']}}}}</script>
   <style>body{font-family:'Cairo',sans-serif}</style>
+  <link rel="stylesheet" href="css/dark-mode.css?v=theme1" />
+  <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme1" />
 </head>
 <body class="bg-gray-50 min-h-screen">
   <main class="max-w-3xl mx-auto px-4 py-10">
@@ -31,5 +51,6 @@
       <p class="text-sm text-gray-500 pt-4">سياسة خصوصية وحماية البيانات ضمن مكتبة السياسات: <a class="text-primary font-bold" href="policies.html">policies.html</a>.</p>
     </article>
   </main>
+  <script src="js/hub-theme.js?v=theme1" defer></script>
 </body>
 </html>
