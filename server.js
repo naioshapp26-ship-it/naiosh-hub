@@ -2233,6 +2233,14 @@ async function boot() {
     console.error('Staff credentials bootstrap skipped:', error.message);
   }
 
+  try {
+    const custHyd = await customerAuth.hydrateFromDb();
+    const custCount = Array.isArray(custHyd?.accounts) ? custHyd.accounts.length : 0;
+    console.log(`Customer accounts hydrated from durable store (${custCount})`);
+  } catch (error) {
+    console.error('Customer accounts hydrate skipped:', error.message);
+  }
+
   // Demo client seed only when explicitly allowed (never in default production)
   if (String(process.env.HUB_ALLOW_LEGACY_DEMO || '') === '1') {
     try {

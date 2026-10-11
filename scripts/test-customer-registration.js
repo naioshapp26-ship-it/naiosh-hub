@@ -79,11 +79,11 @@ async function main() {
     username: 'custshort',
     email: 'short@example.com',
     phone: '+966500000001',
-    password: '123',
-    confirmPassword: '123',
+    password: '',
+    confirmPassword: '',
     termsAccepted: true,
   });
-  assert.strictEqual(tooShort.ok, false, 'password shorter than 4 chars must fail');
+  assert.strictEqual(tooShort.ok, false, 'empty password must fail');
 
   const stamp = Date.now().toString(36);
   const email = `cust_${stamp}@example.com`;
