@@ -647,6 +647,18 @@
       ((own || isStaff()) && (e.status === 'draft' || e.status === 'needs_changes' || isStaff())
         ? '<label class="ev-drop">إضافة مرفق للفعالية<input type="file" data-file hidden></label>'
         : '') +
+      '</article>' +
+      '<article class="ev-card"><h3>الحملات التسويقية المرتبطة</h3>' +
+      ((e.campaignLinks || []).length
+        ? (e.campaignLinks || []).map(function (l) {
+            return (
+              '<p><code>' + esc(l.campaignId) + '</code> · ' + esc(l.label || '') +
+              (l.url ? ' · <a href="' + esc(l.url) + '">فتح الحملة</a>' : '') +
+              '</p>'
+            );
+          }).join('')
+        : '<p class="ev-meta">لا توجد حملات مرتبطة. اربط من استوديو التسويق ← تبويب الربط ← نوع فعالية.</p>') +
+      '<p class="ev-meta"><a href="marketing-campaigns-studio.html">فتح استوديو التسويق</a></p>' +
       '</article></div>' +
       (isStaff() || own
         ? '<h3>التسجيلات</h3>' + regsTable(e.registrations || []) +

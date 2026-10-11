@@ -15,6 +15,8 @@ const ROOT = path.resolve(__dirname, '..');
 const ART = '/opt/cursor/artifacts/marketing-events-studio-ops';
 const PORT = Number(process.env.SCALE_PORT || 8870);
 const BASE = `http://127.0.0.1:${PORT}`;
+const SA_EMAIL = process.env.HUB_SUPER_ADMIN_EMAIL || 'naioshhub@example.com';
+const SA_PASS = process.env.HUB_E2E_SA_PASSWORD || process.env.HUB_SUPER_ADMIN_INITIAL_PASSWORD || '';
 
 const rows = [];
 function mark(fn, op, recordId, store, pass, note) {
@@ -29,23 +31,19 @@ function mark(fn, op, recordId, store, pass, note) {
   console.log(`${pass ? 'PASS' : 'FAIL'} | ${fn} | ${op} | ${recordId || '—'} | ${String(note || '').slice(0, 160)}`);
 }
 
-function tokenFor(email, customer) {
-  if (customer) return `hub360.cust.${Buffer.from(email).toString('base64url')}.${Date.now()}`;
-  return `hub360.${Buffer.from(email).toString('base64')}.${Date.now()}`;
-}
-
-function req(method, urlPath, { email = 'leader@naiosh.com', role = 'supreme_leader', body, raw, type, headers: extra } = {}) {
+function req(method, urlPath, { token = '', email = '', role = '', body, raw, type, headers: extra } = {}) {
   return new Promise((resolve) => {
     const payload = raw || (body != null ? JSON.stringify(body) : null);
-    const t = tokenFor(email, role === 'customer');
     const h = {
-      Authorization: `Bearer ${t}`,
-      'X-Hub-Token': t,
-      'X-Hub-User-Role': role,
-      'X-Hub-User-Name': email.split('@')[0],
       Accept: 'application/json',
       ...(extra || {}),
     };
+    if (token) {
+      h.Authorization = `Bearer ${token}`;
+      h['X-Hub-Token'] = token;
+    }
+    if (role) h['X-Hub-User-Role'] = role;
+    if (email) h['X-Hub-User-Name'] = email.split('@')[0];
     if (payload && !raw) h['Content-Type'] = 'application/json';
     if (type) h['Content-Type'] = type;
     if (payload) h['Content-Length'] = Buffer.byteLength(payload);
@@ -76,9 +74,8 @@ function req(method, urlPath, { email = 'leader@naiosh.com', role = 'supreme_lea
   });
 }
 
-async function uploadBinary(filePath, email, role) {
+async function uploadBinary(filePath, token, role) {
   const buf = fs.readFileSync(filePath);
-  const t = tokenFor(email, role === 'customer');
   return new Promise((resolve) => {
     const r = http.request(
       {
@@ -87,9 +84,9 @@ async function uploadBinary(filePath, email, role) {
         path: '/api/hub/uploads',
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${t}`,
-          'X-Hub-Token': t,
-          'X-Hub-User-Role': role,
+          Authorization: `Bearer ${token}`,
+          'X-Hub-Token': token,
+          'X-Hub-User-Role': role || '',
           'Content-Type': 'application/octet-stream',
           'X-File-Name': path.basename(filePath),
           'X-File-Type': filePath.endsWith('.png') ? 'image/png' : 'video/mp4',
@@ -114,6 +111,35 @@ async function uploadBinary(filePath, email, role) {
     r.write(buf);
     r.end();
   });
+}
+
+async function loginStaff() {
+  if (!SA_PASS) throw new Error('Set HUB_SUPER_ADMIN_INITIAL_PASSWORD or HUB_E2E_SA_PASSWORD');
+  const r = await req('POST', '/api/auth/login', {
+    body: { email: SA_EMAIL, password: SA_PASS },
+  });
+  if (!r.j?.token) throw new Error(`staff login failed: ${r.status} ${JSON.stringify(r.j).slice(0, 200)}`);
+  return {
+    email: SA_EMAIL,
+    role: r.j.user?.role || 'supreme_leader',
+    token: r.j.token,
+  };
+}
+
+async function registerAndLoginCustomer(email, password, fullName) {
+  await req('POST', '/api/auth/register', {
+    body: {
+      fullName,
+      email,
+      phone: `05${String(Date.now() % 10000000000).padStart(10, '0').slice(-10)}`,
+      password,
+      confirmPassword: password,
+      termsAccepted: true,
+    },
+  });
+  const login = await req('POST', '/api/auth/login', { body: { email, password } });
+  if (!login.j?.token) throw new Error(`customer login failed for ${email}: ${login.status}`);
+  return { email, role: 'customer', token: login.j.token };
 }
 
 function startServer() {
@@ -197,9 +223,6 @@ function tinyPng() {
 
 async function main() {
   fs.mkdirSync(ART, { recursive: true });
-  const staff = { email: 'leader@naiosh.com', role: 'supreme_leader' };
-  const clientA = { email: `studio.a.${Date.now()}@naiosh-test.com`, role: 'customer' };
-  const clientB = { email: `studio.b.${Date.now()}@naiosh-test.com`, role: 'customer' };
   const stamp = Date.now().toString(36);
   const today = new Date().toISOString().slice(0, 10);
 
@@ -220,12 +243,18 @@ async function main() {
     await waitHealth();
     mark('health', 'GET /api/health', '', 'server', true, 'up');
 
-    const caps = await req('GET', '/api/hub/reels/capabilities', staff);
+    const staff = await loginStaff();
+    mark('staff_login', 'POST /api/auth/login', staff.email, 'staff-credentials', !!staff.token, staff.role);
+
+    // Fresh staff token after "relogin" probe later
+    const staffAuth = () => ({ token: staff.token, email: staff.email, role: staff.role });
+
+    const caps = await req('GET', '/api/hub/reels/capabilities', staffAuth());
     mark('reels_capabilities', 'ffmpeg available', '', 'server', !!caps.j?.ffmpeg, JSON.stringify(caps.j));
 
     // 1) Create campaign
     const camp = await req('POST', '/api/hub/marketing-campaigns', {
-      ...staff,
+      ...staffAuth(),
       body: {
         name: `حملة استوديو ${stamp}`,
         type: 'فعالية',
@@ -242,13 +271,13 @@ async function main() {
     // 2) Upload image + video + register media library
     const png = tinyPng();
     const mp4 = makeSampleVideo();
-    const imgUp = await uploadBinary(png, staff.email, staff.role);
-    const vidUp = await uploadBinary(mp4, staff.email, staff.role);
+    const imgUp = await uploadBinary(png, staff.token, staff.role);
+    const vidUp = await uploadBinary(mp4, staff.token, staff.role);
     mark('upload_image', 'POST /uploads', imgUp.j?.id || imgUp.j?.storageRef, 'data/uploads + hub_upload_blobs', imgUp.status === 201 || !!imgUp.j?.ok, JSON.stringify(imgUp.j).slice(0, 120));
     mark('upload_video', 'POST /uploads', vidUp.j?.id || vidUp.j?.storageRef, 'data/uploads + hub_upload_blobs', vidUp.status === 201 || !!vidUp.j?.ok, JSON.stringify(vidUp.j).slice(0, 120));
 
     const mediaImg = await req('POST', '/api/hub/media', {
-      ...staff,
+      ...staffAuth(),
       body: {
         uploadId: imgUp.j?.id || imgUp.j?.storageRef,
         url: imgUp.j?.url,
@@ -260,7 +289,7 @@ async function main() {
       },
     });
     const mediaVid = await req('POST', '/api/hub/media', {
-      ...staff,
+      ...staffAuth(),
       body: {
         uploadId: vidUp.j?.id || vidUp.j?.storageRef,
         url: vidUp.j?.url,
@@ -276,7 +305,7 @@ async function main() {
 
     if (campaignId) {
       await req('POST', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/assets`, {
-        ...staff,
+        ...staffAuth(),
         body: {
           kind: 'image',
           name: 'sample.png',
@@ -286,7 +315,7 @@ async function main() {
         },
       });
       await req('POST', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/assets`, {
-        ...staff,
+        ...staffAuth(),
         body: {
           kind: 'video',
           name: 'sample-source.mp4',
@@ -296,7 +325,7 @@ async function main() {
         },
       });
       const content = await req('POST', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/contents`, {
-        ...staff,
+        ...staffAuth(),
         body: {
           title: 'إعلان صورة+فيديو',
           type: 'ad',
@@ -311,7 +340,7 @@ async function main() {
     // 3–5) Real reel from video
     const sourceId = vidUp.j?.id || vidUp.j?.storageRef;
     const reel = await req('POST', '/api/hub/reels/process', {
-      ...staff,
+      ...staffAuth(),
       body: {
         sourceUploadId: sourceId,
         startSec: 0,
@@ -330,7 +359,7 @@ async function main() {
 
     if (campaignId && reel.j?.reel?.outputUploadId) {
       const clip = await req('POST', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/clips`, {
-        ...staff,
+        ...staffAuth(),
         body: {
           title: 'ريلز اختبار',
           duration: reel.j.reel.duration,
@@ -344,7 +373,7 @@ async function main() {
       mark('link_reel_to_campaign', 'POST …/clips', clip.j?.campaign?.clips?.slice(-1)?.[0]?.id, 'marketing-campaigns.json', clip.status < 300, clip.j?.error);
       if (reel.j.reel.mediaId) {
         await req('POST', `/api/hub/media/${encodeURIComponent(reel.j.reel.mediaId)}/usage`, {
-          ...staff,
+          ...staffAuth(),
           body: { type: 'campaign', refId: campaignId, label: 'ريلز اختبار' },
         });
       }
@@ -352,7 +381,7 @@ async function main() {
 
     // 6) Create event
     const ev = await req('POST', '/api/hub/events', {
-      ...staff,
+      ...staffAuth(),
       body: {
         name: `فعالية استوديو ${stamp}`,
         category: 'ورشة',
@@ -371,26 +400,31 @@ async function main() {
     // 7) Link event ↔ campaign (both directions)
     if (campaignId && eventId) {
       const link = await req('PUT', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}`, {
-        ...staff,
+        ...staffAuth(),
         body: {
           links: [{ kind: 'event', refId: eventId, label: `فعالية ${eventId}`, url: `events.html#event=${eventId}` }],
         },
       });
-      const catalogs = await req('GET', '/api/hub/marketing-campaigns/catalogs', staff);
+      const linked = (link.j?.campaign?.links || []).some((l) => l.refId === eventId || l.kind === 'event');
+      const catalogs = await req('GET', '/api/hub/marketing-campaigns/catalogs', staffAuth());
       const liveHit = (catalogs.j?.catalogs?.events || []).some((e) => e.id === eventId);
-      mark('link_campaign_to_event', 'PUT campaign.links', campaignId, 'marketing-campaigns.json', link.status < 300, JSON.stringify(link.j?.campaign?.links || []).slice(0, 120));
+      mark('link_campaign_to_event', 'PUT campaign.links', campaignId, 'marketing-campaigns.json', link.status < 300 && linked, JSON.stringify(link.j?.campaign?.links || []).slice(0, 160));
       mark('catalog_live_events', 'GET catalogs includes EVT-*', eventId, 'hub-events.json → catalogs', liveHit, `count=${(catalogs.j?.catalogs?.events || []).length}`);
+      const evLinked = await req('GET', `/api/hub/events/${encodeURIComponent(eventId)}`, staffAuth());
+      const reverseOk = (evLinked.j?.event?.linkedCampaignIds || []).includes(campaignId) ||
+        (evLinked.j?.event?.campaignLinks || []).some((l) => l.campaignId === campaignId);
+      mark('reverse_link_event_to_campaign', 'event.linkedCampaignIds', eventId, 'hub-events.json', reverseOk, JSON.stringify(evLinked.j?.event?.linkedCampaignIds || []));
     }
 
     // Cover + promo on event
     if (eventId) {
       await req('POST', `/api/hub/events/${encodeURIComponent(eventId)}/assets`, {
-        ...staff,
+        ...staffAuth(),
         body: { kind: 'cover', name: 'cover.png', url: imgUp.j?.url, uploadId: imgUp.j?.id, mime: 'image/png' },
       });
       if (reel.j?.reel?.outputUploadId) {
         await req('POST', `/api/hub/events/${encodeURIComponent(eventId)}/clips`, {
-          ...staff,
+          ...staffAuth(),
           body: {
             title: 'ريلز فعالية',
             sourceVideoId: '',
@@ -408,7 +442,7 @@ async function main() {
     let evtReqId = '';
     if (campaignId) {
       const sub = await req('POST', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/action`, {
-        ...staff,
+        ...staffAuth(),
         body: { action: 'submit' },
       });
       campReqId = sub.j?.campaign?.requestId || '';
@@ -416,7 +450,7 @@ async function main() {
     }
     if (eventId) {
       const subE = await req('POST', `/api/hub/events/${encodeURIComponent(eventId)}/action`, {
-        ...staff,
+        ...staffAuth(),
         body: { action: 'submit' },
       });
       evtReqId = subE.j?.event?.requestId || subE.j?.request?.requestId || '';
@@ -424,8 +458,8 @@ async function main() {
     }
 
     // 9) Appear in requests APIs (POSHA inbox source)
-    const campReqs = await req('GET', '/api/hub/marketing-campaigns/requests', staff);
-    const evtReqs = await req('GET', '/api/hub/events/requests', staff);
+    const campReqs = await req('GET', '/api/hub/marketing-campaigns/requests', staffAuth());
+    const evtReqs = await req('GET', '/api/hub/events/requests', staffAuth());
     const campInInbox = (campReqs.j?.items || []).some((r) => r.requestId === campReqId || r.id === campReqId);
     const evtInInbox = (evtReqs.j?.items || []).some((r) => r.requestId === evtReqId || r.id === evtReqId);
     mark('campaign_in_client_requests_api', 'GET /marketing-campaigns/requests', campReqId, 'POSHA ingest source', campInInbox, `items=${(campReqs.j?.items || []).length}`);
@@ -434,14 +468,14 @@ async function main() {
     // 10) Approve
     if (campaignId) {
       const ap = await req('POST', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/action`, {
-        ...staff,
+        ...staffAuth(),
         body: { action: 'approve' },
       });
       mark('approve_campaign', 'action=approve', campaignId, 'marketing-campaigns.json', ap.j?.campaign?.status === 'approved', ap.j?.campaign?.status);
     }
     if (eventId) {
       const ap = await req('POST', `/api/hub/events/${encodeURIComponent(eventId)}/action`, {
-        ...staff,
+        ...staffAuth(),
         body: { action: 'approve' },
       });
       const st = ap.j?.event?.status;
@@ -451,7 +485,7 @@ async function main() {
     // 11) Schedule content
     if (campaignId) {
       const sch = await req('POST', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/action`, {
-        ...staff,
+        ...staffAuth(),
         body: { action: 'schedule_campaign' },
       });
       mark('schedule_campaign', 'action=schedule_campaign', campaignId, 'marketing-campaigns.json', sch.j?.campaign?.status === 'scheduled', sch.j?.campaign?.status);
@@ -460,7 +494,7 @@ async function main() {
     // 12–13) Publish via connected channel + honest disconnected
     if (campaignId) {
       const pubIn = await req('POST', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/publish`, {
-        ...staff,
+        ...staffAuth(),
         body: { platform: 'website', note: 'نشر داخلي اختبار' },
       });
       const pubs = pubIn.j?.campaign?.publications || [];
@@ -468,7 +502,7 @@ async function main() {
       mark('publish_internal_website', 'POST …/publish website', last?.id, 'publications[]', !!last && (last.connected || last.status === 'published_internal'), JSON.stringify(last || {}).slice(0, 160));
 
       const pubIg = await req('POST', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/publish`, {
-        ...staff,
+        ...staffAuth(),
         body: { platform: 'instagram', note: 'تصدير يدوي' },
       });
       const lastIg = (pubIg.j?.campaign?.publications || []).slice(-1)[0];
@@ -480,70 +514,60 @@ async function main() {
       mark('publish_disconnected_no_fake_success', 'POST …/publish instagram', lastIg?.id, 'publications[]', !!honest, JSON.stringify(lastIg || {}).slice(0, 200));
 
       const pubManual = await req('POST', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/publish`, {
-        ...staff,
+        ...staffAuth(),
         body: { platform: 'instagram', url: 'https://instagram.com/p/test-ops', note: 'رابط بعد نشر يدوي' },
       });
       const lastM = (pubManual.j?.campaign?.publications || []).slice(-1)[0];
       mark('publish_manual_url_logged', 'POST …/publish with url', lastM?.id, 'publications[]', !!lastM?.url, lastM?.url);
     }
 
-    // 14) Persistence after "relogin" (new token) + reload stores
-    const camp2 = await req('GET', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}`, staff);
-    const ev2 = await req('GET', `/api/hub/events/${encodeURIComponent(eventId)}`, staff);
+    // 14) Persistence after relogin (new token) + reload stores
+    const staff2 = await loginStaff();
+    const camp2 = await req('GET', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}`, {
+      token: staff2.token,
+      email: staff2.email,
+      role: staff2.role,
+    });
+    const ev2 = await req('GET', `/api/hub/events/${encodeURIComponent(eventId)}`, {
+      token: staff2.token,
+      email: staff2.email,
+      role: staff2.role,
+    });
     mark('persist_after_reauth', 'GET campaign+event', campaignId, 'json stores', !!camp2.j?.campaign?.id && !!ev2.j?.event?.id, `camp=${camp2.j?.campaign?.status} ev=${ev2.j?.event?.status}`);
 
     // 15) Isolation — two customers cannot see each other's media via ownership filter
-    // Register client accounts quickly
-    await req('POST', '/api/auth/register', {
-      email: '',
-      role: '',
-      body: {
-        fullName: 'عميل أ استوديو',
-        email: clientA.email,
-        phone: `05${String(Date.now() % 10000000000).padStart(10, '0').slice(-10)}`,
-        password: 'StudioA1!',
-        confirmPassword: 'StudioA1!',
-        termsAccepted: true,
-      },
-    });
-    await req('POST', '/api/auth/register', {
-      email: '',
-      role: '',
-      body: {
-        fullName: 'عميل ب استوديو',
-        email: clientB.email,
-        phone: `05${String((Date.now() + 9) % 10000000000).padStart(10, '0').slice(-10)}`,
-        password: 'StudioB1!',
-        confirmPassword: 'StudioB1!',
-        termsAccepted: true,
-      },
-    });
-    const upA = await uploadBinary(png, clientA.email, 'customer');
+    const clientA = await registerAndLoginCustomer(`studio.a.${stamp}@naiosh-test.com`, 'StudioA1!', 'عميل أ استوديو');
+    const clientB = await registerAndLoginCustomer(`studio.b.${stamp}@naiosh-test.com`, 'StudioB1!', 'عميل ب استوديو');
+    mark('customer_a_login', 'register+login', clientA.email, 'customer-accounts', !!clientA.token, '');
+    mark('customer_b_login', 'register+login', clientB.email, 'customer-accounts', !!clientB.token, '');
+
+    const upA = await uploadBinary(png, clientA.token, 'customer');
     await req('POST', '/api/hub/media', {
-      ...clientA,
+      token: clientA.token,
+      email: clientA.email,
+      role: 'customer',
       body: { uploadId: upA.j?.id, url: upA.j?.url, mime: 'image/png', originalName: 'a-only.png', kind: 'image', sourceStudio: 'events' },
     });
-    const listB = await req('GET', '/api/hub/media', clientB);
+    const listB = await req('GET', '/api/hub/media', { token: clientB.token, email: clientB.email, role: 'customer' });
     const leak = (listB.j?.items || []).some((it) => it.ownerEmail === clientA.email || (it.originalName || '').includes('a-only'));
     mark('media_isolation_two_clients', 'GET /media as B', '', 'hub-media-library.json', !leak, `B sees ${ (listB.j?.items || []).length } items`);
 
     // 16) Error + retry: bad source for reel
     const bad = await req('POST', '/api/hub/reels/process', {
-      ...staff,
+      ...staffAuth(),
       body: { sourceUploadId: 'missing-file-xyz.mp4', startSec: 0, endSec: 2 },
     });
     mark('reel_error_missing_source', 'POST /reels/process', '', 'reel-processor', bad.status >= 400 && !bad.j?.ok, bad.j?.error);
-    // Retry success already proven above
 
     // 17) Studio pages load (HTML)
-    const mcsPage = await req('GET', '/marketing-campaigns-studio.html', staff);
-    const evPage = await req('GET', '/events.html', staff);
+    const mcsPage = await req('GET', '/marketing-campaigns-studio.html', staffAuth());
+    const evPage = await req('GET', '/events.html', staffAuth());
     mark('studio_pages_load', 'GET html shells', '', 'static', mcsPage.status === 200 && evPage.status === 200, `mcs=${mcsPage.status} ev=${evPage.status}`);
 
     // Idempotent double submit
     if (campaignId) {
       const again = await req('POST', `/api/hub/marketing-campaigns/${encodeURIComponent(campaignId)}/action`, {
-        ...staff,
+        ...staffAuth(),
         body: { action: 'submit' },
       });
       mark('idempotent_resubmit_safe', 'action=submit twice', campaignId, 'marketing-campaigns.json', again.status < 500, again.j?.error || again.j?.campaign?.status);
