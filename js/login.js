@@ -203,8 +203,11 @@
       return /^[a-zA-Z0-9_\-./?#=&%]+$/.test(n);
     };
     if (isClientRole && !(destGate?.ok)) {
+      const fromCreate = (params.get('from') || '') === 'create-account';
       if (next && isSafePublicNext(next)) {
         dest = next;
+      } else if (fromCreate) {
+        dest = 'client.html#profile360';
       } else if (role === 'platform_owner' && (!next || next === 'my-platform.html')) {
         dest = next || 'my-platform.html';
       } else {

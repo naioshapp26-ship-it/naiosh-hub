@@ -255,11 +255,24 @@
 
       form?.classList.add('hidden');
       successPanel?.classList.remove('hidden');
-      const customerId = data.user.customerId || data.user.clientId || data.user.id || '';
+      const customerId = data.user.customerId || data.user.clientId || data.profile360?.customerId || '';
+      const accountNo = data.user.accountNo || data.profile360?.accountNo || '';
+      const idsEl = document.getElementById('successIds');
+      if (idsEl && (customerId || accountNo)) {
+        idsEl.classList.remove('hidden');
+        idsEl.innerHTML =
+          (accountNo ? `<div>رقم الحساب: <strong>${accountNo}</strong></div>` : '') +
+          (customerId ? `<div>رقم العميل: <strong>${customerId}</strong></div>` : '');
+      }
+      const msgEl = document.getElementById('successMessage');
+      if (msgEl) {
+        msgEl.textContent =
+          'تم إنشاء حسابك كعميل مع الملف الشخصي 360. سجّل الدخول الآن لفتح مركز العميل وإدارة ملفك بنفسك.';
+      }
       showAlert(
-        customerId
-          ? `تم إنشاء الحساب بنجاح. رقم العميل: ${customerId}. سيتم تحويلك لتسجيل الدخول.`
-          : 'تم إنشاء الحساب بنجاح. سيتم تحويلك لتسجيل الدخول.',
+        accountNo || customerId
+          ? `تم إنشاء الحساب والملف الشخصي 360.${accountNo ? ' الحساب: ' + accountNo + '.' : ''}${customerId ? ' العميل: ' + customerId + '.' : ''} سجّل الدخول للمتابعة.`
+          : 'تم إنشاء الحساب والملف الشخصي 360. سجّل الدخول للمتابعة.',
         'success'
       );
       const params = new URLSearchParams(location.search);
@@ -271,16 +284,19 @@
         !/dashboard\.html/i.test(next) &&
         /^[a-zA-Z0-9_\-./?#=&%]+$/.test(next)
           ? next
-          : '';
+          : 'client.html#profile360';
       window.HubRegistrationGuard?.clearCreateAccountDraft?.();
       const loginUrl = new URL('login.html', location.href);
       loginUrl.searchParams.set('switch', '1');
       loginUrl.searchParams.set('from', 'create-account');
       if (data.user.email) loginUrl.searchParams.set('email', data.user.email);
-      if (safeNext) loginUrl.searchParams.set('next', safeNext);
+      loginUrl.searchParams.set('next', safeNext);
+      const successBtn = document.getElementById('successLoginBtn');
+      if (successBtn) successBtn.href = loginUrl.pathname + loginUrl.search;
+      // Give the user a moment to read confirmation, then continue to login
       setTimeout(() => {
         window.location.href = loginUrl.pathname + loginUrl.search;
-      }, 900);
+      }, 2800);
     } catch {
       showAlert('حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.');
       setLoading(false);

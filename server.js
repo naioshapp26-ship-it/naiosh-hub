@@ -1900,14 +1900,25 @@ const server = http.createServer(async (req, res) => {
           } catch {
             /* ignore */
           }
+          let profileSummary = null;
           try {
-            require('./lib/hub-profile-360').onAccountTouch(
-              result.user.email,
-              result.user.name || result.user.fullName
-            );
+            const hubProfile360 = require('./lib/hub-profile-360');
+            hubProfile360.onAccountTouch(result.user.email, result.user.name || result.user.fullName);
+            const raw = hubProfile360.getProfileRaw?.(result.user.email);
+            if (raw) {
+              profileSummary = {
+                accountNo: raw.accountNo || '',
+                customerId: result.user.customerId || result.user.clientId || '',
+                profileId: raw.profileId || '',
+              };
+            }
           } catch {
             /* ignore */
           }
+          if (profileSummary && result.user) {
+            result.user.accountNo = profileSummary.accountNo || result.user.accountNo;
+          }
+          result.profile360 = profileSummary;
         }
         // Registration must NOT establish a browser session cookie.
         // Auth state starts only after an explicit login (account isolation).
@@ -1917,13 +1928,17 @@ const server = http.createServer(async (req, res) => {
           {
             success: !!result.ok,
             ok: !!result.ok,
-            message: result.message || result.error || '',
+            message: result.ok
+              ? 'تم إنشاء الحساب والملف الشخصي 360 بنجاح. سجّل الدخول للمتابعة.'
+              : result.message || result.error || '',
             error: result.ok ? undefined : result.error,
             field: result.field,
             strength: result.strength,
             token: undefined,
             user: result.user,
+            profile360: result.profile360 || undefined,
             destination: result.ok ? 'login.html' : undefined,
+            nextHint: result.ok ? 'client.html#profile360' : undefined,
           },
           result.ok ? { 'Set-Cookie': hubSession.clearSessionCookieHeader() } : {}
         );

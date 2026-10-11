@@ -507,6 +507,10 @@
           '<span class="cp-chip">المستوى: ' + esc(w.accountLevel || 'أساسي') + '</span>' +
           '<span class="cp-chip">' + esc(statusLabel(w.status || 'active')) + '</span>' +
           (w.lifecycle ? '<span class="cp-chip">' + esc(lifecycleLabel(w.lifecycle)) + '</span>' : '') +
+        '</div>' +
+        '<div class="cp-actions" style="margin-top:14px">' +
+          '<a class="cp-btn cp-btn-primary" href="#profile360" data-nav="profile360"><i class="fas fa-id-badge"></i> ملفي الشخصي 360</a>' +
+          '<a class="cp-btn" href="#profile" data-nav="profile">بيانات الحساب</a>' +
         '</div></section>';
 
     var pendingBanner = (w.status === 'pending')

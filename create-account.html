@@ -124,8 +124,18 @@
         <div class="mx-auto w-16 h-16 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-2xl">
           <i class="fa-solid fa-check"></i>
         </div>
-        <h2 class="text-xl font-extrabold text-black">تم إنشاء الحساب بنجاح</h2>
-        <p class="text-sm text-gray-600">مرحبًا بك في نايوش هوب — جاري تحويلك إلى لوحة العميل…</p>
+        <h2 class="text-xl font-extrabold text-black">تم إنشاء حسابك وملفك الشخصي 360</h2>
+        <p class="text-sm text-gray-600" id="successMessage">
+          مرحبًا بك في نايوش هوب. سجّل الدخول الآن لفتح مركز العميل و«ملفي الشخصي 360».
+        </p>
+        <div id="successIds" class="hidden text-sm font-bold text-gray-800 space-y-1" dir="ltr"></div>
+        <div class="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+          <a id="successLoginBtn" href="login.html?switch=1&from=create-account&next=client.html%23profile360"
+            class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-primary text-white font-extrabold hover:bg-primary-dark transition">
+            تسجيل الدخول وفتح ملفي الشخصي 360
+          </a>
+        </div>
+        <p class="text-xs text-gray-500 font-semibold">لا تحتاج لوحة الإدارة — ملفك يظهر لك مباشرة بعد الدخول.</p>
       </div>
 
       <form id="createAccountForm" class="space-y-4" novalidate>
@@ -261,7 +271,7 @@
   <script src="js/hub-i18n-display.js?v=ar13"></script>
   <script src="js/hub-auth.js?v=auth9"></script>
   <script src="js/hub-registration-guard.js?v=r10"></script>
-  <script src="js/hub-create-account.js?v=nou1"></script>
+  <script src="js/hub-create-account.js?v=p360j1"></script>
   <script src="js/hub-global-back.js" defer></script>
   <script src="js/hub-page-guide.js" defer></script>
   <script src="js/hub-ai-assistant.js?v=4" defer></script>
