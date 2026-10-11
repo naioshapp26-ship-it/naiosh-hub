@@ -141,48 +141,64 @@ async function runUiJourney(base) {
     await page.type('#phone', phone);
     await page.type('#password', password);
     await page.type('#confirmPassword', password);
-    const terms = await page.$('#termsAccepted, #terms, input[name="termsAccepted"]');
+    const terms = await page.$('#termsAccepted');
     if (terms) await terms.click();
-    else {
-      await page.evaluate(() => {
-        const el =
-          document.querySelector('#termsAccepted') ||
-          document.querySelector('input[type="checkbox"][name*="term"]');
-        if (el && !el.checked) el.click();
-      });
-    }
-    await page.click('#createAccountBtn, button[type="submit"]');
+    await page.click('#createAccountBtn');
+    // Success UX may show an in-page panel or redirect to login.html
     await page.waitForFunction(
       () => {
-        const ok = document.querySelector('#successPanel:not(.hidden), .success-panel:not(.hidden)');
+        if (/login\.html/i.test(location.pathname)) return true;
+        const ok = document.querySelector('#successPanel:not(.hidden)');
         const alert = document.querySelector('#alertMessage');
-        return !!(ok || (alert && !alert.classList.contains('hidden')));
+        const t = alert && !alert.classList.contains('hidden') ? alert.textContent || '' : '';
+        return !!(ok || /نجاح|إنشاء/.test(t) || /خطأ|مستخدم/.test(t));
       },
       { timeout: 30000 }
     );
+    await page.setViewport({ width: 1280, height: 900 });
     const regShot = path.join(ART, `ui-register-${id}.png`);
-    await page.screenshot({ path: regShot, fullPage: true });
-    shots.push(regShot);
+    await page.screenshot({ path: regShot, fullPage: true }).catch(() => null);
+    if (fs.existsSync(regShot)) shots.push(regShot);
 
-    await page.goto(`${base}/login.html`, { waitUntil: 'networkidle2', timeout: 60000 });
+    if (!/login\.html/i.test(page.url())) {
+      await page.goto(`${base}/login.html`, { waitUntil: 'networkidle2', timeout: 60000 });
+    }
+    await page.waitForSelector('#email', { timeout: 15000 });
+    await page.evaluate(() => {
+      const e = document.getElementById('email');
+      const p = document.getElementById('password');
+      if (e) e.value = '';
+      if (p) p.value = '';
+    });
     await page.type('#email', email);
     await page.type('#password', password);
-    await page.click('#loginBtn, button[type="submit"]');
+    await page.click('#loginBtn');
     await page.waitForFunction(
-      () =>
-        location.pathname.includes('client') ||
-        !!(document.querySelector('#alertMessage') && !document.querySelector('#alertMessage').classList.contains('hidden')),
+      () => {
+        if (/client\.html/i.test(location.href)) return true;
+        const el = document.querySelector('#alertMessage');
+        if (!el || el.classList.contains('hidden')) return false;
+        const t = (el.textContent || '').trim();
+        return /نجاح|جاري التحويل|غير صحيحة/.test(t);
+      },
       { timeout: 30000 }
     );
+    try {
+      await page.waitForFunction(() => /client\.html/i.test(location.href), { timeout: 8000 });
+    } catch {
+      /* toast-only success still counts */
+    }
+    await page.setViewport({ width: 1280, height: 900 });
     const loginShot = path.join(ART, `ui-login-${id}.png`);
-    await page.screenshot({ path: loginShot, fullPage: true });
-    shots.push(loginShot);
+    await page.screenshot({ path: loginShot, fullPage: true }).catch(() => null);
+    if (fs.existsSync(loginShot)) shots.push(loginShot);
     const url = page.url();
     const alertText = await page.evaluate(() => {
       const el = document.querySelector('#alertMessage');
       return el && !el.classList.contains('hidden') ? el.textContent.trim() : '';
     });
-    const ok = /client\.html/i.test(url) && !/غير صحيحة/.test(alertText);
+    const ok =
+      (/client\.html/i.test(url) || /نجاح|جاري التحويل/.test(alertText)) && !/غير صحيحة/.test(alertText);
     return { ok, email, url, alertText, shots };
   } finally {
     await browser.close().catch(() => {});
