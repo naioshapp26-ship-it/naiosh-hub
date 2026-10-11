@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>
+    /* Hub theme FOUC guard — keep before paint */
+    (function () {
+      try {
+        var t = localStorage.getItem('hubTheme') || localStorage.getItem('theme');
+        if (t === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.style.colorScheme = 'dark';
+          document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('dark-mode');
+          });
+        } else {
+          document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الملف الشخصي 360 | نايوش هوب</title>
+  <link rel="icon" href="assets/hub-icon-192.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/hub-profile-360.css?v=1" />
+  <link rel="stylesheet" href="css/dark-mode.css?v=theme3" />
+  <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme3" />
+</head>
+<body class="p360-body">
+  <div class="p360-shell">
+    <header class="p360-topbar">
+      <a class="p360-brand" href="index.html">
+        <img src="assets/logo-hub.jpeg" alt="نايوش هوب" />
+        <span>الملف الشخصي 360</span>
+      </a>
+      <div class="p360-top-actions">
+        <a class="p360-btn" href="client.html" id="p360-link-client">مركز العميل</a>
+        <a class="p360-btn" href="dashboard.html" id="p360-link-dash">لوحة الإدارة</a>
+        <a class="p360-btn p360-btn-dark" href="index.html">الرئيسية</a>
+      </div>
+    </header>
+    <main id="p360-root" aria-live="polite">
+      <div class="p360-card"><div class="p360-empty">جاري تحميل الملف الشخصي…</div></div>
+    </main>
+  </div>
+  <div class="p360-toast" id="p360-toast" role="status"></div>
+  <script src="js/hub-upload-limits.js?v=2"></script>
+  <script src="js/hub-auth.js?v=prod1"></script>
+  <script src="js/hub-profile-360.js?v=1"></script>
+  <script src="js/hub-theme.js?v=theme3" defer></script>
+  <script>
+    (function () {
+      try {
+        var raw = localStorage.getItem('hubUser') || sessionStorage.getItem('hubUser') || '{}';
+        var u = JSON.parse(raw);
+        var role = String(u.role || '').toLowerCase();
+        var isStaff = /supreme_leader|chief_engineer|admin|super_admin/.test(role);
+        var dash = document.getElementById('p360-link-dash');
+        var client = document.getElementById('p360-link-client');
+        if (dash) dash.hidden = !isStaff;
+        if (client) client.hidden = isStaff && !/customer|client/.test(role);
+      } catch (e) {}
+    })();
+  </script>
+</body>
+</html>

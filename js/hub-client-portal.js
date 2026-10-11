@@ -17,6 +17,7 @@
     { id: 'support', label: 'الدعم', icon: 'fa-headset' },
     { id: 'notifications', label: 'الإشعارات', icon: 'fa-bell' },
     { id: 'marketplace', label: 'استكشف الخدمات', icon: 'fa-store' },
+    { id: 'profile360', label: 'ملفي 360', icon: 'fa-id-badge' },
     { id: 'profile', label: 'حسابي', icon: 'fa-user' },
     { id: 'security', label: 'الأمان', icon: 'fa-shield-halved' }
   ];
@@ -33,6 +34,7 @@
     support: ['مركز الدعم', 'تذاكر ومساعدة'],
     notifications: ['الإشعارات', 'تنبيهات حسابك'],
     marketplace: ['استكشف الخدمات', 'منتجات وأنظمة نايوش'],
+    profile360: ['الملف الشخصي 360', 'هويتك وصفاتك وبياناتك الحقيقية عبر نايوش هوب'],
     profile: ['حسابي', 'بياناتك الشخصية'],
     security: ['الأمان', 'كلمة المرور والجلسات']
   };
@@ -1191,6 +1193,10 @@
     try {
       if (!state.home) {
         try { await load('home'); } catch (e) {}
+      }
+      if (state.page === 'profile360') {
+        location.href = 'profile-360.html';
+        return;
       }
       var data = await load(state.page);
       var html = '';

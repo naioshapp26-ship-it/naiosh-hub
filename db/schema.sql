@@ -423,6 +423,52 @@ CREATE TABLE IF NOT EXISTS hub_article_records (
 );
 CREATE INDEX IF NOT EXISTS idx_hub_article_records_status ON hub_article_records(status);
 
+-- Unified Profile 360 (identity + personas; auth remains in existing stores)
+CREATE TABLE IF NOT EXISTS hub_profiles (
+  profile_id TEXT PRIMARY KEY,
+  account_no TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL UNIQUE,
+  full_name TEXT NOT NULL,
+  phone TEXT,
+  avatar_url TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  department TEXT,
+  org_name TEXT,
+  title TEXT,
+  active_persona TEXT,
+  public_opt_in JSONB NOT NULL DEFAULT '{}'::jsonb,
+  documents JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_hub_profiles_email ON hub_profiles(email);
+CREATE INDEX IF NOT EXISTS idx_hub_profiles_account_no ON hub_profiles(account_no);
+
+CREATE TABLE IF NOT EXISTS hub_profile_personas (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL REFERENCES hub_profiles(profile_id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  persona_type TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  refs JSONB NOT NULL DEFAULT '{}'::jsonb,
+  meta JSONB NOT NULL DEFAULT '{}'::jsonb,
+  linked_by TEXT,
+  linked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (email, persona_type)
+);
+CREATE INDEX IF NOT EXISTS idx_hub_profile_personas_email ON hub_profile_personas(email);
+CREATE INDEX IF NOT EXISTS idx_hub_profile_personas_type ON hub_profile_personas(persona_type);
+
+CREATE TABLE IF NOT EXISTS hub_profile_audit (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  action TEXT NOT NULL,
+  by_email TEXT,
+  detail JSONB NOT NULL DEFAULT '{}'::jsonb,
+  at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_hub_profile_audit_email ON hub_profile_audit(email);
+
 -- Idempotent column upgrades for store marketplace linking
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS brand TEXT;
 ALTER TABLE hub_store_items ADD COLUMN IF NOT EXISTS item_kind TEXT DEFAULT 'منتج';

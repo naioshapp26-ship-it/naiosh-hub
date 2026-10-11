@@ -328,6 +328,17 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  if (pathname.startsWith('/api/hub/profiles')) {
+    const hubProfile360 = require('./lib/hub-profile-360');
+    const handled = await hubProfile360.handleApi(req, res, pathname, {
+      sendJson,
+      readBody,
+      requireAuth: requireHubAuthOrReject,
+      requireStaff: requireHubStaffOrReject,
+    });
+    return handled;
+  }
+
   if (pathname.startsWith('/api/hub/tasks')) {
     const taskUrl = new URL(req.url, 'http://local');
     if (await hubTasks.handle(req, res, taskUrl)) return true;
@@ -1889,6 +1900,14 @@ const server = http.createServer(async (req, res) => {
           } catch {
             /* ignore */
           }
+          try {
+            require('./lib/hub-profile-360').onAccountTouch(
+              result.user.email,
+              result.user.name || result.user.fullName
+            );
+          } catch {
+            /* ignore */
+          }
         }
         // Registration must NOT establish a browser session cookie.
         // Auth state starts only after an explicit login (account isolation).
@@ -1961,6 +1980,16 @@ const server = http.createServer(async (req, res) => {
         if (staffResult) {
           if (!staffResult.ok) loginRate.fail(req, email);
           else loginRate.success(req, email);
+          if (staffResult.ok && (staffResult.user?.email || email)) {
+            try {
+              require('./lib/hub-profile-360').onAccountTouch(
+                staffResult.user?.email || email,
+                staffResult.user?.name || ''
+              );
+            } catch {
+              /* ignore */
+            }
+          }
           sendJson(
             res,
             staffResult.status || (staffResult.ok ? 200 : 401),
@@ -1996,6 +2025,14 @@ const server = http.createServer(async (req, res) => {
         if (result.ok && result.user?.email) {
           try {
             hubClientPortal.touchLogin(result.user.email, result.user.name || result.user.fullName);
+          } catch {
+            /* ignore */
+          }
+          try {
+            require('./lib/hub-profile-360').onAccountTouch(
+              result.user.email,
+              result.user.name || result.user.fullName
+            );
           } catch {
             /* ignore */
           }
