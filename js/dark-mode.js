@@ -4,7 +4,7 @@
   function boot() {
     if (window.HubTheme) return;
     var s = document.createElement('script');
-    s.src = 'js/hub-theme.js?v=theme1';
+    s.src = 'js/hub-theme.js?v=theme2';
     s.defer = true;
     document.head.appendChild(s);
   }

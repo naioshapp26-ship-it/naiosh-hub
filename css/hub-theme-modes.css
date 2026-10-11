@@ -524,3 +524,366 @@ body.dark-mode [class*='alert-'] {
   border-color: var(--theme-border);
   color: var(--theme-text);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CONTRAST HARDENING — dark mode readability (platform-wide)
+   Never: light text on light bg · white on white · black on black
+   ═══════════════════════════════════════════════════════════════ */
+
+/* —— Top navigation (homepage + public) —— */
+html[data-theme='dark'] body.homepage .top-nav,
+body.dark-mode.homepage .top-nav {
+  background: #101114 !important;
+  border-bottom-color: #2a2d36 !important;
+  backdrop-filter: none;
+}
+
+html[data-theme='dark'] body.homepage .nav-links a,
+html[data-theme='dark'] body.homepage .nav-dropdown summary,
+html[data-theme='dark'] .top-nav .nav-links a,
+html[data-theme='dark'] .top-nav .nav-dropdown summary,
+body.dark-mode.homepage .nav-links a,
+body.dark-mode.homepage .nav-dropdown summary,
+body.dark-mode .top-nav .nav-links a,
+body.dark-mode .top-nav .nav-dropdown summary {
+  background: #1c1e26 !important;
+  border: 1px solid #3a3f4d !important;
+  color: #f3f4f6 !important;
+  box-shadow: none;
+}
+
+html[data-theme='dark'] body.homepage .nav-links a:hover,
+html[data-theme='dark'] body.homepage .nav-dropdown summary:hover,
+html[data-theme='dark'] .top-nav .nav-links a:hover,
+html[data-theme='dark'] .top-nav .nav-dropdown summary:hover,
+body.dark-mode.homepage .nav-links a:hover,
+body.dark-mode.homepage .nav-dropdown summary:hover,
+body.dark-mode .top-nav .nav-links a:hover,
+body.dark-mode .top-nav .nav-dropdown summary:hover {
+  background: #2a2030 !important;
+  color: #ffffff !important;
+  border-color: rgba(215, 0, 0, 0.55) !important;
+}
+
+html[data-theme='dark'] body.homepage .nav-links a.active,
+html[data-theme='dark'] body.homepage .nav-dropdown[open] summary,
+html[data-theme='dark'] .top-nav .nav-links a.active,
+html[data-theme='dark'] .top-nav .nav-dropdown[open] summary,
+body.dark-mode.homepage .nav-links a.active,
+body.dark-mode.homepage .nav-dropdown[open] summary,
+body.dark-mode .top-nav .nav-links a.active,
+body.dark-mode .top-nav .nav-dropdown[open] summary {
+  background: #e50914 !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 18px rgba(229, 9, 20, 0.35);
+}
+
+html[data-theme='dark'] body.homepage .nav-links a:focus-visible,
+html[data-theme='dark'] .top-nav .nav-links a:focus-visible,
+body.dark-mode.homepage .nav-links a:focus-visible,
+body.dark-mode .top-nav .nav-links a:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] body.homepage .nav-dropdown-menu,
+html[data-theme='dark'] .nav-dropdown-menu,
+body.dark-mode.homepage .nav-dropdown-menu,
+body.dark-mode .nav-dropdown-menu {
+  background: #151821 !important;
+  border-color: #2a2d36 !important;
+}
+
+html[data-theme='dark'] body.homepage .nav-dropdown-menu a,
+html[data-theme='dark'] .nav-dropdown-menu a,
+body.dark-mode.homepage .nav-dropdown-menu a,
+body.dark-mode .nav-dropdown-menu a {
+  background: #1c1e26 !important;
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] body.homepage .nav-dropdown-menu a:hover,
+html[data-theme='dark'] .nav-dropdown-menu a:hover,
+body.dark-mode.homepage .nav-dropdown-menu a:hover,
+body.dark-mode .nav-dropdown-menu a:hover {
+  background: #2a2030 !important;
+  color: #ffffff !important;
+}
+
+/* —— Auth / outline buttons —— */
+html[data-theme='dark'] body.homepage .auth-btn,
+html[data-theme='dark'] .auth-btn:not(.primary),
+body.dark-mode.homepage .auth-btn,
+body.dark-mode .auth-btn:not(.primary) {
+  background: #1c1e26 !important;
+  border-color: #4b5160 !important;
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] body.homepage .auth-btn:hover,
+html[data-theme='dark'] .auth-btn:not(.primary):hover,
+body.dark-mode.homepage .auth-btn:hover,
+body.dark-mode .auth-btn:not(.primary):hover {
+  background: #2a2d38 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] body.homepage .auth-btn.primary,
+html[data-theme='dark'] .auth-btn.primary,
+html[data-theme='dark'] .btn-primary,
+html[data-theme='dark'] a.btn-primary,
+html[data-theme='dark'] button.btn-primary,
+body.dark-mode.homepage .auth-btn.primary,
+body.dark-mode .auth-btn.primary,
+body.dark-mode .btn-primary,
+body.dark-mode a.btn-primary,
+body.dark-mode button.btn-primary {
+  background: linear-gradient(135deg, #e50914, #8a000c) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+
+/* —— Generic buttons by intent —— */
+html[data-theme='dark'] .btn-ghost,
+html[data-theme='dark'] .btn-secondary,
+html[data-theme='dark'] button.btn-ghost,
+html[data-theme='dark'] a.btn-ghost,
+body.dark-mode .btn-ghost,
+body.dark-mode .btn-secondary,
+body.dark-mode button.btn-ghost,
+body.dark-mode a.btn-ghost {
+  background: #22242e !important;
+  border: 1px solid #3a3f4d !important;
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] .btn-dark,
+html[data-theme='dark'] button.btn-dark,
+html[data-theme='dark'] a.btn-dark,
+body.dark-mode .btn-dark,
+body.dark-mode button.btn-dark,
+body.dark-mode a.btn-dark {
+  background: #0a0a0a !important;
+  border-color: #2a2a2a !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .btn-danger,
+html[data-theme='dark'] button.btn-danger,
+body.dark-mode .btn-danger,
+body.dark-mode button.btn-danger {
+  background: #b91c1c !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] :is(button, a, .btn)[disabled],
+html[data-theme='dark'] :is(button, a, .btn).is-disabled,
+body.dark-mode :is(button, a, .btn)[disabled],
+body.dark-mode :is(button, a, .btn).is-disabled {
+  opacity: 0.55;
+  color: #d1d5db !important;
+  background: #2a2d36 !important;
+  border-color: #3a3f4d !important;
+  cursor: not-allowed;
+}
+
+/* —— Light surfaces that remain light: force dark text —— */
+html[data-theme='dark'] :is(
+  .card,
+  .product-card,
+  .incubator-card,
+  .branch-card,
+  .ad-card,
+  .hub-gallery-shot,
+  .hub-platform-card,
+  .hub-inline-ad,
+  .hero-float-card,
+  .feature-card,
+  .feature-item,
+  .list-item,
+  .ss-card,
+  .cp-card
+),
+body.dark-mode :is(
+  .card,
+  .product-card,
+  .incubator-card,
+  .branch-card,
+  .ad-card,
+  .hub-gallery-shot,
+  .hub-platform-card,
+  .hub-inline-ad,
+  .hero-float-card,
+  .feature-card,
+  .feature-item,
+  .list-item,
+  .ss-card,
+  .cp-card
+) {
+  background: #1a1b22 !important;
+  border-color: #2e3140 !important;
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] :is(
+  .card,
+  .product-card,
+  .incubator-card,
+  .branch-card,
+  .ad-card,
+  .hub-gallery-shot,
+  .hub-platform-card,
+  .hub-inline-ad,
+  .hero-float-card,
+  .feature-card,
+  .feature-item,
+  .list-item
+) :is(h1, h2, h3, h4, h5, h6, strong, b, a, p, span, small, label, li),
+body.dark-mode :is(
+  .card,
+  .product-card,
+  .incubator-card,
+  .branch-card,
+  .ad-card,
+  .hub-gallery-shot,
+  .hub-platform-card,
+  .hub-inline-ad,
+  .hero-float-card,
+  .feature-card,
+  .feature-item,
+  .list-item
+) :is(h1, h2, h3, h4, h5, h6, strong, b, a, p, span, small, label, li) {
+  color: inherit;
+}
+
+html[data-theme='dark'] :is(.card, .hub-gallery-shot, .hub-platform-card, .hub-inline-ad, .hero-float-card) a,
+body.dark-mode :is(.card, .hub-gallery-shot, .hub-platform-card, .hub-inline-ad, .hero-float-card) a {
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] :is(.card, .hub-gallery-shot, .hub-platform-card) :is(p, small, .muted, .subtitle, .description),
+body.dark-mode :is(.card, .hub-gallery-shot, .hub-platform-card) :is(p, small, .muted, .subtitle, .description) {
+  color: #b4b9c6 !important;
+}
+
+/* Search float card on hero */
+html[data-theme='dark'] .hero-float-card.is-search-trigger,
+body.dark-mode .hero-float-card.is-search-trigger {
+  background: #1a1b22 !important;
+  color: #f3f4f6 !important;
+  border-color: #3a3f4d !important;
+}
+
+html[data-theme='dark'] .hero-float-title,
+html[data-theme='dark'] .hero-float-desc,
+body.dark-mode .hero-float-title,
+body.dark-mode .hero-float-desc {
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] .hero-float-desc,
+body.dark-mode .hero-float-desc {
+  color: #b4b9c6 !important;
+}
+
+/* —— Colored CTAs: always white text —— */
+html[data-theme='dark'] :is(
+  .btn-primary,
+  .auth-btn.primary,
+  .hub-pwa-install-btn,
+  [class*='btn-red'],
+  a[style*='background'][style*='d70000'],
+  a[style*='background'][style*='e50914']
+),
+body.dark-mode :is(
+  .btn-primary,
+  .auth-btn.primary,
+  .hub-pwa-install-btn,
+  [class*='btn-red']
+) {
+  color: #ffffff !important;
+}
+
+/* Green / blue / purple hero CTAs keep white text */
+html[data-theme='dark'] .hero-actions a,
+html[data-theme='dark'] .hero-cta a,
+html[data-theme='dark'] .hero-content a.btn,
+html[data-theme='dark'] .hero-content .btn,
+body.dark-mode .hero-actions a,
+body.dark-mode .hero-cta a,
+body.dark-mode .hero-content a.btn,
+body.dark-mode .hero-content .btn {
+  color: #ffffff !important;
+}
+
+/* —— Theme toggle always readable —— */
+html[data-theme='dark'] .hub-theme-toggle,
+body.dark-mode .hub-theme-toggle {
+  background: #2a1014 !important;
+  border-color: rgba(255, 80, 80, 0.55) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .hub-theme-toggle i,
+body.dark-mode .hub-theme-toggle i {
+  color: #ffd666 !important;
+}
+
+/* —— Sidebar pills (hero right rail) —— */
+html[data-theme='dark'] .hero-sidebar-item,
+body.dark-mode .hero-sidebar-item {
+  background: #1c1e26 !important;
+  color: #f3f4f6 !important;
+  border-color: #3a3f4d !important;
+}
+
+html[data-theme='dark'] .hero-sidebar-item:hover,
+html[data-theme='dark'] .hero-sidebar-item[aria-expanded='true'],
+body.dark-mode .hero-sidebar-item:hover,
+body.dark-mode .hero-sidebar-item[aria-expanded='true'] {
+  background: #2a2030 !important;
+  color: #ffffff !important;
+}
+
+/* —— Tabs —— */
+html[data-theme='dark'] :is(.products-tabs, .incubators-tabs, .posha-mainnav) button,
+body.dark-mode :is(.products-tabs, .incubators-tabs, .posha-mainnav) button {
+  background: #1c1e26 !important;
+  color: #e5e7eb !important;
+  border-color: #3a3f4d !important;
+}
+
+html[data-theme='dark'] :is(.products-tabs, .incubators-tabs, .posha-mainnav) button:is(.active, .is-active, .is-on),
+body.dark-mode :is(.products-tabs, .incubators-tabs, .posha-mainnav) button:is(.active, .is-active, .is-on) {
+  background: #e50914 !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+/* —— Inputs on dark —— */
+html[data-theme='dark'] :is(input, select, textarea):not([type='checkbox']):not([type='radio']),
+body.dark-mode :is(input, select, textarea):not([type='checkbox']):not([type='radio']) {
+  background: #12131a !important;
+  color: #f3f4f6 !important;
+  border-color: #3a3f4d !important;
+}
+
+html[data-theme='dark'] :is(input, textarea)::placeholder,
+body.dark-mode :is(input, textarea)::placeholder {
+  color: #8b92a5 !important;
+}
+
+/* —— Mobile nav drawer —— */
+html[data-theme='dark'] .top-nav.is-mobile-nav-open .nav-links a,
+body.dark-mode .top-nav.is-mobile-nav-open .nav-links a {
+  background: #1c1e26 !important;
+  color: #f3f4f6 !important;
+}
+
+html[data-theme='dark'] .top-nav.is-mobile-nav-open .nav-links a.active,
+body.dark-mode .top-nav.is-mobile-nav-open .nav-links a.active {
+  background: #e50914 !important;
+  color: #ffffff !important;
+}
