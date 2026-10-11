@@ -337,7 +337,54 @@
       (header.isOwner
         ? '<button type="button" class="p360-btn" id="p360-pass-btn"><i class="fas fa-key"></i> كلمة المرور</button>'
         : '') +
-      '</div></section>' +
+      '</div>' +
+      (header.canEdit
+        ? '<div id="p360-edit-panel" class="p360-card p360-inline-panel" hidden>' +
+          '<h2>تعديل البيانات الشخصية</h2>' +
+          '<p class="p360-panel-hint">يمكنك تعديل بياناتك الظاهرة للعميل. رقم الحساب ورقم العميل غير قابلين للتعديل.</p>' +
+          '<form class="p360-form" id="p360-edit-form" novalidate>' +
+          '<label>الاسم الكامل<input name="fullName" value="' +
+          esc(header.fullName || '') +
+          '" required autocomplete="name" /></label>' +
+          '<label>رقم الجوال<input name="phone" value="' +
+          esc(header.phone || '') +
+          '" dir="ltr" inputmode="tel" autocomplete="tel" /></label>' +
+          '<label>الدولة<input name="country" value="' +
+          esc(header.country || '') +
+          '" autocomplete="country-name" /></label>' +
+          '<label>المدينة<input name="city" value="' +
+          esc(header.city || '') +
+          '" autocomplete="address-level2" /></label>' +
+          '<label>البريد الإلكتروني (تسجيل الدخول)<input name="email" type="email" value="' +
+          esc(header.email || '') +
+          '" dir="ltr" autocomplete="email" /></label>' +
+          '<label class="p360-confirm-pass" id="p360-email-confirm-wrap" hidden>كلمة المرور الحالية لتأكيد تغيير البريد' +
+          '<input type="password" name="confirmCurrentPassword" autocomplete="current-password" /></label>' +
+          '<p class="p360-panel-hint">لتغيير البريد المرتبط بتسجيل الدخول يلزم إدخال كلمة المرور الحالية للتحقق من ملكية الحساب.</p>' +
+          '<div class="p360-form-actions">' +
+          '<button type="submit" class="p360-btn p360-btn-primary" id="p360-edit-save">حفظ التغييرات</button>' +
+          '<button type="button" class="p360-btn" id="p360-edit-cancel">إلغاء</button>' +
+          '</div>' +
+          '<p class="p360-form-msg" id="p360-edit-msg" hidden></p>' +
+          '</form></div>'
+        : '') +
+      (header.isOwner
+        ? '<div id="p360-pass-panel" class="p360-card p360-inline-panel" hidden>' +
+          '<h2>تغيير كلمة المرور</h2>' +
+          '<p class="p360-panel-hint">يُقبل الأرقام أو الحروف. الكلمات القصيرة ضعيفة — يُفضّل كلمة أطول وأقوى.</p>' +
+          '<form class="p360-form" id="p360-pass-form" novalidate>' +
+          '<label>كلمة المرور الحالية<input type="password" name="currentPassword" required autocomplete="current-password" /></label>' +
+          '<label>كلمة المرور الجديدة<input type="password" name="newPassword" required autocomplete="new-password" id="p360-new-pass" /></label>' +
+          '<label>تأكيد كلمة المرور الجديدة<input type="password" name="confirmPassword" required autocomplete="new-password" /></label>' +
+          '<p class="p360-panel-hint" id="p360-pass-strength" aria-live="polite"></p>' +
+          '<div class="p360-form-actions">' +
+          '<button type="submit" class="p360-btn p360-btn-primary">حفظ كلمة المرور</button>' +
+          '<button type="button" class="p360-btn" id="p360-pass-cancel">إلغاء</button>' +
+          '</div>' +
+          '<p class="p360-form-msg" id="p360-pass-msg" hidden></p>' +
+          '</form></div>'
+        : '') +
+      '</section>' +
       '<div class="p360-persona-switch" role="tablist">' +
       (header.personas || [])
         .map(function (p) {
@@ -396,40 +443,7 @@
           );
         })
         .join('') +
-      '</div></div>' +
-      '<div id="p360-edit-panel" hidden style="margin-top:12px" class="p360-card">' +
-      '<h2>تعديل البيانات الشخصية</h2>' +
-      '<form class="p360-form" id="p360-edit-form">' +
-      '<label>الاسم الكامل<input name="fullName" value="' +
-      esc(header.fullName || '') +
-      '" required /></label>' +
-      '<label>رقم الجوال<input name="phone" value="' +
-      esc(header.phone || '') +
-      '" dir="ltr" /></label>' +
-      '<label>الدولة<input name="country" value="' +
-      esc(header.country || '') +
-      '" /></label>' +
-      '<label>المدينة<input name="city" value="' +
-      esc(header.city || '') +
-      '" /></label>' +
-      '<label>المسمى / الصفة<input name="title" value="' +
-      esc(header.title || '') +
-      '" /></label>' +
-      '<label>القسم / الجهة<input name="department" value="' +
-      esc(header.department || '') +
-      '" /></label>' +
-      '<button type="submit" class="p360-btn p360-btn-primary">حفظ التغييرات</button>' +
-      '</form></div>' +
-      (header.isOwner
-        ? '<div id="p360-pass-panel" hidden style="margin-top:12px" class="p360-card">' +
-          '<h2>تغيير كلمة المرور</h2>' +
-          '<form class="p360-form" id="p360-pass-form">' +
-          '<label>كلمة المرور الحالية<input type="password" name="currentPassword" required autocomplete="current-password" /></label>' +
-          '<label>كلمة المرور الجديدة<input type="password" name="newPassword" required autocomplete="new-password" /></label>' +
-          '<label>تأكيد كلمة المرور<input type="password" name="confirmPassword" required autocomplete="new-password" /></label>' +
-          '<button type="submit" class="p360-btn p360-btn-primary">حفظ كلمة المرور</button>' +
-          '</form></div>'
-        : '');
+      '</div></div>';
 
     bindPage(root, data, opts);
   }
@@ -460,36 +474,124 @@
       });
     });
 
+    function showPanel(panel) {
+      if (!panel) return;
+      panel.hidden = false;
+      try {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (e) {
+        panel.scrollIntoView(true);
+      }
+      var first = panel.querySelector('input:not([type="hidden"]):not([disabled])');
+      if (first) {
+        setTimeout(function () {
+          try {
+            first.focus();
+          } catch (e2) {
+            /* ignore */
+          }
+        }, 200);
+      }
+    }
+
+    function setFormMsg(id, text, kind) {
+      var el = root.querySelector(id);
+      if (!el) return;
+      if (!text) {
+        el.hidden = true;
+        el.textContent = '';
+        el.className = 'p360-form-msg';
+        return;
+      }
+      el.hidden = false;
+      el.textContent = text;
+      el.className = 'p360-form-msg' + (kind ? ' is-' + kind : '');
+    }
+
     var editBtn = root.querySelector('#p360-edit-btn');
     var editPanel = root.querySelector('#p360-edit-panel');
-    if (editBtn && editPanel) {
-      editBtn.addEventListener('click', function () {
-        editPanel.hidden = !editPanel.hidden;
-        var pp = root.querySelector('#p360-pass-panel');
-        if (pp) pp.hidden = true;
-      });
-    }
     var passBtn = root.querySelector('#p360-pass-btn');
     var passPanel = root.querySelector('#p360-pass-panel');
-    if (passBtn && passPanel) {
-      passBtn.addEventListener('click', function () {
-        passPanel.hidden = !passPanel.hidden;
-        if (editPanel) editPanel.hidden = true;
+    if (editBtn && editPanel) {
+      editBtn.addEventListener('click', function () {
+        var opening = editPanel.hidden;
+        if (passPanel) passPanel.hidden = true;
+        if (opening) showPanel(editPanel);
+        else editPanel.hidden = true;
       });
     }
+    if (passBtn && passPanel) {
+      passBtn.addEventListener('click', function () {
+        var opening = passPanel.hidden;
+        if (editPanel) editPanel.hidden = true;
+        if (opening) showPanel(passPanel);
+        else passPanel.hidden = true;
+      });
+    }
+    var editCancel = root.querySelector('#p360-edit-cancel');
+    if (editCancel && editPanel) {
+      editCancel.addEventListener('click', function () {
+        editPanel.hidden = true;
+        setFormMsg('#p360-edit-msg', '');
+      });
+    }
+    var passCancel = root.querySelector('#p360-pass-cancel');
+    if (passCancel && passPanel) {
+      passCancel.addEventListener('click', function () {
+        passPanel.hidden = true;
+        setFormMsg('#p360-pass-msg', '');
+      });
+    }
+
     var form = root.querySelector('#p360-edit-form');
     if (form) {
+      var emailInput = form.querySelector('[name="email"]');
+      var emailWrap = root.querySelector('#p360-email-confirm-wrap');
+      var originalEmail = String(header.email || '').toLowerCase();
+      function syncEmailConfirm() {
+        if (!emailInput || !emailWrap) return;
+        var next = String(emailInput.value || '')
+          .trim()
+          .toLowerCase();
+        emailWrap.hidden = !next || next === originalEmail;
+      }
+      if (emailInput) {
+        emailInput.addEventListener('input', syncEmailConfirm);
+        syncEmailConfirm();
+      }
       form.addEventListener('submit', async function (ev) {
         ev.preventDefault();
+        setFormMsg('#p360-edit-msg', '');
         var fd = new FormData(form);
-        var body = {
-          fullName: fd.get('fullName'),
-          phone: fd.get('phone'),
-          city: fd.get('city'),
-          country: fd.get('country'),
-          title: fd.get('title'),
-          department: fd.get('department'),
-        };
+        var fullName = String(fd.get('fullName') || '').trim();
+        var phone = String(fd.get('phone') || '').trim();
+        var city = String(fd.get('city') || '').trim();
+        var country = String(fd.get('country') || '').trim();
+        var email = String(fd.get('email') || '')
+          .trim()
+          .toLowerCase();
+        var confirmCurrentPassword = String(fd.get('confirmCurrentPassword') || '');
+        if (!fullName || fullName.length < 2) {
+          setFormMsg('#p360-edit-msg', 'الاسم الكامل مطلوب (حرفان على الأقل).', 'error');
+          return;
+        }
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          setFormMsg('#p360-edit-msg', 'صيغة البريد الإلكتروني غير صحيحة.', 'error');
+          return;
+        }
+        var emailChanged = !!email && email !== originalEmail;
+        if (emailChanged && !confirmCurrentPassword) {
+          setFormMsg('#p360-edit-msg', 'أدخل كلمة المرور الحالية لتأكيد تغيير البريد الإلكتروني.', 'error');
+          if (emailWrap) emailWrap.hidden = false;
+          return;
+        }
+        var body = { fullName: fullName, phone: phone, city: city, country: country };
+        if (emailChanged) {
+          body.email = email;
+          body.confirmCurrentPassword = confirmCurrentPassword;
+        }
+        var saveBtn = root.querySelector('#p360-edit-save');
+        if (saveBtn) saveBtn.disabled = true;
         try {
           if (opts.adminEmail) {
             await api('/api/hub/profiles/by-email/' + encodeURIComponent(opts.adminEmail), {
@@ -497,36 +599,107 @@
               body: body,
             });
             var v = await api('/api/hub/profiles/by-email/' + encodeURIComponent(opts.adminEmail));
+            toast('تم حفظ البيانات بنجاح', 'ok');
             renderPage(root, v, opts);
           } else {
-            await api('/api/hub/profiles/me', { method: 'PATCH', body: body });
+            var patchRes = await api('/api/hub/profiles/me', { method: 'PATCH', body: body });
+            if (patchRes.token) {
+              try {
+                localStorage.setItem('hubAuthToken', patchRes.token);
+                sessionStorage.setItem('hubAuthToken', patchRes.token);
+              } catch (eTok) {
+                /* ignore */
+              }
+            }
             var me2 = await api('/api/hub/profiles/me');
+            try {
+              var hu = JSON.parse(localStorage.getItem('hubUser') || '{}');
+              if (hu && typeof hu === 'object') {
+                hu.name = me2.header?.fullName || fullName;
+                hu.fullName = me2.header?.fullName || fullName;
+                if (me2.header?.email) hu.email = me2.header.email;
+                localStorage.setItem('hubUser', JSON.stringify(hu));
+              }
+            } catch (e3) {
+              /* ignore */
+            }
+            try {
+              window.dispatchEvent(
+                new CustomEvent('hub-profile-updated', {
+                  detail: { header: me2.header },
+                })
+              );
+            } catch (e4) {
+              /* ignore */
+            }
+            toast('تم حفظ البيانات بنجاح', 'ok');
             renderPage(root, me2, opts);
           }
-          toast('تم حفظ البيانات');
         } catch (e) {
-          toast(e.message || 'فشل الحفظ');
+          setFormMsg('#p360-edit-msg', e.message || 'فشل حفظ البيانات. لم تُفقد قيم النموذج — صحّح ثم أعد المحاولة.', 'error');
+          toast(e.message || 'فشل الحفظ', 'error');
+        } finally {
+          if (saveBtn) saveBtn.disabled = false;
         }
       });
     }
+
     var passForm = root.querySelector('#p360-pass-form');
     if (passForm) {
+      var newPass = passForm.querySelector('[name="newPassword"]');
+      var strength = root.querySelector('#p360-pass-strength');
+      if (newPass && strength) {
+        newPass.addEventListener('input', function () {
+          var v = String(newPass.value || '');
+          if (!v) {
+            strength.textContent = '';
+            return;
+          }
+          if (v.length < 6) strength.textContent = 'تنبيه: كلمة المرور قصيرة — يُفضّل 6 أحرف/أرقام فأكثر.';
+          else if (v.length < 10) strength.textContent = 'مقبولة. يمكنك جعلها أطول لتقوية الحماية.';
+          else strength.textContent = 'كلمة مرور جيدة الطول.';
+        });
+      }
       passForm.addEventListener('submit', async function (ev) {
         ev.preventDefault();
+        setFormMsg('#p360-pass-msg', '');
         var fd = new FormData(passForm);
+        var currentPassword = String(fd.get('currentPassword') || '');
+        var newPassword = String(fd.get('newPassword') || '');
+        var confirmPassword = String(fd.get('confirmPassword') || '');
+        if (!currentPassword || !newPassword) {
+          setFormMsg('#p360-pass-msg', 'كلمة المرور الحالية والجديدة مطلوبتان.', 'error');
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          setFormMsg('#p360-pass-msg', 'تأكيد كلمة المرور غير متطابق.', 'error');
+          return;
+        }
         try {
-          await api('/api/hub/profiles/me/password', {
+          var res = await api('/api/hub/profiles/me/password', {
             method: 'POST',
-            body: {
-              currentPassword: fd.get('currentPassword'),
-              newPassword: fd.get('newPassword'),
-              confirmPassword: fd.get('confirmPassword'),
-            },
+            body: { currentPassword: currentPassword, newPassword: newPassword, confirmPassword: confirmPassword },
           });
+          if (res.token) {
+            try {
+              localStorage.setItem('hubAuthToken', res.token);
+              sessionStorage.setItem('hubAuthToken', res.token);
+            } catch (e5) {
+              /* ignore */
+            }
+          }
           passForm.reset();
-          toast('تم تغيير كلمة المرور بنجاح');
+          if (strength) strength.textContent = '';
+          setFormMsg('#p360-pass-msg', 'تم تغيير كلمة المرور بنجاح. سجّل الدخول لاحقًا بالكلمة الجديدة.', 'ok');
+          toast('تم تغيير كلمة المرور بنجاح', 'ok');
+          if (passPanel) {
+            setTimeout(function () {
+              passPanel.hidden = true;
+            }, 1600);
+          }
         } catch (e) {
-          toast(e.message || 'فشل تغيير كلمة المرور');
+          setFormMsg('#p360-pass-msg', e.message || 'فشل تغيير كلمة المرور.', 'error');
+          toast(e.message || 'فشل تغيير كلمة المرور', 'error');
         }
       });
     }

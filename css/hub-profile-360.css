@@ -412,6 +412,48 @@ body.dark-mode .p360-persona-chip.is-active {
   font-weight: 800;
 }
 
+.p360-inline-panel {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  border: 1px solid rgba(215, 0, 0, 0.22);
+  scroll-margin-top: 88px;
+}
+
+.p360-panel-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--p360-muted);
+  line-height: 1.5;
+}
+
+.p360-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.p360-form-msg {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.p360-form-msg.is-error {
+  color: #b91c1c;
+}
+
+.p360-form-msg.is-ok {
+  color: #15803d;
+}
+
+.p360-hero .p360-inline-panel[hidden],
+.p360-inline-panel[hidden] {
+  display: none !important;
+}
+
 .p360-form input,
 .p360-form select,
 .p360-form textarea {
