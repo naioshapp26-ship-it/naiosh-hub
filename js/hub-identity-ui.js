@@ -620,7 +620,8 @@
       </div>
       <p class="idn-banner idn-auto-note">رقم نايوش: ${
         isEdit && d.naioshId ? `<code dir="ltr">${esc(d.naioshId)}</code> (ثابت)` : 'سيتم إنشاؤه تلقائيًا بعد الحفظ'
-      }</p>`;
+      }</p>
+      <div id="idn-user-attachments" data-hub-attach-host="1"></div>`;
     }
     if (step === 2) {
       return `<div class="idn-ids-step">
@@ -718,7 +719,9 @@
       <li><span>المسمى</span><strong>${esc(d.jobTitle || '—')}</strong></li>
       <li><span>الدور</span><strong>${esc(roleLabel(d.roleCode))}</strong></li>
       <li><span>الحالة</span><strong>${esc(statusAr(d.status))}</strong></li>
-    </ul>`;
+      <li><span>المرفقات</span><strong>${(d._attachments || []).length ? `${d._attachments.length} مرفق` : 'لا مرفقات'}</strong></li>
+    </ul>
+    <div id="idn-user-attachments" data-hub-attach-host="1" style="margin-top:12px"></div>`;
   };
 
   const renderUserWizard = () => {
@@ -864,7 +867,7 @@
     else if (ui.view === 'detail') body = renderDetail(ui.openId);
     else body = renderHome(k);
 
-    return `<div class="hub-idn-ws">
+    const html = `<div class="hub-idn-ws">
       <header class="idn-header">
         <div>
           <p class="idn-kicker"><i class="fas fa-id-card"></i> هوية نايوش</p>
@@ -880,6 +883,8 @@
       ${body}
       ${renderModal()}
     </div>`;
+    scheduleIdentityAttachMount();
+    return html;
   };
 
   const readFilters = () => {
@@ -917,8 +922,43 @@
     if (orgSel?.selectedOptions?.[0]) {
       d.orgId = orgSel.selectedOptions[0].getAttribute('data-org-id') || d.orgId || '';
     }
+    const attHost = document.getElementById('idn-user-attachments');
+    if (attHost && window.HubFormAttachments?.collect) {
+      const collected = window.HubFormAttachments.collect(attHost);
+      if (collected.items?.length) d._attachments = collected.items;
+    }
     ui.addDraft = d;
     return d;
+  };
+
+  const scheduleIdentityAttachMount = () => {
+    setTimeout(() => {
+      const m = ui.modal;
+      if (!m || (m.kind !== 'add-user' && m.kind !== 'edit-user')) return;
+      const step = ui.addStep || 1;
+      if (step !== 1 && step !== 5) return;
+      const host = document.getElementById('idn-user-attachments');
+      if (!host || !window.HubFormAttachments?.mount) return;
+      if (!host.querySelector('[data-hub-attach-block]')) {
+        window.HubFormAttachments.mount(host, { title: 'المرفقات', multi: true });
+      } else {
+        window.HubFormAttachments.bind(host);
+      }
+      const items = ui.addDraft?._attachments;
+      if (Array.isArray(items) && items.length) {
+        window.HubFormAttachments.setItems(host, items);
+      } else if (m.kind === 'edit-user' && ui.addDraft?.naioshId) {
+        window.HubFormAttachments
+          .loadEntityAttachments({ entityType: 'identity', entityId: ui.addDraft.naioshId })
+          .then((loaded) => {
+            if (loaded?.length) {
+              ui.addDraft._attachments = loaded;
+              window.HubFormAttachments.setItems(host, loaded);
+            }
+          })
+          .catch(() => {});
+      }
+    }, 40);
   };
 
   const saveIdentityFromDraft = (actor) => {
@@ -1118,18 +1158,37 @@
       return true;
     }
     if (action === 'idn-add-save') {
-      try {
-        const created = saveIdentityFromDraft(actor);
-        ui.modal = null;
-        ui.addDraft = null;
-        ui.view = 'users';
-        ui.note = created?.naioshId ? `تم الحفظ · رقم نايوش: ${created.naioshId}${created.employeeNo ? ` · موظف: ${created.employeeNo}` : ''}${created.clientNo ? ` · عميل: ${created.clientNo}` : ''}` : 'تم الحفظ';
-        toast?.(ui.editMode ? 'تم حفظ التعديل في السجل المركزي' : 'تم حفظ المستخدم في السجل المركزي');
-        ui.editMode = false;
-      } catch (e) {
-        ui.modal = { kind: ui.editMode ? 'edit-user' : 'add-user', error: e.message || 'تعذر الحفظ' };
-      }
-      return true;
+      return (async () => {
+        try {
+          const draftAtt = (ui.addDraft?._attachments || []).slice();
+          const created = saveIdentityFromDraft(actor);
+          const entityId = created?.naioshId || ui.addDraft?.naioshId || '';
+          const fileItems = draftAtt.filter((a) => a && (a.id || a.url));
+          if (entityId && fileItems.length && window.HubFormAttachments?.persistToEntity) {
+            try {
+              await window.HubFormAttachments.persistToEntity({
+                entityType: 'identity',
+                entityId,
+                ownerEmail: created?.email || ui.addDraft?.email || '',
+                items: fileItems,
+              });
+            } catch (attErr) {
+              console.warn('[identity] attachment persist', attErr);
+            }
+          }
+          ui.modal = null;
+          ui.addDraft = null;
+          ui.view = 'users';
+          ui.note = created?.naioshId
+            ? `تم الحفظ · رقم نايوش: ${created.naioshId}${created.employeeNo ? ` · موظف: ${created.employeeNo}` : ''}${created.clientNo ? ` · عميل: ${created.clientNo}` : ''}`
+            : 'تم الحفظ';
+          toast?.(ui.editMode ? 'تم حفظ التعديل في السجل المركزي' : 'تم حفظ المستخدم في السجل المركزي');
+          ui.editMode = false;
+        } catch (e) {
+          ui.modal = { kind: ui.editMode ? 'edit-user' : 'add-user', error: e.message || 'تعذر الحفظ' };
+        }
+        return true;
+      })();
     }
     if (action === 'idn-matrix-apply') {
       ui.matrixEmp = document.querySelector('[data-idn-matrix-emp]')?.value || '';

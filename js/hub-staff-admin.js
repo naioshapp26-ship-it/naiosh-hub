@@ -462,6 +462,7 @@
             <legend style="font-weight:800;padding:0 6px">الصلاحيات الممنوحة</legend>
             <div style="max-height:180px;overflow:auto">${permChecks([])}</div>
           </fieldset>
+          <div id="sa-add-attachments" data-hub-attach-host="1"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <button type="submit" class="btn btn-primary">إنشاء الإداري</button>
             <button type="button" class="btn" id="sa-cancel-add">إلغاء</button>
@@ -474,6 +475,10 @@
         if (aff.value === 'naiosh') org.value = org.value || 'نايوش';
         else if (org.value === 'نايوش') org.value = '';
       });
+      const addAttHost = wrap.querySelector('#sa-add-attachments');
+      if (addAttHost && window.HubFormAttachments?.mount) {
+        window.HubFormAttachments.mount(addAttHost, { title: 'المرفقات', multi: true });
+      }
       wrap.querySelector('#sa-cancel-add')?.addEventListener('click', () => {
         wrap.classList.add('hidden');
         wrap.innerHTML = '';
@@ -483,6 +488,7 @@
         const fd = new FormData(ev.target);
         const permissions = [...ev.target.querySelectorAll('input[name=perm]:checked')].map((i) => i.value);
         const msg = wrap.querySelector('#sa-add-msg');
+        const collected = window.HubFormAttachments?.collect?.(addAttHost) || { items: [] };
         try {
           const result = await api('/api/admin/staff', {
             method: 'POST',
@@ -499,8 +505,17 @@
               permissions,
             },
           });
+          const empNo = result.staff?.employeeNo || '';
+          if (empNo && collected.items?.length && window.HubFormAttachments?.persistToEntity) {
+            await window.HubFormAttachments.persistToEntity({
+              entityType: 'staff',
+              entityId: empNo,
+              ownerEmail: String(fd.get('email') || ''),
+              items: collected.items,
+            });
+          }
           msg.style.color = '#166534';
-          msg.textContent = `${result.message || 'تم الإنشاء'} — ${result.staff?.employeeNo || ''} / ${result.staff?.accountId || ''}`;
+          msg.textContent = `${result.message || 'تم الإنشاء'} — ${empNo} / ${result.staff?.accountId || ''}`;
           toast?.(msg.textContent);
           setTimeout(() => reload().catch(() => {}), 500);
         } catch (err) {
@@ -534,12 +549,25 @@
             <label style="font-weight:700">اسم الجهة / المؤسسة<input name="orgName" value="${esc(row.orgName || '')}" ${isLeader ? 'readonly' : ''} style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid #d1d5db;border-radius:10px;box-sizing:border-box"/></label>
             <label style="font-weight:700">القسم / مكان العمل<input name="department" value="${esc(row.department || row.workplace || '')}" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid #d1d5db;border-radius:10px;box-sizing:border-box"/></label>
           `)}
+          <div id="sa-edit-attachments" data-hub-attach-host="1"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
             <button type="button" class="btn" id="sa-cancel-edit">إغلاق</button>
             <p id="sa-edit-msg" style="margin:0;font-weight:700"></p>
           </div>
         </form>`;
+      const editAttHost = wrap.querySelector('#sa-edit-attachments');
+      if (editAttHost && window.HubFormAttachments?.mount) {
+        window.HubFormAttachments.mount(editAttHost, { title: 'المرفقات', multi: true });
+        if (row.employeeNo) {
+          window.HubFormAttachments.loadEntityAttachments({
+            entityType: 'staff',
+            entityId: row.employeeNo,
+          }).then((items) => {
+            if (items?.length) window.HubFormAttachments.setItems(editAttHost, items);
+          }).catch(() => {});
+        }
+      }
       wrap.querySelector('#sa-cancel-edit')?.addEventListener('click', () => {
         wrap.classList.add('hidden');
         wrap.innerHTML = '';
@@ -548,6 +576,7 @@
         ev.preventDefault();
         const fd = new FormData(ev.target);
         const msg = wrap.querySelector('#sa-edit-msg');
+        const collected = window.HubFormAttachments?.collect?.(editAttHost) || { items: [] };
         try {
           await api(`/api/admin/staff/${encodeURIComponent(row.email)}`, {
             method: 'PATCH',
@@ -559,6 +588,14 @@
               department: fd.get('department'),
             },
           });
+          if (row.employeeNo && collected.items?.length && window.HubFormAttachments?.persistToEntity) {
+            await window.HubFormAttachments.persistToEntity({
+              entityType: 'staff',
+              entityId: row.employeeNo,
+              ownerEmail: row.email,
+              items: collected.items,
+            });
+          }
           msg.style.color = '#166534';
           msg.textContent = 'تم حفظ التعديلات.';
           toast?.(msg.textContent);
@@ -590,7 +627,28 @@
           <div><dt style="color:#64748b;font-size:12px">الحالة</dt><dd style="margin:2px 0 0">${esc(row.statusLabel)}</dd></div>
           <div style="grid-column:1/-1"><dt style="color:#64748b;font-size:12px">الصلاحيات</dt><dd style="margin:2px 0 0">${esc(row.permissions == null ? 'كامل (قائد أعلى)' : perms.length ? perms.map(permLabel).join(' · ') : 'لا صلاحيات')}</dd></div>
         </dl>
-        <button type="button" class="btn" id="sa-close-view">إغلاق</button>`;
+        <h4 style="margin:0 0 8px">المرفقات</h4>
+        <div id="sa-view-attachments"><p style="color:#64748b">جارٍ التحميل…</p></div>
+        <button type="button" class="btn" id="sa-close-view" style="margin-top:12px">إغلاق</button>`;
+      const viewBox = wrap.querySelector('#sa-view-attachments');
+      if (viewBox && row.employeeNo && window.HubFormAttachments?.loadEntityAttachments) {
+        window.HubFormAttachments.loadEntityAttachments({ entityType: 'staff', entityId: row.employeeNo })
+          .then((items) => {
+            if (!items.length) {
+              viewBox.innerHTML = '<p style="color:#64748b">لا مرفقات</p>';
+              return;
+            }
+            viewBox.innerHTML = `<ul style="margin:0;padding-inline-start:18px">${items
+              .map(
+                (a) =>
+                  `<li><code>${esc(a.id)}</code> · ${esc(a.category)} · ${esc(a.originalFileName || '')} · <a href="${esc(a.contentUrl || a.url || '#')}" target="_blank" rel="noopener">معاينة</a></li>`
+              )
+              .join('')}</ul>`;
+          })
+          .catch(() => {
+            viewBox.innerHTML = '<p style="color:#991b1b">تعذر تحميل المرفقات</p>';
+          });
+      } else if (viewBox) viewBox.innerHTML = '<p style="color:#64748b">لا مرفقات</p>';
       wrap.querySelector('#sa-close-view')?.addEventListener('click', () => {
         wrap.classList.add('hidden');
         wrap.innerHTML = '';

@@ -228,7 +228,13 @@ UI.ui.form = null;
 
 F.openForm(UI.ui, 'employee');
 modalHtml = UI.render();
-push('T12-emp-modal', modalHtml.includes('إضافة موظف') && modalHtml.includes('رقم الموظف') && modalHtml.includes('البريد الإلكتروني'));
+push(
+  'T12-emp-modal',
+  modalHtml.includes('إضافة موظف') &&
+    modalHtml.includes('رقم الموظف') &&
+    modalHtml.includes('البريد الإلكتروني') &&
+    modalHtml.includes('hto-employee-attachments')
+);
 UI.ui.form = null;
 
 F.openForm(UI.ui, 'workplace');

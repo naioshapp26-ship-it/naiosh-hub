@@ -401,8 +401,42 @@
       e.preventDefault();
       e.stopPropagation();
       const ok = window.HubTeamOpsUI.handle(t.getAttribute('data-action'), t, window.__htoCtx || {});
-      if (ok && window.__htoRerender) window.__htoRerender();
+      if (ok && typeof ok.then === 'function') {
+        ok.then((v) => {
+          if (v !== false && window.__htoRerender) window.__htoRerender();
+        });
+      } else if (ok && window.__htoRerender) window.__htoRerender();
     });
+  };
+
+  const paintDrawerAttachments = async () => {
+    const box = document.getElementById('hto-drawer-attachments');
+    if (!box || !window.HubFormAttachments?.loadEntityAttachments) return;
+    const emp = box.getAttribute('data-emp') || '';
+    if (!emp || emp === '—') {
+      box.innerHTML = '<p class="hto-empty">لا رقم موظف لربط المرفقات</p>';
+      return;
+    }
+    try {
+      const items = await window.HubFormAttachments.loadEntityAttachments({
+        entityType: 'employee',
+        entityId: emp,
+      });
+      if (!items.length) {
+        box.innerHTML = '<p class="hto-empty">لا مرفقات بعد</p>';
+        return;
+      }
+      box.innerHTML = `<ul class="hto-perm-list">${items
+        .map((a) => {
+          const kind = a.category === 'image' ? 'صورة' : a.category === 'video' ? 'فيديو' : 'ملف';
+          const href = a.contentUrl || a.url || '#';
+          return `<li><code>${esc(a.id)}</code> · ${esc(kind)} · ${esc(a.originalFileName || '')} · ${esc(a.fileSizeLabel || '')}
+            · <a href="${esc(href)}" target="_blank" rel="noopener">معاينة / تنزيل</a></li>`;
+        })
+        .join('')}</ul>`;
+    } catch {
+      box.innerHTML = '<p class="hto-empty">تعذر تحميل المرفقات</p>';
+    }
   };
 
   const afterPaint = (ctx = {}) => {
@@ -410,6 +444,7 @@
     window.__htoRerender = ctx.rerender;
     bindFormsApi();
     window.HubTeamOpsForms?.afterPaintForm?.(ui);
+    paintDrawerAttachments();
     requestAnimationFrame(placeOpenMenu);
     if (!window.__htoDocBound) {
       window.__htoDocBound = true;
@@ -911,6 +946,9 @@
           <p><strong>رقم نايوش:</strong> ${esc(identity.naioshId)}</p>
           <p><strong>البريد:</strong> ${esc(identity.email || '—')}</p>
           <p><strong>الحالة:</strong> ${statusBadge(identity.status)}</p>
+          ${identity.photo ? `<p><strong>الصورة:</strong> <a href="${esc(identity.photo)}" target="_blank" rel="noopener">معاينة</a></p>` : ''}
+          <h4>المرفقات</h4>
+          <div id="hto-drawer-attachments" data-emp="${esc(empNoOf(identity))}" class="hto-attach-view"><p class="hto-muted">جارٍ التحميل…</p></div>
           <h4>تعيينات الموظف</h4>
           ${
             grants.length

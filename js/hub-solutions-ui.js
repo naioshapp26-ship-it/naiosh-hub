@@ -609,11 +609,7 @@
         <label class="so-block">ملاحظات إضافية
           <textarea id="so-notes" rows="3" placeholder="أي تفاصيل إضافية...">${esc(w.data.notes)}</textarea>
         </label>
-        <label class="so-block">مرفق (اسم الملف)
-          <input id="so-att" placeholder="مثال: brief.pdf" />
-        </label>
-        <ul>${(w.data.attachments || []).map((a) => `<li>${esc(a)}</li>`).join('')}</ul>
-        <button type="button" class="btn btn-sm btn-dark" data-so="wiz-add-att">إضافة مرفق للقائمة</button>
+        <div id="so-wizard-attachments" data-hub-attach-host="1"></div>
         ${ui.submitError ? `<p class="so-error" role="alert">${esc(ui.submitError)}</p>` : ''}
       </div>`;
   };
@@ -666,10 +662,7 @@
         </label>
         <label class="so-block">تفاصيل النطاق<input id="so-scope-detail" value="${esc(w.data.scopeDetail)}" placeholder="اسم الفرع / المشروع..." /></label>`;
       } else if (step === 5) {
-        body = `<label class="so-block">اسم المرفق / المستند
-          <input id="so-att" placeholder="مثال: budget.pdf" /></label>
-          <ul>${(w.data.attachments || []).map((a) => `<li>${esc(a)}</li>`).join('')}</ul>
-          <button type="button" class="btn btn-sm btn-dark" data-so="wiz-add-att">إضافة للقائمة</button>`;
+        body = `<div id="so-wizard-attachments" data-hub-attach-host="1"></div>`;
       } else {
         const c = w.data.customer;
         body = `<ul class="so-feed">
@@ -709,7 +702,8 @@
         const docs = ['كشف مصروفات', 'عقود موردين', 'ميزانيات', 'أخرى'];
         body = `<div class="so-checks">${docs
           .map((d) => `<label><input type="checkbox" data-so-doc="${esc(d)}" ${(cm.docs || []).includes(d) ? 'checked' : ''}/> ${d}</label>`)
-          .join('')}</div>`;
+          .join('')}</div>
+          <div id="so-wizard-attachments" data-hub-attach-host="1" style="margin-top:12px"></div>`;
       } else {
         body = `<ul class="so-feed"><li><b>الهدف:</b> ${esc(cm.goal)}</li><li><b>المشكلة:</b> ${esc(cm.problem)}</li></ul>`;
       }
@@ -832,6 +826,11 @@
     if (document.getElementById('so-budget')) d.budget = g('so-budget');
     if (document.getElementById('so-due')) d.dueDate = g('so-due');
     if (document.getElementById('so-notes')) d.notes = g('so-notes');
+    const attHost = document.getElementById('so-wizard-attachments');
+    if (attHost && window.HubFormAttachments?.collect) {
+      const collected = window.HubFormAttachments.collect(attHost);
+      if (collected.items?.length) d.attachments = collected.items;
+    }
     if (w.mode === 'cost') {
       d.costMeta = d.costMeta || {};
       d.costMeta.expenseTypes = [...document.querySelectorAll('[data-so-exp]:checked')].map((el) => el.getAttribute('data-so-exp'));
@@ -843,7 +842,24 @@
     }
   };
 
-  const submitWizard = () => {
+  const scheduleWizardAttachMount = () => {
+    setTimeout(() => {
+      if (ui.view !== 'wizard' || !ui.wizard) return;
+      const host = document.getElementById('so-wizard-attachments');
+      if (!host || !window.HubFormAttachments?.mount) return;
+      if (!host.querySelector('[data-hub-attach-block]')) {
+        window.HubFormAttachments.mount(host, { title: 'المرفقات', multi: true });
+      } else {
+        window.HubFormAttachments.bind(host);
+      }
+      const items = ui.wizard.data?.attachments;
+      if (Array.isArray(items) && items.length) {
+        window.HubFormAttachments.setItems(host, items);
+      }
+    }, 40);
+  };
+
+  const submitWizard = async () => {
     if (SUBMIT_LOCK.busy) return;
     readWizardFields();
     const w = ui.wizard;
@@ -914,7 +930,19 @@
           budget: w.data.budget || '',
           dueDate: w.data.dueDate || '',
           notes: w.data.notes || '',
-          attachments: (w.data.attachments || []).map((name) => ({ name, at: new Date().toISOString(), by: actorName() })),
+          attachments: (w.data.attachments || []).map((a) =>
+            typeof a === 'string'
+              ? { name: a, at: new Date().toISOString(), by: actorName() }
+              : {
+                  name: a.name || a.originalFileName || 'مرفق',
+                  url: a.url || '',
+                  id: a.id || '',
+                  kind: a.kind || 'file',
+                  size: a.size || 0,
+                  at: new Date().toISOString(),
+                  by: actorName(),
+                }
+          ),
           costMeta: w.data.costMeta,
           status: 'Pending Review',
           sourceModule: 'حلول نايوش',
@@ -927,6 +955,20 @@
       );
 
       if (!req?.id) throw new Error('createRequest returned empty');
+      // Persist real uploads to entity-attachments (idempotent)
+      const fileItems = (w.data.attachments || []).filter((a) => a && typeof a === 'object' && (a.id || a.url));
+      if (fileItems.length && window.HubFormAttachments?.persistToEntity) {
+        try {
+          await window.HubFormAttachments.persistToEntity({
+            entityType: 'solution',
+            entityId: req.id,
+            ownerEmail: c.email || '',
+            items: fileItems,
+          });
+        } catch (attErr) {
+          console.warn('[solutions] attachment persist', attErr);
+        }
+      }
 
       ui.wizard = null;
       ui.selected = null;
@@ -973,6 +1015,7 @@
           <button type="button" class="btn btn-sm ${ui.view === 'audit' ? 'btn-primary' : 'btn-ghost'}" data-so="view-audit">سجل العمليات</button>` : ''}
       </nav>
       ${main}`;
+    scheduleWizardAttachMount();
   };
 
   const onClick = (e) => {
@@ -1078,15 +1121,16 @@
       return;
     }
     if (action === 'wiz-add-att') {
-      const name = document.getElementById('so-att')?.value?.trim();
-      if (!name) return;
-      ui.wizard.data.attachments = ui.wizard.data.attachments || [];
-      ui.wizard.data.attachments.push(name);
-      document.getElementById('so-att').value = '';
-      render();
+      // legacy no-op — uploads happen via HubFormAttachments
       return;
     }
     if (action === 'wiz-submit') {
+      // Collect latest uploads before submit
+      const host = document.getElementById('so-wizard-attachments');
+      if (host && window.HubFormAttachments?.collect) {
+        const collected = window.HubFormAttachments.collect(host);
+        if (collected.items?.length) ui.wizard.data.attachments = collected.items;
+      }
       submitWizard();
       return;
     }

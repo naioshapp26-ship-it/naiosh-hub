@@ -475,8 +475,9 @@
       ${field({ name: 'naioshId', label: 'رقم نايوش إن وجد', value: d.naioshId || '', placeholder: 'NAI-…' })}
       ${field({ name: 'email', label: 'البريد الإلكتروني', type: 'email', value: d.email || '', required: true })}
       ${field({ name: 'phone', label: 'رقم الهاتف', value: d.phone || '', placeholder: '+971…' })}
-      ${field({ name: 'photo', label: 'صورة الموظف (رابط اختياري)', value: d.photo || '', placeholder: 'https://…' })}
       ${field({ name: 'notes', label: 'ملاحظات', type: 'textarea', value: d.notes || '', rows: 2 })}
+      <div id="hto-employee-attachments" data-hub-attach-host="1"></div>
+      ${d.photo ? `<p class="hto-hint" style="margin-top:8px">الصورة الحالية: <a href="${esc(d.photo)}" target="_blank" rel="noopener">معاينة</a></p>` : ''}
     `;
   };
 
@@ -656,14 +657,18 @@
           errors.email = 'يوجد موظف بهذا البريد بالفعل';
         }
       }
+      const attachHost = document.getElementById('hto-employee-attachments');
+      const collected = window.HubFormAttachments?.collect?.(attachHost) || { items: [] };
+      const firstImage = (collected.items || []).find((i) => i.kind === 'image');
       payload = {
         name,
         email,
         employeeNo,
         naioshId: readVal('naioshId') || f.data?.naioshId || undefined,
         phone: readVal('phone'),
-        photo: readVal('photo'),
+        photo: firstImage?.url || f.data?.photo || '',
         notes: readVal('notes'),
+        attachments: collected.items || [],
       };
     }
 
@@ -724,8 +729,14 @@
       f.data.employeeNo = readVal('employeeNo');
       f.data.naioshId = readVal('naioshId');
       f.data.phone = readVal('phone');
-      f.data.photo = readVal('photo');
       f.data.notes = readVal('notes');
+      const attachHost = document.getElementById('hto-employee-attachments');
+      const collected = window.HubFormAttachments?.collect?.(attachHost);
+      if (collected?.items?.length) {
+        f.data._pendingAttachments = collected.items;
+        const img = collected.items.find((i) => i.kind === 'image');
+        if (img?.url) f.data.photo = img.url;
+      }
     } else if (f.kind === 'workplace') {
       f.data.nameAr = readVal('nameAr');
       if (!f.edit) f.data.code = slugCode(readVal('code') || f.data.nameAr, 40);
@@ -792,6 +803,8 @@
         ui.tab = 'systems';
         toast?.('تم حفظ مكان العمل');
       } else if (f.kind === 'employee') {
+        let employeeNo = payload.employeeNo;
+        let ownerEmail = payload.email;
         if (f.edit && (payload.naioshId || f.data?.naioshId)) {
           const nid = payload.naioshId || f.data.naioshId;
           eng().updateIdentity?.(
@@ -804,8 +817,9 @@
             },
             actor
           );
-          toast?.('تم تحديث بيانات الموظف');
           ui.selectedUser = nid;
+          employeeNo = payload.employeeNo || f.data?.employeeNo;
+          toast?.('تم تحديث بيانات الموظف');
         } else {
           const created = eng().registerEmployee(
             {
@@ -820,6 +834,8 @@
             actor
           );
           if (!created?.employeeNo) throw new Error('لا يمكن حفظ موظف بدون رقم موظف');
+          employeeNo = created.employeeNo;
+          ownerEmail = created.email || payload.email;
           ui.wizard = {
             step: 2,
             naioshId: created.naioshId,
@@ -834,6 +850,27 @@
           ui.tab = 'team';
           ui.selectedUser = created.naioshId;
           toast?.(`تم تسجيل الموظف ${created.employeeNo}`);
+        }
+        // Persist attachments after employee exists (idempotent; does not re-create employee)
+        const items = payload.attachments || f.data?._pendingAttachments || [];
+        if (items.length && window.HubFormAttachments?.persistToEntity) {
+          return window.HubFormAttachments.persistToEntity({
+            entityType: 'employee',
+            entityId: employeeNo,
+            ownerEmail,
+            items,
+          })
+            .then(() => {
+              ui.form = null;
+              toast?.('تم حفظ مرفقات الموظف');
+              (ctx.rerender || window.__htoRerender || window.hubRerender)?.();
+            })
+            .catch((err) => {
+              // Employee already saved — keep form closed but surface attachment error
+              ui.form = null;
+              toast?.(err.message || 'حُفظ الموظف لكن فشل ربط بعض المرفقات — أعد الرفع من التعديل');
+              (ctx.rerender || window.__htoRerender || window.hubRerender)?.();
+            });
         }
       }
       ui.form = null;
@@ -853,7 +890,14 @@
       ui.form = null;
       return true;
     }
-    if (action === 'hto-form-save') return submitForm(ui, ctx);
+    if (action === 'hto-form-save') {
+      const result = submitForm(ui, ctx);
+      if (result && typeof result.then === 'function') {
+        result.catch(() => {});
+        return true;
+      }
+      return result;
+    }
     if (action === 'hto-form-gen-empno') {
       if (ui.form?.kind === 'employee') {
         ui.form.data = ui.form.data || {};
@@ -881,10 +925,42 @@
     return false;
   };
 
+  const mountEmployeeAttachments = async (ui) => {
+    if (ui?.form?.kind !== 'employee') return;
+    const host = document.getElementById('hto-employee-attachments');
+    if (!host || !window.HubFormAttachments?.mount) return;
+    if (!host.querySelector('[data-hub-attach-block]')) {
+      window.HubFormAttachments.mount(host, {
+        title: 'المرفقات',
+        multi: true,
+        showLink: false,
+        required: false,
+      });
+    } else {
+      window.HubFormAttachments.bind(host);
+    }
+    if (ui.form.edit && ui.form.data?.employeeNo) {
+      try {
+        const items = await window.HubFormAttachments.loadEntityAttachments({
+          entityType: 'employee',
+          entityId: ui.form.data.employeeNo,
+        });
+        if (items.length) window.HubFormAttachments.setItems(host, items);
+      } catch {
+        /* ignore */
+      }
+    }
+  };
+
   const afterPaintForm = (ui) => {
     if (!ui?.form) return;
     const root = document.querySelector('.hto-form-modal');
-    if (!root || root.dataset.bound === '1') return;
+    if (!root) return;
+
+    // Always (re)mount attachments when employee form is painted
+    mountEmployeeAttachments(ui);
+
+    if (root.dataset.bound === '1') return;
     root.dataset.bound = '1';
 
     root.addEventListener('change', (e) => {

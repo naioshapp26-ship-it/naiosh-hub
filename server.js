@@ -347,6 +347,17 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  if (pathname.startsWith('/api/hub/entity-attachments')) {
+    const hubEntityAtt = require('./lib/hub-entity-attachments');
+    await hubEntityAtt.handleApi(req, res, pathname, {
+      sendJson,
+      readBody,
+      requireAuth: requireHubAuthOrReject,
+      isStaffSession: (session) => !!(session && hubSession.isStaffLane(session.lane)),
+    });
+    return true;
+  }
+
   if (pathname.startsWith('/api/hub/reels')) {
     const hubReels = require('./lib/hub-reel-processor');
     await hubReels.handleApi(req, res, pathname, {
