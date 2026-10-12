@@ -379,7 +379,13 @@ window.HubResearchPublish = (() => {
     if (isLoggedIn() && limits?.uploadFile) {
       try {
         const uploaded = await limits.uploadFile(file, { onProgress: showProgress });
-        return { url: uploaded.url, mime: uploaded.mime || file.type, name: file.name, size: file.size };
+        return {
+          id: uploaded.id || '',
+          url: uploaded.url,
+          mime: uploaded.mime || file.type,
+          name: file.name,
+          size: file.size,
+        };
       } catch (err) {
         if (file.size > cap || video) throw err;
       }
@@ -417,14 +423,15 @@ window.HubResearchPublish = (() => {
       toast(`جاري رفع ${file.name}…`);
       const media = await ingest(file, kind);
       state.current.attachments = state.current.attachments || [];
-      state.current.attachments.push({
-        id: uid('file'),
-        kind,
+      const att = {
+        id: media.id || uid('file'),
+        kind: kind === 'text' ? 'file' : kind,
         name: media.name,
         mime: media.mime,
         url: media.url,
         size: media.size,
-      });
+      };
+      state.current.attachments.push(att);
       if (kind === 'text' && file.size < 400000 && /\.(txt|md|csv)$/i.test(file.name)) {
         const text = await file.text();
         const body = field('body');
@@ -435,6 +442,13 @@ window.HubResearchPublish = (() => {
       }
       renderFiles();
       persistDraft();
+      if (window.HubFormAttachments?.softPersistToEntity && (media.id || media.url)) {
+        await window.HubFormAttachments.softPersistToEntity({
+          entityType: 'research',
+          entityId: state.current.id,
+          items: [{ id: media.id || '', url: media.url, name: media.name, mime: media.mime, size: media.size, kind: att.kind }],
+        });
+      }
       toast(`تم رفع ${file.name}`);
     } catch (err) {
       toast(err.message || 'تعذّر رفع الملف', true);

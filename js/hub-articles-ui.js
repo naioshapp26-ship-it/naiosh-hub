@@ -695,6 +695,13 @@
         if (lbl) lbl.textContent = `جارٍ الرفع · ${pct}%`;
       });
       await persistPatch({ coverImage: up });
+      if (ui.draftId && window.HubFormAttachments?.softPersistToEntity) {
+        await window.HubFormAttachments.softPersistToEntity({
+          entityType: 'article',
+          entityId: ui.draftId,
+          items: [{ id: up.id, url: up.url, name: up.name, mime: up.mime, size: up.size, kind: 'image' }],
+        });
+      }
     } catch (e) {
       await persistPatch({ coverImage: fileMeta(file, { status: 'error' }) });
       alert(e?.message || 'فشل رفع الصورة');
@@ -727,6 +734,13 @@
         if (lbl) lbl.textContent = `جارٍ الرفع · ${pct}%`;
       });
       await persistPatch({ video: up });
+      if (ui.draftId && window.HubFormAttachments?.softPersistToEntity) {
+        await window.HubFormAttachments.softPersistToEntity({
+          entityType: 'article',
+          entityId: ui.draftId,
+          items: [{ id: up.id, url: up.url, name: up.name, mime: up.mime, size: up.size, kind: 'video' }],
+        });
+      }
     } catch (e) {
       await persistPatch({ video: fileMeta(file, { status: 'error' }) });
       alert(e?.message || 'فشل رفع الفيديو');
@@ -746,6 +760,18 @@
       const next = [...(A().get(ui.draftId)?.attachments || list)];
       next[next.length - 1] = up;
       await persistPatch({ attachments: next });
+      if (ui.draftId && window.HubFormAttachments?.softPersistToEntity) {
+        const kind = String(file.type || '').startsWith('image/')
+          ? 'image'
+          : String(file.type || '').startsWith('video/')
+            ? 'video'
+            : 'file';
+        await window.HubFormAttachments.softPersistToEntity({
+          entityType: 'article',
+          entityId: ui.draftId,
+          items: [{ id: up.id, url: up.url, name: up.name, mime: up.mime, size: up.size, kind }],
+        });
+      }
     } catch (e) {
       alert(e?.message || 'فشل رفع المرفق');
     }

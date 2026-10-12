@@ -657,7 +657,7 @@
           }).join('')
         : '<p class="ev-meta">لا مرفقات بعد.</p>') +
       ((own || isStaff()) && (e.status === 'draft' || e.status === 'needs_changes' || isStaff())
-        ? '<label class="ev-drop">إضافة مرفق للفعالية<input type="file" data-file hidden></label>'
+        ? '<label class="ev-drop">إضافة مرفق للفعالية<input type="file" data-file multiple hidden></label>'
         : '') +
       '</article>' +
       '<article class="ev-card"><h3>الحملات التسويقية المرتبطة</h3>' +
@@ -1190,17 +1190,30 @@
       } catch (err) { toast(err.message || String(err)); }
       return;
     }
-    if (e.target.hasAttribute('data-file') && e.target.files && e.target.files[0] && state.event) {
+    if (e.target.hasAttribute('data-file') && e.target.files && e.target.files.length && state.event) {
       try {
-        var file = e.target.files[0];
-        var up = await uploadFile(file);
-        var kind = file.type.indexOf('video') === 0 ? 'video' : file.type.indexOf('image') === 0 ? 'image' : 'file';
-        var out = await api('/api/hub/events/' + encodeURIComponent(state.event.id) + '/assets', {
-          method: 'POST',
-          body: { kind: kind, name: file.name, mime: file.type, size: file.size, url: up.url, uploadId: up.id },
-        });
-        state.event = out.event;
-        toast('تم رفع المرفق');
+        var fileList = Array.prototype.slice.call(e.target.files || []);
+        var eaItems = [];
+        var out = null;
+        for (var fi = 0; fi < fileList.length; fi++) {
+          var file = fileList[fi];
+          var up = await uploadFile(file);
+          var kind = file.type.indexOf('video') === 0 ? 'video' : file.type.indexOf('image') === 0 ? 'image' : 'file';
+          out = await api('/api/hub/events/' + encodeURIComponent(state.event.id) + '/assets', {
+            method: 'POST',
+            body: { kind: kind, name: file.name, mime: file.type, size: file.size, url: up.url, uploadId: up.id },
+          });
+          eaItems.push({ id: up.id || '', url: up.url || '', name: file.name, mime: file.type, size: file.size, kind: kind });
+        }
+        if (out) state.event = out.event;
+        if (eaItems.length && window.HubFormAttachments && HubFormAttachments.softPersistToEntity) {
+          await HubFormAttachments.softPersistToEntity({
+            entityType: 'event',
+            entityId: state.event.id,
+            items: eaItems,
+          });
+        }
+        toast(fileList.length > 1 ? 'تم رفع ' + fileList.length + ' مرفقات' : 'تم رفع المرفق');
         render();
       } catch (err) { toast(err.message || String(err)); }
     }

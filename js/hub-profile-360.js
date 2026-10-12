@@ -420,9 +420,10 @@
       '<div class="p360-card"><h2>المرفقات</h2>' +
       renderValue(data.documents) +
       (header.canEdit
-        ? '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">' +
-          '<button type="button" class="p360-btn" id="p360-doc-btn"><i class="fas fa-paperclip"></i> رفع مرفق</button>' +
-          '<input type="file" id="p360-doc-file" hidden />' +
+        ? '<div style="margin-top:10px" data-p360-attach-host></div>' +
+          '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">' +
+          '<button type="button" class="p360-btn" id="p360-doc-btn"><i class="fas fa-paperclip"></i> رفع مرفق سريع</button>' +
+          '<input type="file" id="p360-doc-file" accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip" multiple hidden />' +
           '</div>'
         : '') +
       '</div>' +
@@ -829,6 +830,50 @@
       });
     }
 
+    var attachHost = root.querySelector('[data-p360-attach-host]');
+    if (attachHost && window.HubFormAttachments && HubFormAttachments.mount) {
+      HubFormAttachments.mount(attachHost, { title: 'رفع مرفقات الملف 360', multi: true, showLink: false });
+      var saveAttBtn = document.createElement('button');
+      saveAttBtn.type = 'button';
+      saveAttBtn.className = 'p360-btn';
+      saveAttBtn.style.marginTop = '8px';
+      saveAttBtn.innerHTML = '<i class="fas fa-save"></i> حفظ المرفقات في الملف';
+      attachHost.appendChild(saveAttBtn);
+      saveAttBtn.addEventListener('click', async function () {
+        try {
+          var collected = HubFormAttachments.collect(attachHost) || { items: [] };
+          if (!collected.items.length) return toast('اختر مرفقًا أولًا');
+          for (var i = 0; i < collected.items.length; i++) {
+            var it = collected.items[i];
+            await api('/api/hub/profiles/me/documents', {
+              method: 'POST',
+              body: {
+                name: it.name,
+                url: it.url,
+                mime: it.mime,
+                kind: it.kind || 'file',
+                persona: header.activePersona || '',
+              },
+            });
+          }
+          var entityId = (data.header && (data.header.accountNo || data.header.email)) || '';
+          if (entityId) {
+            await HubFormAttachments.softPersistToEntity({
+              entityType: 'identity',
+              entityId: entityId,
+              ownerEmail: (data.header && data.header.email) || '',
+              items: collected.items,
+            });
+          }
+          HubFormAttachments.reset(attachHost);
+          renderPage(root, await api('/api/hub/profiles/me'), opts);
+          toast('تم حفظ المرفقات');
+        } catch (e) {
+          toast(e.message || 'فشل حفظ المرفقات');
+        }
+      });
+    }
+
     var docBtn = root.querySelector('#p360-doc-btn');
     var docFile = root.querySelector('#p360-doc-file');
     if (docBtn && docFile) {
@@ -836,23 +881,27 @@
         docFile.click();
       });
       docFile.addEventListener('change', async function () {
-        var file = docFile.files && docFile.files[0];
-        if (!file) return;
+        var files = Array.prototype.slice.call(docFile.files || []);
+        if (!files.length) return;
         try {
-          var up = await uploadFile(file);
-          var url = up.url || up.path || up.publicUrl;
-          await api('/api/hub/profiles/me/documents', {
-            method: 'POST',
-            body: {
-              name: file.name,
-              url: url,
-              mime: file.type,
-              kind: 'file',
-              persona: header.activePersona || '',
-            },
-          });
+          for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var up = await uploadFile(file);
+            var url = up.url || up.path || up.publicUrl;
+            var kind = file.type.indexOf('image/') === 0 ? 'image' : file.type.indexOf('video/') === 0 ? 'video' : 'file';
+            await api('/api/hub/profiles/me/documents', {
+              method: 'POST',
+              body: {
+                name: file.name,
+                url: url,
+                mime: file.type,
+                kind: kind,
+                persona: header.activePersona || '',
+              },
+            });
+          }
           renderPage(root, await api('/api/hub/profiles/me'), opts);
-          toast('تم إرفاق الملف');
+          toast(files.length > 1 ? 'تم إرفاق ' + files.length + ' ملفات' : 'تم إرفاق الملف');
         } catch (e) {
           toast(e.message || 'فشل رفع المرفق');
         }

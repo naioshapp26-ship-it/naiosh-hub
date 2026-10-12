@@ -228,17 +228,17 @@
           <label class="hub-upload-card">
             <span class="hub-field-label">${fieldLabelHtml('رفع ملف / مستند', { optional: true })}</span>
             <input id="hub-field-docFile" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,image/*" />
-            <small>${esc(values.docName || 'PDF · Word · Excel · حتى 150MB')}</small>
+            <small>${esc(values.docName || 'PDF · Word · Excel · حتى 1500MB')}</small>
           </label>
           <label class="hub-upload-card">
             <span class="hub-field-label">${fieldLabelHtml('رفع صورة', { optional: true })}</span>
             <input id="hub-field-imageFile" type="file" accept="image/*" />
-            <small>${esc(values.imageName || 'PNG · JPG · WEBP · حتى 150MB')}</small>
+            <small>${esc(values.imageName || 'PNG · JPG · WEBP · حتى 1500MB')}</small>
           </label>
           <label class="hub-upload-card">
             <span class="hub-field-label">${fieldLabelHtml('رفع فيديو', { optional: true })}</span>
             <input id="hub-field-videoFile" type="file" accept="video/*" />
-            <small>${esc(values.videoName || 'MP4 · MOV · WEBM · حتى 150MB')}</small>
+            <small>${esc(values.videoName || 'MP4 · MOV · WEBM · حتى 1500MB')}</small>
           </label>
         </div>
       </div>`;
@@ -248,9 +248,9 @@
       const file = input?.files?.[0];
       if (!file) return null;
       const limits = window.HubUploadLimits;
-      const maxBytes = limits?.MAX_FILE_BYTES || 150 * 1024 * 1024;
+      const maxBytes = limits?.MAX_FILE_BYTES || 1500 * 1024 * 1024;
       if (file.size > maxBytes) {
-        return { error: limits?.sizeError?.(file) || 'حجم الملف أكبر من 150MB' };
+        return { error: limits?.sizeError?.(file) || 'حجم الملف أكبر من الحد المسموح' };
       }
       const base = { name: file.name, type: file.type, size: file.size, dataUrl: '', url: '' };
       const inlineMax = limits?.INLINE_DATA_URL_MAX_BYTES || 1_500_000;
@@ -712,6 +712,49 @@
       }
       const ok = window.HubStore.entityAction(entity, id, 'edit', patch);
       if (!ok) return toast('تعذّر التعديل');
+      const eaType =
+        entity === 'employees' || entity === 'staff'
+          ? 'employee'
+          : entity === 'products' || entity === 'store'
+            ? 'product'
+            : entity === 'ads'
+              ? 'other'
+              : entity === 'tasks'
+                ? 'task'
+                : 'other';
+      const items = [
+        meta.docUrl
+          ? {
+              id: String(meta.docUrl).replace(/^\/uploads\//, ''),
+              url: meta.docUrl,
+              name: meta.docName || 'ملف',
+              kind: 'file',
+            }
+          : null,
+        meta.imageDataUrl || meta.imageUrl
+          ? {
+              id: String(meta.imageDataUrl || meta.imageUrl || '').replace(/^\/uploads\//, ''),
+              url: meta.imageDataUrl || meta.imageUrl,
+              name: meta.imageName || 'صورة',
+              kind: 'image',
+            }
+          : null,
+        meta.videoUrl
+          ? {
+              id: String(meta.videoUrl).replace(/^\/uploads\//, ''),
+              url: meta.videoUrl,
+              name: meta.videoName || 'فيديو',
+              kind: 'video',
+            }
+          : null,
+      ].filter((x) => x && x.url && !String(x.url).startsWith('data:'));
+      if (items.length && window.HubFormAttachments?.softPersistToEntity) {
+        await window.HubFormAttachments.softPersistToEntity({
+          entityType: eaType,
+          entityId: id,
+          items,
+        });
+      }
       closeModal();
       toast('تم التعديل');
       afterChange(entity, 'edit', id);
@@ -1494,6 +1537,43 @@
     if (entity === 'ads' && !values.content) values.content = values.desc || '';
     const ok = form.save(values);
     if (!ok) return toast('تعذّرت الإضافة');
+    const savedId = ok?.id || ok?.item?.id || values.id || `hub-${entity}-${Date.now().toString(36)}`;
+    const eaTypeAdd =
+      entity === 'employees' || entity === 'staff'
+        ? 'employee'
+        : entity === 'products' || entity === 'store'
+          ? 'product'
+          : entity === 'tasks'
+            ? 'task'
+            : 'other';
+    const addItems = [
+      values.docUrl
+        ? { id: String(values.docUrl).replace(/^\/uploads\//, ''), url: values.docUrl, name: values.docName || 'ملف', kind: 'file' }
+        : null,
+      values.imageDataUrl && !String(values.imageDataUrl).startsWith('data:')
+        ? {
+            id: String(values.imageDataUrl).replace(/^\/uploads\//, ''),
+            url: values.imageDataUrl,
+            name: values.imageName || 'صورة',
+            kind: 'image',
+          }
+        : null,
+      values.videoUrl
+        ? {
+            id: String(values.videoUrl).replace(/^\/uploads\//, ''),
+            url: values.videoUrl,
+            name: values.videoName || 'فيديو',
+            kind: 'video',
+          }
+        : null,
+    ].filter(Boolean);
+    if (addItems.length && window.HubFormAttachments?.softPersistToEntity) {
+      await window.HubFormAttachments.softPersistToEntity({
+        entityType: eaTypeAdd,
+        entityId: String(savedId),
+        items: addItems,
+      });
+    }
     closeModal();
     const noun = entity === 'ads' ? 'الإعلان' : 'المنتج';
     const msg =

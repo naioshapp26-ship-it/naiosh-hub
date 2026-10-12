@@ -573,6 +573,30 @@
         ui.successOwnerType = pack.data.submission.ownerType || '';
         ui.wizardOpen = false;
         toast('تم إرسال إعلانك للمراجعة بنجاح.', 'success');
+        if (
+          ad &&
+          ad.id &&
+          (draft.mediaId || draft.mediaUrl) &&
+          window.HubFormAttachments &&
+          HubFormAttachments.softPersistToEntity
+        ) {
+          var kind =
+            draft.contentType === 'video' ? 'video' : draft.contentType === 'image' ? 'image' : 'file';
+          HubFormAttachments.softPersistToEntity({
+            entityType: 'other',
+            entityId: String(ad.id),
+            items: [
+              {
+                id: draft.mediaId || '',
+                url: draft.mediaUrl || draft.mediaDataUrl || '',
+                name: draft.mediaName || 'مرفق إعلان',
+                mime: draft.mediaMime || '',
+                size: draft.mediaSize || 0,
+                kind: kind,
+              },
+            ],
+          }).catch(function () {});
+        }
       })
       .catch(function (err) {
         ui.submitError = (err && err.message) || 'تعذر إرسال الإعلان.';
@@ -1306,6 +1330,30 @@
         draft.mediaError = '';
         autosave();
         render();
+        var entityId = ui.editingId || draft.id || '';
+        if (
+          entityId &&
+          (res.id || res.url) &&
+          window.HubFormAttachments &&
+          HubFormAttachments.softPersistToEntity
+        ) {
+          var kind =
+            draft.contentType === 'video' ? 'video' : draft.contentType === 'image' ? 'image' : 'file';
+          HubFormAttachments.softPersistToEntity({
+            entityType: 'other',
+            entityId: String(entityId),
+            items: [
+              {
+                id: res.id || '',
+                url: res.url || '',
+                name: file.name,
+                mime: res.mime || file.type || '',
+                size: file.size || 0,
+                kind: kind,
+              },
+            ],
+          }).catch(function () {});
+        }
       })
       .catch(function (err) {
         draft.mediaUploading = false;

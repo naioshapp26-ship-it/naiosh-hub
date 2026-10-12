@@ -10,3 +10,4 @@ data/
 
 .tmp/
 scripts/qa-ui-english-scan-report.json
+db/

@@ -156,6 +156,23 @@
       return;
     }
     const sync = await api.pushRemote();
+    if (pendingMedia?.mediaUrl && window.HubFormAttachments?.softPersistToEntity) {
+      const kind = String(result.item.kind || 'file');
+      await window.HubFormAttachments.softPersistToEntity({
+        entityType: 'research',
+        entityId: result.item.id,
+        items: [
+          {
+            id: String(pendingMedia.mediaUrl).replace(/^\/uploads\//, ''),
+            url: pendingMedia.mediaUrl,
+            name: pendingMedia.mediaName || 'مرفق',
+            mime: pendingMedia.mediaMime || '',
+            size: 0,
+            kind: kind === 'image' || kind === 'video' ? kind : 'file',
+          },
+        ],
+      });
+    }
     const section = result.item.section || result.item.kind;
     const pageName = api.SECTION_META?.[section]?.pageTitle || 'المحتوى';
     showFeedback(

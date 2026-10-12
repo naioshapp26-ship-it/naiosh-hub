@@ -438,6 +438,48 @@
     return container;
   };
 
+  /** Replace legacy single-slot grids with the multi block (progress + list + remove). */
+  const upgradeForm = (form, options = {}) => {
+    if (!form) return null;
+    ensureStyles();
+    const opts = { showLink: true, multi: true, title: 'المرفقات', ...options };
+    const existingBlock = form.querySelector('[data-hub-attach-block]');
+    if (existingBlock) {
+      bind(existingBlock);
+      return existingBlock;
+    }
+    const legacy = form.querySelector('[data-hub-attach-fields]');
+    if (legacy) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = blockHtml(opts);
+      const block = tmp.firstElementChild;
+      legacy.replaceWith(block);
+      bind(block);
+      return block;
+    }
+    return mount(form, opts);
+  };
+
+  /**
+   * Persist when session exists. Guests keep URLs in the local record only.
+   * Returns { ok, persisted, skippedReason, items }.
+   */
+  const softPersistToEntity = async ({ entityType, entityId, ownerEmail, items } = {}) => {
+    const list = Array.isArray(items) ? items.filter((it) => it && (it.id || it.url)) : [];
+    if (!entityType || !entityId || !list.length) {
+      return { ok: true, persisted: 0, skippedReason: 'empty', items: [] };
+    }
+    if (!isLoggedIn()) {
+      return { ok: true, persisted: 0, skippedReason: 'login_required', items: list };
+    }
+    try {
+      const out = await persistToEntity({ entityType, entityId, ownerEmail, items: list });
+      return { ok: true, persisted: out.length, skippedReason: '', items: out };
+    } catch (err) {
+      return { ok: false, persisted: 0, skippedReason: err.message || 'persist_failed', items: [] };
+    }
+  };
+
   const mountAll = (root = document) => {
     ensureStyles();
     root.querySelectorAll?.('form').forEach((form) => bind(form));
@@ -509,6 +551,8 @@
     setItems,
     bind,
     mount,
+    upgradeForm,
+    softPersistToEntity,
     mountAll,
     persistToEntity,
     loadEntityAttachments,

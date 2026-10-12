@@ -285,14 +285,39 @@
     const f = input?.files?.[0];
     if (!f) return null;
     const limits = window.HubUploadLimits;
-    const check = limits?.assertFile ? limits.assertFile(f) : { ok: f.size <= 150 * 1024 * 1024 };
-    if (!check.ok) throw new Error(check.error || 'حجم الملف أكبر من 150MB');
+    const check = limits?.assertFile ? limits.assertFile(f) : { ok: f.size <= 1500 * 1024 * 1024 };
+    if (!check.ok) throw new Error(check.error || 'حجم الملف أكبر من الحد المسموح');
     let url = '';
+    let id = '';
     if (limits?.uploadFile) {
       const uploaded = await limits.uploadFile(f);
       url = uploaded.url || '';
+      id = uploaded.id || '';
     }
-    return { name: f.name, size: f.size, type: f.type || '', url };
+    return { name: f.name, size: f.size, type: f.type || '', url, id };
+  };
+
+  const ensureBookingAttachHost = () => {
+    if (!form || !window.HubFormAttachments?.upgradeForm) return null;
+    const legacyFile = form.querySelector('[name="profileFile"], [name="imageFile"], [name="videoFile"]');
+    if (legacyFile && !form.querySelector('[data-hub-attach-block]')) {
+      const wrap =
+        legacyFile.closest('.hub-book-files, .hub-book-upload, fieldset, .hub-form-grid') || legacyFile.parentElement;
+      if (wrap) {
+        const host = document.createElement('div');
+        host.setAttribute('data-hub-attach-host', '1');
+        host.setAttribute('data-booking-attach', '1');
+        wrap.replaceWith(host);
+        window.HubFormAttachments.mount(host, {
+          title: 'المرفقات',
+          multi: true,
+          showLink: false,
+          required: false,
+        });
+        return host;
+      }
+    }
+    return form.querySelector('[data-hub-attach-block], [data-booking-attach]');
   };
 
   const selectedLabel = (name) => {
@@ -586,18 +611,38 @@
     if (feedback) {
       feedback.hidden = false;
       feedback.classList.remove('is-error', 'is-ok');
-      feedback.textContent = 'جاري رفع الملفات (حتى 150 ميجابايت)...';
+      feedback.textContent = 'جاري تجهيز المرفقات (حتى 1500 ميجابايت)...';
     }
 
+    ensureBookingAttachHost();
     let profileFile;
     let imageFile;
     let videoFile;
+    let attachItems = [];
     try {
-      [profileFile, imageFile, videoFile] = await Promise.all([
-        fileMeta(form.querySelector('[name="profileFile"]')),
-        fileMeta(form.querySelector('[name="imageFile"]')),
-        fileMeta(form.querySelector('[name="videoFile"]')),
-      ]);
+      const collected = window.HubFormAttachments?.collect?.(form);
+      if (collected?.items?.length) {
+        attachItems = collected.items;
+        profileFile = collected.items.find((i) => i.kind === 'file') || null;
+        imageFile = collected.items.find((i) => i.kind === 'image') || null;
+        videoFile = collected.items.find((i) => i.kind === 'video') || null;
+      } else {
+        [profileFile, imageFile, videoFile] = await Promise.all([
+          fileMeta(form.querySelector('[name="profileFile"]')),
+          fileMeta(form.querySelector('[name="imageFile"]')),
+          fileMeta(form.querySelector('[name="videoFile"]')),
+        ]);
+        attachItems = [profileFile, imageFile, videoFile]
+          .filter(Boolean)
+          .map((f) => ({
+            id: f.id || '',
+            url: f.url || '',
+            name: f.name,
+            size: f.size,
+            mime: f.type,
+            kind: f === imageFile ? 'image' : f === videoFile ? 'video' : 'file',
+          }));
+      }
     } catch (err) {
       if (feedback) {
         feedback.classList.add('is-error');
@@ -696,6 +741,8 @@
       }
     }
 
+    const bookingId = `bk-${Date.now().toString(36)}`;
+    payload.id = bookingId;
     try {
       const key = 'naiosh-hub-bookings';
       const prev = JSON.parse(localStorage.getItem(key) || '[]');
@@ -704,6 +751,14 @@
     } catch {
       /* ignore storage errors */
     }
+
+    const persist = await window.HubFormAttachments?.softPersistToEntity?.({
+      entityType: 'booking',
+      entityId: bookingId,
+      ownerEmail: payload.email || '',
+      items: attachItems,
+    });
+    if (persist?.persisted) payload.attachmentsPersisted = true;
 
     if (payload.branch && window.HubClientBranches?.grantFromBooking) {
       window.HubClientBranches.grantFromBooking(payload);
@@ -743,10 +798,19 @@
       } else {
         feedback.textContent = `تم استلام طلب حجز ال${kindLabel}. فريق هوب بيتواصل معك خلال 24 ساعة لتأكيد الموعد والمسار.`;
       }
+      if (persist?.skippedReason === 'login_required' && attachItems.length) {
+        feedback.innerHTML +=
+          '<br><small>سجّل الدخول لربط المرفقات بالحفظ الدائم والصلاحيات.</small>';
+      } else if (persist?.persisted) {
+        feedback.innerHTML += '<br><small>تم ربط المرفقات بالحفظ الدائم.</small>';
+      }
     }
     form.reset();
+    window.HubFormAttachments?.reset?.(form);
     fillForm();
+    ensureBookingAttachHost();
   });
 
   fillForm();
+  ensureBookingAttachHost();
 })();
