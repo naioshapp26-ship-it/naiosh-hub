@@ -219,7 +219,12 @@
             <input id="hub-field-party2Phone" type="tel" value="${esc(values.party2Phone || '')}" required aria-required="true" placeholder="05xxxxxxxx" dir="ltr" />
             <p class="hub-field-error" data-err-for="party2Phone" hidden></p>
           </label>
-          ${selectHtml('branch', 'الفرع', opts.branches, values.branch || '', true)}
+          <label class="hub-field" data-field-wrap="branch">
+            <span class="hub-field-label">${fieldLabelHtml('اسم الفرع أو البلد', { required: true })}</span>
+            <input id="hub-field-branch" type="text" value="${esc(values.branchName || values.branchLabel || values.branch || '')}" required aria-required="true" placeholder="اكتب اسم الفرع التابع لك" autocomplete="organization" />
+            <p class="hub-field-error" data-err-for="branch" hidden></p>
+          </label>
+          <div data-hub-geo-branch data-required="false" data-title="تحديد الموقع (اختياري)"></div>
           ${selectHtml('incubator', 'الحاضنة', opts.incubators, values.incubator || '', true)}
           ${selectHtml('platform', 'المنصة', opts.platforms, values.platform || '', true)}
           ${selectHtml('office', 'المكتب', opts.offices, values.office || '', true)}
@@ -502,6 +507,24 @@
     document.getElementById('hub-erp-modal-body').innerHTML = body;
     document.getElementById('hub-erp-modal-foot').innerHTML = foot || '';
     modal.classList.add('open');
+    try {
+      const host = modal.querySelector('[data-hub-geo-branch]');
+      if (host && window.HubGeoBranch) {
+        const branchVal = modal.querySelector('#hub-field-branch')?.value || '';
+        window.HubGeoBranch.mount(host, {
+          required: false,
+          title: 'تحديد الموقع (اختياري)',
+          values: { branchName: branchVal },
+        });
+        host.addEventListener('hub-geo-confirmed', (ev) => {
+          const d = ev.detail || {};
+          const branchInput = modal.querySelector('#hub-field-branch');
+          if (branchInput && d.branchName && !branchInput.value) branchInput.value = d.branchName;
+        });
+      }
+    } catch (e) {
+      console.warn('[hub-row-actions] geo mount', e);
+    }
     return modal;
   };
 
@@ -600,7 +623,6 @@
     const item = window.HubStore?.getEntity?.(entity, id);
     if (!item) return toast('السجل غير موجود');
     const current = recordTitle(item);
-    const countryOpts = resolveFieldOptions({ optionsFrom: 'branchCountries' });
     const extraFields =
       entity === 'employees'
         ? `<label>الدور
@@ -630,19 +652,10 @@
               <input id="hub-edit-dueDate" type="date" value="${esc(item.dueDate || '')}" />
             </label>`
           : entity === 'branches'
-            ? `<label>الدولة
-                <select id="hub-edit-country">
-                  <option value="">— اختر —</option>
-                  ${countryOpts
-                    .map((o) => {
-                      const val = typeof o === 'string' ? o : o.value;
-                      const lab = typeof o === 'string' ? o : o.label;
-                      const selected = String(val) === String(item.country || '') ? 'selected' : '';
-                      return `<option value="${esc(val)}" ${selected}>${esc(lab)}</option>`;
-                    })
-                    .join('')}
-                </select>
+            ? `<label>الدولة / الموقع (كتابة حرة)
+                <input id="hub-edit-country" type="text" value="${esc(item.country || '')}" placeholder="اكتب الدولة أو المدينة — بدون قائمة جاهزة" autocomplete="country-name" />
               </label>
+              <div data-hub-geo-branch data-required="false" data-title="تحديد موقع الفرع (اختياري)"></div>
               <label>كود الفرع
                 <input id="hub-edit-code" type="text" value="${esc(item.code || '')}" />
               </label>
@@ -709,6 +722,21 @@
         patch.assignee = patch.manager;
         patch.status = document.getElementById('hub-edit-status')?.value || item.status || 'active';
         patch.hours = document.getElementById('hub-edit-hours')?.value.trim() || item.hours || '';
+        try {
+          const geoHost = document.querySelector('#hub-erp-modal-body [data-hub-geo-branch]');
+          const geo = window.HubGeoBranch?.collect?.(geoHost);
+          if (geo) {
+            if (geo.country) patch.country = geo.country;
+            if (geo.city) patch.city = geo.city;
+            if (geo.address) patch.address = geo.address;
+            if (geo.lat != null) patch.lat = geo.lat;
+            if (geo.lng != null) patch.lng = geo.lng;
+            patch.locationSource = geo.locationSource || 'manual';
+            patch.locationUpdatedAt = new Date().toISOString();
+          }
+        } catch {
+          /* optional geo */
+        }
       }
       const ok = window.HubStore.entityAction(entity, id, 'edit', patch);
       if (!ok) return toast('تعذّر التعديل');
@@ -988,15 +1016,15 @@
     branches: {
       title: 'إضافة فرع',
       fields: [
-        { id: 'nameAr', label: 'اسم الفرع', required: true },
+        { id: 'nameAr', label: 'اسم الفرع (كتابة حرة)', required: true },
         {
           id: 'country',
-          label: 'الدولة',
-          type: 'select',
+          label: 'الدولة / الموقع',
+          type: 'text',
           required: true,
-          optionsFrom: 'branchCountries',
+          placeholder: 'اكتب الدولة أو المدينة — بدون قائمة جاهزة',
         },
-        { id: 'code', label: 'كود الفرع', value: '', required: true },
+        { id: 'code', label: 'كود الفرع (اختياري للتوافق)', value: '', required: false },
         { id: 'manager', label: 'مدير الفرع', value: '' },
         {
           id: 'status',
@@ -1384,7 +1412,7 @@
     const opts = hierarchyOptions();
     return `<div class="hub-form-block hub-ad-targets-block">
       <h4><i class="fas fa-layer-group"></i> خيارات العرض — نظام متعدد الطبقات</h4>
-      <p class="hub-form-hint">اعرض في الواجهة الرئيسية و/أو المكتب و/أو المنصة و/أو الحاضنة و/أو الفرع — يمكن اختيار الكل أو عناصر محددة</p>
+      <p class="hub-form-hint">اعرض في الواجهة الرئيسية و/أو المكتب و/أو المنصة و/أو الحاضنة و/أو الفرع — الفروع تُكتب يدويًا بدون قائمة جاهزة</p>
       <label class="hub-multi-chip hub-ad-home-chip">
         <input type="checkbox" id="hub-ad-target-home" value="home" />
         <span><i class="fas fa-house"></i> عرض في الواجهة الرئيسية</span>
@@ -1392,7 +1420,16 @@
       ${groupMultiHtml('المكتب', 'offices', opts.offices, 'كل المكاتب')}
       ${groupMultiHtml('المنصة', 'platforms', opts.platforms, 'كل المنصات')}
       ${groupMultiHtml('الحاضنة', 'incubators', opts.incubators, 'كل الحاضنات')}
-      ${groupMultiHtml('الفرع', 'branches', opts.branches, 'كل الفروع')}
+      <div class="hub-ad-branches-free">
+        <label class="hub-multi-chip">
+          <input type="checkbox" data-ad-select-all="branches" id="hub-ad-branches-all" />
+          <span>كل الفروع (بدون قائمة جاهزة)</span>
+        </label>
+        <label>فروع العرض — كتابة حرة
+          <textarea id="hub-ad-branches-text" rows="2" placeholder="اكتب أسماء الفروع مفصولة بفاصلة — مثال: فرعي في عمّان، فرع الرياض"></textarea>
+        </label>
+        <p class="hub-form-hint">لا تُعرض قوائم دول/فروع قديمة للاختيار. اكتب الأسماء أو فعّل «كل الفروع».</p>
+      </div>
     </div>`;
   };
 
@@ -1403,10 +1440,15 @@
       if (all) return ['*'];
       return Array.from(document.querySelectorAll(`input[data-ad-target="${prefix}"]:checked`)).map((el) => el.value);
     };
+    const branchesAll = !!document.getElementById('hub-ad-branches-all')?.checked;
+    const branchesText = String(document.getElementById('hub-ad-branches-text')?.value || '')
+      .split(/[,،\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
     return {
       home,
       offices: pick('offices'),
-      branches: pick('branches'),
+      branches: branchesAll ? ['*'] : branchesText,
       incubators: pick('incubators'),
       platforms: pick('platforms'),
     };
@@ -1420,6 +1462,13 @@
           el.checked = master.checked;
           el.disabled = master.checked;
         });
+        if (prefix === 'branches') {
+          const ta = document.getElementById('hub-ad-branches-text');
+          if (ta) {
+            ta.disabled = master.checked;
+            if (master.checked) ta.value = '';
+          }
+        }
       });
     });
   };
@@ -1636,6 +1685,11 @@
           : ''
       }
       ${form.includeMarketplaces ? marketplaceFormHtml() : ''}
+      ${
+        entity === 'branches'
+          ? '<div class="hub-form-block" style="margin-top:12px"><div data-hub-geo-branch data-required="false" data-title="تحديد موقع الفرع (اختياري)"></div></div>'
+          : ''
+      }
       ${entity === 'store' || entity === 'products' || entity === 'branches' ? '' : commonMetaFormHtml()}`,
       foot: isPublishable
         ? `
@@ -1654,23 +1708,24 @@
       catSel.addEventListener('change', () => fillSubcategories(catSel.value));
     }
 
-    // branch: country select → suggest country code when code empty
-    const countrySel = document.getElementById('hub-add-country');
-    const codeInput = document.getElementById('hub-add-code');
-    if (entity === 'branches' && countrySel && codeInput) {
-      const applyCountryCode = () => {
-        const opts = resolveFieldOptions({ optionsFrom: 'branchCountries' });
-        const hit = opts.find((o) => String(o.value) === String(countrySel.value));
-        if (hit?.code && (!codeInput.value || codeInput.dataset.auto === '1')) {
-          codeInput.value = String(hit.code).toUpperCase();
-          codeInput.dataset.auto = '1';
-        }
-      };
-      countrySel.addEventListener('change', applyCountryCode);
-      codeInput.addEventListener('input', () => {
-        codeInput.dataset.auto = '0';
-      });
-      applyCountryCode();
+    if (entity === 'branches' && window.HubGeoBranch) {
+      const geoHost = document.querySelector('#hub-erp-modal-body [data-hub-geo-branch]');
+      if (geoHost) {
+        const nameInput = document.getElementById('hub-add-nameAr');
+        const countryInput = document.getElementById('hub-add-country');
+        window.HubGeoBranch.mount(geoHost, {
+          required: false,
+          title: 'تحديد موقع الفرع (اختياري)',
+          values: {
+            branchName: nameInput?.value || '',
+            country: countryInput?.value || '',
+          },
+          onChange: (d) => {
+            if (nameInput && d.branchName && !nameInput.value) nameInput.value = d.branchName;
+            if (countryInput && d.country && !countryInput.value) countryInput.value = d.country;
+          },
+        });
+      }
     }
 
     if (form.includeProjectPicker) wireProjectPicker();
@@ -1729,6 +1784,21 @@
         return toast(meta.error);
       }
       Object.assign(values, meta);
+      if (entity === 'branches') {
+        const geoHost = document.querySelector('#hub-erp-modal-body [data-hub-geo-branch]');
+        const geo = window.HubGeoBranch?.collect?.(geoHost);
+        if (geo) {
+          if (geo.branchName && !values.nameAr) values.nameAr = geo.branchName;
+          if (geo.country && !values.country) values.country = geo.country;
+          values.city = geo.city || '';
+          values.address = geo.address || '';
+          values.lat = geo.lat;
+          values.lng = geo.lng;
+          values.locationSource = geo.locationSource || 'manual';
+          values.locationConfirmed = geo.locationConfirmed;
+          values.locationUpdatedAt = new Date().toISOString();
+        }
+      }
 
       // Server-side validation for apps (must match UI * markers)
       if (entity === 'apps') {

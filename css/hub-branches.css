@@ -395,3 +395,55 @@ body.branches-page .hub-inline-ads {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Free-form geo panel (public branches page) */
+.branches-geo-panel {
+  margin-top: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.branches-geo-next {
+  display: grid;
+  gap: 10px;
+}
+
+.branches-geo-hint,
+.branches-geo-admin-note {
+  margin: 0;
+  color: var(--muted, #6b7280);
+  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.branches-geo-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.branches-cta,
+.branches-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+  text-decoration: none;
+  border: 1px solid var(--border, #e5e7eb);
+  color: inherit;
+  background: #fff;
+}
+
+.branches-cta-primary {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
+}
+
+[data-theme='dark'] .branches-cta,
+.dark-mode .branches-cta {
+  background: rgba(255, 255, 255, 0.06);
+}

@@ -1366,11 +1366,8 @@
       });
     } catch (_) {}
 
-    try {
-      (window.HubBranchesData?.BRANCHES || []).slice(0, 8).forEach((b) => {
-        addBranch(naiosh, b.nameAr === 'المقر الرئيسي' ? 'المقر الرئيسي' : b.nameAr);
-      });
-    } catch (_) {}
+    // Do not inject HubBranchesData country-as-branch catalog into affiliation options.
+    // Staff enter branch names as free text; historical worldBranches remain in store for admin records.
 
     return [...tree.values()]
       .map((o) => ({
