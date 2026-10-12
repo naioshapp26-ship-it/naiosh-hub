@@ -27,16 +27,22 @@ function mark(name, viewport, result, note) {
 
 function startServer() {
   const env = {
-    PATH: process.env.PATH,
-    DATABASE_URL: process.env.DATABASE_URL || '',
+    ...process.env,
     PORT: String(PORT),
     HOST: '127.0.0.1',
-    AUTO_MIGRATE: '0',
+    AUTO_MIGRATE: process.env.AUTO_MIGRATE || '1',
     HUB_CUSTOMER_BACKFILL_BG: '0',
     HUB_SUPER_ADMIN_EMAIL: SA_EMAIL,
     HUB_SUPER_ADMIN_INITIAL_PASSWORD: SA_PASS,
   };
   const child = spawn(process.execPath, ['server.js'], { cwd: ROOT, env, stdio: ['ignore', 'pipe', 'pipe'] });
+  let boot = '';
+  child.stdout.on('data', (d) => {
+    boot += d.toString();
+  });
+  child.stderr.on('data', (d) => {
+    boot += d.toString();
+  });
   return {
     stop: () => {
       try {
@@ -45,6 +51,7 @@ function startServer() {
         /* */
       }
     },
+    bootLog: () => boot.slice(-2000),
   };
 }
 
@@ -65,6 +72,14 @@ async function waitHealth() {
     }
   }
   throw new Error('health timeout');
+}
+
+async function waitHealthOrThrow(srv) {
+  try {
+    await waitHealth();
+  } catch (err) {
+    throw new Error(`${err.message}; boot=${srv.bootLog ? srv.bootLog() : ''}`);
+  }
 }
 
 function writeFixtures(tmpDir) {
@@ -107,8 +122,8 @@ async function uiLogin(page) {
   await page.type('#password', SA_PASS, { delay: 10 });
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => null),
-    page.click('button[type="submit"], .login-btn, #login-btn, form button').catch(() =>
-      page.evaluate(() => document.querySelector('form')?.requestSubmit?.())
+    page.click('#loginBtn').catch(() =>
+      page.evaluate(() => document.querySelector('#loginForm')?.requestSubmit?.())
     ),
   ]);
   await sleep(1200);
@@ -369,7 +384,7 @@ async function main() {
   const srv = startServer();
   let browser;
   try {
-    await waitHealth();
+    await waitHealthOrThrow(srv);
     browser = await puppeteer.launch({
       executablePath: CHROME,
       headless: 'new',
