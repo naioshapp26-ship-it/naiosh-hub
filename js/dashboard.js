@@ -1813,7 +1813,25 @@
     ];
     for (const [prefix, name] of opsHandlers) {
       if (String(action || '').startsWith(prefix) && window[name]?.handle) {
-        const handled = window[name].handle(action, btn, { user, toast, esc, $ });
+        const handled = window[name].handle(action, btn, {
+          user,
+          toast,
+          esc,
+          $,
+          rerender: () => {
+            renderNav();
+            render();
+          },
+        });
+        if (handled && typeof handled.then === 'function') {
+          handled.then((v) => {
+            if (v !== false) {
+              renderNav();
+              render();
+            }
+          });
+          return;
+        }
         if (handled) {
           renderNav();
           render();

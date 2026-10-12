@@ -882,7 +882,7 @@
         ${field('Employee ID', 'wf-a-id', w.id)}
         ${field('البريد', 'wf-a-email', w.email, 'email')}
         ${field('الهاتف', 'wf-a-phone', w.phone)}
-        ${field('رابط الصورة', 'wf-a-avatar', w.avatar)}`;
+        <div id="wf-employee-attachments" data-hub-attach-host="1"></div>`;
     } else if (step === 1) {
       body = `${field('الوظيفة', 'wf-a-title', w.title)}
         ${field('الإدارة', 'wf-a-dept', w.department, 'select', (wf.departments || []).map((d) => `<option ${w.department === d ? 'selected' : ''}>${esc(d)}</option>`).join(''))}
@@ -934,7 +934,10 @@
       w.id = qVal('wf-a-id');
       w.email = qVal('wf-a-email');
       w.phone = qVal('wf-a-phone');
-      w.avatar = qVal('wf-a-avatar');
+      const collected = window.HubFormAttachments?.collect?.(document.getElementById('wf-employee-attachments'));
+      const img = (collected?.items || []).find((i) => i.kind === 'image');
+      if (img?.url) w.avatar = img.url;
+      w._attachments = collected?.items || [];
     } else if (step === 1) {
       w.title = qVal('wf-a-title');
       w.department = qVal('wf-a-dept');
@@ -1264,6 +1267,7 @@
         ui.importRows = [];
         ui.importStats = null;
       }
+      scheduleAttachMount();
       return true;
     }
     if (action === 'wf-modal-close') {
@@ -1277,11 +1281,13 @@
         return true;
       }
       ui.wizardStep = Math.min(2, (ui.wizardStep || 0) + 1);
+      scheduleAttachMount();
       return true;
     }
     if (action === 'wf-add-prev') {
       captureAdd();
       ui.wizardStep = Math.max(0, (ui.wizardStep || 0) - 1);
+      scheduleAttachMount();
       return true;
     }
     if (action === 'wf-add-save') {
@@ -1291,6 +1297,8 @@
         return true;
       }
       const draft = btn.dataset.draft === '1';
+      const attachments = w._attachments || [];
+      delete w._attachments;
       const created = HS.addEmployee(
         {
           ...w,
@@ -1304,10 +1312,28 @@
         toast('تعذر الإضافة');
         return true;
       }
-      ui.modal = null;
-      ui.drawer = created.id;
-      ui.drawerTab = 'overview';
-      toast(draft ? 'حُفظت مسودة الموظف' : 'تمت إضافة الموظف');
+      const entityId = created.employeeNo || created.id;
+      const finish = () => {
+        ui.modal = null;
+        ui.drawer = created.id;
+        ui.drawerTab = 'overview';
+        toast(draft ? 'حُفظت مسودة الموظف' : 'تمت إضافة الموظف');
+      };
+      if (attachments.length && window.HubFormAttachments?.persistToEntity && entityId) {
+        window.HubFormAttachments.persistToEntity({
+          entityType: 'employee',
+          entityId,
+          ownerEmail: created.email || w.email,
+          items: attachments,
+        })
+          .then(finish)
+          .catch(() => {
+            finish();
+            toast('حُفظ الموظف؛ تعذر ربط بعض المرفقات');
+          });
+        return true;
+      }
+      finish();
       return true;
     }
     if (action === 'wf-edit') {
@@ -1631,6 +1657,22 @@
     return false;
   };
 
+  const scheduleAttachMount = () => {
+    setTimeout(() => {
+      if (ui.modal !== 'add' || (ui.wizardStep || 0) !== 0) return;
+      const host = document.getElementById('wf-employee-attachments');
+      if (!host || !window.HubFormAttachments?.mount) return;
+      if (!host.querySelector('[data-hub-attach-block]')) {
+        window.HubFormAttachments.mount(host, { title: 'المرفقات', multi: true });
+      } else {
+        window.HubFormAttachments.bind(host);
+      }
+      if (ui.wizardData?._attachments?.length) {
+        window.HubFormAttachments.setItems(host, ui.wizardData._attachments);
+      }
+    }, 40);
+  };
+
   const render = (ctx = {}) => {
     const user = ctx.user || {};
     const wf = wfData();
@@ -1638,6 +1680,7 @@
       ui.pageSize = wf.settings.pageSize || DEFAULT_PAGE_SIZE;
       ui._pageSizeInit = true;
     }
+    scheduleAttachMount();
     return `<div class="hub-workforce" dir="rtl" data-hub-workforce>
       ${renderHeader(wf, user)}
       ${renderHelp(wf)}
