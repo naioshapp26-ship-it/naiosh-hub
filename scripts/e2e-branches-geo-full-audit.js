@@ -1,8 +1,9 @@
 /**
  * Full branch/geo audit matrix across customer + staff surfaces.
- * SCALE_PORT=8902 node scripts/e2e-branches-geo-full-audit.js
+ * Local:  SCALE_PORT=8902 node scripts/e2e-branches-geo-full-audit.js
+ * Prod:   BASE_URL=https://naiosh-hub-production.up.railway.app node scripts/e2e-branches-geo-full-audit.js
  *
- * Does NOT claim Google Maps works without keys.
+ * Maps: OSM/Leaflet+Nominatim by default (no Google keys required).
  */
 'use strict';
 
@@ -15,7 +16,8 @@ const puppeteer = require('puppeteer-core');
 const ROOT = path.resolve(__dirname, '..');
 const ART = '/opt/cursor/artifacts/branches-geo-full-audit';
 const PORT = Number(process.env.SCALE_PORT || 8902);
-const BASE = `http://127.0.0.1:${PORT}`;
+const EXTERNAL = String(process.env.BASE_URL || '').replace(/\/$/, '');
+const BASE = EXTERNAL || `http://127.0.0.1:${PORT}`;
 const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome-stable';
 const SA_EMAIL = process.env.HUB_SUPER_ADMIN_EMAIL || 'naioshhub@example.com';
 const SA_PASS = process.env.HUB_E2E_SA_PASSWORD || process.env.HUB_SUPER_ADMIN_INITIAL_PASSWORD || '';
@@ -43,6 +45,7 @@ function mark(page, form, catalogGone, manual, auto, map, persist, reopen, deskt
 }
 
 function startServer() {
+  if (EXTERNAL) return { stop() {} };
   const child = spawn(process.execPath, ['server.js'], {
     cwd: ROOT,
     env: {
@@ -68,6 +71,31 @@ function startServer() {
 }
 
 function req(method, urlPath, { token, body } = {}) {
+  if (EXTERNAL) {
+    return (async () => {
+      try {
+        const res = await fetch(`${BASE}${urlPath}`, {
+          method,
+          headers: {
+            Accept: 'application/json',
+            ...(body != null ? { 'Content-Type': 'application/json' } : {}),
+            ...(token ? { Authorization: `Bearer ${token}`, 'X-Hub-Token': token } : {}),
+          },
+          body: body != null ? JSON.stringify(body) : undefined,
+        });
+        const text = await res.text();
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          parsed = text.slice(0, 200);
+        }
+        return { status: res.status, body: parsed };
+      } catch (e) {
+        return { status: 0, body: String(e) };
+      }
+    })();
+  }
   return new Promise((resolve) => {
     const payload = body != null ? JSON.stringify(body) : null;
     const h = { Accept: 'application/json' };
@@ -115,22 +143,23 @@ async function main() {
     await waitHealth();
 
     const cfg = await req('GET', '/api/hub/geo/config');
-    const mapsOn = !!(cfg.body?.browserMapsEnabled && cfg.body?.geocodeEnabled);
+    const mapsOn = !!(cfg.body?.mapsEnabled || cfg.body?.leafletEnabled || (cfg.body?.browserMapsEnabled && cfg.body?.geocodeEnabled));
+    const mapLabel = cfg.body?.provider || (mapsOn ? 'maps-on' : 'DISABLED');
     mark(
       'API',
       'geo/config',
       'n/a',
       'n/a',
       mapsOn ? 'YES' : 'NO',
-      mapsOn ? 'YES' : 'DISABLED',
+      mapsOn ? mapLabel : 'DISABLED',
       'n/a',
       'n/a',
       'n/a',
       'n/a',
       'n/a',
-      cfg.status === 200 ? 'PASS' : 'FAIL',
+      cfg.status === 200 && mapsOn ? 'PASS' : cfg.status === 200 ? 'PASS' : 'FAIL',
       cfg.body?.note || JSON.stringify(cfg.body),
-      mapsOn ? '' : 'ضع GOOGLE_MAPS_BROWSER_KEY + GOOGLE_MAPS_SERVER_KEY على Railway — انظر docs/google-maps-setup.md'
+      mapsOn ? '' : 'الخريطة غير مفعّلة في هذه البيئة'
     );
 
     // Persist free-form booking + reopen
@@ -162,13 +191,19 @@ async function main() {
     const savedId = book.body?.booking?.id;
     let reopenOk = false;
     if (savedId) {
-      // read file store
-      try {
-        const store = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/platform-bookings.json'), 'utf8'));
-        const found = (store.bookings || []).find((b) => b.id === savedId);
-        reopenOk = found && found.branch === branchName && found.lat === 32.0608;
-      } catch {
-        reopenOk = book.body?.booking?.branch === branchName;
+      if (EXTERNAL) {
+        reopenOk =
+          book.body?.booking?.branch === branchName &&
+          Number(book.body?.booking?.lat) === 32.0608 &&
+          book.body?.booking?.city === 'الزرقاء';
+      } else {
+        try {
+          const store = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/platform-bookings.json'), 'utf8'));
+          const found = (store.bookings || []).find((b) => b.id === savedId);
+          reopenOk = found && found.branch === branchName && found.lat === 32.0608;
+        } catch {
+          reopenOk = book.body?.booking?.branch === branchName;
+        }
       }
     }
     mark(
@@ -274,7 +309,7 @@ async function main() {
         catalogGone ? 'YES' : 'NO',
         info.geo || isMyBranch ? 'YES' : 'NO',
         info.geo ? 'deny→manual' : 'n/a',
-        mapsOn ? 'keys-on' : 'DISABLED',
+        mapsOn ? mapLabel : 'DISABLED',
         'UI',
         'n/a',
         viewport.isMobile ? 'n/a' : ok ? 'YES' : 'NO',
@@ -451,14 +486,21 @@ async function main() {
     '- هوية/إعلانات/تعديل فرع/مهام: تحويل لكتابة حرة في الكود.',
     '',
     '## إيه ناقص',
-    '- **خرائط Google غير مفعّلة** في هذه البيئة (لا مفاتيح). الكتابة اليدوية تعمل؛ الخريطة تعرض «غير مفعّلة».',
-    '- اختبار متصفح كامل لنوافذ الهوية/الإعلانات داخل dashboard (مراجعة كود + منطق؛ يحتاج جلسة موظف على الواجهة للتأكيد البصري النهائي).',
+    mapsOn
+      ? '- خريطة OSM/Leaflet مفعّلة. Google اختياري فقط إن رغبت بمفاتيح مدفوعة.'
+      : '- الخريطة غير مفعّلة في هذه الجولة.',
+    '- إعادة فتح المسؤول على الإنتاج تتطلب بيانات دخول موظف صالحة على الموقع المنشور (كلمة مرور البيئة قد لا تطابق قاعدة الإنتاج).',
+    '- اختبار حفظ/إعادة فتح من كل نموذج إداري (مهام/عملاء/موظفين) يحتاج جلسة موظف على الإنتاج.',
     '',
     '## إيه محتاج منك',
-    ...(needs.length ? needs.map((n) => `- ${n}`) : ['- (لا يوجد إن كانت المفاتيح مضبوطة)']),
-    '- التفاصيل: `docs/google-maps-setup.md`',
+    ...(needs.length ? needs.map((n) => `- ${n}`) : ['- لا شيء لتشغيل OSM؛ مفاتيح Google اختيارية للتوسّع.']),
+    '- التفاصيل: `docs/maps-setup.md`',
     '',
-    '**لا FULL PASS** — الخريطة ليست شغّالة فعليًا حتى تُضبط المفاتيح.',
+    mapsOn
+      ? fail
+        ? '**لا FULL PASS** — توجد صفوف فاشلة.'
+        : 'خريطة OSM شغّالة في هذه الجولة. **لا FULL PASS للمنصة** قبل إثبات حفظ/إعادة فتح كل النماذج الإدارية على الإنتاج بجلسة موظف.'
+      : '**لا FULL PASS** — الخريطة ليست شغّالة في هذه الجولة.',
     '',
   ].join('\n');
   fs.writeFileSync(path.join(ART, 'report.md'), md);
