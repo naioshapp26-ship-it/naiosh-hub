@@ -192,44 +192,55 @@ async function main() {
   try {
     await waitHealth();
     const login = await req('POST', '/api/auth/login', { body: { email: SA_EMAIL, password: SA_PASS } });
-    const token = login.j?.token;
+    let token = login.j?.token;
     mark(0, 'staff_login', token ? 'PASS' : 'FAIL', login.j?.user?.role);
 
-    // Resume proof on small file: interrupt then continue
-    {
-      const { filePath, size } = createProbeFile(6);
+    // Resume proof: interrupt after 1 chunk then continue (6MB + 100MB when in ladder / always try 100)
+    const resumeSizes = [6];
+    if (LADDER.includes(100) || !LADDER.length) resumeSizes.push(100);
+    else if (LADDER.some((n) => n >= 100)) resumeSizes.push(Math.min(...LADDER.filter((n) => n >= 100)));
+    for (const rmb of resumeSizes) {
+      const { filePath, size } = createProbeFile(rmb);
       const t0 = Date.now();
       const mid = await uploadFileChunked(token, filePath, size, { dropAfterChunks: 1 });
-      mark(6, 'interrupt_after_1_chunk', mid.uploadId ? 'PASS' : 'FAIL', `uploadId=${mid.uploadId || ''}`);
-      if (mid.uploadId) {
-        const st = await req('GET', `/api/hub/uploads/${encodeURIComponent(mid.uploadId)}/status`, { token });
-        const missing = st.j?.missingIndexes || [];
-        mark(6, 'status_shows_missing', missing.length > 0 ? 'PASS' : 'FAIL', `missing=${missing.length}`);
-        // resume remaining
-        const chunkSize = st.j?.chunkSize || 2 * 1024 * 1024;
-        const fd = fs.openSync(filePath, 'r');
-        try {
-          for (const i of missing) {
-            const start = i * chunkSize;
-            const len = Math.min(chunkSize, size - start);
-            const buf = Buffer.alloc(len);
-            fs.readSync(fd, buf, 0, len, start);
-            await req('PUT', `/api/hub/uploads/${encodeURIComponent(mid.uploadId)}/chunk?index=${i}`, {
-              token,
-              body: buf,
-              type: 'application/octet-stream',
-            });
-          }
-        } finally {
-          fs.closeSync(fd);
+      mark(rmb, 'interrupt_after_1_chunk', mid.uploadId ? 'PASS' : 'FAIL', `uploadId=${mid.uploadId || ''}`);
+      if (!mid.uploadId) continue;
+      const st = await req('GET', `/api/hub/uploads/${encodeURIComponent(mid.uploadId)}/status`, { token });
+      const missing = st.j?.missingIndexes || [];
+      mark(rmb, 'status_shows_missing', missing.length > 0 ? 'PASS' : 'FAIL', `missing=${missing.length}`);
+      const chunkSize = st.j?.chunkSize || 2 * 1024 * 1024;
+      const fd = fs.openSync(filePath, 'r');
+      try {
+        for (const i of missing) {
+          const start = i * chunkSize;
+          const len = Math.min(chunkSize, size - start);
+          const buf = Buffer.alloc(len);
+          fs.readSync(fd, buf, 0, len, start);
+          await req('PUT', `/api/hub/uploads/${encodeURIComponent(mid.uploadId)}/chunk?index=${i}`, {
+            token,
+            body: buf,
+            type: 'application/octet-stream',
+          });
         }
-        const done = await req('POST', `/api/hub/uploads/${encodeURIComponent(mid.uploadId)}/complete`, { token, body: {} });
-        const ok = (done.status === 200 || done.status === 201) && done.j?.id;
-        mark(6, 'resume_complete', ok ? 'PASS' : 'FAIL', `id=${done.j?.id || ''};ms=${Date.now() - t0}`);
-        if (ok) {
-          const content = await req('GET', `/uploads/${done.j.id}`);
-          mark(6, 'file_readable', content.status === 200 && content.buf.length === size ? 'PASS' : 'FAIL', `bytes=${content.buf.length}`);
-        }
+      } finally {
+        fs.closeSync(fd);
+      }
+      const done = await req('POST', `/api/hub/uploads/${encodeURIComponent(mid.uploadId)}/complete`, { token, body: {} });
+      const ok = (done.status === 200 || done.status === 201) && done.j?.id;
+      mark(rmb, 'resume_complete', ok ? 'PASS' : 'FAIL', `id=${done.j?.id || ''};ms=${Date.now() - t0}`);
+      if (ok) {
+        const content = await req('GET', `/uploads/${done.j.id}`);
+        mark(
+          rmb,
+          'file_readable',
+          content.status === 200 && content.buf.length === size ? 'PASS' : 'FAIL',
+          `bytes=${content.buf.length}`
+        );
+      }
+      try {
+        fs.unlinkSync(filePath);
+      } catch {
+        /* */
       }
     }
 
@@ -258,10 +269,10 @@ async function main() {
       const content = await req('GET', `/uploads/${id}`);
       const intact = content.status === 200 && content.buf.length === probe.size && content.buf.slice(0, 8).toString() === 'HUBPROBE';
       mark(mb, 'integrity_open', intact ? 'PASS' : 'FAIL', `http=${content.status};bytes=${content.buf.length}`);
-      // Keep file for restart check on last size
-      if (mb === LADDER[LADDER.length - 1] && intact) {
+      // Restart durability for 100, 500, and the last ladder size
+      const restartSizes = new Set([100, 500, LADDER[LADDER.length - 1]]);
+      if (intact && restartSizes.has(mb)) {
         mark(mb, 'persist_path', 'PASS', path.join(ROOT, 'data', 'uploads', id));
-        // restart server and re-read
         srv.stop();
         await new Promise((r) => setTimeout(r, 800));
         srv = startServer();
@@ -275,6 +286,7 @@ async function main() {
           again.status === 200 && again.buf.length === probe.size ? 'PASS' : 'FAIL',
           `http=${again.status};bytes=${again.buf.length}`
         );
+        token = tok2 || token;
       }
       try {
         fs.unlinkSync(probe.filePath);
