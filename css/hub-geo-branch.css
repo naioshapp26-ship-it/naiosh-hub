@@ -84,7 +84,22 @@
 }
 
 .hub-geo-map.is-ready {
-  background: #dbeafe;
+  background: #e8eef5;
+  height: 260px;
+}
+
+.hub-geo-map-canvas,
+.hub-geo-map.is-ready .leaflet-container {
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+  border-radius: 12px;
+  font: inherit;
+}
+
+.hub-geo-map .leaflet-control-attribution {
+  font-size: 10px;
+  max-width: 70%;
 }
 
 .hub-geo-map-fallback {
@@ -150,7 +165,13 @@
 }
 
 @media (max-width: 640px) {
-  .hub-geo-map {
+  .hub-geo-map,
+  .hub-geo-map.is-ready {
+    min-height: 220px;
+    height: 220px;
+  }
+  .hub-geo-map-canvas,
+  .hub-geo-map.is-ready .leaflet-container {
     min-height: 220px;
   }
   .hub-geo-actions .hub-geo-btn {

@@ -1,11 +1,14 @@
 /**
- * Unified free-form branch + geolocation + Google Maps picker.
+ * Unified free-form branch + geolocation + map picker.
+ * Map: Google Maps (optional keys) OR Leaflet + OpenStreetMap (default, no keys).
+ * Geocode: server /api/hub/geo/reverse (Google or Nominatim).
  * window.HubGeoBranch.mount / collect / upgradeForm / mountAll
  */
 (function () {
   'use strict';
 
   var mapsLoader = null;
+  var leafletLoader = null;
   var configCache = null;
 
   function esc(s) {
@@ -78,6 +81,48 @@
     return mapsLoader;
   }
 
+  function loadLeaflet() {
+    if (window.L && window.L.map) return Promise.resolve(window.L);
+    if (leafletLoader) return leafletLoader;
+    leafletLoader = new Promise(function (resolve, reject) {
+      if (!document.querySelector('link[data-hub-leaflet-css]')) {
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';
+        link.setAttribute('data-hub-leaflet-css', '1');
+        document.head.appendChild(link);
+      }
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+      s.async = true;
+      s.onload = function () {
+        if (window.L && window.L.map) resolve(window.L);
+        else reject(new Error('تعذّر تهيئة Leaflet'));
+      };
+      s.onerror = function () {
+        leafletLoader = null;
+        reject(new Error('فشل تحميل مكتبة الخريطة (Leaflet)'));
+      };
+      document.head.appendChild(s);
+    });
+    return leafletLoader;
+  }
+
+  function moveMarker(st, lat, lng, zoom) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    if (st.mapEngine === 'leaflet' && st.map && st.marker && window.L) {
+      st.marker.setLatLng([lat, lng]);
+      st.map.setView([lat, lng], zoom != null ? zoom : st.map.getZoom());
+      return;
+    }
+    if (st.mapEngine === 'google' && st.map && st.marker && window.google) {
+      var pos = { lat: lat, lng: lng };
+      st.map.setCenter(pos);
+      st.marker.setPosition(pos);
+      if (zoom != null) st.map.setZoom(zoom);
+    }
+  }
+
   function stateOf(host) {
     return host._hubGeoState || (host._hubGeoState = {});
   }
@@ -116,11 +161,8 @@
       branchEl.value = [geo.city, geo.country].filter(Boolean).join(' — ');
     }
     updatePreview(host);
-    if (st.map && st.marker && Number.isFinite(geo.lat) && Number.isFinite(geo.lng)) {
-      var pos = { lat: geo.lat, lng: geo.lng };
-      st.map.setCenter(pos);
-      st.marker.setPosition(pos);
-      st.map.setZoom(14);
+    if (Number.isFinite(geo.lat) && Number.isFinite(geo.lng)) {
+      moveMarker(st, geo.lat, geo.lng, 14);
     }
     syncHidden(host);
   }
@@ -146,11 +188,15 @@
         ? '<div dir="ltr"><strong>الإحداثيات:</strong> ' + esc(String(st.lat)) + ', ' + esc(String(st.lng)) + '</div>'
         : '') +
       (st.lat != null
-        ? '<div class="hub-geo-earth"><a href="https://earth.google.com/web/@' +
+        ? '<div class="hub-geo-earth"><a href="https://www.openstreetmap.org/?mlat=' +
           encodeURIComponent(st.lat) +
-          ',' +
+          '&mlon=' +
           encodeURIComponent(st.lng) +
-          ',100a,1000d,35y,0h,0t,0r" target="_blank" rel="noopener">عرض في Google Earth</a></div>'
+          '#map=16/' +
+          encodeURIComponent(st.lat) +
+          '/' +
+          encodeURIComponent(st.lng) +
+          '" target="_blank" rel="noopener">عرض على OpenStreetMap</a></div>'
         : '');
   }
 
@@ -269,32 +315,16 @@
     return geo;
   }
 
-  async function ensureMap(host) {
+  async function ensureGoogleMap(host, mapEl, cfg) {
     var st = stateOf(host);
-    var mapEl = host.querySelector('[data-geo-map]');
-    if (!mapEl) return null;
-    var cfg = await getConfig();
-    if (!cfg.browserMapsEnabled || !cfg.browserKey) {
-      mapEl.classList.remove('is-ready');
-      var fb = mapEl.querySelector('.hub-geo-map-fallback');
-      if (fb) {
-        fb.hidden = false;
-        fb.innerHTML =
-          '<strong>خريطة Google غير مفعّلة</strong><span>يمكنك كتابة اسم الفرع أو البلد يدويًا وإكمال النموذج دون خريطة.</span>';
-      }
-      return null;
-    }
-    try {
-      await loadGoogleMaps(cfg.browserKey);
-    } catch (e) {
-      setStatus(host, e.message || 'تعذّر تحميل الخريطة', 'error');
-      return null;
-    }
-    var fb2 = mapEl.querySelector('.hub-geo-map-fallback');
-    if (fb2) fb2.hidden = true;
+    await loadGoogleMaps(cfg.browserKey);
+    var fb = mapEl.querySelector('.hub-geo-map-fallback');
+    if (fb) fb.hidden = true;
     mapEl.classList.add('is-ready');
     var center = st.lat != null ? { lat: st.lat, lng: st.lng } : { lat: 24.7136, lng: 46.6753 };
-    if (!st.map) {
+    if (!st.map || st.mapEngine !== 'google') {
+      mapEl.innerHTML = '';
+      st.mapEngine = 'google';
       st.map = new google.maps.Map(mapEl, {
         center: center,
         zoom: st.lat != null ? 14 : 4,
@@ -318,6 +348,88 @@
       });
     }
     return st.map;
+  }
+
+  async function ensureLeafletMap(host, mapEl) {
+    var st = stateOf(host);
+    var L = await loadLeaflet();
+    var fb = mapEl.querySelector('.hub-geo-map-fallback');
+    if (fb) fb.hidden = true;
+    mapEl.classList.add('is-ready');
+    var lat = st.lat != null ? st.lat : 24.7136;
+    var lng = st.lng != null ? st.lng : 46.6753;
+    var zoom = st.lat != null ? 14 : 4;
+    if (!st.map || st.mapEngine !== 'leaflet') {
+      mapEl.innerHTML = '';
+      st.mapEngine = 'leaflet';
+      // Inner canvas so .hub-geo-map keeps layout height; Leaflet owns the child.
+      var canvas = document.createElement('div');
+      canvas.className = 'hub-geo-map-canvas';
+      canvas.setAttribute('data-geo-map-canvas', '');
+      mapEl.appendChild(canvas);
+      st.map = L.map(canvas, { scrollWheelZoom: true, attributionControl: true }).setView([lat, lng], zoom);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+      }).addTo(st.map);
+      st.marker = L.marker([lat, lng], { draggable: true }).addTo(st.map);
+      st.map.on('click', function (ev) {
+        if (!ev.latlng) return;
+        st.marker.setLatLng(ev.latlng);
+        resolveCoords(host, ev.latlng.lat, ev.latlng.lng, 'map');
+      });
+      st.marker.on('dragend', function () {
+        var ll = st.marker.getLatLng();
+        resolveCoords(host, ll.lat, ll.lng, 'map');
+      });
+      setTimeout(function () {
+        try {
+          st.map.invalidateSize();
+        } catch (e) {
+          /* */
+        }
+      }, 80);
+    } else {
+      setTimeout(function () {
+        try {
+          st.map.invalidateSize();
+        } catch (e) {
+          /* */
+        }
+      }, 80);
+    }
+    return st.map;
+  }
+
+  async function ensureMap(host) {
+    var st = stateOf(host);
+    var mapEl = host.querySelector('[data-geo-map]');
+    if (!mapEl) return null;
+    var cfg = await getConfig();
+    try {
+      if (cfg.browserKey && (cfg.provider === 'google' || cfg.googleAvailable)) {
+        return await ensureGoogleMap(host, mapEl, cfg);
+      }
+      return await ensureLeafletMap(host, mapEl);
+    } catch (e) {
+      // Google failed → Leaflet fallback
+      try {
+        return await ensureLeafletMap(host, mapEl);
+      } catch (e2) {
+        mapEl.classList.remove('is-ready');
+        var fb = mapEl.querySelector('.hub-geo-map-fallback');
+        if (!fb) {
+          fb = document.createElement('div');
+          fb.className = 'hub-geo-map-fallback';
+          mapEl.appendChild(fb);
+        }
+        fb.hidden = false;
+        fb.innerHTML =
+          '<strong>تعذّر تحميل الخريطة</strong><span>يمكنك كتابة اسم الفرع أو البلد يدويًا وإكمال النموذج.</span>';
+        setStatus(host, e2.message || e.message || 'تعذّر تحميل الخريطة — أكمل يدويًا', 'error');
+        return null;
+      }
+    }
   }
 
   function mount(host, options) {
@@ -424,13 +536,24 @@
     });
 
     host.querySelector('[data-geo-pick-map]').addEventListener('click', async function () {
+      setStatus(host, 'جاري فتح الخريطة…');
       var map = await ensureMap(host);
       if (!map) {
-        setStatus(host, 'الخريطة غير متاحة — اكتب اسم الفرع يدويًا', 'error');
+        setStatus(host, 'الخريطة غير متاحة حاليًا — اكتب اسم الفرع يدويًا وأكمل الطلب', 'error');
         return;
       }
-      setStatus(host, 'انقر على الخريطة أو اسحب العلامة لتحديد الموقع');
+      setStatus(host, 'انقر على الخريطة أو اسحب العلامة لتحديد الموقع', 'ok');
       host.querySelector('[data-geo-map]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      var st = stateOf(host);
+      if (st.mapEngine === 'leaflet' && st.map) {
+        setTimeout(function () {
+          try {
+            st.map.invalidateSize();
+          } catch (e) {
+            /* */
+          }
+        }, 200);
+      }
     });
 
     host.querySelector('[data-geo-confirm]').addEventListener('click', function () {
@@ -450,9 +573,8 @@
     syncHidden(host);
     updatePreview(host);
     getConfig().then(function (cfg) {
-      if (!cfg.mapsEnabled) {
-        setStatus(host, cfg.note || 'الخريطة غير مفعّلة — الكتابة اليدوية متاحة');
-      }
+      var engine = cfg.provider === 'google' && cfg.browserKey ? 'Google Maps' : 'OpenStreetMap';
+      setStatus(host, 'الخريطة جاهزة عبر ' + engine + ' — أو اكتب اسم الفرع يدويًا');
       ensureMap(host).catch(function () {});
     });
     return host;
@@ -477,7 +599,7 @@
       locationUpdatedAt: new Date().toISOString(),
       earthUrl:
         st.lat != null && st.lng != null
-          ? 'https://earth.google.com/web/@' + st.lat + ',' + st.lng + ',100a,1000d,35y,0h,0t,0r'
+          ? 'https://www.openstreetmap.org/?mlat=' + st.lat + '&mlon=' + st.lng + '#map=16/' + st.lat + '/' + st.lng
           : '',
     };
   }
