@@ -340,9 +340,9 @@
     if (ui.wizardStep === 0) {
       if (!draft.title.trim()) ui.errors.title = 'اسم الإعلان مطلوب';
       if (!draft.headline.trim()) ui.errors.headline = 'عنوان الإعلان مطلوب';
-      if (draft.contentType === 'image' && !draft.mediaDataUrl) ui.errors.media = 'الصورة مطلوبة';
-      if (draft.contentType === 'video' && !draft.mediaDataUrl) ui.errors.media = 'الفيديو مطلوب';
-      if (draft.contentType === 'file' && !draft.mediaDataUrl) ui.errors.media = 'الملف مطلوب';
+      if (draft.contentType === 'image' && !(draft.mediaUrl || draft.mediaDataUrl)) ui.errors.media = 'الصورة مطلوبة';
+      if (draft.contentType === 'video' && !(draft.mediaUrl || draft.mediaDataUrl)) ui.errors.media = 'الفيديو مطلوب';
+      if (draft.contentType === 'file' && !(draft.mediaUrl || draft.mediaDataUrl)) ui.errors.media = 'الملف مطلوب';
       if (draft.contentType === 'text' && !String(draft.bodyText || '').trim()) ui.errors.bodyText = 'النص مطلوب';
       if (draft.ctaLabel && !String(draft.destinationUrl || '').trim()) {
         ui.errors.destinationUrl = 'رابط الوجهة مطلوب مع زر CTA';
@@ -386,7 +386,9 @@
       desc: draft.desc || draft.bodyText,
       bodyText: draft.bodyText,
       contentType: draft.contentType,
-      mediaDataUrl: draft.mediaDataUrl,
+      mediaDataUrl: draft.mediaUrl || draft.mediaDataUrl,
+      mediaUrl: draft.mediaUrl || '',
+      mediaId: draft.mediaId || '',
       mediaName: draft.mediaName,
       mediaSize: draft.mediaSize,
       thumbnailDataUrl: draft.thumbnailDataUrl,
@@ -529,7 +531,9 @@
         desc: draft.desc || draft.bodyText,
         bodyText: draft.bodyText,
         contentType: draft.contentType,
-        mediaDataUrl: draft.mediaDataUrl,
+        mediaDataUrl: draft.mediaUrl || draft.mediaDataUrl,
+        mediaUrl: draft.mediaUrl || '',
+        mediaId: draft.mediaId || '',
         mediaName: draft.mediaName,
         mediaSize: draft.mediaSize,
         thumbnailDataUrl: draft.thumbnailDataUrl,
@@ -1010,15 +1014,23 @@
           (draft.contentType === 'image' ? 'PNG / JPG' : draft.contentType === 'video' ? 'MP4 / WebM' : 'PDF / DOC') +
           '</div><input type="file" hidden data-ads-file></div>' +
           (ui.errors.media ? '<p class="ads-field-error">' + esc(ui.errors.media) + '</p>' : '') +
-          (draft.mediaDataUrl
+          ((draft.mediaUrl || draft.mediaDataUrl)
             ? '<div class="ads-preview-box">' +
               (draft.contentType === 'video'
-                ? '<video src="' + esc(draft.mediaDataUrl) + '" controls style="max-width:100%;max-height:220px"></video>'
+                ? '<video src="' + esc(draft.mediaUrl || draft.mediaDataUrl) + '" controls style="max-width:100%;max-height:220px"></video>'
                 : draft.contentType === 'image'
-                  ? '<img src="' + esc(draft.mediaDataUrl) + '" alt="" style="max-width:100%;max-height:220px;object-fit:contain">'
-                  : '<strong>' + esc(draft.mediaName || 'ملف') + '</strong> · ' + ((draft.mediaSize / 1024 / 1024) || 0).toFixed(2) + ' MB') +
+                  ? '<img src="' + esc(draft.mediaUrl || draft.mediaDataUrl) + '" alt="" style="max-width:100%;max-height:220px;object-fit:contain">'
+                  : '<a href="' +
+                    esc(draft.mediaUrl || draft.mediaDataUrl) +
+                    '" target="_blank" rel="noopener"><strong>' +
+                    esc(draft.mediaName || 'ملف') +
+                    '</strong></a> · ' +
+                    ((draft.mediaSize / 1024 / 1024) || 0).toFixed(2) +
+                    ' MB') +
               '</div>'
-            : '')
+            : draft.mediaUploading
+              ? '<p class="muted">جاري الرفع… ' + esc(String(draft.mediaProgress || 0)) + '%</p>'
+              : '')
         : '') +
       (draft.contentType === 'file'
         ? '<label>الإجراء عند الضغط<select data-draft="fileAction">' +
@@ -1269,15 +1281,42 @@
   }
 
   function readFile(file) {
-    var reader = new FileReader();
-    reader.onload = function () {
-      draft.mediaDataUrl = reader.result;
-      draft.mediaName = file.name;
-      draft.mediaSize = file.size || 0;
-      autosave();
-      render();
-    };
-    reader.readAsDataURL(file);
+    if (!file) return;
+    draft.mediaName = file.name;
+    draft.mediaSize = file.size || 0;
+    draft.mediaUploading = true;
+    autosave();
+    render();
+    var upload = window.HubUploadLimits && window.HubUploadLimits.uploadFile
+      ? window.HubUploadLimits.uploadFile(file, {
+          onProgress: function (pct) {
+            draft.mediaProgress = pct;
+            autosave();
+          },
+        })
+      : Promise.reject(new Error('مكوّن الرفع غير متاح'));
+    upload
+      .then(function (res) {
+        draft.mediaDataUrl = '';
+        draft.mediaUrl = res.url || '';
+        draft.mediaId = res.id || '';
+        draft.mediaMime = res.mime || file.type || '';
+        draft.mediaUploading = false;
+        draft.mediaProgress = 100;
+        draft.mediaError = '';
+        autosave();
+        render();
+      })
+      .catch(function (err) {
+        draft.mediaUploading = false;
+        draft.mediaError = (err && err.message) || 'فشل رفع الملف';
+        draft.mediaUrl = '';
+        draft.mediaId = '';
+        autosave();
+        render();
+        if (window.HubActions && HubActions.toast) HubActions.toast(draft.mediaError);
+        else alert(draft.mediaError);
+      });
   }
 
   function scrollToAdsSection() {

@@ -1708,10 +1708,9 @@
         .join('') || '<li>لا ملاحظات داخلية</li>'}</ul>
         <div class="posha-reply"><input id="posha-req-note" placeholder="ملاحظة داخلية (لا يراها العميل)" /><button type="button" class="btn btn-dark btn-sm" data-req-send-note="${esc(r.id)}">حفظ</button></div>`;
     } else if (tab === 'files') {
-      body = `<ul class="feed">${(r.attachments || [])
-        .map((a) => `<li>${esc(a.name)} · ${esc(a.by)} <small>${fmt(a.at)}</small></li>`)
-        .join('') || '<li>لا مرفقات</li>'}</ul>
-        <button type="button" class="btn btn-dark btn-sm" data-req-att="${esc(r.id)}">إضافة مرفق</button>`;
+      body = `<div id="posha-req-attachments-list" data-entity-id="${esc(r.id)}"></div>
+        <div id="posha-req-attachments" data-hub-attach-host="1"></div>
+        <button type="button" class="btn btn-dark btn-sm" data-req-att="${esc(r.id)}" style="margin-top:8px">حفظ المرفقات</button>`;
     } else if (tab === 'timeline') {
       body = `<ol class="posha-timeline">${(r.timeline || [])
         .map((t) => `<li><b>${esc(t.text)}</b><small>${esc(t.by)} · ${fmt(t.at)}</small></li>`)
@@ -2164,15 +2163,64 @@
       };
     });
     body.querySelectorAll('[data-req-att]').forEach((btn) => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         const id = btn.getAttribute('data-req-att');
-        const name = window.prompt('اسم المرفق؟');
-        if (!name) return;
-        cr()?.addAttachment(id, name, actor());
+        const host = document.getElementById('posha-req-attachments');
+        const collected = (host && window.HubFormAttachments?.collect?.(host)) || { items: [] };
+        const fileItems = (collected.items || []).filter((a) => a && (a.id || a.url));
+        if (!fileItems.length) {
+          window.alert('ارفع صورة أو ملفًا أو فيديو أولًا');
+          return;
+        }
+        try {
+          if (window.HubFormAttachments?.persistToEntity) {
+            await window.HubFormAttachments.persistToEntity({
+              entityType: 'request',
+              entityId: id,
+              ownerEmail: cr()?.get?.(id)?.email || '',
+              items: fileItems,
+            });
+          }
+        } catch (err) {
+          console.warn('[posha] attachment persist', err);
+          window.alert(err.message || 'تعذر حفظ المرفقات');
+          return;
+        }
+        fileItems.forEach((a) => {
+          cr()?.addAttachment?.(id, a.name || a.originalFileName || 'مرفق', actor());
+        });
         state.moreId = null;
         paintBody();
       };
     });
+    // Mount unified attachments when files tab is visible
+    (() => {
+      const host = document.getElementById('posha-req-attachments');
+      if (host && window.HubFormAttachments?.mount) {
+        if (!host.querySelector('[data-hub-attach-block]')) {
+          window.HubFormAttachments.mount(host, { title: 'المرفقات', multi: true });
+        } else {
+          window.HubFormAttachments.bind(host);
+        }
+      }
+      const listHost = document.getElementById('posha-req-attachments-list');
+      const entityId = listHost?.getAttribute('data-entity-id');
+      if (listHost && entityId && window.HubFormAttachments?.loadEntityAttachments) {
+        window.HubFormAttachments
+          .loadEntityAttachments({ entityType: 'request', entityId })
+          .then((items) => {
+            listHost.innerHTML = items?.length
+              ? `<ul class="feed">${items
+                  .map(
+                    (a) =>
+                      `<li><a href="${esc(a.url || a.contentUrl || '#')}" target="_blank" rel="noopener">${esc(a.originalName || a.name || 'مرفق')}</a> · ${esc(a.category || '')}</li>`
+                  )
+                  .join('')}</ul>`
+              : '<p class="posha-muted">لا مرفقات محفوظة بعد</p>';
+          })
+          .catch(() => {});
+      }
+    })();
     body.querySelectorAll('[data-req-dept]').forEach((btn) => {
       btn.onclick = () => {
         const id = btn.getAttribute('data-req-dept');

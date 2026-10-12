@@ -2098,22 +2098,10 @@
         return;
       }
       case 'add-store-item': {
-        const title = $('#store-title')?.value.trim();
-        if (!title) return toast('اسم المنتج أو الخدمة مطلوب');
-        const created = HubStore.addStoreItem({
-          title,
-          price: $('#store-price')?.value,
-          points: $('#store-points')?.value,
-          platformCode: $('#store-platform')?.value.trim() || 'ACADEMY',
-          category: $('#store-cat')?.value || 'أكاديمية',
-          itemKind: $('#store-kind')?.value || 'منتج',
-          brand: 'أكاديمية نايوش',
-          desc: 'مرفوع من غرفة العمليات — متجر موحّد مع الأكاديمية',
-          mirrorToCatalog: true,
-        });
-        if (!created) return toast('تعذّر حفظ المنتج');
-        toast(`تم حفظ المنتج: ${created.title}`);
-        break;
+        // Quick create has no media fields — durable product media lives on store.html#upload.
+        toast('لحفظ منتج مع صورة/ملف/فيديو استخدم صفحة رفع المتجر الكاملة');
+        window.location.href = 'store.html#upload';
+        return;
       }
       case 'store-apply-filters': {
         storeUi.q = $('#store-q')?.value || '';
@@ -2181,35 +2169,18 @@
           .catch((err) => toast(err.message || 'تعذر الإلغاء'));
         return;
       case 'add-ad': {
-        const title = $('#ad-title')?.value.trim();
-        if (!title) return toast('عنوان الإعلان مطلوب');
-        HubStore.addAdListing({
-          title,
-          content: 'إعلان منتج منصة من استوديو الإعلانات',
-          price: $('#ad-price')?.value,
-          category: $('#ad-cat')?.value.trim() || 'تشغيل',
-          platformCode: $('#ad-platform')?.value.trim(),
-          type: 'منتج منصة',
-        });
-        toast('نُشر إعلان المنتج');
-        break;
+        toast('لنشر إعلان مع مرفقات صورة/ملف/فيديو افتح استوديو الإعلانات');
+        window.location.href = 'ads.html';
+        return;
       }
       case 'toggle-ad':
         HubStore.toggleAd(id);
         toast('تحدّثت حالة الإعلان');
         break;
       case 'add-event': {
-        const name = $('#ev-name')?.value.trim();
-        if (!name) return toast('اسم الفعالية مطلوب');
-        HubStore.addEvent({
-          name,
-          description: 'فعالية مُدارة من استوديو الفعاليات في هوب',
-          date: $('#ev-date')?.value || undefined,
-          time: $('#ev-time')?.value || undefined,
-          type: $('#ev-type')?.value.trim() || 'بث مباشر',
-        });
-        toast('أُنشئت الفعالية');
-        break;
+        toast('لإنشاء فعالية مع غلاف/مرفقات/فيديو افتح استوديو الفعاليات');
+        window.location.href = 'events.html';
+        return;
       }
       case 'save-settings': {
         if (btn.dataset.saving === '1') return;

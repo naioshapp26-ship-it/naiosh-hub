@@ -923,9 +923,9 @@
         <label class="field">تعليق<input id="dg-d-comment" /></label>
         <button type="button" class="btn btn-sm btn-primary" data-action="dg-asset-comment" data-id="${esc(asset.id)}">إضافة</button>`;
     } else if (tab === 'attachments') {
-      body = `<ul>${(asset.attachments || []).map((a) => `<li>${esc(a.name)} — ${esc(fmtTime(a.at))}</li>`).join('') || '<li>لا مرفقات</li>'}</ul>
-        <label class="field">مرفق (اسم)<input id="dg-d-attach" /></label>
-        <button type="button" class="btn btn-sm btn-primary" data-action="dg-asset-attach" data-id="${esc(asset.id)}">إرفاق</button>`;
+      body = `<div id="dg-d-attachments-list" data-entity-id="${esc(asset.id || '')}"></div>
+        <div id="dg-d-attachments" data-hub-attach-host="1"></div>
+        <button type="button" class="btn btn-sm btn-primary" data-action="dg-asset-attach" data-id="${esc(asset.id)}">حفظ المرفقات</button>`;
     }
     if (can(user, 'edit_asset') && (tab === 'overview' || tab === 'metadata')) {
       body += `<div class="toolbar" style="margin-top:12px;flex-wrap:wrap;gap:8px;border-top:1px solid rgba(0,0,0,.08);padding-top:12px">
@@ -1103,7 +1103,7 @@
     const user = ctx.user || {};
     const dg = dgData();
     ui.loading = false;
-    return `<div class="hub-data-governance" dir="rtl" data-hub-data-governance>
+    const html = `<div class="hub-data-governance" dir="rtl" data-hub-data-governance>
       ${renderHeader(dg, user)}
       ${renderKpis(dg)}
       ${renderTabs()}
@@ -1112,6 +1112,34 @@
       ${renderModal(dg, user)}
       ${renderConfirm()}
     </div>`;
+    setTimeout(() => {
+      const host = document.getElementById('dg-d-attachments');
+      if (host && window.HubFormAttachments?.mount) {
+        if (!host.querySelector('[data-hub-attach-block]')) {
+          window.HubFormAttachments.mount(host, { title: 'المرفقات', multi: true });
+        } else {
+          window.HubFormAttachments.bind(host);
+        }
+      }
+      const listHost = document.getElementById('dg-d-attachments-list');
+      const entityId = listHost?.getAttribute('data-entity-id');
+      if (listHost && entityId && window.HubFormAttachments?.loadEntityAttachments) {
+        window.HubFormAttachments
+          .loadEntityAttachments({ entityType: 'data_asset', entityId })
+          .then((items) => {
+            listHost.innerHTML = items?.length
+              ? `<ul>${items
+                  .map(
+                    (a) =>
+                      `<li><a href="${esc(a.url || a.contentUrl || '#')}" target="_blank" rel="noopener">${esc(a.originalName || a.name || 'مرفق')}</a></li>`
+                  )
+                  .join('')}</ul>`
+              : '<p class="empty">لا مرفقات محفوظة</p>';
+          })
+          .catch(() => {});
+      }
+    }, 40);
+    return html;
   };
 
   const parseImportLines = (raw) => {
@@ -1506,15 +1534,43 @@
 
     if (action === 'dg-asset-attach') {
       if (!can(user, 'edit_asset')) return toast('لا صلاحية'), true;
-      const name = String(qVal('dg-d-attach') || '').trim();
-      if (!name) return true;
+      const host = document.getElementById('dg-d-attachments');
+      const collected = (host && window.HubFormAttachments?.collect?.(host)) || { items: [] };
+      const fileItems = (collected.items || []).filter((x) => x && (x.id || x.url));
+      if (!fileItems.length) return toast('ارفع مرفقًا أولًا'), true;
       const a = assetById(dgData(), btn.dataset.id);
       if (!a) return true;
-      if (!Array.isArray(a.attachments)) a.attachments = [];
-      a.attachments.unshift({ name, at: new Date().toISOString(), by: act });
-      HS.updateDataAsset(btn.dataset.id, { attachments: a.attachments }, act);
-      toast('أُرفق الملف');
-      return true;
+      return (async () => {
+        try {
+          if (window.HubFormAttachments?.persistToEntity) {
+            await window.HubFormAttachments.persistToEntity({
+              entityType: 'data_asset',
+              entityId: btn.dataset.id,
+              ownerEmail: user?.email || '',
+              items: fileItems,
+            });
+          }
+        } catch (err) {
+          console.warn('[data-gov] attachment persist', err);
+          toast(err.message || 'تعذر حفظ المرفقات');
+          return true;
+        }
+        if (!Array.isArray(a.attachments)) a.attachments = [];
+        fileItems.forEach((it) => {
+          a.attachments.unshift({
+            name: it.name || 'مرفق',
+            url: it.url || '',
+            id: it.id || '',
+            kind: it.kind || 'file',
+            size: it.size || 0,
+            at: new Date().toISOString(),
+            by: act,
+          });
+        });
+        HS.updateDataAsset(btn.dataset.id, { attachments: a.attachments }, act);
+        toast('أُرفقت الملفات');
+        return true;
+      })();
     }
 
     if (action === 'dg-import-preview') {
