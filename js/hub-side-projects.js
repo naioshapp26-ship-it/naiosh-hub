@@ -289,14 +289,30 @@
     const f = input?.files?.[0];
     if (!f) return null;
     const limits = window.HubUploadLimits;
-    const check = limits?.assertFile ? limits.assertFile(f) : { ok: f.size <= 150 * 1024 * 1024 };
-    if (!check.ok) throw new Error(check.error || 'حجم الملف أكبر من 150MB');
+    const check = limits?.assertFile ? limits.assertFile(f) : { ok: f.size <= 1500 * 1024 * 1024 };
+    if (!check.ok) throw new Error(check.error || 'حجم الملف أكبر من الحد المسموح');
     let url = '';
+    let id = '';
     if (limits?.uploadFile) {
       const uploaded = await limits.uploadFile(f);
       url = uploaded.url || '';
+      id = uploaded.id || '';
     }
-    return { name: f.name, size: f.size, type: f.type || '', url };
+    return { name: f.name, size: f.size, type: f.type || '', url, id };
+  };
+
+  const ensureSpAttachHost = () => {
+    if (!regForm || !window.HubFormAttachments?.mount) return null;
+    if (regForm.querySelector('[data-hub-attach-block]')) return regForm.querySelector('[data-hub-attach-block]');
+    const legacy = regForm.querySelector('[name="fileDoc"], [name="fileImage"], [name="fileVideo"]');
+    if (!legacy) return null;
+    const wrap = legacy.closest('.sp-reg-files, fieldset, .sp-reg-step, .hub-form-grid') || legacy.parentElement;
+    if (!wrap) return null;
+    const host = document.createElement('div');
+    host.setAttribute('data-hub-attach-host', '1');
+    wrap.replaceWith(host);
+    window.HubFormAttachments.mount(host, { title: 'المرفقات', multi: true, showLink: false });
+    return host;
   };
 
   const paintSelectedProject = () => {
@@ -464,12 +480,32 @@
     let fileDoc;
     let fileImage;
     let fileVideo;
+    let attachItems = [];
     if (includeFiles) {
-      [fileDoc, fileImage, fileVideo] = await Promise.all([
-        fileMeta(regForm.querySelector('[name="fileDoc"]')),
-        fileMeta(regForm.querySelector('[name="fileImage"]')),
-        fileMeta(regForm.querySelector('[name="fileVideo"]')),
-      ]);
+      ensureSpAttachHost();
+      const collected = window.HubFormAttachments?.collect?.(regForm);
+      if (collected?.items?.length) {
+        attachItems = collected.items;
+        fileDoc = collected.items.find((i) => i.kind === 'file') || null;
+        fileImage = collected.items.find((i) => i.kind === 'image') || null;
+        fileVideo = collected.items.find((i) => i.kind === 'video') || null;
+      } else {
+        [fileDoc, fileImage, fileVideo] = await Promise.all([
+          fileMeta(regForm.querySelector('[name="fileDoc"]')),
+          fileMeta(regForm.querySelector('[name="fileImage"]')),
+          fileMeta(regForm.querySelector('[name="fileVideo"]')),
+        ]);
+        attachItems = [fileDoc, fileImage, fileVideo]
+          .filter(Boolean)
+          .map((f) => ({
+            id: f.id || '',
+            url: f.url || '',
+            name: f.name,
+            size: f.size,
+            mime: f.type,
+            kind: f === fileImage ? 'image' : f === fileVideo ? 'video' : 'file',
+          }));
+      }
     }
     const cat = data.categories.find((c) => c.id === selectedProject?.categoryId);
     return {
@@ -489,6 +525,7 @@
       fileDoc,
       fileImage,
       fileVideo,
+      attachItems,
       currentWork: String(fd.get('currentWork') || '').trim(),
       commercialOrNotes: String(fd.get('commercialOrNotes') || '').trim(),
       categoryId: selectedProject?.categoryId || '',
@@ -612,6 +649,12 @@
       if (!result?.ok) return toast(result?.error || 'تعذّر حفظ المسودة');
       const regId = regForm.querySelector('[data-sp-reg-id]');
       if (regId) regId.value = result.record.id;
+      await window.HubFormAttachments?.softPersistToEntity?.({
+        entityType: 'side_project',
+        entityId: result.record.id,
+        ownerEmail: payload.email || '',
+        items: payload.attachItems || [],
+      });
       paintRegistrations();
       journeyMark('detailsDone', true);
       toast('تم حفظ المسودة بنجاح.');
@@ -641,6 +684,12 @@
         result = regApi.create({ ...payload, status: 'جديد' });
       }
       if (!result?.ok) return toast(result?.error || 'تعذّر إرسال المشروع');
+      await window.HubFormAttachments?.softPersistToEntity?.({
+        entityType: 'side_project',
+        entityId: result.record.id,
+        ownerEmail: payload.email || '',
+        items: payload.attachItems || [],
+      });
       paintRegistrations();
       closeRegModal();
       journeyMark('detailsDone', true);

@@ -54,6 +54,8 @@
     productUrl: '',
     images: [],
     attachments: [],
+    videos: [],
+    uploadProgress: null,
     submissionId: '',
     productId: '',
     requestId: '',
@@ -462,11 +464,11 @@
     return (
       '<section class="su-card">' +
         '<h3>صور المنتج</h3>' +
-        '<p class="su-hint">اسحب الصور هنا أو اضغط للاختيار. الصورة الأولى هي الرئيسية.</p>' +
+        '<p class="su-hint">اسحب الصور هنا أو اضغط للاختيار. الصورة الأولى هي الرئيسية. الرفع عبر خادم هوب (حتى 1500MB).</p>' +
         '<div class="su-drop" data-su-drop="images" tabindex="0">' +
           '<strong>اسحب الصور هنا أو اضغط للاختيار</strong>' +
-          '<span>PNG / JPG — الصورة الأولى رئيسية</span>' +
-          '<input type="file" accept="image/*" multiple hidden data-su-file="images">' +
+          '<span>PNG / JPG / WEBP — الصورة الأولى رئيسية</span>' +
+          '<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif" multiple hidden data-su-file="images">' +
         '</div>' +
         '<div class="su-previews">' + previews + '</div>' +
       '</section>' +
@@ -479,6 +481,23 @@
           '<input type="file" accept=".pdf,.doc,.docx,image/*" multiple hidden data-su-file="files">' +
         '</div>' +
         files +
+      '</section>' +
+      '<section class="su-card">' +
+        '<h3>فيديو المنتج</h3>' +
+        '<p class="su-hint">اختياري: فيديو تعريفي (MP4 / WEBM / MOV — حتى 1500MB)</p>' +
+        '<div class="su-drop" data-su-drop="videos" tabindex="0">' +
+          '<strong>اسحب الفيديو هنا أو اضغط للاختيار</strong>' +
+          '<span>MP4 · WEBM · MOV</span>' +
+          '<input type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v" multiple hidden data-su-file="videos">' +
+        '</div>' +
+        (state.videos || []).map(function (v, i) {
+          return (
+            '<div style="display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid #eee;border-radius:10px;margin-top:8px">' +
+              '<span style="font-weight:800;font-size:14px">' + esc(v.name) + (v.url ? ' · مرفوع' : '') + '</span>' +
+              '<button type="button" class="btn btn-outline" data-su-rm-video="' + i + '">حذف</button>' +
+            '</div>'
+          );
+        }).join('') +
       '</section>'
     );
   }
@@ -653,6 +672,8 @@
       productUrl: '',
       images: [],
       attachments: [],
+      videos: [],
+      uploadProgress: null,
       submissionId: '',
       productId: '',
       requestId: '',
@@ -732,15 +753,46 @@
 
   function readFiles(fileList, kind) {
     var files = Array.prototype.slice.call(fileList || []);
+    if (!state.videos) state.videos = [];
     files.forEach(function (file) {
+      var limits = window.HubUploadLimits;
+      var check = limits && limits.assertFile ? limits.assertFile(file) : { ok: file.size <= 1500 * 1024 * 1024 };
+      if (!check.ok) {
+        state.submitError = check.error || 'حجم الملف أكبر من الحد المسموح';
+        renderShell();
+        return;
+      }
+      var pushLocal = function (extra) {
+        if (kind === 'images') state.images.push(Object.assign({ name: file.name }, extra));
+        else if (kind === 'videos') state.videos.push(Object.assign({ name: file.name }, extra));
+        else state.attachments.push(Object.assign({ name: file.name }, extra));
+        renderShell();
+      };
+      if (limits && limits.uploadFile && (window.HubAuth && HubAuth.isLoggedIn && HubAuth.isLoggedIn())) {
+        limits
+          .uploadFile(file, {
+            onProgress: function (pct) {
+              state.uploadProgress = pct;
+              renderShell();
+            },
+          })
+          .then(function (up) {
+            pushLocal({ url: up.url || '', id: up.id || '', mime: file.type, size: file.size });
+          })
+          .catch(function (err) {
+            state.submitError = err.message || 'فشل رفع الملف';
+            renderShell();
+          });
+        return;
+      }
+      if (kind === 'videos' || file.size > ((limits && limits.INLINE_DATA_URL_MAX_BYTES) || 1.5 * 1024 * 1024)) {
+        state.submitError = 'سجّل الدخول لرفع فيديو أو ملفات كبيرة إلى الخادم';
+        renderShell();
+        return;
+      }
       var reader = new FileReader();
       reader.onload = function () {
-        if (kind === 'images') {
-          state.images.push({ name: file.name, dataUrl: reader.result });
-        } else {
-          state.attachments.push({ name: file.name, dataUrl: reader.result });
-        }
-        renderShell();
+        pushLocal({ dataUrl: reader.result, size: file.size, mime: file.type });
       };
       reader.readAsDataURL(file);
     });
@@ -866,7 +918,8 @@
         storeName: store ? storeName(store) : state.purchaseType === 'INTERNAL' ? 'NAIOSh' : '',
         productUrl: state.purchaseType === 'EXTERNAL' ? state.productUrl : '',
         images: state.images,
-        attachments: state.attachments
+        attachments: state.attachments,
+        videos: state.videos || []
       }
     };
 
@@ -885,6 +938,34 @@
           throw new Error((pack.data && pack.data.error) || 'تعذر إرسال المنتج.');
         }
         applyServerSubmission(pack.data.submission, pack.data.request);
+        var entityId = (pack.data.submission && (pack.data.submission.productId || pack.data.submission.requestId)) || '';
+        var items = []
+          .concat(state.images || [])
+          .concat(state.attachments || [])
+          .concat(state.videos || [])
+          .map(function (it) {
+            return {
+              id: it.id || '',
+              url: it.url || it.dataUrl || '',
+              name: it.name || 'مرفق',
+              mime: it.mime || '',
+              size: it.size || 0,
+              kind: (state.videos || []).indexOf(it) >= 0 ? 'video' : (state.images || []).indexOf(it) >= 0 ? 'image' : 'file',
+            };
+          })
+          .filter(function (it) { return it.id || (it.url && String(it.url).indexOf('data:') !== 0); });
+        if (entityId && items.length && window.HubFormAttachments && HubFormAttachments.softPersistToEntity) {
+          return HubFormAttachments.softPersistToEntity({
+            entityType: 'product',
+            entityId: entityId,
+            ownerEmail: state.ownerEmail || '',
+            items: items,
+          }).then(function () { return pack; });
+        }
+        return pack;
+      })
+      .then(function (pack) {
+        if (!pack || !pack.data) return;
         try { localStorage.removeItem('naiosh_store_upload_draft_v1'); } catch (e2) {}
         toast('تم إرسال المنتج للمراجعة بنجاح.', 'success');
         try {
@@ -1259,11 +1340,11 @@
       });
       zone.addEventListener('drop', function (e) {
         e.preventDefault();
-        readFiles(e.dataTransfer.files, kind === 'images' ? 'images' : 'files');
+        readFiles(e.dataTransfer.files, kind === 'videos' ? 'videos' : kind === 'images' ? 'images' : 'files');
       });
       if (input) {
         input.addEventListener('change', function () {
-          readFiles(input.files, kind === 'images' ? 'images' : 'files');
+          readFiles(input.files, kind === 'videos' ? 'videos' : kind === 'images' ? 'images' : 'files');
           input.value = '';
         });
       }
@@ -1281,6 +1362,15 @@
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         state.attachments.splice(Number(btn.getAttribute('data-su-rm-file')), 1);
+        renderShell();
+      });
+    });
+
+    root.querySelectorAll('[data-su-rm-video]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        state.videos = state.videos || [];
+        state.videos.splice(Number(btn.getAttribute('data-su-rm-video')), 1);
         renderShell();
       });
     });

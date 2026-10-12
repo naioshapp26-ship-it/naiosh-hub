@@ -195,10 +195,12 @@ async function main() {
     let token = login.j?.token;
     mark(0, 'staff_login', token ? 'PASS' : 'FAIL', login.j?.user?.role);
 
-    // Resume proof: interrupt after 1 chunk then continue (6MB + 100MB when in ladder / always try 100)
-    const resumeSizes = [6];
-    if (LADDER.includes(100) || !LADDER.length) resumeSizes.push(100);
-    else if (LADDER.some((n) => n >= 100)) resumeSizes.push(Math.min(...LADDER.filter((n) => n >= 100)));
+    // Resume proof: interrupt after 1 chunk then continue for configured sizes
+    // Default includes large resumes when ladder asks for them via HUB_RESUME_SIZES
+    const resumeSizes = String(process.env.HUB_RESUME_SIZES || '6,100')
+      .split(',')
+      .map((x) => Number(x.trim()))
+      .filter((n) => Number.isFinite(n) && n > 0);
     for (const rmb of resumeSizes) {
       const { filePath, size } = createProbeFile(rmb);
       const t0 = Date.now();
@@ -295,12 +297,15 @@ async function main() {
       }
     }
 
-    // Explicit 1500 status if not in ladder
-    if (!LADDER.includes(1500)) {
+    // Only mark 1500 ladder gaps when neither ladder nor resume covered it
+    const resumed1500 = rows.some((r) => r.sizeMb === 1500 && r.operation === 'resume_complete' && r.result === 'PASS');
+    if (!LADDER.includes(1500) && !resumed1500) {
       mark(1500, 'chunked_upload_complete', 'NOT_TESTED', `Set HUB_SIZE_LADDER to include 1500. Current ladder: ${LADDER.join(',')}`);
       mark(1500, 'integrity_open', 'NOT_TESTED', 'depends on 1500 upload');
       mark(1500, 'after_restart_readable', 'NOT_TESTED', 'depends on 1500 upload');
-      mark(1500, 'resume_after_disconnect', 'NOT_TESTED', 'resume proven at 6MB; 1500MB resume not run in this pass');
+      mark(1500, 'resume_after_disconnect', 'NOT_TESTED', 'Set HUB_RESUME_SIZES=...,1500');
+    } else if (resumed1500 && !LADDER.includes(1500)) {
+      mark(1500, 'resume_after_disconnect', 'PASS', 'covered by HUB_RESUME_SIZES run in this suite');
     }
   } catch (err) {
     mark(0, 'suite_error', 'FAIL', err.stack || err.message);

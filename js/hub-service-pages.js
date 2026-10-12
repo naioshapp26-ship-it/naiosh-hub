@@ -1,5 +1,5 @@
 /**
- * صفحات الاستشارة / المقترحات / الشكاوي
+ * صفحات الاستشارة / المقترحات / الشكاوي — مرفقات متعددة + حفظ دائم عند تسجيل الدخول
  */
 (() => {
   'use strict';
@@ -11,15 +11,64 @@
   const form = root.querySelector('[data-service-form]');
   const feedback = root.querySelector('[data-service-feedback]');
   const listEl = root.querySelector('[data-service-list]');
+  const entityType = kind === 'complaint' ? 'complaint' : 'request';
 
-  const renderList = () => {
+  const escapeHtml = (s) =>
+    String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  const attachLine = (t) => {
+    const bits = [];
+    if (t.attachLink) bits.push(`<a href="${escapeHtml(t.attachLink)}" target="_blank" rel="noopener noreferrer">رابط</a>`);
+    const att = Array.isArray(t.attachments) ? t.attachments : [];
+    att.forEach((a) => {
+      const label = a.kind === 'image' ? 'صورة' : a.kind === 'video' ? 'فيديو' : 'ملف';
+      if (a.url) bits.push(`<a href="${escapeHtml(a.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`);
+      else bits.push(label);
+    });
+    if (!att.length) {
+      if (t.attachDocName || t.attachDocUrl) bits.push(`ملف: ${escapeHtml(t.attachDocName || 'مستند')}`);
+      if (t.attachImageUrl) bits.push(t.attachImageUrl ? `<a href="${escapeHtml(t.attachImageUrl)}" target="_blank" rel="noopener noreferrer">صورة</a>` : 'صورة');
+      if (t.attachVideoUrl) bits.push(t.attachVideoUrl ? `<a href="${escapeHtml(t.attachVideoUrl)}" target="_blank" rel="noopener noreferrer">فيديو</a>` : 'فيديو');
+    }
+    if (t.attachmentsPersisted) bits.push('محفوظ');
+    if (!bits.length) return '';
+    return `<p class="hub-attach-chip" style="margin-top:8px">${bits.join(' · ')}</p>`;
+  };
+
+  const renderList = async () => {
     if (!listEl || !window.HubServiceRequests?.byKind) return;
     const items = window.HubServiceRequests.byKind(kind).slice(0, 8);
     if (!items.length) {
       listEl.innerHTML = '<p class="hub-service-empty">لا طلبات بعد — أرسل النموذج أعلاه.</p>';
       return;
     }
-    listEl.innerHTML = items
+    const enriched = await Promise.all(
+      items.map(async (t) => {
+        if (!window.HubAuth?.isLoggedIn?.() || !window.HubFormAttachments?.loadEntityAttachments) return t;
+        try {
+          const loaded = await window.HubFormAttachments.loadEntityAttachments({ entityType, entityId: t.id });
+          if (loaded?.length) {
+            return {
+              ...t,
+              attachmentsPersisted: true,
+              attachments: loaded.map((a) => ({
+                url: a.contentUrl || a.url || '',
+                kind: a.category || 'file',
+                name: a.originalFileName || '',
+              })),
+            };
+          }
+        } catch {
+          /* ignore */
+        }
+        return t;
+      })
+    );
+    listEl.innerHTML = enriched
       .map(
         (t) => `<article class="hub-feature-card">
           <div class="hub-feature-card-top">
@@ -40,31 +89,18 @@
       .join('');
   };
 
-  const escapeHtml = (s) =>
-    String(s || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+  window.HubFormAttachments?.upgradeForm?.(form, { showLink: true, multi: true, title: 'المرفقات' });
+  window.HubFormAttachments?.bind?.(form);
 
-  const attachLine = (t) => {
-    const bits = [];
-    if (t.attachLink) bits.push(`<a href="${escapeHtml(t.attachLink)}" target="_blank" rel="noopener noreferrer">رابط</a>`);
-    if (t.attachDocName || t.attachDocUrl) bits.push(`ملف: ${escapeHtml(t.attachDocName || 'مستند')}`);
-    if (t.attachImageUrl) bits.push('صورة');
-    if (t.attachVideoUrl) bits.push('فيديو');
-    if (!bits.length) return '';
-    return `<p class="hub-attach-chip" style="margin-top:8px">${bits.join(' · ')}</p>`;
-  };
-
-  form?.addEventListener('submit', (event) => {
+  form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
     }
     const data = new FormData(form);
-    const stored = window.HubFormAttachments?.toStored?.(window.HubFormAttachments.collect(form)) || {};
+    const collected = window.HubFormAttachments?.collect?.(form) || {};
+    const stored = window.HubFormAttachments?.toStored?.(collected) || {};
     const item = window.HubServiceRequests?.create?.({
       kind,
       title: data.get('title'),
@@ -84,9 +120,33 @@
       alert('أدخل عنوانًا واضحًا للطلب');
       return;
     }
+    const persist = await window.HubFormAttachments?.softPersistToEntity?.({
+      entityType,
+      entityId: item.id,
+      ownerEmail: item.email || '',
+      items: collected.items || [],
+    });
+    if (persist?.persisted) {
+      try {
+        const list = window.HubServiceRequests.read();
+        const row = list.find((x) => x.id === item.id);
+        if (row) {
+          row.attachmentsPersisted = true;
+          localStorage.setItem(window.HubServiceRequests.KEY, JSON.stringify(list));
+        }
+      } catch {
+        /* ignore */
+      }
+    }
     if (feedback) {
       feedback.hidden = false;
-      feedback.textContent = 'تم استلام طلبك وربطه بالنظام. فريق هوب بيتابعه من غرفة العمليات.';
+      const note =
+        persist?.skippedReason === 'login_required' && (collected.items || []).length
+          ? ' تم حفظ الروابط محليًا — سجّل الدخول لربط المرفقات بالحفظ الدائم والصلاحيات.'
+          : persist?.persisted
+            ? ' تم ربط المرفقات بالحفظ الدائم.'
+            : '';
+      feedback.textContent = 'تم استلام طلبك وربطه بالنظام. فريق هوب بيتابعه من غرفة العمليات.' + note;
     }
     form.reset();
     window.HubFormAttachments?.reset?.(form);

@@ -108,15 +108,17 @@
   const bindRequestForm = (root, svc) => {
     const reqForm = root.querySelector('[data-service-request]');
     if (!reqForm) return;
+    window.HubFormAttachments?.upgradeForm?.(reqForm, { showLink: true, multi: true, title: 'المرفقات' });
     window.HubFormAttachments?.bind?.(reqForm);
-    reqForm.addEventListener('submit', (event) => {
+    reqForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!reqForm.checkValidity()) {
         reqForm.reportValidity();
         return;
       }
       const data = new FormData(reqForm);
-      const stored = window.HubFormAttachments?.toStored?.(window.HubFormAttachments.collect(reqForm)) || {};
+      const collected = window.HubFormAttachments?.collect?.(reqForm) || {};
+      const stored = window.HubFormAttachments?.toStored?.(collected) || {};
       const item = window.HubServiceRequests?.create?.({
         kind: 'consultation',
         title: data.get('title'),
@@ -140,9 +142,21 @@
         }
         return;
       }
+      const persist = await window.HubFormAttachments?.softPersistToEntity?.({
+        entityType: 'request',
+        entityId: item.id,
+        ownerEmail: item.email || '',
+        items: collected.items || [],
+      });
       if (box) {
         box.hidden = false;
-        box.textContent = 'تم استلام طلبك وربطه بالنظام. فريق هوب بيتابعه من غرفة العمليات.';
+        const note =
+          persist?.skippedReason === 'login_required' && (collected.items || []).length
+            ? ' سجّل الدخول لربط المرفقات بالحفظ الدائم.'
+            : persist?.persisted
+              ? ' تم ربط المرفقات بالحفظ الدائم.'
+              : '';
+        box.textContent = 'تم استلام طلبك وربطه بالنظام. فريق هوب بيتابعه من غرفة العمليات.' + note;
         box.style.background = '#ecfdf5';
         box.style.color = '#065f46';
       }

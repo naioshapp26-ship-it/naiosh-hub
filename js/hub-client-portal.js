@@ -370,6 +370,17 @@
           if (auth[k]) xhr.setRequestHeader(k, auth[k]);
         });
       } catch (e) { /* ignore */ }
+      xhr.upload.onprogress = function (event) {
+        if (!event.lengthComputable) return;
+        var pct = Math.round((event.loaded / event.total) * 100);
+        try {
+          var status = document.querySelector('[data-cp-attach-status]');
+          if (status) {
+            status.hidden = false;
+            status.textContent = 'جاري الرفع… ' + pct + '% — ' + (file.name || '');
+          }
+        } catch (e) { /* ignore */ }
+      };
       xhr.onload = function () {
         var data = xhr.response && typeof xhr.response === 'object' ? xhr.response : null;
         if (xhr.status === 413) {

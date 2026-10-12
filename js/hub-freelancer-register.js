@@ -1,5 +1,6 @@
 /**
  * تسجيل فريلانسر — مكتب فقط من المقر، بدون منصة وبدون نظام
+ * مرفقات عبر HubFormAttachments + حفظ دائم عند تسجيل الدخول
  */
 (() => {
   'use strict';
@@ -35,18 +36,27 @@
     feedback.classList.toggle('is-ok', ok);
   };
 
-  const fileMeta = async (input) => {
-    const f = input?.files?.[0];
-    if (!f) return null;
-    const limits = window.HubUploadLimits;
-    const check = limits?.assertFile ? limits.assertFile(f) : { ok: f.size <= 150 * 1024 * 1024 };
-    if (!check.ok) throw new Error(check.error || 'حجم الملف أكبر من 150MB');
-    let url = '';
-    if (limits?.uploadFile) {
-      const uploaded = await limits.uploadFile(f);
-      url = uploaded.url || '';
+  const ensureAttachHost = () => {
+    if (!form || !window.HubFormAttachments?.mount) return null;
+    if (form.querySelector('[data-hub-attach-block]')) return form.querySelector('[data-hub-attach-block]');
+    const legacy = form.querySelector('[name="profileFile"], [name="imageFile"], [name="videoFile"]');
+    if (!legacy) {
+      const host = form.querySelector('[data-fl-attach-host]') || document.createElement('div');
+      if (!host.isConnected) {
+        host.setAttribute('data-fl-attach-host', '1');
+        requiredProxy?.before?.(host) || form.appendChild(host);
+      }
+      window.HubFormAttachments.mount(host, { title: 'المرفقات', multi: true, required: true });
+      return host;
     }
-    return { name: f.name, size: f.size, type: f.type, url };
+    const wrap = legacy.closest('.hub-book-files, fieldset, .hub-form-grid') || legacy.parentElement?.parentElement;
+    const host = document.createElement('div');
+    host.setAttribute('data-fl-attach-host', '1');
+    (wrap || legacy.parentElement).replaceWith(host);
+    window.HubFormAttachments.mount(host, { title: 'المرفقات', multi: true, required: true });
+    const hint = form.querySelector('.hub-book-hint');
+    if (hint) hint.textContent = 'الحد الأقصى للصورة والملف والفيديو: 1500 ميجابايت للملف';
+    return host;
   };
 
   const normalize = (value) =>
@@ -123,7 +133,6 @@
 
   const grantOfficeOnly = (app) => {
     const nameAr = `مكتب فريلانسر — ${app.fullName}`;
-    // مسار الفريلانسر: مكتب فقط من المقر — بدون منصة وبدون نظام
     if (window.HubClientOffices?.grantFromBooking) {
       const res = window.HubClientOffices.grantFromBooking({
         kind: 'freelancer',
@@ -177,19 +186,20 @@
       return;
     }
 
-    const fd = new FormData(form);
-    toast('جاري رفع الملفات (حتى 150 ميجابايت)...');
-    let files;
-    try {
-      files = {
-        file: await fileMeta(form.querySelector('[name="profileFile"]')),
-        image: await fileMeta(form.querySelector('[name="imageFile"]')),
-        video: await fileMeta(form.querySelector('[name="videoFile"]')),
-      };
-    } catch (err) {
-      toast(err.message || 'فشل رفع الملف');
+    ensureAttachHost();
+    const collected = window.HubFormAttachments?.collect?.(form) || { items: [] };
+    if (!collected.items?.length) {
+      toast('أرفق ملفًا وصورة وفيديو واحدًا على الأقل (أو سجّل الدخول لرفع ملفات كبيرة)');
       return;
     }
+
+    const fd = new FormData(form);
+    toast('جاري حفظ الطلب والمرفقات (حتى 1500 ميجابايت)...');
+    const files = {
+      file: collected.items.find((i) => i.kind === 'file') || null,
+      image: collected.items.find((i) => i.kind === 'image') || null,
+      video: collected.items.find((i) => i.kind === 'video') || null,
+    };
     const app = {
       id: `fl-${Date.now().toString(36)}`,
       kind: 'freelancer',
@@ -207,6 +217,7 @@
       specialty: String(fd.get('specialty') || '').trim(),
       experience: String(fd.get('experience') || '').trim(),
       files,
+      attachments: collected.items,
       projects: [...selected.values()],
       at: new Date().toISOString(),
     };
@@ -219,6 +230,14 @@
       platformGranted: false,
       systemGranted: false,
     };
+
+    const persist = await window.HubFormAttachments?.softPersistToEntity?.({
+      entityType: 'freelancer',
+      entityId: app.id,
+      ownerEmail: app.email || '',
+      items: collected.items,
+    });
+    if (persist?.persisted) app.attachmentsPersisted = true;
 
     const prev = readSaved();
     prev.unshift(app);
@@ -239,11 +258,19 @@
       feedback.classList.add('is-ok');
       feedback.innerHTML = `تم استلام حجزك كفريلانسر. <strong>لا منصة ولا نظام</strong> — يُمنح <strong>مكتب فقط</strong> ويُشغَّل من <strong>المكتب الرئيسي</strong> حسب حاجة المنصات.${
         app.office.grantId ? ` رقم المكتب: <strong>${esc(app.office.grantId)}</strong>.` : ''
-      } <a href="my-office.html?email=${emailQ}">افتح مكتبي</a>`;
+      } <a href="my-office.html?email=${emailQ}">افتح مكتبي</a>${
+        persist?.skippedReason === 'login_required'
+          ? '<br><small>سجّل الدخول لربط المرفقات بالحفظ الدائم.</small>'
+          : persist?.persisted
+            ? '<br><small>تم ربط المرفقات بالحفظ الدائم.</small>'
+            : ''
+      }`;
     }
     form.reset();
+    window.HubFormAttachments?.reset?.(form);
     selected.clear();
     renderList();
+    ensureAttachHost();
   };
 
   const bind = async () => {
@@ -256,6 +283,7 @@
     }
     fillCategories();
     renderList();
+    ensureAttachHost();
 
     searchEl?.addEventListener('input', renderList);
     catEl?.addEventListener('change', renderList);
@@ -277,6 +305,5 @@
     syncRequired();
   };
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once: true });
-  else bind();
+  bind();
 })();

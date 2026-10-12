@@ -228,17 +228,17 @@
           <label class="hub-upload-card">
             <span class="hub-field-label">${fieldLabelHtml('رفع ملف / مستند', { optional: true })}</span>
             <input id="hub-field-docFile" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,image/*" />
-            <small>${esc(values.docName || 'PDF · Word · Excel · حتى 150MB')}</small>
+            <small>${esc(values.docName || 'PDF · Word · Excel · حتى 1500MB')}</small>
           </label>
           <label class="hub-upload-card">
             <span class="hub-field-label">${fieldLabelHtml('رفع صورة', { optional: true })}</span>
             <input id="hub-field-imageFile" type="file" accept="image/*" />
-            <small>${esc(values.imageName || 'PNG · JPG · WEBP · حتى 150MB')}</small>
+            <small>${esc(values.imageName || 'PNG · JPG · WEBP · حتى 1500MB')}</small>
           </label>
           <label class="hub-upload-card">
             <span class="hub-field-label">${fieldLabelHtml('رفع فيديو', { optional: true })}</span>
             <input id="hub-field-videoFile" type="file" accept="video/*" />
-            <small>${esc(values.videoName || 'MP4 · MOV · WEBM · حتى 150MB')}</small>
+            <small>${esc(values.videoName || 'MP4 · MOV · WEBM · حتى 1500MB')}</small>
           </label>
         </div>
       </div>`;
@@ -248,9 +248,9 @@
       const file = input?.files?.[0];
       if (!file) return null;
       const limits = window.HubUploadLimits;
-      const maxBytes = limits?.MAX_FILE_BYTES || 150 * 1024 * 1024;
+      const maxBytes = limits?.MAX_FILE_BYTES || 1500 * 1024 * 1024;
       if (file.size > maxBytes) {
-        return { error: limits?.sizeError?.(file) || 'حجم الملف أكبر من 150MB' };
+        return { error: limits?.sizeError?.(file) || 'حجم الملف أكبر من الحد المسموح' };
       }
       const base = { name: file.name, type: file.type, size: file.size, dataUrl: '', url: '' };
       const inlineMax = limits?.INLINE_DATA_URL_MAX_BYTES || 1_500_000;
