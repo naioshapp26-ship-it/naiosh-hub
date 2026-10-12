@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Landing hero NAIOSH AI logo → quality-analysis.html
+ * Landing hero NAIOSH AI logo (نظام تحليل البيانات) → quality-analysis.html
  */
 'use strict';
 
@@ -117,8 +117,8 @@ async function main() {
     mark('logo_present_in_title_row', meta.inTitleRow, JSON.stringify(meta));
     mark('logo_uses_original_asset', /logo-naiosh-ai\.jpg/.test(meta.imgSrc || ''), meta.imgSrc);
     mark('logo_href_quality_analysis', /quality-analysis\.html/.test(meta.href || ''), meta.href);
-    mark('aria_label_quality', meta.aria === 'الانتقال إلى تحليل الجودة', meta.aria);
-    mark('title_quality', meta.title === 'الانتقال إلى تحليل الجودة', meta.title);
+    mark('aria_label_data_analysis', meta.aria === 'الانتقال إلى نظام تحليل البيانات', meta.aria);
+    mark('title_data_analysis', meta.title === 'الانتقال إلى نظام تحليل البيانات', meta.title);
     mark('cursor_pointer', meta.cursor === 'pointer', meta.cursor);
     mark('nav_logo_unchanged', /logo-hub/.test(meta.navLogoSrc || ''), meta.navLogoSrc);
 
@@ -137,8 +137,12 @@ async function main() {
     const qaOk = /quality-analysis\.html/.test(afterUrl);
     const bodyText = await page.evaluate(() => document.body.innerText);
     const noAuthBlock = !/غير مصرح|مطلوب تسجيل الدخول|403|ليس لديك صلاحية/i.test(bodyText);
-    mark('click_opens_quality_analysis', qaOk, afterUrl);
-    mark('quality_page_loads_no_auth_error', qaOk && noAuthBlock && /تحليل الجودة/.test(bodyText), bodyText.slice(0, 200));
+    mark('click_opens_data_analysis', qaOk, afterUrl);
+    mark(
+      'data_analysis_page_loads_no_auth_error',
+      qaOk && noAuthBlock && /تحليل البيانات/.test(bodyText),
+      bodyText.slice(0, 200)
+    );
     await page.screenshot({ path: path.join(ART, 'quality-analysis-after-click.png'), fullPage: false });
 
     // Mobile
