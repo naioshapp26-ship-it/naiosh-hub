@@ -17,8 +17,12 @@
 | `SESSION_SECRET` | أي نص طويل عشوائي |
 | `APP_URL` | رابط الدومين العام للخدمة |
 | `CORS_ORIGIN` | `*` |
+| `GOOGLE_MAPS_BROWSER_KEY` | مفتاح متصفح Google Maps (HTTP referrers) — انظر `docs/google-maps-setup.md` |
+| `GOOGLE_MAPS_SERVER_KEY` | مفتاح خادم Geocoding فقط — **لا يُرسل للمتصفح** |
 
 > اسم مرجع Postgres قد يختلف (`Postgres` / `Postgres-xxxxx`). اختر الخدمة من قائمة References.
+>
+> **لا تلصقي مفاتيح Google في الشات أو في Git.** ضعيها فقط في Railway Variables ثم اكتبي للوكيل: «تم وضع المفاتيح في Railway».
 
 4. احفظ — Railway هيعمل Redeploy تلقائي.
 5. عند الإقلاع السيرفر يشغّل الترحيل وينشئ الجداول من `db/schema.sql` + البذرة `db/seed.sql`.
