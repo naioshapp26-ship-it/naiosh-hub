@@ -555,6 +555,44 @@ body.dark-mode .p360-persona-chip.is-active {
   font-weight: 800;
 }
 
+.p360-admin-table tr.is-selected {
+  background: rgba(215, 0, 0, 0.06);
+}
+
+.p360-tx-row {
+  display: grid;
+  gap: 4px;
+}
+
+.p360-tx-link {
+  color: #b91c1c;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+.p360-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.p360-btn-sm {
+  font-size: 12px !important;
+  padding: 6px 10px !important;
+}
+
+.p360-pager .p360-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.p360-section-title {
+  margin: 18px 0 10px;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
 @media (max-width: 900px) {
   .p360-hero {
     grid-template-columns: 1fr;
