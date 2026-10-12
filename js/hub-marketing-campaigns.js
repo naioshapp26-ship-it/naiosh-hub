@@ -1044,7 +1044,7 @@
         '<button class="mcs-btn primary" data-mcs="do-sch"><i class="fas fa-clock"></i> حفظ الجدولة</button>';
     } else if (state.detailTab === 'files') {
       body =
-        '<div class="mcs-drop" data-drop="1">اسحب الملف هنا أو اختر ملفًا<input type="file" data-file></div>' +
+        '<div class="mcs-drop" data-drop="1">اسحب الملف هنا أو اختر ملفًا<input type="file" data-file multiple></div>' +
         '<table class="mcs-table"><thead><tr><th>الاسم</th><th>النوع</th><th>الحجم</th><th>الرافع</th><th>التاريخ</th><th></th></tr></thead><tbody>' +
         (c.assets || [])
           .map(function (a) {
@@ -1582,18 +1582,31 @@
       await refreshAll();
       return;
     }
-    if (e.target.hasAttribute('data-file') && e.target.files && e.target.files[0] && state.campaign) {
+    if (e.target.hasAttribute('data-file') && e.target.files && e.target.files.length && state.campaign) {
       try {
-        var file = e.target.files[0];
-        var up = await uploadFile(file);
-        var kind = file.type.indexOf('video') === 0 ? 'video' : file.type.indexOf('image') === 0 ? 'image' : 'file';
-        var out = await api('/api/hub/marketing-campaigns/' + encodeURIComponent(state.campaign.id) + '/assets', {
-          method: 'POST',
-          body: { kind: kind, name: file.name, mime: file.type, size: file.size, url: up.url, uploadId: up.id },
-        });
-        state.campaign = out.campaign;
+        var files = Array.prototype.slice.call(e.target.files || []);
+        var eaItems = [];
+        var out = null;
+        for (var ci = 0; ci < files.length; ci++) {
+          var file = files[ci];
+          var up = await uploadFile(file);
+          var kind = file.type.indexOf('video') === 0 ? 'video' : file.type.indexOf('image') === 0 ? 'image' : 'file';
+          out = await api('/api/hub/marketing-campaigns/' + encodeURIComponent(state.campaign.id) + '/assets', {
+            method: 'POST',
+            body: { kind: kind, name: file.name, mime: file.type, size: file.size, url: up.url, uploadId: up.id },
+          });
+          eaItems.push({ id: up.id || '', url: up.url || '', name: file.name, mime: file.type, size: file.size, kind: kind });
+        }
+        if (out) state.campaign = out.campaign;
+        if (eaItems.length && window.HubFormAttachments && HubFormAttachments.softPersistToEntity) {
+          await HubFormAttachments.softPersistToEntity({
+            entityType: 'campaign',
+            entityId: state.campaign.id,
+            items: eaItems,
+          });
+        }
         state.section = 'detail';
-        toast('تم رفع الملف');
+        toast(files.length > 1 ? 'تم رفع ' + files.length + ' ملفات' : 'تم رفع الملف');
         render();
       } catch (err) {
         toast(err.message || String(err));
@@ -1629,6 +1642,13 @@
         body: { kind: kind, name: file.name, mime: file.type, size: file.size, url: up.url, uploadId: up.id },
       });
       state.campaign = out.campaign;
+      if (window.HubFormAttachments && HubFormAttachments.softPersistToEntity) {
+        await HubFormAttachments.softPersistToEntity({
+          entityType: 'campaign',
+          entityId: state.campaign.id,
+          items: [{ id: up.id || '', url: up.url || '', name: file.name, mime: file.type, size: file.size, kind: kind }],
+        });
+      }
       state.section = 'detail';
       toast('تم رفع الملف');
       render();

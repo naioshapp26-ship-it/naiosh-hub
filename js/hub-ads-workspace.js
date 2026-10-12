@@ -1306,6 +1306,30 @@
         draft.mediaError = '';
         autosave();
         render();
+        var entityId = ui.editingId || draft.id || '';
+        if (
+          entityId &&
+          (res.id || res.url) &&
+          window.HubFormAttachments &&
+          HubFormAttachments.softPersistToEntity
+        ) {
+          var kind =
+            draft.contentType === 'video' ? 'video' : draft.contentType === 'image' ? 'image' : 'file';
+          HubFormAttachments.softPersistToEntity({
+            entityType: 'other',
+            entityId: String(entityId),
+            items: [
+              {
+                id: res.id || '',
+                url: res.url || '',
+                name: file.name,
+                mime: res.mime || file.type || '',
+                size: file.size || 0,
+                kind: kind,
+              },
+            ],
+          }).catch(function () {});
+        }
       })
       .catch(function (err) {
         draft.mediaUploading = false;

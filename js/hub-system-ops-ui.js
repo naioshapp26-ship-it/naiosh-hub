@@ -724,6 +724,24 @@
           toast('أدخل عنوان المقال');
           return;
         }
+        if (attachments.length && window.HubFormAttachments?.softPersistToEntity) {
+          await window.HubFormAttachments.softPersistToEntity({
+            entityType: 'article',
+            entityId: post.id || post.postId || `sysblog-${Date.now().toString(36)}`,
+            items: attachments.map((a) => ({
+              id: String(a.url || '').replace(/^\/uploads\//, ''),
+              url: a.url,
+              name: a.name,
+              mime: a.mime,
+              size: a.size,
+              kind: String(a.mime || '').startsWith('image/')
+                ? 'image'
+                : String(a.mime || '').startsWith('video/')
+                  ? 'video'
+                  : 'file',
+            })),
+          });
+        }
         toast(attachments.length ? `تم النشر مع ${attachments.length} مرفق` : 'تم النشر على المدونة');
       } catch (err) {
         toast(err?.message || 'فشل رفع المرفقات');
