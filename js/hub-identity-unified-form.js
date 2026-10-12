@@ -97,7 +97,10 @@
         <p class="hub-id360-hint">إضافة شخص كعميل لا تمنحه صلاحيات موظف أو مسؤول.</p>
       </div>`
       }
-      <div class="hub-id360-section ${relation === 'employee' ? 'hidden' : ''}" data-id360-client>
+      ${
+        opts.lockRelation && relation === 'employee'
+          ? ''
+          : `<div class="hub-id360-section ${relation === 'employee' ? 'hidden' : ''}" data-id360-client>
         <h4 class="hub-id360-title">ارتباط العميل بالمنظومة *</h4>
         <div class="hub-id360-grid">
           <label class="hub-id360-field">الحاضنة *
@@ -142,8 +145,12 @@
             </select>
           </label>
         </div>
-      </div>
-      <div class="hub-id360-section ${relation === 'client' ? 'hidden' : ''}" data-id360-employee>
+      </div>`
+      }
+      ${
+        opts.lockRelation && relation === 'client'
+          ? ''
+          : `<div class="hub-id360-section ${relation === 'client' ? 'hidden' : ''}" data-id360-employee>
         <h4 class="hub-id360-title">التبعية الوظيفية والصلاحيات</h4>
         <div class="hub-id360-grid">
           <label class="hub-id360-field">جهة العمل
@@ -174,7 +181,8 @@
           }
         </div>
         <div data-id360-perms class="hub-id360-perms"></div>
-      </div>
+      </div>`
+      }
       <p class="hub-id360-error" data-id360-error hidden></p>
     `;
 
