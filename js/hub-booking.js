@@ -634,33 +634,33 @@
       at: new Date().toISOString(),
     };
 
-    if (kind === 'platform') {
-      try {
-        const res = await fetch('/api/hub/platform-bookings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok || json.ok === false) {
-          if (json.field) showFieldError(json.field, json.error);
-          if (feedback) {
-            feedback.hidden = false;
-            feedback.classList.add('is-error');
-            feedback.classList.remove('is-ok');
-            feedback.textContent = json.error || 'تعذر التحقق من بيانات الحجز.';
-          }
-          return;
-        }
-      } catch {
+    // Persist every booking kind server-side (branch/geo included) so staff can reopen.
+    try {
+      const res = await fetch('/api/hub/platform-bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.ok === false) {
+        if (json.field) showFieldError(json.field, json.error);
         if (feedback) {
           feedback.hidden = false;
           feedback.classList.add('is-error');
           feedback.classList.remove('is-ok');
-          feedback.textContent = 'تعذر الاتصال بالخادم للتحقق من الحجز.';
+          feedback.textContent = json.error || 'تعذر التحقق من بيانات الحجز.';
         }
         return;
       }
+      if (json.booking?.id) payload.serverId = json.booking.id;
+    } catch {
+      if (feedback) {
+        feedback.hidden = false;
+        feedback.classList.add('is-error');
+        feedback.classList.remove('is-ok');
+        feedback.textContent = 'تعذر الاتصال بالخادم للتحقق من الحجز.';
+      }
+      return;
     }
 
     let grant = null;
