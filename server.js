@@ -1608,10 +1608,12 @@ async function handleHubApi(req, res, pathname) {
   const hydratePlatformBookings = async () => {
     if (platformBookingsHydrated && platformBookingsMem) return platformBookingsMem;
     platformBookingsHydrated = true;
+    const fromDisk = readPlatformBookingsFileSync();
+    let fromDb = null;
     try {
       const { getDatabaseUrl, withClient } = require('./db/migrate');
       if (getDatabaseUrl()) {
-        const fromDb = await withClient(async (client) => {
+        fromDb = await withClient(async (client) => {
           const r = await client.query(`SELECT value FROM hub_meta WHERE key = $1 LIMIT 1`, [
             PLATFORM_BOOKINGS_META_KEY,
           ]);
@@ -1619,22 +1621,30 @@ async function handleHubApi(req, res, pathname) {
           const value = r.rows[0].value;
           return typeof value === 'string' ? JSON.parse(value) : value;
         });
-        if (fromDb && Array.isArray(fromDb.bookings) && fromDb.bookings.length) {
-          platformBookingsMem = {
-            version: fromDb.version || 1,
-            bookings: fromDb.bookings,
-            updatedAt: fromDb.updatedAt || new Date().toISOString(),
-          };
-          ensurePlatformBookingsFile();
-          fs.writeFileSync(platformBookingsPath, JSON.stringify(platformBookingsMem, null, 2), 'utf8');
-          return platformBookingsMem;
-        }
       }
     } catch (err) {
       console.warn('[platform-bookings] DB hydrate skipped:', err.message);
     }
-    platformBookingsMem = readPlatformBookingsFileSync();
-    if ((platformBookingsMem.bookings || []).length) {
+    const diskBookings = Array.isArray(fromDisk?.bookings) ? fromDisk.bookings : [];
+    const dbBookings = Array.isArray(fromDb?.bookings) ? fromDb.bookings : [];
+    const merged = platformBooking.mergeBookingsById(diskBookings, dbBookings);
+    const diskIds = new Set(diskBookings.map((b) => b?.id).filter(Boolean));
+    const dbIds = new Set(dbBookings.map((b) => b?.id).filter(Boolean));
+    const gainedFromDisk = merged.filter((b) => diskIds.has(b.id) && !dbIds.has(b.id)).length;
+    const gainedFromDb = merged.filter((b) => dbIds.has(b.id) && !diskIds.has(b.id)).length;
+    if (gainedFromDisk || gainedFromDb) {
+      console.warn(
+        `[platform-bookings] merge hydrate: disk=${diskBookings.length} db=${dbBookings.length} union=${merged.length} (+disk=${gainedFromDisk} +db=${gainedFromDb})`
+      );
+    }
+    platformBookingsMem = {
+      version: (fromDb && fromDb.version) || fromDisk.version || 1,
+      bookings: merged,
+      updatedAt: new Date().toISOString(),
+    };
+    ensurePlatformBookingsFile();
+    fs.writeFileSync(platformBookingsPath, JSON.stringify(platformBookingsMem, null, 2), 'utf8');
+    if (merged.length) {
       await persistPlatformBookingsToDb(platformBookingsMem);
     }
     return platformBookingsMem;
@@ -1711,6 +1721,94 @@ async function handleHubApi(req, res, pathname) {
         field: err.field,
       });
     }
+    return true;
+  }
+
+  // Staff read-only: last safe-restore audit (no secrets).
+  if (pathname === '/api/hub/platform-bookings/restore-status' && req.method === 'GET') {
+    const session = await requireHubAuthOrReject(req, res);
+    if (!session) return true;
+    if (!hubSession.isStaffLane(session.lane)) {
+      sendJson(res, 403, { ok: false, error: 'موظفون فقط' });
+      return true;
+    }
+    try {
+      const bookingsRestore = require('./lib/hub-bookings-restore');
+      const { getDatabaseUrl, withClient } = require('./db/migrate');
+      if (!getDatabaseUrl()) {
+        sendJson(res, 503, { ok: false, error: 'لا قاعدة بيانات' });
+        return true;
+      }
+      const audit = await bookingsRestore.readAudit(withClient);
+      await hydratePlatformBookings();
+      const state = readPlatformBookingsFile();
+      const ids = (state.bookings || []).map((b) => b.id);
+      sendJson(res, 200, {
+        ok: true,
+        count: ids.length,
+        ids,
+        approvedPresent: bookingsRestore.ALLOWED.every((id) => ids.includes(id)),
+        audit,
+      });
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message || 'تعذر قراءة حالة الاستعادة' });
+    }
+    return true;
+  }
+
+  // Supreme-leader only: add missing bookings by id — never overwrite/delete existing.
+  if (pathname === '/api/hub/platform-bookings/restore-missing' && req.method === 'POST') {
+    const session = await requireHubAuthOrReject(req, res);
+    if (!session) return true;
+    if (!hubSession.isStaffLane(session.lane) || session.lane !== 'SUPER_ADMIN') {
+      sendJson(res, 403, { ok: false, error: 'استعادة الحجوزات للقائد الأعلى فقط' });
+      return true;
+    }
+    const body = await readBody(req);
+    if (String(body?.confirm || '') !== 'RESTORE_MISSING_ONLY') {
+      sendJson(res, 400, {
+        ok: false,
+        error: 'أرفق confirm=RESTORE_MISSING_ONLY مع قائمة الحجوزات الناقصة فقط',
+      });
+      return true;
+    }
+    const allowIds = Array.isArray(body?.allowIds) ? body.allowIds.map(String) : [];
+    const candidates = Array.isArray(body?.bookings) ? body.bookings : [];
+    if (!allowIds.length || !candidates.length) {
+      sendJson(res, 400, { ok: false, error: 'allowIds و bookings مطلوبان' });
+      return true;
+    }
+    // Reject any candidate outside allowlist
+    if (candidates.some((b) => !b?.id || !allowIds.includes(String(b.id)))) {
+      sendJson(res, 400, { ok: false, error: 'كل حجز يجب أن يكون ضمن allowIds المعتمدة' });
+      return true;
+    }
+    await hydratePlatformBookings();
+    const state = readPlatformBookingsFile();
+    const beforeIds = (state.bookings || []).map((b) => b.id);
+    const { bookings, added } = platformBooking.restoreMissingBookingsOnly(state.bookings || [], candidates, {
+      allowIds,
+    });
+    // Integrity: every previously present id must remain
+    const afterIds = new Set(bookings.map((b) => b.id));
+    const lost = beforeIds.filter((id) => !afterIds.has(id));
+    if (lost.length) {
+      sendJson(res, 500, { ok: false, error: 'رفضت الاستعادة: كانت ستفقد حجوزات موجودة', lost });
+      return true;
+    }
+    writePlatformBookingsFile({ version: state.version || 1, bookings });
+    try {
+      await platformBookingsDbQueue;
+    } catch {
+      /* ignore */
+    }
+    sendJson(res, 200, {
+      ok: true,
+      addedCount: added.length,
+      addedIds: added.map((b) => b.id),
+      totalCount: bookings.length,
+      preservedExisting: beforeIds,
+    });
     return true;
   }
 
@@ -2565,6 +2663,8 @@ async function boot() {
     console.error('Staff credentials bootstrap skipped:', error.message);
   }
 
+  // Safe restore runs AFTER listen (see below) so healthchecks are not blocked by backup.
+
   try {
     await customerAuth.ensureCustomerSchema?.();
     const custHyd = await customerAuth.hydrateFromDb();
@@ -2665,6 +2765,8 @@ async function boot() {
     } catch (e) {
       console.error('POSHA schedulers failed:', e.message);
     }
+    // NOTE: experimental booking restore boot hook intentionally removed.
+    // Durability fix is hydrate merge-by-id (disk ∪ Postgres). Do not set HUB_SAFE_RESTORE_*.
   });
 }
 
