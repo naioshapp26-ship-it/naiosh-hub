@@ -2663,17 +2663,7 @@ async function boot() {
     console.error('Staff credentials bootstrap skipped:', error.message);
   }
 
-  try {
-    const bookingsRestore = require('./lib/hub-bookings-restore');
-    const restored = await bookingsRestore.runSafeRailwayRestore();
-    if (restored?.ran) {
-      console.warn(
-        `[boot] safe-restore ran ok=${restored.ok !== false} added=${(restored.addedIds || []).join(',') || '(none)'} total=${restored.totalCount ?? '?'} — unset HUB_SAFE_RESTORE_TWO_BOOKINGS`
-      );
-    }
-  } catch (error) {
-    console.error('Bookings safe-restore boot hook skipped:', error.message);
-  }
+  // Safe restore runs AFTER listen (see below) so healthchecks are not blocked by backup.
 
   try {
     await customerAuth.ensureCustomerSchema?.();
@@ -2775,6 +2765,23 @@ async function boot() {
     } catch (e) {
       console.error('POSHA schedulers failed:', e.message);
     }
+    // After accept traffic: optional one-shot safe restore (add-missing-only; no-op if done).
+    setImmediate(() => {
+      const bookingsRestore = require('./lib/hub-bookings-restore');
+      if (!bookingsRestore.flagEnabled()) return;
+      bookingsRestore
+        .runSafeRailwayRestore()
+        .then((restored) => {
+          if (restored?.ran) {
+            console.warn(
+              `[boot] safe-restore ran ok=${restored.ok !== false} added=${(restored.addedIds || []).join(',') || '(none)'} total=${restored.totalCount ?? '?'} — unset HUB_SAFE_RESTORE_TWO_BOOKINGS`
+            );
+          }
+        })
+        .catch((error) => {
+          console.error('Bookings safe-restore post-listen skipped:', error.message);
+        });
+    });
   });
 }
 
