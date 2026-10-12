@@ -104,13 +104,14 @@
   }
 
   body.homepage a.hero-naiosh-ai-logo {
-    width: 72px !important;
-    height: 72px !important;
-    border-radius: 14px !important;
-    padding: 3px !important;
-    /* Comfortable touch target without oversized crest */
-    min-width: 72px !important;
-    min-height: 72px !important;
+    width: 78px !important;
+    height: auto !important;
+    aspect-ratio: 1357 / 1600 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    /* Comfortable touch target; height follows full crest + caption */
+    min-width: 78px !important;
+    min-height: 0 !important;
   }
 
   body.homepage .hero-content > p {
@@ -511,10 +512,11 @@
   }
 
   body.homepage a.hero-naiosh-ai-logo {
-    width: 64px !important;
-    height: 64px !important;
-    min-width: 64px !important;
-    min-height: 64px !important;
+    width: 68px !important;
+    height: auto !important;
+    aspect-ratio: 1357 / 1600 !important;
+    min-width: 68px !important;
+    min-height: 0 !important;
   }
 
   body.homepage .hub-guide-button {
