@@ -1608,10 +1608,12 @@ async function handleHubApi(req, res, pathname) {
   const hydratePlatformBookings = async () => {
     if (platformBookingsHydrated && platformBookingsMem) return platformBookingsMem;
     platformBookingsHydrated = true;
+    const fromDisk = readPlatformBookingsFileSync();
+    let fromDb = null;
     try {
       const { getDatabaseUrl, withClient } = require('./db/migrate');
       if (getDatabaseUrl()) {
-        const fromDb = await withClient(async (client) => {
+        fromDb = await withClient(async (client) => {
           const r = await client.query(`SELECT value FROM hub_meta WHERE key = $1 LIMIT 1`, [
             PLATFORM_BOOKINGS_META_KEY,
           ]);
@@ -1619,22 +1621,30 @@ async function handleHubApi(req, res, pathname) {
           const value = r.rows[0].value;
           return typeof value === 'string' ? JSON.parse(value) : value;
         });
-        if (fromDb && Array.isArray(fromDb.bookings) && fromDb.bookings.length) {
-          platformBookingsMem = {
-            version: fromDb.version || 1,
-            bookings: fromDb.bookings,
-            updatedAt: fromDb.updatedAt || new Date().toISOString(),
-          };
-          ensurePlatformBookingsFile();
-          fs.writeFileSync(platformBookingsPath, JSON.stringify(platformBookingsMem, null, 2), 'utf8');
-          return platformBookingsMem;
-        }
       }
     } catch (err) {
       console.warn('[platform-bookings] DB hydrate skipped:', err.message);
     }
-    platformBookingsMem = readPlatformBookingsFileSync();
-    if ((platformBookingsMem.bookings || []).length) {
+    const diskBookings = Array.isArray(fromDisk?.bookings) ? fromDisk.bookings : [];
+    const dbBookings = Array.isArray(fromDb?.bookings) ? fromDb.bookings : [];
+    const merged = platformBooking.mergeBookingsById(diskBookings, dbBookings);
+    const diskIds = new Set(diskBookings.map((b) => b?.id).filter(Boolean));
+    const dbIds = new Set(dbBookings.map((b) => b?.id).filter(Boolean));
+    const gainedFromDisk = merged.filter((b) => diskIds.has(b.id) && !dbIds.has(b.id)).length;
+    const gainedFromDb = merged.filter((b) => dbIds.has(b.id) && !diskIds.has(b.id)).length;
+    if (gainedFromDisk || gainedFromDb) {
+      console.warn(
+        `[platform-bookings] merge hydrate: disk=${diskBookings.length} db=${dbBookings.length} union=${merged.length} (+disk=${gainedFromDisk} +db=${gainedFromDb})`
+      );
+    }
+    platformBookingsMem = {
+      version: (fromDb && fromDb.version) || fromDisk.version || 1,
+      bookings: merged,
+      updatedAt: new Date().toISOString(),
+    };
+    ensurePlatformBookingsFile();
+    fs.writeFileSync(platformBookingsPath, JSON.stringify(platformBookingsMem, null, 2), 'utf8');
+    if (merged.length) {
       await persistPlatformBookingsToDb(platformBookingsMem);
     }
     return platformBookingsMem;
