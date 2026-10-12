@@ -2,7 +2,7 @@
 'use strict';
 
 const assert = require('assert');
-const { mergeBookingsById } = require('../lib/hub-platform-booking');
+const { mergeBookingsById, restoreMissingBookingsOnly } = require('../lib/hub-platform-booking');
 
 const disk = [
   { id: 'a', createdAt: '2026-10-12T10:00:00.000Z', branch: 'disk-a' },
@@ -29,5 +29,23 @@ assert.strictEqual(wiped.length, 1, 'empty db must not wipe disk');
 const emptyDisk = mergeBookingsById([], db);
 assert.strictEqual(emptyDisk.length, 2, 'empty disk keeps db');
 
-console.log('PASS | mergeBookingsById unit');
+const current = [
+  { id: 'keep-1', branch: 'current-1' },
+  { id: 'keep-2', branch: 'current-2' },
+];
+const candidates = [
+  { id: 'keep-1', branch: 'should-not-overwrite' },
+  { id: 'pb-mv5po1cv-x1he3', branch: 'restored-a' },
+  { id: 'other', branch: 'not-allowed' },
+];
+const { bookings, added } = restoreMissingBookingsOnly(current, candidates, {
+  allowIds: ['pb-mv5po1cv-x1he3', 'pb-mv5oximx-9f46e'],
+});
+assert.strictEqual(added.length, 1);
+assert.strictEqual(added[0].id, 'pb-mv5po1cv-x1he3');
+assert.strictEqual(bookings.find((b) => b.id === 'keep-1').branch, 'current-1', 'no overwrite');
+assert.ok(bookings.some((b) => b.id === 'keep-2'));
+assert.ok(!bookings.some((b) => b.id === 'other'));
+
+console.log('PASS | mergeBookingsById + restoreMissingBookingsOnly unit');
 process.exit(0);

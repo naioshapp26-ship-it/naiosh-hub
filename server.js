@@ -1724,6 +1724,62 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  // Supreme-leader only: add missing bookings by id — never overwrite/delete existing.
+  if (pathname === '/api/hub/platform-bookings/restore-missing' && req.method === 'POST') {
+    const session = await requireHubAuthOrReject(req, res);
+    if (!session) return true;
+    if (!hubSession.isStaffLane(session.lane) || session.lane !== 'SUPER_ADMIN') {
+      sendJson(res, 403, { ok: false, error: 'استعادة الحجوزات للقائد الأعلى فقط' });
+      return true;
+    }
+    const body = await readBody(req);
+    if (String(body?.confirm || '') !== 'RESTORE_MISSING_ONLY') {
+      sendJson(res, 400, {
+        ok: false,
+        error: 'أرفق confirm=RESTORE_MISSING_ONLY مع قائمة الحجوزات الناقصة فقط',
+      });
+      return true;
+    }
+    const allowIds = Array.isArray(body?.allowIds) ? body.allowIds.map(String) : [];
+    const candidates = Array.isArray(body?.bookings) ? body.bookings : [];
+    if (!allowIds.length || !candidates.length) {
+      sendJson(res, 400, { ok: false, error: 'allowIds و bookings مطلوبان' });
+      return true;
+    }
+    // Reject any candidate outside allowlist
+    if (candidates.some((b) => !b?.id || !allowIds.includes(String(b.id)))) {
+      sendJson(res, 400, { ok: false, error: 'كل حجز يجب أن يكون ضمن allowIds المعتمدة' });
+      return true;
+    }
+    await hydratePlatformBookings();
+    const state = readPlatformBookingsFile();
+    const beforeIds = (state.bookings || []).map((b) => b.id);
+    const { bookings, added } = platformBooking.restoreMissingBookingsOnly(state.bookings || [], candidates, {
+      allowIds,
+    });
+    // Integrity: every previously present id must remain
+    const afterIds = new Set(bookings.map((b) => b.id));
+    const lost = beforeIds.filter((id) => !afterIds.has(id));
+    if (lost.length) {
+      sendJson(res, 500, { ok: false, error: 'رفضت الاستعادة: كانت ستفقد حجوزات موجودة', lost });
+      return true;
+    }
+    writePlatformBookingsFile({ version: state.version || 1, bookings });
+    try {
+      await platformBookingsDbQueue;
+    } catch {
+      /* ignore */
+    }
+    sendJson(res, 200, {
+      ok: true,
+      addedCount: added.length,
+      addedIds: added.map((b) => b.id),
+      totalCount: bookings.length,
+      preservedExisting: beforeIds,
+    });
+    return true;
+  }
+
   if (pathname === '/api/hub/my-grant' && req.method === 'GET') {
     const session = await requireHubAuthOrReject(req, res);
     if (!session) return true;
@@ -2573,6 +2629,18 @@ async function boot() {
     }
   } catch (error) {
     console.error('Staff credentials bootstrap skipped:', error.message);
+  }
+
+  try {
+    const bookingsRestore = require('./lib/hub-bookings-restore');
+    const restored = await bookingsRestore.maybeBootRestoreTwoBookings();
+    if (restored?.ran && restored.addedIds?.length) {
+      console.warn(
+        `[boot] restored missing bookings: ${restored.addedIds.join(', ')} (total=${restored.totalCount}) — unset HUB_RESTORE_TWO_BOOKINGS`
+      );
+    }
+  } catch (error) {
+    console.error('Bookings restore boot hook skipped:', error.message);
   }
 
   try {
