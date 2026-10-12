@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 /**
- * Run inside Railway (or any host that already has internal DATABASE_URL).
- *
- *   HUB_SAFE_RESTORE_TWO_BOOKINGS=1 node scripts/railway-safe-restore-two-bookings.js
- *
- * Also invoked automatically on boot when the same env flag is set.
- * Does NOT print connection strings or passwords.
+ * CANCELLED for production use — experimental bookings restore is no longer requested.
+ * Refuses to run unless HUB_ALLOW_EXPERIMENTAL_RESTORE=1 is set deliberately.
  */
 'use strict';
+
+if (String(process.env.HUB_ALLOW_EXPERIMENTAL_RESTORE || '') !== '1') {
+  console.error(
+    '[railway-safe-restore] CANCELLED — experimental restore disabled. Do not set HUB_SAFE_RESTORE_TWO_BOOKINGS on Railway.'
+  );
+  process.exit(0);
+}
 
 process.env.HUB_SAFE_RESTORE_TWO_BOOKINGS =
   process.env.HUB_SAFE_RESTORE_TWO_BOOKINGS || process.env.HUB_RESTORE_TWO_BOOKINGS || '1';
