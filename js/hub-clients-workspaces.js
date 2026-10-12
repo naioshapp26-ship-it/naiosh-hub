@@ -206,8 +206,46 @@
           <select id="cl-source" ${clUi.saving ? 'disabled' : ''}>${['إدخال يدوي', 'System Generated', 'Integration', 'POSHA', 'Register'].map((s) => `<option value="${K.esc(s)}" ${(item.source || 'إدخال يدوي') === s ? 'selected' : ''}>${K.esc(window.HubI18n?.label?.(s) || s)}</option>`).join('')}</select>
         </div>
       </div>
+      <div id="cl-attachments" data-hub-attach-host="1" style="margin-top:12px"></div>
       <p class="muted" style="margin-top:8px">يُحفظ في نفس مصدر بيانات «عملاء نايوش». رقم العميل والبريد هوية ثابتة بعد الإنشاء.</p>
       ${item.createdByEmployeeId ? `<p class="muted">أُنشئ بواسطة: <strong>${K.esc(item.createdByEmployeeId)}</strong></p>` : ''}`;
+  };
+
+  const scheduleClientAttachMount = () => {
+    setTimeout(() => {
+      if (!clUi.modal) return;
+      const host = document.getElementById('cl-attachments');
+      if (!host || !window.HubFormAttachments?.mount) return;
+      if (!host.querySelector('[data-hub-attach-block]')) {
+        window.HubFormAttachments.mount(host, { title: 'المرفقات', multi: true });
+      } else {
+        window.HubFormAttachments.bind(host);
+      }
+      const items = clUi.modal.data?._attachments;
+      if (Array.isArray(items) && items.length) {
+        window.HubFormAttachments.setItems(host, items);
+      } else if (clUi.editId || clUi.modal.data?.clientId) {
+        const entityId = clUi.modal.data?.clientId || clUi.editId;
+        if (entityId && window.HubFormAttachments.loadEntityAttachments) {
+          window.HubFormAttachments
+            .loadEntityAttachments({ entityType: 'client', entityId })
+            .then((loaded) => {
+              if (loaded?.length && clUi.modal?.data) {
+                clUi.modal.data._attachments = loaded;
+                window.HubFormAttachments.setItems(host, loaded);
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    }, 40);
+  };
+
+  const collectClientAttachments = () => {
+    const host = document.getElementById('cl-attachments');
+    if (!host || !window.HubFormAttachments?.collect) return [];
+    const collected = window.HubFormAttachments.collect(host);
+    return collected.items || [];
   };
 
   const renderClientDrawer = (c) => {
@@ -303,7 +341,7 @@
         })
       : '';
 
-    return `<div class="hub-ops-ws hub-clients-ws hub-clients-ws--unified">
+    const html = `<div class="hub-ops-ws hub-clients-ws hub-clients-ws--unified">
       ${K.renderHeader({
         prefix: 'cl',
         title: 'إدارة العملاء',
@@ -326,6 +364,8 @@
       })}
       ${modal}
     </div>`;
+    scheduleClientAttachMount();
+    return html;
   };
 
   const handleClients = (action, btn, ctx = {}) => {
@@ -395,6 +435,7 @@
     }
     if (action === 'cl-save') {
       if (clUi.saving) return true;
+      const attItems = collectClientAttachments();
       const payload = {
         id: clUi.editId || undefined,
         name: K.qVal('cl-name'),
@@ -410,6 +451,7 @@
         city: K.qVal('cl-city'),
         address: K.qVal('cl-address'),
         source: K.qVal('cl-source'),
+        _attachments: attItems,
       };
       if (!payload.name || !payload.email) {
         toast?.('الاسم والبريد مطلوبان');
@@ -419,6 +461,21 @@
         toast?.('صيغة البريد الإلكتروني غير صحيحة.');
         return true;
       }
+
+      const persistClientAtt = async (entityId, ownerEmail) => {
+        const fileItems = (attItems || []).filter((a) => a && (a.id || a.url));
+        if (!entityId || !fileItems.length || !window.HubFormAttachments?.persistToEntity) return;
+        try {
+          await window.HubFormAttachments.persistToEntity({
+            entityType: 'client',
+            entityId,
+            ownerEmail: ownerEmail || payload.email || '',
+            items: fileItems,
+          });
+        } catch (attErr) {
+          console.warn('[clients] attachment persist', attErr);
+        }
+      };
 
       // Edit + create both go through Backend (same portal store as عملاء نايوش).
       if (clUi.editId || clUi.editEmail) {
@@ -445,6 +502,8 @@
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok || !data.ok) throw new Error(data.error || 'تعذر حفظ العميل');
+            const entityId = data.client?.clientId || payload.clientId || clUi.editId;
+            await persistClientAtt(entityId, email);
             clUi.modal = null;
             clUi.editId = null;
             clUi.editEmail = null;
@@ -516,6 +575,7 @@
             },
             actor
           );
+          await persistClientAtt(c.clientId || '', c.email || payload.email);
           clUi.modal = null;
           clUi.editId = null;
           clUi.editEmail = null;
@@ -1008,6 +1068,7 @@
   const renderCreateModal = () => {
     if (!clUi.modal) return '';
     const K = Kit();
+    scheduleClientAttachMount();
     return K.renderModal('cl', {
       title: clUi.editId ? 'تعديل عميل' : 'إضافة عميل جديد',
       bodyHtml: clientForm(clUi.modal.data || {}),

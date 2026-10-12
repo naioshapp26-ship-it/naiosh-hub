@@ -184,8 +184,52 @@ async function main() {
     // HIGH-priority forms inventory smoke (source checks)
     const staffAdmin = fs.readFileSync(path.join(ROOT, 'js/hub-staff-admin.js'), 'utf8');
     const workforce = fs.readFileSync(path.join(ROOT, 'js/hub-workforce.js'), 'utf8');
+    const solutionsUi = fs.readFileSync(path.join(ROOT, 'js/hub-solutions-ui.js'), 'utf8');
+    const costHtml = fs.readFileSync(path.join(ROOT, 'cost-reduction.html'), 'utf8');
+    const solHtml = fs.readFileSync(path.join(ROOT, 'naiosh-solutions.html'), 'utf8');
     mark('staff_admin_has_attachments', 'sa-add-attachments', '', 'hub-staff-admin.js', /sa-add-attachments/.test(staffAdmin), '');
     mark('workforce_has_attachments', 'wf-employee-attachments', '', 'hub-workforce.js', /wf-employee-attachments/.test(workforce), '');
+    mark(
+      'solutions_wizard_attachments',
+      'so-wizard-attachments + persistToEntity',
+      '',
+      'hub-solutions-ui.js',
+      /so-wizard-attachments/.test(solutionsUi) &&
+        /scheduleWizardAttachMount/.test(solutionsUi) &&
+        /persistToEntity/.test(solutionsUi) &&
+        /entityType:\s*['"]solution['"]/.test(solutionsUi),
+      ''
+    );
+    mark(
+      'solutions_pages_load_component',
+      'hub-form-attachments.js',
+      '',
+      'naiosh-solutions.html + cost-reduction.html',
+      /hub-form-attachments\.js/.test(solHtml) && /hub-form-attachments\.js/.test(costHtml),
+      ''
+    );
+    const identityUi = fs.readFileSync(path.join(ROOT, 'js/hub-identity-ui.js'), 'utf8');
+    const clientsWs = fs.readFileSync(path.join(ROOT, 'js/hub-clients-workspaces.js'), 'utf8');
+    mark(
+      'identity_form_attachments',
+      'idn-user-attachments + persist',
+      '',
+      'hub-identity-ui.js',
+      /idn-user-attachments/.test(identityUi) &&
+        /scheduleIdentityAttachMount/.test(identityUi) &&
+        /entityType:\s*['"]identity['"]/.test(identityUi),
+      ''
+    );
+    mark(
+      'clients_form_attachments',
+      'cl-attachments + persist',
+      '',
+      'hub-clients-workspaces.js',
+      /cl-attachments/.test(clientsWs) &&
+        /scheduleClientAttachMount/.test(clientsWs) &&
+        /entityType:\s*['"]client['"]/.test(clientsWs),
+      ''
+    );
   } catch (err) {
     mark('suite_error', err.message, '', '', false, err.stack);
   } finally {
