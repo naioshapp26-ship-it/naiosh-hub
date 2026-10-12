@@ -1,143 +1,96 @@
+/**
+ * Public branches page — free-form location picker (no catalog cards for customers).
+ * Legacy HubBranchesData remains available for admin/history compatibility only.
+ */
 (() => {
-  const data = window.HubBranchesData;
-  const grid = document.getElementById('branchGrid');
-  if (!data || !grid) return;
+  'use strict';
 
-  const esc = (v = '') =>
-    String(v)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+  const page = document.body?.classList?.contains('branches-page');
+  if (!page) return;
 
-  const toast = (msg) => {
-    if (window.HubActions?.toast) return window.HubActions.toast(msg);
-    let el = document.getElementById('hub-toast-mini');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'hub-toast-mini';
-      el.className = 'hub-toast-mini';
-      document.body.appendChild(el);
+  const showcase = document.querySelector('.branches-showcase');
+  if (!showcase) return;
+
+  // Remove legacy card toolbar/grid if still in markup
+  showcase.querySelector('.branches-toolbar')?.remove();
+  showcase.querySelector('#branchGrid')?.remove();
+  showcase.querySelector('#branchFilterStatus')?.remove();
+
+  const head = showcase.querySelector('.branches-head-copy');
+  if (head) {
+    const h1 = head.querySelector('h1');
+    const p = head.querySelector('p');
+    if (h1) h1.textContent = 'حدد موقعك أو اكتب الفرع التابع لك';
+    if (p) {
+      p.textContent =
+        'لا قوائم فروع جاهزة. اكتب اسم الفرع أو البلد، أو حدّد موقعك على الخريطة، ثم أكّد للمتابعة إلى الحجز أو التسجيل.';
     }
-    el.textContent = msg;
-    el.classList.add('show');
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => el.classList.remove('show'), 2200);
-  };
+  }
 
-  const PAGE_TITLE = 'الفروع | نايوش هوب 360';
+  let panel = showcase.querySelector('[data-branches-geo-panel]');
+  if (!panel) {
+    panel = document.createElement('section');
+    panel.className = 'branches-geo-panel';
+    panel.setAttribute('data-branches-geo-panel', '');
+    panel.innerHTML =
+      '<div data-hub-geo-branch data-title="حدد موقعك أو اكتب الفرع التابع لك"></div>' +
+      '<div class="branches-geo-next">' +
+      '<p class="branches-geo-hint">بعد تأكيد الموقع يمكنك المتابعة لحجز حاضنة أو منصة أو التسجيل — سيُمرَّر اسم الفرع الذي كتبته.</p>' +
+      '<div class="branches-geo-cta">' +
+      '<a class="branches-cta-primary" data-geo-go="incubator" href="book-incubator.html">احجز حاضنة</a>' +
+      '<a class="branches-cta" data-geo-go="platform" href="book-platform.html">احجز منصة</a>' +
+      '<a class="branches-cta" data-geo-go="register" href="register.html">سجل معنا</a>' +
+      '</div>' +
+      '<p class="branches-geo-admin-note">إدارة الفروع التاريخية متاحة للمسؤولين من غرفة العمليات — ولا تُعرض كاختيارات إجبارية للعملاء.</p>' +
+      '</div>';
+    const ads = showcase.querySelector('.hub-inline-ads');
+    if (ads) ads.insertAdjacentElement('afterend', panel);
+    else showcase.appendChild(panel);
+  }
 
-  const render = () => {
-    if (document.title !== PAGE_TITLE) document.title = PAGE_TITLE;
-    const h1 = document.querySelector('.branches-head h1');
-    if (h1 && h1.textContent.trim() !== PAGE_TITLE) h1.textContent = PAGE_TITLE;
-
-    const list =
-      window.HubStore?.get?.()?.empire?.organization?.worldBranches?.length
-        ? window.HubStore.get().empire.organization.worldBranches
-        : data.BRANCHES;
-
-    grid.innerHTML = list
-      .map((b) => {
-        const searchKey = `${b.nameAr || ''} ${b.nameEn || ''} ${b.code || ''}`;
-        const actions =
-          window.HubActions?.rowHtml?.('branches', b.id, {
-            extra: '',
-          }) || '';
-        return `<article class="branch-card" data-id="${esc(b.id)}" data-branch="${esc(searchKey)}" data-type="${esc(b.type)}">
-          <div class="branch-card-top">
-            <span class="branch-badge">${esc(b.type)}</span>
-            <img class="branch-flag" alt="${esc(b.flagAlt || b.nameAr)}" src="${esc(b.flag)}" />
-          </div>
-          <div class="branch-content">
-            <h3 class="branch-title">${esc(b.nameAr || b.name || b.code || '')}${b.code ? ` <span dir="ltr">${esc(b.code)}</span>` : ''}</h3>
-            <p class="branch-hours"><i class="fas fa-clock"></i> ${esc(b.hours)}</p>
-            <div class="branch-actions">
-              <button type="button" class="branch-btn primary" data-branch-act="book" data-id="${esc(b.id)}" aria-label="احجز زيارة - ${esc(b.nameAr)}">احجز زيارة</button>
-              <button type="button" class="branch-btn" data-branch-act="view" data-id="${esc(b.id)}" aria-label="عرض الفرع - ${esc(b.nameAr)}">عرض الفرع</button>
-            </div>
-            ${actions ? `<div class="branch-card-actions">${actions}</div>` : ''}
-          </div>
-        </article>`;
-      })
-      .join('');
-  };
-
-  const getBranchWord = (count) => {
-    if (count === 1) return 'فرع';
-    if (count === 2) return 'فرعين';
-    return 'فروع';
-  };
-
-  const applyFilters = () => {
-    const searchInput = document.getElementById('branchSearch');
-    const typeFilter = document.getElementById('branchTypeFilter');
-    const status = document.getElementById('branchFilterStatus');
-    const cards = Array.from(document.querySelectorAll('.branch-card'));
-    const query = (searchInput?.value || '').trim().toLowerCase();
-    const type = typeFilter?.value || 'all';
-    let visibleCount = 0;
-    cards.forEach((card) => {
-      const branchText = (card.getAttribute('data-branch') || '').toLowerCase();
-      const branchType = card.getAttribute('data-type') || '';
-      const matchesSearch = !query || branchText.includes(query);
-      const matchesType = type === 'all' || branchType === type;
-      const isVisible = matchesSearch && matchesType;
-      card.style.display = isVisible ? '' : 'none';
-      if (isVisible) visibleCount += 1;
+  const mountGeo = () => {
+    const host = panel.querySelector('[data-hub-geo-branch]');
+    if (!host || !window.HubGeoBranch) return;
+    window.HubGeoBranch.mount(host, {
+      required: true,
+      title: 'حدد موقعك أو اكتب الفرع التابع لك',
     });
-    if (status) status.textContent = `تم عرض ${visibleCount} ${getBranchWord(visibleCount)}`;
   };
 
-  const findBranch = (id) => {
-    const list =
-      window.HubStore?.get?.()?.empire?.organization?.worldBranches || data.BRANCHES;
-    return list.find((b) => String(b.id) === String(id));
+  if (window.HubGeoBranch) mountGeo();
+  else {
+    document.addEventListener('DOMContentLoaded', mountGeo);
+    setTimeout(mountGeo, 50);
+  }
+
+  const withLocationQuery = (href) => {
+    const host = panel.querySelector('[data-hub-geo-branch]');
+    const data = window.HubGeoBranch?.collect?.(host) || {};
+    const url = new URL(href, location.href);
+    if (data.branchName) {
+      url.searchParams.set('branch', data.branchName);
+      url.searchParams.set('branchLabel', data.branchName);
+    }
+    if (data.country) url.searchParams.set('country', data.country);
+    if (data.city) url.searchParams.set('city', data.city);
+    if (data.lat != null) url.searchParams.set('lat', String(data.lat));
+    if (data.lng != null) url.searchParams.set('lng', String(data.lng));
+    if (data.locationSource) url.searchParams.set('locationSource', data.locationSource);
+    return url.pathname + url.search;
   };
 
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-branch-act]');
-    if (!btn) return;
-    const id = btn.dataset.id;
-    const act = btn.dataset.branchAct;
-    const branch = findBranch(id);
-    if (!branch) return toast('الفرع غير موجود');
-
-    if (act === 'view') {
-      if (window.HubActions?.openView && window.HubStore?.getEntity?.('branches', id)) {
-        return window.HubActions.openView('branches', id);
-      }
-      toast(`فرع ${branch.nameAr} · ${branch.type} · ${branch.hours}`);
+  panel.addEventListener('click', (ev) => {
+    const a = ev.target.closest('[data-geo-go]');
+    if (!a) return;
+    const host = panel.querySelector('[data-hub-geo-branch]');
+    const v = window.HubGeoBranch?.validate?.(host, { required: true });
+    if (!v?.ok) {
+      ev.preventDefault();
       return;
     }
-    if (act === 'book') {
-      toast(`تم تسجيل طلب زيارة لفرع ${branch.nameAr}`);
-      window.HubStore?.pushFeed?.('decision', `حجز زيارة فرع: ${branch.nameAr}`);
-    }
+    a.setAttribute('href', withLocationQuery(a.getAttribute('href') || a.href));
   });
 
-  const searchInput = document.getElementById('branchSearch');
-  const typeFilter = document.getElementById('branchTypeFilter');
-  const allButton = document.getElementById('branchFilterAll');
-
-  searchInput?.addEventListener('input', applyFilters);
-  typeFilter?.addEventListener('change', applyFilters);
-  allButton?.addEventListener('click', () => {
-    if (searchInput) searchInput.value = '';
-    if (typeFilter) typeFilter.value = 'all';
-    applyFilters();
-  });
-
-  document.getElementById('to-top')?.addEventListener('click', () => {
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
-  });
-
-  window.hubRerender = () => {
-    render();
-    applyFilters();
-  };
-
-  render();
-  applyFilters();
+  // Keep hubRerender noop-safe for ads refresh
+  window.hubRerender = () => {};
 })();

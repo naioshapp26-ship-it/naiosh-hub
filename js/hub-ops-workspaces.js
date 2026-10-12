@@ -728,8 +728,8 @@
           <div class="tk-org-grid">
             <div class="field tk-org-field">
               <label>الفرع <span class="tk-opt">(اختياري)</span></label>
-              <input id="tk-branch-q" data-tk-change="branchQ" type="search" placeholder="ابحث باسم الفرع أو رقمه…" />
-              <select id="tk-branch-id"><option value="">— بدون فرع —</option></select>
+              <input id="tk-branch-id" type="text" placeholder="اكتب اسم الفرع أو البلد — بدون قائمة جاهزة" autocomplete="organization" />
+              <input id="tk-branch-q" type="hidden" value="" />
             </div>
             <div class="field tk-org-field">
               <label>الحاضنة <span class="tk-opt">(اختياري)</span></label>
@@ -912,7 +912,7 @@
   };
 
   const fillOrgSelects = () => {
-    fillOrgSelect('branch');
+    // Branch is free-text (no catalog select)
     fillOrgSelect('incubator');
     fillOrgSelect('platform');
   };
@@ -990,10 +990,9 @@
     const assigneeType = K.qVal('tk-assignee-type');
     const assigneeId = K.qVal('tk-assignee-id');
     const assigneeOpt = document.getElementById('tk-assignee-id')?.selectedOptions?.[0];
-    const branchOpt = document.getElementById('tk-branch-id')?.selectedOptions?.[0];
     const incubatorOpt = document.getElementById('tk-incubator-id')?.selectedOptions?.[0];
     const platformOpt = document.getElementById('tk-platform-id')?.selectedOptions?.[0];
-    const branchId = K.qVal('tk-branch-id');
+    const branchName = K.qVal('tk-branch-id');
     const incubatorId = K.qVal('tk-incubator-id');
     const platformId = K.qVal('tk-platform-id');
     return {
@@ -1010,8 +1009,8 @@
       assigneeId,
       companyName: assigneeOpt?.getAttribute('data-org') || assigneeOpt?.textContent || '',
       contactPersonId: K.qVal('tk-contact-id'),
-      branchId,
-      branchName: branchId ? branchOpt?.getAttribute('data-name') || branchOpt?.textContent || '' : '',
+      branchId: branchName || '',
+      branchName: branchName || '',
       incubatorId,
       incubatorName: incubatorId
         ? incubatorOpt?.getAttribute('data-name') || incubatorOpt?.textContent || ''

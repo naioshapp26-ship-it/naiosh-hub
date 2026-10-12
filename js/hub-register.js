@@ -262,13 +262,24 @@
 
   const fillForm = () => {
     const params = new URLSearchParams(window.location.search);
-    fillSelect(form?.querySelector('[name="country"]'), countryList(), 'اختر الدولة', params.get('country') || '');
+    const geoHost = form?.querySelector('[data-hub-geo-branch]');
+    if (geoHost && window.HubGeoBranch) {
+      window.HubGeoBranch.mount(geoHost, {
+        required: true,
+        title: 'اكتب اسم الفرع التابع لك أو حدّد موقعك',
+        values: {
+          branchName: params.get('branchLabel') || (/^br-/i.test(params.get('branch') || '') ? '' : params.get('branch') || ''),
+          country: params.get('country') || '',
+          city: params.get('city') || '',
+          lat: params.get('lat') || '',
+          lng: params.get('lng') || '',
+          locationSource: params.get('locationSource') || 'manual',
+        },
+      });
+    }
     fillSelect(form?.querySelector('[name="incubator"]'), incubatorOptions(), 'اختر اسم الحاضنة', params.get('incubator') || '');
     fillSelect(form?.querySelector('[name="platform"]'), platformOptions(), 'اختر اسم المنصة', params.get('platform') || params.get('code') || '');
     fillSelect(form?.querySelector('[name="requestedSystem"]'), systemOptions(), 'اختر النظام', params.get('system') || '');
-    const country = params.get('country') || '';
-    if (country) unlockBranch(country, params.get('branch') || '');
-    else lockBranch('اختر الدولة أولاً');
   };
 
   const categoryLabel = (cat) => {
@@ -510,6 +521,13 @@
     }
 
     const fd = new FormData(form);
+    const geoHost = form?.querySelector('[data-hub-geo-branch]');
+    const geo = window.HubGeoBranch?.validate?.(geoHost, { required: true });
+    if (!geo?.ok) {
+      toast(geo?.error || 'اكتب اسم الفرع التابع لك أو حدّد موقعك');
+      return;
+    }
+    const g = geo.data || {};
     const payload = {
       source: 'register',
       companyName: selectedLabel('platform') || String(fd.get('fullName') || '').trim(),
@@ -520,9 +538,16 @@
       adminPhone: String(fd.get('phone') || '').trim(),
       adminEmail: String(fd.get('email') || '').trim(),
       adminPassword: String(fd.get('password') || ''),
-      country: String(fd.get('country') || '').trim(),
-      branch: String(fd.get('branch') || '').trim(),
-      branchLabel: selectedLabel('branch'),
+      country: String(g.country || fd.get('country') || '').trim(),
+      city: String(g.city || '').trim(),
+      address: String(g.address || '').trim(),
+      branch: String(g.branchName || fd.get('branch') || '').trim(),
+      branchName: String(g.branchName || fd.get('branch') || '').trim(),
+      branchLabel: String(g.branchName || fd.get('branch') || '').trim(),
+      lat: g.lat != null ? g.lat : null,
+      lng: g.lng != null ? g.lng : null,
+      locationSource: g.locationSource || 'manual',
+      locationConfirmed: !!g.locationConfirmed,
       incubator: String(fd.get('incubator') || '').trim(),
       incubatorLabel: selectedLabel('incubator'),
       platform: String(fd.get('platform') || '').trim(),
@@ -693,13 +718,23 @@
     Object.entries(fields).forEach(([name, value]) => {
       const el = form.querySelector(`[name="${name}"]`);
       if (!el || el.type === 'password' || value == null || value === '') return;
-      if (name === 'country') {
-        el.value = String(value);
-        unlockBranch(String(value), fields.branch || '');
+      if (name === 'branch' || name === 'country') {
+        /* restored via HubGeoBranch mount values */
         return;
       }
       el.value = String(value);
     });
+    const geoHost = form?.querySelector('[data-hub-geo-branch]');
+    if (geoHost && window.HubGeoBranch && (fields.branch || fields.country)) {
+      window.HubGeoBranch.mount(geoHost, {
+        required: true,
+        values: {
+          branchName: fields.branchName || fields.branchLabel || fields.branch || '',
+          country: fields.country || '',
+          city: fields.city || '',
+        },
+      });
+    }
   };
 
   const bind = async () => {
@@ -709,13 +744,6 @@
 
     const suffix = root.querySelector('[data-subdomain-suffix]');
     if (suffix && grants()) suffix.textContent = `.${grants().BASE_DOMAIN}`;
-
-    form?.querySelector('[name="country"]')?.addEventListener('change', (event) => {
-      const country = String(event.target.value || '').trim();
-      if (!country) lockBranch('اختر الدولة أولاً');
-      else unlockBranch(country);
-      persistRegisterDraft();
-    });
 
     let timer = null;
     form?.querySelector('[name="subdomain"]')?.addEventListener('input', () => {

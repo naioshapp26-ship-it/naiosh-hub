@@ -219,7 +219,12 @@
             <input id="hub-field-party2Phone" type="tel" value="${esc(values.party2Phone || '')}" required aria-required="true" placeholder="05xxxxxxxx" dir="ltr" />
             <p class="hub-field-error" data-err-for="party2Phone" hidden></p>
           </label>
-          ${selectHtml('branch', 'الفرع', opts.branches, values.branch || '', true)}
+          <label class="hub-field" data-field-wrap="branch">
+            <span class="hub-field-label">${fieldLabelHtml('اسم الفرع أو البلد', { required: true })}</span>
+            <input id="hub-field-branch" type="text" value="${esc(values.branchName || values.branchLabel || values.branch || '')}" required aria-required="true" placeholder="اكتب اسم الفرع التابع لك" autocomplete="organization" />
+            <p class="hub-field-error" data-err-for="branch" hidden></p>
+          </label>
+          <div data-hub-geo-branch data-required="false" data-title="تحديد الموقع (اختياري)"></div>
           ${selectHtml('incubator', 'الحاضنة', opts.incubators, values.incubator || '', true)}
           ${selectHtml('platform', 'المنصة', opts.platforms, values.platform || '', true)}
           ${selectHtml('office', 'المكتب', opts.offices, values.office || '', true)}
@@ -502,6 +507,24 @@
     document.getElementById('hub-erp-modal-body').innerHTML = body;
     document.getElementById('hub-erp-modal-foot').innerHTML = foot || '';
     modal.classList.add('open');
+    try {
+      const host = modal.querySelector('[data-hub-geo-branch]');
+      if (host && window.HubGeoBranch) {
+        const branchVal = modal.querySelector('#hub-field-branch')?.value || '';
+        window.HubGeoBranch.mount(host, {
+          required: false,
+          title: 'تحديد الموقع (اختياري)',
+          values: { branchName: branchVal },
+        });
+        host.addEventListener('hub-geo-confirmed', (ev) => {
+          const d = ev.detail || {};
+          const branchInput = modal.querySelector('#hub-field-branch');
+          if (branchInput && d.branchName && !branchInput.value) branchInput.value = d.branchName;
+        });
+      }
+    } catch (e) {
+      console.warn('[hub-row-actions] geo mount', e);
+    }
     return modal;
   };
 
@@ -988,15 +1011,15 @@
     branches: {
       title: 'إضافة فرع',
       fields: [
-        { id: 'nameAr', label: 'اسم الفرع', required: true },
+        { id: 'nameAr', label: 'اسم الفرع (كتابة حرة)', required: true },
         {
           id: 'country',
-          label: 'الدولة',
-          type: 'select',
+          label: 'الدولة / الموقع',
+          type: 'text',
           required: true,
-          optionsFrom: 'branchCountries',
+          placeholder: 'اكتب الدولة أو المدينة — بدون قائمة جاهزة',
         },
-        { id: 'code', label: 'كود الفرع', value: '', required: true },
+        { id: 'code', label: 'كود الفرع (اختياري للتوافق)', value: '', required: false },
         { id: 'manager', label: 'مدير الفرع', value: '' },
         {
           id: 'status',

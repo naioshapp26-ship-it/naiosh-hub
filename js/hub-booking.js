@@ -255,11 +255,12 @@
   const unlockIncubator = (branchId, selected) => {
     const el = form?.querySelector('[name="incubator"]');
     if (!el) return;
-    if (needsBranchScopedIncubators) {
+    // Free-form branch: never require a catalog branch id to unlock incubators
+    if (needsBranchScopedIncubators && branchId && /^br-/i.test(String(branchId))) {
       const options = incubatorOptionsForBranch(branchId);
       fillSelect(el, options, options.length ? 'اختر حاضنة تابعة للفرع' : 'لا حاضنة تابعة لهذا الفرع', selected);
-      el.disabled = !branchId || !options.length;
-      if (options.length === 1 && branchId) el.value = options[0].id;
+      el.disabled = !options.length;
+      if (options.length === 1) el.value = options[0].id;
       return;
     }
     fillSelect(el, incubatorOptionsAll(), 'اختر الحاضنة', selected);
@@ -298,26 +299,31 @@
   };
 
   const ensureBookingAttachHost = () => {
-    if (!form || !window.HubFormAttachments?.upgradeForm) return null;
-    const legacyFile = form.querySelector('[name="profileFile"], [name="imageFile"], [name="videoFile"]');
-    if (legacyFile && !form.querySelector('[data-hub-attach-block]')) {
-      const wrap =
-        legacyFile.closest('.hub-book-files, .hub-book-upload, fieldset, .hub-form-grid') || legacyFile.parentElement;
-      if (wrap) {
-        const host = document.createElement('div');
-        host.setAttribute('data-hub-attach-host', '1');
-        host.setAttribute('data-booking-attach', '1');
-        wrap.replaceWith(host);
-        window.HubFormAttachments.mount(host, {
-          title: 'المرفقات',
-          multi: true,
-          showLink: false,
-          required: false,
-        });
-        return host;
-      }
+    if (!form || !window.HubFormAttachments?.mount) return null;
+    if (form.querySelector('[data-hub-attach-block], [data-booking-attach]')) {
+      return form.querySelector('[data-hub-attach-block], [data-booking-attach]');
     }
-    return form.querySelector('[data-hub-attach-block], [data-booking-attach]');
+    const legacyFile = form.querySelector('[name="profileFile"], [name="imageFile"], [name="videoFile"]');
+    const host = document.createElement('div');
+    host.setAttribute('data-hub-attach-host', '1');
+    host.setAttribute('data-booking-attach', '1');
+    // Never replace the <form> itself — file inputs are often direct children.
+    if (legacyFile && legacyFile.parentElement && legacyFile.parentElement !== form) {
+      const wrap = legacyFile.closest('.hub-book-files, .hub-book-upload, fieldset, .hub-form-grid');
+      if (wrap && wrap !== form) wrap.replaceWith(host);
+      else legacyFile.parentElement.insertBefore(host, legacyFile);
+    } else if (legacyFile) {
+      form.insertBefore(host, legacyFile);
+    } else {
+      form.appendChild(host);
+    }
+    window.HubFormAttachments.mount(host, {
+      title: 'المرفقات',
+      multi: true,
+      showLink: false,
+      required: false,
+    });
+    return host;
   };
 
   const selectedLabel = (name) => {
@@ -389,30 +395,49 @@
     syncSystemsRequired();
   };
 
+  const geoHost = () => form?.querySelector('[data-hub-geo-branch]');
+
+  const ensureGeoBranch = () => {
+    const host = geoHost();
+    if (!host || !window.HubGeoBranch) return host;
+    if (host.dataset.hubGeoMounted === '1') return host;
+    const preBranch = params.get('branchLabel') || params.get('branch') || '';
+    const preCountry = params.get('country') || '';
+    window.HubGeoBranch.mount(host, {
+      required: !isHqPlatform,
+      title: 'اكتب اسم الفرع التابع لك أو حدّد موقعك',
+      values: {
+        branchName: /^br-/i.test(preBranch) ? '' : preBranch,
+        country: preCountry,
+        city: params.get('city') || '',
+        lat: params.get('lat') || '',
+        lng: params.get('lng') || '',
+        locationSource: params.get('locationSource') || 'manual',
+      },
+    });
+    return host;
+  };
+
   const fillForm = () => {
     const preSector = params.get('sector') || '';
-    const preBranch = params.get('branch') || '';
     const preIncubator = params.get('incubator') || '';
     const prePlatform = params.get('platform') || params.get('code') || '';
-    const preCountry = params.get('country') || '';
 
     fillSelect(form?.querySelector('[name="sectorName"]'), sectorOptions(), 'اختر اسم القطاع', preSector);
-    fillSelect(form?.querySelector('[name="country"]'), countryList(), 'اختر الدولة', preCountry);
 
     if (isHqPlatform) {
+      // HQ: free-text country only (no branch catalog)
+      const countryEl = form?.querySelector('#book-country-hq, [name="hqCountry"], [name="country"]');
+      if (countryEl) {
+        countryEl.hidden = false;
+        if (params.get('country')) countryEl.value = params.get('country');
+      }
       lockBranch('بدون فرع — المنح من المكتب الرئيسي');
       lockIncubator('بدون حاضنة — المنح من المكتب الرئيسي');
     } else {
-      if (preCountry) unlockBranch(preCountry, preBranch);
-      else lockBranch('اختر الدولة أولاً');
-
-      const branchNow = String(form?.querySelector('[name="branch"]')?.value || preBranch || '').trim();
-      if (needsBranchScopedIncubators) {
-        if (branchNow) unlockIncubator(branchNow, preIncubator);
-        else lockIncubator('اختر الفرع أولاً لعرض حاضناته');
-      } else {
-        unlockIncubator('', preIncubator);
-      }
+      ensureGeoBranch();
+      // Free-form branch: show all incubators (no forced catalog branch id)
+      unlockIncubator('', preIncubator);
     }
 
     const platformEl = form?.querySelector('[name="platform"]');
@@ -431,21 +456,6 @@
 
     fillSystems();
   };
-
-  form?.querySelector('[name="country"]')?.addEventListener('change', (event) => {
-    if (isHqPlatform) return;
-    const country = String(event.target.value || '').trim();
-    if (!country) lockBranch('اختر الدولة أولاً');
-    else unlockBranch(country);
-    if (needsBranchScopedIncubators) lockIncubator('اختر الفرع أولاً لعرض حاضناته');
-  });
-
-  form?.querySelector('[name="branch"]')?.addEventListener('change', (event) => {
-    if (!needsBranchScopedIncubators) return;
-    const branchId = String(event.target.value || '').trim();
-    if (!branchId) lockIncubator('اختر الفرع أولاً لعرض حاضناته');
-    else unlockIncubator(branchId);
-  });
 
   const kindLabel =
     kind === 'incubator' ? 'حاضنة' : kind === 'platform' ? 'منصة' : 'مكتب';
@@ -536,14 +546,23 @@
 
     checks.push(['fullName', valueOf('fullName')]);
     checks.push(['phone', valueOf('phone')]);
-    checks.push(['country', valueOf('country')]);
 
-    if (!isHqPlatform) {
-      const branchEl = form?.querySelector('[name="branch"]');
-      const incubatorEl = form?.querySelector('[name="incubator"]');
-      if (branchEl && !branchEl.hidden && branchEl.required !== false) {
-        checks.push(['branch', valueOf('branch')]);
+    if (isHqPlatform) {
+      const hqCountry = String(
+        form?.querySelector('#book-country-hq')?.value || form?.querySelector('[name="hqCountry"]')?.value || valueOf('country') || ''
+      ).trim();
+      if (!hqCountry) {
+        showFieldError('country', FIELD_ERROR_MSG.country);
+        return false;
       }
+    } else {
+      const host = ensureGeoBranch();
+      const geo = window.HubGeoBranch?.validate?.(host, { required: true });
+      if (!geo?.ok) {
+        showFieldError('branch', geo?.error || FIELD_ERROR_MSG.branch);
+        return false;
+      }
+      const incubatorEl = form?.querySelector('[name="incubator"]');
       if (incubatorEl && !incubatorEl.hidden && incubatorEl.required !== false) {
         checks.push(['incubator', valueOf('incubator')]);
       }
@@ -651,17 +670,29 @@
       return;
     }
 
+    const geo = !isHqPlatform ? window.HubGeoBranch?.collect?.(ensureGeoBranch()) || {} : {};
+    const branchName = isHqPlatform ? '' : String(geo.branchName || data.get('branch') || '').trim();
     const payload = {
       kind,
       source: isHqPlatform ? 'hq' : from,
       sectorName: String(data.get('sectorName') || '').trim(),
       subdomain,
-      branch: isHqPlatform ? '' : String(data.get('branch') || '').trim(),
-      branchLabel: isHqPlatform ? 'المكتب الرئيسي' : selectedLabel('branch'),
+      branch: branchName,
+      branchName,
+      branchLabel: isHqPlatform ? 'المكتب الرئيسي' : branchName || selectedLabel('branch'),
+      branchId: null,
       fullName: String(data.get('fullName') || '').trim(),
       phone: String(data.get('phone') || '').trim(),
       email: String(data.get('email') || '').trim(),
-      country: String(data.get('country') || '').trim(),
+      country: isHqPlatform
+        ? String(form?.querySelector('#book-country-hq')?.value || data.get('hqCountry') || data.get('country') || '').trim()
+        : String(geo.country || data.get('country') || '').trim(),
+      city: String(geo.city || data.get('city') || '').trim(),
+      address: String(geo.address || data.get('address') || '').trim(),
+      lat: geo.lat != null ? geo.lat : null,
+      lng: geo.lng != null ? geo.lng : null,
+      locationSource: geo.locationSource || 'manual',
+      locationConfirmed: !!geo.locationConfirmed,
       platform: String(data.get('platform') || platformName || params.get('platform') || params.get('code') || '').trim(),
       platformName: platformName || String(data.get('platform') || '').trim(),
       incubator: isHqPlatform ? '' : String(data.get('incubator') || '').trim(),
@@ -706,16 +737,7 @@
 
     let grant = null;
     if (isBranchIncubator && window.HubClientIncubators?.grantFromBooking) {
-      const allowed = incubatorOptionsForBranch(payload.branch).some((o) => String(o.id) === String(payload.incubator));
-      if (!allowed) {
-        if (feedback) {
-          feedback.hidden = false;
-          feedback.classList.add('is-error');
-          feedback.classList.remove('is-ok');
-          feedback.textContent = 'الحاضنة يجب أن تكون تابعة للفرع المختار.';
-        }
-        return;
-      }
+      // Free-form branch: no catalog branch-id scoping — any listed incubator is allowed
       grant = window.HubClientIncubators.grantFromBooking(payload);
       if (!grant?.ok) {
         if (feedback) {

@@ -380,6 +380,12 @@ async function handleHubApi(req, res, pathname) {
     return handled;
   }
 
+  if (pathname.startsWith('/api/hub/geo')) {
+    const hubGeo = require('./lib/hub-geo');
+    const handled = await hubGeo.handleApi(req, res, pathname, { sendJson, readBody });
+    if (handled) return true;
+  }
+
   if (pathname.startsWith('/api/hub/tasks')) {
     const taskUrl = new URL(req.url, 'http://local');
     if (await hubTasks.handle(req, res, taskUrl)) return true;

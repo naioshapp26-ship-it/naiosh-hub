@@ -21,8 +21,8 @@
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>الفروع | نايوش هوب 360</title>
-  <meta name="description" content="فروع نايوش هوب حول العالم — نفس شبكة فروع ERP عبر أكثر من 25 دولة." />
+  <title>حدد موقعك أو اكتب الفرع | نايوش هوب 360</title>
+  <meta name="description" content="اكتب اسم الفرع التابع لك أو حدّد موقعك على الخريطة — بدون قوائم فروع جاهزة." />
   <link rel="icon" href="assets/hub-icon-192.png" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -34,7 +34,8 @@
   <link rel="stylesheet" href="css/hub-ai-assistant.css?v=4" />
   <link rel="stylesheet" href="css/hub-header-actions.css?v=20" />
   <link rel="stylesheet" href="css/hub-row-actions.css" />
-  <link rel="stylesheet" href="css/hub-branches.css?v=2" />
+  <link rel="stylesheet" href="css/hub-branches.css?v=4" />
+  <link rel="stylesheet" href="css/hub-geo-branch.css?v=1" />
   <link rel="stylesheet" href="css/dark-mode.css?v=theme3" />
   <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme3" />
 </head>
@@ -69,24 +70,11 @@
     <section class="branches-showcase">
       <header class="branches-head">
         <div class="branches-head-copy">
-          <h1>الفروع | نايوش هوب 360</h1>
-          <p>شبكة الفروع العالمية مصممة لتقديم تجربة موحدة واحترافية عبر مواقعنا المختلفة.</p>
+          <h1>حدد موقعك أو اكتب الفرع التابع لك</h1>
+          <p>لا قوائم فروع جاهزة. اكتب اسم الفرع أو البلد، أو حدّد موقعك على الخريطة، ثم أكّد للمتابعة.</p>
         </div>
       </header>
       <section class="hub-inline-ads" id="branch-ads" data-hub-ads="branches" data-hub-ads-title="إعلانات الصفحة الرئيسية للفرع" data-hub-ads-limit="6" aria-label="إعلانات الفروع"></section>
-      <div class="branches-toolbar">
-        <input id="branchSearch" type="search" placeholder="ابحث عن الفرع أو الدولة..." aria-label="بحث الفروع" />
-        <select id="branchTypeFilter" aria-label="تصفية نوع الفرع">
-          <option value="all">كل الأنواع</option>
-          <option value="المقر الرئيسي">المقر الرئيسي</option>
-          <option value="مكاتب خاصة">مكاتب خاصة</option>
-          <option value="حاضنة أعمال">حاضنة أعمال</option>
-          <option value="مسرعة أعمال">مسرعة أعمال</option>
-        </select>
-        <button type="button" id="branchFilterAll" class="branches-filter-all">الكل</button>
-      </div>
-      <p id="branchFilterStatus" class="sr-only" aria-live="polite"></p>
-      <section class="branch-grid" id="branchGrid" aria-label="شبكة الفروع"></section>
     </section>
   </main>
 
@@ -112,7 +100,8 @@
   <script src="js/hub-row-actions.js"></script>
   <script src="js/hub-currency.js"></script>
   <script src="js/hub-ads-display.js"></script>
-  <script src="js/hub-branches.js?v=3"></script>
+  <script src="js/hub-geo-branch.js?v=1"></script>
+  <script src="js/hub-branches.js?v=4"></script>
 <script src="js/mobile-nav.js"></script>
   <script src="js/hub-upload-limits.js?v=1"></script>
   <script src="js/hub-header-actions.js?v=22"></script>
