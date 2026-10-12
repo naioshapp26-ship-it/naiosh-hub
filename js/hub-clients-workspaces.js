@@ -113,6 +113,16 @@
               lastLoginAt: apiRow.lastLoginAt || '',
               lastActivityAt: apiRow.lastActivityAt || '',
               source: apiRow.source || 'API',
+              incubatorId: apiRow.incubatorId || '',
+              incubatorName: apiRow.incubatorName || '',
+              platformCode: apiRow.platformCode || '',
+              platformName: apiRow.platformName || '',
+              branch: apiRow.branch || apiRow.branchName || '',
+              branchName: apiRow.branchName || apiRow.branch || '',
+              lat: apiRow.lat != null ? apiRow.lat : null,
+              lng: apiRow.lng != null ? apiRow.lng : null,
+              locationSource: apiRow.locationSource || '',
+              locationConfirmed: !!apiRow.locationConfirmed,
               createdAt: apiRow.createdAt || '',
               updatedAt: apiRow.updatedAt || apiRow.createdAt || '',
               createdByEmployeeId: apiRow.createdByEmployeeId || '',
@@ -136,6 +146,16 @@
               clientType: apiRow.clientType ?? row.clientType,
               activityType: apiRow.activityType ?? row.activityType,
               naioshId: apiRow.naioshId ?? row.naioshId,
+              incubatorId: apiRow.incubatorId ?? row.incubatorId ?? '',
+              incubatorName: apiRow.incubatorName ?? row.incubatorName ?? '',
+              platformCode: apiRow.platformCode ?? row.platformCode ?? '',
+              platformName: apiRow.platformName ?? row.platformName ?? '',
+              branch: apiRow.branch || apiRow.branchName || row.branch || '',
+              branchName: apiRow.branchName || apiRow.branch || row.branchName || '',
+              lat: apiRow.lat != null ? apiRow.lat : row.lat,
+              lng: apiRow.lng != null ? apiRow.lng : row.lng,
+              locationSource: apiRow.locationSource ?? row.locationSource ?? '',
+              locationConfirmed: apiRow.locationConfirmed != null ? !!apiRow.locationConfirmed : !!row.locationConfirmed,
               lastLoginAt: apiRow.lastLoginAt || row.lastLoginAt,
               lastActivityAt: apiRow.lastActivityAt || row.lastActivityAt,
               updatedAt: apiRow.updatedAt || row.updatedAt,
@@ -180,38 +200,33 @@
 
   const clientForm = (item = {}) => {
     const K = Kit();
-    const creating = !clUi.editId;
     return `
-      <div class="grid-2 cl-form-grid">
-        <div class="field"><label>الاسم *</label><input id="cl-name" value="${K.esc(item.name || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
-        <div class="field"><label>البريد *</label><input id="cl-email" type="email" value="${K.esc(item.email || '')}" ${clUi.saving || !!clUi.editId ? 'disabled' : ''} /></div>
-        <div class="field"><label>الجوال</label><input id="cl-phone" value="${K.esc(item.phone || '')}" placeholder="05xxxxxxxx" ${clUi.saving ? 'disabled' : ''} /></div>
-        <div class="field"><label>رقم العميل</label><input id="cl-clientId" value="${K.esc(item.clientId || '')}" placeholder="يُنشأ تلقائيًا" disabled /></div>
-        <div class="field"><label>رقم نايوش</label><input id="cl-naioshId" value="${K.esc(item.naioshId || '')}" placeholder="يُنشأ تلقائيًا إن تُرك فارغًا" ${clUi.saving ? 'disabled' : ''} /></div>
-        <div class="field"><label>الحالة</label>
-          <select id="cl-status" ${clUi.saving ? 'disabled' : ''}>${['active', 'pending', 'suspended'].map((s) => `<option value="${s}" ${item.status === s ? 'selected' : ''}>${K.esc(window.HubI18n?.status?.(s) || s)}</option>`).join('')}</select>
-        </div>
-        <div class="field"><label>نوع العميل</label>
-          <select id="cl-clientType" ${clUi.saving ? 'disabled' : ''}>
-            <option value="">—</option>
-            ${['فرد', 'مؤسسة'].map((t) => `<option value="${t}" ${item.clientType === t ? 'selected' : ''}>${t}</option>`).join('')}
-          </select>
-        </div>
-        <div class="field"><label>نوع النشاط</label><input id="cl-activityType" value="${K.esc(item.activityType || '')}" placeholder="تعليم / تجارة…" ${clUi.saving ? 'disabled' : ''} /></div>
-        <div class="field"><label>المؤسسة / الشركة</label><input id="cl-company" value="${K.esc(item.company || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
-        <div class="field"><label>الدولة</label><input id="cl-country" value="${K.esc(item.country || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
-        <div class="field"><label>المدينة</label><input id="cl-city" value="${K.esc(item.city || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
-        <div class="field"><label>العنوان</label><input id="cl-address" value="${K.esc(item.address || '')}" ${clUi.saving ? 'disabled' : ''} /></div>
-        <div class="field"><label>المصدر</label>
-          <select id="cl-source" ${clUi.saving ? 'disabled' : ''}>${['إدخال يدوي', 'System Generated', 'Integration', 'POSHA', 'Register'].map((s) => `<option value="${K.esc(s)}" ${(item.source || 'إدخال يدوي') === s ? 'selected' : ''}>${K.esc(window.HubI18n?.label?.(s) || s)}</option>`).join('')}</select>
-        </div>
-      </div>
+      <div id="cl-id360-host" class="cl-id360-host" data-cl-id360="1"></div>
       <div id="cl-attachments" data-hub-attach-host="1" style="margin-top:12px"></div>
-      <p class="muted" style="margin-top:8px">يُحفظ في نفس مصدر بيانات «عملاء نايوش». رقم العميل والبريد هوية ثابتة بعد الإنشاء.</p>
+      <p class="muted" style="margin-top:8px">نموذج الهوية الموحد 360 — الحاضنة والمنصة والفرع إلزامية للعميل. رقم العميل والبريد هوية ثابتة بعد الإنشاء.</p>
+      ${item.clientId ? `<p class="muted">رقم العميل: <strong>${K.esc(item.clientId)}</strong></p>` : ''}
       ${item.createdByEmployeeId ? `<p class="muted">أُنشئ بواسطة: <strong>${K.esc(item.createdByEmployeeId)}</strong></p>` : ''}`;
   };
 
+  const mountClientIdentityForm = () => {
+    setTimeout(async () => {
+      if (!clUi.modal) return;
+      const host = document.getElementById('cl-id360-host');
+      if (!host || !window.HubIdentityUnifiedForm?.mount) return;
+      const item = clUi.modal.data || {};
+      await window.HubIdentityUnifiedForm.mount(host, {
+        values: item,
+        defaultRelation: 'client',
+        lockRelation: true,
+        creating: !clUi.editId,
+        editMode: !!clUi.editId,
+        disabled: !!clUi.saving,
+      });
+    }, 30);
+  };
+
   const scheduleClientAttachMount = () => {
+    mountClientIdentityForm();
     setTimeout(() => {
       if (!clUi.modal) return;
       const host = document.getElementById('cl-attachments');
@@ -264,6 +279,8 @@
         <article class="kpi"><span>تذاكر</span><strong>${(c.tickets || []).length}</strong></article>
       </div>
       <p class="muted">${K.esc(c.company || '—')} · ${K.esc(c.country || '—')} · مصدر: ${K.esc(window.HubI18n?.label?.(c.source) || c.source || '—')}</p>
+      <p class="muted">الحاضنة: <strong>${K.esc(c.incubatorName || c.incubatorId || '—')}</strong> · المنصة: <strong>${K.esc(c.platformName || c.platformCode || '—')}</strong></p>
+      <p class="muted">الفرع: <strong>${K.esc(c.branchName || c.branch || '—')}</strong>${c.lat != null && c.lng != null ? ` · موقع: ${K.esc(String(c.lat))},${K.esc(String(c.lng))}` : ''}</p>
       <p class="muted">رقم العميل: <strong>${K.esc(c.clientId || '—')}</strong> · أُنشئ بواسطة: <strong>${K.esc(c.createdByEmployeeId || '—')}</strong></p>
       <div class="toolbar">
         <button type="button" class="btn btn-sm btn-dark" data-action="cl-status" data-id="${c.id}" data-status="active">تفعيل</button>
@@ -334,12 +351,13 @@
 
     const modal = clUi.modal
       ? K.renderModal('cl', {
-          title: clUi.editId ? 'تعديل عميل' : 'إضافة عميل جديد',
+          title: clUi.editId ? 'تعديل هوية / عميل' : 'إضافة إنسان — عميل (هوية 360)',
           bodyHtml: clientForm(clUi.modal.data || {}),
           footerHtml: `<button type="button" class="btn btn-ghost" data-action="cl-modal-close" ${clUi.saving ? 'disabled' : ''}>إلغاء</button>
             <button type="button" class="btn btn-primary" data-action="cl-save" ${clUi.saving ? 'disabled' : ''}>${clUi.saving ? 'جاري الحفظ…' : 'إنشاء / حفظ'}</button>`,
         })
       : '';
+    if (clUi.modal) scheduleClientAttachMount();
 
     const html = `<div class="hub-ops-ws hub-clients-ws hub-clients-ws--unified">
       ${K.renderHeader({
@@ -436,21 +454,36 @@
     if (action === 'cl-save') {
       if (clUi.saving) return true;
       const attItems = collectClientAttachments();
+      const idHost = document.getElementById('cl-id360-host');
+      const validated = window.HubIdentityUnifiedForm?.validate?.(idHost);
+      if (validated && validated.ok === false) {
+        toast?.(validated.error || 'أكمل الحقول الإلزامية');
+        return true;
+      }
+      const collected = window.HubIdentityUnifiedForm?.collect?.(idHost) || {};
       const payload = {
         id: clUi.editId || undefined,
-        name: K.qVal('cl-name'),
-        email: K.qVal('cl-email'),
-        phone: K.qVal('cl-phone'),
-        clientId: K.qVal('cl-clientId'),
-        naioshId: K.qVal('cl-naioshId'),
-        status: K.qVal('cl-status'),
-        clientType: K.qVal('cl-clientType'),
-        activityType: K.qVal('cl-activityType'),
-        company: K.qVal('cl-company'),
-        country: K.qVal('cl-country'),
-        city: K.qVal('cl-city'),
-        address: K.qVal('cl-address'),
-        source: K.qVal('cl-source'),
+        name: collected.name,
+        email: collected.email,
+        phone: collected.phone,
+        clientId: clUi.modal?.data?.clientId || '',
+        naioshId: clUi.modal?.data?.naioshId || '',
+        status: collected.status || 'pending',
+        clientType: collected.clientType || '',
+        activityType: clUi.modal?.data?.activityType || '',
+        company: collected.company || '',
+        country: collected.country || '',
+        city: collected.city || '',
+        address: collected.address || '',
+        source: clUi.modal?.data?.source || 'إدخال يدوي',
+        incubatorId: collected.incubatorId,
+        platformCode: collected.platformCode,
+        branch: collected.branchName || collected.branch,
+        branchName: collected.branchName || collected.branch,
+        lat: collected.lat,
+        lng: collected.lng,
+        locationSource: collected.locationSource,
+        locationConfirmed: collected.locationConfirmed,
         _attachments: attItems,
       };
       if (!payload.name || !payload.email) {
@@ -498,6 +531,14 @@
                 activityType: payload.activityType,
                 naioshId: payload.naioshId,
                 source: payload.source,
+                incubatorId: payload.incubatorId,
+                platformCode: payload.platformCode,
+                branch: payload.branch,
+                branchName: payload.branchName,
+                lat: payload.lat,
+                lng: payload.lng,
+                locationSource: payload.locationSource,
+                locationConfirmed: payload.locationConfirmed,
               }),
             });
             const data = await res.json().catch(() => ({}));
@@ -546,6 +587,14 @@
               activityType: payload.activityType,
               naioshId: payload.naioshId,
               source: payload.source,
+              incubatorId: payload.incubatorId,
+              platformCode: payload.platformCode,
+              branch: payload.branch,
+              branchName: payload.branchName,
+              lat: payload.lat,
+              lng: payload.lng,
+              locationSource: payload.locationSource,
+              locationConfirmed: payload.locationConfirmed,
               idempotencyKey: idem,
             }),
           });
@@ -1070,7 +1119,7 @@
     const K = Kit();
     scheduleClientAttachMount();
     return K.renderModal('cl', {
-      title: clUi.editId ? 'تعديل عميل' : 'إضافة عميل جديد',
+      title: clUi.editId ? 'تعديل هوية / عميل' : 'إضافة إنسان — عميل (هوية 360)',
       bodyHtml: clientForm(clUi.modal.data || {}),
       footerHtml: `<button type="button" class="btn btn-ghost" data-action="cl-modal-close" ${clUi.saving ? 'disabled' : ''}>إلغاء</button>
         <button type="button" class="btn btn-primary" data-action="cl-save" ${clUi.saving ? 'disabled' : ''}>${clUi.saving ? 'جاري الحفظ…' : 'إنشاء / حفظ'}</button>`,

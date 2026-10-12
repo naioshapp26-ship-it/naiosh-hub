@@ -433,35 +433,10 @@
       if (!wrap) return;
       wrap.classList.remove('hidden');
       wrap.innerHTML = `
-        <h4 style="margin:0 0 8px">إضافة إداري</h4>
-        <p style="margin:0 0 12px;color:#64748b;font-size:13px">يُنشأ حساب بهوية وظيفية (رقم موظف + رقم حساب) وصلاحيات محددة. الانتماء لنايوش أو لجهة خارجية لا يمنح صلاحيات تلقائيًا.</p>
+        <h4 style="margin:0 0 8px">إضافة إنسان — موظف / إداري (هوية 360)</h4>
+        <p style="margin:0 0 12px;color:#64748b;font-size:13px">نفس نموذج الهوية الموحد. يُنشأ حساب بهوية وظيفية (رقم موظف + رقم حساب) وصلاحيات محددة — إضافة شخص لا تمنحه صلاحيات تلقائيًا.</p>
         <form id="sa-add-form" style="display:grid;gap:12px">
-          ${fieldGrid(`
-            <label style="font-weight:700">الاسم<input name="name" required style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid #d1d5db;border-radius:10px;box-sizing:border-box"/></label>
-            <label style="font-weight:700">البريد الإلكتروني<input name="email" type="email" required dir="ltr" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid #d1d5db;border-radius:10px;box-sizing:border-box;text-align:left"/></label>
-            <label style="font-weight:700">رقم الجوال<input name="phone" dir="ltr" placeholder="+97059XXXXXXX" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid #d1d5db;border-radius:10px;box-sizing:border-box;text-align:left"/></label>
-            <label style="font-weight:700">جهة العمل
-              <select name="affiliationKind" id="sa-aff-kind" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid #d1d5db;border-radius:10px">
-                <option value="naiosh">نايوش</option>
-                <option value="external">جهة خارجية</option>
-              </select>
-            </label>
-            <label style="font-weight:700">اسم الجهة / المؤسسة<input name="orgName" id="sa-org-name" value="نايوش" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid #d1d5db;border-radius:10px;box-sizing:border-box"/></label>
-            <label style="font-weight:700">القسم / مكان العمل<input name="department" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid #d1d5db;border-radius:10px;box-sizing:border-box"/></label>
-            <label style="font-weight:700">الدور الإداري
-              <select name="role" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid #d1d5db;border-radius:10px">
-                ${roles
-                  .filter((r) => r.code !== 'supreme_leader')
-                  .map((r) => `<option value="${esc(r.code)}">${esc(r.label)}</option>`)
-                  .join('')}
-              </select>
-            </label>
-            <label style="font-weight:700">كلمة مرور مؤقتة<input name="temporaryPassword" type="password" required autocomplete="new-password" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid #d1d5db;border-radius:10px;box-sizing:border-box"/></label>
-          `)}
-          <fieldset style="border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin:0">
-            <legend style="font-weight:800;padding:0 6px">الصلاحيات الممنوحة</legend>
-            <div style="max-height:180px;overflow:auto">${permChecks([])}</div>
-          </fieldset>
+          <div id="sa-id360-host" class="sa-id360-host"></div>
           <div id="sa-add-attachments" data-hub-attach-host="1"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <button type="submit" class="btn btn-primary">إنشاء الإداري</button>
@@ -469,12 +444,26 @@
             <p id="sa-add-msg" style="margin:0;font-weight:700"></p>
           </div>
         </form>`;
-      const aff = wrap.querySelector('#sa-aff-kind');
-      const org = wrap.querySelector('#sa-org-name');
-      aff?.addEventListener('change', () => {
-        if (aff.value === 'naiosh') org.value = org.value || 'نايوش';
-        else if (org.value === 'نايوش') org.value = '';
-      });
+      const idHost = wrap.querySelector('#sa-id360-host');
+      const roleOpts = roles
+        .filter((r) => r.code !== 'supreme_leader')
+        .map((r) => ({ code: r.code, label: r.label }));
+      const mountUnified = async () => {
+        if (!window.HubIdentityUnifiedForm?.mount || !idHost) return;
+        await window.HubIdentityUnifiedForm.mount(idHost, {
+          defaultRelation: 'employee',
+          lockRelation: true,
+          creating: true,
+          roles: roleOpts.length ? roleOpts : [{ code: 'admin', label: 'إداري' }],
+          renderPermissions: (permsHost) => {
+            permsHost.innerHTML = `<fieldset style="border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin:0">
+              <legend style="font-weight:800;padding:0 6px">الصلاحيات الممنوحة</legend>
+              <div style="max-height:180px;overflow:auto">${permChecks([])}</div>
+            </fieldset>`;
+          },
+        });
+      };
+      mountUnified().catch((err) => console.warn('[staff-admin] id360 mount', err));
       const addAttHost = wrap.querySelector('#sa-add-attachments');
       if (addAttHost && window.HubFormAttachments?.mount) {
         window.HubFormAttachments.mount(addAttHost, { title: 'المرفقات', multi: true });
@@ -485,23 +474,30 @@
       });
       wrap.querySelector('#sa-add-form')?.addEventListener('submit', async (ev) => {
         ev.preventDefault();
-        const fd = new FormData(ev.target);
-        const permissions = [...ev.target.querySelectorAll('input[name=perm]:checked')].map((i) => i.value);
         const msg = wrap.querySelector('#sa-add-msg');
+        const validated = window.HubIdentityUnifiedForm?.validate?.(idHost);
+        if (validated && validated.ok === false) {
+          msg.style.color = '#991b1b';
+          msg.textContent = validated.error || 'أكمل الحقول الإلزامية';
+          toast?.(msg.textContent);
+          return;
+        }
+        const collectedId = window.HubIdentityUnifiedForm?.collect?.(idHost) || {};
+        const permissions = [...(idHost?.querySelectorAll('input[name=perm]:checked') || [])].map((i) => i.value);
         const collected = window.HubFormAttachments?.collect?.(addAttHost) || { items: [] };
         try {
           const result = await api('/api/admin/staff', {
             method: 'POST',
             body: {
-              name: fd.get('name'),
-              email: fd.get('email'),
-              phone: fd.get('phone'),
-              affiliationKind: fd.get('affiliationKind'),
-              orgName: fd.get('orgName'),
-              department: fd.get('department'),
-              workplace: fd.get('department'),
-              role: fd.get('role'),
-              temporaryPassword: fd.get('temporaryPassword'),
+              name: collectedId.name,
+              email: collectedId.email,
+              phone: collectedId.phone,
+              affiliationKind: collectedId.affiliationKind || 'naiosh',
+              orgName: collectedId.orgName || 'نايوش',
+              department: collectedId.department || '',
+              workplace: collectedId.department || collectedId.workplace || '',
+              role: collectedId.role || 'admin',
+              temporaryPassword: collectedId.temporaryPassword,
               permissions,
             },
           });
@@ -510,7 +506,7 @@
             await window.HubFormAttachments.persistToEntity({
               entityType: 'staff',
               entityId: empNo,
-              ownerEmail: String(fd.get('email') || ''),
+              ownerEmail: String(collectedId.email || ''),
               items: collected.items,
             });
           }

@@ -256,7 +256,17 @@
           الشركة: s.basics.company || '—',
           المدينة: s.basics.city || '—',
           الدولة: s.basics.country || '—',
+          العنوان: s.basics.address || '—',
           الحالة: s.basics.status || '—',
+        });
+        push('ارتباط العميل بالمنظومة', {
+          الحاضنة: s.basics.incubatorName || s.basics.incubatorId || '—',
+          المنصة: s.basics.platformName || s.basics.platformCode || '—',
+          الفرع: s.basics.branchName || s.basics.branch || '—',
+          الموقع:
+            s.basics.lat != null && s.basics.lng != null
+              ? String(s.basics.lat) + ',' + String(s.basics.lng)
+              : '—',
         });
       }
       if (s.adminSummary && opts.adminEmail) {

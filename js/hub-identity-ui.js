@@ -717,25 +717,33 @@
     <div id="idn-user-attachments" data-hub-attach-host="1" style="margin-top:12px"></div>`;
   };
 
+  const relationFromDraft = (d) => {
+    const needsEmp = kindNeedsEmployee(d.userKind);
+    const needsCli = kindNeedsClient(d.userKind, d.alsoCustomer);
+    if (needsEmp && needsCli) return 'both';
+    if (needsEmp) return 'employee';
+    return 'client';
+  };
+
   const renderUserWizard = () => {
     const m = ui.modal;
     if (!m || (m.kind !== 'add-user' && m.kind !== 'edit-user')) return '';
     const isEdit = m.kind === 'edit-user';
-    const d = ui.addDraft || blankDraft();
-    const step = ui.addStep || 1;
-    const titles = ['الهوية الأساسية', 'الأرقام والارتباطات', 'الجهة والعمل', 'الدور والصلاحيات', 'المراجعة والحفظ'];
     return `<div class="idn-modal-backdrop" data-action="idn-modal-cancel">
       <div class="idn-modal idn-modal-lg" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
         <header>
-          <h3>${isEdit ? 'تعديل مستخدم' : 'إضافة مستخدم'} · ${esc(titles[step - 1])}</h3>
+          <h3>${isEdit ? 'تعديل إنسان — هوية 360' : 'إضافة إنسان — هوية 360'}</h3>
           <button type="button" class="idn-modal-x" data-action="idn-modal-cancel">×</button>
         </header>
-        <div class="idn-steps">${titles.map((t, i) => `<span class="${i + 1 === step ? 'is-on' : i + 1 < step ? 'is-done' : ''}">${i + 1}. ${esc(t)}</span>`).join('')}</div>
-        <div class="idn-modal-body">${renderWizardBody(d, step, isEdit)}${m.error ? `<p class="idn-error">${esc(m.error)}</p>` : ''}</div>
+        <div class="idn-modal-body">
+          <p class="idn-muted" style="margin-top:0">نموذج الهوية الموحد: بيانات أساسية ثم حقول العميل و/أو الموظف حسب نوع العلاقة. إضافة عميل لا تمنح صلاحيات موظف.</p>
+          <div id="idn-id360-host" class="idn-id360-host"></div>
+          <div id="idn-user-attachments" data-hub-attach-host="1" style="margin-top:12px"></div>
+          ${m.error ? `<p class="idn-error">${esc(m.error)}</p>` : ''}
+        </div>
         <footer>
           <button type="button" class="btn btn-ghost" data-action="idn-modal-cancel">إلغاء</button>
-          ${step > 1 ? `<button type="button" class="btn btn-ghost" data-action="idn-add-prev">السابق</button>` : ''}
-          ${step < 5 ? `<button type="button" class="btn btn-primary" data-action="idn-add-next">التالي</button>` : `<button type="button" class="btn btn-primary" data-action="idn-add-save">${isEdit ? 'حفظ التعديل' : 'حفظ المستخدم'}</button>`}
+          <button type="button" class="btn btn-primary" data-action="idn-add-save">${isEdit ? 'حفظ التعديل' : 'حفظ الإنسان'}</button>
         </footer>
       </div>
     </div>`;
@@ -902,34 +910,80 @@
   };
 
   const readDraftFields = () => {
-    const box = document.querySelector('.idn-modal');
-    if (!box) return ui.addDraft || blankDraft();
     const d = { ...(ui.addDraft || blankDraft()) };
-    box.querySelectorAll('[data-f]').forEach((el) => {
-      const key = el.getAttribute('data-f');
-      if (el.type === 'checkbox') d[key] = el.checked;
-      else if (el.tagName === 'SELECT' && el.multiple) d[key] = [...el.selectedOptions].map((o) => o.value);
-      else d[key] = el.value;
-    });
-    const orgSel = box.querySelector('[data-f="orgName"]');
-    if (orgSel?.selectedOptions?.[0]) {
-      d.orgId = orgSel.selectedOptions[0].getAttribute('data-org-id') || d.orgId || '';
+    const idHost = document.getElementById('idn-id360-host');
+    if (idHost && window.HubIdentityUnifiedForm?.collect) {
+      const collected = window.HubIdentityUnifiedForm.collect(idHost) || {};
+      d.name = collected.name || d.name;
+      d.email = collected.email || d.email;
+      d.phone = collected.phone || d.phone;
+      d.country = collected.country || d.country;
+      d.city = collected.city || '';
+      d.address = collected.address || '';
+      d.branchName = collected.branchName || collected.branch || d.branchName || '';
+      d.department = collected.department || d.department || '';
+      d.orgName = collected.orgName || d.orgName || '';
+      d.affiliationKind = collected.affiliationKind || d.affiliationKind || '';
+      d.roleCode = collected.role || d.roleCode || 'HUB_EMPLOYEE';
+      d.temporaryPassword = collected.temporaryPassword || '';
+      d.incubatorId = collected.incubatorId || '';
+      d.platformCode = collected.platformCode || '';
+      d.clientType = collected.clientType || '';
+      d.company = collected.company || '';
+      d.status = collected.status || d.status || 'active';
+      d.lat = collected.lat;
+      d.lng = collected.lng;
+      d.locationSource = collected.locationSource || '';
+      d.locationConfirmed = !!collected.locationConfirmed;
+      if (collected.isEmployee && collected.isClient) {
+        d.userKind = 'INTERNAL';
+        d.alsoCustomer = true;
+      } else if (collected.isEmployee) {
+        d.userKind = 'INTERNAL';
+        d.alsoCustomer = false;
+      } else {
+        d.userKind = 'CUSTOMER';
+        d.alsoCustomer = false;
+      }
+      if (d.orgName === 'نايوش' && !d.orgId) d.orgId = 'ORG-NAIOSH';
     }
     const attHost = document.getElementById('idn-user-attachments');
     if (attHost && window.HubFormAttachments?.collect) {
-      const collected = window.HubFormAttachments.collect(attHost);
-      if (collected.items?.length) d._attachments = collected.items;
+      const collectedAtt = window.HubFormAttachments.collect(attHost);
+      if (collectedAtt.items?.length) d._attachments = collectedAtt.items;
     }
     ui.addDraft = d;
     return d;
   };
 
   const scheduleIdentityAttachMount = () => {
-    setTimeout(() => {
+    setTimeout(async () => {
       const m = ui.modal;
       if (!m || (m.kind !== 'add-user' && m.kind !== 'edit-user')) return;
-      const step = ui.addStep || 1;
-      if (step !== 1 && step !== 5) return;
+      const d = ui.addDraft || blankDraft();
+      const idHost = document.getElementById('idn-id360-host');
+      if (idHost && window.HubIdentityUnifiedForm?.mount && !idHost.dataset.mounted) {
+        idHost.dataset.mounted = '1';
+        const roleOpts = (affOpts().roles || []).map((r) => ({ code: r.code, label: r.nameAr || r.code }));
+        try {
+          await window.HubIdentityUnifiedForm.mount(idHost, {
+            values: {
+              ...d,
+              relation: relationFromDraft(d),
+              role: d.roleCode,
+              branch: d.branchName,
+              branchName: d.branchName,
+            },
+            defaultRelation: relationFromDraft(d),
+            creating: m.kind === 'add-user',
+            editMode: m.kind === 'edit-user',
+            requireEmployeePassword: false,
+            roles: roleOpts.length ? roleOpts : [{ code: 'HUB_EMPLOYEE', label: 'موظف هوب' }],
+          });
+        } catch (err) {
+          console.warn('[identity] id360 mount', err);
+        }
+      }
       const host = document.getElementById('idn-user-attachments');
       if (!host || !window.HubFormAttachments?.mount) return;
       if (!host.querySelector('[data-hub-attach-block]')) {
@@ -954,13 +1008,86 @@
     }, 40);
   };
 
-  const saveIdentityFromDraft = (actor) => {
+  const authHeadersJson = () => {
+    const token =
+      localStorage.getItem('hubAuthToken') ||
+      sessionStorage.getItem('hubAuthToken') ||
+      localStorage.getItem('hub_token') ||
+      '';
+    return {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}`, 'X-Hub-Token': token } : {}),
+    };
+  };
+
+  const persistClientOrgViaApi = async (d) => {
+    const needsCli = kindNeedsClient(d.userKind, d.alsoCustomer);
+    if (!needsCli) return null;
+    if (!d.incubatorId || !d.platformCode || !(d.branchName || d.branch)) {
+      throw new Error('الحاضنة والمنصة والفرع إلزامية عند صفة العميل');
+    }
+    const payload = {
+      name: d.name,
+      email: d.email,
+      phone: d.phone,
+      country: d.country || '',
+      city: d.city || '',
+      address: d.address || '',
+      company: d.company || '',
+      clientType: d.clientType || '',
+      status: d.status === 'suspended' ? 'suspended' : d.status === 'active' ? 'active' : 'pending',
+      incubatorId: d.incubatorId,
+      platformCode: d.platformCode,
+      branch: d.branchName || d.branch,
+      branchName: d.branchName || d.branch,
+      lat: d.lat,
+      lng: d.lng,
+      locationSource: d.locationSource || 'manual',
+      locationConfirmed: !!d.locationConfirmed,
+      source: 'هوية 360',
+    };
+    // Prefer PATCH when client already exists; otherwise create.
+    const listRes = await fetch('/api/admin/clients', { credentials: 'same-origin', headers: authHeadersJson() });
+    const listData = await listRes.json().catch(() => ({}));
+    const existing = (listData.clients || listData.items || []).find(
+      (c) => String(c.email || '').toLowerCase() === String(d.email || '').toLowerCase()
+    );
+    if (existing?.email) {
+      const res = await fetch(`/api/admin/clients/${encodeURIComponent(existing.email)}/profile`, {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: authHeadersJson(),
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error(data.error || 'تعذر تحديث ارتباط العميل');
+      return data.client || existing;
+    }
+    const res = await fetch('/api/admin/clients', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: authHeadersJson(),
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) throw new Error(data.error || 'تعذر إنشاء العميل من الهوية الموحدة');
+    return data.client || null;
+  };
+
+  const saveIdentityFromDraft = async (actor) => {
+    const idHost = document.getElementById('idn-id360-host');
+    const validated = window.HubIdentityUnifiedForm?.validate?.(idHost);
+    if (validated && validated.ok === false) throw new Error(validated.error || 'أكمل الحقول الإلزامية');
     const d = readDraftFields();
     const needsOrg = kindNeedsOrg(d.userKind);
     if (!d.name?.trim() || !d.email?.trim()) throw new Error('الاسم والبريد مطلوبان');
     if (!d.userKind) throw new Error('نوع المستخدم مطلوب');
     if (needsOrg && !d.orgName) throw new Error('المؤسسة مطلوبة لهذا النوع');
     if (d.orgName === 'نايوش' && !d.orgId) d.orgId = 'ORG-NAIOSH';
+
+    // Persist client org affiliation in the live client store/Postgres (no parallel identity).
+    await persistClientOrgViaApi(d);
 
     if (d.editId) {
       eng()?.updateIdentity?.(
@@ -971,7 +1098,7 @@
           phone: d.phone,
           country: d.country,
           userKind: d.userKind,
-          status: d.status,
+          status: d.status === 'pending' ? 'active' : d.status,
           orgId: d.orgId,
           orgName: d.orgName,
           branchName: d.branchName,
@@ -980,7 +1107,7 @@
           roleCode: d.roleCode,
           alsoCustomer: d.alsoCustomer,
           alsoEmployee: kindNeedsEmployee(d.userKind),
-          reason: 'تعديل من سجل الهويات',
+          reason: 'تعديل من سجل الهويات (نموذج 360)',
         },
         actor
       );
@@ -994,7 +1121,7 @@
         phone: d.phone,
         country: d.country,
         userKind: d.userKind,
-        status: d.status,
+        status: d.status === 'pending' ? 'active' : d.status,
         orgId: d.orgId,
         orgName: d.orgName,
         branchName: d.branchName,
@@ -1004,7 +1131,7 @@
         systems: d.systems?.length ? d.systems : ['HUB'],
         alsoCustomer: d.alsoCustomer,
         dataSource: 'user-created',
-        reason: 'إضافة من سجل الهويات',
+        reason: 'إضافة من سجل الهويات (نموذج 360)',
       },
       actor
     );
@@ -1102,6 +1229,7 @@
     if (action === 'idn-add-open') {
       ui.addStep = 1;
       ui.addDraft = blankDraft();
+      ui.addDraft.userKind = 'CUSTOMER';
       ui.editMode = false;
       ui.modal = { kind: 'add-user', error: '' };
       ui.menuId = null;
@@ -1113,44 +1241,22 @@
         toast?.('المستخدم غير موجود');
         return true;
       }
-      ui.addStep = action === 'idn-affil-open' ? 3 : 1;
+      ui.addStep = 1;
       ui.addDraft = blankDraft(id);
       ui.editMode = true;
       ui.modal = { kind: 'edit-user', error: '', id: btn.dataset.id };
       ui.menuId = null;
       return true;
     }
-    if (action === 'idn-add-prev') {
-      readDraftFields();
-      ui.addStep = Math.max(1, (ui.addStep || 1) - 1);
-      ui.modal = { ...(ui.modal || { kind: ui.editMode ? 'edit-user' : 'add-user' }), error: '' };
-      return true;
-    }
-    if (action === 'idn-add-next') {
-      const d = readDraftFields();
-      const step = ui.addStep || 1;
-      const kind = ui.modal?.kind || (ui.editMode ? 'edit-user' : 'add-user');
-      if (step === 1 && (!d.name?.trim() || !d.email?.trim() || !d.userKind)) {
-        ui.modal = { kind, error: 'الاسم والبريد ونوع المستخدم مطلوبة' };
-        return true;
-      }
-      if (step === 3 && kindNeedsOrg(d.userKind) && !d.orgName) {
-        ui.modal = { kind, error: 'المؤسسة مطلوبة لهذا النوع' };
-        return true;
-      }
-      // Free-form branch/department: never wipe typed values against catalog lists.
-      if (step === 3) {
-        ui.addDraft = d;
-      }
-      ui.addStep = Math.min(5, step + 1);
-      ui.modal = { kind, error: '' };
+    if (action === 'idn-add-prev' || action === 'idn-add-next') {
+      // Wizard steps retired — unified 360 form is single-page.
       return true;
     }
     if (action === 'idn-add-save') {
       return (async () => {
         try {
           const draftAtt = (ui.addDraft?._attachments || []).slice();
-          const created = saveIdentityFromDraft(actor);
+          const created = await saveIdentityFromDraft(actor);
           const entityId = created?.naioshId || ui.addDraft?.naioshId || '';
           const fileItems = draftAtt.filter((a) => a && (a.id || a.url));
           if (entityId && fileItems.length && window.HubFormAttachments?.persistToEntity) {

@@ -109,35 +109,32 @@
     }
   };
 
-  const incubatorOptions = () => {
-    const list = window.HubIncubatorsData?.INCUBATORS || [];
-    if (list.length) {
-      return list.slice(0, 80).map((inc) => ({
+  /** Real registered catalogs only — never invent incubator/platform options. */
+  const loadCatalogOptions = async () => {
+    const out = { incubators: [], platforms: [], incubatorMsg: '', platformMsg: '' };
+    try {
+      const incRes = await fetch('/api/hub/catalog/incubators', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      const incData = await incRes.json().catch(() => ({}));
+      out.incubators = (incData.incubators || []).map((inc) => ({
         id: inc.id,
-        label: `${inc.num ? `${inc.num}. ` : ''}${inc.name}${inc.sector ? ` — ${inc.sector}` : ''}`,
+        label: `${inc.name_ar || inc.id}${inc.sector ? ` — ${inc.sector}` : ''}`,
       }));
+      if (!out.incubators.length) out.incubatorMsg = incData.message || 'لا توجد حاضنات مسجّلة في قاعدة البيانات.';
+    } catch {
+      out.incubatorMsg = 'تعذر تحميل الحاضنات من الخادم.';
     }
-    return [
-      { id: 'inc-edu', label: 'التعليم والتعلم' },
-      { id: 'inc-digital', label: 'التسويق الرقمي' },
-      { id: 'inc-health', label: 'الصحة والجمال' },
-      { id: 'inc-business', label: 'عالم الأعمال' },
-    ];
-  };
-
-  const platformOptions = () => {
-    const list = window.HubSovereignPlatforms?.list || [];
-    if (list.length) {
-      return list.map((p) => ({
+    try {
+      const platRes = await fetch('/api/hub/catalog/platforms', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      const platData = await platRes.json().catch(() => ({}));
+      out.platforms = (platData.platforms || []).map((p) => ({
         id: p.code,
-        label: `${p.nameAr}${p.role ? ` — ${p.role}` : ''}`,
+        label: `${p.name_ar || p.code}${p.code ? ` (${p.code})` : ''}`,
       }));
+      if (!out.platforms.length) out.platformMsg = platData.message || 'لا توجد منصات مسجّلة في قاعدة البيانات.';
+    } catch {
+      out.platformMsg = 'تعذر تحميل المنصات من الخادم.';
     }
-    return [
-      { id: 'core', label: 'المنصة المركزية' },
-      { id: 'ops', label: 'منصة التشغيل' },
-      { id: 'gov', label: 'منصة الحوكمة' },
-    ];
+    return out;
   };
 
   const systemOptions = () => {
@@ -179,7 +176,7 @@
     statusEl.className = `hub-book-subdomain-status ${res.available ? 'is-ok' : raw ? 'is-bad' : ''}`;
   };
 
-  const fillForm = () => {
+  const fillForm = async () => {
     const params = new URLSearchParams(window.location.search);
     const geoHost = form?.querySelector('[data-hub-geo-branch]');
     if (geoHost && window.HubGeoBranch) {
@@ -196,8 +193,27 @@
         },
       });
     }
-    fillSelect(form?.querySelector('[name="incubator"]'), incubatorOptions(), 'اختر اسم الحاضنة', params.get('incubator') || '');
-    fillSelect(form?.querySelector('[name="platform"]'), platformOptions(), 'اختر اسم المنصة', params.get('platform') || params.get('code') || '');
+    const catalog = await loadCatalogOptions();
+    const incEl = form?.querySelector('[name="incubator"]');
+    const platEl = form?.querySelector('[name="platform"]');
+    fillSelect(incEl, catalog.incubators, catalog.incubators.length ? 'اختر حاضنة مسجّلة' : '— لا توجد حاضنات مسجّلة —', params.get('incubator') || '');
+    fillSelect(platEl, catalog.platforms, catalog.platforms.length ? 'اختر منصة مسجّلة' : '— لا توجد منصات مسجّلة —', params.get('platform') || params.get('code') || '');
+    if (incEl && !catalog.incubators.length) {
+      incEl.setAttribute('disabled', 'disabled');
+      const hint = document.createElement('p');
+      hint.className = 'hub-book-feedback is-error';
+      hint.style.marginTop = '6px';
+      hint.textContent = catalog.incubatorMsg || 'لا يمكن التسجيل بدون حاضنات مسجّلة.';
+      incEl.parentElement?.insertBefore(hint, incEl.nextSibling);
+    }
+    if (platEl && !catalog.platforms.length) {
+      platEl.setAttribute('disabled', 'disabled');
+      const hint = document.createElement('p');
+      hint.className = 'hub-book-feedback is-error';
+      hint.style.marginTop = '6px';
+      hint.textContent = catalog.platformMsg || 'لا يمكن التسجيل بدون منصات مسجّلة.';
+      platEl.parentElement?.insertBefore(hint, platEl.nextSibling);
+    }
     fillSelect(form?.querySelector('[name="requestedSystem"]'), systemOptions(), 'اختر النظام', params.get('system') || '');
   };
 

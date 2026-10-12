@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "platforms": [
+    {
+      "code": "UOS",
+      "name_ar": "النظام التشغيلي الموحد",
+      "status": "online"
+    },
+    {
+      "code": "KMS",
+      "name_ar": "إدارة المعرفة والدستور",
+      "status": "online"
+    },
+    {
+      "code": "CCS",
+      "name_ar": "التحكم الكوني",
+      "status": "online"
+    },
+    {
+      "code": "NAI",
+      "name_ar": "محرك الذكاء الاصطناعي",
+      "status": "online"
+    },
+    {
+      "code": "NERP",
+      "name_ar": "نظام إدارة الموارد",
+      "status": "online"
+    },
+    {
+      "code": "NHR",
+      "name_ar": "الموارد البشرية السيادية",
+      "status": "online"
+    },
+    {
+      "code": "NQMS",
+      "name_ar": "الجودة والامتثال",
+      "status": "online"
+    },
+    {
+      "code": "NIMS",
+      "name_ar": "إدارة الحوادث والطوارئ",
+      "status": "online"
+    },
+    {
+      "code": "NAMS",
+      "name_ar": "إدارة الأصول",
+      "status": "online"
+    },
+    {
+      "code": "NEMS",
+      "name_ar": "التعليم والتدريب",
+      "status": "online"
+    },
+    {
+      "code": "NTS",
+      "name_ar": "النقل والمركبات",
+      "status": "online"
+    },
+    {
+      "code": "NCS",
+      "name_ar": "الاتصال المؤسسي والإعلام",
+      "status": "online"
+    },
+    {
+      "code": "NMS",
+      "name_ar": "التسويق والهوية",
+      "status": "online"
+    },
+    {
+      "code": "NDS",
+      "name_ar": "البيانات والتحليل",
+      "status": "online"
+    },
+    {
+      "code": "NFS",
+      "name_ar": "المالية والمحاسبة",
+      "status": "online"
+    },
+    {
+      "code": "NOPS",
+      "name_ar": "العمليات التشغيلية",
+      "status": "online"
+    },
+    {
+      "code": "NIS",
+      "name_ar": "التكامل والربط",
+      "status": "online"
+    },
+    {
+      "code": "NGS",
+      "name_ar": "الحوكمة والرقابة",
+      "status": "online"
+    }
+  ]
+}

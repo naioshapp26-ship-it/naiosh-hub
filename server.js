@@ -380,6 +380,13 @@ async function handleHubApi(req, res, pathname) {
     return handled;
   }
 
+  if (pathname.startsWith('/api/hub/catalog/')) {
+    require('./lib/hub-org-catalog')
+      .handleOrgCatalogApi(req, res, pathname)
+      .catch((error) => sendJson(res, error.status || 500, { ok: false, error: error.message || 'Catalog API error' }));
+    return;
+  }
+
   if (pathname.startsWith('/api/hub/geo')) {
     const hubGeo = require('./lib/hub-geo');
     const handled = await hubGeo.handleApi(req, res, pathname, { sendJson, readBody });
