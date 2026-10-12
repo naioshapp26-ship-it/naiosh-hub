@@ -4846,12 +4846,21 @@ const HubStore = (() => {
       countries.find((c) => (c.name || c.nameAr) === country) ||
       countries.find((c) => String(c.code || '').toUpperCase() === code);
     const flagKey = String(countryHit?.code || code || 'eg').toLowerCase();
+    const lat = payload.lat != null && payload.lat !== '' ? Number(payload.lat) : null;
+    const lng = payload.lng != null && payload.lng !== '' ? Number(payload.lng) : null;
     const item = {
       id: uid('br'),
       nameAr,
       nameEn: String(payload.nameEn || nameAr).trim(),
       code,
       country: country || countryHit?.name || countryHit?.nameAr || '',
+      city: String(payload.city || '').trim(),
+      address: String(payload.address || '').trim(),
+      lat: Number.isFinite(lat) ? lat : null,
+      lng: Number.isFinite(lng) ? lng : null,
+      locationSource: String(payload.locationSource || 'manual').trim() || 'manual',
+      locationConfirmed: !!payload.locationConfirmed,
+      locationUpdatedAt: payload.locationUpdatedAt || new Date().toISOString(),
       type: String(payload.type || 'مكاتب خاصة').trim(),
       hours: String(payload.hours || 'من 9:00 صباحًا إلى 6:00 مساءً').trim(),
       manager: String(payload.manager || payload.assignee || '').trim(),

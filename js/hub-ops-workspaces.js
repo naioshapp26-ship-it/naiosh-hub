@@ -922,6 +922,18 @@
     document.querySelector('.hub-ws-modal')?.setAttribute('data-tk-wide', '1');
     const modal = document.querySelector('.hub-ws-modal');
     if (modal) modal.style.width = 'min(960px,96vw)';
+    const branchInput = document.getElementById('tk-branch-id');
+    if (branchInput && !branchInput.value) {
+      const d = tkUi.modal?.data || {};
+      const branchPrefill =
+        d.branchName ||
+        d.branch?.name ||
+        d.orgLinks?.branch?.name ||
+        d.branchLabel ||
+        preferredOrgId('branch') ||
+        '';
+      if (branchPrefill) branchInput.value = String(branchPrefill);
+    }
     fillAssigneeSelect();
     fillOrgSelects();
     document.getElementById('tk-assignee-id')?.addEventListener('change', fillCompanyContacts);

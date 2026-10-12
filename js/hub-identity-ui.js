@@ -665,17 +665,15 @@
           <input data-f="branchName" type="text" value="${esc(d.branchName || '')}" placeholder="اكتب اسم الفرع أو البلد" autocomplete="organization" />
         </label>
         <label>القسم
-          <select data-f="department">
-            <option value="">—</option>
-            ${(deptList.length ? deptList : opts.departments || []).map((x) => `<option value="${esc(x)}" ${d.department === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}
-          </select>
+          <input data-f="department" type="text" value="${esc(d.department || '')}" list="idn-dept-list" placeholder="اكتب القسم أو اختر من الاقتراحات" autocomplete="organization-title" />
+          <datalist id="idn-dept-list">${(deptList.length ? deptList : opts.departments || []).map((x) => `<option value="${esc(x)}"></option>`).join('')}</datalist>
         </label>
         <label>المسمى الوظيفي
           <input data-f="jobTitle" value="${esc(d.jobTitle)}" list="idn-jobs-list" />
           <datalist id="idn-jobs-list">${(opts.jobTitles || []).map((j) => `<option value="${esc(j)}"></option>`).join('')}</datalist>
         </label>
       </div>
-      <p class="idn-muted">القوائم مترابطة: المؤسسة → الفرع → القسم من مصدر المؤسسات/الهيكل.</p>`;
+      <p class="idn-muted">الفرع كتابة حرة (بدون قائمة دول/فروع جاهزة). القسم والمسمى يقبلان نصًا حرًا مع اقتراحات اختيارية من الهيكل.</p>`;
     }
     if (step === 4) {
       return `<div class="idn-wizard-grid">
@@ -1140,12 +1138,8 @@
         ui.modal = { kind, error: 'المؤسسة مطلوبة لهذا النوع' };
         return true;
       }
-      // إعادة بناء قوائم الفرع عند تغيير المؤسسة
+      // Free-form branch/department: never wipe typed values against catalog lists.
       if (step === 3) {
-        const validBranches = branchesForOrg(d.orgName, d.orgId).map((b) => b.name);
-        if (d.branchName && validBranches.length && !validBranches.includes(d.branchName)) d.branchName = '';
-        const validDepts = deptsFor(d.orgName, d.orgId, d.branchName);
-        if (d.department && validDepts.length && !validDepts.includes(d.department)) d.department = '';
         ui.addDraft = d;
       }
       ui.addStep = Math.min(5, step + 1);

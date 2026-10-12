@@ -296,17 +296,24 @@ async function main() {
     const staffSrc = {
       identityFree: !fs.readFileSync(path.join(ROOT, 'js/hub-identity-ui.js'), 'utf8').includes('data-f="branchName" data-cascade="branch"'),
       identityFilterInput: fs.readFileSync(path.join(ROOT, 'js/hub-identity-ui.js'), 'utf8').includes('تصفية باسم الفرع (كتابة حرة)'),
+      identityNoWipe: !fs.readFileSync(path.join(ROOT, 'js/hub-identity-ui.js'), 'utf8').includes('!validBranches.includes(d.branchName)'),
+      identityDeptFree: fs.readFileSync(path.join(ROOT, 'js/hub-identity-ui.js'), 'utf8').includes('data-f="department" type="text"'),
       adsFree: fs.readFileSync(path.join(ROOT, 'js/hub-row-actions.js'), 'utf8').includes('hub-ad-branches-text'),
       adsNoGroup: !fs.readFileSync(path.join(ROOT, 'js/hub-row-actions.js'), 'utf8').includes("groupMultiHtml('الفرع', 'branches'"),
       editCountryText: fs.readFileSync(path.join(ROOT, 'js/hub-row-actions.js'), 'utf8').includes('الدولة / الموقع (كتابة حرة)'),
+      addBranchGeo: fs.readFileSync(path.join(ROOT, 'js/hub-row-actions.js'), 'utf8').includes("entity === 'branches'") &&
+        fs.readFileSync(path.join(ROOT, 'js/hub-row-actions.js'), 'utf8').includes('تحديد موقع الفرع (اختياري)'),
+      bookingNoCatalogUnlock: !fs.readFileSync(path.join(ROOT, 'js/hub-booking.js'), 'utf8').includes('const unlockBranch'),
+      registerNoCatalogUnlock: !fs.readFileSync(path.join(ROOT, 'js/hub-register.js'), 'utf8').includes('const unlockBranch'),
       noBranchInject: !fs.readFileSync(path.join(ROOT, 'js/hub-access-governance-engine.js'), 'utf8').includes('HubBranchesData?.BRANCHES || []).slice(0, 8)'),
       tasksFree: fs.readFileSync(path.join(ROOT, 'js/hub-ops-workspaces.js'), 'utf8').includes('بدون قائمة جاهزة'),
+      tasksPrefill: fs.readFileSync(path.join(ROOT, 'js/hub-ops-workspaces.js'), 'utf8').includes('branchPrefill'),
       solutionsFree: fs.readFileSync(path.join(ROOT, 'js/hub-solutions-ui.js'), 'utf8').includes('id="so-c-branch"'),
     };
     mark(
       'js/hub-identity-ui.js',
       'سجل الهوية — فرع',
-      staffSrc.identityFree && staffSrc.identityFilterInput ? 'YES' : 'NO',
+      staffSrc.identityFree && staffSrc.identityFilterInput && staffSrc.identityNoWipe ? 'YES' : 'NO',
       'YES',
       'n/a',
       'n/a',
@@ -315,13 +322,20 @@ async function main() {
       'code',
       'code',
       'n/a',
-      staffSrc.identityFree && staffSrc.identityFilterInput ? 'PASS' : 'FAIL',
-      JSON.stringify(staffSrc)
+      staffSrc.identityFree && staffSrc.identityFilterInput && staffSrc.identityNoWipe && staffSrc.identityDeptFree
+        ? 'PASS'
+        : 'FAIL',
+      JSON.stringify({
+        identityFree: staffSrc.identityFree,
+        identityFilterInput: staffSrc.identityFilterInput,
+        identityNoWipe: staffSrc.identityNoWipe,
+        identityDeptFree: staffSrc.identityDeptFree,
+      })
     );
     mark(
       'js/hub-row-actions.js',
-      'أهداف إعلان + تعديل فرع',
-      staffSrc.adsFree && staffSrc.adsNoGroup && staffSrc.editCountryText ? 'YES' : 'NO',
+      'أهداف إعلان + إضافة/تعديل فرع',
+      staffSrc.adsFree && staffSrc.adsNoGroup && staffSrc.editCountryText && staffSrc.addBranchGeo ? 'YES' : 'NO',
       'YES',
       'n/a',
       'n/a',
@@ -330,8 +344,31 @@ async function main() {
       'code',
       'code',
       'n/a',
-      staffSrc.adsFree && staffSrc.adsNoGroup && staffSrc.editCountryText ? 'PASS' : 'FAIL',
-      JSON.stringify({ adsFree: staffSrc.adsFree, adsNoGroup: staffSrc.adsNoGroup, editCountryText: staffSrc.editCountryText })
+      staffSrc.adsFree && staffSrc.adsNoGroup && staffSrc.editCountryText && staffSrc.addBranchGeo ? 'PASS' : 'FAIL',
+      JSON.stringify({
+        adsFree: staffSrc.adsFree,
+        adsNoGroup: staffSrc.adsNoGroup,
+        editCountryText: staffSrc.editCountryText,
+        addBranchGeo: staffSrc.addBranchGeo,
+      })
+    );
+    mark(
+      'js/hub-booking.js + hub-register.js',
+      'إزالة unlockBranch كتالوج',
+      staffSrc.bookingNoCatalogUnlock && staffSrc.registerNoCatalogUnlock ? 'YES' : 'NO',
+      'YES',
+      'n/a',
+      'n/a',
+      'n/a',
+      'n/a',
+      'code',
+      'code',
+      'n/a',
+      staffSrc.bookingNoCatalogUnlock && staffSrc.registerNoCatalogUnlock ? 'PASS' : 'FAIL',
+      JSON.stringify({
+        bookingNoCatalogUnlock: staffSrc.bookingNoCatalogUnlock,
+        registerNoCatalogUnlock: staffSrc.registerNoCatalogUnlock,
+      })
     );
     mark(
       'js/hub-access-governance-engine.js',
@@ -352,7 +389,7 @@ async function main() {
       'js/hub-ops-workspaces.js + solutions',
       'مهام / حلول — فرع نص',
       'YES',
-      staffSrc.tasksFree && staffSrc.solutionsFree ? 'YES' : 'PARTIAL',
+      staffSrc.tasksFree && staffSrc.solutionsFree && staffSrc.tasksPrefill ? 'YES' : 'PARTIAL',
       'n/a',
       'n/a',
       'n/a',
@@ -360,8 +397,12 @@ async function main() {
       'code',
       'code',
       'n/a',
-      staffSrc.tasksFree && staffSrc.solutionsFree ? 'PASS' : 'FAIL',
-      JSON.stringify({ tasksFree: staffSrc.tasksFree, solutionsFree: staffSrc.solutionsFree })
+      staffSrc.tasksFree && staffSrc.solutionsFree && staffSrc.tasksPrefill ? 'PASS' : 'FAIL',
+      JSON.stringify({
+        tasksFree: staffSrc.tasksFree,
+        tasksPrefill: staffSrc.tasksPrefill,
+        solutionsFree: staffSrc.solutionsFree,
+      })
     );
 
     // side-projects country select is country not branch — note as reviewed OK (different purpose)

@@ -1685,6 +1685,11 @@
           : ''
       }
       ${form.includeMarketplaces ? marketplaceFormHtml() : ''}
+      ${
+        entity === 'branches'
+          ? '<div class="hub-form-block" style="margin-top:12px"><div data-hub-geo-branch data-required="false" data-title="تحديد موقع الفرع (اختياري)"></div></div>'
+          : ''
+      }
       ${entity === 'store' || entity === 'products' || entity === 'branches' ? '' : commonMetaFormHtml()}`,
       foot: isPublishable
         ? `
@@ -1703,23 +1708,24 @@
       catSel.addEventListener('change', () => fillSubcategories(catSel.value));
     }
 
-    // branch: country select → suggest country code when code empty
-    const countrySel = document.getElementById('hub-add-country');
-    const codeInput = document.getElementById('hub-add-code');
-    if (entity === 'branches' && countrySel && codeInput) {
-      const applyCountryCode = () => {
-        const opts = resolveFieldOptions({ optionsFrom: 'branchCountries' });
-        const hit = opts.find((o) => String(o.value) === String(countrySel.value));
-        if (hit?.code && (!codeInput.value || codeInput.dataset.auto === '1')) {
-          codeInput.value = String(hit.code).toUpperCase();
-          codeInput.dataset.auto = '1';
-        }
-      };
-      countrySel.addEventListener('change', applyCountryCode);
-      codeInput.addEventListener('input', () => {
-        codeInput.dataset.auto = '0';
-      });
-      applyCountryCode();
+    if (entity === 'branches' && window.HubGeoBranch) {
+      const geoHost = document.querySelector('#hub-erp-modal-body [data-hub-geo-branch]');
+      if (geoHost) {
+        const nameInput = document.getElementById('hub-add-nameAr');
+        const countryInput = document.getElementById('hub-add-country');
+        window.HubGeoBranch.mount(geoHost, {
+          required: false,
+          title: 'تحديد موقع الفرع (اختياري)',
+          values: {
+            branchName: nameInput?.value || '',
+            country: countryInput?.value || '',
+          },
+          onChange: (d) => {
+            if (nameInput && d.branchName && !nameInput.value) nameInput.value = d.branchName;
+            if (countryInput && d.country && !countryInput.value) countryInput.value = d.country;
+          },
+        });
+      }
     }
 
     if (form.includeProjectPicker) wireProjectPicker();
@@ -1778,6 +1784,21 @@
         return toast(meta.error);
       }
       Object.assign(values, meta);
+      if (entity === 'branches') {
+        const geoHost = document.querySelector('#hub-erp-modal-body [data-hub-geo-branch]');
+        const geo = window.HubGeoBranch?.collect?.(geoHost);
+        if (geo) {
+          if (geo.branchName && !values.nameAr) values.nameAr = geo.branchName;
+          if (geo.country && !values.country) values.country = geo.country;
+          values.city = geo.city || '';
+          values.address = geo.address || '';
+          values.lat = geo.lat;
+          values.lng = geo.lng;
+          values.locationSource = geo.locationSource || 'manual';
+          values.locationConfirmed = geo.locationConfirmed;
+          values.locationUpdatedAt = new Date().toISOString();
+        }
+      }
 
       // Server-side validation for apps (must match UI * markers)
       if (entity === 'apps') {

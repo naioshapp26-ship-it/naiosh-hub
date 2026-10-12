@@ -40,37 +40,6 @@
   /** @type {{ id: string, category: string, file: File, previewUrl?: string, status: string, progress: number, error?: string, attachment?: object, controller?: AbortController }[]} */
   const pendingFiles = [];
 
-  const COUNTRIES = [
-    'المملكة العربية السعودية',
-    'الإمارات العربية المتحدة',
-    'الكويت',
-    'قطر',
-    'البحرين',
-    'عُمان',
-    'الأردن',
-    'مصر',
-    'العراق',
-    'سوريا',
-    'لبنان',
-    'فلسطين',
-    'اليمن',
-    'المغرب',
-    'الجزائر',
-    'تونس',
-    'ليبيا',
-    'السودان',
-    'موريتانيا',
-    'تركيا',
-    'أخرى',
-  ];
-
-  const COUNTRY_ALIASES = {
-    'المملكة العربية السعودية': ['السعودية'],
-    'الإمارات العربية المتحدة': ['الإمارات'],
-    إنجلترا: ['إنجلترا', 'بريطانيا'],
-    أمريكا: ['أمريكا', 'الولايات المتحدة'],
-  };
-
   const esc = (v = '') =>
     String(v)
       .replace(/&/g, '&amp;')
@@ -138,56 +107,6 @@
       const has = options.some((o) => String(typeof o === 'string' ? o : o.id) === String(selected));
       if (has) el.value = String(selected);
     }
-  };
-
-  const countryList = () => {
-    const fromBranches = (window.HubBranchesData?.COUNTRIES || []).map((c) => c.nameAr);
-    const seen = new Set();
-    const out = [];
-    [...fromBranches, ...COUNTRIES].forEach((name) => {
-      const n = String(name || '').trim();
-      if (!n || seen.has(n)) return;
-      seen.add(n);
-      out.push(n);
-    });
-    return out;
-  };
-
-  const branchMatchesCountry = (branch, country) => {
-    if (!country) return false;
-    const aliases = COUNTRY_ALIASES[country] || [];
-    const hay = [branch.nameAr, branch.nameEn, branch.code].map((x) => String(x || '').trim()).filter(Boolean);
-    const needles = [country, ...aliases];
-    return hay.some((n) => needles.some((c) => c && (n === c || n.includes(c) || c.includes(n))));
-  };
-
-  const branchOptions = (country = '') => {
-    const list = window.HubBranchesData?.BRANCHES || [];
-    if (!country) return [];
-    const matched = list.filter((b) => b.code !== 'HQ' && branchMatchesCountry(b, country));
-    if (matched.length) {
-      return matched.map((b) => ({
-        id: b.id,
-        label: `${b.nameAr}${b.type ? ` — ${b.type}` : ''}`,
-      }));
-    }
-    return [{ id: `br-${country}`, label: `فرع ${country}` }];
-  };
-
-  const lockBranch = (placeholder) => {
-    const el = form?.querySelector('[name="branch"]');
-    if (!el) return;
-    fillSelect(el, [], placeholder);
-    el.disabled = true;
-  };
-
-  const unlockBranch = (country, selected) => {
-    const el = form?.querySelector('[name="branch"]');
-    if (!el) return;
-    const options = branchOptions(country);
-    fillSelect(el, options, 'اختر اسم الفرع', selected);
-    el.disabled = !country;
-    if (options.length === 1 && country) el.value = options[0].id;
   };
 
   const incubatorOptions = () => {

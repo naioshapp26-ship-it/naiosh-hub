@@ -12,30 +12,6 @@
   const form = root.querySelector('[data-book-form]');
   const feedback = root.querySelector('[data-book-feedback]');
 
-  const COUNTRIES = [
-    'المملكة العربية السعودية',
-    'الإمارات العربية المتحدة',
-    'الكويت',
-    'قطر',
-    'البحرين',
-    'عُمان',
-    'الأردن',
-    'مصر',
-    'العراق',
-    'سوريا',
-    'لبنان',
-    'فلسطين',
-    'اليمن',
-    'المغرب',
-    'الجزائر',
-    'تونس',
-    'ليبيا',
-    'السودان',
-    'موريتانيا',
-    'تركيا',
-    'أخرى',
-  ];
-
   const params = new URLSearchParams(window.location.search);
   const from = String(params.get('from') || '').toLowerCase();
   const isIncubatorPlatform = kind === 'platform' && from === 'incubator';
@@ -161,61 +137,13 @@
         ];
   };
 
-  const COUNTRY_ALIASES = {
-    'المملكة العربية السعودية': ['السعودية'],
-    'الإمارات العربية المتحدة': ['الإمارات'],
-    إنجلترا: ['إنجلترا', 'بريطانيا'],
-    أمريكا: ['أمريكا', 'الولايات المتحدة'],
-  };
-
-  const countryList = () => {
-    const fromBranches = (window.HubBranchesData?.COUNTRIES || []).map((c) => c.nameAr);
-    const seen = new Set();
-    const out = [];
-    [...fromBranches, ...COUNTRIES].forEach((name) => {
-      const n = String(name || '').trim();
-      if (!n || seen.has(n)) return;
-      seen.add(n);
-      out.push(n);
-    });
-    return out;
-  };
-
-  const branchMatchesCountry = (branch, country) => {
-    if (!country) return false;
-    const aliases = COUNTRY_ALIASES[country] || [];
-    const hay = [branch.nameAr, branch.nameEn, branch.code].map((x) => String(x || '').trim()).filter(Boolean);
-    const needles = [country, ...aliases];
-    return hay.some((n) => needles.some((c) => c && (n === c || n.includes(c) || c.includes(n))));
-  };
-
-  const branchOptions = (country = '') => {
-    const list = window.HubBranchesData?.BRANCHES || [];
-    if (!country) return [];
-    const matched = list.filter((b) => b.code !== 'HQ' && branchMatchesCountry(b, country));
-    if (matched.length) {
-      return matched.map((b) => ({
-        id: b.id,
-        label: `${b.nameAr}${b.type ? ` — ${b.type}` : ''}`,
-      }));
-    }
-    return [{ id: `br-${country}`, label: `فرع ${country}` }];
-  };
-
-  const lockBranch = (placeholder) => {
-    const el = form?.querySelector('[name="branch"]');
+  /** HQ only: disable legacy select if present — never touch HubGeoBranch text inputs. */
+  const lockBranch = () => {
+    const el = form?.querySelector('select[name="branch"], select#book-branch');
     if (!el) return;
-    fillSelect(el, [], placeholder);
+    el.innerHTML = '<option value="">بدون فرع — المنح من المكتب الرئيسي</option>';
+    el.required = false;
     el.disabled = true;
-  };
-
-  const unlockBranch = (country, selected) => {
-    const el = form?.querySelector('[name="branch"]');
-    if (!el) return;
-    const options = branchOptions(country);
-    fillSelect(el, options, 'اختر الفرع', selected);
-    el.disabled = !country;
-    if (options.length === 1 && country) el.value = options[0].id;
   };
 
   const incubatorOptionsAll = () => {
@@ -432,7 +360,7 @@
         countryEl.hidden = false;
         if (params.get('country')) countryEl.value = params.get('country');
       }
-      lockBranch('بدون فرع — المنح من المكتب الرئيسي');
+      lockBranch();
       lockIncubator('بدون حاضنة — المنح من المكتب الرئيسي');
     } else {
       ensureGeoBranch();
