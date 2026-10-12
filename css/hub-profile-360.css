@@ -559,6 +559,30 @@ body.dark-mode .p360-persona-chip.is-active {
   background: rgba(215, 0, 0, 0.06);
 }
 
+.p360-admin-detail:not([hidden]) {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.p360-admin-dossier-bar {
+  border: 2px solid #b91c1c;
+  box-shadow: 0 8px 24px rgba(185, 28, 28, 0.08);
+}
+
+.p360-dossier-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.p360-dossier-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #b91c1c;
+}
+
 .p360-tx-row {
   display: grid;
   gap: 4px;

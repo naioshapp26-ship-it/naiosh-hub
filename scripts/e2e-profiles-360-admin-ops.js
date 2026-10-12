@@ -241,20 +241,24 @@ async function main() {
       await page.waitForSelector(`#p360-admin-rows [data-open="${email}"]`, { timeout: 20000 });
       await page.click(`#p360-admin-rows [data-open="${email}"]`);
       await sleep(2000);
+      await page.waitForSelector('#p360-admin-detail:not([hidden]) #p360-back-list', { timeout: 20000 });
       await page.waitForSelector('#p360-admin-dossier .p360-hero, #p360-admin-detail .p360-hero', { timeout: 20000 });
       const text = await page.evaluate(() => document.querySelector('#p360-admin-detail')?.innerText || '');
-      return text;
+      const listHidden = await page.evaluate(() => !!document.querySelector('#p360-admin-list')?.hidden);
+      return { text, listHidden };
     }
 
     const desk = await browser.newPage();
-    const deskText = await seedAndOpen(desk, { width: 1366, height: 900 });
+    const deskOpen = await seedAndOpen(desk, { width: 1366, height: 900 });
+    const deskText = deskOpen.text || '';
     const deskHasDossier =
-      /رحلة ملف 360/i.test(deskText) &&
+      deskOpen.listHidden &&
+      /ملف الشخص 360|رحلة ملف 360/i.test(deskText) &&
       /رقم الحساب|ACC-/i.test(deskText) &&
-      (/ملخص إداري|الطلبات والمعاملات|الشكاوى والدعم|التذاكر|سجل النشاط/i.test(deskText) ||
+      (/ملخص إداري|الطلبات والمعاملات|الشكاوى والدعم|التذاكر|سجل النشاط|المعاملات/i.test(deskText) ||
         (await desk.$('#p360-admin-dossier .p360-kpi')) != null) &&
       !/تعذّر فتح الملف/i.test(deskText);
-    mark('متصفح كمبيوتر: عرض يفتح الملف الحقيقي', deskHasDossier, deskText.slice(0, 280));
+    mark('متصفح كمبيوتر: عرض يستبدل القائمة بالملف', deskHasDossier, 'listHidden=' + deskOpen.listHidden + ' · ' + deskText.slice(0, 220));
     // Click an ops button if present (close on order)
     const opsClicked = await desk.evaluate(() => {
       const btn = document.querySelector('[data-p360-ops="close"]');
@@ -266,7 +270,7 @@ async function main() {
     mark('متصفح: زر إجراء تشغيلي قابل للضغط', opsClicked || /إحالة|متابعة|إغلاق/.test(deskText), opsClicked ? 'clicked close' : 'ops labels in dossier');
     await desk.screenshot({ path: path.join(ART, 'admin-view-desktop.png'), fullPage: false });
 
-    // theme dark
+    // theme dark — reopen dossier after reload
     await desk.evaluate(() => {
       localStorage.setItem('hubTheme', 'dark');
       document.documentElement.setAttribute('data-theme', 'dark');
@@ -278,11 +282,12 @@ async function main() {
     mark('وضع ليلي يحمّل صفحة الإدارة', true, 'screenshot');
 
     const mob = await browser.newPage();
-    const mobText = await seedAndOpen(mob, { width: 390, height: 844, isMobile: true, hasTouch: true });
+    const mobOpen = await seedAndOpen(mob, { width: 390, height: 844, isMobile: true, hasTouch: true });
+    const mobText = mobOpen.text || '';
     mark(
-      'متصفح موبايل: عرض يفتح الملف',
-      /رحلة ملف 360|تذكرة|ملخص إداري/i.test(mobText),
-      mobText.slice(0, 180)
+      'متصفح موبايل: عرض يستبدل القائمة بالملف',
+      mobOpen.listHidden && /ملف الشخص 360|رحلة ملف 360|ACC-/i.test(mobText),
+      'listHidden=' + mobOpen.listHidden + ' · ' + mobText.slice(0, 160)
     );
     await mob.screenshot({ path: path.join(ART, 'admin-view-mobile.png'), fullPage: false });
 

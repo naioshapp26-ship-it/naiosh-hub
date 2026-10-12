@@ -1075,54 +1075,105 @@
     var pageLimit = 40;
     var lastQuery = '';
     el.innerHTML =
-      '<div class="p360-card" style="margin-bottom:12px">' +
+      '<div id="p360-admin-detail" class="p360-admin-detail" hidden></div>' +
+      '<div id="p360-admin-list" class="p360-card" style="margin-bottom:12px">' +
       '<h2 style="margin:0 0 6px">إدارة الملفات الشخصية 360</h2>' +
-      '<p style="margin:0 0 12px;color:var(--p360-muted);font-weight:700;font-size:13px">صورة شاملة للشخص ومعاملاته — منفصلة عن إدارة العملاء. بحث بالاسم والبريد ورقم الحساب ورقم العميل ورقم الموظف</p>' +
+      '<p style="margin:0 0 12px;color:var(--p360-muted);font-weight:700;font-size:13px">اضغط «عرض» لفتح ملف الشخص الكامل فوق القائمة — معاملات · دعم · حجوزات · ملخص متابعة · إجراءات</p>' +
       '<form id="p360-admin-search" class="p360-form" style="grid-template-columns:1fr auto;display:grid;gap:8px">' +
       '<input name="q" placeholder="الاسم · البريد · ACC- · CL- · EMP-" />' +
       '<button class="p360-btn p360-btn-primary" type="submit">بحث</button></form>' +
       '<p id="p360-admin-count" style="margin:10px 0 0;font-size:13px;font-weight:700;color:var(--p360-muted)"></p>' +
       '<div style="overflow:auto;margin-top:12px"><table class="p360-admin-table"><thead><tr>' +
       '<th>الاسم</th><th>الحساب / العميل</th><th>الصفات</th><th></th></tr></thead><tbody id="p360-admin-rows"></tbody></table></div>' +
-      '<div id="p360-admin-pager" class="p360-pager" style="margin-top:10px;display:flex;gap:8px;align-items:center"></div></div>' +
-      '<div id="p360-admin-detail"></div>';
+      '<div id="p360-admin-pager" class="p360-pager" style="margin-top:10px;display:flex;gap:8px;align-items:center"></div></div>';
+
+    function showList() {
+      selectedEmail = '';
+      var detail = el.querySelector('#p360-admin-detail');
+      var list = el.querySelector('#p360-admin-list');
+      if (detail) {
+        detail.hidden = true;
+        detail.innerHTML = '';
+      }
+      if (list) list.hidden = false;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      loadList(lastQuery, pageOffset).catch(function () {});
+    }
 
     async function openProfile(email) {
       selectedEmail = email;
       var detail = el.querySelector('#p360-admin-detail');
+      var list = el.querySelector('#p360-admin-list');
+      if (list) list.hidden = true;
+      detail.hidden = false;
       detail.innerHTML =
-        '<div class="p360-card"><div class="p360-empty">جاري تحميل ملف <span dir="ltr">' +
+        '<div class="p360-card p360-admin-dossier-bar">' +
+        '<button type="button" class="p360-btn p360-btn-primary" id="p360-back-list"><i class="fas fa-arrow-right"></i> رجوع للقائمة</button>' +
+        '<div class="p360-empty" style="margin:12px 0 0">جاري تحميل ملف <span dir="ltr">' +
         esc(email) +
         '</span>…</div></div>';
-      detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      try {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (e0) {
+        /* ignore */
+      }
+      detail.querySelector('#p360-back-list').addEventListener('click', showList);
+
       try {
         var view = await api('/api/hub/profiles/by-email/' + encodeURIComponent(email));
         if (!view || !view.ok) throw new Error((view && view.error) || 'تعذّر تحميل الملف');
+        var summary = view.sections && view.sections.client && view.sections.client.adminSummary;
         detail.innerHTML =
-          '<div class="p360-card" style="margin-bottom:12px">' +
-          '<h3 style="margin:0 0 8px">الحساب المحدد</h3>' +
-          '<p style="margin:0 0 12px;font-weight:800">' +
+          '<div class="p360-card p360-admin-dossier-bar" style="margin-bottom:12px">' +
+          '<div class="p360-dossier-toolbar">' +
+          '<button type="button" class="p360-btn p360-btn-primary" id="p360-back-list"><i class="fas fa-arrow-right"></i> رجوع للقائمة</button>' +
+          '<strong class="p360-dossier-title">ملف الشخص 360</strong>' +
+          '</div>' +
+          '<p style="margin:10px 0 0;font-weight:800">' +
           esc(view.header?.fullName || email) +
           ' · <span dir="ltr">' +
           esc(email) +
-          '</span> · ' +
+          '</span></p>' +
+          '<p style="margin:6px 0 0;font-weight:700;color:var(--p360-muted)" dir="ltr">' +
           esc(view.header?.accountNo || '') +
           (view.header?.customerId ? ' · CL ' + esc(view.header.customerId) : '') +
           (view.header?.employeeNo ? ' · EMP ' + esc(view.header.employeeNo) : '') +
           '</p>' +
-          '<form id="p360-admin-attach" class="p360-form" style="grid-template-columns:1fr 1fr auto;display:grid;gap:8px">' +
+          (summary
+            ? '<div class="p360-kpis" style="margin-top:12px">' +
+              [
+                ['المعاملات', summary.total],
+                ['مفتوح', summary.open],
+                ['متأخر', summary.overdue],
+                ['متابعة', summary.needsFollowUp],
+              ]
+                .map(function (k) {
+                  return (
+                    '<article class="p360-kpi"><span>' +
+                    esc(k[0]) +
+                    '</span><strong>' +
+                    esc(String(k[1])) +
+                    '</strong></article>'
+                  );
+                })
+                .join('') +
+              '</div>'
+            : '') +
+          '<form id="p360-admin-attach" class="p360-form" style="grid-template-columns:1fr 1fr auto;display:grid;gap:8px;margin-top:12px">' +
           '<select name="type"><option value="trainee">متدرب</option><option value="trainer">مدرب</option><option value="freelancer">مستقل</option><option value="member">عضو</option><option value="client">عميل</option><option value="employee">موظف (يتطلب رقم موظف معتمد)</option></select>' +
           '<input name="employeeNo" placeholder="رقم الموظف إن لزم EMP-...." />' +
           '<button class="p360-btn p360-btn-primary" type="submit">ربط صفة لهذا الحساب</button></form>' +
-          '<div id="p360-admin-audit" style="margin-top:10px"></div></div>';
-        var wrap = document.createElement('div');
-        wrap.id = 'p360-admin-dossier';
-        detail.appendChild(wrap);
+          '<div id="p360-admin-audit" style="margin-top:10px"></div></div>' +
+          '<div id="p360-admin-dossier"></div>';
+        detail.querySelector('#p360-back-list').addEventListener('click', showList);
+        var wrap = detail.querySelector('#p360-admin-dossier');
         renderPage(wrap, view, {
           adminEmail: email,
           showAllPersonas: true,
           canOps: !!(view.header && (view.header.canOps || view.header.canEdit)),
         });
+        if (helpers.toast) helpers.toast('تم فتح ملف ' + (view.header?.fullName || email));
         try {
           var audit = await api('/api/hub/profiles/by-email/' + encodeURIComponent(email) + '/audit');
           el.querySelector('#p360-admin-audit').innerHTML =
@@ -1153,20 +1204,21 @@
             });
             if (helpers.toast) helpers.toast('تم ربط صفة ' + (LABELS[type] || type) + ' بالحساب المحدد');
             await openProfile(selectedEmail);
-            await loadList(lastQuery, pageOffset);
           } catch (err) {
             if (helpers.toast) helpers.toast(err.message);
             else alert(err.message);
           }
         });
-        await loadList(lastQuery, pageOffset);
       } catch (err) {
         detail.innerHTML =
-          '<div class="p360-card"><div class="p360-empty" style="border-color:#b91c1c;color:#b91c1c">' +
+          '<div class="p360-card">' +
+          '<button type="button" class="p360-btn p360-btn-primary" id="p360-back-list"><i class="fas fa-arrow-right"></i> رجوع للقائمة</button>' +
+          '<div class="p360-empty" style="border-color:#b91c1c;color:#b91c1c;margin-top:12px">' +
           '<strong>تعذّر فتح الملف</strong><br>' +
           esc(err.message || 'خطأ غير معروف') +
           (err.status ? ' <small>(HTTP ' + err.status + ')</small>' : '') +
           '</div></div>';
+        detail.querySelector('#p360-back-list').addEventListener('click', showList);
         if (helpers.toast) helpers.toast(err.message || 'تعذّر فتح الملف');
       }
     }
