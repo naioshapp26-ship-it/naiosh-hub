@@ -1423,7 +1423,7 @@
       return false; // don't full re-render (keeps modal state)
     }
     if (key === 'branchQ') {
-      fillOrgSelect('branch');
+      // Branch is free-text — ignore legacy catalog filter hooks
       return false;
     }
     if (key === 'incubatorQ') {
