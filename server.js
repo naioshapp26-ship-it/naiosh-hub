@@ -1583,6 +1583,37 @@ async function handleHubApi(req, res, pathname) {
     );
   };
 
+  if (pathname === '/api/hub/platform-bookings' && req.method === 'GET') {
+    const session = await requireHubAuthOrReject(req, res);
+    if (!session) return true;
+    const url = new URL(req.url, 'http://localhost');
+    const id = String(url.searchParams.get('id') || '').trim();
+    const emailQ = String(url.searchParams.get('email') || '')
+      .trim()
+      .toLowerCase();
+    const state = readPlatformBookingsFile();
+    let bookings = Array.isArray(state.bookings) ? state.bookings : [];
+    const staff = hubSession.isStaffLane(session.lane);
+    if (!staff) {
+      // Clients may only read their own bookings
+      const own = String(session.email || '').trim().toLowerCase();
+      bookings = bookings.filter((b) => String(b.email || '').toLowerCase() === own);
+    } else if (emailQ) {
+      bookings = bookings.filter((b) => String(b.email || '').toLowerCase() === emailQ);
+    }
+    if (id) {
+      const booking = bookings.find((b) => b.id === id) || null;
+      if (!booking) {
+        sendJson(res, 404, { ok: false, error: 'الحجز غير موجود' });
+        return true;
+      }
+      sendJson(res, 200, { ok: true, booking });
+      return true;
+    }
+    sendJson(res, 200, { ok: true, count: bookings.length, bookings: bookings.slice(0, 200) });
+    return true;
+  }
+
   if (pathname === '/api/hub/platform-bookings' && req.method === 'POST') {
     const body = await readBody(req);
     try {

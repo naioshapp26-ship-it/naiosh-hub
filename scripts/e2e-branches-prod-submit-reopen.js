@@ -49,15 +49,28 @@ async function main() {
     const page = await browser.newPage();
     await page.setViewport({ width: 1366, height: 900 });
 
-    // Capture create response
+    // Capture create request/response
     let createPayload = null;
-    page.on('response', async (res) => {
+    page.on('request', (req) => {
       try {
-        if (res.url().includes('/api/hub/platform-bookings') && res.request().method() === 'POST') {
-          createPayload = { status: res.status(), body: await res.json().catch(() => ({})) };
+        if (req.url().includes('/api/hub/platform-bookings') && req.method() === 'POST') {
+          createPayload = createPayload || {};
+          createPayload.requestBody = req.postData() || '';
         }
       } catch {
         /* */
+      }
+    });
+    page.on('response', async (res) => {
+      try {
+        if (res.url().includes('/api/hub/platform-bookings') && res.request().method() === 'POST') {
+          const text = await res.text();
+          let body = {};
+          try { body = JSON.parse(text); } catch { body = { raw: text.slice(0, 200) }; }
+          createPayload = { ...(createPayload || {}), status: res.status(), body };
+        }
+      } catch (e) {
+        createPayload = { ...(createPayload || {}), captureError: String(e.message || e) };
       }
     });
 
@@ -236,7 +249,7 @@ async function main() {
       })
     );
 
-    // Staff reopen if credentials work
+    // Staff reopen if credentials work (GET /api/hub/platform-bookings?id=)
     let staffOk = false;
     let staffEvidence = 'no-login';
     if (SA_PASS && booking?.id) {
@@ -248,22 +261,31 @@ async function main() {
       const lj = await login.json().catch(() => ({}));
       const token = lj.token || lj.accessToken;
       if (token) {
-        const list = await fetch(`${BASE}/api/hub/platform-bookings`, {
+        const one = await fetch(`${BASE}/api/hub/platform-bookings?id=${encodeURIComponent(booking.id)}`, {
           headers: { Accept: 'application/json', Authorization: `Bearer ${token}`, 'X-Hub-Token': token },
         });
-        const lj2 = await list.json().catch(() => ({}));
-        const arr = lj2.bookings || lj2.items || (Array.isArray(lj2) ? lj2 : []);
-        const found = arr.find((b) => b.id === booking.id);
-        staffOk = !!(found && (found.branch === branchName || found.branchName === branchName) && found.lat != null);
+        const oj = await one.json().catch(() => ({}));
+        const found = oj.booking;
+        staffOk = !!(
+          one.status === 200 &&
+          found &&
+          (found.branch === branchName || found.branchName === branchName) &&
+          found.lat != null
+        );
         staffEvidence = JSON.stringify({
-          listStatus: list.status,
+          getStatus: one.status,
           found: !!found,
           branch: found?.branch,
           lat: found?.lat,
           country: found?.country,
+          city: found?.city,
         });
       } else {
-        staffEvidence = JSON.stringify({ loginStatus: login.status, msg: lj.message || lj.error });
+        staffEvidence = JSON.stringify({
+          loginStatus: login.status,
+          msg: lj.message || lj.error,
+          note: 'بيانات دخول الموظف على الإنتاج لا تطابق متغير البيئة — الحفظ نفسه نجح في POST',
+        });
       }
     }
     mark('staff reopen booking geo fields', staffOk, staffEvidence);
