@@ -1559,6 +1559,11 @@ async function handleHubApi(req, res, pathname) {
   }
 
   const platformBookingsPath = path.join(ROOT, 'data', 'platform-bookings.json');
+  const PLATFORM_BOOKINGS_META_KEY = 'platform_bookings_v1';
+  let platformBookingsMem = null;
+  let platformBookingsHydrated = false;
+  let platformBookingsDbQueue = Promise.resolve();
+
   const ensurePlatformBookingsFile = () => {
     const dir = path.dirname(platformBookingsPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -1566,7 +1571,7 @@ async function handleHubApi(req, res, pathname) {
       fs.writeFileSync(platformBookingsPath, JSON.stringify({ version: 1, bookings: [] }, null, 2), 'utf8');
     }
   };
-  const readPlatformBookingsFile = () => {
+  const readPlatformBookingsFileSync = () => {
     ensurePlatformBookingsFile();
     try {
       return JSON.parse(fs.readFileSync(platformBookingsPath, 'utf8'));
@@ -1574,18 +1579,87 @@ async function handleHubApi(req, res, pathname) {
       return { version: 1, bookings: [] };
     }
   };
+  const persistPlatformBookingsToDb = (state) => {
+    platformBookingsDbQueue = platformBookingsDbQueue
+      .then(async () => {
+        try {
+          const { getDatabaseUrl, withClient } = require('./db/migrate');
+          if (!getDatabaseUrl()) return;
+          const payload = {
+            version: state.version || 1,
+            updatedAt: state.updatedAt || new Date().toISOString(),
+            bookings: Array.isArray(state.bookings) ? state.bookings.slice(0, 500) : [],
+          };
+          await withClient(async (client) => {
+            await client.query(
+              `INSERT INTO hub_meta (key, value, updated_at)
+               VALUES ($1, $2::jsonb, NOW())
+               ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+              [PLATFORM_BOOKINGS_META_KEY, JSON.stringify(payload)]
+            );
+          });
+        } catch (err) {
+          console.warn('[platform-bookings] DB persist skipped:', err.message);
+        }
+      })
+      .catch(() => {});
+    return platformBookingsDbQueue;
+  };
+  const hydratePlatformBookings = async () => {
+    if (platformBookingsHydrated && platformBookingsMem) return platformBookingsMem;
+    platformBookingsHydrated = true;
+    try {
+      const { getDatabaseUrl, withClient } = require('./db/migrate');
+      if (getDatabaseUrl()) {
+        const fromDb = await withClient(async (client) => {
+          const r = await client.query(`SELECT value FROM hub_meta WHERE key = $1 LIMIT 1`, [
+            PLATFORM_BOOKINGS_META_KEY,
+          ]);
+          if (!r.rows[0]?.value) return null;
+          const value = r.rows[0].value;
+          return typeof value === 'string' ? JSON.parse(value) : value;
+        });
+        if (fromDb && Array.isArray(fromDb.bookings) && fromDb.bookings.length) {
+          platformBookingsMem = {
+            version: fromDb.version || 1,
+            bookings: fromDb.bookings,
+            updatedAt: fromDb.updatedAt || new Date().toISOString(),
+          };
+          ensurePlatformBookingsFile();
+          fs.writeFileSync(platformBookingsPath, JSON.stringify(platformBookingsMem, null, 2), 'utf8');
+          return platformBookingsMem;
+        }
+      }
+    } catch (err) {
+      console.warn('[platform-bookings] DB hydrate skipped:', err.message);
+    }
+    platformBookingsMem = readPlatformBookingsFileSync();
+    if ((platformBookingsMem.bookings || []).length) {
+      await persistPlatformBookingsToDb(platformBookingsMem);
+    }
+    return platformBookingsMem;
+  };
+  const readPlatformBookingsFile = () => {
+    if (platformBookingsMem) return platformBookingsMem;
+    return readPlatformBookingsFileSync();
+  };
   const writePlatformBookingsFile = (state) => {
     ensurePlatformBookingsFile();
-    fs.writeFileSync(
-      platformBookingsPath,
-      JSON.stringify({ ...state, updatedAt: new Date().toISOString() }, null, 2),
-      'utf8'
-    );
+    const next = {
+      ...state,
+      version: state.version || 1,
+      bookings: Array.isArray(state.bookings) ? state.bookings.slice(0, 500) : [],
+      updatedAt: new Date().toISOString(),
+    };
+    platformBookingsMem = next;
+    fs.writeFileSync(platformBookingsPath, JSON.stringify(next, null, 2), 'utf8');
+    persistPlatformBookingsToDb(next);
   };
 
   if (pathname === '/api/hub/platform-bookings' && req.method === 'GET') {
     const session = await requireHubAuthOrReject(req, res);
     if (!session) return true;
+    await hydratePlatformBookings();
     const url = new URL(req.url, 'http://localhost');
     const id = String(url.searchParams.get('id') || '').trim();
     const emailQ = String(url.searchParams.get('email') || '')
@@ -1618,11 +1692,17 @@ async function handleHubApi(req, res, pathname) {
     const body = await readBody(req);
     try {
       const { booking } = platformBooking.validateAndNormalize(body || {});
+      await hydratePlatformBookings();
       const state = readPlatformBookingsFile();
       state.bookings = Array.isArray(state.bookings) ? state.bookings : [];
       state.bookings.unshift(booking);
       state.bookings = state.bookings.slice(0, 500);
       writePlatformBookingsFile(state);
+      try {
+        await platformBookingsDbQueue;
+      } catch {
+        /* ignore */
+      }
       sendJson(res, 201, { ok: true, booking });
     } catch (err) {
       sendJson(res, err.status || 400, {
@@ -2475,6 +2555,12 @@ async function boot() {
     }
     const legacy = await staffCreds.ensureLegacyDemoBootstrap();
     if (legacy.ok && legacy.created) console.log(`Legacy demo staff seeded: ${legacy.created}`);
+    const e2eStaff = await staffCreds.ensureE2eStaffBootstrap();
+    if (e2eStaff.ok) {
+      console.log(
+        `E2E staff ready: ${e2eStaff.email} (${e2eStaff.employeeNo})${e2eStaff.created ? ' [created]' : ' [updated]'}`
+      );
+    }
   } catch (error) {
     console.error('Staff credentials bootstrap skipped:', error.message);
   }
