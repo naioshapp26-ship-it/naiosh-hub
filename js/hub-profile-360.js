@@ -93,7 +93,8 @@
     return v === EMPTY || v == null || v === '' || (Array.isArray(v) && !v.length);
   }
 
-  function renderValue(v) {
+  function renderValue(v, opts) {
+    opts = opts || {};
     if (v && typeof v === 'object' && v.restricted) {
       return '<div class="p360-restricted">' + esc(v.message || 'محجوب') + '</div>';
     }
@@ -105,16 +106,49 @@
           .map(function (item) {
             if (typeof item === 'string') return '<li><span>' + esc(item) + '</span></li>';
             var title = item.name || item.title || item.subject || item.code || item.id || '—';
-            var sub = item.status || item.plan || item.createdAt || '';
+            var num = item.number && item.number !== item.id ? item.number : item.id || '';
+            var subParts = [item.status, item.assignee ? 'مسؤول: ' + item.assignee : '', item.createdAt || item.plan || ''].filter(
+              Boolean
+            );
+            var linkHref = opts.admin ? item.adminHref || item.href : item.href;
+            var opsHtml = '';
+            if (opts.admin && opts.canOps && item.kind && item.id) {
+              opsHtml =
+                '<div class="p360-ops">' +
+                '<button type="button" class="p360-btn p360-btn-sm" data-p360-ops="refer" data-kind="' +
+                esc(item.kind) +
+                '" data-id="' +
+                esc(item.id) +
+                '">إحالة</button>' +
+                '<button type="button" class="p360-btn p360-btn-sm" data-p360-ops="open" data-kind="' +
+                esc(item.kind) +
+                '" data-id="' +
+                esc(item.id) +
+                '">متابعة</button>' +
+                '<button type="button" class="p360-btn p360-btn-sm" data-p360-ops="close" data-kind="' +
+                esc(item.kind) +
+                '" data-id="' +
+                esc(item.id) +
+                '">إغلاق</button>' +
+                '</div>';
+            }
             return (
-              '<li><span>' +
+              '<li class="p360-tx-row">' +
+              '<span><strong>' +
               esc(title) +
+              '</strong>' +
+              (num ? ' <small dir="ltr">#' + esc(String(num)) + '</small>' : '') +
               (item.total != null || item.amount != null
                 ? ' · ' + esc(String(item.total != null ? item.total : item.amount))
                 : '') +
+              (linkHref
+                ? ' · <a class="p360-tx-link" href="' + esc(linkHref) + '" target="_blank" rel="noopener">فتح السجل</a>'
+                : '') +
               '</span><small>' +
-              esc(sub) +
-              '</small></li>'
+              esc(subParts.join(' · ')) +
+              '</small>' +
+              opsHtml +
+              '</li>'
             );
           })
           .join('') +
@@ -186,7 +220,8 @@
     ];
   }
 
-  function sectionCards(persona, sections) {
+  function sectionCards(persona, sections, opts) {
+    opts = opts || {};
     var s = sections[persona] || {};
     if (s.available === false) {
       return (
@@ -198,19 +233,62 @@
       );
     }
     var blocks = [];
-    function push(title, val) {
-      blocks.push('<div class="p360-card"><h3>' + esc(title) + '</h3>' + renderValue(val) + '</div>');
+    var txOpts = { admin: !!opts.adminEmail, canOps: !!opts.canOps };
+    function push(title, val, useTx) {
+      blocks.push(
+        '<div class="p360-card" data-p360-section="' +
+          esc(title) +
+          '"><h3>' +
+          esc(title) +
+          '</h3>' +
+          renderValue(val, useTx ? txOpts : {}) +
+          '</div>'
+      );
     }
     if (persona === 'client') {
+      if (s.basics) {
+        push('البيانات الأساسية', {
+          الاسم: s.basics.fullName || '—',
+          البريد: s.basics.email || '—',
+          الجوال: s.basics.phone || '—',
+          'رقم الحساب': s.basics.accountNo || '—',
+          'رقم العميل': s.basics.customerId || '—',
+          الشركة: s.basics.company || '—',
+          المدينة: s.basics.city || '—',
+          الدولة: s.basics.country || '—',
+          الحالة: s.basics.status || '—',
+        });
+      }
+      if (s.adminSummary && opts.adminEmail) {
+        push('ملخص إداري للمتابعة', {
+          'إجمالي المعاملات': s.adminSummary.total,
+          المفتوح: s.adminSummary.open,
+          المتأخر: s.adminSummary.overdue,
+          المغلق: s.adminSummary.closed,
+          'يحتاج متابعة': s.adminSummary.needsFollowUp,
+        });
+        push('مشكلات تحتاج متابعة', s.needsFollowUp, true);
+      }
+      push('الطلبات والمعاملات', s.orders, true);
+      push('طلبات الخدمة', s.serviceRequests, true);
+      push('الحجوزات', s.bookings, true);
+      push(
+        'الشكاوى والدعم',
+        (function () {
+          var a = Array.isArray(s.complaints) ? s.complaints : [];
+          var b = Array.isArray(s.tickets) ? s.tickets : [];
+          var all = a.concat(b);
+          return all.length ? all : EMPTY;
+        })(),
+        true
+      );
+      push('الاشتراكات', s.subscriptions, true);
+      push('المرفقات', s.attachments);
       push('الأنظمة المشتركة', s.systems);
-      push('الطلبات / المشتريات', s.orders);
-      push('التذاكر', s.tickets);
-      push('طلبات الخدمة', s.serviceRequests);
-      push('الاشتراكات', s.subscriptions);
-      push('الفواتير', s.invoices);
+      push('الفواتير', s.invoices, true);
       push('المحفظة', s.wallet);
       push('الإشعارات', s.notifications);
-      push('النشاط', s.activity);
+      push('سجل النشاط', s.activity);
     } else if (persona === 'employee') {
       push('البيانات الوظيفية', {
         'رقم الموظف': s.employeeNo || EMPTY,
@@ -267,7 +345,10 @@
       return p.status === 'active';
     });
     var sectionsHtml = '';
-    if (opts.showAllPersonas !== false && activePersonas.length > 1 && !opts.adminEmail) {
+    var showAll = opts.showAllPersonas === true || (opts.showAllPersonas !== false && activePersonas.length > 1 && !opts.adminEmail);
+    // Admin dossier: always surface every active persona block (client + employee…)
+    if (opts.adminEmail) showAll = true;
+    if (showAll && activePersonas.length) {
       activePersonas.forEach(function (p) {
         sectionsHtml +=
           '<div class="p360-persona-block" data-persona-block="' +
@@ -278,12 +359,28 @@
           (p.type === persona ? ' · الحالي' : '') +
           '</h2>' +
           '<div class="p360-grid">' +
-          sectionCards(p.type, data.sections || {}) +
+          sectionCards(p.type, data.sections || {}, opts) +
           '</div></div>';
       });
     } else {
-      sectionsHtml = '<div class="p360-grid">' + sectionCards(persona, data.sections || {}) + '</div>';
+      sectionsHtml = '<div class="p360-grid">' + sectionCards(persona || 'client', data.sections || {}, opts) + '</div>';
     }
+    // If admin and no personas listed yet, still show client section when available
+    if (opts.adminEmail && !sectionsHtml && data.sections && data.sections.client) {
+      sectionsHtml = '<div class="p360-grid">' + sectionCards('client', data.sections, opts) + '</div>';
+    }
+
+    var kpisAdmin = [];
+    if (opts.adminEmail && data.sections && data.sections.client && data.sections.client.adminSummary) {
+      var sm = data.sections.client.adminSummary;
+      kpisAdmin = [
+        { label: 'المعاملات', value: sm.total },
+        { label: 'مفتوح', value: sm.open },
+        { label: 'متأخر', value: sm.overdue },
+        { label: 'يحتاج متابعة', value: sm.needsFollowUp },
+      ];
+    }
+    var kpisFinal = kpisAdmin.length ? kpisAdmin : kpis;
 
     root.innerHTML =
       '<section class="p360-hero">' +
@@ -296,13 +393,16 @@
       '<div class="p360-avatar-status" id="p360-avatar-status" hidden></div>' +
       '</div>' +
       '<div class="p360-identity">' +
-      '<p class="p360-eyebrow">ملفي الشخصي 360</p>' +
+      '<p class="p360-eyebrow">' +
+      (opts.adminEmail ? 'ملف الشخص 360 · إدارة' : 'ملفي الشخصي 360') +
+      '</p>' +
       '<h1>' +
       esc(header.fullName || '—') +
       '</h1>' +
       '<p class="p360-title">' +
       esc(header.accountType || header.personaLabel || header.title || '') +
       (header.department ? ' · ' + esc(header.department) : '') +
+      (header.role ? ' · ' + esc(header.role) : '') +
       '</p>' +
       '<div class="p360-meta-grid">' +
       '<div><span>رقم الحساب</span><strong dir="ltr">' +
@@ -310,6 +410,9 @@
       '</strong></div>' +
       '<div><span>رقم العميل</span><strong dir="ltr">' +
       esc(header.customerId || (persona === 'client' ? header.roleRef : '') || '—') +
+      '</strong></div>' +
+      '<div><span>رقم الموظف</span><strong dir="ltr">' +
+      esc(header.employeeNo || '—') +
       '</strong></div>' +
       '<div><span>رقم الجوال</span><strong dir="ltr">' +
       esc(header.phone || '—') +
@@ -403,7 +506,7 @@
         .join('') +
       '</div>' +
       '<div class="p360-kpis">' +
-      kpis
+      kpisFinal
         .map(function (k) {
           return (
             '<article class="p360-kpi"><span>' +
@@ -845,7 +948,10 @@
           if (!collected.items.length) return toast('اختر مرفقًا أولًا');
           for (var i = 0; i < collected.items.length; i++) {
             var it = collected.items[i];
-            await api('/api/hub/profiles/me/documents', {
+            var docPath = opts.adminEmail
+              ? '/api/hub/profiles/by-email/' + encodeURIComponent(opts.adminEmail) + '/documents'
+              : '/api/hub/profiles/me/documents';
+            await api(docPath, {
               method: 'POST',
               body: {
                 name: it.name,
@@ -866,7 +972,10 @@
             });
           }
           HubFormAttachments.reset(attachHost);
-          renderPage(root, await api('/api/hub/profiles/me'), opts);
+          var reloadPath = opts.adminEmail
+            ? '/api/hub/profiles/by-email/' + encodeURIComponent(opts.adminEmail)
+            : '/api/hub/profiles/me';
+          renderPage(root, await api(reloadPath), opts);
           toast('تم حفظ المرفقات');
         } catch (e) {
           toast(e.message || 'فشل حفظ المرفقات');
@@ -884,12 +993,15 @@
         var files = Array.prototype.slice.call(docFile.files || []);
         if (!files.length) return;
         try {
+          var docPath = opts.adminEmail
+            ? '/api/hub/profiles/by-email/' + encodeURIComponent(opts.adminEmail) + '/documents'
+            : '/api/hub/profiles/me/documents';
           for (var i = 0; i < files.length; i++) {
             var file = files[i];
             var up = await uploadFile(file);
             var url = up.url || up.path || up.publicUrl;
             var kind = file.type.indexOf('image/') === 0 ? 'image' : file.type.indexOf('video/') === 0 ? 'video' : 'file';
-            await api('/api/hub/profiles/me/documents', {
+            await api(docPath, {
               method: 'POST',
               body: {
                 name: file.name,
@@ -900,11 +1012,39 @@
               },
             });
           }
-          renderPage(root, await api('/api/hub/profiles/me'), opts);
+          var reloadPath = opts.adminEmail
+            ? '/api/hub/profiles/by-email/' + encodeURIComponent(opts.adminEmail)
+            : '/api/hub/profiles/me';
+          renderPage(root, await api(reloadPath), opts);
           toast(files.length > 1 ? 'تم إرفاق ' + files.length + ' ملفات' : 'تم إرفاق الملف');
         } catch (e) {
           toast(e.message || 'فشل رفع المرفق');
         }
+      });
+    }
+
+    // Admin operational actions on linked transactions
+    if (opts.adminEmail) {
+      root.querySelectorAll('[data-p360-ops]').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          try {
+            btn.disabled = true;
+            await api('/api/hub/profiles/by-email/' + encodeURIComponent(opts.adminEmail) + '/ops', {
+              method: 'POST',
+              body: {
+                action: btn.getAttribute('data-p360-ops'),
+                kind: btn.getAttribute('data-kind'),
+                id: btn.getAttribute('data-id'),
+              },
+            });
+            toast('تم تحديث المعاملة', 'ok');
+            renderPage(root, await api('/api/hub/profiles/by-email/' + encodeURIComponent(opts.adminEmail)), opts);
+          } catch (e) {
+            toast(e.message || 'فشل الإجراء', 'error');
+          } finally {
+            btn.disabled = false;
+          }
+        });
       });
     }
   }
@@ -931,123 +1071,203 @@
     if (!el) return;
     helpers = helpers || {};
     var selectedEmail = '';
+    var pageOffset = 0;
+    var pageLimit = 40;
+    var lastQuery = '';
     el.innerHTML =
       '<div class="p360-card" style="margin-bottom:12px">' +
       '<h2 style="margin:0 0 6px">إدارة الملفات الشخصية 360</h2>' +
-      '<p style="margin:0 0 12px;color:var(--p360-muted);font-weight:700;font-size:13px">عرض الحسابات الحقيقية من قاعدة الهوية — بحث بالاسم والبريد ورقم الحساب ورقم العميل ورقم الموظف</p>' +
+      '<p style="margin:0 0 12px;color:var(--p360-muted);font-weight:700;font-size:13px">صورة شاملة للشخص ومعاملاته — منفصلة عن إدارة العملاء. بحث بالاسم والبريد ورقم الحساب ورقم العميل ورقم الموظف</p>' +
       '<form id="p360-admin-search" class="p360-form" style="grid-template-columns:1fr auto;display:grid;gap:8px">' +
       '<input name="q" placeholder="الاسم · البريد · ACC- · CL- · EMP-" />' +
       '<button class="p360-btn p360-btn-primary" type="submit">بحث</button></form>' +
       '<p id="p360-admin-count" style="margin:10px 0 0;font-size:13px;font-weight:700;color:var(--p360-muted)"></p>' +
       '<div style="overflow:auto;margin-top:12px"><table class="p360-admin-table"><thead><tr>' +
-      '<th>الاسم</th><th>الحساب / العميل</th><th>الصفات</th><th></th></tr></thead><tbody id="p360-admin-rows"></tbody></table></div></div>' +
+      '<th>الاسم</th><th>الحساب / العميل</th><th>الصفات</th><th></th></tr></thead><tbody id="p360-admin-rows"></tbody></table></div>' +
+      '<div id="p360-admin-pager" class="p360-pager" style="margin-top:10px;display:flex;gap:8px;align-items:center"></div></div>' +
       '<div id="p360-admin-detail"></div>';
 
     async function openProfile(email) {
       selectedEmail = email;
       var detail = el.querySelector('#p360-admin-detail');
-      var view = await api('/api/hub/profiles/by-email/' + encodeURIComponent(email));
       detail.innerHTML =
-        '<div class="p360-card" style="margin-bottom:12px">' +
-        '<h3 style="margin:0 0 8px">الحساب المحدد</h3>' +
-        '<p style="margin:0 0 12px;font-weight:800">' +
-        esc(view.header?.fullName || email) +
-        ' · <span dir="ltr">' +
+        '<div class="p360-card"><div class="p360-empty">جاري تحميل ملف <span dir="ltr">' +
         esc(email) +
-        '</span> · ' +
-        esc(view.header?.accountNo || '') +
-        (view.header?.customerId ? ' · عميل ' + esc(view.header.customerId) : '') +
-        '</p>' +
-        '<form id="p360-admin-attach" class="p360-form" style="grid-template-columns:1fr 1fr auto;display:grid;gap:8px">' +
-        '<select name="type"><option value="trainee">متدرب</option><option value="trainer">مدرب</option><option value="freelancer">مستقل</option><option value="member">عضو</option><option value="client">عميل</option><option value="employee">موظف (يتطلب رقم موظف معتمد)</option></select>' +
-        '<input name="employeeNo" placeholder="رقم الموظف إن لزم EMP-...." />' +
-        '<button class="p360-btn p360-btn-primary" type="submit">ربط صفة لهذا الحساب</button></form>' +
-        '<div id="p360-admin-audit" style="margin-top:10px"></div></div>';
-      var wrap = document.createElement('div');
-      detail.appendChild(wrap);
-      renderPage(wrap, view, { adminEmail: email, showAllPersonas: false });
-      var audit = await api('/api/hub/profiles/by-email/' + encodeURIComponent(email) + '/audit');
-      el.querySelector('#p360-admin-audit').innerHTML =
-        '<h4>سجل التغييرات</h4>' +
-        renderValue(
-          (audit.items || []).map(function (a) {
-            return { name: a.action, status: (a.by || '') + ' · ' + (a.at || '') };
-          })
-        );
-      el.querySelector('#p360-admin-attach').addEventListener('submit', async function (ev) {
-        ev.preventDefault();
-        if (!selectedEmail) {
-          if (helpers.toast) helpers.toast('اختر حسابًا أولًا عبر عرض');
-          return;
-        }
-        var fd = new FormData(ev.target);
-        var type = String(fd.get('type'));
-        var refs = {};
-        if (type === 'employee') refs.employeeNo = String(fd.get('employeeNo') || '').trim();
+        '</span>…</div></div>';
+      detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      try {
+        var view = await api('/api/hub/profiles/by-email/' + encodeURIComponent(email));
+        if (!view || !view.ok) throw new Error((view && view.error) || 'تعذّر تحميل الملف');
+        detail.innerHTML =
+          '<div class="p360-card" style="margin-bottom:12px">' +
+          '<h3 style="margin:0 0 8px">الحساب المحدد</h3>' +
+          '<p style="margin:0 0 12px;font-weight:800">' +
+          esc(view.header?.fullName || email) +
+          ' · <span dir="ltr">' +
+          esc(email) +
+          '</span> · ' +
+          esc(view.header?.accountNo || '') +
+          (view.header?.customerId ? ' · CL ' + esc(view.header.customerId) : '') +
+          (view.header?.employeeNo ? ' · EMP ' + esc(view.header.employeeNo) : '') +
+          '</p>' +
+          '<form id="p360-admin-attach" class="p360-form" style="grid-template-columns:1fr 1fr auto;display:grid;gap:8px">' +
+          '<select name="type"><option value="trainee">متدرب</option><option value="trainer">مدرب</option><option value="freelancer">مستقل</option><option value="member">عضو</option><option value="client">عميل</option><option value="employee">موظف (يتطلب رقم موظف معتمد)</option></select>' +
+          '<input name="employeeNo" placeholder="رقم الموظف إن لزم EMP-...." />' +
+          '<button class="p360-btn p360-btn-primary" type="submit">ربط صفة لهذا الحساب</button></form>' +
+          '<div id="p360-admin-audit" style="margin-top:10px"></div></div>';
+        var wrap = document.createElement('div');
+        wrap.id = 'p360-admin-dossier';
+        detail.appendChild(wrap);
+        renderPage(wrap, view, {
+          adminEmail: email,
+          showAllPersonas: true,
+          canOps: !!(view.header && (view.header.canOps || view.header.canEdit)),
+        });
         try {
-          await api('/api/hub/profiles/by-email/' + encodeURIComponent(selectedEmail) + '/persona', {
-            method: 'POST',
-            body: { type: type, refs: refs },
-          });
-          if (helpers.toast) helpers.toast('تم ربط صفة ' + (LABELS[type] || type) + ' بالحساب المحدد');
-          await openProfile(selectedEmail);
-          await loadList(el.querySelector('#p360-admin-search [name=q]')?.value || '');
-        } catch (err) {
-          if (helpers.toast) helpers.toast(err.message);
-          else alert(err.message);
+          var audit = await api('/api/hub/profiles/by-email/' + encodeURIComponent(email) + '/audit');
+          el.querySelector('#p360-admin-audit').innerHTML =
+            '<h4>سجل التغييرات</h4>' +
+            renderValue(
+              (audit.items || []).map(function (a) {
+                return { name: a.action, status: (a.by || '') + ' · ' + (a.at || '') };
+              })
+            );
+        } catch (auditErr) {
+          el.querySelector('#p360-admin-audit').innerHTML =
+            '<p class="p360-empty">تعذّر تحميل سجل التغييرات: ' + esc(auditErr.message || '') + '</p>';
         }
-      });
+        el.querySelector('#p360-admin-attach').addEventListener('submit', async function (ev) {
+          ev.preventDefault();
+          if (!selectedEmail) {
+            if (helpers.toast) helpers.toast('اختر حسابًا أولًا عبر عرض');
+            return;
+          }
+          var fd = new FormData(ev.target);
+          var type = String(fd.get('type'));
+          var refs = {};
+          if (type === 'employee') refs.employeeNo = String(fd.get('employeeNo') || '').trim();
+          try {
+            await api('/api/hub/profiles/by-email/' + encodeURIComponent(selectedEmail) + '/persona', {
+              method: 'POST',
+              body: { type: type, refs: refs },
+            });
+            if (helpers.toast) helpers.toast('تم ربط صفة ' + (LABELS[type] || type) + ' بالحساب المحدد');
+            await openProfile(selectedEmail);
+            await loadList(lastQuery, pageOffset);
+          } catch (err) {
+            if (helpers.toast) helpers.toast(err.message);
+            else alert(err.message);
+          }
+        });
+        await loadList(lastQuery, pageOffset);
+      } catch (err) {
+        detail.innerHTML =
+          '<div class="p360-card"><div class="p360-empty" style="border-color:#b91c1c;color:#b91c1c">' +
+          '<strong>تعذّر فتح الملف</strong><br>' +
+          esc(err.message || 'خطأ غير معروف') +
+          (err.status ? ' <small>(HTTP ' + err.status + ')</small>' : '') +
+          '</div></div>';
+        if (helpers.toast) helpers.toast(err.message || 'تعذّر فتح الملف');
+      }
     }
 
-    async function loadList(q) {
-      var data = await api('/api/hub/profiles?q=' + encodeURIComponent(q || '') + '&limit=100');
+    async function loadList(q, offset) {
+      lastQuery = q || '';
+      pageOffset = Math.max(0, Number(offset) || 0);
+      var data = await api(
+        '/api/hub/profiles?q=' +
+          encodeURIComponent(lastQuery) +
+          '&limit=' +
+          pageLimit +
+          '&offset=' +
+          pageOffset
+      );
       var tbody = el.querySelector('#p360-admin-rows');
       var count = el.querySelector('#p360-admin-count');
-      if (count) count.textContent = 'عدد النتائج: ' + (data.items || []).length + (data.synced ? ' (مزامنة من الحسابات الحقيقية)' : '');
-      tbody.innerHTML = (data.items || [])
-        .map(function (p) {
-          return (
-            '<tr class="' +
-            (selectedEmail === p.email ? 'is-selected' : '') +
-            '"><td>' +
-            esc(p.fullName) +
-            '<br><small dir="ltr">' +
-            esc(p.email) +
-            '</small></td><td dir="ltr">' +
-            esc(p.accountNo) +
-            (p.customerId ? '<br><small>عميل ' + esc(p.customerId) + '</small>' : '') +
-            (p.employeeNo ? '<br><small>موظف ' + esc(p.employeeNo) + '</small>' : '') +
-            '</td><td>' +
-            esc(
-              (p.personas || [])
-                .filter(function (x) {
-                  return x.status === 'active';
-                })
-                .map(function (x) {
-                  return x.label;
-                })
-                .join(' · ') || '—'
-            ) +
-            '</td><td><button type="button" class="p360-btn" data-open="' +
-            esc(p.email) +
-            '">عرض</button></td></tr>'
-          );
-        })
-        .join('') || '<tr><td colspan="4"><div class="p360-empty">لا توجد حسابات مطابقة</div></td></tr>';
+      var total = data.total != null ? data.total : (data.items || []).length;
+      if (count) {
+        count.textContent =
+          'عدد النتائج: ' +
+          total +
+          (data.synced ? ' (مزامنة من الحسابات الحقيقية)' : '') +
+          ' · عرض ' +
+          (pageOffset + 1) +
+          '–' +
+          Math.min(pageOffset + pageLimit, total);
+      }
+      tbody.innerHTML =
+        (data.items || [])
+          .map(function (p) {
+            return (
+              '<tr class="' +
+              (selectedEmail === p.email ? 'is-selected' : '') +
+              '"><td>' +
+              esc(p.fullName) +
+              '<br><small dir="ltr">' +
+              esc(p.email) +
+              '</small></td><td dir="ltr">' +
+              esc(p.accountNo) +
+              (p.customerId ? '<br><small>CL ' + esc(p.customerId) + '</small>' : '') +
+              (p.employeeNo ? '<br><small>EMP ' + esc(p.employeeNo) + '</small>' : '') +
+              '</td><td>' +
+              esc(
+                (p.personas || [])
+                  .filter(function (x) {
+                    return x.status === 'active';
+                  })
+                  .map(function (x) {
+                    return x.label;
+                  })
+                  .join(' · ') || '—'
+              ) +
+              '</td><td><button type="button" class="p360-btn" data-open="' +
+              esc(p.email) +
+              '">عرض</button></td></tr>'
+            );
+          })
+          .join('') || '<tr><td colspan="4"><div class="p360-empty">لا توجد حسابات مطابقة</div></td></tr>';
       tbody.querySelectorAll('[data-open]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          openProfile(btn.dataset.open).catch(function (err) {
-            if (helpers.toast) helpers.toast(err.message);
-          });
+          openProfile(btn.dataset.open);
         });
       });
+      var pager = el.querySelector('#p360-admin-pager');
+      if (pager) {
+        var hasPrev = pageOffset > 0;
+        var hasNext = pageOffset + pageLimit < total;
+        pager.innerHTML =
+          '<button type="button" class="p360-btn" id="p360-prev" ' +
+          (hasPrev ? '' : 'disabled') +
+          '>السابق</button>' +
+          '<button type="button" class="p360-btn" id="p360-next" ' +
+          (hasNext ? '' : 'disabled') +
+          '>التالي</button>';
+        var prev = pager.querySelector('#p360-prev');
+        var next = pager.querySelector('#p360-next');
+        if (prev) {
+          prev.addEventListener('click', function () {
+            loadList(lastQuery, Math.max(0, pageOffset - pageLimit)).catch(function (e) {
+              if (helpers.toast) helpers.toast(e.message);
+            });
+          });
+        }
+        if (next) {
+          next.addEventListener('click', function () {
+            loadList(lastQuery, pageOffset + pageLimit).catch(function (e) {
+              if (helpers.toast) helpers.toast(e.message);
+            });
+          });
+        }
+      }
     }
 
     el.querySelector('#p360-admin-search').addEventListener('submit', function (ev) {
       ev.preventDefault();
-      loadList(new FormData(ev.target).get('q'));
+      loadList(new FormData(ev.target).get('q'), 0).catch(function (e) {
+        if (helpers.toast) helpers.toast(e.message);
+      });
     });
-    loadList('').catch(function (e) {
+    loadList('', 0).catch(function (e) {
       if (helpers.toast) helpers.toast(e.message);
     });
   }
