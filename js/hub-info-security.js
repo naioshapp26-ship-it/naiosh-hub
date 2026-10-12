@@ -1095,6 +1095,7 @@
         ${formField('المالك', 'sec-ctrl-owner', c?.owner || '', 'select', `<option value=""></option>${people.map((p) => `<option ${c?.owner === p ? 'selected' : ''} value="${esc(p)}">${esc(p)}</option>`).join('')}`)}
         ${formField('مراجعة قادمة', 'sec-ctrl-next', c?.nextReview || '', 'date')}
         ${formField('الوصف', 'sec-ctrl-desc', c?.description || '', 'textarea')}
+        <div id="sec-ctrl-attachments" data-hub-attach-host="1"></div>
       `;
       footer = `<button type="button" class="btn btn-ghost" data-action="sec-modal-close">إلغاء</button>
         <button type="button" class="btn btn-primary" data-action="sec-control-save" data-id="${esc(c?.id || '')}">${c ? 'حفظ' : 'إنشاء'}</button>`;
@@ -1112,6 +1113,7 @@
         ${formField('تاريخ مستهدف', 'sec-risk-target', r?.targetDate || '', 'date')}
         ${formField('الحالة', 'sec-risk-status', '', 'select', RISK_STATUSES.map((s) => `<option ${r?.status === s ? 'selected' : ''} value="${esc(s)}">${esc(s)}</option>`).join(''))}
         ${formField('الوصف', 'sec-risk-desc', r?.description || '', 'textarea')}
+        <div id="sec-risk-attachments" data-hub-attach-host="1"></div>
       `;
       footer = `<button type="button" class="btn btn-ghost" data-action="sec-modal-close">إلغاء</button>
         <button type="button" class="btn btn-primary" data-action="sec-risk-save" data-id="${esc(r?.id || '')}">${r ? 'حفظ' : 'إنشاء'}</button>`;
@@ -1177,7 +1179,7 @@
       ${renderConfirm()}
     </div>`;
     setTimeout(() => {
-      ['sec-inc-attachments', 'sec-drawer-attachments'].forEach((id) => {
+      ['sec-inc-attachments', 'sec-drawer-attachments', 'sec-ctrl-attachments', 'sec-risk-attachments'].forEach((id) => {
         const host = document.getElementById(id);
         if (!host || !window.HubFormAttachments?.mount) return;
         if (!host.querySelector('[data-hub-attach-block]')) {
@@ -1573,18 +1575,38 @@
         nextReview: qVal('sec-ctrl-next'),
         description: qVal('sec-ctrl-desc'),
       };
+      const attHost = document.getElementById('sec-ctrl-attachments');
+      const fileItems = ((attHost && window.HubFormAttachments?.collect?.(attHost)) || { items: [] }).items.filter(
+        (a) => a && (a.id || a.url)
+      );
       const id = btn.dataset.id;
-      if (id) {
-        if (!can(user, 'update_control')) return toast('لا صلاحية'), true;
-        HS.updateSecurityControl(id, payload, act);
-        toast('حُدّث الضابط');
-      } else {
-        if (!can(user, 'create_control')) return toast('لا صلاحية'), true;
-        HS.addSecurityControl(payload, act);
-        toast('أُنشئ الضابط');
-      }
-      ui.modal = null;
-      return true;
+      return (async () => {
+        let entityId = id;
+        if (id) {
+          if (!can(user, 'update_control')) return toast('لا صلاحية'), true;
+          HS.updateSecurityControl(id, payload, act);
+          toast('حُدّث الضابط');
+        } else {
+          if (!can(user, 'create_control')) return toast('لا صلاحية'), true;
+          const created = HS.addSecurityControl(payload, act);
+          entityId = created?.id || '';
+          toast('أُنشئ الضابط');
+        }
+        if (entityId && fileItems.length && window.HubFormAttachments?.persistToEntity) {
+          try {
+            await window.HubFormAttachments.persistToEntity({
+              entityType: 'security',
+              entityId,
+              ownerEmail: user?.email || '',
+              items: fileItems,
+            });
+          } catch (err) {
+            console.warn('[info-security] control attachments', err);
+          }
+        }
+        ui.modal = null;
+        return true;
+      })();
     }
 
     if (action === 'sec-toggle-control') {
@@ -1614,18 +1636,51 @@
         status: qVal('sec-risk-status'),
         description: qVal('sec-risk-desc'),
       };
+      const attHost = document.getElementById('sec-risk-attachments');
+      const fileItems = ((attHost && window.HubFormAttachments?.collect?.(attHost)) || { items: [] }).items.filter(
+        (a) => a && (a.id || a.url)
+      );
       const id = btn.dataset.id;
+      return (async () => {
       if (id) {
         if (!can(user, 'update_risk')) return toast('لا صلاحية'), true;
         HS.updateSecurityRisk(id, payload, act);
         toast('حُدّث الخطر');
       } else {
         if (!can(user, 'create_risk')) return toast('لا صلاحية'), true;
-        HS.addSecurityRisk(payload, act);
+        const created = HS.addSecurityRisk(payload, act);
+        const entityId = created?.id || '';
+        if (entityId && fileItems.length && window.HubFormAttachments?.persistToEntity) {
+          try {
+            await window.HubFormAttachments.persistToEntity({
+              entityType: 'security',
+              entityId,
+              ownerEmail: user?.email || '',
+              items: fileItems,
+            });
+          } catch (err) {
+            console.warn('[info-security] risk attachments', err);
+          }
+        }
         toast('أُنشئ الخطر');
+        ui.modal = null;
+        return true;
+      }
+      if (id && fileItems.length && window.HubFormAttachments?.persistToEntity) {
+        try {
+          await window.HubFormAttachments.persistToEntity({
+            entityType: 'security',
+            entityId: id,
+            ownerEmail: user?.email || '',
+            items: fileItems,
+          });
+        } catch (err) {
+          console.warn('[info-security] risk attachments', err);
+        }
       }
       ui.modal = null;
       return true;
+      })();
     }
 
     if (action === 'sec-confirm') {

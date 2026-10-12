@@ -1,8 +1,8 @@
 # تقرير اختبار المرفقات الحقيقي — نايوش هوب 360
 
-التاريخ: 2026-10-12T15:35:17.965Z
+التاريخ: 2026-10-12 (محدّث بعد الاستئناف + سلم 1500MB)
 سجل الموظف الاختباري: `EMP-REAL-MV5EY3VE`
-PASS: 27 · FAIL: 0 · NOT_TESTED: 2 · NOT_IMPLEMENTED: 1
+PASS lifecycle: 27 · FAIL: 0 · استئناف/أحجام: انظر `unified-attachments-resumable-sizes-report.md` · إنتاج متعدد الأدوار: **NOT_TESTED**
 
 | الوظيفة | العملية | رقم السجل | مكان الحفظ | النتيجة | ملاحظة |
 |---|---|---|---|---|---|
@@ -32,13 +32,13 @@ PASS: 27 · FAIL: 0 · NOT_TESTED: 2 · NOT_IMPLEMENTED: 1
 | retry_then_persist | upload+link after fail | EMP-REAL-MV5EY3VE | entity-attachments | **PASS** | count=4 |
 | idempotent_no_duplicate | POST same Idempotency-Key | EATT-000011 | entity-attachments | **PASS** | {"reused":true,"id":"EATT-000011"} |
 | large_video_8mb | POST /uploads | mv5eyhoh-777078d968d2.bin | data/uploads | **PASS** | bytes=8388608;ms=23;status=201;storage=/uploads/mv5eyhoh-777078d968d2.bin;err= |
-| video_1500mb_real_upload | full 1500MB byte upload | — | object-storage / reverse-proxy | **NOT_TESTED** | Environment policy: do not stream 1.5GB in CI agent; resumable chunking across reverse-proxy NOT IMPLEMENTED without external object storage. Policy limit 1500M |
-| resumable_chunked_upload | resume after disconnect | — | object-storage | **NOT_IMPLEMENTED** | Requires external object storage multipart; stream+retry from UI is live for connected uploads only. |
-| prod_health | GET production /api/health | https://naiosh-hub-production.up.railway.app | railway | **PASS** | {"ok":true,"service":"naiosh-hub","env":"production","database":{"linked":true,"status":"connected","message":"قاعدة البيانات متصلة","ok":true,"tables":42,"hubO |
-| prod_browser_journeys | client/staff/manager/unauthorized + mobile/dark | https://naiosh-hub-production.up.railway.app | production | **NOT_TESTED** | Requires deployed revision of this branch + dedicated test accounts on production; local lifecycle tests above cover API durability. Mark NOT_TESTED until relea |
+| video_1500mb_real_upload | chunked 1000+1500MB | mv5fwm3x-… | data/uploads + volume | **PASS (محلي)** | انظر `unified-attachments-resumable-sizes-report.md` — سلامة بايتات + بقاء بعد إعادة تشغيل الخادم |
+| resumable_chunked_upload | resume after disconnect | upl-mv5fwcny-… | .chunk-sessions | **PASS (محلي)** | قطع بعد chunk واحد على 6MB ثم إكمال؛ status يظهر الأجزاء الناقصة |
+| prod_health | GET production /api/health | https://naiosh-hub-production.up.railway.app | railway | **PASS** | {"ok":true,"service":"naiosh-hub",…} |
+| prod_browser_journeys | client/staff/manager/unauthorized + mobile/dark | production deploy of this branch | production | **NOT_TESTED** | يتطلب نشر مراجعة هذا الفرع + حسابات اختبار على الإنتاج |
 
 ## ملاحظات صريحة
 - رفع صورة/ملف/فيديو + الربط بكيان موظف + إعادة الجلب بعد إعادة الدخول + العزل + عدم التكرار: مغطاة أعلاه.
-- **1500MB فعليًا: NOT_TESTED** في هذه البيئة؛ تم فحص حد السياسة في الكود واختبار حجم عملي أصغر (`HUB_ATTACH_LARGE_MB`).
-- **استئناف مجزأ بعد انقطاع: NOT_IMPLEMENTED** بدون Object Storage خارجي.
-- **رحلات الإنتاج متعددة الأدوار/الجوال/الوضع الليلي: NOT_TESTED** حتى ينشر هذا الفرع على الإنتاج بحسابات اختبار.
+- **استئناف مجزأ + سلم حتى 1500MB: PASS محليًا** على Volume/`data/uploads` (ليس BYTEA). الإنتاج خلف reverse-proxy قد يفرض حدودًا إضافية — يُعاد الاختبار بعد النشر.
+- **رحلات الإنتاج متعددة الأدوار/الجوال/الوضع الليلي: NOT_TESTED** حتى ينشر هذا الفرع.
+- **لا FULL PASS** للنماذج الـ58 — انظر `unified-attachments-58-final-matrix.md`.

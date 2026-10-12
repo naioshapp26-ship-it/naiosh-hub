@@ -28,11 +28,16 @@
     return { ok: true };
   };
 
-  const uploadFile = async (file, { onProgress, signal, url, headers } = {}) => {
-    const check = assertFile(file);
-    if (!check.ok) throw new Error(check.error);
+  const authHeaders = () => {
+    try {
+      return (window.HubAuth && HubAuth.authHeaders && HubAuth.authHeaders()) || {};
+    } catch {
+      return {};
+    }
+  };
 
-    return new Promise((resolve, reject) => {
+  const uploadSimple = (file, { onProgress, signal, url, headers } = {}) =>
+    new Promise((resolve, reject) => {
       if (signal?.aborted) {
         reject(new Error('أُلغي الرفع'));
         return;
@@ -43,14 +48,10 @@
       xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name || 'file'));
       xhr.setRequestHeader('X-File-Type', file.type || 'application/octet-stream');
       xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-      try {
-        const auth = window.HubAuth?.authHeaders?.() || {};
-        if (auth.Authorization) xhr.setRequestHeader('Authorization', auth.Authorization);
-        if (auth['X-Hub-Token']) xhr.setRequestHeader('X-Hub-Token', auth['X-Hub-Token']);
-        if (auth['X-Hub-User-Role']) xhr.setRequestHeader('X-Hub-User-Role', auth['X-Hub-User-Role']);
-      } catch {
-        /* ignore */
-      }
+      const auth = authHeaders();
+      if (auth.Authorization) xhr.setRequestHeader('Authorization', auth.Authorization);
+      if (auth['X-Hub-Token']) xhr.setRequestHeader('X-Hub-Token', auth['X-Hub-Token']);
+      if (auth['X-Hub-User-Role']) xhr.setRequestHeader('X-Hub-User-Role', auth['X-Hub-User-Role']);
       if (headers && typeof headers === 'object') {
         Object.entries(headers).forEach(([k, v]) => {
           if (v != null && v !== '') xhr.setRequestHeader(k, String(v));
@@ -91,6 +92,148 @@
       };
       xhr.send(file);
     });
+
+  const CHUNK_THRESHOLD = 4 * 1024 * 1024;
+
+  const putChunk = (uploadId, index, blob, { signal, headers } = {}) =>
+    new Promise((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(new Error('أُلغي الرفع'));
+        return;
+      }
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', `${UPLOAD_URL}/${encodeURIComponent(uploadId)}/chunk?index=${index}`);
+      xhr.responseType = 'json';
+      xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+      const auth = authHeaders();
+      if (auth.Authorization) xhr.setRequestHeader('Authorization', auth.Authorization);
+      if (auth['X-Hub-Token']) xhr.setRequestHeader('X-Hub-Token', auth['X-Hub-Token']);
+      if (headers && typeof headers === 'object') {
+        Object.entries(headers).forEach(([k, v]) => {
+          if (v != null && v !== '') xhr.setRequestHeader(k, String(v));
+        });
+      }
+      const onAbort = () => {
+        try {
+          xhr.abort();
+        } catch {
+          /* ignore */
+        }
+      };
+      if (signal) signal.addEventListener('abort', onAbort, { once: true });
+      xhr.onload = () => {
+        if (signal) signal.removeEventListener('abort', onAbort);
+        const data = xhr.response && typeof xhr.response === 'object' ? xhr.response : null;
+        if (xhr.status >= 200 && xhr.status < 300 && data?.ok) {
+          resolve(data);
+          return;
+        }
+        reject(new Error(data?.error || `فشل رفع الجزء ${index}`));
+      };
+      xhr.onerror = () => {
+        if (signal) signal.removeEventListener('abort', onAbort);
+        reject(new Error('تعذر الاتصال بخادم الرفع'));
+      };
+      xhr.onabort = () => {
+        if (signal) signal.removeEventListener('abort', onAbort);
+        reject(new Error('أُلغي الرفع'));
+      };
+      xhr.send(blob);
+    });
+
+  const uploadResumable = async (file, { onProgress, signal, headers, resumeUploadId } = {}) => {
+    const check = assertFile(file);
+    if (!check.ok) throw new Error(check.error);
+    const auth = authHeaders();
+    let uploadId = resumeUploadId || '';
+    let chunkSize = CHUNK_THRESHOLD;
+    let totalChunks = Math.ceil(file.size / chunkSize) || 1;
+    let missing = [];
+
+    if (uploadId) {
+      const stRes = await fetch(`${UPLOAD_URL}/${encodeURIComponent(uploadId)}/status`, {
+        headers: { ...auth, Accept: 'application/json' },
+        signal,
+      });
+      const st = await stRes.json().catch(() => ({}));
+      if (stRes.ok && st.ok) {
+        chunkSize = st.chunkSize || chunkSize;
+        totalChunks = st.totalChunks || totalChunks;
+        missing = Array.isArray(st.missingIndexes) ? st.missingIndexes : [];
+        if (st.status === 'complete' && st.url) return { ok: true, id: st.finalId, url: st.url, name: file.name, size: file.size, resumed: true };
+      } else {
+        uploadId = '';
+      }
+    }
+
+    if (!uploadId) {
+      const initRes = await fetch(`${UPLOAD_URL}/init`, {
+        method: 'POST',
+        headers: { ...auth, 'Content-Type': 'application/json', Accept: 'application/json', ...(headers || {}) },
+        body: JSON.stringify({ name: file.name, mime: file.type || 'application/octet-stream', size: file.size }),
+        signal,
+      });
+      const init = await initRes.json().catch(() => ({}));
+      if (!initRes.ok || !init.ok || !init.uploadId) throw new Error(init.error || 'تعذر بدء الرفع المجزأ');
+      uploadId = init.uploadId;
+      chunkSize = init.chunkSize || chunkSize;
+      totalChunks = init.totalChunks || totalChunks;
+      missing = Array.from({ length: totalChunks }, (_, i) => i);
+    }
+
+    const sendIndex = async (index) => {
+      const start = index * chunkSize;
+      const end = Math.min(file.size, start + chunkSize);
+      const blob = file.slice(start, end);
+      let attempts = 0;
+      while (attempts < 3) {
+        attempts += 1;
+        try {
+          await putChunk(uploadId, index, blob, { signal, headers });
+          return;
+        } catch (err) {
+          if (attempts >= 3 || signal?.aborted) throw err;
+          await new Promise((r) => setTimeout(r, 400 * attempts));
+        }
+      }
+    };
+
+    for (let n = 0; n < missing.length; n += 1) {
+      if (signal?.aborted) throw new Error('أُلغي الرفع');
+      const index = missing[n];
+      await sendIndex(index);
+      if (onProgress) {
+        const done = n + 1;
+        onProgress(Math.round((done / missing.length) * 100), Math.min(file.size, done * chunkSize), file.size);
+      }
+    }
+
+    const doneRes = await fetch(`${UPLOAD_URL}/${encodeURIComponent(uploadId)}/complete`, {
+      method: 'POST',
+      headers: { ...auth, Accept: 'application/json', ...(headers || {}) },
+      signal,
+    });
+    const data = await doneRes.json().catch(() => ({}));
+    if (!doneRes.ok || !data.ok || !(data.url || data.id)) throw new Error(data.error || 'تعذر إكمال الرفع المجزأ');
+    if (onProgress) onProgress(100, file.size, file.size);
+    return data;
+  };
+
+  const uploadFile = async (file, { onProgress, signal, url, headers, forceSimple, resumeUploadId } = {}) => {
+    const check = assertFile(file);
+    if (!check.ok) throw new Error(check.error);
+    if (forceSimple || url || file.size < CHUNK_THRESHOLD) {
+      return uploadSimple(file, { onProgress, signal, url, headers });
+    }
+    try {
+      return await uploadResumable(file, { onProgress, signal, headers, resumeUploadId });
+    } catch (err) {
+      // Fallback to simple stream if resumable endpoints unavailable
+      if (/404|تعذر بدء|Not Found/i.test(String(err.message || ''))) {
+        return uploadSimple(file, { onProgress, signal, url, headers });
+      }
+      throw err;
+    }
   };
 
   const skipHint = (input) => {
@@ -166,10 +309,13 @@
     MAX_FILE_BYTES,
     INLINE_DATA_URL_MAX_BYTES,
     UPLOAD_URL,
+    CHUNK_THRESHOLD,
     sizeLabel,
     sizeError,
     assertFile,
     uploadFile,
+    uploadSimple,
+    uploadResumable,
     install,
     installed: false,
   };

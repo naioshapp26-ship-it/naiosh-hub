@@ -2,24 +2,26 @@
 
 تاريخ: 2026-10-12 · الفرع: `cursor/unified-attachments-full-audit-ee32`  
 المكوّن: `HubFormAttachments` + `/api/hub/uploads` + `/api/hub/entity-attachments`  
-حد السياسة: **1500MB/ملف** (`HubUploadLimits`) · الاستئناف المجزأ: **NOT_IMPLEMENTED** بدون Object Storage
+حد السياسة: **1500MB/ملف** (`HubUploadLimits`) · الاستئناف المجزأ: **IMPLEMENTED** (`lib/hub-upload-sessions.js` + `/api/hub/uploads/:id/chunk|complete`)  
+المصفوفة النهائية صفًا بصف: `docs/unified-attachments-58-final-matrix.md` · تقرير الأحجام: `docs/unified-attachments-resumable-sizes-report.md`
 
 ## ملخص الأعداد
 
 | المقياس | العدد |
 |---|---:|
 | إجمالي النماذج/النوافذ المفحوصة | **118** |
-| تحتاج مرفقات (`yes`) | **58** |
+| تحتاج مرفقات (`yes`) | **58** (كلها مصنّفة نهائيًا في المصفوفة) |
 | ربما تحتاج (`maybe`) | **18** |
 | لا تحتاج (`no`) | **42** |
-| مربوطة بـ `HubFormAttachments` (yes+partial) | **19** |
-| رفع مخصص عامل (صورة/ملف/فيديو أو جزء) عبر `HubUploadLimits`/APIs أخرى | **33** |
-| كانت بلا رفع حقيقي وأُصلحت في هذا الفرع | **5** (أمن المعلومات، حوكمة البيانات، عقد/مستند الحوكمة، مرفقات طلب Posha) |
-| تحتاج مرفقات وما زالت بلا واجهة رفع كاملة | **انظر جدول الفجوات** |
+| مربوطة بـ `HubFormAttachments` | **21** |
+| رفع مخصص (كامل / جزئي / استثناء مبرر) | **~33** |
+| REDIRECT / عرض فقط | **4** |
+| كانت بلا رفع حقيقي وأُصلحت في هذا الفرع | أمن، حوكمة بيانات، حوكمة، Posha، إعلانات→HubUpload، تحويلات اللوحة |
+| سلم 100/500/1000/1500MB + استئناف | **PASS محلي** — انظر تقرير الأحجام |
 | مختبرة برفع حقيقي (API lifecycle) | انظر `docs/unified-attachments-real-ops-report.md` |
-| مختبرة UI فقط سابقًا | نموذج إضافة موظف (ظهور الحقول) |
+| مختبرة UI متصفح | موظف + إعلان smoke؛ الباقي **NOT_TESTED** |
 
-**لا يُعلن 100% PASS** — انظر أعمدة الاختبار في الجداول وتقرير العمليات الحقيقي.
+**لا يُعلن FULL PASS** — انظر المصفوفة النهائية وأعمدة الاختبار.
 
 ### دلالة عمود «موحّد؟»
 - **نعم** = `HubFormAttachments` mount/bind + (عادة) `persistToEntity`

@@ -16,6 +16,7 @@ const erpAdapter = require('./lib/erp-saas-adapter');
 const hubSso = require('./lib/hub-sso');
 const { handleAdminApi } = require('./lib/hub-rbac-admin');
 const hubUploads = require('./lib/hub-uploads');
+const hubUploadSessions = require('./lib/hub-upload-sessions');
 const hubRegisterAttachments = require('./lib/hub-register-attachments');
 const customerAuth = require('./lib/hub-customer-auth');
 const hubSession = require('./lib/hub-session');
@@ -1175,6 +1176,70 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  // —— رفع مجزأ قابل للاستئناف ——
+  if (pathname === '/api/hub/uploads/init' && req.method === 'POST') {
+    if (!(await requireHubAuthOrReject(req, res))) return true;
+    try {
+      const body = await readBody(req);
+      const user = req.hubUser || {};
+      const init = hubUploadSessions.initSession({
+        originalName: body?.name || body?.originalName,
+        mime: body?.mime || body?.type,
+        sizeBytes: body?.size || body?.sizeBytes,
+        ownerEmail: user.email || body?.ownerEmail || '',
+      });
+      sendJson(res, 201, { ok: true, ...init, resumable: true });
+    } catch (error) {
+      sendJson(res, error.status || 500, { ok: false, error: error.message || 'تعذر بدء جلسة الرفع' });
+    }
+    return true;
+  }
+
+  if (pathname.startsWith('/api/hub/uploads/') && pathname.endsWith('/status') && req.method === 'GET') {
+    if (!(await requireHubAuthOrReject(req, res))) return true;
+    try {
+      const uploadId = decodeURIComponent(pathname.split('/')[4] || '');
+      sendJson(res, 200, { ok: true, ...hubUploadSessions.statusOf(uploadId) });
+    } catch (error) {
+      sendJson(res, error.status || 500, { ok: false, error: error.message || 'تعذر قراءة حالة الرفع' });
+    }
+    return true;
+  }
+
+  if (pathname.startsWith('/api/hub/uploads/') && pathname.endsWith('/chunk') && req.method === 'PUT') {
+    if (!(await requireHubAuthOrReject(req, res))) return true;
+    try {
+      const uploadId = decodeURIComponent(pathname.split('/')[4] || '');
+      const urlObj = new URL(req.url, 'http://127.0.0.1');
+      const index = urlObj.searchParams.get('index');
+      const buf = await hubUploadSessions.readBodyBuffer(req, hubUploadSessions.CHUNK_SIZE + 64 * 1024);
+      const st = hubUploadSessions.saveChunk(uploadId, index, buf);
+      sendJson(res, 200, { ok: true, ...st });
+    } catch (error) {
+      if (!res.headersSent) {
+        sendJson(res, error.status || 500, { ok: false, error: error.message || 'فشل رفع الجزء' });
+      }
+    }
+    return true;
+  }
+
+  if (pathname.startsWith('/api/hub/uploads/') && pathname.endsWith('/complete') && req.method === 'POST') {
+    if (!(await requireHubAuthOrReject(req, res))) return true;
+    try {
+      const uploadId = decodeURIComponent(pathname.split('/')[4] || '');
+      const saved = hubUploadSessions.completeSession(uploadId);
+      sendJson(res, 201, {
+        ok: true,
+        ...saved,
+        maxBytes: hubUploads.MAX_UPLOAD_BYTES,
+        maxMb: hubUploads.MAX_UPLOAD_MB,
+      });
+    } catch (error) {
+      sendJson(res, error.status || 500, { ok: false, error: error.message || 'تعذر إكمال الرفع' });
+    }
+    return true;
+  }
+
   if (pathname === '/api/hub/upload-limits' && req.method === 'GET') {
     sendJson(res, 200, {
       ok: true,
@@ -1182,6 +1247,8 @@ async function handleHubApi(req, res, pathname) {
       maxBytes: hubUploads.MAX_UPLOAD_BYTES,
       videoMaxMb: hubUploads.MAX_UPLOAD_MB,
       videoMaxBytes: hubUploads.MAX_UPLOAD_BYTES,
+      chunkSize: hubUploadSessions.CHUNK_SIZE,
+      resumable: true,
     });
     return true;
   }
