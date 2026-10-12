@@ -17,11 +17,15 @@ const BASE = String(process.env.BASE_URL || 'https://naiosh-hub-production.up.ra
 const ART = '/opt/cursor/artifacts/staff-branches-prod-journey';
 const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome-stable';
 const STAFF_EMAIL = process.env.HUB_E2E_STAFF_EMAIL || 'e2e-branches@naiosh.test';
-const STAFF_PASS =
-  process.env.HUB_E2E_STAFF_PASSWORD ||
-  process.env.HUB_SUPER_ADMIN_INITIAL_PASSWORD ||
-  process.env.HUB_E2E_PASSWORD ||
-  '';
+function e2eFallbackPassword(email) {
+  const crypto = require('crypto');
+  return crypto
+    .createHash('sha256')
+    .update(`naiosh-hub-e2e-staff-v1|${String(email || '').trim().toLowerCase()}|EMP-E2E-BR`)
+    .digest('base64url')
+    .slice(0, 28);
+}
+const STAFF_PASS = process.env.HUB_E2E_STAFF_PASSWORD || e2eFallbackPassword(STAFF_EMAIL);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 fs.mkdirSync(ART, { recursive: true });
