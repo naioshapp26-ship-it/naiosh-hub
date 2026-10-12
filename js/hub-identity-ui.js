@@ -253,7 +253,10 @@
     if (ui.type) rows = rows.filter((i) => String(i.userKind || '') === ui.type);
     if (ui.status) rows = rows.filter((i) => String(i.status || 'active') === ui.status);
     if (ui.org) rows = rows.filter((i) => String(i.orgName || '') === ui.org || String(i.orgId || '') === ui.org);
-    if (ui.branch) rows = rows.filter((i) => String(i.branchName || '') === ui.branch);
+    if (ui.branch) {
+      const needle = String(ui.branch).trim().toLowerCase();
+      rows = rows.filter((i) => String(i.branchName || '').toLowerCase().includes(needle));
+    }
     if (ui.department) rows = rows.filter((i) => String(i.department || '') === ui.department);
     if (ui.role) rows = rows.filter((i) => primaryRolesOf(i).includes(ui.role));
     if (ui.q) {
@@ -366,12 +369,7 @@
         <option value="">كل المؤسسات</option>
         ${(opts.orgs || []).map((o) => `<option value="${esc(o.name)}" ${ui.org === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}
       </select>
-      <select data-idn-branch data-action-change="idn-live-filter">
-        <option value="">كل الفروع</option>
-        ${filterBranchOptions()
-          .map((b) => `<option value="${esc(b)}" ${ui.branch === b ? 'selected' : ''}>${esc(b)}</option>`)
-          .join('')}
-      </select>
+      <input type="search" data-idn-branch data-action-change="idn-live-filter" placeholder="تصفية باسم الفرع (كتابة حرة)" value="${esc(ui.branch || '')}" autocomplete="organization" />
       <select data-idn-department data-action-change="idn-live-filter">
         <option value="">كل الأقسام</option>
         ${filterDeptOptions()
@@ -663,11 +661,8 @@
               .join('')}
           </select>
         </label>
-        <label>الفرع
-          <select data-f="branchName" data-cascade="branch">
-            <option value="">—</option>
-            ${branchList.map((b) => `<option value="${esc(b.name)}" ${d.branchName === b.name ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}
-          </select>
+        <label>الفرع (كتابة حرة — بدون قائمة جاهزة)
+          <input data-f="branchName" type="text" value="${esc(d.branchName || '')}" placeholder="اكتب اسم الفرع أو البلد" autocomplete="organization" />
         </label>
         <label>القسم
           <select data-f="department">
