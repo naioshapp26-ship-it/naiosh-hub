@@ -1005,9 +1005,9 @@
         <p><strong>إجراءات وقائية:</strong></p><ul>${(inc.preventiveActions || []).map((x) => `<li>${esc(x)}</li>`).join('') || '<li>—</li>'}</ul>
         ${inc.status !== 'مغلق' ? `<button type="button" class="btn btn-dark" data-action="sec-modal" data-modal="close_incident" data-id="${esc(inc.id)}">معالج الإغلاق</button>` : `<button type="button" class="btn btn-ghost" data-action="sec-reopen" data-id="${esc(inc.id)}">إعادة فتح</button>`}`;
     } else if (ui.drawerSection === 'attachments') {
-      body = `<ul>${(inc.attachments || []).map((a) => `<li>${esc(a.name)} — ${esc(fmtTime(a.at))}</li>`).join('') || '<li>لا مرفقات</li>'}</ul>
-        <label class="field">اسم ملف (مرجع)<input id="sec-drawer-attach-name" placeholder="report.pdf" /></label>
-        <button type="button" class="btn btn-sm btn-primary" data-action="sec-drawer-attach" data-id="${esc(inc.id)}">إرفاق</button>`;
+      body = `<div id="sec-drawer-attachments-list" class="hub-attach-list-host" data-entity-id="${esc(inc.id || '')}"></div>
+        <div id="sec-drawer-attachments" data-hub-attach-host="1"></div>
+        <button type="button" class="btn btn-sm btn-primary" data-action="sec-drawer-attach" data-id="${esc(inc.id)}">حفظ المرفقات الجديدة</button>`;
     } else if (ui.drawerSection === 'links') {
       body = `<p><strong>مخاطر:</strong> ${(inc.relatedRisks || []).map((id) => esc(id)).join(' · ') || '—'}</p>
         <p><strong>ضوابط:</strong> ${(inc.relatedControls || []).map((id) => esc(id)).join(' · ') || '—'}</p>`;
@@ -1065,7 +1065,7 @@
         ${formField('وصف تفصيلي *', 'sec-inc-desc', '', 'textarea')}
         ${formField('الإجراءات الأولية المتخذة', 'sec-inc-init', '', 'textarea')}
         ${formField('وسوم', 'sec-inc-tags', '')}
-        ${formField('مرفق (اسم ملف)', 'sec-inc-file', '')}
+        <div id="sec-inc-attachments" data-hub-attach-host="1"></div>
         <label class="field"><input type="checkbox" id="sec-inc-sensitive" /> هل يحتوي الحادث على بيانات حساسة؟</label>
       `;
       footer = `<button type="button" class="btn btn-ghost" data-action="sec-modal-close">إلغاء</button>
@@ -1166,7 +1166,7 @@
     ui.loading = false;
     /* KPI focus is applied once in handle(sec-kpi-focus); tabs stay free for navigation */
 
-    return `<div class="hub-info-security" dir="rtl" data-hub-info-security>
+    const html = `<div class="hub-info-security" dir="rtl" data-hub-info-security>
       ${renderHeader(sec, user)}
       ${renderNotifications(sec, user)}
       ${renderKpis(sec, user)}
@@ -1176,6 +1176,37 @@
       ${renderModal(sec, user)}
       ${renderConfirm()}
     </div>`;
+    setTimeout(() => {
+      ['sec-inc-attachments', 'sec-drawer-attachments'].forEach((id) => {
+        const host = document.getElementById(id);
+        if (!host || !window.HubFormAttachments?.mount) return;
+        if (!host.querySelector('[data-hub-attach-block]')) {
+          window.HubFormAttachments.mount(host, { title: 'المرفقات', multi: true });
+        } else {
+          window.HubFormAttachments.bind(host);
+        }
+      });
+      const listHost = document.getElementById('sec-drawer-attachments-list');
+      const entityId = listHost?.getAttribute('data-entity-id');
+      if (listHost && entityId && window.HubFormAttachments?.loadEntityAttachments) {
+        window.HubFormAttachments
+          .loadEntityAttachments({ entityType: 'security', entityId })
+          .then((items) => {
+            if (!items?.length) {
+              listHost.innerHTML = '<p class="empty">لا مرفقات محفوظة</p>';
+              return;
+            }
+            listHost.innerHTML = `<ul>${items
+              .map(
+                (a) =>
+                  `<li><a href="${esc(a.url || a.contentUrl || '#')}" target="_blank" rel="noopener">${esc(a.originalName || a.name || 'مرفق')}</a> · ${esc(a.category || a.kind || '')} · ${Number(a.sizeBytes || a.size || 0)}B</li>`
+              )
+              .join('')}</ul>`;
+          })
+          .catch(() => {});
+      }
+    }, 40);
+    return html;
   };
 
   const qVal = (id) => {
@@ -1388,7 +1419,9 @@
       try {
         if (date && time) discoveredAt = new Date(`${date}T${time}:00`).toISOString();
       } catch (_) {}
-      const file = String(qVal('sec-inc-file') || '').trim();
+      const attHost = document.getElementById('sec-inc-attachments');
+      const collected = (attHost && window.HubFormAttachments?.collect?.(attHost)) || { items: [] };
+      const fileItems = (collected.items || []).filter((a) => a && (a.id || a.url));
       const item = HS.addSecurityIncident(
         {
           title: titleStr || 'مسودة حادث',
@@ -1403,15 +1436,36 @@
           sensitiveData: !!qVal('sec-inc-sensitive'),
           discoveredAt,
           draft,
-          attachments: file ? [{ name: file, at: new Date().toISOString() }] : [],
+          attachments: fileItems.map((a) => ({
+            name: a.name || a.originalFileName || 'مرفق',
+            url: a.url || '',
+            id: a.id || '',
+            kind: a.kind || 'file',
+            size: a.size || 0,
+            at: new Date().toISOString(),
+          })),
         },
         act
       );
-      ui.modal = null;
-      ui.tab = 'incidents';
-      if (item?.id) ui.drawer = item.id;
-      toast(draft ? 'حُفظت المسودة' : `سُجّل الحادث ${item?.id || ''}`);
-      return true;
+      return (async () => {
+        if (item?.id && fileItems.length && window.HubFormAttachments?.persistToEntity) {
+          try {
+            await window.HubFormAttachments.persistToEntity({
+              entityType: 'security',
+              entityId: item.id,
+              ownerEmail: user?.email || '',
+              items: fileItems,
+            });
+          } catch (err) {
+            console.warn('[info-security] attachment persist', err);
+          }
+        }
+        ui.modal = null;
+        ui.tab = 'incidents';
+        if (item?.id) ui.drawer = item.id;
+        toast(draft ? 'حُفظت المسودة' : `سُجّل الحادث ${item?.id || ''}`);
+        return true;
+      })();
     }
 
     if (action === 'sec-incident-patch') {
@@ -1475,11 +1529,32 @@
     }
 
     if (action === 'sec-drawer-attach') {
-      const name = String(qVal('sec-drawer-attach-name') || '').trim();
-      if (!name) return toast('اسم الملف مطلوب'), true;
-      HS.addSecurityAttachment('incident', btn.dataset.id, name, act);
-      toast('أُضيف المرفق');
-      return true;
+      const host = document.getElementById('sec-drawer-attachments');
+      const collected = (host && window.HubFormAttachments?.collect?.(host)) || { items: [] };
+      const fileItems = (collected.items || []).filter((a) => a && (a.id || a.url));
+      if (!fileItems.length) return toast('ارفع مرفقًا أولًا'), true;
+      const entityId = btn.dataset.id;
+      return (async () => {
+        if (entityId && window.HubFormAttachments?.persistToEntity) {
+          try {
+            await window.HubFormAttachments.persistToEntity({
+              entityType: 'security',
+              entityId,
+              ownerEmail: user?.email || '',
+              items: fileItems,
+            });
+          } catch (err) {
+            console.warn('[info-security] drawer persist', err);
+            toast(err.message || 'تعذر حفظ المرفقات');
+            return true;
+          }
+        }
+        fileItems.forEach((a) => {
+          HS.addSecurityAttachment?.('incident', entityId, a.name || 'مرفق', act);
+        });
+        toast('أُضيفت المرفقات');
+        return true;
+      })();
     }
 
     if (action === 'sec-control-save') {

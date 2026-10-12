@@ -990,7 +990,8 @@
          ${field('القيمة', 'gov-ct-val', '0', { type: 'number' })}
          ${field('البداية', 'gov-ct-start', '2026-01-01', { type: 'date' })}
          ${field('النهاية', 'gov-ct-end', '2026-12-31', { type: 'date' })}
-         ${field('المسؤول', 'gov-ct-owner', 'الموارد البشرية')}`,
+         ${field('المسؤول', 'gov-ct-owner', 'الموارد البشرية')}
+         <div id="gov-ct-attachments" data-hub-attach-host="1"></div>`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إلغاء</button>
          <button type="button" class="btn btn-primary" data-action="gov-save-contract">حفظ وإرسال للاعتماد</button>`
       );
@@ -1057,7 +1058,8 @@
         'إضافة دليل/مستند',
         `${field('اسم المستند *', 'gov-doc-name', '', { required: true })}
          ${field('النوع', 'gov-doc-type', 'دليل')}
-         ${field('مرتبط بـ', 'gov-doc-rel', '')}`,
+         ${field('مرتبط بـ', 'gov-doc-rel', '')}
+         <div id="gov-doc-attachments" data-hub-attach-host="1"></div>`,
         `<button type="button" class="btn btn-ghost" data-action="gov-modal-close">إلغاء</button>
          <button type="button" class="btn btn-primary" data-action="gov-save-document">حفظ</button>`
       );
@@ -1386,7 +1388,10 @@
       }
       const personId = qVal('gov-ct-person');
       const person = personById(g, personId);
-      HS.addGovContract?.(
+      const attHost = document.getElementById('gov-ct-attachments');
+      const collected = (attHost && window.HubFormAttachments?.collect?.(attHost)) || { items: [] };
+      const fileItems = (collected.items || []).filter((a) => a && (a.id || a.url));
+      const created = HS.addGovContract?.(
         {
           name,
           relatedType: 'person',
@@ -1398,12 +1403,28 @@
           startDate: qVal('gov-ct-start'),
           endDate: qVal('gov-ct-end'),
           owner: qVal('gov-ct-owner'),
+          attachments: fileItems,
         },
         act
       );
-      ui.modal = null;
-      toast('تم إنشاء العقد وإرساله للاعتماد');
-      return true;
+      return (async () => {
+        const entityId = created?.id || created?.contractId || '';
+        if (entityId && fileItems.length && window.HubFormAttachments?.persistToEntity) {
+          try {
+            await window.HubFormAttachments.persistToEntity({
+              entityType: 'governance',
+              entityId,
+              ownerEmail: user?.email || '',
+              items: fileItems,
+            });
+          } catch (err) {
+            console.warn('[governance] contract attachments', err);
+          }
+        }
+        ui.modal = null;
+        toast('تم إنشاء العقد وإرساله للاعتماد');
+        return true;
+      })();
     }
     if (action === 'gov-save-reward') {
       const personId = qVal('gov-r-person') || ui.wizardData.personId;
@@ -1498,10 +1519,33 @@
         toast('اسم المستند مطلوب');
         return true;
       }
-      HS.addGovDocument?.({ name, type: qVal('gov-doc-type'), relatedEntity: qVal('gov-doc-rel') }, act);
-      ui.modal = null;
-      toast('أُضيف المستند');
-      return true;
+      const attHost = document.getElementById('gov-doc-attachments');
+      const collected = (attHost && window.HubFormAttachments?.collect?.(attHost)) || { items: [] };
+      const fileItems = (collected.items || []).filter((a) => a && (a.id || a.url));
+      const created = HS.addGovDocument?.({
+        name,
+        type: qVal('gov-doc-type'),
+        relatedEntity: qVal('gov-doc-rel'),
+        attachments: fileItems,
+      }, act);
+      return (async () => {
+        const entityId = created?.id || created?.documentId || '';
+        if (entityId && fileItems.length && window.HubFormAttachments?.persistToEntity) {
+          try {
+            await window.HubFormAttachments.persistToEntity({
+              entityType: 'governance',
+              entityId,
+              ownerEmail: user?.email || '',
+              items: fileItems,
+            });
+          } catch (err) {
+            console.warn('[governance] document attachments', err);
+          }
+        }
+        ui.modal = null;
+        toast('أُضيف المستند');
+        return true;
+      })();
     }
     if (action === 'gov-save-org') {
       const name = qVal('gov-org-name');
@@ -1572,7 +1616,7 @@
       ui.pageSize = g.settings.pageSize;
       ui._ps = true;
     }
-    return `<div class="hub-governance-360" dir="rtl" data-hub-governance>
+    const html = `<div class="hub-governance-360" dir="rtl" data-hub-governance>
       ${renderHeader(g, user)}
       ${renderHelp()}
       ${renderTabs()}
@@ -1581,6 +1625,18 @@
       ${renderCreateModal(g)}
       ${renderDetailModal(g)}
     </div>`;
+    setTimeout(() => {
+      ['gov-ct-attachments', 'gov-doc-attachments'].forEach((id) => {
+        const host = document.getElementById(id);
+        if (!host || !window.HubFormAttachments?.mount) return;
+        if (!host.querySelector('[data-hub-attach-block]')) {
+          window.HubFormAttachments.mount(host, { title: 'المرفقات', multi: true });
+        } else {
+          window.HubFormAttachments.bind(host);
+        }
+      });
+    }, 40);
+    return html;
   };
 
   window.HubGovernance = { render, handle, handleChange, ui };
