@@ -1724,6 +1724,38 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
+  // Staff read-only: last safe-restore audit (no secrets).
+  if (pathname === '/api/hub/platform-bookings/restore-status' && req.method === 'GET') {
+    const session = await requireHubAuthOrReject(req, res);
+    if (!session) return true;
+    if (!hubSession.isStaffLane(session.lane)) {
+      sendJson(res, 403, { ok: false, error: 'موظفون فقط' });
+      return true;
+    }
+    try {
+      const bookingsRestore = require('./lib/hub-bookings-restore');
+      const { getDatabaseUrl, withClient } = require('./db/migrate');
+      if (!getDatabaseUrl()) {
+        sendJson(res, 503, { ok: false, error: 'لا قاعدة بيانات' });
+        return true;
+      }
+      const audit = await bookingsRestore.readAudit(withClient);
+      await hydratePlatformBookings();
+      const state = readPlatformBookingsFile();
+      const ids = (state.bookings || []).map((b) => b.id);
+      sendJson(res, 200, {
+        ok: true,
+        count: ids.length,
+        ids,
+        approvedPresent: bookingsRestore.ALLOWED.every((id) => ids.includes(id)),
+        audit,
+      });
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: err.message || 'تعذر قراءة حالة الاستعادة' });
+    }
+    return true;
+  }
+
   // Supreme-leader only: add missing bookings by id — never overwrite/delete existing.
   if (pathname === '/api/hub/platform-bookings/restore-missing' && req.method === 'POST') {
     const session = await requireHubAuthOrReject(req, res);
@@ -2633,14 +2665,14 @@ async function boot() {
 
   try {
     const bookingsRestore = require('./lib/hub-bookings-restore');
-    const restored = await bookingsRestore.maybeBootRestoreTwoBookings();
-    if (restored?.ran && restored.addedIds?.length) {
+    const restored = await bookingsRestore.runSafeRailwayRestore();
+    if (restored?.ran) {
       console.warn(
-        `[boot] restored missing bookings: ${restored.addedIds.join(', ')} (total=${restored.totalCount}) — unset HUB_RESTORE_TWO_BOOKINGS`
+        `[boot] safe-restore ran ok=${restored.ok !== false} added=${(restored.addedIds || []).join(',') || '(none)'} total=${restored.totalCount ?? '?'} — unset HUB_SAFE_RESTORE_TWO_BOOKINGS`
       );
     }
   } catch (error) {
-    console.error('Bookings restore boot hook skipped:', error.message);
+    console.error('Bookings safe-restore boot hook skipped:', error.message);
   }
 
   try {
