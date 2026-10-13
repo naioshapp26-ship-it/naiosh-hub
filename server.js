@@ -23,6 +23,7 @@ const hubSession = require('./lib/hub-session');
 const hubClientPortal = require('./lib/hub-client-portal');
 const hubPoshaOps = require('./lib/hub-posha-ops');
 const hubPoshaOs = require('./lib/hub-posha-os');
+const hubSubscriptionPackages = require('./lib/hub-subscription-packages');
 const productCategories = require('./lib/hub-product-categories');
 const productOrders = require('./lib/hub-product-orders');
 const platformBooking = require('./lib/hub-platform-booking');
@@ -2489,6 +2490,16 @@ const server = http.createServer(async (req, res) => {
           error: status === 413 ? 'حجم الطلب أكبر من المسموح' : 'بيانات الدخول غير صحيحة.',
         });
       });
+    return;
+  }
+
+  if (pathname.startsWith('/api/hub/packages') || pathname.startsWith('/api/admin/packages')) {
+    hubSubscriptionPackages
+      .handlePackagesApi(req, res, pathname)
+      .then((handled) => {
+        if (!handled) sendJson(res, 404, { ok: false, error: 'Packages route not found' });
+      })
+      .catch((error) => sendJson(res, error.status || 500, { ok: false, error: error.message || 'Packages API error' }));
     return;
   }
 
