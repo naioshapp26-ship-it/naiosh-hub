@@ -103,7 +103,14 @@ async function main() {
 
     const page = await req('GET', '/packages.html');
     const pageText = page.json.raw || '';
-    failed += !mark('packages_page', page.status === 200 && (/باقات الاشتراك/.test(pageText) || /hub-packages\.js/.test(pageText)), { status: page.status, sample: pageText.slice(0, 80) }) ? 1 : 0;
+    failed += !mark(
+      'packages_page',
+      page.status === 200 &&
+        (/باقات نايوش هوب 360/.test(pageText) || /باقات الاشتراك/.test(pageText) || /hub-packages\.js/.test(pageText)),
+      { status: page.status, sample: pageText.slice(0, 80) }
+    )
+      ? 1
+      : 0;
 
     const cat = await req('GET', '/api/hub/packages');
     failed += !mark(
