@@ -102,8 +102,13 @@ async function main() {
       ? 1
       : 0;
 
-    failed += !mark('payment_not_fake_available', cat.json.payment && cat.json.payment.available === Boolean(process.env.STRIPE_SECRET_KEY), {
+    const expectPayAvailable = Boolean(
+      process.env.STRIPE_SECRET_KEY ||
+        (process.env.PAYMOB_API_KEY && process.env.PAYMOB_INTEGRATION_ID && process.env.PAYMOB_HMAC_SECRET)
+    );
+    failed += !mark('payment_not_fake_available', cat.json.payment && cat.json.payment.available === expectPayAvailable, {
       available: cat.json.payment && cat.json.payment.available,
+      expectPayAvailable,
     })
       ? 1
       : 0;

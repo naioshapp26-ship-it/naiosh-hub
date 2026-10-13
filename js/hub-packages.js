@@ -314,12 +314,23 @@
       html +=
         '<button type="button" class="btn btn-primary" data-claim-free><i class="fas fa-gift"></i> تأكيد منح 300 نقطة</button>';
     } else {
+      var active = (state.payment && state.payment.activeGatewayIds) || [];
       if (state.payment && state.payment.available) {
-        html +=
-          '<button type="button" class="btn btn-primary" data-pay="stripe"><i class="fas fa-credit-card"></i> الدفع عبر البوابة</button>';
+        if (active.indexOf('paymob') >= 0) {
+          html +=
+            '<button type="button" class="btn btn-primary" data-pay="paymob"><i class="fas fa-credit-card"></i> الدفع عبر Paymob</button>';
+        }
+        if (active.indexOf('stripe') >= 0) {
+          html +=
+            '<button type="button" class="btn btn-secondary" data-pay="stripe"><i class="fas fa-stripe"></i> الدفع عبر Stripe</button>';
+        }
+        if (!active.length) {
+          html +=
+            '<button type="button" class="btn btn-secondary" disabled><i class="fas fa-ban"></i> الدفع غير متاح حاليًا</button>';
+        }
       } else {
         html +=
-          '<button type="button" class="btn btn-secondary" disabled><i class="fas fa-ban"></i> الدفع غير متاح حاليًا</button>';
+          '<button type="button" class="btn btn-secondary" disabled><i class="fas fa-ban"></i> الدفع غير متاح حاليًا — يلزم تفعيل حساب تاجر</button>';
       }
       html +=
         '<button type="button" class="btn btn-primary" data-pay="manual_review"><i class="fas fa-clipboard-check"></i> طلب شحن للمراجعة الإدارية</button>';

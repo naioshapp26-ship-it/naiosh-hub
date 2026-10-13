@@ -787,12 +787,15 @@
   function renderMarketplace(list) {
     if (!list.length) return empty('fa-store', 'لا خدمات متاحة حاليًا', 'عد لاحقًا لاستكشاف أنظمة نايوش.', null, null);
     return '<section class="cp-card"><div class="cp-card-head"><h3>استكشف خدمات نايوش</h3></div><div class="cp-sys-grid">' + list.map(function (p) {
+      var pts = p.pointsCost != null ? p.pointsCost : p.price;
+      var priceText = p.priceLabel || (pts != null ? pts + ' نقطة' : 'حسب الطلب');
       return '<article class="cp-sys">' +
-        '<div class="cp-sys-top"><img src="' + esc(p.logo || 'assets/logo-hub.jpeg') + '" alt="" /><div><strong>' + esc(p.name) + '</strong><small>' + esc(p.type || '') + ' · ' + esc(p.priceLabel || 'حسب الطلب') + '</small></div></div>' +
+        '<div class="cp-sys-top"><img src="' + esc(p.logo || 'assets/logo-hub.jpeg') + '" alt="" /><div><strong>' + esc(p.name) + '</strong><small>' + esc(p.type || '') + ' · <strong style="color:var(--cp-ink)">' + esc(priceText) + '</strong></small></div></div>' +
         '<p style="margin:0;color:var(--cp-muted);font-size:13px;font-weight:700">' + esc(p.description || '') + '</p>' +
+        '<p style="margin:0;font-size:13px;font-weight:800">السعر المعتمد قبل الشراء: ' + esc(priceText) + '</p>' +
         '<div class="cp-actions">' +
-          '<button type="button" class="cp-btn cp-btn-primary" data-checkout-id="' + esc(p.id) + '" data-checkout-sku="' + esc(p.sku || p.code || '') + '">اشترِ الآن (محفظة)</button>' +
-          '<button type="button" class="cp-btn" data-checkout-id="' + esc(p.id) + '" data-checkout-sku="' + esc(p.sku || p.code || '') + '" data-pay-later="1">اطلب بدون دفع</button>' +
+          '<button type="button" class="cp-btn cp-btn-primary" data-checkout-id="' + esc(p.id) + '" data-checkout-sku="' + esc(p.sku || p.code || '') + '" data-points-cost="' + esc(pts != null ? pts : '') + '" data-service-name="' + esc(p.name) + '">اشترِ الآن (محفظة)</button>' +
+          '<button type="button" class="cp-btn" data-checkout-id="' + esc(p.id) + '" data-checkout-sku="' + esc(p.sku || p.code || '') + '" data-pay-later="1" data-points-cost="' + esc(pts != null ? pts : '') + '" data-service-name="' + esc(p.name) + '">اطلب بدون دفع</button>' +
         '</div></article>';
     }).join('') + '</div></section>';
   }
@@ -960,6 +963,12 @@
         btn.addEventListener('click', async function () {
           try {
             var payLater = btn.getAttribute('data-pay-later') === '1';
+            var pts = btn.getAttribute('data-points-cost') || '';
+            var name = btn.getAttribute('data-service-name') || 'الخدمة';
+            var confirmMsg = payLater
+              ? ('تأكيد طلب «' + name + '» بدون خصم فوري؟\nالسعر المعتمد: ' + (pts || '—') + ' نقطة (فاتورة لاحقًا).')
+              : ('تأكيد شراء «' + name + '» وخصم ' + (pts || '—') + ' نقطة من محفظتك الآن؟');
+            if (!window.confirm(confirmMsg)) return;
             var result = await api('/api/client/checkout', {
               method: 'POST',
               body: {
