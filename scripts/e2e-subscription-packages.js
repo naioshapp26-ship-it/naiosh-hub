@@ -8,9 +8,9 @@ const https = require('https');
 const { spawn } = require('child_process');
 const path = require('path');
 
-const PORT = Number(process.env.SCALE_PORT || process.env.PORT || 8933);
-const BASE = process.env.BASE_URL || `http://127.0.0.1:${PORT}`;
 const ROOT = path.join(__dirname, '..');
+const PORT = Number(process.env.E2E_PACKAGES_PORT || 0) || 19300 + Math.floor(Math.random() * 500);
+const BASE = process.env.BASE_URL || `http://127.0.0.1:${PORT}`;
 
 function req(method, urlPath, { body, token, headers } = {}) {
   const u = new URL(urlPath, BASE);
@@ -70,9 +70,26 @@ async function main() {
   let child = null;
   let started = false;
   if (!process.env.BASE_URL) {
+    const env = {
+      ...process.env,
+      PORT: String(PORT),
+      SCALE_PORT: String(PORT),
+      HOST: '127.0.0.1',
+      HUB_ALLOW_LEGACY_DEMO: '1',
+      APP_URL: `http://127.0.0.1:${PORT}`,
+    };
+    // This suite asserts gateways are OFF unless explicitly configured for the test.
+    delete env.BASE_URL;
+    delete env.HUB_PAYMOB_STUB;
+    delete env.PAYMOB_API_KEY;
+    delete env.PAYMOB_INTEGRATION_ID;
+    delete env.PAYMOB_HMAC_SECRET;
+    delete env.PAYMOB_IFRAME_ID;
+    delete env.STRIPE_SECRET_KEY;
+    delete env.STRIPE_WEBHOOK_SECRET;
     child = spawn(process.execPath, ['server.js'], {
       cwd: ROOT,
-      env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1', HUB_ALLOW_LEGACY_DEMO: '1' },
+      env,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     started = true;
@@ -102,13 +119,11 @@ async function main() {
       ? 1
       : 0;
 
-    const expectPayAvailable = Boolean(
-      process.env.STRIPE_SECRET_KEY ||
-        (process.env.PAYMOB_API_KEY && process.env.PAYMOB_INTEGRATION_ID && process.env.PAYMOB_HMAC_SECRET)
-    );
+    // Own spawned server clears gateway secrets → payment must be unavailable (no fake "available").
+    const expectPayAvailable = false;
     failed += !mark('payment_not_fake_available', cat.json.payment && cat.json.payment.available === expectPayAvailable, {
       available: cat.json.payment && cat.json.payment.available,
-      expectPayAvailable,
+      stubMode: cat.json.payment && cat.json.payment.stubMode,
     })
       ? 1
       : 0;
