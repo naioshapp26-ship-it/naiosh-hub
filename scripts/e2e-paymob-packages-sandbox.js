@@ -13,9 +13,16 @@ const crypto = require('crypto');
 const { spawn } = require('child_process');
 const path = require('path');
 
-const PORT = Number(process.env.SCALE_PORT || process.env.PORT || 8944);
-const BASE = process.env.BASE_URL || `http://127.0.0.1:${PORT}`;
 const ROOT = path.join(__dirname, '..');
+function pickPort() {
+  if (process.env.BASE_URL) return null;
+  const forced = Number(process.env.E2E_PAYMOB_PORT || 0);
+  if (forced > 0) return forced;
+  // Avoid colliding with leftover agent servers that may already hold SCALE_PORT/PORT.
+  return 19000 + Math.floor(Math.random() * 1000);
+}
+const PORT = pickPort();
+const BASE = process.env.BASE_URL || `http://127.0.0.1:${PORT}`;
 const SA_EMAIL = process.env.HUB_SUPER_ADMIN_EMAIL || 'naioshhub@example.com';
 const SA_PASS = process.env.HUB_SUPER_ADMIN_INITIAL_PASSWORD || 'E2eSaPaymobTest!99';
 const E2E_STAFF = process.env.HUB_E2E_STAFF_EMAIL || 'e2e-branches@naiosh.test';
@@ -104,28 +111,38 @@ async function main() {
   let child = null;
   let started = false;
   if (!process.env.BASE_URL) {
+    const env = {
+      ...process.env,
+      PORT: String(PORT),
+      SCALE_PORT: String(PORT),
+      HOST: '127.0.0.1',
+      NODE_ENV: 'development',
+      APP_URL: `http://127.0.0.1:${PORT}`,
+      HUB_ALLOW_LEGACY_DEMO: '1',
+      HUB_SUPER_ADMIN_INITIAL_PASSWORD: SA_PASS,
+      HUB_SUPER_ADMIN_FORCE_PASSWORD_RESET: '1',
+      HUB_PAYMOB_STUB: '1',
+      PAYMOB_API_KEY: 'test_stub_paymob_key',
+      PAYMOB_INTEGRATION_ID: '123456',
+      PAYMOB_HMAC_SECRET: 'test_hmac_secret_paymob_e2e',
+      PAYMOB_IFRAME_ID: '789',
+      HUB_PAYMOB_CHARGE_CURRENCY: 'EGP',
+    };
+    delete env.BASE_URL;
     child = spawn(process.execPath, ['server.js'], {
       cwd: ROOT,
-      env: {
-        ...process.env,
-        PORT: String(PORT),
-        HOST: '127.0.0.1',
-        NODE_ENV: 'development',
-        HUB_ALLOW_LEGACY_DEMO: '1',
-        HUB_SUPER_ADMIN_INITIAL_PASSWORD: SA_PASS,
-        HUB_SUPER_ADMIN_FORCE_PASSWORD_RESET: '1',
-        HUB_PAYMOB_STUB: '1',
-        PAYMOB_API_KEY: 'test_stub_paymob_key',
-        PAYMOB_INTEGRATION_ID: '123456',
-        PAYMOB_HMAC_SECRET: 'test_hmac_secret_paymob_e2e',
-        PAYMOB_IFRAME_ID: '789',
-        HUB_PAYMOB_CHARGE_CURRENCY: 'EGP',
-      },
+      env,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     started = true;
+    let bootErr = '';
     child.stdout.on('data', () => {});
-    child.stderr.on('data', () => {});
+    child.stderr.on('data', (d) => {
+      bootErr += String(d);
+    });
+    child.on('exit', (code) => {
+      if (code && code !== 0) console.error('server exited', code, bootErr.slice(0, 400));
+    });
   }
 
   let failed = 0;
@@ -212,7 +229,7 @@ async function main() {
     failed += !mark(
       'reload_no_credit_before_webhook',
       statusBefore.json.ok && statusBefore.json.order && statusBefore.json.order.credited === false && statusBefore.json.wallet.paid === 0,
-      statusBefore.json.order
+      { status: statusBefore.status, order: statusBefore.json.order, err: statusBefore.json.error, paid: statusBefore.json.wallet && statusBefore.json.wallet.paid }
     )
       ? 1
       : 0;
@@ -224,9 +241,12 @@ async function main() {
       'paymob_success_credits_once',
       complete.json.ok && complete.json.credited === true && complete.json.wallet && complete.json.wallet.paid >= 6000,
       {
+        status: complete.status,
+        err: complete.json.error,
         paid: complete.json.wallet && complete.json.wallet.paid,
         total: complete.json.wallet && complete.json.wallet.total,
         dup: complete.json.duplicate,
+        body: complete.json,
       }
     )
       ? 1
