@@ -10,6 +10,7 @@
     { id: 'systems', label: 'أنظمتي', icon: 'fa-cubes' },
     { id: 'orders', label: 'طلباتي', icon: 'fa-receipt' },
     { id: 'subscriptions', label: 'اشتراكاتي', icon: 'fa-rotate' },
+    { id: 'packages', label: 'باقات الاشتراك', icon: 'fa-box-open', href: 'packages.html' },
     { id: 'wallet', label: 'المحفظة', icon: 'fa-wallet' },
     { id: 'invoices', label: 'الفواتير', icon: 'fa-file-invoice' },
     { id: 'requests', label: 'طلبات الخدمة', icon: 'fa-clipboard-list' },
@@ -431,9 +432,27 @@
     var nav = $('cp-nav');
     if (!nav) return;
     nav.innerHTML = NAV.map(function (n) {
+      if (n.href) {
+        return (
+          '<a href="' +
+          n.href +
+          '" data-ext="' +
+          n.id +
+          '"><i class="fas ' +
+          n.icon +
+          '"></i><span>' +
+          n.label +
+          '</span></a>'
+        );
+      }
       return '<a href="#' + n.id + '" data-nav="' + n.id + '"><i class="fas ' + n.icon + '"></i><span>' + n.label + '</span></a>';
     }).join('');
     nav.addEventListener('click', function (e) {
+      var ext = e.target.closest('[data-ext]');
+      if (ext) {
+        document.body.classList.remove('cp-nav-open');
+        return; // allow normal navigation
+      }
       var a = e.target.closest('[data-nav]');
       if (!a) return;
       e.preventDefault();

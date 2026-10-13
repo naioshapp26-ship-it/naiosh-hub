@@ -656,3 +656,56 @@ ALTER TABLE hub_profiles ADD COLUMN IF NOT EXISTS city TEXT DEFAULT '';
 ALTER TABLE hub_profiles ADD COLUMN IF NOT EXISTS country TEXT DEFAULT '';
 ALTER TABLE hub_profiles ADD COLUMN IF NOT EXISTS personas JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE hub_profiles ADD COLUMN IF NOT EXISTS extras JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- ─── Subscription packages / points orders (durable ledger) ───
+CREATE TABLE IF NOT EXISTS hub_package_orders (
+  id TEXT PRIMARY KEY,
+  ref TEXT NOT NULL UNIQUE,
+  package_id TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  points INT NOT NULL,
+  price_usd NUMERIC(12,2) NOT NULL DEFAULT 0,
+  settlement_currency TEXT NOT NULL DEFAULT 'USD',
+  settlement_amount NUMERIC(14,4) NOT NULL DEFAULT 0,
+  display_currency TEXT,
+  display_amount NUMERIC(14,4),
+  client_email TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'created',
+  payment_status TEXT NOT NULL DEFAULT 'unpaid',
+  method TEXT NOT NULL DEFAULT 'none',
+  credited BOOLEAN NOT NULL DEFAULT FALSE,
+  idempotency_key TEXT,
+  stripe_session_id TEXT,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hub_package_orders_email_idx ON hub_package_orders (client_email);
+CREATE INDEX IF NOT EXISTS hub_package_orders_status_idx ON hub_package_orders (status);
+CREATE UNIQUE INDEX IF NOT EXISTS hub_package_orders_idem_uidx
+  ON hub_package_orders (idempotency_key)
+  WHERE idempotency_key IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS hub_service_point_prices (
+  id TEXT PRIMARY KEY,
+  sku TEXT,
+  name_ar TEXT NOT NULL DEFAULT '',
+  type TEXT DEFAULT '',
+  points_cost INT NOT NULL DEFAULT 0,
+  updated_by TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+
+CREATE TABLE IF NOT EXISTS hub_package_audit (
+  id TEXT PRIMARY KEY,
+  actor TEXT,
+  action TEXT NOT NULL,
+  ref TEXT,
+  email TEXT,
+  amount INT,
+  note TEXT,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hub_package_audit_created_idx ON hub_package_audit (created_at DESC);

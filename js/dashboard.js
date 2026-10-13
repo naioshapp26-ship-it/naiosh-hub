@@ -24,6 +24,7 @@
     { key: 'organization', icon: 'fa-code-branch', label: 'الفروع | نايوش هوب 360' },
     { key: 'incubators', icon: 'fa-building', label: 'الحاضنات' },
     { key: 'wallet', icon: 'fa-coins', label: 'محفظة النقاط' },
+    { key: 'packages-points', icon: 'fa-box-open', label: 'باقات الاشتراك والنقاط' },
     { key: 'core', icon: 'fa-brain', label: 'العقل المركزي' },
     { key: 'governance', icon: 'fa-scale-balanced', label: 'الحوكمة' },
     { key: 'info-security', icon: 'fa-shield-halved', label: 'أمن المعلومات' },
@@ -76,6 +77,10 @@
     organization: ['الفروع | نايوش هوب 360', 'إدارة فروع نايوش حسب الدول ومتابعة بيانات كل فرع.'],
     incubators: ['إدارة الحاضنات', '100 حاضنة قطاعية · منصات · مكاتب · أعضاء'],
     wallet: ['اقتصاد النقاط', 'شحن · استهلاك · تسعير · فواتير'],
+    'packages-points': [
+      'باقات الاشتراك والنقاط',
+      'باقات · عمليات دفع · أرصدة · أسعار الخدمات · تدقيق إداري',
+    ],
     governance: ['الحوكمة المؤسسية 360', 'أشخاص · سياسات · امتثال · جودة · عقود · مكافآت · موافقات · تدقيق'],
     'info-security': ['أمن المعلومات', 'حماية · إدارة · حوادث · مخاطر · ضوابط · تقارير'],
     'data-governance': ['حوكمة البيانات', 'كتالوج · مصادر · جودة · رحلة البيانات · سياسات · اعتمادات'],
@@ -399,6 +404,7 @@
     'side-project-regs',
     'content-articles',
     'settings',
+    'packages-points',
   ]);
   const buildVisibleNav = () => {
     let list =
@@ -1524,6 +1530,7 @@
     organization: renderOrganization,
     incubators: renderIncubators,
     wallet: renderWallet,
+    'packages-points': () => `<div id="packages-points-mount" class="pkg-admin-root"></div>`,
     core: renderCore,
     governance: renderGovernance,
     'info-security': renderInfoSecurity,
@@ -1671,6 +1678,10 @@
     }
     if (current === 'store') {
       loadProductOrdersAdmin();
+    }
+    if (current === 'packages-points' && window.HubPackagesAdmin?.mount) {
+      const mount = document.getElementById('packages-points-mount');
+      if (mount) window.HubPackagesAdmin.mount(mount);
     }
     if (current === 'settings' && window.HubSettingsCenter?.bind) {
       window.HubSettingsCenter.bind(root, {
