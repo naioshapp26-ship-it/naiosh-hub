@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>عودة من Paymob | نايوش هوب 360</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css?v=nav4" />
+  <style>
+    body { font-family: Cairo, sans-serif; padding: 2rem; max-width: 640px; margin: 0 auto; }
+    .box { border: 1px solid #ddd; padding: 1.25rem; border-radius: 12px; }
+    .ok { color: #166534; }
+    .err { color: #b91c1c; }
+    a { font-weight: 800; }
+  </style>
+</head>
+<body>
+  <h1>عودة من بوابة الدفع</h1>
+  <div class="box" id="msg">جاري التحقق من حالة الدفع… لن تُضاف النقاط من هذه الصفحة وحدها.</div>
+  <p><a href="packages.html">العودة إلى الباقات</a> · <a href="client.html#wallet">محفظتي</a></p>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var ref = params.get('ref') || params.get('merchant_order_id') || '';
+      var stub = params.get('stub') === '1';
+      var tx = params.get('tx') || params.get('id') || '';
+      var successParam = params.get('success');
+      var el = document.getElementById('msg');
+
+      function goPackages(note) {
+        var q = new URLSearchParams();
+        if (ref) q.set('ref', ref);
+        q.set(note === 'ok' ? 'paid' : 'cancel', '1');
+        location.replace('packages.html?' + q.toString());
+      }
+
+      async function run() {
+        if (stub && ref) {
+          // Sandbox only: server rejects unless HUB_PAYMOB_STUB=1 and non-production
+          try {
+            var res = await fetch('/api/hub/packages/paymob/stub-complete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({
+                ref: ref,
+                tx: tx,
+                success: successParam !== 'false' && successParam !== '0',
+              }),
+            });
+            var data = await res.json().catch(function () { return {}; });
+            if (data.credited) {
+              el.className = 'box ok';
+              el.textContent = 'تم التحقق التجريبي وإضافة النقاط · ' + ref + (data.duplicate ? ' (تكرار آمن)' : '');
+              setTimeout(function () { goPackages('ok'); }, 900);
+              return;
+            }
+            if (data.failed || data.ok === false) {
+              el.className = 'box err';
+              el.textContent = (data.error || 'فشل الدفع التجريبي') + ' — لم تُضف نقاط. المرجع ' + ref;
+              setTimeout(function () { goPackages('fail'); }, 1200);
+              return;
+            }
+            el.textContent = 'الطلب قيد المعالجة · ' + ref + ' — تحقق من المحفظة بعد إشعار البوابة.';
+            setTimeout(function () { goPackages('ok'); }, 1200);
+            return;
+          } catch (e) {
+            el.className = 'box err';
+            el.textContent = 'تعذّر إكمال الوضع التجريبي. لم تُضف نقاط من المتصفح.';
+            return;
+          }
+        }
+
+        // Live return: never credit here — only show status from server
+        if (!ref) {
+          el.textContent = 'لا يوجد مرجع طلب. إن أتممت الدفع ستُضاف النقاط بعد إشعار Paymob الموقّع للخادم.';
+          return;
+        }
+        try {
+          var st = await fetch('/api/hub/packages/order-status?ref=' + encodeURIComponent(ref), {
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+          });
+          var body = await st.json().catch(function () { return {}; });
+          el.className = 'box ' + (body.order && body.order.credited ? 'ok' : '');
+          el.textContent =
+            (body.noteAr || 'تم الرجوع من البوابة') +
+            (body.order ? ' · الحالة: ' + body.order.status : '') +
+            ' — إضافة النقاط تتم فقط بعد Webhook HMAC.';
+          setTimeout(function () {
+            goPackages(body.order && body.order.credited ? 'ok' : 'fail');
+          }, 1000);
+        } catch (e2) {
+          el.textContent = 'تعذّر جلب الحالة. راجع محفظتك لاحقًا — لا اعتماد على هذه الصفحة لإضافة الرصيد.';
+        }
+      }
+      run();
+    })();
+  </script>
+</body>
+</html>

@@ -71,9 +71,30 @@
       fmt(stats.usdCollected) +
       '</span>' +
       '<span class="chip">' +
-      (pay.available ? 'Stripe مفعّل' : 'الدفع الإلكتروني غير متاح') +
+      (pay.available
+        ? 'بوابات: ' + ((pay.activeGatewayIds || []).join(' · ') || pay.gateway || 'مفعّلة')
+        : 'الدفع الإلكتروني غير متاح') +
       '</span>' +
       '</div>' +
+      (pay.gateways && pay.gateways.length
+        ? '<section><h3>بوابات الدفع</h3><ul>' +
+          pay.gateways
+            .map(function (g) {
+              return (
+                '<li><strong>' +
+                esc(g.nameAr) +
+                '</strong> — ' +
+                esc(g.statusAr) +
+                ' · عملات: ' +
+                esc((g.settlementCurrencies || []).join(', ')) +
+                '</li>'
+              );
+            })
+            .join('') +
+          '</ul><p style="opacity:.85">' +
+          esc(pay.recommendationAr || '') +
+          '</p></section>'
+        : '') +
       '<section><h3>الباقات</h3><div style="overflow:auto"><table class="table"><thead><tr><th>الباقة</th><th>النقاط</th><th>USD</th><th>النوع</th></tr></thead><tbody>' +
       (data.packages || [])
         .map(function (p) {

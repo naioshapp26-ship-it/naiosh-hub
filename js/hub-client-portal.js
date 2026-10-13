@@ -706,20 +706,40 @@
     return form + '<section class="cp-card" style="margin-top:12px"><div class="cp-card-head"><h3>شكاواي</h3></div>' + rows + '</section>';
   }
 
-  function renderWallet(w) {
-    w = w || {};
+  function renderWallet(data) {
+    var w = (data && data.wallet) || data || {};
     var ledger = w.ledger || [];
+    var orders = (data && data.packageOrders) || [];
+    var pay = (data && data.payment) || {};
+    var modeLabel = pay.testMode ? 'اختبار' : pay.liveChargesEnabled ? 'Live' : pay.stubMode ? 'Stub' : 'غير مفعّل';
+    var ordersHtml = !orders.length
+      ? '<p style="color:var(--cp-muted);font-weight:700">لا طلبات شحن باقات بعد.</p>'
+      : '<div class="cp-list">' + orders.slice(0, 12).map(function (o) {
+          return '<div class="cp-row" style="align-items:flex-start">' +
+            '<div><strong>' + esc(o.ref || '') + ' · ' + esc(o.packageNameAr || '') + '</strong>' +
+            '<small>الحالة: ' + esc(o.status || '') + ' · الدفع: ' + esc(o.paymentStatus || '') +
+            (o.settlementAmount != null ? ' · تحصيل: ' + esc(o.settlementAmount) + ' ' + esc(o.settlementCurrency || '') : '') +
+            '</small></div>' +
+            '<strong>' + (o.credited ? '+' : '') + esc(o.points || 0) + ' نقطة</strong></div>';
+        }).join('') + '</div>';
     return '<section class="cp-card"><div class="cp-card-head"><h3>محفظتي</h3></div>' +
       '<div class="cp-summary" style="margin-bottom:14px">' +
         '<div class="cp-card" style="box-shadow:none"><span>الرصيد المدفوع</span><strong style="color:var(--cp-red);font-size:1.4rem;display:block;margin-top:6px">' + (w.paid || 0) + '</strong></div>' +
         '<div class="cp-card" style="box-shadow:none"><span>الرصيد المجاني</span><strong style="color:var(--cp-red);font-size:1.4rem;display:block;margin-top:6px">' + (w.free || 0) + '</strong></div>' +
         '<div class="cp-card" style="box-shadow:none"><span>إجمالي النقاط</span><strong style="color:var(--cp-red);font-size:1.4rem;display:block;margin-top:6px">' + (w.total || 0) + '</strong></div>' +
       '</div>' +
-      '<div class="cp-actions" style="margin-bottom:14px"><button type="button" class="cp-btn cp-btn-primary" id="cp-topup">طلب شحن الرصيد</button></div>' +
-      '<h4 style="margin:0 0 10px">آخر العمليات</h4>' +
+      '<p style="font-weight:800;margin:0 0 12px">حالة الدفع: ' + esc(modeLabel) + ' — ' + esc(pay.messageAr || '—') + '</p>' +
+      '<div class="cp-actions" style="margin-bottom:14px;flex-wrap:wrap;gap:8px">' +
+        '<a class="cp-btn cp-btn-primary" href="packages.html">شحن باقة / نقاط</a>' +
+        '<a class="cp-btn" href="packages-receipts.html">الإيصالات وسجل الشحن</a>' +
+        '<button type="button" class="cp-btn" id="cp-topup">طلب شحن إداري</button>' +
+      '</div>' +
+      '<h4 style="margin:0 0 10px">طلبات الباقات وحالة الدفع</h4>' + ordersHtml +
+      '<h4 style="margin:18px 0 10px">سجل النقاط</h4>' +
       (ledger.length
         ? '<div class="cp-list">' + ledger.map(function (t) {
-            return '<div class="cp-row"><div><strong>' + esc(t.note || t.type) + '</strong><small>' + esc(fmtDate(t.at)) + '</small></div><strong>' + (t.type === 'debit' ? '−' : '+') + t.amount + '</strong></div>';
+            var sign = (t.type === 'debit' || t.type === 'debit_refund' || t.type === 'debit_refund_partial') ? '−' : '+';
+            return '<div class="cp-row"><div><strong>' + esc(t.note || t.type) + '</strong><small>' + esc(fmtDate(t.at)) + (t.reference ? ' · ' + esc(t.reference) : '') + '</small></div><strong>' + sign + t.amount + '</strong></div>';
           }).join('') + '</div>'
         : '<p style="color:var(--cp-muted);font-weight:700">لا عمليات بعد.</p>') +
       '<p style="margin-top:12px;color:var(--cp-muted);font-size:12px;font-weight:700">لا يمكن تعديل الرصيد يدويًا من حساب العميل.</p></section>';
@@ -787,12 +807,15 @@
   function renderMarketplace(list) {
     if (!list.length) return empty('fa-store', 'لا خدمات متاحة حاليًا', 'عد لاحقًا لاستكشاف أنظمة نايوش.', null, null);
     return '<section class="cp-card"><div class="cp-card-head"><h3>استكشف خدمات نايوش</h3></div><div class="cp-sys-grid">' + list.map(function (p) {
+      var pts = p.pointsCost != null ? p.pointsCost : p.price;
+      var priceText = p.priceLabel || (pts != null ? pts + ' نقطة' : 'حسب الطلب');
       return '<article class="cp-sys">' +
-        '<div class="cp-sys-top"><img src="' + esc(p.logo || 'assets/logo-hub.jpeg') + '" alt="" /><div><strong>' + esc(p.name) + '</strong><small>' + esc(p.type || '') + ' · ' + esc(p.priceLabel || 'حسب الطلب') + '</small></div></div>' +
+        '<div class="cp-sys-top"><img src="' + esc(p.logo || 'assets/logo-hub.jpeg') + '" alt="" /><div><strong>' + esc(p.name) + '</strong><small>' + esc(p.type || '') + ' · <strong style="color:var(--cp-ink)">' + esc(priceText) + '</strong></small></div></div>' +
         '<p style="margin:0;color:var(--cp-muted);font-size:13px;font-weight:700">' + esc(p.description || '') + '</p>' +
+        '<p style="margin:0;font-size:13px;font-weight:800">السعر المعتمد قبل الشراء: ' + esc(priceText) + '</p>' +
         '<div class="cp-actions">' +
-          '<button type="button" class="cp-btn cp-btn-primary" data-checkout-id="' + esc(p.id) + '" data-checkout-sku="' + esc(p.sku || p.code || '') + '">اشترِ الآن (محفظة)</button>' +
-          '<button type="button" class="cp-btn" data-checkout-id="' + esc(p.id) + '" data-checkout-sku="' + esc(p.sku || p.code || '') + '" data-pay-later="1">اطلب بدون دفع</button>' +
+          '<button type="button" class="cp-btn cp-btn-primary" data-checkout-id="' + esc(p.id) + '" data-checkout-sku="' + esc(p.sku || p.code || '') + '" data-points-cost="' + esc(pts != null ? pts : '') + '" data-service-name="' + esc(p.name) + '">اشترِ الآن (محفظة)</button>' +
+          '<button type="button" class="cp-btn" data-checkout-id="' + esc(p.id) + '" data-checkout-sku="' + esc(p.sku || p.code || '') + '" data-pay-later="1" data-points-cost="' + esc(pts != null ? pts : '') + '" data-service-name="' + esc(p.name) + '">اطلب بدون دفع</button>' +
         '</div></article>';
     }).join('') + '</div></section>';
   }
@@ -960,6 +983,12 @@
         btn.addEventListener('click', async function () {
           try {
             var payLater = btn.getAttribute('data-pay-later') === '1';
+            var pts = btn.getAttribute('data-points-cost') || '';
+            var name = btn.getAttribute('data-service-name') || 'الخدمة';
+            var confirmMsg = payLater
+              ? ('تأكيد طلب «' + name + '» بدون خصم فوري؟\nالسعر المعتمد: ' + (pts || '—') + ' نقطة (فاتورة لاحقًا).')
+              : ('تأكيد شراء «' + name + '» وخصم ' + (pts || '—') + ' نقطة من محفظتك الآن؟');
+            if (!window.confirm(confirmMsg)) return;
             var result = await api('/api/client/checkout', {
               method: 'POST',
               body: {
@@ -1267,7 +1296,7 @@
         case 'systems': html = renderSystems(data.systems || []); break;
         case 'orders': html = renderOrders(data.orders || []); break;
         case 'subscriptions': html = renderSubs(data.subscriptions || []); break;
-        case 'wallet': html = renderWallet(data.wallet || data); break;
+        case 'wallet': html = renderWallet(data); break;
         case 'invoices': html = renderInvoices(data.invoices || []); break;
         case 'requests': html = renderRequests(data.requests || []); break;
         case 'complaints': html = renderComplaints(data.complaints || []); break;

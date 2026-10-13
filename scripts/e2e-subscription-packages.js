@@ -8,9 +8,9 @@ const https = require('https');
 const { spawn } = require('child_process');
 const path = require('path');
 
-const PORT = Number(process.env.SCALE_PORT || process.env.PORT || 8933);
-const BASE = process.env.BASE_URL || `http://127.0.0.1:${PORT}`;
 const ROOT = path.join(__dirname, '..');
+const PORT = Number(process.env.E2E_PACKAGES_PORT || 0) || 19300 + Math.floor(Math.random() * 500);
+const BASE = process.env.BASE_URL || `http://127.0.0.1:${PORT}`;
 
 function req(method, urlPath, { body, token, headers } = {}) {
   const u = new URL(urlPath, BASE);
@@ -70,9 +70,26 @@ async function main() {
   let child = null;
   let started = false;
   if (!process.env.BASE_URL) {
+    const env = {
+      ...process.env,
+      PORT: String(PORT),
+      SCALE_PORT: String(PORT),
+      HOST: '127.0.0.1',
+      HUB_ALLOW_LEGACY_DEMO: '1',
+      APP_URL: `http://127.0.0.1:${PORT}`,
+    };
+    // This suite asserts gateways are OFF unless explicitly configured for the test.
+    delete env.BASE_URL;
+    delete env.HUB_PAYMOB_STUB;
+    delete env.PAYMOB_API_KEY;
+    delete env.PAYMOB_INTEGRATION_ID;
+    delete env.PAYMOB_HMAC_SECRET;
+    delete env.PAYMOB_IFRAME_ID;
+    delete env.STRIPE_SECRET_KEY;
+    delete env.STRIPE_WEBHOOK_SECRET;
     child = spawn(process.execPath, ['server.js'], {
       cwd: ROOT,
-      env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1', HUB_ALLOW_LEGACY_DEMO: '1' },
+      env,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     started = true;
@@ -102,8 +119,11 @@ async function main() {
       ? 1
       : 0;
 
-    failed += !mark('payment_not_fake_available', cat.json.payment && cat.json.payment.available === Boolean(process.env.STRIPE_SECRET_KEY), {
+    // Own spawned server clears gateway secrets → payment must be unavailable (no fake "available").
+    const expectPayAvailable = false;
+    failed += !mark('payment_not_fake_available', cat.json.payment && cat.json.payment.available === expectPayAvailable, {
       available: cat.json.payment && cat.json.payment.available,
+      stubMode: cat.json.payment && cat.json.payment.stubMode,
     })
       ? 1
       : 0;
@@ -178,15 +198,32 @@ async function main() {
 
     if (token) {
       const claim1 = await req('POST', '/api/hub/packages/claim-free', { token, body: {} });
-      failed += !mark('claim_free_once', claim1.json.ok && claim1.json.wallet && claim1.json.wallet.free >= 300, {
-        free: claim1.json.wallet && claim1.json.wallet.free,
-        ref: claim1.json.order && claim1.json.order.ref,
-      })
+      failed += !mark(
+        'claim_free_once',
+        claim1.status === 200 &&
+          claim1.json.ok === true &&
+          claim1.json.wallet &&
+          claim1.json.wallet.free >= 300 &&
+          claim1.json.order &&
+          claim1.json.order.ref,
+        {
+          status: claim1.status,
+          free: claim1.json.wallet && claim1.json.wallet.free,
+          ref: claim1.json.order && claim1.json.order.ref,
+          err: claim1.json.error,
+        }
+      )
         ? 1
         : 0;
 
       const claim2 = await req('POST', '/api/hub/packages/claim-free', { token, body: {} });
-      failed += !mark('claim_free_idempotent', claim2.status === 409 || claim2.json.ok === false, { status: claim2.status }) ? 1 : 0;
+      failed += !mark(
+        'claim_free_idempotent',
+        claim2.status === 409 && claim2.json.ok === false,
+        { status: claim2.status, err: claim2.json.error }
+      )
+        ? 1
+        : 0;
 
       const paid = await req('POST', '/api/hub/packages/checkout', {
         token,

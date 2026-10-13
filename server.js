@@ -2706,6 +2706,16 @@ async function boot() {
   }
 
   try {
+    const store = hubClientPortal.readStore();
+    const pkgHyd = await hubSubscriptionPackages.hydratePackageOrdersFromPg(store);
+    console.log(
+      `Package orders hydrated from Postgres (rows=${pkgHyd?.count || 0}, merged=${pkgHyd?.merged || 0})`
+    );
+  } catch (error) {
+    console.error('Package orders hydrate skipped:', error.message);
+  }
+
+  try {
     const hubProfile360 = require('./lib/hub-profile-360');
     const profHyd = await hubProfile360.hydrateFromDb();
     console.log(

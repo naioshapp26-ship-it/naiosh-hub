@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('hubTheme') || localStorage.getItem('theme');
+        if (t === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.style.colorScheme = 'dark';
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>إيصالات الشحن وسجل النقاط | نايوش هوب 360</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/styles.css?v=nav4" />
+  <link rel="stylesheet" href="css/hub-theme.css?v=2" />
+  <link rel="stylesheet" href="css/hub-chrome.css" />
+  <link rel="stylesheet" href="css/hub-packages.css?v=1" />
+  <style>
+    .rcpt-shell { max-width: 920px; margin: 0 auto; padding: 1.5rem 1rem 3rem; font-family: Cairo, sans-serif; }
+    .rcpt-card { border: 1px solid rgba(0,0,0,.12); border-radius: 14px; padding: 1rem 1.15rem; margin-bottom: 12px; background: #fff; }
+    .rcpt-card h3 { margin: 0 0 .35rem; font-size: 1.05rem; }
+    .rcpt-meta { font-weight: 700; opacity: .8; font-size: .9rem; }
+    .rcpt-status { display: inline-block; font-weight: 800; margin-top: .5rem; }
+    .rcpt-status.is-ok { color: #166534; }
+    .rcpt-status.is-warn { color: #9a3412; }
+    .rcpt-status.is-bad { color: #b91c1c; }
+    .rcpt-wallet { display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 10px; margin: 1rem 0; }
+    .rcpt-wallet div { border: 1px solid rgba(0,0,0,.1); border-radius: 12px; padding: .75rem; font-weight: 800; }
+    table.rcpt-table { width: 100%; border-collapse: collapse; font-weight: 700; }
+    table.rcpt-table th, table.rcpt-table td { border-bottom: 1px solid rgba(0,0,0,.08); padding: .55rem .35rem; text-align: right; }
+    .rcpt-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 1rem 0; }
+  </style>
+</head>
+<body class="homepage pkg-page">
+  <header class="top-nav">
+    <div class="container inner">
+      <div class="nav-main">
+        <a class="brand" href="index.html"><img class="site-header-logo" src="assets/logo-hub.jpeg" alt="نايوش هوب" /><span class="logo-text">NAIOSH <span class="hub-mark">HUB</span></span></a>
+        <nav class="nav-links" aria-label="روابط">
+          <a href="packages.html">باقات الاشتراك</a>
+          <a href="packages-receipts.html" aria-current="page">الإيصالات</a>
+          <a href="client.html#wallet">المحفظة</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="rcpt-shell">
+    <h1>حالة الدفع · الإيصالات · سجل النقاط</h1>
+    <p id="rcpt-pay-status" class="rcpt-meta">جاري التحميل…</p>
+    <div class="rcpt-actions">
+      <a class="btn btn-primary" href="packages.html">شحن باقة</a>
+      <a class="btn btn-secondary" href="client.html#wallet">فتح المحفظة</a>
+      <a class="btn btn-secondary" href="login.html?next=packages-receipts.html" id="rcpt-login">تسجيل الدخول</a>
+    </div>
+    <div class="rcpt-wallet" id="rcpt-wallet" hidden></div>
+    <h2>طلبات الشحن والإيصالات</h2>
+    <div id="rcpt-orders"></div>
+    <h2>سجل النقاط</h2>
+    <div style="overflow:auto">
+      <table class="rcpt-table" id="rcpt-ledger">
+        <thead><tr><th>التاريخ</th><th>الوصف</th><th>المرجع</th><th>النقاط</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      function tokenHeaders() {
+        var token =
+          (window.HubAuth && window.HubAuth.getToken && window.HubAuth.getToken()) ||
+          localStorage.getItem('hubToken') ||
+          localStorage.getItem('token') ||
+          '';
+        var h = { Accept: 'application/json' };
+        if (token) {
+          h.Authorization = 'Bearer ' + token;
+          h['X-Hub-Token'] = token;
+        }
+        return h;
+      }
+      function fmt(n) {
+        return Number(n || 0).toLocaleString('en-US');
+      }
+      function statusClass(st) {
+        if (/fulfilled|paid|free_grant/.test(st)) return 'is-ok';
+        if (/pending|awaiting|review/.test(st)) return 'is-warn';
+        if (/fail|reject|mismatch|shortfall/.test(st)) return 'is-bad';
+        return '';
+      }
+      async function load() {
+        var res = await fetch('/api/hub/packages/me', { headers: tokenHeaders(), credentials: 'same-origin' });
+        var data = await res.json().catch(function () { return {}; });
+        var payEl = document.getElementById('rcpt-pay-status');
+        var pay = data.payment || {};
+        payEl.textContent =
+          (pay.messageAr || 'حالة البوابة غير متاحة') +
+          (pay.testMode ? ' · وضع اختبار' : '') +
+          (pay.liveChargesEnabled ? ' · Live' : '');
+        if (!data.authenticated) {
+          document.getElementById('rcpt-orders').innerHTML =
+            '<p class="rcpt-meta">يلزم تسجيل الدخول لعرض الإيصالات والرصيد.</p>';
+          return;
+        }
+        document.getElementById('rcpt-login').hidden = true;
+        var w = data.wallet || {};
+        var box = document.getElementById('rcpt-wallet');
+        box.hidden = false;
+        box.innerHTML =
+          '<div>مدفوع<br><strong>' + fmt(w.paid) + '</strong></div>' +
+          '<div>مجاني<br><strong>' + fmt(w.free) + '</strong></div>' +
+          '<div>الإجمالي<br><strong>' + fmt(w.total) + '</strong></div>';
+        var orders = data.packageOrders || data.orders || [];
+        document.getElementById('rcpt-orders').innerHTML = orders.length
+          ? orders
+              .map(function (o) {
+                var lines = (o.receipt && o.receipt.lines) || [];
+                return (
+                  '<article class="rcpt-card">' +
+                  '<h3>' +
+                  (o.receipt && o.receipt.titleAr ? o.receipt.titleAr : 'طلب شحن') +
+                  ' — ' +
+                  (o.packageNameAr || '') +
+                  '</h3>' +
+                  '<div class="rcpt-meta">' +
+                  lines.join(' · ') +
+                  '</div>' +
+                  '<span class="rcpt-status ' +
+                  statusClass(String(o.status || '') + ' ' + String(o.paymentStatus || '')) +
+                  '">' +
+                  (o.credited ? 'تمت إضافة النقاط' : 'لم تُضف النقاط بعد') +
+                  ' · ' +
+                  (o.status || '') +
+                  '</span></article>'
+                );
+              })
+              .join('')
+          : '<p class="rcpt-meta">لا إيصالات بعد. <a href="packages.html">اشحن باقة</a></p>';
+        var tb = document.querySelector('#rcpt-ledger tbody');
+        var ledger = data.ledger || (w.ledger || []);
+        tb.innerHTML = ledger.length
+          ? ledger
+              .map(function (e) {
+                var sign =
+                  e.type === 'debit' || e.type === 'debit_refund' || e.type === 'debit_refund_partial' ? '−' : '+';
+                return (
+                  '<tr><td>' +
+                  (e.at || '').replace('T', ' ').slice(0, 19) +
+                  '</td><td>' +
+                  (e.note || e.type || '') +
+                  '</td><td>' +
+                  (e.reference || '—') +
+                  '</td><td>' +
+                  sign +
+                  fmt(e.amount) +
+                  '</td></tr>'
+                );
+              })
+              .join('')
+          : '<tr><td colspan="4">لا عمليات نقاط بعد.</td></tr>';
+      }
+      load().catch(function (e) {
+        document.getElementById('rcpt-pay-status').textContent = e.message || 'فشل التحميل';
+      });
+    })();
+  </script>
+</body>
+</html>
