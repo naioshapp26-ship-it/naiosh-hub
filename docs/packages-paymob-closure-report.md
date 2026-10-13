@@ -28,9 +28,10 @@ PR: https://github.com/naioshapp26-ship-it/naiosh-hub/pull/235
 
 ## اختبارات محلية مثبتة
 
-- `scripts/e2e-packages-postgres-durability.js` — استمرار Postgres + الدفع غير متاح بدون مفاتيح  
-- `scripts/e2e-paymob-packages-sandbox.js` — فشل / تكرار / استرداد جزئي (Stub محلي فقط)  
-- `scripts/e2e-subscription-packages.js` — بدون بوابات  
+- `scripts/e2e-packages-postgres-durability.js` — منح مجاني `200` · منع تكرار `409` · استمرار Postgres بعد إعادة التشغيل · الدفع غير متاح بدون مفاتيح  
+- `scripts/e2e-paymob-packages-sandbox.js` — منح `200` · فشل / تكرار / استرداد جزئي (Stub محلي فقط)  
+- `scripts/e2e-subscription-packages.js` — منح `200` من أول محاولة · بدون بوابات  
+- جاهزية الدمج: `docs/pr-235-merge-ready.md`  
 
 ## ما لن يُعلن
 

@@ -160,7 +160,27 @@ async function main() {
 
     const claim = await req('POST', '/api/hub/packages/claim-free', { token, body: {} });
     const freeRef = claim.json.order && claim.json.order.ref;
-    failed += !mark('claim_free_order', claim.json.ok && freeRef, { ref: freeRef }) ? 1 : 0;
+    failed += !mark(
+      'claim_free_order',
+      claim.status === 200 && claim.json.ok === true && freeRef && claim.json.wallet && claim.json.wallet.free >= 300,
+      {
+        status: claim.status,
+        ref: freeRef,
+        free: claim.json.wallet && claim.json.wallet.free,
+        err: claim.json.error,
+      }
+    )
+      ? 1
+      : 0;
+
+    const claimAgain = await req('POST', '/api/hub/packages/claim-free', { token, body: {} });
+    failed += !mark(
+      'claim_free_no_repeat',
+      claimAgain.status === 409 && claimAgain.json.ok === false,
+      { status: claimAgain.status, err: claimAgain.json.error }
+    )
+      ? 1
+      : 0;
 
     const manual = await req('POST', '/api/hub/packages/checkout', {
       token,

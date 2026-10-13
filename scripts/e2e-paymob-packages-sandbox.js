@@ -192,9 +192,30 @@ async function main() {
     if (!client.token) throw new Error('no client token');
 
     const claim = await req('POST', '/api/hub/packages/claim-free', { token: client.token, body: {} });
-    failed += !mark('claim_free_300', claim.json.ok && claim.json.wallet && claim.json.wallet.free >= 300, {
-      free: claim.json.wallet && claim.json.wallet.free,
-    })
+    failed += !mark(
+      'claim_free_300',
+      claim.status === 200 &&
+        claim.json.ok === true &&
+        claim.json.wallet &&
+        claim.json.wallet.free >= 300 &&
+        claim.json.order &&
+        claim.json.order.ref,
+      {
+        status: claim.status,
+        free: claim.json.wallet && claim.json.wallet.free,
+        ref: claim.json.order && claim.json.order.ref,
+        err: claim.json.error,
+      }
+    )
+      ? 1
+      : 0;
+
+    const claimDup = await req('POST', '/api/hub/packages/claim-free', { token: client.token, body: {} });
+    failed += !mark(
+      'claim_free_409_no_double',
+      claimDup.status === 409 && claimDup.json.ok === false,
+      { status: claimDup.status, err: claimDup.json.error }
+    )
       ? 1
       : 0;
 

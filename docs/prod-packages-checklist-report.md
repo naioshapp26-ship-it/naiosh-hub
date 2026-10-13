@@ -31,6 +31,13 @@ persistPackageOrderPg is not defined
 2. **إعادة اختبار ما بعد النشر** لـ: حفظ Postgres بعد redeploy، صفحة الإيصالات، عدم ظهور 500 عند المنح/المراجعة.  
 3. **أي رحلة دفع Paymob Test/Live** — متعمّدًا غير مُنفَّذة (لا مفاتيح تاجر · لا Live).
 
+## إثبات محلي بعد تقوية الاختبارات (قبل الدمج)
+
+- `claim_free_once` / `claim_free_order` / `claim_free_300` تشترط الآن `HTTP 200` + `ok` + `free>=300` + `ref`
+- منع التكرار يشترط `HTTP 409`
+- `e2e-subscription-packages.js` و`e2e-packages-postgres-durability.js` و`e2e-paymob-packages-sandbox.js`: **PASS كامل محليًا**
+- تفاصيل الجاهزية: `docs/pr-235-merge-ready.md`
+
 ## الخطوة التالية لصاحب الصلاحية
 
 1. مراجعة ودمج PR #235  
@@ -38,5 +45,5 @@ persistPackageOrderPg is not defined
 3. إعادة تشغيل قائمة الاختبار 1–7 على الإنتاج  
 4. بعدها فقط التفكير في مفاتيح Paymob **Test** (بدون Live)
 
-مرحلة البرمجة: **مغلقة بانتظار الدمج**.  
+مرحلة البرمجة: **جاهزة للدمج · بانتظار صاحب الصلاحية**.  
 نظام الدفع: **ليس FULL PASS**.
