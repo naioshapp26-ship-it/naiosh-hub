@@ -67,33 +67,21 @@
     el.classList.toggle('is-ok', ok === true);
   }
 
+  function paymentAvailable() {
+    return !!(state.payment && state.payment.available);
+  }
+
   function renderStatus() {
     var box = $('pkg-status');
     if (!box) return;
-    var pay = state.payment || {};
-    var pills = [];
-    pills.push(
-      '<span class="pkg-pill ' +
-        (pay.available ? 'is-ok' : 'is-warn') +
-        '"><i class="fas ' +
-        (pay.available ? 'fa-check-circle' : 'fa-triangle-exclamation') +
-        '"></i> ' +
-        (pay.available ? 'بوابة الدفع مفعّلة' : 'الدفع الإلكتروني غير متاح حاليًا') +
-        '</span>'
-    );
-    pills.push(
-      '<span class="pkg-pill"><i class="fas fa-university"></i> عملات التحصيل: ' +
-        ((pay.settlementCurrencies || ['USD']).join(' · ') || 'USD') +
-        '</span>'
-    );
-    if (state.me && state.me.authenticated) {
-      pills.push('<span class="pkg-pill is-ok"><i class="fas fa-user-check"></i> مسجّل الدخول</span>');
-    } else {
-      pills.push(
-        '<span class="pkg-pill"><i class="fas fa-user-lock"></i> <a href="login.html?next=packages.html" style="color:inherit;text-decoration:underline">تسجيل الدخول مطلوب للشراء</a></span>'
-      );
+    if (paymentAvailable()) {
+      box.innerHTML =
+        '<span class="pkg-pill is-ok"><i class="fas fa-check-circle"></i> الشراء الإلكتروني متاح</span>';
+      return;
     }
-    box.innerHTML = pills.join('');
+    box.innerHTML =
+      '<span class="pkg-pill is-warn"><i class="fas fa-clock"></i> الشراء متاح قريبًا</span>' +
+      '<span class="pkg-pill is-ok"><i class="fas fa-gift"></i> الباقة المجانية متاحة للمستحقين</span>';
   }
 
   function renderWallet() {
@@ -106,18 +94,12 @@
     }
     box.hidden = false;
     box.innerHTML =
-      '<div>الرصيد المتاح: <strong>' +
+      '<div>رصيدك: <strong>' +
       fmtPts(w.total) +
       '</strong> نقطة</div>' +
-      '<div>مجاني: <strong>' +
-      fmtPts(w.free) +
-      '</strong></div>' +
-      '<div>مدفوع: <strong>' +
-      fmtPts(w.paid) +
-      '</strong></div>' +
       (state.me.freeClaimed
-        ? '<div class="pkg-pill">الباقة المجانية مُنحت مسبقًا</div>'
-        : '<div class="pkg-pill is-ok">الباقة المجانية متاحة مرة واحدة</div>');
+        ? '<span class="pkg-pill">حصلت على الباقة المجانية</span>'
+        : '<span class="pkg-pill is-ok">يمكنك الحصول على 300 نقطة مجانًا</span>');
   }
 
   function fillSelects() {
@@ -135,17 +117,13 @@
           c.currency +
           '">' +
           c.nameAr +
-          ' (' +
-          c.code +
-          ') · ' +
-          c.currency +
           '</option>'
         );
       })
       .join('');
     uSel.innerHTML = currencies
       .map(function (c) {
-        return '<option value="' + c.code + '">' + c.code + ' — ' + (c.nameAr || c.nameEn || '') + '</option>';
+        return '<option value="' + c.code + '">' + (c.nameAr || c.nameEn || c.code) + '</option>';
       })
       .join('');
 
@@ -158,7 +136,6 @@
   async function refreshQuotes() {
     var currency = $('pkg-currency') ? $('pkg-currency').value : 'USD';
     var countryCode = $('pkg-country') ? $('pkg-country').value : '';
-    var meta = $('pkg-fx-meta');
     state.quotes = {};
     for (var i = 0; i < state.packages.length; i++) {
       var p = state.packages[i];
@@ -168,57 +145,28 @@
       });
       if (q.ok) state.quotes[p.id] = q;
     }
-    var any = state.quotes[state.packages[0] && state.packages[0].id];
-    if (meta && any && any.fx) {
-      meta.innerHTML =
-        'سعر الصرف من ' +
-        (any.fx.provider || 'مزوّد') +
-        '<br>تحديث: ' +
-        (any.fx.updatedAt || '—') +
-        (any.fx.stale ? ' <strong>(مخزّن مؤقتًا)</strong>' : '') +
-        '<br>USD → ' +
-        currency +
-        ' = ' +
-        fmtNum(any.fx.rate, 4);
-    }
+    // FX provider/timestamps stay server-side — never shown to clients.
     renderCards();
   }
 
-  function packageButtonLabel(p) {
-    if (p.kind === 'free') {
-      return state.me && state.me.freeClaimed ? 'تم المنح مسبقًا' : 'ابدأ مجانًا';
-    }
-    if (p.id === 'pack-6000' || Number(p.points) === 6000) {
-      return 'اختر باقة 6,000 نقطة';
-    }
-    if (p.id === 'pack-16000' || Number(p.points) === 16000) {
-      return 'اختر باقة 16,000 نقطة';
-    }
-    return 'اختر هذه الباقة';
-  }
-
   function packageMeta(p) {
-    if (p.kind === 'free') {
-      return 'مرة واحدة لكل عميل مؤهل بعد التحقق. تُضاف إلى رصيدك المجاني مباشرة عند التأكيد.';
-    }
-    return (
-      'شراء رصيد نقاط مرة واحدة — بدون اشتراك شهري أو تجديد تلقائي. ' +
-      (p.descriptionAr || 'يُستخدم الرصيد في خدمات نايوش هوب المسجّلة بالنقاط.')
-    );
+    if (p.kind === 'free') return 'مرة واحدة للمستحقين بعد تسجيل الدخول.';
+    return 'رصيد يُستخدم في خدمات نايوش هوب بالنقاط.';
   }
 
   function coverageHint(cost) {
     var c = Number(cost) || 0;
-    if (c <= 0) return 'التكلفة غير محددة بعد.';
-    if (c <= 300) return 'يمكن تغطيتها من الباقة المجانية (300 نقطة) أو أي شحن أعلى.';
-    if (c <= 6000) return 'تحتاج باقة 6,000 نقطة أو أعلى (أو رصيدًا مكافئًا في المحفظة).';
-    if (c <= 16000) return 'تناسب باقة 16,000 نقطة أو رصيدًا مدفوعًا مكافئًا.';
-    return 'قد تحتاج أكثر من باقة واحدة أو رصيدًا متراكمًا حسب محفظتك.';
+    if (c <= 0) return '';
+    if (c <= 300) return 'تكفي لها الباقة المجانية أو أي باقة أعلى.';
+    if (c <= 6000) return 'تناسب باقة 6,000 نقطة أو أعلى.';
+    if (c <= 16000) return 'تناسب باقة 16,000 نقطة.';
+    return 'قد تحتاج رصيدًا أكبر من باقة واحدة.';
   }
 
   function renderCards() {
     var grid = $('pkg-grid');
     if (!grid) return;
+    var canPay = paymentAvailable();
     grid.innerHTML = state.packages
       .map(function (p, idx) {
         var q = state.quotes[p.id];
@@ -231,23 +179,38 @@
               fmtNum(disp ? disp.amount : p.priceUsd, disp ? disp.decimals : 2) +
               ' ' +
               (disp ? disp.currency : 'USD') +
-              '<small>السعر المرجعي: ' +
-              fmtNum(p.priceUsd, 2) +
-              ' USD' +
-              (settle && settle.currency !== (disp && disp.currency)
-                ? ' · التحصيل: ' + fmtNum(settle.amount, settle.decimals) + ' ' + settle.currency
-                : '') +
+              '<small>' +
+              (settle && settle.amount != null
+                ? 'السعر عند الشراء: ' + fmtNum(settle.amount, settle.decimals) + ' ' + settle.currency
+                : 'السعر: ' + fmtNum(p.priceUsd, 2) + ' دولار') +
               '</small></div>';
-        var btnLabel = packageButtonLabel(p);
-        var disabled = p.kind === 'free' && state.me && state.me.freeClaimed ? ' disabled' : '';
         var featured = idx === 1 || p.id === 'pack-6000';
+        var actionHtml = '';
+        if (p.kind === 'free') {
+          var claimed = state.me && state.me.freeClaimed;
+          actionHtml =
+            '<button type="button" class="btn btn-primary" data-select="' +
+            p.id +
+            '"' +
+            (claimed ? ' disabled' : '') +
+            '>' +
+            (claimed ? 'تم الحصول عليها' : 'ابدأ مجانًا') +
+            '</button>';
+        } else if (canPay) {
+          actionHtml =
+            '<button type="button" class="btn btn-primary" data-select="' +
+            p.id +
+            '">اختر هذه الباقة</button>';
+        } else {
+          actionHtml = '<div class="pkg-soon" role="status">الشراء متاح قريبًا</div>';
+        }
         return (
           '<article class="pkg-card' +
           (featured ? ' is-featured' : '') +
           '" data-id="' +
           p.id +
           '">' +
-          '<span class="pkg-badge">الأكثر توازنًا</span>' +
+          '<span class="pkg-badge">الأنسب لكثيرين</span>' +
           '<h2>' +
           p.nameAr +
           '</h2>' +
@@ -258,13 +221,7 @@
           '<p class="pkg-card-meta">' +
           packageMeta(p) +
           '</p>' +
-          '<button type="button" class="btn btn-primary" data-select="' +
-          p.id +
-          '"' +
-          disabled +
-          '>' +
-          btnLabel +
-          '</button>' +
+          actionHtml +
           '</article>'
         );
       })
@@ -330,24 +287,25 @@
     var box = $('pkg-checkout');
     var dl = $('pkg-checkout-dl');
     var actions = $('pkg-checkout-actions');
+    var title = $('pkg-checkout-title');
     var p = state.packages.find(function (x) {
       return x.id === packageId;
     });
     var q = state.quotes[packageId];
     if (!box || !dl || !actions || !p) return;
+
+    // Paid packages: do not open a fake checkout when payment is unavailable.
+    if (p.kind !== 'free' && !paymentAvailable()) {
+      box.classList.remove('is-open');
+      setFeedback('الشراء متاح قريبًا. يمكنك الحصول على الباقة المجانية إن كنت مستحقًا.', false);
+      return;
+    }
+
     box.classList.add('is-open');
     setFeedback('');
+    if (title) title.textContent = p.kind === 'free' ? 'الحصول على الباقة المجانية' : 'تأكيد الشراء';
     var settle = q && q.settlement;
     var disp = q && q.display;
-    var fxNote = q && q.fx
-      ? 'سعر الصرف: 1 USD = ' +
-        fmtNum(settle && settle.rate != null ? settle.rate : q.fx.rate, 4) +
-        ' ' +
-        (settle ? settle.currency : '') +
-        (q.fx.stale ? ' (مخزّن مؤقتًا)' : '') +
-        ' · المصدر: ' +
-        (q.fx.provider || '—')
-      : '';
     dl.innerHTML =
       '<dt>الباقة</dt><dd>' +
       p.nameAr +
@@ -355,38 +313,18 @@
       '<dt>النقاط</dt><dd>' +
       fmtPts(p.points) +
       '</dd>' +
-      '<dt>السعر المرجعي</dt><dd>' +
-      (p.kind === 'free' ? 'مجانًا' : fmtNum(p.priceUsd, 2) + ' USD') +
-      '</dd>' +
-      '<dt>سعر العرض (تقريبي)</dt><dd>' +
       (p.kind === 'free'
-        ? '—'
-        : fmtNum(disp ? disp.amount : p.priceUsd, disp ? disp.decimals : 2) +
+        ? '<dt>السعر</dt><dd>مجانًا</dd>'
+        : '<dt>السعر المعروض</dt><dd>' +
+          fmtNum(disp ? disp.amount : p.priceUsd, disp ? disp.decimals : 2) +
           ' ' +
           (disp ? disp.currency : 'USD') +
-          '<br><small style="opacity:.8">للعرض فقط — ليس بالضرورة مبلغ التحصيل</small>') +
-      '</dd>' +
-      '<dt>المبلغ النهائي للتحصيل</dt><dd style="font-size:1.15rem">' +
-      (p.kind === 'free'
-        ? '—'
-        : '<strong>' +
-          (settle ? fmtNum(settle.amount, settle.decimals) + ' ' + settle.currency : fmtNum(p.priceUsd, 2) + ' USD') +
-          '</strong>' +
-          (settle && settle.gateway ? ' عبر ' + settle.gateway : '') +
-          '<br><small style="font-weight:700;opacity:.85">' +
-          ((settle && settle.noteAr) || '') +
-          '</small>' +
-          (fxNote ? '<br><small style="opacity:.8">' + fxNote + '</small>' : '')) +
-      '</dd>' +
-      '<dt>تنبيه العملات</dt><dd>' +
-      ((state.payment && state.payment.displaySettlementNoteAr) ||
-        'عملة العرض ≠ عملة التحصيل. التحصيل يعتمد على البوابة ودولة التاجر.') +
-      '</dd>' +
-      '<dt>حالة البوابة</dt><dd>' +
-      ((state.payment && state.payment.messageAr) || '') +
-      (state.payment && state.payment.testMode ? ' <strong>(Test — بدون تحصيل حقيقي)</strong>' : '') +
-      (state.payment && state.payment.liveChargesEnabled ? ' <strong>(Live)</strong>' : '') +
-      '</dd>';
+          '</dd>' +
+          '<dt>المبلغ النهائي</dt><dd style="font-size:1.15rem"><strong>' +
+          (settle
+            ? fmtNum(settle.amount, settle.decimals) + ' ' + settle.currency
+            : fmtNum(p.priceUsd, 2) + ' دولار') +
+          '</strong></dd>');
 
     var html = '';
     if (!(state.me && state.me.authenticated)) {
@@ -395,39 +333,26 @@
         '<a class="btn btn-secondary" href="register-freelancer.html">إنشاء حساب</a>';
     } else if (p.kind === 'free') {
       html +=
-        '<button type="button" class="btn btn-primary" data-claim-free><i class="fas fa-gift"></i> تأكيد منح 300 نقطة</button>';
+        '<button type="button" class="btn btn-primary" data-claim-free><i class="fas fa-gift"></i> تأكيد الحصول على 300 نقطة</button>';
     } else {
       var active = (state.payment && state.payment.activeGatewayIds) || [];
-      if (state.payment && state.payment.available) {
+      if (paymentAvailable()) {
         if (active.indexOf('paymob') >= 0) {
-          var payLabel =
-            state.payment && state.payment.testMode
-              ? 'الدفع التجريبي عبر Paymob (Test)'
-              : state.payment && state.payment.liveChargesEnabled
-                ? 'الدفع عبر Paymob'
-                : 'الدفع عبر Paymob';
           html +=
-            '<button type="button" class="btn btn-primary" data-pay="paymob"><i class="fas fa-credit-card"></i> ' +
-            payLabel +
-            (settle
-              ? ' — ' + fmtNum(settle.amount, settle.decimals) + ' ' + settle.currency
-              : '') +
+            '<button type="button" class="btn btn-primary" data-pay="paymob"><i class="fas fa-credit-card"></i> ادفع الآن' +
+            (settle ? ' — ' + fmtNum(settle.amount, settle.decimals) + ' ' + settle.currency : '') +
             '</button>';
         }
         if (active.indexOf('stripe') >= 0) {
           html +=
-            '<button type="button" class="btn btn-secondary" data-pay="stripe"><i class="fas fa-stripe"></i> الدفع عبر Stripe</button>';
+            '<button type="button" class="btn btn-secondary" data-pay="stripe"><i class="fas fa-credit-card"></i> ادفع الآن</button>';
         }
         if (!active.length) {
-          html +=
-            '<button type="button" class="btn btn-secondary" disabled><i class="fas fa-ban"></i> الدفع غير متاح حاليًا</button>';
+          html += '<div class="pkg-soon" role="status">الشراء متاح قريبًا</div>';
         }
       } else {
-        html +=
-          '<button type="button" class="btn btn-secondary" disabled><i class="fas fa-ban"></i> الدفع غير متاح حاليًا — يلزم تفعيل حساب تاجر</button>';
+        html += '<div class="pkg-soon" role="status">الشراء متاح قريبًا</div>';
       }
-      html +=
-        '<button type="button" class="btn btn-primary" data-pay="manual_review"><i class="fas fa-clipboard-check"></i> طلب شحن للمراجعة الإدارية</button>';
     }
     actions.innerHTML = html;
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
