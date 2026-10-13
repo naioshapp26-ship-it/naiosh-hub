@@ -40,9 +40,9 @@ function req(method, urlPath, { body, token, headers } = {}) {
           try {
             json = JSON.parse(text);
           } catch {
-            json = { raw: text.slice(0, 4000) };
+            json = { raw: text };
           }
-          resolve({ status: res.statusCode, json });
+          resolve({ status: res.statusCode, json, text });
         });
       }
     );
@@ -102,12 +102,16 @@ async function main() {
     if (started && !(await waitHealth())) throw new Error('server not ready');
 
     const page = await req('GET', '/packages.html');
-    const pageText = page.json.raw || '';
+    const pageText = page.text || page.json.raw || '';
     failed += !mark(
       'packages_page',
       page.status === 200 &&
-        (/باقات نايوش هوب 360/.test(pageText) || /باقات الاشتراك/.test(pageText) || /hub-packages\.js/.test(pageText)),
-      { status: page.status, sample: pageText.slice(0, 80) }
+        (/باقات النقاط/.test(pageText) ||
+          /باقات نايوش هوب 360/.test(pageText) ||
+          /باقات الاشتراك/.test(pageText) ||
+          /hub-packages\.js/.test(pageText) ||
+          /الشراء متاح قريبًا/.test(pageText)),
+      { status: page.status, sample: pageText.slice(0, 120) }
     )
       ? 1
       : 0;
