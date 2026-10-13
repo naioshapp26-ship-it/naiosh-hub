@@ -104,13 +104,13 @@
   }
 
   body.homepage a.hero-naiosh-ai-logo {
-    width: 78px !important;
+    width: min(72vw, 240px) !important;
     height: auto !important;
-    aspect-ratio: 1357 / 1600 !important;
-    border-radius: 0 !important;
+    aspect-ratio: 1386 / 944 !important;
+    border-radius: 10px !important;
     padding: 0 !important;
-    /* Comfortable touch target; height follows full crest + caption */
-    min-width: 78px !important;
+    /* Comfortable touch target; height follows full horizontal lockup */
+    min-width: 160px !important;
     min-height: 0 !important;
   }
 
@@ -512,10 +512,10 @@
   }
 
   body.homepage a.hero-naiosh-ai-logo {
-    width: 68px !important;
+    width: min(78vw, 220px) !important;
     height: auto !important;
-    aspect-ratio: 1357 / 1600 !important;
-    min-width: 68px !important;
+    aspect-ratio: 1386 / 944 !important;
+    min-width: 150px !important;
     min-height: 0 !important;
   }
 

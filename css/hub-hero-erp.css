@@ -138,16 +138,16 @@ body.homepage .hero-content h1.hero-heading-white {
   z-index: 1 !important;
 }
 
-/* Portrait crest + «نظام تحليل البيانات» capsule — keep full image, no crop */
+/* Horizontal lockup «نظام تحليل البيانات» + NAIOSH AI crest — keep full image, no crop */
 body.homepage a.hero-naiosh-ai-logo {
   flex: 0 0 auto !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: clamp(86px, 9.2vw, 118px) !important;
+  width: clamp(168px, 22vw, 280px) !important;
   height: auto !important;
-  aspect-ratio: 1357 / 1600 !important;
-  border-radius: 0 !important;
+  aspect-ratio: 1386 / 944 !important;
+  border-radius: 10px !important;
   padding: 0 !important;
   text-decoration: none !important;
   cursor: pointer !important;
@@ -170,7 +170,7 @@ body.homepage a.hero-naiosh-ai-logo img {
   height: 100% !important;
   object-fit: contain !important;
   object-position: center !important;
-  border-radius: 0 !important;
+  border-radius: 10px !important;
   pointer-events: none !important;
   /* Keep original attached artwork colors/text as-is */
   filter: none !important;
@@ -200,7 +200,7 @@ body:not(.dark-mode) a.hero-naiosh-ai-logo {
 
 @media (max-width: 1100px) {
   body.homepage a.hero-naiosh-ai-logo {
-    width: clamp(78px, 11vw, 100px) !important;
+    width: clamp(150px, 28vw, 220px) !important;
     height: auto !important;
   }
 }
