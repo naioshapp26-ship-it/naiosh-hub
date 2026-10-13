@@ -122,12 +122,14 @@ async function main() {
       HUB_SUPER_ADMIN_INITIAL_PASSWORD: SA_PASS,
       HUB_SUPER_ADMIN_FORCE_PASSWORD_RESET: '1',
       HUB_PAYMOB_STUB: '1',
+      HUB_PAYMOB_MODE: 'test',
       PAYMOB_API_KEY: 'test_stub_paymob_key',
       PAYMOB_INTEGRATION_ID: '123456',
       PAYMOB_HMAC_SECRET: 'test_hmac_secret_paymob_e2e',
       PAYMOB_IFRAME_ID: '789',
       HUB_PAYMOB_CHARGE_CURRENCY: 'EGP',
     };
+    delete env.HUB_PAYMOB_LIVE;
     delete env.BASE_URL;
     child = spawn(process.execPath, ['server.js'], {
       cwd: ROOT,
@@ -370,6 +372,48 @@ async function main() {
       ? 1
       : 0;
 
+    // Receipts / me payload
+    failed += !mark(
+      'client_receipts_payload',
+      Array.isArray(meDebit.json.packageOrders) &&
+        meDebit.json.packageOrders.some((o) => o.ref === refOk && o.receipt && o.receipt.lines && o.receipt.lines.length),
+      { n: (meDebit.json.packageOrders || []).length }
+    )
+      ? 1
+      : 0;
+
+    const countries = await req('GET', '/api/hub/packages/countries');
+    failed += !mark(
+      'display_currencies_include_fx',
+      countries.json.ok &&
+        (countries.json.currencies || []).length >= 20 &&
+        (countries.json.currencies || []).some((c) => c.code === 'EGP') &&
+        (countries.json.currencies || []).some((c) => c.code === 'EUR'),
+      { n: (countries.json.currencies || []).length, note: countries.json.noteAr }
+    )
+      ? 1
+      : 0;
+
+    const quoteEgp = await req('POST', '/api/hub/packages/quote', {
+      body: { packageId: 'pack-6000', currency: 'EGP', countryCode: 'EG' },
+    });
+    failed += !mark(
+      'usd_to_egp_settlement_quote',
+      quoteEgp.json.ok &&
+        quoteEgp.json.package.priceUsd === 15 &&
+        quoteEgp.json.settlement &&
+        quoteEgp.json.settlement.currency === 'EGP' &&
+        Number(quoteEgp.json.settlement.amount) > 15 &&
+        quoteEgp.json.fx &&
+        quoteEgp.json.fx.rate > 0,
+      {
+        settle: quoteEgp.json.settlement,
+        fx: quoteEgp.json.fx && { rate: quoteEgp.json.fx.rate, provider: quoteEgp.json.fx.provider, stale: quoteEgp.json.fx.stale },
+      }
+    )
+      ? 1
+      : 0;
+
     // --- Staff admin ---
     const saLogin = await req('POST', '/api/auth/login', {
       body: { email: SA_EMAIL, password: SA_PASS, lane: 'staff' },
@@ -391,6 +435,58 @@ async function main() {
           walletHit: (overview.json.wallets || []).find((w) => w.email === client.email),
         }
       )
+        ? 1
+        : 0;
+
+      // Spend deeper into paid balance so refund of 6000 cannot fully claw (shortfall path)
+      const heavySkus = ['sys-erp', 'sys-law', 'svc-train'];
+      for (const id of heavySkus) {
+        const item = (market.json.items || []).find((x) => x.id === id);
+        if (!item) continue;
+        await req('POST', '/api/client/checkout', {
+          token: client.token,
+          body: { items: [{ id: item.id, sku: item.sku, qty: 1 }], payWithWallet: true },
+        });
+      }
+      const meBeforeRefund = await req('GET', '/api/hub/packages/me', { token: client.token });
+      const beforeRefund = meBeforeRefund.json.wallet;
+      const refund = await req('POST', '/api/admin/packages/refund', {
+        token: saTok,
+        body: { ref: refOk, note: 'اختبار استرداد بعد استخدام جزئي' },
+      });
+      const meRefund = await req('GET', '/api/hub/packages/me', { token: client.token });
+      const expectPartial = beforeRefund && beforeRefund.total < 6000;
+      failed += !mark(
+        'refund_after_partial_spend',
+        refund.json.ok &&
+          meRefund.json.wallet &&
+          meRefund.json.wallet.total < beforeRefund.total &&
+          (expectPartial
+            ? refund.json.partial === true && Number(refund.json.shortfall) > 0
+            : refund.json.order && (refund.json.order.status === 'refunded' || refund.json.order.status === 'refunded_partial')),
+        {
+          status: refund.status,
+          partial: refund.json.partial,
+          clawed: refund.json.clawed,
+          shortfall: refund.json.shortfall,
+          before: beforeRefund && beforeRefund.total,
+          after: meRefund.json.wallet && meRefund.json.wallet.total,
+          orderStatus: refund.json.order && refund.json.order.status,
+          expectPartial,
+        }
+      )
+        ? 1
+        : 0;
+
+      // Replay refund — idempotent
+      const refund2 = await req('POST', '/api/admin/packages/refund', {
+        token: saTok,
+        body: { ref: refOk, note: 'إعادة استرداد' },
+      });
+      failed += !mark('refund_replay_idempotent', refund2.json.ok && refund2.json.duplicate === true, {
+        dup: refund2.json.duplicate,
+        status: refund2.status,
+      })
         ? 1
         : 0;
 

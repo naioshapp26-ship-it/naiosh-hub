@@ -279,6 +279,15 @@
     setFeedback('');
     var settle = q && q.settlement;
     var disp = q && q.display;
+    var fxNote = q && q.fx
+      ? 'سعر الصرف: 1 USD = ' +
+        fmtNum(settle && settle.rate != null ? settle.rate : q.fx.rate, 4) +
+        ' ' +
+        (settle ? settle.currency : '') +
+        (q.fx.stale ? ' (مخزّن مؤقتًا)' : '') +
+        ' · المصدر: ' +
+        (q.fx.provider || '—')
+      : '';
     dl.innerHTML =
       '<dt>الباقة</dt><dd>' +
       p.nameAr +
@@ -286,23 +295,37 @@
       '<dt>النقاط</dt><dd>' +
       fmtPts(p.points) +
       '</dd>' +
-      '<dt>سعر العرض</dt><dd>' +
-      (p.kind === 'free'
-        ? 'مجانًا'
-        : fmtNum(disp ? disp.amount : p.priceUsd, disp ? disp.decimals : 2) +
-          ' ' +
-          (disp ? disp.currency : 'USD')) +
+      '<dt>السعر المرجعي</dt><dd>' +
+      (p.kind === 'free' ? 'مجانًا' : fmtNum(p.priceUsd, 2) + ' USD') +
       '</dd>' +
-      '<dt>عملة التحصيل</dt><dd>' +
+      '<dt>سعر العرض (تقريبي)</dt><dd>' +
       (p.kind === 'free'
         ? '—'
-        : (settle ? settle.currency + ' · ' + fmtNum(settle.amount, settle.decimals) : 'USD') +
-          '<br><small style="font-weight:600;color:inherit;opacity:.8">' +
+        : fmtNum(disp ? disp.amount : p.priceUsd, disp ? disp.decimals : 2) +
+          ' ' +
+          (disp ? disp.currency : 'USD') +
+          '<br><small style="opacity:.8">للعرض فقط — ليس بالضرورة مبلغ التحصيل</small>') +
+      '</dd>' +
+      '<dt>المبلغ النهائي للتحصيل</dt><dd style="font-size:1.15rem">' +
+      (p.kind === 'free'
+        ? '—'
+        : '<strong>' +
+          (settle ? fmtNum(settle.amount, settle.decimals) + ' ' + settle.currency : fmtNum(p.priceUsd, 2) + ' USD') +
+          '</strong>' +
+          (settle && settle.gateway ? ' عبر ' + settle.gateway : '') +
+          '<br><small style="font-weight:700;opacity:.85">' +
           ((settle && settle.noteAr) || '') +
-          '</small>') +
+          '</small>' +
+          (fxNote ? '<br><small style="opacity:.8">' + fxNote + '</small>' : '')) +
+      '</dd>' +
+      '<dt>تنبيه العملات</dt><dd>' +
+      ((state.payment && state.payment.displaySettlementNoteAr) ||
+        'عملة العرض ≠ عملة التحصيل. التحصيل يعتمد على البوابة ودولة التاجر.') +
       '</dd>' +
       '<dt>حالة البوابة</dt><dd>' +
       ((state.payment && state.payment.messageAr) || '') +
+      (state.payment && state.payment.testMode ? ' <strong>(Test — بدون تحصيل حقيقي)</strong>' : '') +
+      (state.payment && state.payment.liveChargesEnabled ? ' <strong>(Live)</strong>' : '') +
       '</dd>';
 
     var html = '';
@@ -317,8 +340,19 @@
       var active = (state.payment && state.payment.activeGatewayIds) || [];
       if (state.payment && state.payment.available) {
         if (active.indexOf('paymob') >= 0) {
+          var payLabel =
+            state.payment && state.payment.testMode
+              ? 'الدفع التجريبي عبر Paymob (Test)'
+              : state.payment && state.payment.liveChargesEnabled
+                ? 'الدفع عبر Paymob'
+                : 'الدفع عبر Paymob';
           html +=
-            '<button type="button" class="btn btn-primary" data-pay="paymob"><i class="fas fa-credit-card"></i> الدفع عبر Paymob</button>';
+            '<button type="button" class="btn btn-primary" data-pay="paymob"><i class="fas fa-credit-card"></i> ' +
+            payLabel +
+            (settle
+              ? ' — ' + fmtNum(settle.amount, settle.decimals) + ' ' + settle.currency
+              : '') +
+            '</button>';
         }
         if (active.indexOf('stripe') >= 0) {
           html +=

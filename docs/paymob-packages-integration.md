@@ -22,25 +22,37 @@
 
 ## 2) المتغيرات (ضعوها في Railway — لا تُرسل في الشات)
 
+### للنشر والاختبار على الإنتاج بمفاتيح Test فقط (بدون مال حقيقي)
+
 ```
-PAYMOB_API_KEY=
+PAYMOB_API_KEY=          # من لوحة Paymob → Test
 PAYMOB_INTEGRATION_ID=
 PAYMOB_IFRAME_ID=
 PAYMOB_HMAC_SECRET=
+HUB_PAYMOB_MODE=test
 HUB_PAYMOB_CHARGE_CURRENCY=EGP
 HUB_PAYMOB_SETTLEMENT_CURRENCIES=EGP,AED,SAR
 APP_URL=https://your-production-host
+# لا تضبط HUB_PAYMOB_LIVE إلا بعد موافقة صريحة على التحصيل الحقيقي
 ```
 
-وضع تجريبي محلي فقط (ممنوع في `NODE_ENV=production`):
+### Live (ممنوع قبل موافقة المالك)
+
+```
+HUB_PAYMOB_MODE=live
+HUB_PAYMOB_LIVE=1
+# + مفاتيح Live من Paymob
+```
+
+### Stub محلي فقط (ممنوع على الإنتاج / Railway production)
 
 ```
 HUB_PAYMOB_STUB=1
 PAYMOB_API_KEY=test_stub_...
-PAYMOB_INTEGRATION_ID=...
-PAYMOB_HMAC_SECRET=...
-PAYMOB_IFRAME_ID=...
+...
 ```
+
+دليل فتح حساب التاجر والمستندات: `docs/paymob-merchant-onboarding-ar.md`
 
 Webhook الإنتاج:
 

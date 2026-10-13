@@ -65,17 +65,20 @@
     <section class="pkg-toolbar" aria-label="الدولة والعملة">
       <div class="pkg-field">
         <label for="pkg-country-search">ابحث عن الدولة أو العملة</label>
-        <input id="pkg-country-search" type="search" placeholder="مثال: السعودية · SAR · Egypt" autocomplete="off" />
+        <input id="pkg-country-search" type="search" placeholder="مثال: السعودية · SAR · Egypt · EUR" autocomplete="off" />
       </div>
       <div class="pkg-field">
         <label for="pkg-country">الدولة</label>
         <select id="pkg-country"></select>
       </div>
       <div class="pkg-field">
-        <label for="pkg-currency">عملة العرض</label>
+        <label for="pkg-currency">عملة العرض (تحويل تقريبي)</label>
         <select id="pkg-currency"></select>
       </div>
       <div class="pkg-fx-meta" id="pkg-fx-meta">جاري تحميل أسعار الصرف…</div>
+      <p style="grid-column:1/-1;margin:0;font-weight:700;opacity:.85;font-size:.92rem">
+        عملة العرض متاحة لكل العملات المدعومة في أسعار الصرف. المبلغ النهائي للتحصيل يظهر قبل الدفع ويعتمد على بوابة الدفع ودولة التاجر (مثل EGP عبر Paymob من مصر).
+      </p>
     </section>
 
     <section class="pkg-grid" id="pkg-grid" aria-label="الباقات"></section>

@@ -706,20 +706,40 @@
     return form + '<section class="cp-card" style="margin-top:12px"><div class="cp-card-head"><h3>شكاواي</h3></div>' + rows + '</section>';
   }
 
-  function renderWallet(w) {
-    w = w || {};
+  function renderWallet(data) {
+    var w = (data && data.wallet) || data || {};
     var ledger = w.ledger || [];
+    var orders = (data && data.packageOrders) || [];
+    var pay = (data && data.payment) || {};
+    var modeLabel = pay.testMode ? 'اختبار' : pay.liveChargesEnabled ? 'Live' : pay.stubMode ? 'Stub' : 'غير مفعّل';
+    var ordersHtml = !orders.length
+      ? '<p style="color:var(--cp-muted);font-weight:700">لا طلبات شحن باقات بعد.</p>'
+      : '<div class="cp-list">' + orders.slice(0, 12).map(function (o) {
+          return '<div class="cp-row" style="align-items:flex-start">' +
+            '<div><strong>' + esc(o.ref || '') + ' · ' + esc(o.packageNameAr || '') + '</strong>' +
+            '<small>الحالة: ' + esc(o.status || '') + ' · الدفع: ' + esc(o.paymentStatus || '') +
+            (o.settlementAmount != null ? ' · تحصيل: ' + esc(o.settlementAmount) + ' ' + esc(o.settlementCurrency || '') : '') +
+            '</small></div>' +
+            '<strong>' + (o.credited ? '+' : '') + esc(o.points || 0) + ' نقطة</strong></div>';
+        }).join('') + '</div>';
     return '<section class="cp-card"><div class="cp-card-head"><h3>محفظتي</h3></div>' +
       '<div class="cp-summary" style="margin-bottom:14px">' +
         '<div class="cp-card" style="box-shadow:none"><span>الرصيد المدفوع</span><strong style="color:var(--cp-red);font-size:1.4rem;display:block;margin-top:6px">' + (w.paid || 0) + '</strong></div>' +
         '<div class="cp-card" style="box-shadow:none"><span>الرصيد المجاني</span><strong style="color:var(--cp-red);font-size:1.4rem;display:block;margin-top:6px">' + (w.free || 0) + '</strong></div>' +
         '<div class="cp-card" style="box-shadow:none"><span>إجمالي النقاط</span><strong style="color:var(--cp-red);font-size:1.4rem;display:block;margin-top:6px">' + (w.total || 0) + '</strong></div>' +
       '</div>' +
-      '<div class="cp-actions" style="margin-bottom:14px"><button type="button" class="cp-btn cp-btn-primary" id="cp-topup">طلب شحن الرصيد</button></div>' +
-      '<h4 style="margin:0 0 10px">آخر العمليات</h4>' +
+      '<p style="font-weight:800;margin:0 0 12px">حالة الدفع: ' + esc(modeLabel) + ' — ' + esc(pay.messageAr || '—') + '</p>' +
+      '<div class="cp-actions" style="margin-bottom:14px;flex-wrap:wrap;gap:8px">' +
+        '<a class="cp-btn cp-btn-primary" href="packages.html">شحن باقة / نقاط</a>' +
+        '<a class="cp-btn" href="packages-receipts.html">الإيصالات وسجل الشحن</a>' +
+        '<button type="button" class="cp-btn" id="cp-topup">طلب شحن إداري</button>' +
+      '</div>' +
+      '<h4 style="margin:0 0 10px">طلبات الباقات وحالة الدفع</h4>' + ordersHtml +
+      '<h4 style="margin:18px 0 10px">سجل النقاط</h4>' +
       (ledger.length
         ? '<div class="cp-list">' + ledger.map(function (t) {
-            return '<div class="cp-row"><div><strong>' + esc(t.note || t.type) + '</strong><small>' + esc(fmtDate(t.at)) + '</small></div><strong>' + (t.type === 'debit' ? '−' : '+') + t.amount + '</strong></div>';
+            var sign = (t.type === 'debit' || t.type === 'debit_refund' || t.type === 'debit_refund_partial') ? '−' : '+';
+            return '<div class="cp-row"><div><strong>' + esc(t.note || t.type) + '</strong><small>' + esc(fmtDate(t.at)) + (t.reference ? ' · ' + esc(t.reference) : '') + '</small></div><strong>' + sign + t.amount + '</strong></div>';
           }).join('') + '</div>'
         : '<p style="color:var(--cp-muted);font-weight:700">لا عمليات بعد.</p>') +
       '<p style="margin-top:12px;color:var(--cp-muted);font-size:12px;font-weight:700">لا يمكن تعديل الرصيد يدويًا من حساب العميل.</p></section>';
@@ -1276,7 +1296,7 @@
         case 'systems': html = renderSystems(data.systems || []); break;
         case 'orders': html = renderOrders(data.orders || []); break;
         case 'subscriptions': html = renderSubs(data.subscriptions || []); break;
-        case 'wallet': html = renderWallet(data.wallet || data); break;
+        case 'wallet': html = renderWallet(data); break;
         case 'invoices': html = renderInvoices(data.invoices || []); break;
         case 'requests': html = renderRequests(data.requests || []); break;
         case 'complaints': html = renderComplaints(data.complaints || []); break;
