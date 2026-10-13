@@ -70,10 +70,10 @@ body.homepage .hero-inner.container {
   width: 100% !important;
   margin-inline: 0 !important;
   display: grid !important;
-  /* visual (left) · data-analysis logo (middle gap) · content · sidebar */
-  grid-template-columns: minmax(0, 34%) minmax(200px, 300px) minmax(0, 1.15fr) 228px !important;
+  /* visual (left) · flexible middle gap (logo centered) · content · sidebar */
+  grid-template-columns: minmax(0, 34%) minmax(0, 1fr) minmax(280px, 620px) 228px !important;
   grid-template-areas: 'visual logo content sidebar' !important;
-  gap: clamp(18px, 2vw, 34px) !important;
+  gap: clamp(20px, 2.2vw, 40px) !important;
   align-items: stretch !important;
   align-self: stretch !important;
   align-content: center !important;
@@ -98,9 +98,9 @@ body.homepage .hero-content {
   direction: rtl !important;
   text-align: right !important;
   align-self: center !important;
-  max-width: 620px !important;
+  max-width: 100% !important;
   width: 100% !important;
-  justify-self: end !important;
+  justify-self: stretch !important;
   margin: 0 !important;
   padding: 0 !important;
 }
@@ -125,7 +125,7 @@ body.homepage .hero-content h1.hero-heading-white {
   z-index: 1 !important;
 }
 
-/* Standalone middle-slot lockup — not beside the H1 */
+/* Standalone middle-slot lockup — centered in the flexible gap, not beside the H1 */
 body.homepage a.hero-naiosh-ai-logo {
   grid-area: logo !important;
   justify-self: center !important;
@@ -133,8 +133,8 @@ body.homepage a.hero-naiosh-ai-logo {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: min(100%, clamp(200px, 20vw, 300px)) !important;
-  max-width: 100% !important;
+  width: min(92%, clamp(220px, 24vw, 320px)) !important;
+  max-width: 320px !important;
   height: auto !important;
   aspect-ratio: 1386 / 944 !important;
   margin: 0 !important;
@@ -192,11 +192,11 @@ body:not(.dark-mode) a.hero-naiosh-ai-logo {
 @media (max-width: 1280px) {
   body.homepage .container.hero-inner,
   body.homepage .hero-inner.container {
-    grid-template-columns: minmax(0, 32%) minmax(180px, 260px) minmax(0, 1.2fr) 210px !important;
+    grid-template-columns: minmax(0, 32%) minmax(0, 1fr) minmax(260px, 560px) 200px !important;
   }
 
   body.homepage a.hero-naiosh-ai-logo {
-    width: min(100%, clamp(180px, 22vw, 260px)) !important;
+    width: min(90%, clamp(200px, 26vw, 280px)) !important;
   }
 }
 

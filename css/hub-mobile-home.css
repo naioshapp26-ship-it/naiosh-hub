@@ -507,11 +507,12 @@
   }
 
   body.homepage a.hero-naiosh-ai-logo {
-    width: min(78vw, 220px) !important;
+    width: min(86vw, 260px) !important;
     height: auto !important;
     aspect-ratio: 1386 / 944 !important;
-    min-width: 150px !important;
+    min-width: 0 !important;
     min-height: 0 !important;
+    margin: 4px auto 8px !important;
   }
 
   body.homepage .hub-guide-button {
