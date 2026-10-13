@@ -184,6 +184,38 @@
     renderCards();
   }
 
+  function packageButtonLabel(p) {
+    if (p.kind === 'free') {
+      return state.me && state.me.freeClaimed ? 'تم المنح مسبقًا' : 'ابدأ مجانًا';
+    }
+    if (p.id === 'pack-6000' || Number(p.points) === 6000) {
+      return 'اختر باقة 6,000 نقطة';
+    }
+    if (p.id === 'pack-16000' || Number(p.points) === 16000) {
+      return 'اختر باقة 16,000 نقطة';
+    }
+    return 'اختر هذه الباقة';
+  }
+
+  function packageMeta(p) {
+    if (p.kind === 'free') {
+      return 'مرة واحدة لكل عميل مؤهل بعد التحقق. تُضاف إلى رصيدك المجاني مباشرة عند التأكيد.';
+    }
+    return (
+      'شراء رصيد نقاط مرة واحدة — بدون اشتراك شهري أو تجديد تلقائي. ' +
+      (p.descriptionAr || 'يُستخدم الرصيد في خدمات نايوش هوب المسجّلة بالنقاط.')
+    );
+  }
+
+  function coverageHint(cost) {
+    var c = Number(cost) || 0;
+    if (c <= 0) return 'التكلفة غير محددة بعد.';
+    if (c <= 300) return 'يمكن تغطيتها من الباقة المجانية (300 نقطة) أو أي شحن أعلى.';
+    if (c <= 6000) return 'تحتاج باقة 6,000 نقطة أو أعلى (أو رصيدًا مكافئًا في المحفظة).';
+    if (c <= 16000) return 'تناسب باقة 16,000 نقطة أو رصيدًا مدفوعًا مكافئًا.';
+    return 'قد تحتاج أكثر من باقة واحدة أو رصيدًا متراكمًا حسب محفظتك.';
+  }
+
   function renderCards() {
     var grid = $('pkg-grid');
     if (!grid) return;
@@ -199,26 +231,23 @@
               fmtNum(disp ? disp.amount : p.priceUsd, disp ? disp.decimals : 2) +
               ' ' +
               (disp ? disp.currency : 'USD') +
-              '<small>مرجعي: ' +
+              '<small>السعر المرجعي: ' +
               fmtNum(p.priceUsd, 2) +
               ' USD' +
               (settle && settle.currency !== (disp && disp.currency)
                 ? ' · التحصيل: ' + fmtNum(settle.amount, settle.decimals) + ' ' + settle.currency
                 : '') +
               '</small></div>';
-        var btnLabel =
-          p.kind === 'free'
-            ? state.me && state.me.freeClaimed
-              ? 'تم المنح مسبقًا'
-              : 'احصل على الباقة المجانية'
-            : 'اشترك / اشترِ';
+        var btnLabel = packageButtonLabel(p);
         var disabled = p.kind === 'free' && state.me && state.me.freeClaimed ? ' disabled' : '';
+        var featured = idx === 1 || p.id === 'pack-6000';
         return (
           '<article class="pkg-card' +
-          (idx === 1 ? ' is-featured' : '') +
+          (featured ? ' is-featured' : '') +
           '" data-id="' +
           p.id +
           '">' +
+          '<span class="pkg-badge">الأكثر توازنًا</span>' +
           '<h2>' +
           p.nameAr +
           '</h2>' +
@@ -226,8 +255,8 @@
           fmtPts(p.points) +
           ' <span>نقطة</span></div>' +
           priceHtml +
-          '<p>' +
-          (p.descriptionAr || '') +
+          '<p class="pkg-card-meta">' +
+          packageMeta(p) +
           '</p>' +
           '<button type="button" class="btn btn-primary" data-select="' +
           p.id +
@@ -243,23 +272,54 @@
   }
 
   function renderServices() {
+    var grid = $('pkg-services-grid');
     var tb = document.querySelector('#pkg-services-table tbody');
-    if (!tb) return;
     var rows = state.services || [];
+    if (tb) {
+      if (!rows.length) {
+        tb.innerHTML = '<tr><td colspan="3">لا توجد أسعار خدمات مسجّلة بعد.</td></tr>';
+      } else {
+        tb.innerHTML = rows
+          .map(function (s) {
+            return (
+              '<tr><td>' +
+              (s.nameAr || s.id) +
+              '</td><td>' +
+              (s.type || '—') +
+              '</td><td>' +
+              fmtPts(s.pointsCost) +
+              '</td></tr>'
+            );
+          })
+          .join('');
+      }
+    }
+    if (!grid) return;
     if (!rows.length) {
-      tb.innerHTML = '<tr><td colspan="3">لا توجد أسعار خدمات مسجّلة بعد.</td></tr>';
+      grid.innerHTML =
+        '<div class="pkg-svc-empty">لا توجد خدمات مربوطة بالمحفظة في سجل الأسعار الحالي. عند إضافة أسعار من الإدارة ستظهر هنا.</div>';
       return;
     }
-    tb.innerHTML = rows
+    grid.innerHTML = rows
       .map(function (s) {
+        var cost = Number(s.pointsCost) || 0;
         return (
-          '<tr><td>' +
+          '<article class="pkg-svc">' +
+          '<div class="pkg-svc-top">' +
+          '<h3 class="pkg-svc-name">' +
           (s.nameAr || s.id) +
-          '</td><td>' +
-          (s.type || '—') +
-          '</td><td>' +
-          fmtPts(s.pointsCost) +
-          '</td></tr>'
+          '</h3>' +
+          '<span class="pkg-svc-type">' +
+          (s.type || 'SERVICE') +
+          '</span>' +
+          '</div>' +
+          '<div class="pkg-svc-cost">' +
+          fmtPts(cost) +
+          ' <span>نقطة</span></div>' +
+          '<p class="pkg-svc-fit">' +
+          coverageHint(cost) +
+          '</p>' +
+          '</article>'
         );
       })
       .join('');
