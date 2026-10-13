@@ -144,7 +144,8 @@ body.homepage a.hero-naiosh-ai-logo {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: clamp(168px, 22vw, 280px) !important;
+  /* Fit original title-row crest slot; shrink lockup instead of shifting layout */
+  width: clamp(118px, 11vw, 156px) !important;
   height: auto !important;
   aspect-ratio: 1386 / 944 !important;
   border-radius: 10px !important;
@@ -200,7 +201,7 @@ body:not(.dark-mode) a.hero-naiosh-ai-logo {
 
 @media (max-width: 1100px) {
   body.homepage a.hero-naiosh-ai-logo {
-    width: clamp(150px, 28vw, 220px) !important;
+    width: clamp(108px, 14vw, 136px) !important;
     height: auto !important;
   }
 }

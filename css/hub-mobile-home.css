@@ -104,13 +104,12 @@
   }
 
   body.homepage a.hero-naiosh-ai-logo {
-    width: min(72vw, 240px) !important;
+    width: min(42vw, 150px) !important;
     height: auto !important;
     aspect-ratio: 1386 / 944 !important;
     border-radius: 10px !important;
     padding: 0 !important;
-    /* Comfortable touch target; height follows full horizontal lockup */
-    min-width: 160px !important;
+    min-width: 110px !important;
     min-height: 0 !important;
   }
 
@@ -512,10 +511,10 @@
   }
 
   body.homepage a.hero-naiosh-ai-logo {
-    width: min(78vw, 220px) !important;
+    width: min(48vw, 150px) !important;
     height: auto !important;
     aspect-ratio: 1386 / 944 !important;
-    min-width: 150px !important;
+    min-width: 110px !important;
     min-height: 0 !important;
   }
 
