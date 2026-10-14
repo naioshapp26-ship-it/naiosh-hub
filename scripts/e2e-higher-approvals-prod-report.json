@@ -1,0 +1,103 @@
+{
+  "at": "2026-10-14T23:29:39.100Z",
+  "base": "https://naiosh-hub-production.up.railway.app",
+  "productionTested": true,
+  "fullPass": true,
+  "cases": [
+    {
+      "name": "prod_health",
+      "result": "PASS",
+      "detail": "db=connected"
+    },
+    {
+      "name": "data_ledger_not_world_readable",
+      "result": "PASS",
+      "detail": "status=403 jsonLeak=false blockedOrHtml=true"
+    },
+    {
+      "name": "unauth_list_denied",
+      "result": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "name": "staff_login",
+      "result": "PASS",
+      "detail": "role=supreme_leader status=200"
+    },
+    {
+      "name": "ha_inbox_api",
+      "result": "PASS",
+      "detail": "count=0 pending=0"
+    },
+    {
+      "name": "register_returns_approvalId",
+      "result": "PASS",
+      "detail": "req=REG-REQ-MV8QS8VR-76B5 apr=APR-2026-00001"
+    },
+    {
+      "name": "appears_in_leader_inbox",
+      "result": "PASS",
+      "detail": "APR-2026-00001 status=pending_review"
+    },
+    {
+      "name": "guest_decide_denied",
+      "result": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "name": "prod_approve_reflects",
+      "result": "PASS",
+      "detail": "status=200 req=approved"
+    },
+    {
+      "name": "persist_after_reload",
+      "result": "PASS",
+      "detail": "status=approved"
+    }
+  ],
+  "matrix": [
+    {
+      "path": "register→waiting_label",
+      "result": "PASS"
+    },
+    {
+      "path": "inbox_visibility",
+      "result": "PASS"
+    },
+    {
+      "path": "approve→origin",
+      "result": "PASS"
+    },
+    {
+      "path": "reject_prod",
+      "result": "NOT TESTED",
+      "note": "optional second register"
+    },
+    {
+      "path": "revise_prod",
+      "result": "NOT TESTED",
+      "note": "optional second register"
+    },
+    {
+      "path": "refer_prod",
+      "result": "NOT TESTED",
+      "note": "optional second register"
+    },
+    {
+      "path": "service_restart_persist",
+      "result": "NOT TESTED",
+      "note": "requires deploy ops"
+    },
+    {
+      "path": "logout_login_persist",
+      "result": "NOT TESTED",
+      "note": "UI browser path"
+    }
+  ],
+  "summary": {
+    "pass": 10,
+    "fail": 0,
+    "notTested": 0
+  },
+  "verdict": "FULL_PASS_PROD"
+}

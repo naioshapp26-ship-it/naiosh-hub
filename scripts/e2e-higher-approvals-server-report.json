@@ -1,10 +1,10 @@
 {
-  "startedAt": "2026-10-14T23:24:45.885Z",
+  "startedAt": "2026-10-14T23:31:15.395Z",
   "cases": [
     {
       "name": "register_returns_approval_id",
       "result": "PASS",
-      "detail": "APR-2026-00032"
+      "detail": "APR-2026-00039"
     },
     {
       "name": "register_status_pending_label",
@@ -14,17 +14,17 @@
     {
       "name": "approval_appears_in_inbox",
       "result": "PASS",
-      "detail": "APR-2026-00032"
+      "detail": "APR-2026-00039"
     },
     {
       "name": "kpis_pending_gt_zero",
       "result": "PASS",
-      "detail": "{\"pending\":16,\"underReview\":0,\"approved\":5,\"rejected\":6,\"needsRevision\":0,\"referred\":5,\"all\":32}"
+      "detail": "{\"pending\":20,\"underReview\":0,\"approved\":6,\"rejected\":7,\"needsRevision\":0,\"referred\":6,\"all\":39}"
     },
     {
       "name": "register_dedupe",
       "result": "PASS",
-      "detail": "approval=APR-2026-00032"
+      "detail": "approval=APR-2026-00039"
     },
     {
       "name": "no_duplicate_open_approvals",
@@ -54,7 +54,7 @@
     {
       "name": "backfill_ok",
       "result": "PASS",
-      "detail": "created=0 scanned=33"
+      "detail": "created=0 scanned=37"
     },
     {
       "name": "no_auto_reopen_after_backfill",
@@ -94,7 +94,7 @@
     {
       "name": "role_grant_durable",
       "result": "PASS",
-      "detail": "APR-2026-00035"
+      "detail": "APR-2026-00042"
     },
     {
       "name": "role_grant_in_inbox",
@@ -104,17 +104,17 @@
     {
       "name": "identity_suspend_durable",
       "result": "PASS",
-      "detail": "APR-2026-00036"
+      "detail": "APR-2026-00043"
     },
     {
       "name": "reward_approval_durable",
       "result": "PASS",
-      "detail": "APR-2026-00037"
+      "detail": "APR-2026-00044"
     },
     {
       "name": "system_rental_enqueue",
       "result": "PASS",
-      "detail": "APR-2026-00038"
+      "detail": "APR-2026-00045"
     }
   ],
   "rootCause": "Higher Approvals كانت تُحفظ في localStorage بالمتصفح فقط؛ طلبات /api/hub/register-requests تُنشئ المنحة على السيرفر دون سجل موافقة دائم، فيظهر «بانتظار الموافقة» للعميل بينما صندوق القائد يبقى صفرًا على جهاز/جلسة أخرى.",
@@ -211,15 +211,15 @@
       "result": "PASS"
     }
   ],
-  "finishedAt": "2026-10-14T23:24:46.527Z",
+  "finishedAt": "2026-10-14T23:31:16.215Z",
   "kpis": {
-    "pending": 19,
+    "pending": 23,
     "underReview": 0,
-    "approved": 6,
-    "rejected": 7,
+    "approved": 7,
+    "rejected": 8,
     "needsRevision": 0,
-    "referred": 6,
-    "all": 38
+    "referred": 7,
+    "all": 45
   },
   "successCriterion": "لا يوجد طلب بحالة بانتظار موافقة المدير الأعلى دون سجل محفوظ يظهر في صندوق الموافقات — ثبت لـ platform_grant عبر createRegisterRequest.",
   "verdict": "PASS_CORE",
