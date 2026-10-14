@@ -1777,6 +1777,15 @@
 
     if (String(action || '').startsWith('wf-') && window.HubWorkforce?.handle) {
       const handled = HubWorkforce.handle(action, btn, { user, toast, esc, $ });
+      if (handled && typeof handled.then === 'function') {
+        handled.then((v) => {
+          if (v !== false) {
+            renderNav();
+            render();
+          }
+        });
+        return;
+      }
       if (handled) {
         renderNav();
         render();

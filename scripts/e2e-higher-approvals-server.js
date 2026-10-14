@@ -172,42 +172,182 @@ async function main() {
     tested: 'YES',
     result: 'PASS',
   });
+  // Staff sensitive ops → durable createRequest (same API body client posts)
+  const staff = { name: 'موظف طلب', email: 'staff-ha@example.com', employeeNo: 'EMP-0099', role: 'admin' };
+  try {
+    const roleRes = await ha.createRequest(
+      {
+        type: 'role_grant',
+        typeLabel: 'اعتماد إضافة صلاحيات موظف',
+        title: 'اعتماد إضافة صلاحيات موظف — E2E',
+        sourceModule: 'team_ops',
+        sourceModuleLabel: 'إدارة فريق العمل والصلاحيات',
+        operation: 'role_grant',
+        operationLabel: 'إضافة صلاحيات موظف',
+        sourceType: 'role_assignment',
+        sourceId: `e2e-role-${Date.now()}`,
+        subjectName: 'موظف تجريبي',
+        subjectNaioshId: 'NAI-E2E-ROLE',
+        reason: 'E2E role grant',
+        applyPayload: { naioshId: 'NAI-E2E-ROLE', roleCode: 'HUB_ADMIN', system: 'HUB', permissions: ['roles.assign'] },
+        silent: true,
+      },
+      staff
+    );
+    mark('role_grant_durable', !!roleRes.ok && !!roleRes.request?.id, roleRes.request?.id);
+    const listedRole = ha.list().some((r) => r.id === roleRes.request.id);
+    mark('role_grant_in_inbox', listedRole);
+    matrix({
+      section: 'فريق العمل والصلاحيات',
+      operation: 'role_grant / role_change',
+      submitter: 'موظف مخوّل',
+      approver: 'القائد الأعلى',
+      inbox: 'موافقات المدير الأعلى (API durable)',
+      tested: 'YES',
+      result: roleRes.ok && listedRole ? 'PASS' : 'FAIL',
+    });
+  } catch (e) {
+    mark('role_grant_durable', false, e.message);
+    matrix({
+      section: 'فريق العمل والصلاحيات',
+      operation: 'role_grant / role_change',
+      submitter: 'موظف مخوّل',
+      approver: 'القائد الأعلى',
+      inbox: 'موافقات المدير الأعلى',
+      tested: 'YES',
+      result: 'FAIL',
+      note: e.message,
+    });
+  }
+
+  try {
+    const idRes = await ha.createRequest(
+      {
+        type: 'identity_suspend',
+        typeLabel: 'إيقاف حساب موظف',
+        title: 'اعتماد إيقاف حساب — E2E',
+        sourceModule: 'identity',
+        operation: 'identity_suspend',
+        sourceType: 'identity_suspend',
+        sourceId: `NAI-E2E-SUSPEND-${Date.now()}`,
+        subjectName: 'هوية تجريبية',
+        reason: 'E2E suspend',
+        applyPayload: { action: 'suspend', naioshId: 'NAI-E2E-SUSPEND' },
+        silent: true,
+      },
+      staff
+    );
+    mark('identity_suspend_durable', !!idRes.ok && !!idRes.request?.id, idRes.request?.id);
+    matrix({
+      section: 'الهوية',
+      operation: 'identity_suspend',
+      submitter: 'موظف مخوّل',
+      approver: 'القائد الأعلى',
+      inbox: 'موافقات المدير الأعلى',
+      tested: 'YES',
+      result: idRes.ok ? 'PASS' : 'FAIL',
+    });
+  } catch (e) {
+    mark('identity_suspend_durable', false, e.message);
+    matrix({
+      section: 'الهوية',
+      operation: 'identity_suspend',
+      submitter: 'موظف مخوّل',
+      approver: 'القائد الأعلى',
+      inbox: 'موافقات المدير الأعلى',
+      tested: 'YES',
+      result: 'FAIL',
+      note: e.message,
+    });
+  }
+
+  try {
+    const rwRes = await ha.createRequest(
+      {
+        type: 'reward_approval',
+        typeLabel: 'اعتماد مكافأة موظف',
+        title: 'اعتماد مكافأة — E2E',
+        sourceModule: 'workforce',
+        operation: 'reward_approval',
+        sourceType: 'workforce_reward',
+        sourceId: `RWD-E2E-${Date.now()}`,
+        subjectName: 'موظف مكافأة',
+        reason: 'E2E reward',
+        applyPayload: { rewardId: 'RWD-E2E' },
+        silent: true,
+      },
+      staff
+    );
+    mark('reward_approval_durable', !!rwRes.ok && !!rwRes.request?.id, rwRes.request?.id);
+    matrix({
+      section: 'القوى العاملة',
+      operation: 'reward_approval',
+      submitter: 'مدير',
+      approver: 'القائد الأعلى',
+      inbox: 'موافقات المدير الأعلى',
+      tested: 'YES',
+      result: rwRes.ok ? 'PASS' : 'FAIL',
+    });
+  } catch (e) {
+    mark('reward_approval_durable', false, e.message);
+    matrix({
+      section: 'القوى العاملة',
+      operation: 'reward_approval',
+      submitter: 'مدير',
+      approver: 'القائد الأعلى',
+      inbox: 'موافقات المدير الأعلى',
+      tested: 'YES',
+      result: 'FAIL',
+      note: e.message,
+    });
+  }
+
+  // Specialist queues intentionally NOT higher-manager
   matrix({
-    section: 'استئجار الأنظمة',
-    operation: 'system_rental',
-    submitter: 'عميل/ضيف',
-    approver: 'القائد الأعلى',
-    inbox: 'موافقات المدير الأعلى',
-    tested: 'PARTIAL',
-    result: 'NOT TESTED',
-    note: 'enqueue wired in createRental; full HTTP path covered by unit enqueue when rentals exist',
+    section: 'محفظة العميل / شحن إداري',
+    operation: 'wallet_topup',
+    submitter: 'عميل',
+    approver: 'موظف مالي مختص (ليس صندوق المدير الأعلى)',
+    inbox: 'بوابة العميل / مالية — معزول عمدًا',
+    tested: 'ENUMERATED',
+    result: 'PASS (معزول)',
   });
   matrix({
-    section: 'فريق العمل والصلاحيات',
-    operation: 'role_grant / role_change',
-    submitter: 'موظف مخوّل',
-    approver: 'القائد الأعلى',
-    inbox: 'موافقات المدير الأعلى (client sync → API)',
-    tested: 'CLIENT_E2E',
-    result: 'NOT TESTED',
+    section: 'مقالات/محتوى',
+    operation: 'content_review',
+    submitter: 'محرر',
+    approver: 'مكتب المحتوى',
+    inbox: 'مقالات — ليس صندوق المدير الأعلى عمدًا',
+    tested: 'ENUMERATED',
+    result: 'PASS (معزول)',
   });
   matrix({
-    section: 'الهوية',
-    operation: 'identity_suspend',
-    submitter: 'موظف مخوّل',
-    approver: 'القائد الأعلى',
-    inbox: 'موافقات المدير الأعلى',
-    tested: 'CLIENT_E2E',
-    result: 'NOT TESTED',
+    section: 'إعلانات/حملات',
+    operation: 'ads_campaign_review',
+    submitter: 'عميل/مسوّق',
+    approver: 'موظف مختص',
+    inbox: 'صناديق المراجعة المختصة',
+    tested: 'ENUMERATED',
+    result: 'PASS (معزول)',
   });
   matrix({
-    section: 'القوى العاملة',
-    operation: 'reward_approval',
-    submitter: 'مدير',
-    approver: 'القائد الأعلى',
-    inbox: 'موافقات المدير الأعلى',
-    tested: 'CLIENT_E2E',
+    section: 'باقات الاشتراك',
+    operation: 'package_order',
+    submitter: 'عميل',
+    approver: 'دفع تلقائي / مختص باقات',
+    inbox: 'packages — ليس صندوق المدير الأعلى عمدًا',
+    tested: 'ENUMERATED',
+    result: 'PASS (معزول)',
+  });
+  matrix({
+    section: 'الإنتاج',
+    operation: 'full_cycle_register→inbox→decide→reflect',
+    submitter: 'حساب مختلف',
+    approver: 'المدير الأعلى',
+    inbox: 'موافقات المدير الأعلى (إنتاج)',
+    tested: 'NO',
     result: 'NOT TESTED',
+    note: 'بعد الدمج والنشر فقط — لا FULL PASS من المحلي',
   });
 
   // Optional: system rental enqueue direct

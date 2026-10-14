@@ -1287,7 +1287,7 @@
     return intersection.length ? intersection : pool.slice(0, 6);
   };
 
-  const submitWizard = (ctx = {}) => {
+  const submitWizard = async (ctx = {}) => {
     const { toast, user } = ctx;
     const actor = actorOf(user);
     readWizardPerms();
@@ -1313,31 +1313,35 @@
       try {
         engine().registerEmployee({ naioshId: w.naioshId }, actor);
       } catch (_) {}
-      const ticket = window.HubHigherApprovals.enqueueRoleAssignment(
-        {
-          naioshId: w.naioshId,
-          subjectName: identity?.name || w.naioshId,
-          subjectEmployeeNo: identity?.employeeNo || '',
-          roleCode: w.roleCode,
-          system: w.system || 'HUB',
-          positionCode: w.positionCode || role?.eligiblePositions?.[0] || null,
-          permissions,
-          editGrantId: w.editGrantId || null,
-          currentRoleCode: existingGrant?.roleCode || '',
-          currentPermissions: existingGrant?.permissions || [],
-          reason: w.editGrantId ? 'طلب تعديل تعيين يتطلب موافقة المدير الأعلى' : 'طلب تفعيل دور يتطلب موافقة المدير الأعلى',
-          scopeCode: w.system === 'HUB' ? 'HUB-GLOBAL' : 'GLOBAL',
-          governanceLevel: w.system === 'HUB' ? 'HUB' : w.roleCode === 'SUPER_ADMIN' ? 'EMPIRE' : 'SYSTEM',
-        },
-        { name: actor, email: user?.email, employeeNo: user?.employeeNo, naioshId: user?.naioshId }
-      );
-      ui.success = {
-        message: `لم يُنفَّذ التعيين بعد. أُنشئ طلب موافقة ${ticket.id} ويظهر في «موافقات المدير الأعلى».`,
-        userId: w.naioshId,
-      };
-      ui.wizard = null;
-      ui.tab = 'team';
-      toast?.(`أُرسل طلب الموافقة ${ticket.id}`);
+      try {
+        const ticket = await window.HubHigherApprovals.enqueueRoleAssignment(
+          {
+            naioshId: w.naioshId,
+            subjectName: identity?.name || w.naioshId,
+            subjectEmployeeNo: identity?.employeeNo || '',
+            roleCode: w.roleCode,
+            system: w.system || 'HUB',
+            positionCode: w.positionCode || role?.eligiblePositions?.[0] || null,
+            permissions,
+            editGrantId: w.editGrantId || null,
+            currentRoleCode: existingGrant?.roleCode || '',
+            currentPermissions: existingGrant?.permissions || [],
+            reason: w.editGrantId ? 'طلب تعديل تعيين يتطلب موافقة المدير الأعلى' : 'طلب تفعيل دور يتطلب موافقة المدير الأعلى',
+            scopeCode: w.system === 'HUB' ? 'HUB-GLOBAL' : 'GLOBAL',
+            governanceLevel: w.system === 'HUB' ? 'HUB' : w.roleCode === 'SUPER_ADMIN' ? 'EMPIRE' : 'SYSTEM',
+          },
+          { name: actor, email: user?.email, employeeNo: user?.employeeNo, naioshId: user?.naioshId }
+        );
+        ui.success = {
+          message: `لم يُنفَّذ التعيين بعد. أُنشئ طلب موافقة ${ticket.id} ويظهر في «موافقات المدير الأعلى».`,
+          userId: w.naioshId,
+        };
+        ui.wizard = null;
+        ui.tab = 'team';
+        toast?.(`أُرسل طلب الموافقة ${ticket.id}`);
+      } catch (e) {
+        toast?.(e.message || 'تعذر حفظ طلب الموافقة على السيرفر — لم يُنشأ الطلب');
+      }
       return true;
     }
 
@@ -1656,51 +1660,53 @@
       return true;
     }
     if (action === 'hto-confirm-ok') {
-      try {
-        const c = ui.confirm;
-        if (c.kind === 'revoke') {
-          engine().revokeGrant(c.id, actor, 'إلغاء تعيين من إدارة فريق العمل');
-          toast?.('تم إلغاء التعيين وسحب صلاحيات النظام.');
-        } else if (c.kind === 'suspend') {
-          const identity = engine().findIdentity(c.id);
-          if (window.HubHigherApprovals?.enqueueIdentitySuspend) {
-            const ticket = window.HubHigherApprovals.enqueueIdentitySuspend(
-              {
-                naioshId: c.id,
-                subjectName: identity?.name || c.name || c.id,
-                subjectEmployeeNo: identity?.employeeNo || '',
-                reason: 'طلب إيقاف حساب من إدارة فريق العمل',
-                sourceModule: 'team_ops',
-                sourceLink: 'dashboard.html#roles-permissions',
-              },
-              { name: actor, email: user?.email, employeeNo: user?.employeeNo, naioshId: user?.naioshId }
-            );
-            toast?.(`أُرسل طلب إيقاف للحساب إلى موافقات المدير الأعلى (${ticket.id})`);
-          } else {
-            engine().suspendIdentity(c.id, actor, 'إيقاف من إدارة فريق العمل');
-            toast?.('تم إيقاف الوصول.');
+      return (async () => {
+        try {
+          const c = ui.confirm;
+          if (c.kind === 'revoke') {
+            engine().revokeGrant(c.id, actor, 'إلغاء تعيين من إدارة فريق العمل');
+            toast?.('تم إلغاء التعيين وسحب صلاحيات النظام.');
+          } else if (c.kind === 'suspend') {
+            const identity = engine().findIdentity(c.id);
+            if (window.HubHigherApprovals?.enqueueIdentitySuspend) {
+              const ticket = await window.HubHigherApprovals.enqueueIdentitySuspend(
+                {
+                  naioshId: c.id,
+                  subjectName: identity?.name || c.name || c.id,
+                  subjectEmployeeNo: identity?.employeeNo || '',
+                  reason: 'طلب إيقاف حساب من إدارة فريق العمل',
+                  sourceModule: 'team_ops',
+                  sourceLink: 'dashboard.html#roles-permissions',
+                },
+                { name: actor, email: user?.email, employeeNo: user?.employeeNo, naioshId: user?.naioshId }
+              );
+              toast?.(`أُرسل طلب إيقاف للحساب إلى موافقات المدير الأعلى (${ticket.id})`);
+            } else {
+              engine().suspendIdentity(c.id, actor, 'إيقاف من إدارة فريق العمل');
+              toast?.('تم إيقاف الوصول.');
+            }
+          } else if (c.kind === 'sensitive') {
+            if (ui.wizard) {
+              ui.wizard.sensitiveOk = true;
+              ui.wizard.step = Math.min(5, ui.wizard.step + 1);
+            }
+          } else if (c.kind === 'disable-system') {
+            const cur = systems().find((s) => s.code === c.id);
+            if (cur) engine().upsertManagedSystem({ ...cur, status: 'inactive' }, actor);
+            toast?.('تم إيقاف النظام');
+          } else if (c.kind === 'deactivate-perm' || c.kind === 'delete-perm') {
+            const cur = (store().permissions || []).find((p) => p.code === c.id);
+            if (cur) {
+              engine().upsertPermission({ ...cur, system: cur.systemHint, status: 'inactive' }, actor);
+              toast?.('تم إيقاف الصلاحية بدلًا من حذفها');
+            }
           }
-        } else if (c.kind === 'sensitive') {
-          if (ui.wizard) {
-            ui.wizard.sensitiveOk = true;
-            ui.wizard.step = Math.min(5, ui.wizard.step + 1);
-          }
-        } else if (c.kind === 'disable-system') {
-          const cur = systems().find((s) => s.code === c.id);
-          if (cur) engine().upsertManagedSystem({ ...cur, status: 'inactive' }, actor);
-          toast?.('تم إيقاف النظام');
-        } else if (c.kind === 'deactivate-perm' || c.kind === 'delete-perm') {
-          const cur = (store().permissions || []).find((p) => p.code === c.id);
-          if (cur) {
-            engine().upsertPermission({ ...cur, system: cur.systemHint, status: 'inactive' }, actor);
-            toast?.('تم إيقاف الصلاحية بدلًا من حذفها');
-          }
+        } catch (e) {
+          toast?.(e.message || 'تعذر إكمال العملية');
         }
-      } catch (e) {
-        toast?.(e.message || 'تعذر إكمال العملية');
-      }
-      ui.confirm = null;
-      return true;
+        ui.confirm = null;
+        return true;
+      })();
     }
     if (action === 'hto-reactivate') {
       try {

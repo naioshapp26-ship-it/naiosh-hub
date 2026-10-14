@@ -345,14 +345,34 @@
     }
 
     let approval = null;
+    let approvalPromise = null;
     try {
-      approval = window.HubHigherApprovals?.enqueuePlatformGrant?.(grant, {
-        name: adminName,
-        email: adminEmail,
-      });
+      if (window.HubHigherApprovals?.enqueuePlatformGrant) {
+        approvalPromise = Promise.resolve(
+          window.HubHigherApprovals.enqueuePlatformGrant(grant, {
+            name: adminName,
+            email: adminEmail,
+          })
+        )
+          .then((ticket) => {
+            approval = ticket;
+            if (ticket?.id) {
+              grant.approvalId = ticket.id;
+              const st = readLocal();
+              const row = (st.grants || []).find((g) => String(g.id) === String(grant.id));
+              if (row) {
+                row.approvalId = ticket.id;
+                saveLocal(st);
+              }
+            }
+            return ticket;
+          })
+          .catch(() => null);
+        grant._approvalPromise = approvalPromise;
+      }
     } catch (_) {}
 
-    return { ok: true, grant, approval };
+    return { ok: true, grant, approval, approvalPromise };
   };
 
   const approveGrant = (id) => {

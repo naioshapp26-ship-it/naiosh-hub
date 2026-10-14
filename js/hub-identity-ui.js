@@ -1372,31 +1372,33 @@
         return true;
       }
       if (m.next === 'suspend') {
-        try {
-          const identity = eng()?.findIdentity?.(m.id);
-          if (window.HubHigherApprovals?.enqueueIdentitySuspend) {
-            const ticket = window.HubHigherApprovals.enqueueIdentitySuspend(
-              {
-                naioshId: m.id,
-                subjectName: identity?.name || m.id,
-                subjectEmployeeNo: identity?.employeeNo || '',
-                reason: 'طلب إيقاف حساب من هوية نايوش',
-                sourceModule: 'identity',
-                sourceLink: 'dashboard.html#identity',
-              },
-              { name: actor }
-            );
-            ui.modal = null;
-            toast?.(`أُرسل طلب الإيقاف إلى موافقات المدير الأعلى (${ticket.id})`);
-          } else {
-            eng()?.suspendIdentity?.(m.id, actor, 'إيقاف من هوية نايوش');
-            ui.modal = null;
-            toast?.('تم إيقاف الوصول');
+        return (async () => {
+          try {
+            const identity = eng()?.findIdentity?.(m.id);
+            if (window.HubHigherApprovals?.enqueueIdentitySuspend) {
+              const ticket = await window.HubHigherApprovals.enqueueIdentitySuspend(
+                {
+                  naioshId: m.id,
+                  subjectName: identity?.name || m.id,
+                  subjectEmployeeNo: identity?.employeeNo || '',
+                  reason: 'طلب إيقاف حساب من هوية نايوش',
+                  sourceModule: 'identity',
+                  sourceLink: 'dashboard.html#identity',
+                },
+                { name: actor, email: ctx.user?.email, employeeNo: ctx.user?.employeeNo, naioshId: ctx.user?.naioshId }
+              );
+              ui.modal = null;
+              toast?.(`أُرسل طلب الإيقاف إلى موافقات المدير الأعلى (${ticket.id})`);
+            } else {
+              eng()?.suspendIdentity?.(m.id, actor, 'إيقاف من هوية نايوش');
+              ui.modal = null;
+              toast?.('تم إيقاف الوصول');
+            }
+          } catch (e) {
+            ui.modal = { ...m, error: e.message || 'تعذر الإيقاف' };
           }
-        } catch (e) {
-          ui.modal = { ...m, error: e.message || 'تعذر الإيقاف' };
-        }
-        return true;
+          return true;
+        })();
       }
       if (m.next === 'archive') {
         try {

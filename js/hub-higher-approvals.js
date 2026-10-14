@@ -209,6 +209,10 @@
         const data = await res.json();
         if (data?.ok) mergeServerState(data);
         lastHydratedAt = Date.now();
+        // Push any leftover local-only open tickets (staff drafts) into Postgres.
+        try {
+          await syncLocalOnlyToServer();
+        } catch (_) {}
       } catch (_) {
         /* keep local cache */
       } finally {
@@ -235,24 +239,48 @@
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.request) {
         const idx = state.requests.findIndex((r) => r.id === data.request.id);
-        if (idx >= 0) state.requests[idx] = normalizeRequest(data.request);
-        else state.requests.unshift(normalizeRequest(data.request));
+        if (idx >= 0) state.requests[idx] = normalizeRequest({ ...data.request, _localOnly: false });
+        else state.requests.unshift(normalizeRequest({ ...data.request, _localOnly: false }));
         // drop local-only duplicate by source
         if (data.request.sourceType && data.request.sourceId) {
           state.requests = state.requests.filter(
             (r) =>
               !(
                 r._localOnly &&
+                r.id !== data.request.id &&
                 r.sourceType === data.request.sourceType &&
                 String(r.sourceId) === String(data.request.sourceId)
               )
           );
         }
         save();
-        return normalizeRequest(data.request);
+        return normalizeRequest({ ...data.request, _localOnly: false });
       }
-    } catch (_) {}
-    return null;
+      return { error: data.error || `فشل حفظ الموافقة (${res.status})` };
+    } catch (e) {
+      return { error: e.message || 'تعذر الاتصال بالسيرفر لحفظ الموافقة' };
+    }
+  };
+
+  /** Push any local-only open tickets to Postgres (staff session). */
+  const syncLocalOnlyToServer = async () => {
+    const locals = (state.requests || []).filter(
+      (r) =>
+        r &&
+        r._localOnly &&
+        [STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION, STATUS.REFERRED].includes(r.status)
+    );
+    let synced = 0;
+    for (const row of locals) {
+      const remote = await postCreate({ ...row, silent: true, id: row.id }, {
+        name: row.requesterName,
+        email: row.requesterEmail,
+        employeeNo: row.requesterEmployeeNo,
+        naioshId: row.requesterNaioshId,
+      });
+      if (remote && !remote.error) synced += 1;
+    }
+    return { ok: true, synced, scanned: locals.length };
   };
 
   const postDecide = async (id, action, opts = {}) => {
@@ -348,23 +376,16 @@
     if (state.decisions.length > 500) state.decisions.length = 500;
   };
 
-  const createRequest = (payload = {}, actor) => {
+  const buildLocalRow = (payload = {}, actor) => {
     const a = actorMeta(actor);
     const type = payload.type || 'sensitive_op';
-    const silent = payload.silent === true;
-    if (payload.sourceType && payload.sourceId) {
-      const existing = findBySource(payload.sourceType, payload.sourceId);
-      if (existing && [STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION, STATUS.REFERRED].includes(existing.status)) {
-        return normalizeRequest(existing);
-      }
-    }
     const sourceModule = payload.sourceModule || payload.sourceType || 'HUB';
     const sourceModuleLabel =
       payload.sourceModuleLabel || SOURCE_AR[sourceModule] || payload.systemLabel || 'النظام';
     const operation = payload.operation || type;
     const operationLabel = payload.operationLabel || payload.typeLabel || TYPE_AR[type] || type;
     const title = payload.title || `${operationLabel}${payload.subjectName ? ` — ${payload.subjectName}` : ''}`;
-    const row = normalizeRequest({
+    return normalizeRequest({
       id: payload.id || nextId(),
       title,
       type,
@@ -418,46 +439,97 @@
         },
       ],
     });
-    state.requests.unshift(row);
-    save();
-    // Durable server mirror (fire-and-await via returned promise on window helper)
-    const serverPayload = { ...payload, ...row, silent: true };
-    delete serverPayload.id; // let server assign APR id when possible — keep local until merge
-    // Keep local id for UX; server dedupes by sourceType/sourceId
-    postCreate({ ...serverPayload, id: row.id, silent: true }, actor).then((remote) => {
-      if (remote && remote.id !== row.id) {
-        // Replace local temp with durable server id
-        state.requests = state.requests.filter((r) => r.id !== row.id);
-        const exists = state.requests.find((r) => r.id === remote.id);
-        if (!exists) state.requests.unshift(normalizeRequest(remote));
-        save();
-      } else if (remote) {
-        const idx = state.requests.findIndex((r) => r.id === remote.id);
-        if (idx >= 0) {
-          state.requests[idx] = normalizeRequest({ ...remote, _localOnly: false });
-          save();
+  };
+
+  const notifyCreated = (row) => {
+    notify({
+      title: `طلب جديد لاعتماد ${row.operationLabel}`,
+      body: `${row.title} · المصدر: ${row.sourceModuleLabel} · مقدم الطلب: ${row.requesterName}${
+        row.subjectEmployeeNo ? ` · ${row.subjectEmployeeNo}` : ''
+      }`,
+      level: 'warning',
+      category: 'ops',
+      source: 'HIGHER_APPROVALS',
+      sourceName: 'موافقات المدير الأعلى',
+      link: `dashboard.html#rent-admin?apr=${encodeURIComponent(row.id)}`,
+      actionLabel: 'مراجعة الطلب',
+      actionLink: `dashboard.html#rent-admin?apr=${encodeURIComponent(row.id)}`,
+      needsAction: true,
+      referenceType: 'higher_approval',
+      referenceId: row.id,
+      requestId: row.id,
+    });
+  };
+
+  /**
+   * Durable create: waits for Postgres/API before returning.
+   * On failure rolls back the local draft so we never show success without an inbox row.
+   */
+  const createRequestAsync = async (payload = {}, actor) => {
+    const silent = payload.silent === true;
+    if (payload.sourceType && payload.sourceId) {
+      const existing = findBySource(payload.sourceType, payload.sourceId);
+      if (existing && [STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION, STATUS.REFERRED].includes(existing.status)) {
+        if (existing._localOnly) {
+          const remote = await postCreate({ ...existing, silent: true }, actor);
+          if (remote && !remote.error) return remote;
+        } else {
+          return normalizeRequest(existing);
         }
       }
-    });
-    if (!silent) {
-      notify({
-        title: `طلب جديد لاعتماد ${operationLabel}`,
-        body: `${title} · المصدر: ${sourceModuleLabel} · مقدم الطلب: ${row.requesterName}${
-          row.subjectEmployeeNo ? ` · ${row.subjectEmployeeNo}` : ''
-        }`,
-        level: 'warning',
-        category: 'ops',
-        source: 'HIGHER_APPROVALS',
-        sourceName: 'موافقات المدير الأعلى',
-        link: `dashboard.html#rent-admin?apr=${encodeURIComponent(row.id)}`,
-        actionLabel: 'مراجعة الطلب',
-        actionLink: `dashboard.html#rent-admin?apr=${encodeURIComponent(row.id)}`,
-        needsAction: true,
-        referenceType: 'higher_approval',
-        referenceId: row.id,
-        requestId: row.id,
-      });
     }
+    const row = buildLocalRow(payload, actor);
+    state.requests.unshift(row);
+    save();
+    const remote = await postCreate({ ...payload, ...row, silent: true, id: row.id }, actor);
+    if (!remote || remote.error) {
+      state.requests = state.requests.filter((r) => r.id !== row.id);
+      save();
+      const err = new Error(remote?.error || 'تعذر حفظ طلب الموافقة على السيرفر — لم يُنشأ الطلب');
+      err.code = 'HIGHER_APPROVAL_PERSIST_FAILED';
+      throw err;
+    }
+    // Remove draft if server assigned a different id
+    if (remote.id !== row.id) {
+      state.requests = state.requests.filter((r) => r.id !== row.id);
+      if (!state.requests.find((r) => r.id === remote.id)) state.requests.unshift(remote);
+      save();
+    }
+    if (!silent) notifyCreated(remote);
+    return remote;
+  };
+
+  /** Sync helper kept for offline/e2e — prefers durable path when staff session exists. */
+  const createRequest = (payload = {}, actor) => {
+    const silent = payload.silent === true;
+    if (payload.sourceType && payload.sourceId) {
+      const existing = findBySource(payload.sourceType, payload.sourceId);
+      if (existing && [STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION, STATUS.REFERRED].includes(existing.status)) {
+        return normalizeRequest(existing);
+      }
+    }
+    const row = buildLocalRow(payload, actor);
+    state.requests.unshift(row);
+    save();
+    const persist = postCreate({ ...payload, ...row, silent: true, id: row.id }, actor).then((remote) => {
+      if (!remote || remote.error) {
+        row._persistError = remote?.error || 'persist_failed';
+        save();
+        return null;
+      }
+      if (remote.id !== row.id) {
+        state.requests = state.requests.filter((r) => r.id !== row.id);
+        if (!state.requests.find((r) => r.id === remote.id)) state.requests.unshift(remote);
+        save();
+      } else {
+        const idx = state.requests.findIndex((r) => r.id === remote.id);
+        if (idx >= 0) state.requests[idx] = normalizeRequest({ ...remote, _localOnly: false });
+        save();
+      }
+      return remote;
+    });
+    row._persistPromise = persist;
+    if (!silent) notifyCreated(row);
     return row;
   };
 
@@ -1052,7 +1124,7 @@
     return { ok: true, request: req };
   };
 
-  /** واجهة مساعدة لإنشاء طلب تعيين دور من فريق العمل */
+  /** واجهة مساعدة لإنشاء طلب تعيين دور من فريق العمل — دائم عبر السيرفر */
   const enqueueRoleAssignment = (payload = {}, actor) => {
     const type = payload.editGrantId ? 'role_change' : 'role_grant';
     const curRole = payload.currentRoleCode || '';
@@ -1061,7 +1133,7 @@
     const newPerms = payload.permissions || [];
     const subject = payload.subjectName || payload.naioshId || '';
     const opLabel = type === 'role_change' ? 'تغيير صلاحيات موظف' : 'إضافة صلاحيات موظف';
-    return createRequest(
+    return createRequestAsync(
       {
         type,
         typeLabel: type === 'role_change' ? TYPE_AR.role_change : TYPE_AR.role_grant,
@@ -1115,7 +1187,7 @@
 
   const enqueueIdentitySuspend = (payload = {}, actor) => {
     const name = payload.subjectName || payload.naioshId || 'موظف';
-    return createRequest(
+    return createRequestAsync(
       {
         type: 'identity_suspend',
         typeLabel: TYPE_AR.identity_suspend,
@@ -1146,7 +1218,7 @@
 
   const enqueueRewardApproval = (payload = {}, actor) => {
     const name = payload.subjectName || payload.employeeName || 'موظف';
-    return createRequest(
+    return createRequestAsync(
       {
         type: 'reward_approval',
         typeLabel: TYPE_AR.reward_approval,
@@ -1174,16 +1246,16 @@
     );
   };
 
-  const enqueuePlatformGrant = (grant, actor) => {
+  const enqueuePlatformGrant = async (grant, actor) => {
     if (!grant?.id) return null;
     // Prefer durable server approval id returned from /api/hub/register-requests
     if (grant.approvalId) {
       const existing = get(grant.approvalId);
-      if (existing) return existing;
+      if (existing && !existing._localOnly) return existing;
     }
     const bySource = findBySource('platform_grant', grant.id);
-    if (bySource) return bySource;
-    return createRequest(
+    if (bySource && !bySource._localOnly) return bySource;
+    return createRequestAsync(
       {
         id: grant.approvalId || undefined,
         type: 'platform_grant',
@@ -1238,12 +1310,14 @@
       return state;
     },
     hydrateFromServer,
+    syncLocalOnlyToServer,
     getState: () => state,
     list,
     listDecisions: () => state.decisions.slice(),
     get,
     kpis,
     createRequest,
+    createRequestAsync,
     enqueueRoleAssignment,
     enqueueIdentitySuspend,
     enqueueRewardApproval,

@@ -1,10 +1,10 @@
 {
-  "startedAt": "2026-10-14T22:31:25.862Z",
+  "startedAt": "2026-10-14T23:05:28.345Z",
   "cases": [
     {
       "name": "register_returns_approval_id",
       "result": "PASS",
-      "detail": "APR-2026-00013"
+      "detail": "APR-2026-00025"
     },
     {
       "name": "register_status_pending_label",
@@ -14,17 +14,17 @@
     {
       "name": "approval_appears_in_inbox",
       "result": "PASS",
-      "detail": "APR-2026-00013"
+      "detail": "APR-2026-00025"
     },
     {
       "name": "kpis_pending_gt_zero",
       "result": "PASS",
-      "detail": "{\"pending\":6,\"underReview\":0,\"approved\":2,\"rejected\":3,\"needsRevision\":0,\"referred\":2,\"all\":13}"
+      "detail": "{\"pending\":12,\"underReview\":0,\"approved\":4,\"rejected\":5,\"needsRevision\":0,\"referred\":4,\"all\":25}"
     },
     {
       "name": "register_dedupe",
       "result": "PASS",
-      "detail": "approval=APR-2026-00013"
+      "detail": "approval=APR-2026-00025"
     },
     {
       "name": "no_duplicate_open_approvals",
@@ -54,7 +54,7 @@
     {
       "name": "backfill_ok",
       "result": "PASS",
-      "detail": "created=0 scanned=19"
+      "detail": "created=0 scanned=29"
     },
     {
       "name": "no_auto_reopen_after_backfill",
@@ -82,9 +82,29 @@
       "detail": "referred"
     },
     {
+      "name": "role_grant_durable",
+      "result": "PASS",
+      "detail": "APR-2026-00028"
+    },
+    {
+      "name": "role_grant_in_inbox",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "identity_suspend_durable",
+      "result": "PASS",
+      "detail": "APR-2026-00029"
+    },
+    {
+      "name": "reward_approval_durable",
+      "result": "PASS",
+      "detail": "APR-2026-00030"
+    },
+    {
       "name": "system_rental_enqueue",
       "result": "PASS",
-      "detail": "APR-2026-00016"
+      "detail": "APR-2026-00031"
     }
   ],
   "rootCause": "Higher Approvals كانت تُحفظ في localStorage بالمتصفح فقط؛ طلبات /api/hub/register-requests تُنشئ المنحة على السيرفر دون سجل موافقة دائم، فيظهر «بانتظار الموافقة» للعميل بينما صندوق القائد يبقى صفرًا على جهاز/جلسة أخرى.",
@@ -99,23 +119,13 @@
       "result": "PASS"
     },
     {
-      "section": "استئجار الأنظمة",
-      "operation": "system_rental",
-      "submitter": "عميل/ضيف",
-      "approver": "القائد الأعلى",
-      "inbox": "موافقات المدير الأعلى",
-      "tested": "PARTIAL",
-      "result": "NOT TESTED",
-      "note": "enqueue wired in createRental; full HTTP path covered by unit enqueue when rentals exist"
-    },
-    {
       "section": "فريق العمل والصلاحيات",
       "operation": "role_grant / role_change",
       "submitter": "موظف مخوّل",
       "approver": "القائد الأعلى",
-      "inbox": "موافقات المدير الأعلى (client sync → API)",
-      "tested": "CLIENT_E2E",
-      "result": "NOT TESTED"
+      "inbox": "موافقات المدير الأعلى (API durable)",
+      "tested": "YES",
+      "result": "PASS"
     },
     {
       "section": "الهوية",
@@ -123,8 +133,8 @@
       "submitter": "موظف مخوّل",
       "approver": "القائد الأعلى",
       "inbox": "موافقات المدير الأعلى",
-      "tested": "CLIENT_E2E",
-      "result": "NOT TESTED"
+      "tested": "YES",
+      "result": "PASS"
     },
     {
       "section": "القوى العاملة",
@@ -132,8 +142,54 @@
       "submitter": "مدير",
       "approver": "القائد الأعلى",
       "inbox": "موافقات المدير الأعلى",
-      "tested": "CLIENT_E2E",
-      "result": "NOT TESTED"
+      "tested": "YES",
+      "result": "PASS"
+    },
+    {
+      "section": "محفظة العميل / شحن إداري",
+      "operation": "wallet_topup",
+      "submitter": "عميل",
+      "approver": "موظف مالي مختص (ليس صندوق المدير الأعلى)",
+      "inbox": "بوابة العميل / مالية — معزول عمدًا",
+      "tested": "ENUMERATED",
+      "result": "PASS (معزول)"
+    },
+    {
+      "section": "مقالات/محتوى",
+      "operation": "content_review",
+      "submitter": "محرر",
+      "approver": "مكتب المحتوى",
+      "inbox": "مقالات — ليس صندوق المدير الأعلى عمدًا",
+      "tested": "ENUMERATED",
+      "result": "PASS (معزول)"
+    },
+    {
+      "section": "إعلانات/حملات",
+      "operation": "ads_campaign_review",
+      "submitter": "عميل/مسوّق",
+      "approver": "موظف مختص",
+      "inbox": "صناديق المراجعة المختصة",
+      "tested": "ENUMERATED",
+      "result": "PASS (معزول)"
+    },
+    {
+      "section": "باقات الاشتراك",
+      "operation": "package_order",
+      "submitter": "عميل",
+      "approver": "دفع تلقائي / مختص باقات",
+      "inbox": "packages — ليس صندوق المدير الأعلى عمدًا",
+      "tested": "ENUMERATED",
+      "result": "PASS (معزول)"
+    },
+    {
+      "section": "الإنتاج",
+      "operation": "full_cycle_register→inbox→decide→reflect",
+      "submitter": "حساب مختلف",
+      "approver": "المدير الأعلى",
+      "inbox": "موافقات المدير الأعلى (إنتاج)",
+      "tested": "NO",
+      "result": "NOT TESTED",
+      "note": "بعد الدمج والنشر فقط — لا FULL PASS من المحلي"
     },
     {
       "section": "استئجار الأنظمة",
@@ -145,15 +201,15 @@
       "result": "PASS"
     }
   ],
-  "finishedAt": "2026-10-14T22:31:26.068Z",
+  "finishedAt": "2026-10-14T23:05:28.919Z",
   "kpis": {
-    "pending": 6,
+    "pending": 15,
     "underReview": 0,
-    "approved": 3,
-    "rejected": 4,
+    "approved": 5,
+    "rejected": 6,
     "needsRevision": 0,
-    "referred": 3,
-    "all": 16
+    "referred": 5,
+    "all": 31
   },
   "successCriterion": "لا يوجد طلب بحالة بانتظار موافقة المدير الأعلى دون سجل محفوظ يظهر في صندوق الموافقات — ثبت لـ platform_grant عبر createRegisterRequest.",
   "verdict": "PASS_CORE",

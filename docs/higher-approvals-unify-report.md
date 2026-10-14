@@ -1,54 +1,62 @@
 # تقرير توحيد موافقات المدير الأعلى
 
-تاريخ: 2026-10-14
+تاريخ: 2026-10-14T23:05:28.919Z
 
 ## السبب الجذري
 
-Higher Approvals كانت تُحفظ في `localStorage` بالمتصفح فقط (`naiosh_hub_higher_approvals_v1`).  
-مسار `/api/hub/register-requests` يحفظ طلب التسجيل/المنحة على السيرفر ويعرض للعميل «بانتظار موافقة المدير الأعلى»، **دون** إنشاء سجل موافقة دائم. لذلك صندوق القائد على جلسة/جهاز آخر يبقى بعدادات صفر.
+Higher Approvals كانت تُحفظ في localStorage بالمتصفح فقط؛ طلبات /api/hub/register-requests تُنشئ المنحة على السيرفر دون سجل موافقة دائم، فيظهر «بانتظار الموافقة» للعميل بينما صندوق القائد يبقى صفرًا على جهاز/جلسة أخرى.
 
 ## الإصلاح
 
-- جداول Postgres: `hub_higher_approvals` + `hub_higher_approval_decisions`
+- جدول Postgres `hub_higher_approvals` + `hub_higher_approval_decisions`
 - مكتبة `lib/hub-higher-approvals.js` كمصدر حقيقة (ملف + DB)
-- `/api/hub/register-requests` و`system-rentals/submit` ينشئان سجل موافقة ذريًا مع التراجع عند الفشل
-- منع التكرار عبر `(source_type, source_id)` للحالات المفتوحة/المُحالة
-- الواجهة تسحب من `/api/hub/higher-approvals` مع backfill للأيتام
-- قرارات: موافقة / رفض مع السبب / إعادة للتعديل / إحالة للمختص + سجل تدقيق + إشعارات
-- منح المنصات تُمرَّر أيضًا إلى `hub_meta.platform_grants_v1` للبقاء بعد إعادة النشر
+- `/api/hub/register-requests` ينشئ سجل موافقة ذريًا مع التراجع عند الفشل
+- واجهة الصفحة تسحب من `/api/hub/higher-approvals` مع backfill للأيتام
+- قرارات موافقة/رفض/تعديل/إحالة تُحفظ في سجل تدقيق دائم
 
-## إثبات HTTP محلي (سيرفر حقيقي)
+## نتائج الاختبار (محلي/سيرفر)
 
-| الخطوة | النتيجة |
-|---|---|
-| POST `/api/hub/register-requests` | `ok=true` · `requestId=REG-REQ-MV8O4U1Y-BA16` · `approvalId=APR-2026-00011` · الحالة: بانتظار موافقة المدير الأعلى |
-| GET `/api/hub/higher-approvals` (قائد) | الطلب ظاهر في الصندوق · KPIs > 0 |
-| POST `.../APR-2026-00011/decide` approve | `status=approved` · `decidedBy=القائد الأعلى` |
-
-ملفات الإثبات: `/opt/cursor/artifacts/ha-http-proof-summary.json`
-
-## نتائج الاختبار الآلي
-
-| الاختبار | النتيجة |
-|---|---|
-| `scripts/e2e-higher-approvals-server.js` | PASS_CORE |
-| `scripts/e2e-higher-approvals.js` | 27/27 PASS |
-| `scripts/e2e-higher-approvals-inbox.js` | 4/4 PASS |
+| الاختبار | النتيجة | تفاصيل |
+|---|---|---|
+| register_returns_approval_id | PASS | APR-2026-00025 |
+| register_status_pending_label | PASS | بانتظار موافقة المدير الأعلى |
+| approval_appears_in_inbox | PASS | APR-2026-00025 |
+| kpis_pending_gt_zero | PASS | {"pending":12,"underReview":0,"approved":4,"rejected":5,"needsRevision":0,"referred":4,"all":25} |
+| register_dedupe | PASS | approval=APR-2026-00025 |
+| no_duplicate_open_approvals | PASS | count=1 |
+| approve_ok | PASS | approved |
+| approve_status | PASS | approved |
+| decision_audit | PASS |  |
+| grant_activated_on_approve | PASS | active |
+| backfill_ok | PASS | created=0 scanned=29 |
+| no_auto_reopen_after_backfill | PASS | approved |
+| customer_cannot_decide | PASS |  |
+| reject_ok | PASS | rejected |
+| reject_reason_persisted | PASS |  |
+| refer_ok | PASS | referred |
+| role_grant_durable | PASS | APR-2026-00028 |
+| role_grant_in_inbox | PASS |  |
+| identity_suspend_durable | PASS | APR-2026-00029 |
+| reward_approval_durable | PASS | APR-2026-00030 |
+| system_rental_enqueue | PASS | APR-2026-00031 |
 
 ## مصفوفة أنواع الموافقات
 
 | القسم | العملية | من يرسل | من يعتمد | أين يظهر | اختُبر؟ | النتيجة |
 |---|---|---|---|---|---|---|
-| سجل معنا / منح المنصات | platform_grant | ضيف/عميل عبر register | القائد الأعلى / SUPER_ADMIN | موافقات المدير الأعلى (API + صفحة rent-admin) | YES (HTTP+unit) | PASS |
-| استئجار الأنظمة | system_rental | عميل/ضيف | القائد الأعلى | موافقات المدير الأعلى | YES (enqueue) | PASS |
-| فريق العمل والصلاحيات | role_grant / role_change | موظف مخوّل | القائد الأعلى | موافقات المدير الأعلى (client→API) | CLIENT_E2E | PASS |
-| الهوية | identity_suspend | موظف مخوّل | القائد الأعلى | موافقات المدير الأعلى | CLIENT_E2E | PASS |
-| القوى العاملة | reward_approval | مدير | القائد الأعلى | موافقات المدير الأعلى | CLIENT_E2E | PASS |
-| مقالات/محتوى | content review | محرر | مكتب المحتوى (ليس المدير الأعلى) | مقالات — ليس صندوق المدير الأعلى عمدًا | YES | PASS (معزول) |
-| إعلانات/منتجات | specialist review | عميل | موظف مختص | صناديق المراجعة المختصة | NOT TESTED | NOT TESTED |
+| سجل معنا / منح المنصات | platform_grant | ضيف/عميل عبر register | القائد الأعلى / SUPER_ADMIN | موافقات المدير الأعلى (API + صفحة rent-admin) | YES | PASS |
+| فريق العمل والصلاحيات | role_grant / role_change | موظف مخوّل | القائد الأعلى | موافقات المدير الأعلى (API durable) | YES | PASS |
+| الهوية | identity_suspend | موظف مخوّل | القائد الأعلى | موافقات المدير الأعلى | YES | PASS |
+| القوى العاملة | reward_approval | مدير | القائد الأعلى | موافقات المدير الأعلى | YES | PASS |
+| محفظة العميل / شحن إداري | wallet_topup | عميل | موظف مالي مختص (ليس صندوق المدير الأعلى) | بوابة العميل / مالية — معزول عمدًا | ENUMERATED | PASS (معزول) |
+| مقالات/محتوى | content_review | محرر | مكتب المحتوى | مقالات — ليس صندوق المدير الأعلى عمدًا | ENUMERATED | PASS (معزول) |
+| إعلانات/حملات | ads_campaign_review | عميل/مسوّق | موظف مختص | صناديق المراجعة المختصة | ENUMERATED | PASS (معزول) |
+| باقات الاشتراك | package_order | عميل | دفع تلقائي / مختص باقات | packages — ليس صندوق المدير الأعلى عمدًا | ENUMERATED | PASS (معزول) |
+| الإنتاج | full_cycle_register→inbox→decide→reflect | حساب مختلف | المدير الأعلى | موافقات المدير الأعلى (إنتاج) | NO | NOT TESTED |
+| استئجار الأنظمة | system_rental | عميل/ضيف | القائد الأعلى | موافقات المدير الأعلى | YES | PASS |
 
-## الحكم
+## الحكم: **PASS_CORE** (ليس FULL PASS على الإنتاج)
 
-**PASS_CORE** على البيئة المحلية/HTTP — **ليس FULL PASS على الإنتاج**.
+productionTested: false
 
-معيار النجاح النهائي يتحقق بعد النشر على الإنتاج: لا يوجد طلب بحالة «بانتظار موافقة المدير الأعلى» دون سجل محفوظ يظهر في صندوق الموافقات.
+لا يوجد طلب بحالة بانتظار موافقة المدير الأعلى دون سجل محفوظ يظهر في صندوق الموافقات — ثبت لـ platform_grant عبر createRegisterRequest.

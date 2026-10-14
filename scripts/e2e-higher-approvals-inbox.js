@@ -24,6 +24,49 @@ function makeCtx() {
     clear: () => store.clear(),
   };
   const notifications = [];
+  const serverStore = { requests: [], decisions: [], seq: 0 };
+  const mockFetch = async (url, opts = {}) => {
+    const u = String(url);
+    const method = String(opts.method || 'GET').toUpperCase();
+    if (u.includes('/api/hub/higher-approvals') && method === 'POST' && !u.includes('/decide') && !u.includes('/backfill')) {
+      const body = JSON.parse(opts.body || '{}');
+      if (body.sourceType && body.sourceId) {
+        const existing = serverStore.requests.find(
+          (r) =>
+            r.sourceType === body.sourceType &&
+            String(r.sourceId) === String(body.sourceId) &&
+            ['pending_review', 'under_review', 'needs_revision', 'referred'].includes(r.status)
+        );
+        if (existing) {
+          return { ok: true, status: 200, json: async () => ({ ok: true, request: existing, deduped: true }) };
+        }
+      }
+      serverStore.seq += 1;
+      const id = body.id || `APR-2026-${String(serverStore.seq).padStart(5, '0')}`;
+      const row = {
+        ...body,
+        id,
+        status: body.status || 'pending_review',
+        _localOnly: false,
+        createdAt: body.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        history: body.history || [{ at: new Date().toISOString(), action: 'created', by: 'mock' }],
+      };
+      serverStore.requests.unshift(row);
+      return { ok: true, status: 201, json: async () => ({ ok: true, request: row, deduped: false }) };
+    }
+    if (u.includes('/api/hub/higher-approvals') && method === 'GET') {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, requests: serverStore.requests, decisions: serverStore.decisions }),
+      };
+    }
+    if (u.includes('/decide') || u.includes('/backfill')) {
+      return { ok: true, status: 200, json: async () => ({ ok: true }) };
+    }
+    return { ok: false, status: 404, json: async () => ({ ok: false }) };
+  };
   const windowObj = {
     localStorage,
     HubStore: null,
@@ -35,6 +78,7 @@ function makeCtx() {
         employeeNo: 'EMP-0001',
         naioshId: 'NAI-LEADER-001',
       }),
+      authHeaders: (extra = {}) => ({ ...extra }),
     },
     dispatchEvent: () => {},
     addEventListener: () => {},
@@ -42,7 +86,7 @@ function makeCtx() {
       this.type = name;
       this.detail = init?.detail;
     },
-    fetch: async () => ({ ok: false, json: async () => ({}) }),
+    fetch: mockFetch,
   };
   const document = {
     querySelectorAll: () => [],
@@ -51,7 +95,17 @@ function makeCtx() {
     addEventListener: () => {},
     body: { appendChild: () => {}, dataset: {} },
   };
-  const ctx = { window: windowObj, localStorage, document, console, CustomEvent: windowObj.CustomEvent, URL, setTimeout, clearTimeout };
+  const ctx = {
+    window: windowObj,
+    localStorage,
+    document,
+    console,
+    fetch: mockFetch,
+    CustomEvent: windowObj.CustomEvent,
+    URL,
+    setTimeout,
+    clearTimeout,
+  };
   vm.createContext(ctx);
   ctx.window.document = document;
   ctx.window.HubStore = {
@@ -69,7 +123,7 @@ function makeCtx() {
     decideReward: null,
     _notifications: notifications,
   };
-  return { ctx, notifications, localStorage };
+  return { ctx, notifications, localStorage, serverStore };
 }
 
 function boot(ctx) {
@@ -84,7 +138,6 @@ function boot(ctx) {
   for (const f of files) {
     vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx);
   }
-  // Minimal HubStore reward APIs for workforce source
   const rewards = [];
   ctx.window.HubStore.rewardEmployee = (id, amount, extras = {}, actor = 'مشغّل هوب') => {
     const item = {
@@ -100,21 +153,26 @@ function boot(ctx) {
     };
     rewards.push(item);
     if (item.status === 'Pending Approval' && ctx.window.HubHigherApprovals?.enqueueRewardApproval) {
-      const ticket = ctx.window.HubHigherApprovals.enqueueRewardApproval(
-        {
-          rewardId: item.id,
-          subjectName: item.employee,
-          subjectEmployeeNo: extras.subjectEmployeeNo || id,
-          employeeId: id,
-          rewardType: item.type,
-          value: item.value,
-          points: item.points,
-          reason: item.reason,
-          priority: 'high',
-        },
-        typeof actor === 'string' ? { name: actor } : actor
-      );
-      item.higherApprovalId = ticket.id;
+      const haPromise = Promise.resolve(
+        ctx.window.HubHigherApprovals.enqueueRewardApproval(
+          {
+            rewardId: item.id,
+            subjectName: item.employee,
+            subjectEmployeeNo: extras.subjectEmployeeNo || id,
+            employeeId: id,
+            rewardType: item.type,
+            value: item.value,
+            points: item.points,
+            reason: item.reason,
+            priority: 'high',
+          },
+          typeof actor === 'string' ? { name: actor } : actor
+        )
+      ).then((ticket) => {
+        item.higherApprovalId = ticket.id;
+        return item;
+      });
+      item._haPromise = haPromise;
     }
     return item;
   };
@@ -134,7 +192,7 @@ function boot(ctx) {
   ctx.window.__rewards = rewards;
 }
 
-function main() {
+async function main() {
   const { ctx, notifications } = makeCtx();
   boot(ctx);
   const HA = ctx.window.HubHigherApprovals;
@@ -156,9 +214,8 @@ function main() {
     staff.name
   );
 
-  // ——— Source 1: Team ops role grant ———
   const beforeGrants = (S.get().grants || []).filter((g) => g.naioshId === emp.naioshId && g.roleCode === 'HUB_ADMIN').length;
-  const t1 = HA.enqueueRoleAssignment(
+  const t1 = await HA.enqueueRoleAssignment(
     {
       naioshId: emp.naioshId,
       subjectName: emp.name,
@@ -175,9 +232,12 @@ function main() {
   assert.strictEqual(midGrants, beforeGrants, 'role must NOT apply before approval');
   assert.ok(t1.sourceModuleLabel && /فريق العمل|صلاحيات/.test(t1.sourceModuleLabel), 'source label');
   assert.ok(/صلاحيات|دور|موظف/.test(t1.operationLabel), 'operation label');
+  assert.notStrictEqual(t1._localOnly, true, 'role ticket must be durable');
   const a1 = HA.approve(t1.id, boss);
   assert.ok(a1.ok, a1.error);
-  const afterGrants = (S.get().grants || []).filter((g) => g.naioshId === emp.naioshId && g.roleCode === 'HUB_ADMIN' && g.status !== 'revoked').length;
+  const afterGrants = (S.get().grants || []).filter(
+    (g) => g.naioshId === emp.naioshId && g.roleCode === 'HUB_ADMIN' && g.status !== 'revoked'
+  ).length;
   push({
     source: 'إدارة فريق العمل والصلاحيات',
     aprId: t1.id,
@@ -188,8 +248,6 @@ function main() {
     result: a1.ok && afterGrants > beforeGrants && appeared1 ? 'PASS' : 'FAIL',
   });
 
-  // ——— Source 2: Platform grant ———
-  // Bypass subdomain uniqueness by direct createRequest via enqueue after synthetic grant
   const grantState = JSON.parse(ctx.localStorage.getItem('naiosh_hub_platform_grants_v1') || '{"grants":[]}');
   const grant = {
     id: 'pgrant-e2e-001',
@@ -219,7 +277,7 @@ function main() {
   grantState.grants = grantState.grants || [];
   grantState.grants.unshift(grant);
   ctx.localStorage.setItem('naiosh_hub_platform_grants_v1', JSON.stringify(grantState));
-  const t2 = HA.enqueuePlatformGrant(grant, { name: grant.adminName, email: grant.adminEmail });
+  const t2 = await HA.enqueuePlatformGrant(grant, { name: grant.adminName, email: grant.adminEmail });
   const appeared2 = !!HA.get(t2.id);
   assert.ok(/منصات|سجل/.test(t2.sourceModuleLabel), t2.sourceModuleLabel);
   assert.strictEqual(PG.getGrant?.(grant.id)?.status || PG.listGrants?.().find((g) => g.id === grant.id)?.status, 'pending');
@@ -236,7 +294,6 @@ function main() {
     result: r2.ok && grantAfter?.status === 'rejected' && appeared2 ? 'PASS' : 'FAIL',
   });
 
-  // ——— Source 3: Workforce reward ———
   const reward = ctx.window.HubStore.rewardEmployee(
     'EMP-TEST-1',
     500,
@@ -251,6 +308,7 @@ function main() {
     },
     staff
   );
+  await reward._haPromise;
   const t3id = reward.higherApprovalId;
   const t3 = HA.get(t3id);
   assert.ok(t3, 'reward must create HA ticket');
@@ -259,7 +317,6 @@ function main() {
   const revise = HA.requestRevision(t3.id, 'وضح قيمة المكافأة والمبرر المالي', boss);
   assert.ok(revise.ok, revise.error);
   assert.strictEqual(HA.get(t3.id).status, 'needs_revision');
-  // resubmit then approve
   HA.resubmit(t3.id, { reason: 'مكافأة أداء ربع سنوي — قيمة معتمدة 500' }, staff);
   const a3 = HA.approve(t3.id, boss);
   assert.ok(a3.ok, a3.error);
@@ -274,8 +331,7 @@ function main() {
     result: a3.ok && rewardAfter?.status === 'Approved' ? 'PASS' : 'FAIL',
   });
 
-  // ——— Source 4 bonus: identity suspend appear + reject keeps active ———
-  const t4 = HA.enqueueIdentitySuspend(
+  const t4 = await HA.enqueueIdentitySuspend(
     {
       naioshId: emp.naioshId,
       subjectName: emp.name,
@@ -298,7 +354,6 @@ function main() {
     result: rej4.ok && beforeSus === afterSus ? 'PASS' : 'FAIL',
   });
 
-  // Notifications + audit
   const notifOk = notifications.some((n) => /موافقة|اعتماد|موافقتك/.test(`${n.title || ''}${n.body || ''}`));
   const decisions = HA.listDecisions();
   assert.ok(decisions.length >= 4, 'decisions logged');
@@ -306,7 +361,6 @@ function main() {
   assert.ok(HA.canDecide(boss), 'boss can decide');
   assert.strictEqual(HA.canDecide({ name: 'visitor', role: 'customer' }), false, 'customer cannot decide');
 
-  // UI smoke
   const html = ctx.window.HubHigherApprovalsUI.render({ user: boss });
   assert.ok(html.includes('موافقات المدير الأعلى'));
   assert.ok(html.includes('المصدر') || html.includes('ha-source') || html.includes('sourceModule'));
@@ -323,4 +377,7 @@ function main() {
   console.log('PASS e2e-higher-approvals-inbox');
 }
 
-main();
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
