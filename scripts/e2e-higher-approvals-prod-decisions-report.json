@@ -1,0 +1,88 @@
+{
+  "at": "2026-10-14T23:30:02.653Z",
+  "base": "https://naiosh-hub-production.up.railway.app",
+  "cases": [
+    {
+      "name": "leader_login",
+      "result": "PASS",
+      "detail": "role=supreme_leader"
+    },
+    {
+      "name": "relogin_session",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "reject_register",
+      "result": "PASS",
+      "detail": "REG-REQ-MV8QSP5F-F226 / APR-2026-00002"
+    },
+    {
+      "name": "reject_in_inbox",
+      "result": "PASS",
+      "detail": "APR-2026-00002"
+    },
+    {
+      "name": "reject_decide",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "reject_reflects_origin",
+      "result": "FAIL",
+      "detail": "grant=pending"
+    },
+    {
+      "name": "revise_register",
+      "result": "PASS",
+      "detail": "APR-2026-00003"
+    },
+    {
+      "name": "revise_decide",
+      "result": "PASS",
+      "detail": "needs_revision"
+    },
+    {
+      "name": "revise_resubmit",
+      "result": "PASS",
+      "detail": "pending_review"
+    },
+    {
+      "name": "refer_register",
+      "result": "PASS",
+      "detail": "APR-2026-00004"
+    },
+    {
+      "name": "refer_decide",
+      "result": "PASS",
+      "detail": "referred"
+    },
+    {
+      "name": "non_auth_cannot_decide",
+      "result": "PASS",
+      "detail": "status=401"
+    },
+    {
+      "name": "kpis_from_server",
+      "result": "PASS",
+      "detail": "{\"pending\":1,\"underReview\":0,\"approved\":1,\"rejected\":1,\"needsRevision\":0,\"referred\":1,\"all\":4}"
+    },
+    {
+      "name": "persist_after_relogin",
+      "result": "PASS",
+      "detail": "found=3 statuses=referred,pending_review,rejected"
+    },
+    {
+      "name": "data_still_403",
+      "result": "PASS",
+      "detail": "status=403"
+    }
+  ],
+  "summary": {
+    "pass": 14,
+    "fail": 1,
+    "notTested": 0
+  },
+  "corePass": true,
+  "verdict": "FAIL_OR_PARTIAL"
+}
