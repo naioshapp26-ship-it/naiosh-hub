@@ -1613,11 +1613,21 @@ async function handleHubApi(req, res, pathname) {
     persistPlatformGrantsToDb(next);
     return next;
   };
-  const hydratePlatformGrantsFromDb = async () => {
-    if (platformGrantsHydrated) return readPlatformGrantsFile();
+  let platformGrantsLastHydratedAt = 0;
+  const PLATFORM_GRANTS_TTL_MS = Math.max(250, Number(process.env.HUB_PLATFORM_GRANTS_TTL_MS || 1500) || 1500);
+  const hydratePlatformGrantsFromDb = async ({ force = false } = {}) => {
+    const now = Date.now();
+    if (!force && platformGrantsHydrated && now - platformGrantsLastHydratedAt < PLATFORM_GRANTS_TTL_MS) {
+      return readPlatformGrantsFile();
+    }
     platformGrantsHydrated = true;
+    // Drop sticky mem so file/DB re-read picks up HA decide side-effects.
+    platformGrantsMem = null;
     const fileState = readPlatformGrantsFile();
-    if (!getDatabaseUrl()) return fileState;
+    if (!getDatabaseUrl()) {
+      platformGrantsLastHydratedAt = Date.now();
+      return fileState;
+    }
     try {
       const { withClient } = require('./db/migrate');
       const fromDb = await withClient(async (client) => {
@@ -1626,24 +1636,45 @@ async function handleHubApi(req, res, pathname) {
       });
       if (!fromDb) {
         await persistPlatformGrantsToDb(fileState);
+        platformGrantsLastHydratedAt = Date.now();
         return fileState;
       }
       const parsed = typeof fromDb === 'string' ? JSON.parse(fromDb) : fromDb;
       const dbGrants = Array.isArray(parsed.grants) ? parsed.grants : [];
       const fileGrants = Array.isArray(fileState.grants) ? fileState.grants : [];
-      if (dbGrants.length >= fileGrants.length) {
-        return writePlatformGrantsFile({ version: 1, grants: dbGrants, updatedAt: parsed.updatedAt });
+      // Prefer the freshest per-grant status (HA decide may update file or DB first).
+      const byId = new Map();
+      for (const g of dbGrants) {
+        if (g?.id) byId.set(String(g.id), g);
       }
-      await persistPlatformGrantsToDb(fileState);
-      return fileState;
+      for (const g of fileGrants) {
+        if (!g?.id) continue;
+        const prev = byId.get(String(g.id));
+        if (!prev) {
+          byId.set(String(g.id), g);
+          continue;
+        }
+        const prevT = Date.parse(prev.updatedAt || prev.approvedAt || prev.rejectedAt || 0) || 0;
+        const nextT = Date.parse(g.updatedAt || g.approvedAt || g.rejectedAt || 0) || 0;
+        if (nextT >= prevT) byId.set(String(g.id), { ...prev, ...g });
+      }
+      const merged = {
+        version: 1,
+        grants: [...byId.values()],
+        updatedAt: parsed.updatedAt || fileState.updatedAt || new Date().toISOString(),
+      };
+      const written = writePlatformGrantsFile(merged);
+      platformGrantsLastHydratedAt = Date.now();
+      return written;
     } catch (err) {
       console.warn('[platform-grants] hydrate failed:', err.message);
+      platformGrantsLastHydratedAt = Date.now();
       return fileState;
     }
   };
 
   if (pathname === '/api/hub/platform-grants' && req.method === 'GET') {
-    const state = await hydratePlatformGrantsFromDb();
+    const state = await hydratePlatformGrantsFromDb({ force: true });
     sendJson(res, 200, { ok: true, state });
     return true;
   }
