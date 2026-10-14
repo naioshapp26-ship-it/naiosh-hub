@@ -514,6 +514,7 @@
       approved: rows.filter((r) => r.status === STATUS.APPROVED).length,
       rejected: rows.filter((r) => r.status === STATUS.REJECTED).length,
       needsRevision: rows.filter((r) => r.status === STATUS.NEEDS_REVISION).length,
+      referred: rows.filter((r) => r.status === STATUS.REFERRED).length,
       all: rows.length,
     };
   };
