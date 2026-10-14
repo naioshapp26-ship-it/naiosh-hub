@@ -6,7 +6,10 @@
   'use strict';
 
   const KEY = 'naiosh_hub_higher_approvals_v1';
+  const API = '/api/hub/higher-approvals';
   const YEAR = () => new Date().getFullYear();
+  let hydratePromise = null;
+  let lastHydratedAt = 0;
 
   const STATUS = {
     PENDING: 'pending_review',
@@ -14,6 +17,7 @@
     APPROVED: 'approved',
     REJECTED: 'rejected',
     NEEDS_REVISION: 'needs_revision',
+    REFERRED: 'referred',
   };
 
   const STATUS_AR = {
@@ -22,6 +26,7 @@
     [STATUS.APPROVED]: 'تمت الموافقة',
     [STATUS.REJECTED]: 'مرفوضة',
     [STATUS.NEEDS_REVISION]: 'أعيدت للتعديل',
+    [STATUS.REFERRED]: 'أُحيلت للمختص',
   };
 
   const TYPE_AR = {
@@ -144,6 +149,133 @@
     return state;
   };
 
+  const authHeaders = (extra = {}) => {
+    try {
+      return window.HubAuth?.authHeaders?.(extra) || { ...extra };
+    } catch {
+      return { ...extra };
+    }
+  };
+
+  const mergeServerState = (payload) => {
+    const remoteReqs = Array.isArray(payload?.requests) ? payload.requests : [];
+    const remoteDecs = Array.isArray(payload?.decisions) ? payload.decisions : [];
+    const byId = new Map();
+    // Server is source of truth; keep local-only rows that are not yet on server (offline draft).
+    (state.requests || []).forEach((r) => {
+      if (r?.id && r._localOnly) byId.set(r.id, normalizeRequest(r));
+    });
+    remoteReqs.forEach((r) => {
+      if (r?.id) byId.set(r.id, normalizeRequest(r));
+    });
+    const dMap = new Map();
+    remoteDecs.forEach((d) => {
+      if (d?.id) dMap.set(d.id, d);
+    });
+    (state.decisions || []).forEach((d) => {
+      if (d?.id && !dMap.has(d.id)) dMap.set(d.id, d);
+    });
+    state.requests = [...byId.values()].sort((a, b) =>
+      String(b.createdAt || '').localeCompare(String(a.createdAt || ''))
+    );
+    state.decisions = [...dMap.values()].sort((a, b) =>
+      String(b.decidedAt || '').localeCompare(String(a.decidedAt || ''))
+    );
+    state.schemaVersion = Math.max(Number(state.schemaVersion) || 1, 3);
+    save();
+    return state;
+  };
+
+  const hydrateFromServer = async ({ force = false, backfill = false } = {}) => {
+    const now = Date.now();
+    if (!force && hydratePromise) return hydratePromise;
+    if (!force && now - lastHydratedAt < 1500) return state;
+    hydratePromise = (async () => {
+      try {
+        if (backfill) {
+          await fetch(`${API}/backfill`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: '{}',
+            cache: 'no-store',
+          }).catch(() => null);
+        }
+        const res = await fetch(API, {
+          method: 'GET',
+          headers: authHeaders({ Accept: 'application/json' }),
+          cache: 'no-store',
+        });
+        if (!res.ok) return state;
+        const data = await res.json();
+        if (data?.ok) mergeServerState(data);
+        lastHydratedAt = Date.now();
+      } catch (_) {
+        /* keep local cache */
+      } finally {
+        hydratePromise = null;
+      }
+      return state;
+    })();
+    return hydratePromise;
+  };
+
+  const postCreate = async (payload, actor) => {
+    try {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          ...payload,
+          requesterName: payload.requesterName || actorMeta(actor).name,
+          requesterEmail: payload.requesterEmail || actorMeta(actor).email,
+          requesterEmployeeNo: payload.requesterEmployeeNo || actorMeta(actor).employeeNo,
+          requesterNaioshId: payload.requesterNaioshId || actorMeta(actor).naioshId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.request) {
+        const idx = state.requests.findIndex((r) => r.id === data.request.id);
+        if (idx >= 0) state.requests[idx] = normalizeRequest(data.request);
+        else state.requests.unshift(normalizeRequest(data.request));
+        // drop local-only duplicate by source
+        if (data.request.sourceType && data.request.sourceId) {
+          state.requests = state.requests.filter(
+            (r) =>
+              !(
+                r._localOnly &&
+                r.sourceType === data.request.sourceType &&
+                String(r.sourceId) === String(data.request.sourceId)
+              )
+          );
+        }
+        save();
+        return normalizeRequest(data.request);
+      }
+    } catch (_) {}
+    return null;
+  };
+
+  const postDecide = async (id, action, opts = {}) => {
+    try {
+      const res = await fetch(`${API}/${encodeURIComponent(id)}/decide`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ action, ...opts }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return { ok: false, error: data.error || 'تعذر تنفيذ القرار على السيرفر' };
+      if (data.request) {
+        const idx = state.requests.findIndex((r) => r.id === id);
+        if (idx >= 0) state.requests[idx] = normalizeRequest(data.request);
+        else state.requests.unshift(normalizeRequest(data.request));
+        save();
+      }
+      return { ok: true, ...data };
+    } catch (e) {
+      return { ok: false, error: e.message || 'تعذر الاتصال بالسيرفر' };
+    }
+  };
+
   const nextId = () => {
     state.seq = (state.seq || 0) + 1;
     return `APR-${YEAR()}-${String(state.seq).padStart(5, '0')}`;
@@ -222,7 +354,7 @@
     const silent = payload.silent === true;
     if (payload.sourceType && payload.sourceId) {
       const existing = findBySource(payload.sourceType, payload.sourceId);
-      if (existing && [STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION].includes(existing.status)) {
+      if (existing && [STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION, STATUS.REFERRED].includes(existing.status)) {
         return normalizeRequest(existing);
       }
     }
@@ -233,7 +365,7 @@
     const operationLabel = payload.operationLabel || payload.typeLabel || TYPE_AR[type] || type;
     const title = payload.title || `${operationLabel}${payload.subjectName ? ` — ${payload.subjectName}` : ''}`;
     const row = normalizeRequest({
-      id: nextId(),
+      id: payload.id || nextId(),
       title,
       type,
       typeLabel: payload.typeLabel || TYPE_AR[type] || type,
@@ -276,6 +408,7 @@
       decidedAt: '',
       decidedBy: '',
       decidedByEmployeeNo: '',
+      _localOnly: true,
       history: [
         {
           at: nowIso(),
@@ -287,6 +420,25 @@
     });
     state.requests.unshift(row);
     save();
+    // Durable server mirror (fire-and-await via returned promise on window helper)
+    const serverPayload = { ...payload, ...row, silent: true };
+    delete serverPayload.id; // let server assign APR id when possible — keep local until merge
+    // Keep local id for UX; server dedupes by sourceType/sourceId
+    postCreate({ ...serverPayload, id: row.id, silent: true }, actor).then((remote) => {
+      if (remote && remote.id !== row.id) {
+        // Replace local temp with durable server id
+        state.requests = state.requests.filter((r) => r.id !== row.id);
+        const exists = state.requests.find((r) => r.id === remote.id);
+        if (!exists) state.requests.unshift(normalizeRequest(remote));
+        save();
+      } else if (remote) {
+        const idx = state.requests.findIndex((r) => r.id === remote.id);
+        if (idx >= 0) {
+          state.requests[idx] = normalizeRequest({ ...remote, _localOnly: false });
+          save();
+        }
+      }
+    });
     if (!silent) {
       notify({
         title: `طلب جديد لاعتماد ${operationLabel}`,
@@ -604,6 +756,7 @@
     req.updatedAt = nowIso();
     req.history.push({ at: nowIso(), action: 'under_review', by: a.name, detail: 'بدأ المدير مراجعة الطلب' });
     save();
+    void postDecide(id, 'start_review');
     return { ok: true, request: req };
   };
 
@@ -620,6 +773,8 @@
     }
     const a = actorMeta(actor);
     const beforeStatus = req.status;
+    // Durable server decision first — then client-side domain apply for role/grant engines.
+    const serverPromise = postDecide(id, 'approve', { note: note || '' });
     try {
       const applied = applyApproved(req, a);
       req.status = STATUS.APPROVED;
@@ -666,7 +821,8 @@
         requestId: req.id,
         meta: { email: req.requesterEmail },
       });
-      return { ok: true, request: req, applied };
+      void serverPromise;
+      return { ok: true, request: req, applied, serverPromise };
     } catch (e) {
       return { ok: false, error: e.message || 'فشل تنفيذ الموافقة' };
     }
@@ -733,6 +889,7 @@
       decidedAt: req.decidedAt,
     });
     save();
+    void postDecide(id, 'reject', { reason: req.rejectReason, note: req.rejectReason });
     notify({
       title: 'رُفض طلب الموافقة',
       body: `طلب ${req.id}: ${req.rejectReason}`,
@@ -782,6 +939,7 @@
       decidedAt: nowIso(),
     });
     save();
+    void postDecide(id, 'revise', { note: req.revisionNote, reason: req.revisionNote });
     notify({
       title: 'مطلوب تعديل طلبك',
       body: `طلب ${req.id}: ${req.revisionNote}`,
@@ -796,6 +954,66 @@
       referenceId: req.id,
       requestId: req.id,
       meta: { email: req.requesterEmail },
+    });
+    return { ok: true, request: req };
+  };
+
+  const refer = (id, assignee, actor, note = '') => {
+    const req = get(id);
+    if (!req) return { ok: false, error: 'الطلب غير موجود' };
+    try {
+      assertCanDecide(actor);
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+    const referredTo = String(assignee || '').trim();
+    if (!referredTo && !String(note || '').trim()) {
+      return { ok: false, error: 'حدد المختص أو سبب الإحالة' };
+    }
+    if (![STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION].includes(req.status)) {
+      return { ok: false, error: 'لا يمكن إحالة هذا الطلب في حالته الحالية' };
+    }
+    const a = actorMeta(actor);
+    const beforeStatus = req.status;
+    req.status = STATUS.REFERRED;
+    req.referredTo = referredTo;
+    req.referredToLabel = referredTo;
+    req.updatedAt = nowIso();
+    req.decidedAt = nowIso();
+    req.decidedBy = a.name;
+    req.decidedByEmployeeNo = a.employeeNo || '';
+    const detail = `إحالة إلى ${referredTo}${note ? ` — ${note}` : ''}`;
+    req.history.push({ at: nowIso(), action: 'referred', by: a.name, detail });
+    pushDecision({
+      id: `DEC-${req.id}-${Date.now()}`,
+      requestId: req.id,
+      type: req.type,
+      typeLabel: req.typeLabel,
+      requesterName: req.requesterName,
+      decision: 'referred',
+      decisionAr: STATUS_AR[STATUS.REFERRED],
+      decidedBy: a.name,
+      decidedByEmployeeNo: a.employeeNo || '',
+      reason: note || detail,
+      beforeStatus,
+      afterStatus: STATUS.REFERRED,
+      requestedAt: req.createdAt,
+      decidedAt: req.decidedAt,
+    });
+    save();
+    void postDecide(id, 'refer', { referredTo, referredToLabel: referredTo, note, reason: note });
+    notify({
+      title: 'أُحيل طلب موافقة',
+      body: `طلب ${req.id} أُحيل إلى ${referredTo} من ${a.name}.`,
+      level: 'info',
+      category: 'ops',
+      source: 'HIGHER_APPROVALS',
+      sourceName: 'موافقات المدير الأعلى',
+      link: `dashboard.html#rent-admin?apr=${encodeURIComponent(req.id)}`,
+      needsAction: true,
+      referenceType: 'higher_approval',
+      referenceId: req.id,
+      requestId: req.id,
     });
     return { ok: true, request: req };
   };
@@ -957,8 +1175,16 @@
 
   const enqueuePlatformGrant = (grant, actor) => {
     if (!grant?.id) return null;
+    // Prefer durable server approval id returned from /api/hub/register-requests
+    if (grant.approvalId) {
+      const existing = get(grant.approvalId);
+      if (existing) return existing;
+    }
+    const bySource = findBySource('platform_grant', grant.id);
+    if (bySource) return bySource;
     return createRequest(
       {
+        id: grant.approvalId || undefined,
         type: 'platform_grant',
         typeLabel: TYPE_AR.platform_grant,
         title: `اعتماد إضافة منصة — ${grant.companyName || grant.platformLabel || grant.host || grant.id}`,
@@ -994,6 +1220,7 @@
 
   window.HubHigherApprovals = {
     KEY,
+    API,
     STATUS,
     STATUS_AR,
     TYPE_AR,
@@ -1009,6 +1236,7 @@
       ingestExternal();
       return state;
     },
+    hydrateFromServer,
     getState: () => state,
     list,
     listDecisions: () => state.decisions.slice(),
@@ -1023,6 +1251,7 @@
     approve,
     reject,
     requestRevision,
+    refer,
     resubmit,
     ingestExternal,
     roleLabel,
@@ -1031,4 +1260,15 @@
   };
 
   ingestExternal();
+  // Best-effort durable hydrate shortly after boot (staff session may arrive after scripts).
+  try {
+    const schedule = typeof setTimeout === 'function' ? setTimeout : null;
+    if (schedule) {
+      schedule(() => {
+        try {
+          void hydrateFromServer({ force: true, backfill: true });
+        } catch (_) {}
+      }, 400);
+    }
+  } catch (_) {}
 })();

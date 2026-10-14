@@ -35,6 +35,7 @@ const hubMarketingCampaigns = require('./lib/hub-marketing-campaigns');
 const hubTasks = require('./lib/hub-tasks');
 const hubEvents = require('./lib/hub-events');
 const hubArticles = require('./lib/hub-articles');
+const hubHigherApprovals = require('./lib/hub-higher-approvals');
 
 const PORT = Number(process.env.PORT) > 0 ? Number(process.env.PORT) : 8080;
 const HOST = '0.0.0.0';
@@ -307,6 +308,15 @@ async function requireHubAuthOrReject(req, res) {
 async function handleHubApi(req, res, pathname) {
   if (req.method === 'OPTIONS') {
     sendJson(res, 204, {});
+    return true;
+  }
+
+  if (pathname.startsWith('/api/hub/higher-approvals')) {
+    await hubHigherApprovals.handleApi(req, res, pathname, {
+      sendJson,
+      readBody,
+      requireStaff: requireHubStaffOrReject,
+    });
     return true;
   }
 
@@ -1287,24 +1297,34 @@ async function handleHubApi(req, res, pathname) {
       sendJson(res, 400, { ok: false, error: 'النطاق الفرعي غير صالح' });
       return true;
     }
-    const { request, uploadToken } = hubRegisterAttachments.createRegisterRequest({
-      ...body,
-      adminName,
-      adminPhone,
-      adminEmail,
-      adminPassword,
-      subdomain,
-      slug: subdomain,
-      host: body?.host || `${subdomain}.naiosh.app`,
-    });
-    sendJson(res, 201, {
-      ok: true,
-      requestId: request.id,
-      status: request.status,
-      statusLabel: request.statusLabel,
-      uploadToken,
-      request: hubRegisterAttachments.publicRequest(request),
-    });
+    try {
+      const { request, uploadToken, approval, deduped } = await hubRegisterAttachments.createRegisterRequest({
+        ...body,
+        adminName,
+        adminPhone,
+        adminEmail,
+        adminPassword,
+        subdomain,
+        slug: subdomain,
+        host: body?.host || `${subdomain}.naiosh.app`,
+      });
+      sendJson(res, deduped ? 200 : 201, {
+        ok: true,
+        requestId: request.id,
+        status: request.status,
+        statusLabel: request.statusLabel,
+        uploadToken,
+        approvalId: approval?.id || request.approvalId || '',
+        approval: approval || null,
+        request: hubRegisterAttachments.publicRequest(request),
+      });
+    } catch (err) {
+      sendJson(res, err.status || 500, {
+        ok: false,
+        error: err.message || 'تعذر إنشاء طلب التسجيل',
+        code: err.code || 'REGISTER_FAILED',
+      });
+    }
     return true;
   }
 
@@ -1453,7 +1473,7 @@ async function handleHubApi(req, res, pathname) {
     const session = hubSession.resolveSession(req);
     const authed = session.ok ? session : null;
     try {
-      const result = systemRentals.createRental({
+      const result = await systemRentals.createRental({
         session: authed,
         contact: body?.owner || body?.contact || {
           name: body?.adminName || body?.rental?.adminName,
@@ -1524,6 +1544,10 @@ async function handleHubApi(req, res, pathname) {
   }
 
   const platformGrantsPath = path.join(ROOT, 'data', 'platform-grants.json');
+  const PLATFORM_GRANTS_META_KEY = 'platform_grants_v1';
+  let platformGrantsMem = null;
+  let platformGrantsHydrated = false;
+  let platformGrantsDbQueue = Promise.resolve();
   const ensurePlatformGrantsFile = () => {
     const dir = path.dirname(platformGrantsPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -1532,36 +1556,94 @@ async function handleHubApi(req, res, pathname) {
     }
   };
   const readPlatformGrantsFile = () => {
+    if (platformGrantsMem) return platformGrantsMem;
     ensurePlatformGrantsFile();
     try {
-      return JSON.parse(fs.readFileSync(platformGrantsPath, 'utf8'));
+      platformGrantsMem = JSON.parse(fs.readFileSync(platformGrantsPath, 'utf8'));
+      return platformGrantsMem;
     } catch {
-      return { version: 1, grants: [] };
+      platformGrantsMem = { version: 1, grants: [] };
+      return platformGrantsMem;
     }
+  };
+  const persistPlatformGrantsToDb = (state) => {
+    platformGrantsDbQueue = platformGrantsDbQueue
+      .then(async () => {
+        try {
+          if (!getDatabaseUrl()) return;
+          const { withClient } = require('./db/migrate');
+          const payload = {
+            version: state.version || 1,
+            updatedAt: state.updatedAt || new Date().toISOString(),
+            grants: Array.isArray(state.grants) ? state.grants.slice(0, 2000) : [],
+          };
+          await withClient(async (client) => {
+            await client.query(
+              `INSERT INTO hub_meta (key, value, updated_at)
+               VALUES ($1, $2::jsonb, NOW())
+               ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+              [PLATFORM_GRANTS_META_KEY, JSON.stringify(payload)]
+            );
+          });
+        } catch (err) {
+          console.warn('[platform-grants] db persist failed:', err.message);
+        }
+      })
+      .catch(() => {});
+    return platformGrantsDbQueue;
   };
   const writePlatformGrantsFile = (state) => {
     ensurePlatformGrantsFile();
-    fs.writeFileSync(
-      platformGrantsPath,
-      JSON.stringify({ ...state, updatedAt: new Date().toISOString() }, null, 2),
-      'utf8'
-    );
+    const next = { ...state, updatedAt: new Date().toISOString() };
+    fs.writeFileSync(platformGrantsPath, JSON.stringify(next, null, 2), 'utf8');
+    platformGrantsMem = next;
+    persistPlatformGrantsToDb(next);
+    return next;
+  };
+  const hydratePlatformGrantsFromDb = async () => {
+    if (platformGrantsHydrated) return readPlatformGrantsFile();
+    platformGrantsHydrated = true;
+    const fileState = readPlatformGrantsFile();
+    if (!getDatabaseUrl()) return fileState;
+    try {
+      const { withClient } = require('./db/migrate');
+      const fromDb = await withClient(async (client) => {
+        const r = await client.query(`SELECT value FROM hub_meta WHERE key = $1 LIMIT 1`, [PLATFORM_GRANTS_META_KEY]);
+        return r.rows[0]?.value || null;
+      });
+      if (!fromDb) {
+        await persistPlatformGrantsToDb(fileState);
+        return fileState;
+      }
+      const parsed = typeof fromDb === 'string' ? JSON.parse(fromDb) : fromDb;
+      const dbGrants = Array.isArray(parsed.grants) ? parsed.grants : [];
+      const fileGrants = Array.isArray(fileState.grants) ? fileState.grants : [];
+      if (dbGrants.length >= fileGrants.length) {
+        return writePlatformGrantsFile({ version: 1, grants: dbGrants, updatedAt: parsed.updatedAt });
+      }
+      await persistPlatformGrantsToDb(fileState);
+      return fileState;
+    } catch (err) {
+      console.warn('[platform-grants] hydrate failed:', err.message);
+      return fileState;
+    }
   };
 
   if (pathname === '/api/hub/platform-grants' && req.method === 'GET') {
-    const state = readPlatformGrantsFile();
+    const state = await hydratePlatformGrantsFromDb();
     sendJson(res, 200, { ok: true, state });
     return true;
   }
 
   if (pathname === '/api/hub/platform-grants' && req.method === 'POST') {
-    if (!requireHubStaffOrReject(req, res)) return true;
+    if (!(await requireHubStaffOrReject(req, res))) return true;
     const body = await readBody(req);
     const state = {
       version: 1,
       grants: Array.isArray(body?.grants) ? body.grants : [],
     };
     writePlatformGrantsFile(state);
+    await platformGrantsDbQueue;
     sendJson(res, 200, { ok: true, count: state.grants.length });
     return true;
   }
@@ -2635,6 +2717,17 @@ async function boot() {
       console.error('DB migrate failed:', error.message);
     }
   }
+
+    try {
+      const haHyd = await hubHigherApprovals.hydrateFromDb();
+      if (haHyd?.ok) {
+        console.log(`hub_higher_approvals hydrated (${haHyd.count || haHyd.store?.requests?.length || 0} from ${haHyd.source || 'file'})`);
+        const backfill = await hubHigherApprovals.backfillOrphans();
+        if (backfill.created) console.log(`hub_higher_approvals backfill created ${backfill.created} orphan inbox rows`);
+      }
+    } catch (error) {
+      console.error('hub_higher_approvals hydrate skipped:', error.message);
+    }
 
     try {
       const hyd = await productOrders.hydrateFromDb();

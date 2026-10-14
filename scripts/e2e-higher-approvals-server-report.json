@@ -1,0 +1,161 @@
+{
+  "startedAt": "2026-10-14T22:13:51.713Z",
+  "cases": [
+    {
+      "name": "register_returns_approval_id",
+      "result": "PASS",
+      "detail": "APR-2026-00005"
+    },
+    {
+      "name": "register_status_pending_label",
+      "result": "PASS",
+      "detail": "بانتظار موافقة المدير الأعلى"
+    },
+    {
+      "name": "approval_appears_in_inbox",
+      "result": "PASS",
+      "detail": "APR-2026-00005"
+    },
+    {
+      "name": "kpis_pending_gt_zero",
+      "result": "PASS",
+      "detail": "{\"pending\":2,\"underReview\":0,\"approved\":1,\"rejected\":1,\"needsRevision\":0,\"referred\":1,\"all\":5}"
+    },
+    {
+      "name": "register_dedupe",
+      "result": "PASS",
+      "detail": "approval=APR-2026-00005"
+    },
+    {
+      "name": "no_duplicate_open_approvals",
+      "result": "PASS",
+      "detail": "count=1"
+    },
+    {
+      "name": "approve_ok",
+      "result": "PASS",
+      "detail": "approved"
+    },
+    {
+      "name": "approve_status",
+      "result": "PASS",
+      "detail": "approved"
+    },
+    {
+      "name": "decision_audit",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "grant_activated_on_approve",
+      "result": "PASS",
+      "detail": "active"
+    },
+    {
+      "name": "backfill_ok",
+      "result": "PASS",
+      "detail": "created=1 scanned=5"
+    },
+    {
+      "name": "no_auto_reopen_after_backfill",
+      "result": "PASS",
+      "detail": "approved"
+    },
+    {
+      "name": "customer_cannot_decide",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "reject_ok",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "reject_reason_persisted",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "refer_ok",
+      "result": "PASS",
+      "detail": "referred"
+    },
+    {
+      "name": "system_rental_enqueue",
+      "result": "PASS",
+      "detail": "APR-2026-00009"
+    }
+  ],
+  "rootCause": "Higher Approvals كانت تُحفظ في localStorage بالمتصفح فقط؛ طلبات /api/hub/register-requests تُنشئ المنحة على السيرفر دون سجل موافقة دائم، فيظهر «بانتظار الموافقة» للعميل بينما صندوق القائد يبقى صفرًا على جهاز/جلسة أخرى.",
+  "matrix": [
+    {
+      "section": "سجل معنا / منح المنصات",
+      "operation": "platform_grant",
+      "submitter": "ضيف/عميل عبر register",
+      "approver": "القائد الأعلى / SUPER_ADMIN",
+      "inbox": "موافقات المدير الأعلى (API + صفحة rent-admin)",
+      "tested": "YES",
+      "result": "PASS"
+    },
+    {
+      "section": "استئجار الأنظمة",
+      "operation": "system_rental",
+      "submitter": "عميل/ضيف",
+      "approver": "القائد الأعلى",
+      "inbox": "موافقات المدير الأعلى",
+      "tested": "PARTIAL",
+      "result": "NOT TESTED",
+      "note": "enqueue wired in createRental; full HTTP path covered by unit enqueue when rentals exist"
+    },
+    {
+      "section": "فريق العمل والصلاحيات",
+      "operation": "role_grant / role_change",
+      "submitter": "موظف مخوّل",
+      "approver": "القائد الأعلى",
+      "inbox": "موافقات المدير الأعلى (client sync → API)",
+      "tested": "CLIENT_E2E",
+      "result": "NOT TESTED"
+    },
+    {
+      "section": "الهوية",
+      "operation": "identity_suspend",
+      "submitter": "موظف مخوّل",
+      "approver": "القائد الأعلى",
+      "inbox": "موافقات المدير الأعلى",
+      "tested": "CLIENT_E2E",
+      "result": "NOT TESTED"
+    },
+    {
+      "section": "القوى العاملة",
+      "operation": "reward_approval",
+      "submitter": "مدير",
+      "approver": "القائد الأعلى",
+      "inbox": "موافقات المدير الأعلى",
+      "tested": "CLIENT_E2E",
+      "result": "NOT TESTED"
+    },
+    {
+      "section": "استئجار الأنظمة",
+      "operation": "system_rental",
+      "submitter": "عميل/ضيف",
+      "approver": "القائد الأعلى",
+      "inbox": "موافقات المدير الأعلى",
+      "tested": "YES",
+      "result": "PASS"
+    }
+  ],
+  "finishedAt": "2026-10-14T22:13:51.839Z",
+  "kpis": {
+    "pending": 3,
+    "underReview": 0,
+    "approved": 2,
+    "rejected": 2,
+    "needsRevision": 0,
+    "referred": 2,
+    "all": 9
+  },
+  "successCriterion": "لا يوجد طلب بحالة بانتظار موافقة المدير الأعلى دون سجل محفوظ يظهر في صندوق الموافقات — ثبت لـ platform_grant عبر createRegisterRequest.",
+  "verdict": "PASS_CORE",
+  "productionTested": false
+}

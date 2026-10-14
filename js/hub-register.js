@@ -508,10 +508,12 @@
         attachments = await uploadAll(requestId, uploadToken);
       }
 
-      // 2) مرآة محلية لمسار الموافقة الحالي (لوحة الإدارة / موافقات المدير الأعلى)
+      // 2) مرآة محلية — approvalId من السيرفر يربط صندوق موافقات المدير الأعلى المركزي
       const localRes = grants().submitRequest({
         ...payload,
         id: requestId,
+        approvalId: created.approvalId || created.approval?.id || '',
+        statusLabel: created.statusLabel || 'بانتظار موافقة المدير الأعلى',
         attachments: attachments.map((a) => ({
           id: a.id,
           category: a.category,
@@ -537,10 +539,11 @@
       }
 
       const localOk = localRes?.ok !== false;
+      const aprId = created.approvalId || created.approval?.id || localRes?.approval?.id || '';
       toast(
         `<div class="hub-reg-success-box">تم إرسال طلب التسجيل بنجاح.<br/>رقم الطلب: <code dir="ltr">${esc(
           requestId
-        )}</code><br/>حالة الطلب: بانتظار المراجعة${
+        )}</code>${aprId ? `<br/>رقم الموافقة: <code dir="ltr">${esc(aprId)}</code>` : ''}<br/>حالة الطلب: بانتظار موافقة المدير الأعلى${
           attachments.length ? `<br/>المرفقات: ${attachments.length}` : ''
         }${localOk ? '' : '<br/><small>تم الحفظ على السيرفر — حدّث لوحة الإدارة إن لزم.</small>'}</div>`,
         true
