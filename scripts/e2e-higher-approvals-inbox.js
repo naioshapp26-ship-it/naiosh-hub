@@ -62,7 +62,26 @@ function makeCtx() {
         json: async () => ({ ok: true, requests: serverStore.requests, decisions: serverStore.decisions }),
       };
     }
-    if (u.includes('/decide') || u.includes('/backfill')) {
+    if (u.includes('/decide') && method === 'POST') {
+      const id = decodeURIComponent(u.split('/higher-approvals/')[1]?.split('/')[0] || '');
+      const body = JSON.parse(opts.body || '{}');
+      const row = serverStore.requests.find((r) => r.id === id);
+      if (row) {
+        if (body.action === 'approve') row.status = 'approved';
+        else if (body.action === 'reject') {
+          row.status = 'rejected';
+          row.rejectReason = body.reason || body.note || '';
+        } else if (body.action === 'revise' || body.action === 'needs_revision') {
+          row.status = 'needs_revision';
+          row.revisionNote = body.note || body.reason || '';
+        } else if (body.action === 'refer') row.status = 'referred';
+        else if (body.action === 'start_review') row.status = 'under_review';
+        row.updatedAt = new Date().toISOString();
+        row.decidedAt = row.updatedAt;
+      }
+      return { ok: true, status: 200, json: async () => ({ ok: true, request: row || null }) };
+    }
+    if (u.includes('/backfill')) {
       return { ok: true, status: 200, json: async () => ({ ok: true }) };
     }
     return { ok: false, status: 404, json: async () => ({ ok: false }) };
@@ -233,7 +252,7 @@ async function main() {
   assert.ok(t1.sourceModuleLabel && /فريق العمل|صلاحيات/.test(t1.sourceModuleLabel), 'source label');
   assert.ok(/صلاحيات|دور|موظف/.test(t1.operationLabel), 'operation label');
   assert.notStrictEqual(t1._localOnly, true, 'role ticket must be durable');
-  const a1 = HA.approve(t1.id, boss);
+  const a1 = await HA.approve(t1.id, boss);
   assert.ok(a1.ok, a1.error);
   const afterGrants = (S.get().grants || []).filter(
     (g) => g.naioshId === emp.naioshId && g.roleCode === 'HUB_ADMIN' && g.status !== 'revoked'
@@ -281,7 +300,7 @@ async function main() {
   const appeared2 = !!HA.get(t2.id);
   assert.ok(/منصات|سجل/.test(t2.sourceModuleLabel), t2.sourceModuleLabel);
   assert.strictEqual(PG.getGrant?.(grant.id)?.status || PG.listGrants?.().find((g) => g.id === grant.id)?.status, 'pending');
-  const r2 = HA.reject(t2.id, 'بيانات المنصة غير مكتملة', boss);
+  const r2 = await HA.reject(t2.id, 'بيانات المنصة غير مكتملة', boss);
   assert.ok(r2.ok, r2.error);
   const grantAfter = PG.listGrants().find((g) => g.id === grant.id);
   push({
@@ -314,11 +333,11 @@ async function main() {
   assert.ok(t3, 'reward must create HA ticket');
   assert.strictEqual(t3.sourceModule, 'workforce', `sourceModule=${t3.sourceModule} label=${t3.sourceModuleLabel}`);
   assert.ok(t3.operationLabel, 'operation label present');
-  const revise = HA.requestRevision(t3.id, 'وضح قيمة المكافأة والمبرر المالي', boss);
+  const revise = await HA.requestRevision(t3.id, 'وضح قيمة المكافأة والمبرر المالي', boss);
   assert.ok(revise.ok, revise.error);
   assert.strictEqual(HA.get(t3.id).status, 'needs_revision');
   HA.resubmit(t3.id, { reason: 'مكافأة أداء ربع سنوي — قيمة معتمدة 500' }, staff);
-  const a3 = HA.approve(t3.id, boss);
+  const a3 = await HA.approve(t3.id, boss);
   assert.ok(a3.ok, a3.error);
   const rewardAfter = ctx.window.__rewards.find((x) => x.id === reward.id);
   push({
@@ -342,7 +361,7 @@ async function main() {
     staff
   );
   const beforeSus = E.findIdentity(emp.naioshId)?.status;
-  const rej4 = HA.reject(t4.id, 'لا مبرر كافٍ للإيقاف', boss);
+  const rej4 = await HA.reject(t4.id, 'لا مبرر كافٍ للإيقاف', boss);
   const afterSus = E.findIdentity(emp.naioshId)?.status;
   push({
     source: 'هوية نايوش',

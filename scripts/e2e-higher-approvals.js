@@ -73,7 +73,23 @@ const mockFetch = async (url, opts = {}) => {
     };
   }
   if (u.includes('/decide') && method === 'POST') {
-    return { ok: true, status: 200, json: async () => ({ ok: true }) };
+    const id = decodeURIComponent(u.split('/higher-approvals/')[1]?.split('/')[0] || '');
+    const body = JSON.parse(opts.body || '{}');
+    const row = serverStore.requests.find((r) => r.id === id);
+    if (row) {
+      if (body.action === 'approve') row.status = 'approved';
+      else if (body.action === 'reject') {
+        row.status = 'rejected';
+        row.rejectReason = body.reason || body.note || '';
+      } else if (body.action === 'revise' || body.action === 'needs_revision') {
+        row.status = 'needs_revision';
+        row.revisionNote = body.note || body.reason || '';
+      } else if (body.action === 'refer') row.status = 'referred';
+      else if (body.action === 'start_review') row.status = 'under_review';
+      row.updatedAt = new Date().toISOString();
+      row.decidedAt = row.updatedAt;
+    }
+    return { ok: true, status: 200, json: async () => ({ ok: true, request: row || null }) };
   }
   if (u.includes('/backfill')) {
     return { ok: true, status: 200, json: async () => ({ ok: true, created: 0 }) };
@@ -189,7 +205,11 @@ const push = (n, ok, d) => tests.push({ n, ok: !!ok, d: d == null ? '' : String(
   push('T3-has-compare', !!(ticket.currentDisplay && ticket.requestedDisplay));
   push('T3-has-reason', ticket.reason.includes('إدارية'));
 
-  const apr = HA.approve(ticket.id, actorBoss, 'موافقة E2E');
+  push('T4-admin-cannot-decide', HA.canDecide({ name: 'مشرف', role: 'admin', employeeNo: 'EMP-0099' }) === false);
+  const deniedAdmin = await HA.approve(ticket.id, { name: 'مشرف', role: 'admin', employeeNo: 'EMP-0099' }, 'bypass');
+  push('T4-admin-approve-blocked', deniedAdmin.ok === false);
+
+  const apr = await HA.approve(ticket.id, actorBoss, 'موافقة E2E');
   push('T4-approve-ok', apr.ok === true, apr.error || '');
   push('T4-status-approved', HA.get(ticket.id)?.status === HA.STATUS.APPROVED);
   push(
@@ -215,9 +235,9 @@ const push = (n, ok, d) => tests.push({ n, ok: !!ok, d: d == null ? '' : String(
     },
     actorStaff
   );
-  const rej = HA.reject(ticket2.id, '', actorBoss);
+  const rej = await HA.reject(ticket2.id, '', actorBoss);
   push('T5-reject-requires-reason', rej.ok === false);
-  const rej2 = HA.reject(ticket2.id, 'الصلاحيات أعلى من المطلوب', actorBoss);
+  const rej2 = await HA.reject(ticket2.id, 'الصلاحيات أعلى من المطلوب', actorBoss);
   push('T5-reject-ok', rej2.ok === true, rej2.error || '');
   push(
     'T5-not-applied',
@@ -240,7 +260,7 @@ const push = (n, ok, d) => tests.push({ n, ok: !!ok, d: d == null ? '' : String(
     },
     actorStaff
   );
-  const rev = HA.requestRevision(ticket3.id, 'قلّل الصلاحيات وأعد الإرسال', actorBoss);
+  const rev = await HA.requestRevision(ticket3.id, 'قلّل الصلاحيات وأعد الإرسال', actorBoss);
   push('T6-revise-ok', rev.ok === true);
   push('T6-status-needs', HA.get(ticket3.id)?.status === HA.STATUS.NEEDS_REVISION);
   const resub = HA.resubmit(

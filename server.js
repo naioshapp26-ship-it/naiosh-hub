@@ -146,6 +146,19 @@ function serveStatic(req, res) {
   let pathname = new URL(req.url, 'http://localhost').pathname;
   if (pathname === '/') pathname = '/index.html';
 
+  // Never expose on-disk ledgers / secrets via static HTTP (higher-approvals, grants, auth dumps).
+  const lowerPath = pathname.toLowerCase();
+  if (
+    lowerPath === '/data' ||
+    lowerPath.startsWith('/data/') ||
+    lowerPath === '/var' ||
+    lowerPath.startsWith('/var/') ||
+    lowerPath.startsWith('/.env') ||
+    lowerPath.includes('/node_modules/')
+  ) {
+    return send(res, 403, 'Forbidden');
+  }
+
   const filePath = resolveSafePath(pathname);
   if (!filePath) {
     return send(res, 403, 'Forbidden');

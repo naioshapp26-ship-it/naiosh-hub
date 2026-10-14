@@ -115,7 +115,7 @@ async function main() {
   const stillOneApproved = ha.list().filter((r) => r.sourceId === created.request.id);
   mark('no_auto_reopen_after_backfill', stillOneApproved.every((r) => r.status === 'approved'), stillOneApproved.map((r) => r.status).join(','));
 
-  // 5) Customer cannot decide
+  // 5) Customer / everyday admin cannot decide
   let denied = false;
   try {
     await ha.decide(created.approval.id, 'reject', { name: 'عميل', role: 'customer', email: created.request.adminEmail }, { reason: 'x' });
@@ -123,6 +123,23 @@ async function main() {
     denied = e.status === 403 || /صلاحية/.test(e.message);
   }
   mark('customer_cannot_decide', denied);
+  let adminDenied = false;
+  try {
+    await ha.decide(created.approval.id, 'approve', { name: 'مشرف يومي', role: 'admin', email: 'admin-daily@example.com', employeeNo: 'EMP-0100' }, {
+      note: 'bypass',
+    });
+  } catch (e) {
+    adminDenied = e.status === 403 || /صلاحية/.test(e.message);
+  }
+  mark('admin_cannot_decide', adminDenied);
+  mark('data_path_blocked_in_code', (() => {
+    try {
+      const src = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
+      return /startsWith\('\/data\/'\)|pathname\.startsWith\('\/data\/'\)|lowerPath\.startsWith\('\/data\/'\)/.test(src);
+    } catch {
+      return false;
+    }
+  })());
 
   // 6) Fresh pending + reject path
   const slug2 = `ha-e2e-r-${Date.now().toString(36)}`;

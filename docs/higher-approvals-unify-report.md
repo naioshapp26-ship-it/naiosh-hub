@@ -1,6 +1,6 @@
 # تقرير توحيد موافقات المدير الأعلى
 
-تاريخ: 2026-10-14T23:05:28.919Z
+تاريخ: 2026-10-14T23:24:46.527Z
 
 ## السبب الجذري
 
@@ -18,27 +18,29 @@ Higher Approvals كانت تُحفظ في localStorage بالمتصفح فقط؛
 
 | الاختبار | النتيجة | تفاصيل |
 |---|---|---|
-| register_returns_approval_id | PASS | APR-2026-00025 |
+| register_returns_approval_id | PASS | APR-2026-00032 |
 | register_status_pending_label | PASS | بانتظار موافقة المدير الأعلى |
-| approval_appears_in_inbox | PASS | APR-2026-00025 |
-| kpis_pending_gt_zero | PASS | {"pending":12,"underReview":0,"approved":4,"rejected":5,"needsRevision":0,"referred":4,"all":25} |
-| register_dedupe | PASS | approval=APR-2026-00025 |
+| approval_appears_in_inbox | PASS | APR-2026-00032 |
+| kpis_pending_gt_zero | PASS | {"pending":16,"underReview":0,"approved":5,"rejected":6,"needsRevision":0,"referred":5,"all":32} |
+| register_dedupe | PASS | approval=APR-2026-00032 |
 | no_duplicate_open_approvals | PASS | count=1 |
 | approve_ok | PASS | approved |
 | approve_status | PASS | approved |
 | decision_audit | PASS |  |
 | grant_activated_on_approve | PASS | active |
-| backfill_ok | PASS | created=0 scanned=29 |
+| backfill_ok | PASS | created=0 scanned=33 |
 | no_auto_reopen_after_backfill | PASS | approved |
 | customer_cannot_decide | PASS |  |
+| admin_cannot_decide | PASS |  |
+| data_path_blocked_in_code | PASS |  |
 | reject_ok | PASS | rejected |
 | reject_reason_persisted | PASS |  |
 | refer_ok | PASS | referred |
-| role_grant_durable | PASS | APR-2026-00028 |
+| role_grant_durable | PASS | APR-2026-00035 |
 | role_grant_in_inbox | PASS |  |
-| identity_suspend_durable | PASS | APR-2026-00029 |
-| reward_approval_durable | PASS | APR-2026-00030 |
-| system_rental_enqueue | PASS | APR-2026-00031 |
+| identity_suspend_durable | PASS | APR-2026-00036 |
+| reward_approval_durable | PASS | APR-2026-00037 |
+| system_rental_enqueue | PASS | APR-2026-00038 |
 
 ## مصفوفة أنواع الموافقات
 

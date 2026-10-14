@@ -1,6 +1,6 @@
 {
-  "at": "2026-10-14T23:04:43.018Z",
-  "passed": 33,
+  "at": "2026-10-14T23:24:45.066Z",
+  "passed": 35,
   "failed": 0,
   "tests": [
     {
@@ -55,6 +55,16 @@
     },
     {
       "n": "T3-has-reason",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T4-admin-cannot-decide",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T4-admin-approve-blocked",
       "ok": true,
       "d": ""
     },

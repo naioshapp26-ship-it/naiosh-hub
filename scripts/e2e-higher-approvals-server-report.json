@@ -1,10 +1,10 @@
 {
-  "startedAt": "2026-10-14T23:05:28.345Z",
+  "startedAt": "2026-10-14T23:24:45.885Z",
   "cases": [
     {
       "name": "register_returns_approval_id",
       "result": "PASS",
-      "detail": "APR-2026-00025"
+      "detail": "APR-2026-00032"
     },
     {
       "name": "register_status_pending_label",
@@ -14,17 +14,17 @@
     {
       "name": "approval_appears_in_inbox",
       "result": "PASS",
-      "detail": "APR-2026-00025"
+      "detail": "APR-2026-00032"
     },
     {
       "name": "kpis_pending_gt_zero",
       "result": "PASS",
-      "detail": "{\"pending\":12,\"underReview\":0,\"approved\":4,\"rejected\":5,\"needsRevision\":0,\"referred\":4,\"all\":25}"
+      "detail": "{\"pending\":16,\"underReview\":0,\"approved\":5,\"rejected\":6,\"needsRevision\":0,\"referred\":5,\"all\":32}"
     },
     {
       "name": "register_dedupe",
       "result": "PASS",
-      "detail": "approval=APR-2026-00025"
+      "detail": "approval=APR-2026-00032"
     },
     {
       "name": "no_duplicate_open_approvals",
@@ -54,7 +54,7 @@
     {
       "name": "backfill_ok",
       "result": "PASS",
-      "detail": "created=0 scanned=29"
+      "detail": "created=0 scanned=33"
     },
     {
       "name": "no_auto_reopen_after_backfill",
@@ -63,6 +63,16 @@
     },
     {
       "name": "customer_cannot_decide",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "admin_cannot_decide",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "data_path_blocked_in_code",
       "result": "PASS",
       "detail": ""
     },
@@ -84,7 +94,7 @@
     {
       "name": "role_grant_durable",
       "result": "PASS",
-      "detail": "APR-2026-00028"
+      "detail": "APR-2026-00035"
     },
     {
       "name": "role_grant_in_inbox",
@@ -94,17 +104,17 @@
     {
       "name": "identity_suspend_durable",
       "result": "PASS",
-      "detail": "APR-2026-00029"
+      "detail": "APR-2026-00036"
     },
     {
       "name": "reward_approval_durable",
       "result": "PASS",
-      "detail": "APR-2026-00030"
+      "detail": "APR-2026-00037"
     },
     {
       "name": "system_rental_enqueue",
       "result": "PASS",
-      "detail": "APR-2026-00031"
+      "detail": "APR-2026-00038"
     }
   ],
   "rootCause": "Higher Approvals كانت تُحفظ في localStorage بالمتصفح فقط؛ طلبات /api/hub/register-requests تُنشئ المنحة على السيرفر دون سجل موافقة دائم، فيظهر «بانتظار الموافقة» للعميل بينما صندوق القائد يبقى صفرًا على جهاز/جلسة أخرى.",
@@ -201,15 +211,15 @@
       "result": "PASS"
     }
   ],
-  "finishedAt": "2026-10-14T23:05:28.919Z",
+  "finishedAt": "2026-10-14T23:24:46.527Z",
   "kpis": {
-    "pending": 15,
+    "pending": 19,
     "underReview": 0,
-    "approved": 5,
-    "rejected": 6,
+    "approved": 6,
+    "rejected": 7,
     "needsRevision": 0,
-    "referred": 5,
-    "all": 31
+    "referred": 6,
+    "all": 38
   },
   "successCriterion": "لا يوجد طلب بحالة بانتظار موافقة المدير الأعلى دون سجل محفوظ يظهر في صندوق الموافقات — ثبت لـ platform_grant عبر createRegisterRequest.",
   "verdict": "PASS_CORE",
