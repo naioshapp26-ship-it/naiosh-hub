@@ -93,7 +93,7 @@
     logo.href = `${prefix}index.html`;
     logo.title = 'الصفحة الرئيسية — صفحة الهبوط';
     logo.setAttribute('aria-label', 'نايوش هوب — الصفحة الرئيسية');
-    logo.innerHTML = `<img src="${prefix}assets/hub-icon-192.png" alt="نايوش هوب" />`;
+    logo.innerHTML = `<img src="${prefix}assets/hub-icon-192.png?v=official1" alt="نايوش هوب" />`;
     wrap.appendChild(logo);
     return wrap;
   };

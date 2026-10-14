@@ -5,13 +5,14 @@
  * Cache name is Hub-specific (never nais-shell-*).
  */
 
-const CACHE_NAME = 'hub-shell-v5';
+const CACHE_NAME = 'hub-shell-v6-official1';
 
 const SHELL_URLS = [
   '/',
   '/index.html',
-  '/hub-icon-192.png',
-  '/hub-icon-512.png',
+  '/hub-icon-192.png?v=official1',
+  '/hub-icon-512.png?v=official1',
+  '/assets/logo-hub.jpeg?v=official1',
 ];
 
 self.addEventListener('install', (event) => {

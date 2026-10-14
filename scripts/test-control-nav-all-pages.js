@@ -51,7 +51,7 @@ assert(
 assert(rolesNav.includes('لوحة التحكم'), 'roles page must show لوحة التحكم in markup');
 assert(rolesNav.includes('href="dashboard.html"'), 'roles page must link dashboard');
 assert(rolesNav.includes('href="index.html"'), 'roles page logo must link landing');
-assert(rolesNav.includes('assets/logo-hub.jpeg'), 'roles page must include small logo');
+assert(rolesNav.includes('assets/logo-hub.jpeg?v=official1'), 'roles page must include small logo');
 const divs = countTags(rolesNav, 'div');
 assert.strictEqual(
   divs.open,
