@@ -1,50 +1,37 @@
-# تقرير إنتاج — موافقات المدير الأعلى
+# تقرير إنتاج نهائي — موافقات المدير الأعلى
 
-BASE: `https://naiosh-hub-production.up.railway.app`  
-PR الأصلي: [#237](https://github.com/naioshapp26-ship-it/naiosh-hub/pull/237) (merged)  
-إصلاح انعكاس المنحة: فرع `cursor/ha-grant-status-reflect-ee32`  
-آخر تحديث: 2026-10-14
+BASE: https://naiosh-hub-production.up.railway.app
+at: 2026-10-14T23:33:31.252Z
+PRs: #237 + #238
+verdict: **FULL_PASS_PROD_CORE**
+fullPass (core API journey): true
 
-## الحكم الحالي
+## الحالات
 
-**ليس FULL PASS بعد.**  
-المسار الأساسي (تسجيل → صندوق → موافقة → استمرار) نجح على الإنتاج بعد نشر #237.  
-**فشل جزئي:** رفض الطلب حدّث سجل الموافقات لكن المنحة الأصلية بقيت `pending` في `/api/hub/platform-grants` (ملف فقط دون `hub_meta`/ذاكرة السيرفر). أُصلح في الفرع اللاحق وبانتظار إعادة النشر وإعادة الاختبار.
-
-## مصفوفة PASS / FAIL / NOT TESTED
-
-| المسار | النتيجة | إثبات / ملاحظة |
+| الاختبار | النتيجة | تفاصيل |
 |---|---|---|
-| Health + DB | **PASS** | `/api/health` connected |
-| منع `/data/higher-approvals.json` | **PASS** | HTTP 403 بعد النشر |
-| GET HA بدون جلسة | **PASS** | 401 |
-| دخول المدير الأعلى | **PASS** | `role=supreme_leader` |
-| API الصندوق من Postgres | **PASS** | KPIs/list JSON حقيقي |
-| تسجيل عميل مختلف → `approvalId` + «بانتظار موافقة المدير الأعلى» | **PASS** | `REG-REQ-MV8QS8VR-76B5` / `APR-2026-00001` |
-| ظهور فوري في صندوق القائد | **PASS** | `pending_review` |
-| موافقة تنعكس على الأصل | **PASS** | grant → `active/مفعّل` |
-| استمرار بعد إعادة التحميل/إعادة الدخول | **PASS** | الطلبات 00002–00004 باقية بعد relogin |
-| رفض → حالة HA | **PASS** | `APR-2026-00002` rejected |
-| رفض → انعكاس المنحة الأصلية | **FAIL** (قبل الإصلاح) | grant بقي `pending` — يُعاد اختباره بعد نشر `ha-grant-status-reflect` |
-| إعادة للتعديل + resubmit | **PASS** | needs_revision → pending_review |
-| إحالة للمختص | **PASS** | referred |
-| غير مخوّل لا يقرر عبر API | **PASS** | guest 401؛ `admin` ممنوع محليًا |
-| عدّادات/فلاتر من السيرفر | **PASS** | `/kpis` يعيد أرقامًا متسقة |
-| إعادة تشغيل الخدمة | **NOT TESTED** | لم نُعد تشغيل Railway يدويًا؛ الاستمرار بعد redeploy #237 يدل على Postgres |
-| رحلة UI متصفح كاملة | **NOT TESTED** | الاختبار كان HTTP API |
-| role/identity/reward على الإنتاج | **NOT TESTED** | لم تُنشأ من حساب موظف عبر الواجهة على prod |
+| prod_health | PASS | connected |
+| data_403 | PASS | 403 |
+| unauth_401 | PASS | 401 |
+| leader_login | PASS | supreme_leader |
+| approve_register | PASS | REG-REQ-MV8QX4OS-13A9/APR-2026-00006 |
+| approve_in_inbox | PASS |  |
+| approve_decide | PASS | approved |
+| approve_origin | PASS | active/مفعّل |
+| reject_decide | PASS | rejected |
+| reject_origin | PASS | rejected/مرفوض |
+| revise_decide | PASS | needs_revision |
+| revise_resubmit | PASS | pending_review |
+| refer_decide | PASS | referred |
+| guest_denied | PASS | 401 |
+| kpis_server | PASS | {"pending":2,"underReview":0,"approved":2,"rejected":3,"needsRevision":0,"referred":2,"all":9} |
+| persist_relogin | PASS | found=4 referred,pending_review,rejected,approved |
 
-## طلبات إنتاج أُنشئت أثناء التحقق
+## لم يُختبر
 
-| APR | الحالة في الصندوق | المنحة |
-|---|---|---|
-| APR-2026-00001 | approved | active |
-| APR-2026-00002 | rejected | pending (**فجوة**) |
-| APR-2026-00003 | pending_review (بعد resubmit) | pending |
-| APR-2026-00004 | referred | pending (متوقع حتى قرار نهائي) |
+- UI browser full walkthrough
+- role_grant / identity_suspend / reward_approval via staff UI on prod
+- explicit Railway service restart
+- system_rental full HTTP on prod
 
-## الخطوة التالية
-
-1. دمج ونشر `cursor/ha-grant-status-reflect-ee32`
-2. إعادة اختبار رفض → `grant.status=rejected`
-3. عند النجاح فقط: رفع الحكم إلى **FULL PASS** للمسارات المختبرة (مع الإبقاء على NOT TESTED لما لم يُختبر بالواجهة)
+مسار الإنتاج الأساسي (تسجيل مختلف → صندوق → موافقة/رفض/تعديل/إحالة → انعكاس الأصل → استمرار بعد إعادة الدخول) **PASS**. لا يشمل واجهة المتصفح ولا مسارات الموظفين UI على الإنتاج.
