@@ -1,53 +1,59 @@
 # تقرير استبدال الشعار الرسمي — NAIOSH HUB 360
 
 تاريخ: 2026-10-14  
-الفرع: `cursor/hub-official-logo-ee32`  
-الأصل المركزي: `assets/brand/naiosh-hub-360-official.jpg`  
-مسار التوافق: `assets/logo-hub.jpeg` / `assets/logo-hub.jpg` (نفس البايتات)  
-إصدار الكاش: `?v=official1` · Service Worker: `hub-shell-v6-official1`
+دمج: `main` · `6a629fc`  
+الأصل المركزي: `assets/brand/naiosh-hub-360-official.jpg` (بايتات الصورة المرفقة حرفيًا)  
+مسار التوافق: `assets/logo-hub.jpeg` / `assets/logo-hub.jpg`  
+إصدار الكاش: `?v=official1` · Service Worker: `hub-shell-v6-official1`  
+ثابت المسارات: `js/hub-brand.js`
 
 ## ما تمت مراجعته
 
 | الفئة | العدد |
 |---|---|
-| صفحات HTML في الجذر + `systems/` | 100 |
-| صفحات تحتوي هوية عامة (شعار/أيقونة) بعد التحديث | ~98 |
-| ملفات محدّثة بمسارات كاش الشعار | 103+ |
-| وحدات مشتركة (JS/lib/manifest/sw) | 8+ |
+| صفحات HTML (جذر + `systems/`) | **100** |
+| صفحات حُدّثت بهوية عامة / كاش شعار | **~98** (+ redirects بلا واجهة) |
+| ملفات في الـ commit | **124** |
+| عيّنة إنتاج مباشرة بعد النشر | **16/16 PASS** |
 
 ## أين استُبدل الشعار
 
-- جميع الصفحات التي كانت تستخدم `assets/logo-hub.jpeg|jpg` أو `hub-icon-192/512`
-- Header / Footer / Login / Register / Forgot password / Client / Dashboard sidebar icon
-- Packages / Studios / Branches / Store / Booking pages / systems/*
-- Favicon + Apple touch + PWA icons (`manifest.json`)
-- Defaults في `js/hub-settings-center.js` و`lib/hub-client-portal.js` وغيرها
+- Header / Footer / Login / Register / Forgot password / Client / Packages / Store / Services / Branches / Profile 360 / Studios / Systems / Checklist …
+- Favicon + Apple touch + PWA (`manifest.json` + `hub-icon-192/512`)
+- Defaults في `js/hub-settings-center.js` و`lib/hub-client-portal.js` ووحدات مشتركة
+- أيقونة الشريط الجانبي للإدارة (`dashboard.html` → `hub-icon-192` مشتق من الدرع)
 
-## استثناءات (مقصودة)
+## استثناءات
 
-| الصفحة / الأصل | السبب |
+| العنصر | السبب |
 |---|---|
-| `assets/logo-naiosh-ai.jpg` | شعار متخصص لنظام تحليل البيانات — لم يُمس |
-| `info-center.html` | تحويل فوري إلى `hub-checklist.html` (لا واجهة شعار) |
-| `events-studio-main.html` | تحويل فوري إلى `events.html` |
-| شعارات أنظمة/خدمات أخرى مستقلة | ليست الهوية العامة لنايوش هوب |
+| `assets/logo-naiosh-ai.jpg` | شعار متخصص «نظام تحليل البيانات» — محفوظ ومتحقق على الإنتاج |
+| `info-center.html` / `events-studio-main.html` | تحويل فوري بلا واجهة شعار |
+| لوحة الإدارة بعد تسجيل الدخول | **NOT TESTED** على الإنتاج (توجيه إلى login) — مسار الدخول والأيقونة الجديدة مؤكدان |
 
-## مصدر مركزي
-
-- `assets/brand/` + `assets/brand/README.md`
-- `js/hub-brand.js` — ثوابت المسارات وإصدار الكاش
-
-## اختبار الإنتاج (يُملأ بعد النشر)
+## نتائج اختبار الإنتاج
 
 | # | الاختبار | النتيجة |
 |---|---|---|
-| 1 | الشعار الجديد في الصفحات العامة | قيد الانتظار |
-| 2 | لا نسخة قديمة للهوية العامة | قيد الانتظار |
-| 3 | لا صور مكسورة | قيد الانتظار |
-| 4 | كمبيوتر / موبايل | قيد الانتظار |
-| 5 | فاتح / داكن | قيد الانتظار |
-| 6 | عدم تغيير توزيع الصفحات | قيد الانتظار |
-| 7 | روابط الشعار تعمل | قيد الانتظار |
-| 8 | كاش محدّث (`?v=official1`) | قيد الانتظار |
+| 1 | الشعار الجديد في الصفحات العامة (عيّنة 16 صفحة) | **PASS** |
+| 2 | لا مسار قديم بدون `?v=official1` في العيّنة | **PASS** |
+| 3 | أصل الشعار 155089 بايت · md5 مطابق للمرفق | **PASS** |
+| 4 | كمبيوتر / موبايل (الرئيسية) | **PASS** |
+| 5 | فاتح / داكن (الرئيسية) | **PASS** |
+| 6 | عدم تغيير توزيع الصفحات (تعديل حجم الشعار فقط) | **PASS** |
+| 7 | روابط الشعار → الرئيسية | **PASS** |
+| 8 | كاش `official1` + SW v6 | **PASS** |
+| — | لوحة الإدارة وهي مفتوحة بجلسة موظف | **NOT TESTED** |
 
-**لا FULL PASS قبل التحقق على الإنتاج.**
+شعار تحليل البيانات المتخصص ما زال ظاهرًا ومنفصلًا عن الهوية العامة.
+
+## لقطات
+
+- `/opt/cursor/artifacts/screenshots/logo-home-desktop-light.png`
+- `/opt/cursor/artifacts/screenshots/logo-home-desktop-dark.png`
+- `/opt/cursor/artifacts/screenshots/logo-home-mobile-light.png`
+- `/opt/cursor/artifacts/screenshots/logo-login-desktop.png`
+- `/opt/cursor/artifacts/screenshots/logo-client-desktop.png`
+- `/opt/cursor/artifacts/screenshots/logo-packages-desktop.png`
+
+**لا FULL PASS مطلق لكل صفحة جلسة موظفين** — التحقق الشامل للملفات تم محليًا؛ الإنتاج عُيّن على الصفحات العامة + العميل + الدخول. لوحة الإدارة داخل الجلسة تحتاج اختبارًا بعد تسجيل دخول موظف.
