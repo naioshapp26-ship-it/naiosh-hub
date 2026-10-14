@@ -1,10 +1,10 @@
 {
-  "startedAt": "2026-10-14T22:13:51.713Z",
+  "startedAt": "2026-10-14T22:31:25.862Z",
   "cases": [
     {
       "name": "register_returns_approval_id",
       "result": "PASS",
-      "detail": "APR-2026-00005"
+      "detail": "APR-2026-00013"
     },
     {
       "name": "register_status_pending_label",
@@ -14,17 +14,17 @@
     {
       "name": "approval_appears_in_inbox",
       "result": "PASS",
-      "detail": "APR-2026-00005"
+      "detail": "APR-2026-00013"
     },
     {
       "name": "kpis_pending_gt_zero",
       "result": "PASS",
-      "detail": "{\"pending\":2,\"underReview\":0,\"approved\":1,\"rejected\":1,\"needsRevision\":0,\"referred\":1,\"all\":5}"
+      "detail": "{\"pending\":6,\"underReview\":0,\"approved\":2,\"rejected\":3,\"needsRevision\":0,\"referred\":2,\"all\":13}"
     },
     {
       "name": "register_dedupe",
       "result": "PASS",
-      "detail": "approval=APR-2026-00005"
+      "detail": "approval=APR-2026-00013"
     },
     {
       "name": "no_duplicate_open_approvals",
@@ -54,7 +54,7 @@
     {
       "name": "backfill_ok",
       "result": "PASS",
-      "detail": "created=1 scanned=5"
+      "detail": "created=0 scanned=19"
     },
     {
       "name": "no_auto_reopen_after_backfill",
@@ -84,7 +84,7 @@
     {
       "name": "system_rental_enqueue",
       "result": "PASS",
-      "detail": "APR-2026-00009"
+      "detail": "APR-2026-00016"
     }
   ],
   "rootCause": "Higher Approvals كانت تُحفظ في localStorage بالمتصفح فقط؛ طلبات /api/hub/register-requests تُنشئ المنحة على السيرفر دون سجل موافقة دائم، فيظهر «بانتظار الموافقة» للعميل بينما صندوق القائد يبقى صفرًا على جهاز/جلسة أخرى.",
@@ -145,15 +145,15 @@
       "result": "PASS"
     }
   ],
-  "finishedAt": "2026-10-14T22:13:51.839Z",
+  "finishedAt": "2026-10-14T22:31:26.068Z",
   "kpis": {
-    "pending": 3,
+    "pending": 6,
     "underReview": 0,
-    "approved": 2,
-    "rejected": 2,
+    "approved": 3,
+    "rejected": 4,
     "needsRevision": 0,
-    "referred": 2,
-    "all": 9
+    "referred": 3,
+    "all": 16
   },
   "successCriterion": "لا يوجد طلب بحالة بانتظار موافقة المدير الأعلى دون سجل محفوظ يظهر في صندوق الموافقات — ثبت لـ platform_grant عبر createRegisterRequest.",
   "verdict": "PASS_CORE",

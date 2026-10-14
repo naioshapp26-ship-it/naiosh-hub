@@ -733,7 +733,7 @@ CREATE INDEX IF NOT EXISTS hub_higher_approvals_created_idx ON hub_higher_approv
 CREATE INDEX IF NOT EXISTS hub_higher_approvals_source_idx ON hub_higher_approvals (source_type, source_id);
 CREATE UNIQUE INDEX IF NOT EXISTS hub_higher_approvals_open_source_uidx
   ON hub_higher_approvals (source_type, source_id)
-  WHERE source_id <> '' AND status IN ('pending_review', 'under_review', 'needs_revision');
+  WHERE source_id <> '' AND status IN ('pending_review', 'under_review', 'needs_revision', 'referred');
 
 CREATE TABLE IF NOT EXISTS hub_higher_approval_decisions (
   id TEXT PRIMARY KEY,
