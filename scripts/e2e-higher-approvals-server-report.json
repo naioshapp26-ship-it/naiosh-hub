@@ -1,0 +1,227 @@
+{
+  "startedAt": "2026-10-14T23:24:45.885Z",
+  "cases": [
+    {
+      "name": "register_returns_approval_id",
+      "result": "PASS",
+      "detail": "APR-2026-00032"
+    },
+    {
+      "name": "register_status_pending_label",
+      "result": "PASS",
+      "detail": "بانتظار موافقة المدير الأعلى"
+    },
+    {
+      "name": "approval_appears_in_inbox",
+      "result": "PASS",
+      "detail": "APR-2026-00032"
+    },
+    {
+      "name": "kpis_pending_gt_zero",
+      "result": "PASS",
+      "detail": "{\"pending\":16,\"underReview\":0,\"approved\":5,\"rejected\":6,\"needsRevision\":0,\"referred\":5,\"all\":32}"
+    },
+    {
+      "name": "register_dedupe",
+      "result": "PASS",
+      "detail": "approval=APR-2026-00032"
+    },
+    {
+      "name": "no_duplicate_open_approvals",
+      "result": "PASS",
+      "detail": "count=1"
+    },
+    {
+      "name": "approve_ok",
+      "result": "PASS",
+      "detail": "approved"
+    },
+    {
+      "name": "approve_status",
+      "result": "PASS",
+      "detail": "approved"
+    },
+    {
+      "name": "decision_audit",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "grant_activated_on_approve",
+      "result": "PASS",
+      "detail": "active"
+    },
+    {
+      "name": "backfill_ok",
+      "result": "PASS",
+      "detail": "created=0 scanned=33"
+    },
+    {
+      "name": "no_auto_reopen_after_backfill",
+      "result": "PASS",
+      "detail": "approved"
+    },
+    {
+      "name": "customer_cannot_decide",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "admin_cannot_decide",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "data_path_blocked_in_code",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "reject_ok",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "reject_reason_persisted",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "refer_ok",
+      "result": "PASS",
+      "detail": "referred"
+    },
+    {
+      "name": "role_grant_durable",
+      "result": "PASS",
+      "detail": "APR-2026-00035"
+    },
+    {
+      "name": "role_grant_in_inbox",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "identity_suspend_durable",
+      "result": "PASS",
+      "detail": "APR-2026-00036"
+    },
+    {
+      "name": "reward_approval_durable",
+      "result": "PASS",
+      "detail": "APR-2026-00037"
+    },
+    {
+      "name": "system_rental_enqueue",
+      "result": "PASS",
+      "detail": "APR-2026-00038"
+    }
+  ],
+  "rootCause": "Higher Approvals كانت تُحفظ في localStorage بالمتصفح فقط؛ طلبات /api/hub/register-requests تُنشئ المنحة على السيرفر دون سجل موافقة دائم، فيظهر «بانتظار الموافقة» للعميل بينما صندوق القائد يبقى صفرًا على جهاز/جلسة أخرى.",
+  "matrix": [
+    {
+      "section": "سجل معنا / منح المنصات",
+      "operation": "platform_grant",
+      "submitter": "ضيف/عميل عبر register",
+      "approver": "القائد الأعلى / SUPER_ADMIN",
+      "inbox": "موافقات المدير الأعلى (API + صفحة rent-admin)",
+      "tested": "YES",
+      "result": "PASS"
+    },
+    {
+      "section": "فريق العمل والصلاحيات",
+      "operation": "role_grant / role_change",
+      "submitter": "موظف مخوّل",
+      "approver": "القائد الأعلى",
+      "inbox": "موافقات المدير الأعلى (API durable)",
+      "tested": "YES",
+      "result": "PASS"
+    },
+    {
+      "section": "الهوية",
+      "operation": "identity_suspend",
+      "submitter": "موظف مخوّل",
+      "approver": "القائد الأعلى",
+      "inbox": "موافقات المدير الأعلى",
+      "tested": "YES",
+      "result": "PASS"
+    },
+    {
+      "section": "القوى العاملة",
+      "operation": "reward_approval",
+      "submitter": "مدير",
+      "approver": "القائد الأعلى",
+      "inbox": "موافقات المدير الأعلى",
+      "tested": "YES",
+      "result": "PASS"
+    },
+    {
+      "section": "محفظة العميل / شحن إداري",
+      "operation": "wallet_topup",
+      "submitter": "عميل",
+      "approver": "موظف مالي مختص (ليس صندوق المدير الأعلى)",
+      "inbox": "بوابة العميل / مالية — معزول عمدًا",
+      "tested": "ENUMERATED",
+      "result": "PASS (معزول)"
+    },
+    {
+      "section": "مقالات/محتوى",
+      "operation": "content_review",
+      "submitter": "محرر",
+      "approver": "مكتب المحتوى",
+      "inbox": "مقالات — ليس صندوق المدير الأعلى عمدًا",
+      "tested": "ENUMERATED",
+      "result": "PASS (معزول)"
+    },
+    {
+      "section": "إعلانات/حملات",
+      "operation": "ads_campaign_review",
+      "submitter": "عميل/مسوّق",
+      "approver": "موظف مختص",
+      "inbox": "صناديق المراجعة المختصة",
+      "tested": "ENUMERATED",
+      "result": "PASS (معزول)"
+    },
+    {
+      "section": "باقات الاشتراك",
+      "operation": "package_order",
+      "submitter": "عميل",
+      "approver": "دفع تلقائي / مختص باقات",
+      "inbox": "packages — ليس صندوق المدير الأعلى عمدًا",
+      "tested": "ENUMERATED",
+      "result": "PASS (معزول)"
+    },
+    {
+      "section": "الإنتاج",
+      "operation": "full_cycle_register→inbox→decide→reflect",
+      "submitter": "حساب مختلف",
+      "approver": "المدير الأعلى",
+      "inbox": "موافقات المدير الأعلى (إنتاج)",
+      "tested": "NO",
+      "result": "NOT TESTED",
+      "note": "بعد الدمج والنشر فقط — لا FULL PASS من المحلي"
+    },
+    {
+      "section": "استئجار الأنظمة",
+      "operation": "system_rental",
+      "submitter": "عميل/ضيف",
+      "approver": "القائد الأعلى",
+      "inbox": "موافقات المدير الأعلى",
+      "tested": "YES",
+      "result": "PASS"
+    }
+  ],
+  "finishedAt": "2026-10-14T23:24:46.527Z",
+  "kpis": {
+    "pending": 19,
+    "underReview": 0,
+    "approved": 6,
+    "rejected": 7,
+    "needsRevision": 0,
+    "referred": 6,
+    "all": 38
+  },
+  "successCriterion": "لا يوجد طلب بحالة بانتظار موافقة المدير الأعلى دون سجل محفوظ يظهر في صندوق الموافقات — ثبت لـ platform_grant عبر createRegisterRequest.",
+  "verdict": "PASS_CORE",
+  "productionTested": false
+}

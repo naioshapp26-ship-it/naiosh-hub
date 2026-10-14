@@ -1428,23 +1428,30 @@
         ui.modal = null;
         return true;
       }
-      const item = HS.rewardEmployee(
-        d.employeeId,
-        Number(d.value) || 0,
-        {
-          type: d.type,
-          value: Number(d.value) || 0,
-          points: d.type === 'نقاط' || !d.type ? Number(d.value) || 0 : 0,
-          reason: d.reason,
-          source: d.source,
-          requiresApproval: needsApproval && !forceGrant,
-          forceGrant: forceGrant && mode === 'grant',
-        },
-        act
-      );
-      ui.modal = null;
-      toast(item?.status === 'Pending Approval' ? 'أُرسلت للاعتماد' : 'تم منح المكافأة');
-      return true;
+      return (async () => {
+        const item = HS.rewardEmployee(
+          d.employeeId,
+          Number(d.value) || 0,
+          {
+            type: d.type,
+            value: Number(d.value) || 0,
+            points: d.type === 'نقاط' || !d.type ? Number(d.value) || 0 : 0,
+            reason: d.reason,
+            source: d.source,
+            requiresApproval: needsApproval && !forceGrant,
+            forceGrant: forceGrant && mode === 'grant',
+          },
+          act
+        );
+        try {
+          if (item?._haPromise) await item._haPromise;
+          ui.modal = null;
+          toast(item?.status === 'Pending Approval' ? 'أُرسلت للاعتماد' : 'تم منح المكافأة');
+        } catch (e) {
+          toast(e?.message || 'تعذر حفظ طلب الموافقة على السيرفر — لم تُرسل المكافأة للاعتماد');
+        }
+        return true;
+      })();
     }
     if (action === 'wf-reward-decide') {
       const decision = btn.dataset.decision;

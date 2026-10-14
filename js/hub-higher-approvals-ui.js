@@ -157,8 +157,9 @@
       .join('');
   };
 
-  const renderTable = (rows) => {
+  const renderTable = (rows, user) => {
     if (!rows.length) return emptyState(ui.tab);
+    const canDecideNow = !!HA()?.canDecide?.(actorOf(user));
     return `<div class="ha-table-wrap"><table class="ha-table">
       <thead>
         <tr>
@@ -178,6 +179,9 @@
         ${rows
           .map((r) => {
             const orgBranch = [r.org, r.branch].filter(Boolean).join(' · ') || r.workplace || '—';
+            const canActRow =
+              canDecideNow &&
+              (r.status === 'pending_review' || r.status === 'under_review' || r.status === 'needs_revision');
             return `<tr class="${ui.openId === r.id ? 'is-open' : ''}">
             <td><code dir="ltr">${esc(r.id)}</code></td>
             <td><strong class="ha-title">${esc(r.title || r.typeLabel)}</strong>
@@ -193,7 +197,7 @@
             <td class="ha-row-acts">
               <button type="button" class="btn btn-dark btn-sm" data-action="ha-open" data-id="${esc(r.id)}">عرض</button>
               ${
-                r.status === 'pending_review' || r.status === 'under_review' || r.status === 'needs_revision'
+                canActRow
                   ? `<button type="button" class="btn btn-primary btn-sm" data-action="ha-modal" data-kind="approve" data-id="${esc(r.id)}">موافقة</button>
                      <button type="button" class="btn btn-ghost btn-sm" data-action="ha-modal" data-kind="reject" data-id="${esc(r.id)}">رفض</button>`
                   : ''
@@ -388,8 +392,9 @@
         ${
           canAct
             ? `<button type="button" class="btn btn-primary" data-action="ha-modal" data-kind="approve" data-id="${esc(r.id)}"><i class="fas fa-check"></i> موافقة</button>
-               <button type="button" class="btn btn-dark" data-action="ha-modal" data-kind="revise" data-id="${esc(r.id)}"><i class="fas fa-pen"></i> طلب تعديل</button>
-               <button type="button" class="btn btn-ghost danger" data-action="ha-modal" data-kind="reject" data-id="${esc(r.id)}"><i class="fas fa-xmark"></i> رفض</button>`
+               <button type="button" class="btn btn-dark" data-action="ha-modal" data-kind="revise" data-id="${esc(r.id)}"><i class="fas fa-pen"></i> إعادة للتعديل</button>
+               <button type="button" class="btn btn-ghost" data-action="ha-modal" data-kind="refer" data-id="${esc(r.id)}"><i class="fas fa-share"></i> إحالة للمختص</button>
+               <button type="button" class="btn btn-ghost danger" data-action="ha-modal" data-kind="reject" data-id="${esc(r.id)}"><i class="fas fa-xmark"></i> رفض مع السبب</button>`
             : !HA()?.canDecide?.(actorOf(user))
               ? `<p class="ha-note is-bad">ليست لديك صلاحية اتخاذ قرار على هذا الطلب.</p>`
               : ''
@@ -422,6 +427,27 @@
           <footer>
             <button type="button" class="btn btn-ghost" data-action="ha-modal-cancel">إلغاء</button>
             <button type="button" class="btn btn-primary" data-action="ha-modal-ok">تأكيد الموافقة وتنفيذ العملية</button>
+          </footer>
+        </div>
+      </div>`;
+    }
+    if (m.kind === 'refer') {
+      return `<div class="ha-modal-backdrop" data-action="ha-modal-cancel">
+        <div class="ha-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+          <header><h3>إحالة للمختص</h3><button type="button" class="ha-modal-x" data-action="ha-modal-cancel">×</button></header>
+          <div class="ha-modal-body">
+            <p><b>${esc(req.title || req.typeLabel)}</b> · <code dir="ltr">${esc(req.id)}</code></p>
+            <label>المختص (بريد أو اسم/دور) <span class="req">*</span>
+              <input type="text" data-ha-field="value" placeholder="مثال: malika@naiosh.com أو مدير الموارد البشرية" value="${esc(m.value || '')}" />
+            </label>
+            <label style="display:block;margin-top:10px">ملاحظة الإحالة
+              <textarea data-ha-field="note" rows="3" placeholder="سبب الإحالة…">${esc(m.note || '')}</textarea>
+            </label>
+            ${m.error ? `<p class="ha-error">${esc(m.error)}</p>` : ''}
+          </div>
+          <footer>
+            <button type="button" class="btn btn-ghost" data-action="ha-modal-cancel">إلغاء</button>
+            <button type="button" class="btn btn-primary" data-action="ha-modal-ok">تأكيد الإحالة</button>
           </footer>
         </div>
       </div>`;
@@ -467,6 +493,19 @@
   const render = (ctx = {}) => {
     parseDeepLink();
     HA()?.reload?.();
+    // Kick durable hydrate; re-render when server state arrives.
+    if (!ui._hydrateKick) {
+      ui._hydrateKick = true;
+      Promise.resolve(window.HubPlatformGrants?.hydrate?.())
+        .then(() => HA()?.hydrateFromServer?.({ force: true, backfill: true }))
+        .then(() => {
+          window.dispatchEvent(new CustomEvent('hub-ha-rerender'));
+        })
+        .catch(() => {})
+        .finally(() => {
+          ui._hydrateKick = false;
+        });
+    }
     const user = ctx.user || window.HubAuth?.getUser?.() || {};
     const k = HA()?.kpis?.() || { pending: 0, underReview: 0, approved: 0, rejected: 0, needsRevision: 0, all: 0 };
     const rows = filteredRows();
@@ -508,7 +547,7 @@
           : ''
       }
       <div class="ha-layout ${open ? 'has-detail' : ''}">
-        <div class="ha-main">${ui.tab === 'audit' ? renderAudit() : renderTable(rows)}</div>
+        <div class="ha-main">${ui.tab === 'audit' ? renderAudit() : renderTable(rows, user)}</div>
         ${open ? renderDetail(open, user) : ''}
       </div>
       ${renderModal()}
@@ -530,9 +569,18 @@
       return true;
     }
     if (action === 'ha-refresh') {
-      HA()?.reload?.();
-      window.HubPlatformGrants?.hydrate?.();
-      toast?.('تم التحديث');
+      toast?.('جارٍ التحديث من السيرفر…');
+      Promise.resolve(window.HubPlatformGrants?.hydrate?.())
+        .then(() => HA()?.hydrateFromServer?.({ force: true, backfill: true }))
+        .then(() => {
+          HA()?.reload?.();
+          window.dispatchEvent(new CustomEvent('hub-ha-rerender'));
+          toast?.('تم التحديث من السجل المركزي');
+        })
+        .catch(() => {
+          HA()?.reload?.();
+          toast?.('تعذر التحديث الكامل — عُرضت النسخة المحلية');
+        });
       return true;
     }
     if (action === 'ha-search') {
@@ -561,21 +609,39 @@
       return true;
     }
     if (action === 'ha-modal-ok') {
-      const m = ui.modal;
-      if (!m) return true;
-      const value = readModalField();
-      let res;
-      if (m.kind === 'approve') res = HA().approve(m.id, actor, value);
-      else if (m.kind === 'reject') res = HA().reject(m.id, value, actor);
-      else if (m.kind === 'revise') res = HA().requestRevision(m.id, value, actor);
-      if (res && !res.ok) {
-        ui.modal = { ...m, value, error: res.error || 'تعذر إكمال العملية' };
+      return (async () => {
+        const m = ui.modal;
+        if (!m) return true;
+        if (!HA()?.canDecide?.(actor) && ['approve', 'reject', 'revise', 'refer'].includes(m.kind)) {
+          ui.modal = { ...m, error: 'ليست لديك صلاحية اعتماد/رفض طلبات المدير الأعلى' };
+          return true;
+        }
+        const value = readModalField();
+        const noteEl = document.querySelector('.ha-modal [data-ha-field="note"]');
+        const note = noteEl ? noteEl.value : m.note || '';
+        let res;
+        if (m.kind === 'approve') res = await HA().approve(m.id, actor, value);
+        else if (m.kind === 'reject') res = await HA().reject(m.id, value, actor);
+        else if (m.kind === 'revise') res = await HA().requestRevision(m.id, value, actor);
+        else if (m.kind === 'refer') res = await HA().refer(m.id, value, actor, note);
+        if (res && !res.ok) {
+          ui.modal = { ...m, value, note, error: res.error || 'تعذر إكمال العملية' };
+          return true;
+        }
+        ui.modal = null;
+        ui.openId = m.id;
+        toast?.(
+          m.kind === 'approve'
+            ? 'تمت الموافقة وتنفيذ العملية'
+            : m.kind === 'reject'
+              ? 'تم الرفض'
+              : m.kind === 'refer'
+                ? 'تمت الإحالة للمختص'
+                : 'أُعيد للتعديل'
+        );
+        await HA()?.hydrateFromServer?.({ force: true });
         return true;
-      }
-      ui.modal = null;
-      ui.openId = m.id;
-      toast?.(m.kind === 'approve' ? 'تمت الموافقة وتنفيذ العملية' : m.kind === 'reject' ? 'تم الرفض' : 'طُلب التعديل');
-      return true;
+      })();
     }
     if (action === 'ha-resubmit') {
       const res = HA().resubmit(btn.dataset.id, {}, actor);

@@ -1,0 +1,183 @@
+{
+  "at": "2026-10-14T23:24:45.066Z",
+  "passed": 35,
+  "failed": 0,
+  "tests": [
+    {
+      "n": "T0-employee",
+      "ok": true,
+      "d": "EMP-0015"
+    },
+    {
+      "n": "T1-requires-approval",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T2-ticket-created",
+      "ok": true,
+      "d": "APR-2026-00001"
+    },
+    {
+      "n": "T2-status-pending",
+      "ok": true,
+      "d": "pending_review"
+    },
+    {
+      "n": "T2-durable-not-local-only",
+      "ok": true,
+      "d": "false"
+    },
+    {
+      "n": "T2-not-applied-yet",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T2-notify-boss",
+      "ok": true,
+      "d": "طلب جديد لاعتماد إضافة صلاحيات موظف"
+    },
+    {
+      "n": "T2-on-mock-server",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T3-in-pending-list",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T3-has-compare",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T3-has-reason",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T4-admin-cannot-decide",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T4-admin-approve-blocked",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T4-approve-ok",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T4-status-approved",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T4-applied",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T4-decision-log",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T4-notify-requester",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T5-reject-requires-reason",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T5-reject-ok",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T5-not-applied",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T5-reason-visible",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T5-notify-reject",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T6-revise-ok",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T6-status-needs",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T6-resubmit-ok",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T6-back-pending",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T8-identity-suspend-durable",
+      "ok": true,
+      "d": "APR-2026-00004"
+    },
+    {
+      "n": "T8-identity-on-server",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T9-reward-durable",
+      "ok": true,
+      "d": "APR-2026-00005"
+    },
+    {
+      "n": "T9-reward-on-server",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T7-ui-title",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T7-ui-no-super-admin-label",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T7-ui-tabs",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "n": "T7-kpis",
+      "ok": true,
+      "d": ""
+    }
+  ],
+  "sampleTicket": "APR-2026-00001"
+}

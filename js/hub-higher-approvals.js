@@ -6,7 +6,10 @@
   'use strict';
 
   const KEY = 'naiosh_hub_higher_approvals_v1';
+  const API = '/api/hub/higher-approvals';
   const YEAR = () => new Date().getFullYear();
+  let hydratePromise = null;
+  let lastHydratedAt = 0;
 
   const STATUS = {
     PENDING: 'pending_review',
@@ -14,6 +17,7 @@
     APPROVED: 'approved',
     REJECTED: 'rejected',
     NEEDS_REVISION: 'needs_revision',
+    REFERRED: 'referred',
   };
 
   const STATUS_AR = {
@@ -22,6 +26,7 @@
     [STATUS.APPROVED]: 'تمت الموافقة',
     [STATUS.REJECTED]: 'مرفوضة',
     [STATUS.NEEDS_REVISION]: 'أعيدت للتعديل',
+    [STATUS.REFERRED]: 'أُحيلت للمختص',
   };
 
   const TYPE_AR = {
@@ -73,7 +78,6 @@
     'platform_owner',
     'super_admin',
     'SUPER_ADMIN',
-    'admin',
     'empire_governor',
     'EMPIRE_GOVERNOR',
   ]);
@@ -144,6 +148,161 @@
     return state;
   };
 
+  const authHeaders = (extra = {}) => {
+    try {
+      return window.HubAuth?.authHeaders?.(extra) || { ...extra };
+    } catch {
+      return { ...extra };
+    }
+  };
+
+  const mergeServerState = (payload) => {
+    const remoteReqs = Array.isArray(payload?.requests) ? payload.requests : [];
+    const remoteDecs = Array.isArray(payload?.decisions) ? payload.decisions : [];
+    const byId = new Map();
+    // Server is source of truth; keep local-only rows that are not yet on server (offline draft).
+    (state.requests || []).forEach((r) => {
+      if (r?.id && r._localOnly) byId.set(r.id, normalizeRequest(r));
+    });
+    remoteReqs.forEach((r) => {
+      if (r?.id) byId.set(r.id, normalizeRequest(r));
+    });
+    const dMap = new Map();
+    remoteDecs.forEach((d) => {
+      if (d?.id) dMap.set(d.id, d);
+    });
+    (state.decisions || []).forEach((d) => {
+      if (d?.id && !dMap.has(d.id)) dMap.set(d.id, d);
+    });
+    state.requests = [...byId.values()].sort((a, b) =>
+      String(b.createdAt || '').localeCompare(String(a.createdAt || ''))
+    );
+    state.decisions = [...dMap.values()].sort((a, b) =>
+      String(b.decidedAt || '').localeCompare(String(a.decidedAt || ''))
+    );
+    state.schemaVersion = Math.max(Number(state.schemaVersion) || 1, 3);
+    save();
+    return state;
+  };
+
+  const hydrateFromServer = async ({ force = false, backfill = false } = {}) => {
+    const now = Date.now();
+    if (!force && hydratePromise) return hydratePromise;
+    if (!force && now - lastHydratedAt < 1500) return state;
+    hydratePromise = (async () => {
+      try {
+        if (backfill) {
+          await fetch(`${API}/backfill`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: '{}',
+            cache: 'no-store',
+          }).catch(() => null);
+        }
+        const res = await fetch(API, {
+          method: 'GET',
+          headers: authHeaders({ Accept: 'application/json' }),
+          cache: 'no-store',
+        });
+        if (!res.ok) return state;
+        const data = await res.json();
+        if (data?.ok) mergeServerState(data);
+        lastHydratedAt = Date.now();
+        // Push any leftover local-only open tickets (staff drafts) into Postgres.
+        try {
+          await syncLocalOnlyToServer();
+        } catch (_) {}
+      } catch (_) {
+        /* keep local cache */
+      } finally {
+        hydratePromise = null;
+      }
+      return state;
+    })();
+    return hydratePromise;
+  };
+
+  const postCreate = async (payload, actor) => {
+    try {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          ...payload,
+          requesterName: payload.requesterName || actorMeta(actor).name,
+          requesterEmail: payload.requesterEmail || actorMeta(actor).email,
+          requesterEmployeeNo: payload.requesterEmployeeNo || actorMeta(actor).employeeNo,
+          requesterNaioshId: payload.requesterNaioshId || actorMeta(actor).naioshId,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.request) {
+        const idx = state.requests.findIndex((r) => r.id === data.request.id);
+        if (idx >= 0) state.requests[idx] = normalizeRequest({ ...data.request, _localOnly: false });
+        else state.requests.unshift(normalizeRequest({ ...data.request, _localOnly: false }));
+        // drop local-only duplicate by source
+        if (data.request.sourceType && data.request.sourceId) {
+          state.requests = state.requests.filter(
+            (r) =>
+              !(
+                r._localOnly &&
+                r.id !== data.request.id &&
+                r.sourceType === data.request.sourceType &&
+                String(r.sourceId) === String(data.request.sourceId)
+              )
+          );
+        }
+        save();
+        return normalizeRequest({ ...data.request, _localOnly: false });
+      }
+      return { error: data.error || `فشل حفظ الموافقة (${res.status})` };
+    } catch (e) {
+      return { error: e.message || 'تعذر الاتصال بالسيرفر لحفظ الموافقة' };
+    }
+  };
+
+  /** Push any local-only open tickets to Postgres (staff session). */
+  const syncLocalOnlyToServer = async () => {
+    const locals = (state.requests || []).filter(
+      (r) =>
+        r &&
+        r._localOnly &&
+        [STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION, STATUS.REFERRED].includes(r.status)
+    );
+    let synced = 0;
+    for (const row of locals) {
+      const remote = await postCreate({ ...row, silent: true, id: row.id }, {
+        name: row.requesterName,
+        email: row.requesterEmail,
+        employeeNo: row.requesterEmployeeNo,
+        naioshId: row.requesterNaioshId,
+      });
+      if (remote && !remote.error) synced += 1;
+    }
+    return { ok: true, synced, scanned: locals.length };
+  };
+
+  const postDecide = async (id, action, opts = {}) => {
+    try {
+      const res = await fetch(`${API}/${encodeURIComponent(id)}/decide`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ action, ...opts }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return { ok: false, error: data.error || 'تعذر تنفيذ القرار على السيرفر' };
+      if (data.request) {
+        const idx = state.requests.findIndex((r) => r.id === id);
+        if (idx >= 0) state.requests[idx] = normalizeRequest(data.request);
+        else state.requests.unshift(normalizeRequest(data.request));
+        save();
+      }
+      return { ok: true, ...data };
+    } catch (e) {
+      return { ok: false, error: e.message || 'تعذر الاتصال بالسيرفر' };
+    }
+  };
+
   const nextId = () => {
     state.seq = (state.seq || 0) + 1;
     return `APR-${YEAR()}-${String(state.seq).padStart(5, '0')}`;
@@ -172,20 +331,23 @@
   const canDecide = (actor) => {
     const a = actorMeta(actor);
     const role = String(a.role || '').toLowerCase();
+    if (role === 'admin' || role === 'customer' || role === 'client' || role === 'client_user' || role === 'staff') {
+      return false;
+    }
     if (a.role || role) {
       if (DECIDER_ROLES.has(a.role) || DECIDER_ROLES.has(role)) return true;
-      // Explicit non-decider role provided on actor → deny (do not fall back to session)
-      if (role === 'customer' || role === 'client' || role === 'client_user') return false;
-      if (role && !DECIDER_ROLES.has(a.role) && !DECIDER_ROLES.has(role)) {
-        // staff without decider role: deny unless session is decider AND actor omitted role intentionally
-        return false;
-      }
+      if (role && !DECIDER_ROLES.has(a.role) && !DECIDER_ROLES.has(role)) return false;
     }
     try {
       const u = window.HubAuth?.getUser?.() || JSON.parse(localStorage.getItem('hubUser') || '{}');
       const r = String(u?.role || '').toLowerCase();
+      if (r === 'admin' || r === 'customer' || r === 'client' || r === 'client_user' || r === 'staff') return false;
       if (DECIDER_ROLES.has(u?.role) || DECIDER_ROLES.has(r)) return true;
-      if (u?.employeeNo && String(u.employeeNo).indexOf('EMP-') === 0 && (r === 'admin' || r.includes('leader') || r.includes('owner'))) {
+      if (
+        u?.employeeNo &&
+        String(u.employeeNo).indexOf('EMP-') === 0 &&
+        (r.includes('leader') || r.includes('owner') || r.includes('governor') || r.includes('supreme'))
+      ) {
         return true;
       }
     } catch (_) {}
@@ -216,24 +378,17 @@
     if (state.decisions.length > 500) state.decisions.length = 500;
   };
 
-  const createRequest = (payload = {}, actor) => {
+  const buildLocalRow = (payload = {}, actor) => {
     const a = actorMeta(actor);
     const type = payload.type || 'sensitive_op';
-    const silent = payload.silent === true;
-    if (payload.sourceType && payload.sourceId) {
-      const existing = findBySource(payload.sourceType, payload.sourceId);
-      if (existing && [STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION].includes(existing.status)) {
-        return normalizeRequest(existing);
-      }
-    }
     const sourceModule = payload.sourceModule || payload.sourceType || 'HUB';
     const sourceModuleLabel =
       payload.sourceModuleLabel || SOURCE_AR[sourceModule] || payload.systemLabel || 'النظام';
     const operation = payload.operation || type;
     const operationLabel = payload.operationLabel || payload.typeLabel || TYPE_AR[type] || type;
     const title = payload.title || `${operationLabel}${payload.subjectName ? ` — ${payload.subjectName}` : ''}`;
-    const row = normalizeRequest({
-      id: nextId(),
+    return normalizeRequest({
+      id: payload.id || nextId(),
       title,
       type,
       typeLabel: payload.typeLabel || TYPE_AR[type] || type,
@@ -276,6 +431,7 @@
       decidedAt: '',
       decidedBy: '',
       decidedByEmployeeNo: '',
+      _localOnly: true,
       history: [
         {
           at: nowIso(),
@@ -285,27 +441,97 @@
         },
       ],
     });
+  };
+
+  const notifyCreated = (row) => {
+    notify({
+      title: `طلب جديد لاعتماد ${row.operationLabel}`,
+      body: `${row.title} · المصدر: ${row.sourceModuleLabel} · مقدم الطلب: ${row.requesterName}${
+        row.subjectEmployeeNo ? ` · ${row.subjectEmployeeNo}` : ''
+      }`,
+      level: 'warning',
+      category: 'ops',
+      source: 'HIGHER_APPROVALS',
+      sourceName: 'موافقات المدير الأعلى',
+      link: `dashboard.html#rent-admin?apr=${encodeURIComponent(row.id)}`,
+      actionLabel: 'مراجعة الطلب',
+      actionLink: `dashboard.html#rent-admin?apr=${encodeURIComponent(row.id)}`,
+      needsAction: true,
+      referenceType: 'higher_approval',
+      referenceId: row.id,
+      requestId: row.id,
+    });
+  };
+
+  /**
+   * Durable create: waits for Postgres/API before returning.
+   * On failure rolls back the local draft so we never show success without an inbox row.
+   */
+  const createRequestAsync = async (payload = {}, actor) => {
+    const silent = payload.silent === true;
+    if (payload.sourceType && payload.sourceId) {
+      const existing = findBySource(payload.sourceType, payload.sourceId);
+      if (existing && [STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION, STATUS.REFERRED].includes(existing.status)) {
+        if (existing._localOnly) {
+          const remote = await postCreate({ ...existing, silent: true }, actor);
+          if (remote && !remote.error) return remote;
+        } else {
+          return normalizeRequest(existing);
+        }
+      }
+    }
+    const row = buildLocalRow(payload, actor);
     state.requests.unshift(row);
     save();
-    if (!silent) {
-      notify({
-        title: `طلب جديد لاعتماد ${operationLabel}`,
-        body: `${title} · المصدر: ${sourceModuleLabel} · مقدم الطلب: ${row.requesterName}${
-          row.subjectEmployeeNo ? ` · ${row.subjectEmployeeNo}` : ''
-        }`,
-        level: 'warning',
-        category: 'ops',
-        source: 'HIGHER_APPROVALS',
-        sourceName: 'موافقات المدير الأعلى',
-        link: `dashboard.html#rent-admin?apr=${encodeURIComponent(row.id)}`,
-        actionLabel: 'مراجعة الطلب',
-        actionLink: `dashboard.html#rent-admin?apr=${encodeURIComponent(row.id)}`,
-        needsAction: true,
-        referenceType: 'higher_approval',
-        referenceId: row.id,
-        requestId: row.id,
-      });
+    const remote = await postCreate({ ...payload, ...row, silent: true, id: row.id }, actor);
+    if (!remote || remote.error) {
+      state.requests = state.requests.filter((r) => r.id !== row.id);
+      save();
+      const err = new Error(remote?.error || 'تعذر حفظ طلب الموافقة على السيرفر — لم يُنشأ الطلب');
+      err.code = 'HIGHER_APPROVAL_PERSIST_FAILED';
+      throw err;
     }
+    // Remove draft if server assigned a different id
+    if (remote.id !== row.id) {
+      state.requests = state.requests.filter((r) => r.id !== row.id);
+      if (!state.requests.find((r) => r.id === remote.id)) state.requests.unshift(remote);
+      save();
+    }
+    if (!silent) notifyCreated(remote);
+    return remote;
+  };
+
+  /** Sync helper kept for offline/e2e — prefers durable path when staff session exists. */
+  const createRequest = (payload = {}, actor) => {
+    const silent = payload.silent === true;
+    if (payload.sourceType && payload.sourceId) {
+      const existing = findBySource(payload.sourceType, payload.sourceId);
+      if (existing && [STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION, STATUS.REFERRED].includes(existing.status)) {
+        return normalizeRequest(existing);
+      }
+    }
+    const row = buildLocalRow(payload, actor);
+    state.requests.unshift(row);
+    save();
+    const persist = postCreate({ ...payload, ...row, silent: true, id: row.id }, actor).then((remote) => {
+      if (!remote || remote.error) {
+        row._persistError = remote?.error || 'persist_failed';
+        save();
+        return null;
+      }
+      if (remote.id !== row.id) {
+        state.requests = state.requests.filter((r) => r.id !== row.id);
+        if (!state.requests.find((r) => r.id === remote.id)) state.requests.unshift(remote);
+        save();
+      } else {
+        const idx = state.requests.findIndex((r) => r.id === remote.id);
+        if (idx >= 0) state.requests[idx] = normalizeRequest({ ...remote, _localOnly: false });
+        save();
+      }
+      return remote;
+    });
+    row._persistPromise = persist;
+    if (!silent) notifyCreated(row);
     return row;
   };
 
@@ -362,6 +588,7 @@
       approved: rows.filter((r) => r.status === STATUS.APPROVED).length,
       rejected: rows.filter((r) => r.status === STATUS.REJECTED).length,
       needsRevision: rows.filter((r) => r.status === STATUS.NEEDS_REVISION).length,
+      referred: rows.filter((r) => r.status === STATUS.REFERRED).length,
       all: rows.length,
     };
   };
@@ -598,16 +825,28 @@
   const startReview = (id, actor) => {
     const req = get(id);
     if (!req) return { ok: false, error: 'الطلب غير موجود' };
+    if (!canDecide(actor)) return { ok: true, request: req, skipped: true };
     if (req.status !== STATUS.PENDING) return { ok: true, request: req };
     const a = actorMeta(actor);
     req.status = STATUS.UNDER_REVIEW;
     req.updatedAt = nowIso();
     req.history.push({ at: nowIso(), action: 'under_review', by: a.name, detail: 'بدأ المدير مراجعة الطلب' });
     save();
+    void postDecide(id, 'start_review');
     return { ok: true, request: req };
   };
 
-  const approve = (id, actor, note = '') => {
+  const mergeServerRequest = (id, serverReq) => {
+    if (!serverReq?.id) return get(id);
+    const idx = state.requests.findIndex((r) => r.id === id);
+    const next = normalizeRequest({ ...serverReq, _localOnly: false });
+    if (idx >= 0) state.requests[idx] = next;
+    else state.requests.unshift(next);
+    save();
+    return next;
+  };
+
+  const approve = async (id, actor, note = '') => {
     const req = get(id);
     if (!req) return { ok: false, error: 'الطلب غير موجود' };
     try {
@@ -620,28 +859,35 @@
     }
     const a = actorMeta(actor);
     const beforeStatus = req.status;
+    // Durable server decision FIRST — never apply locally if API rejects.
+    const server = await postDecide(id, 'approve', { note: note || '' });
+    if (!server.ok) return { ok: false, error: server.error || 'تعذر اعتماد الطلب على السيرفر' };
+    const live = mergeServerRequest(id, server.request) || req;
     try {
-      const applied = applyApproved(req, a);
-      req.status = STATUS.APPROVED;
-      req.updatedAt = nowIso();
-      req.decidedAt = nowIso();
-      req.decidedBy = a.name;
-      req.decidedByEmployeeNo = a.employeeNo || '';
-      req.history.push({ at: nowIso(), action: 'approved', by: a.name, detail: note || applied?.detail || 'موافقة' });
+      const applied = applyApproved(live, a);
+      live.status = STATUS.APPROVED;
+      live.updatedAt = nowIso();
+      live.decidedAt = live.decidedAt || nowIso();
+      live.decidedBy = live.decidedBy || a.name;
+      live.decidedByEmployeeNo = live.decidedByEmployeeNo || a.employeeNo || '';
+      live.history = Array.isArray(live.history) ? live.history : [];
+      if (!live.history.some((h) => h.action === 'approved' && h.at === live.decidedAt)) {
+        live.history.push({ at: nowIso(), action: 'approved', by: a.name, detail: note || applied?.detail || 'موافقة' });
+      }
       pushDecision({
-        id: `DEC-${req.id}-${Date.now()}`,
-        requestId: req.id,
-        type: req.type,
-        typeLabel: req.typeLabel,
-        title: req.title,
-        sourceModule: req.sourceModule,
-        sourceModuleLabel: req.sourceModuleLabel,
-        operation: req.operation,
-        operationLabel: req.operationLabel,
-        sourceType: req.sourceType,
-        sourceId: req.sourceId,
-        requesterName: req.requesterName,
-        subjectEmployeeNo: req.subjectEmployeeNo,
+        id: `DEC-${live.id}-${Date.now()}`,
+        requestId: live.id,
+        type: live.type,
+        typeLabel: live.typeLabel,
+        title: live.title,
+        sourceModule: live.sourceModule,
+        sourceModuleLabel: live.sourceModuleLabel,
+        operation: live.operation,
+        operationLabel: live.operationLabel,
+        sourceType: live.sourceType,
+        sourceId: live.sourceId,
+        requesterName: live.requesterName,
+        subjectEmployeeNo: live.subjectEmployeeNo,
         decision: 'approved',
         decisionAr: STATUS_AR[STATUS.APPROVED],
         decidedBy: a.name,
@@ -649,30 +895,30 @@
         reason: note || '',
         beforeStatus,
         afterStatus: STATUS.APPROVED,
-        requestedAt: req.createdAt,
-        decidedAt: req.decidedAt,
+        requestedAt: live.createdAt,
+        decidedAt: live.decidedAt,
       });
       save();
       notify({
         title: 'تمت الموافقة على طلبك',
-        body: `طلب ${req.id} (${req.operationLabel || req.typeLabel}) تمت الموافقة عليه من ${a.name}.`,
+        body: `طلب ${live.id} (${live.operationLabel || live.typeLabel}) تمت الموافقة عليه من ${a.name}.`,
         level: 'success',
         category: 'ops',
         source: 'HIGHER_APPROVALS',
         sourceName: 'موافقات المدير الأعلى',
-        link: `dashboard.html#rent-admin?apr=${encodeURIComponent(req.id)}`,
+        link: `dashboard.html#rent-admin?apr=${encodeURIComponent(live.id)}`,
         referenceType: 'higher_approval',
-        referenceId: req.id,
-        requestId: req.id,
-        meta: { email: req.requesterEmail },
+        referenceId: live.id,
+        requestId: live.id,
+        meta: { email: live.requesterEmail },
       });
-      return { ok: true, request: req, applied };
+      return { ok: true, request: live, applied };
     } catch (e) {
-      return { ok: false, error: e.message || 'فشل تنفيذ الموافقة' };
+      return { ok: false, error: e.message || 'فشل تنفيذ الموافقة بعد اعتماد السيرفر' };
     }
   };
 
-  const reject = (id, reason, actor) => {
+  const reject = async (id, reason, actor) => {
     const req = get(id);
     if (!req) return { ok: false, error: 'الطلب غير موجود' };
     try {
@@ -686,70 +932,75 @@
     }
     const a = actorMeta(actor);
     const beforeStatus = req.status;
-    if (req.sourceType === 'platform_grant' || req.type === 'platform_grant') {
+    const rejectReason = String(reason).trim();
+    const server = await postDecide(id, 'reject', { reason: rejectReason, note: rejectReason });
+    if (!server.ok) return { ok: false, error: server.error || 'تعذر رفض الطلب على السيرفر' };
+    const live = mergeServerRequest(id, server.request) || req;
+    if (live.sourceType === 'platform_grant' || live.type === 'platform_grant') {
       try {
-        window.HubPlatformGrants?.rejectGrant?.(req.sourceId || req.applyPayload?.grantId);
+        window.HubPlatformGrants?.rejectGrant?.(live.sourceId || live.applyPayload?.grantId);
       } catch (_) {}
     }
-    if (req.sourceType === 'system_rental' || req.type === 'system_rental') {
+    if (live.sourceType === 'system_rental' || live.type === 'system_rental') {
       try {
-        window.HubRentStore?.rejectRental?.(req.sourceId || req.applyPayload?.rentalId, reason);
+        window.HubRentStore?.rejectRental?.(live.sourceId || live.applyPayload?.rentalId, rejectReason);
       } catch (_) {}
     }
-    if (req.type === 'reward_approval' || req.sourceType === 'workforce_reward') {
+    if (live.type === 'reward_approval' || live.sourceType === 'workforce_reward') {
       try {
-        window.HubStore?.decideReward?.(req.applyPayload?.rewardId || req.sourceId, 'reject', reason, a.name);
+        window.HubStore?.decideReward?.(live.applyPayload?.rewardId || live.sourceId, 'reject', rejectReason, a.name);
       } catch (_) {}
     }
-    req.status = STATUS.REJECTED;
-    req.rejectReason = String(reason).trim();
-    req.updatedAt = nowIso();
-    req.decidedAt = nowIso();
-    req.decidedBy = a.name;
-    req.decidedByEmployeeNo = a.employeeNo || '';
-    req.history.push({ at: nowIso(), action: 'rejected', by: a.name, detail: req.rejectReason });
+    live.status = STATUS.REJECTED;
+    live.rejectReason = rejectReason;
+    live.updatedAt = nowIso();
+    live.decidedAt = live.decidedAt || nowIso();
+    live.decidedBy = live.decidedBy || a.name;
+    live.decidedByEmployeeNo = live.decidedByEmployeeNo || a.employeeNo || '';
+    live.history = Array.isArray(live.history) ? live.history : [];
+    live.history.push({ at: nowIso(), action: 'rejected', by: a.name, detail: rejectReason });
     pushDecision({
-      id: `DEC-${req.id}-${Date.now()}`,
-      requestId: req.id,
-      type: req.type,
-      typeLabel: req.typeLabel,
-      title: req.title,
-      sourceModule: req.sourceModule,
-      sourceModuleLabel: req.sourceModuleLabel,
-      operation: req.operation,
-      operationLabel: req.operationLabel,
-      sourceType: req.sourceType,
-      sourceId: req.sourceId,
-      requesterName: req.requesterName,
-      subjectEmployeeNo: req.subjectEmployeeNo,
+      id: `DEC-${live.id}-${Date.now()}`,
+      requestId: live.id,
+      type: live.type,
+      typeLabel: live.typeLabel,
+      title: live.title,
+      sourceModule: live.sourceModule,
+      sourceModuleLabel: live.sourceModuleLabel,
+      operation: live.operation,
+      operationLabel: live.operationLabel,
+      sourceType: live.sourceType,
+      sourceId: live.sourceId,
+      requesterName: live.requesterName,
+      subjectEmployeeNo: live.subjectEmployeeNo,
       decision: 'rejected',
       decisionAr: STATUS_AR[STATUS.REJECTED],
       decidedBy: a.name,
       decidedByEmployeeNo: a.employeeNo || '',
-      reason: req.rejectReason,
+      reason: rejectReason,
       beforeStatus,
       afterStatus: STATUS.REJECTED,
-      requestedAt: req.createdAt,
-      decidedAt: req.decidedAt,
+      requestedAt: live.createdAt,
+      decidedAt: live.decidedAt,
     });
     save();
     notify({
       title: 'رُفض طلب الموافقة',
-      body: `طلب ${req.id}: ${req.rejectReason}`,
+      body: `طلب ${live.id}: ${rejectReason}`,
       level: 'error',
       category: 'ops',
       source: 'HIGHER_APPROVALS',
       sourceName: 'موافقات المدير الأعلى',
-      link: `dashboard.html#rent-admin?apr=${encodeURIComponent(req.id)}`,
+      link: `dashboard.html#rent-admin?apr=${encodeURIComponent(live.id)}`,
       referenceType: 'higher_approval',
-      referenceId: req.id,
-      requestId: req.id,
-      meta: { email: req.requesterEmail },
+      referenceId: live.id,
+      requestId: live.id,
+      meta: { email: live.requesterEmail },
     });
-    return { ok: true, request: req };
+    return { ok: true, request: live };
   };
 
-  const requestRevision = (id, note, actor) => {
+  const requestRevision = async (id, note, actor) => {
     const req = get(id);
     if (!req) return { ok: false, error: 'الطلب غير موجود' };
     try {
@@ -762,42 +1013,115 @@
       return { ok: false, error: 'لا يمكن طلب تعديل في هذه الحالة' };
     }
     const a = actorMeta(actor);
-    req.status = STATUS.NEEDS_REVISION;
-    req.revisionNote = String(note).trim();
-    req.updatedAt = nowIso();
-    req.history.push({ at: nowIso(), action: 'needs_revision', by: a.name, detail: req.revisionNote });
+    const revisionNote = String(note).trim();
+    const server = await postDecide(id, 'revise', { note: revisionNote, reason: revisionNote });
+    if (!server.ok) return { ok: false, error: server.error || 'تعذر طلب التعديل على السيرفر' };
+    const live = mergeServerRequest(id, server.request) || req;
+    live.status = STATUS.NEEDS_REVISION;
+    live.revisionNote = revisionNote;
+    live.updatedAt = nowIso();
+    live.history = Array.isArray(live.history) ? live.history : [];
+    live.history.push({ at: nowIso(), action: 'needs_revision', by: a.name, detail: revisionNote });
     pushDecision({
-      id: `DEC-${req.id}-${Date.now()}`,
-      requestId: req.id,
-      type: req.type,
-      typeLabel: req.typeLabel,
-      requesterName: req.requesterName,
-      subjectEmployeeNo: req.subjectEmployeeNo,
+      id: `DEC-${live.id}-${Date.now()}`,
+      requestId: live.id,
+      type: live.type,
+      typeLabel: live.typeLabel,
+      requesterName: live.requesterName,
+      subjectEmployeeNo: live.subjectEmployeeNo,
       decision: 'needs_revision',
       decisionAr: STATUS_AR[STATUS.NEEDS_REVISION],
       decidedBy: a.name,
       decidedByEmployeeNo: a.employeeNo || '',
-      reason: req.revisionNote,
-      requestedAt: req.createdAt,
+      reason: revisionNote,
+      requestedAt: live.createdAt,
       decidedAt: nowIso(),
     });
     save();
     notify({
       title: 'مطلوب تعديل طلبك',
-      body: `طلب ${req.id}: ${req.revisionNote}`,
+      body: `طلب ${live.id}: ${revisionNote}`,
       level: 'warning',
       category: 'ops',
       source: 'HIGHER_APPROVALS',
       sourceName: 'موافقات المدير الأعلى',
-      link: `dashboard.html#rent-admin?apr=${encodeURIComponent(req.id)}`,
+      link: `dashboard.html#rent-admin?apr=${encodeURIComponent(live.id)}`,
       actionLabel: 'تعديل وإعادة الإرسال',
       needsAction: true,
       referenceType: 'higher_approval',
-      referenceId: req.id,
-      requestId: req.id,
-      meta: { email: req.requesterEmail },
+      referenceId: live.id,
+      requestId: live.id,
+      meta: { email: live.requesterEmail },
     });
-    return { ok: true, request: req };
+    return { ok: true, request: live };
+  };
+
+  const refer = async (id, assignee, actor, note = '') => {
+    const req = get(id);
+    if (!req) return { ok: false, error: 'الطلب غير موجود' };
+    try {
+      assertCanDecide(actor);
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+    const referredTo = String(assignee || '').trim();
+    if (!referredTo && !String(note || '').trim()) {
+      return { ok: false, error: 'حدد المختص أو سبب الإحالة' };
+    }
+    if (![STATUS.PENDING, STATUS.UNDER_REVIEW, STATUS.NEEDS_REVISION].includes(req.status)) {
+      return { ok: false, error: 'لا يمكن إحالة هذا الطلب في حالته الحالية' };
+    }
+    const a = actorMeta(actor);
+    const beforeStatus = req.status;
+    const server = await postDecide(id, 'refer', {
+      referredTo,
+      referredToLabel: referredTo,
+      note,
+      reason: note,
+    });
+    if (!server.ok) return { ok: false, error: server.error || 'تعذر إحالة الطلب على السيرفر' };
+    const live = mergeServerRequest(id, server.request) || req;
+    live.status = STATUS.REFERRED;
+    live.referredTo = referredTo;
+    live.referredToLabel = referredTo;
+    live.updatedAt = nowIso();
+    live.decidedAt = live.decidedAt || nowIso();
+    live.decidedBy = live.decidedBy || a.name;
+    live.decidedByEmployeeNo = live.decidedByEmployeeNo || a.employeeNo || '';
+    const detail = `إحالة إلى ${referredTo}${note ? ` — ${note}` : ''}`;
+    live.history = Array.isArray(live.history) ? live.history : [];
+    live.history.push({ at: nowIso(), action: 'referred', by: a.name, detail });
+    pushDecision({
+      id: `DEC-${live.id}-${Date.now()}`,
+      requestId: live.id,
+      type: live.type,
+      typeLabel: live.typeLabel,
+      requesterName: live.requesterName,
+      decision: 'referred',
+      decisionAr: STATUS_AR[STATUS.REFERRED],
+      decidedBy: a.name,
+      decidedByEmployeeNo: a.employeeNo || '',
+      reason: note || detail,
+      beforeStatus,
+      afterStatus: STATUS.REFERRED,
+      requestedAt: live.createdAt,
+      decidedAt: live.decidedAt,
+    });
+    save();
+    notify({
+      title: 'أُحيل طلب موافقة',
+      body: `طلب ${live.id} أُحيل إلى ${referredTo} من ${a.name}.`,
+      level: 'info',
+      category: 'ops',
+      source: 'HIGHER_APPROVALS',
+      sourceName: 'موافقات المدير الأعلى',
+      link: `dashboard.html#rent-admin?apr=${encodeURIComponent(live.id)}`,
+      needsAction: true,
+      referenceType: 'higher_approval',
+      referenceId: live.id,
+      requestId: live.id,
+    });
+    return { ok: true, request: live };
   };
 
   const resubmit = (id, patch = {}, actor) => {
@@ -833,7 +1157,7 @@
     return { ok: true, request: req };
   };
 
-  /** واجهة مساعدة لإنشاء طلب تعيين دور من فريق العمل */
+  /** واجهة مساعدة لإنشاء طلب تعيين دور من فريق العمل — دائم عبر السيرفر */
   const enqueueRoleAssignment = (payload = {}, actor) => {
     const type = payload.editGrantId ? 'role_change' : 'role_grant';
     const curRole = payload.currentRoleCode || '';
@@ -842,7 +1166,7 @@
     const newPerms = payload.permissions || [];
     const subject = payload.subjectName || payload.naioshId || '';
     const opLabel = type === 'role_change' ? 'تغيير صلاحيات موظف' : 'إضافة صلاحيات موظف';
-    return createRequest(
+    return createRequestAsync(
       {
         type,
         typeLabel: type === 'role_change' ? TYPE_AR.role_change : TYPE_AR.role_grant,
@@ -896,7 +1220,7 @@
 
   const enqueueIdentitySuspend = (payload = {}, actor) => {
     const name = payload.subjectName || payload.naioshId || 'موظف';
-    return createRequest(
+    return createRequestAsync(
       {
         type: 'identity_suspend',
         typeLabel: TYPE_AR.identity_suspend,
@@ -927,7 +1251,7 @@
 
   const enqueueRewardApproval = (payload = {}, actor) => {
     const name = payload.subjectName || payload.employeeName || 'موظف';
-    return createRequest(
+    return createRequestAsync(
       {
         type: 'reward_approval',
         typeLabel: TYPE_AR.reward_approval,
@@ -955,10 +1279,18 @@
     );
   };
 
-  const enqueuePlatformGrant = (grant, actor) => {
+  const enqueuePlatformGrant = async (grant, actor) => {
     if (!grant?.id) return null;
-    return createRequest(
+    // Prefer durable server approval id returned from /api/hub/register-requests
+    if (grant.approvalId) {
+      const existing = get(grant.approvalId);
+      if (existing && !existing._localOnly) return existing;
+    }
+    const bySource = findBySource('platform_grant', grant.id);
+    if (bySource && !bySource._localOnly) return bySource;
+    return createRequestAsync(
       {
+        id: grant.approvalId || undefined,
         type: 'platform_grant',
         typeLabel: TYPE_AR.platform_grant,
         title: `اعتماد إضافة منصة — ${grant.companyName || grant.platformLabel || grant.host || grant.id}`,
@@ -994,6 +1326,7 @@
 
   window.HubHigherApprovals = {
     KEY,
+    API,
     STATUS,
     STATUS_AR,
     TYPE_AR,
@@ -1009,12 +1342,15 @@
       ingestExternal();
       return state;
     },
+    hydrateFromServer,
+    syncLocalOnlyToServer,
     getState: () => state,
     list,
     listDecisions: () => state.decisions.slice(),
     get,
     kpis,
     createRequest,
+    createRequestAsync,
     enqueueRoleAssignment,
     enqueueIdentitySuspend,
     enqueueRewardApproval,
@@ -1023,6 +1359,7 @@
     approve,
     reject,
     requestRevision,
+    refer,
     resubmit,
     ingestExternal,
     roleLabel,
@@ -1031,4 +1368,15 @@
   };
 
   ingestExternal();
+  // Best-effort durable hydrate shortly after boot (staff session may arrive after scripts).
+  try {
+    const schedule = typeof setTimeout === 'function' ? setTimeout : null;
+    if (schedule) {
+      schedule(() => {
+        try {
+          void hydrateFromServer({ force: true, backfill: true });
+        } catch (_) {}
+      }, 400);
+    }
+  } catch (_) {}
 })();

@@ -5108,8 +5108,9 @@ const HubStore = (() => {
     pushFeed('decision', `مكافأة ${e.name}: ${item.value}`);
     save();
     if (item.status === 'Pending Approval' && window.HubHigherApprovals?.enqueueRewardApproval) {
-      try {
-        const ticket = window.HubHigherApprovals.enqueueRewardApproval(
+      const haActor = typeof actor === 'string' ? { name: actor } : actor;
+      const haPromise = Promise.resolve(
+        window.HubHigherApprovals.enqueueRewardApproval(
           {
             rewardId: item.id,
             subjectName: e.name,
@@ -5121,11 +5122,25 @@ const HubStore = (() => {
             reason: item.reason,
             priority: /مالية|هدية|إجازة|money|gift|leave/i.test(String(item.type)) ? 'high' : 'normal',
           },
-          typeof actor === 'string' ? { name: actor } : actor
-        );
-        item.higherApprovalId = ticket?.id || '';
-        save();
-      } catch (_) {}
+          haActor
+        )
+      )
+        .then((ticket) => {
+          item.higherApprovalId = ticket?.id || '';
+          item.haPersistError = '';
+          save();
+          return item;
+        })
+        .catch((err) => {
+          // Do not leave «بانتظار الاعتماد» without a durable inbox row.
+          const wf2 = wfBag();
+          wf2.rewards = (wf2.rewards || []).filter((r) => r.id !== item.id);
+          item.status = 'Failed';
+          item.haPersistError = err?.message || 'تعذر حفظ طلب الموافقة';
+          save();
+          throw err;
+        });
+      item._haPromise = haPromise;
     }
     return item;
   };

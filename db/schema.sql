@@ -709,3 +709,45 @@ CREATE TABLE IF NOT EXISTS hub_package_audit (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS hub_package_audit_created_idx ON hub_package_audit (created_at DESC);
+
+-- ─── Higher Manager Approvals (central durable inbox) ───
+CREATE TABLE IF NOT EXISTS hub_higher_approvals (
+  id TEXT PRIMARY KEY,
+  source_type TEXT NOT NULL DEFAULT '',
+  source_id TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending_review',
+  operation TEXT NOT NULL DEFAULT 'sensitive_op',
+  source_module TEXT NOT NULL DEFAULT '',
+  priority TEXT NOT NULL DEFAULT 'normal',
+  requester_email TEXT NOT NULL DEFAULT '',
+  subject_naiosh_id TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL DEFAULT '',
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  decided_at TIMESTAMPTZ,
+  decided_by TEXT
+);
+CREATE INDEX IF NOT EXISTS hub_higher_approvals_status_idx ON hub_higher_approvals (status);
+CREATE INDEX IF NOT EXISTS hub_higher_approvals_created_idx ON hub_higher_approvals (created_at DESC);
+CREATE INDEX IF NOT EXISTS hub_higher_approvals_source_idx ON hub_higher_approvals (source_type, source_id);
+CREATE UNIQUE INDEX IF NOT EXISTS hub_higher_approvals_open_source_uidx
+  ON hub_higher_approvals (source_type, source_id)
+  WHERE source_id <> '' AND status IN ('pending_review', 'under_review', 'needs_revision', 'referred');
+
+CREATE TABLE IF NOT EXISTS hub_higher_approval_decisions (
+  id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL REFERENCES hub_higher_approvals(id) ON DELETE CASCADE,
+  decision TEXT NOT NULL,
+  decided_by TEXT,
+  decided_by_employee_no TEXT DEFAULT '',
+  reason TEXT DEFAULT '',
+  before_status TEXT DEFAULT '',
+  after_status TEXT DEFAULT '',
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS hub_higher_approval_decisions_req_idx
+  ON hub_higher_approval_decisions (request_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS hub_higher_approval_decisions_created_idx
+  ON hub_higher_approval_decisions (created_at DESC);
