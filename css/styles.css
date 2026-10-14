@@ -175,8 +175,9 @@ main.container {
   display: block;
   height: auto !important;
   width: auto !important;
-  max-height: 44px !important;
-  max-width: min(136px, 42vw) !important;
+  /* شعار رسمي عريض (درع + HUB 360) — ارتفاع مضبوط داخل المساحة الحالية */
+  max-height: 48px !important;
+  max-width: min(200px, 52vw) !important;
   object-fit: contain !important;
   object-position: center;
   flex: 0 0 auto;
@@ -245,8 +246,8 @@ main.container {
   .brand > img,
   .top-nav .brand img,
   #site-logo-header {
-    max-height: 46px !important;
-    max-width: 140px !important;
+    max-height: 52px !important;
+    max-width: 220px !important;
   }
 }
 
@@ -255,8 +256,8 @@ main.container {
   .brand > img,
   .top-nav .brand img,
   #site-logo-header {
-    max-height: 36px !important;
-    max-width: min(120px, 40vw) !important;
+    max-height: 40px !important;
+    max-width: min(168px, 48vw) !important;
   }
   .logo-text {
     font-size: 14px;

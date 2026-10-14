@@ -509,7 +509,7 @@
   }
 
   function systemCard(sys) {
-    var logo = sys.logo || 'assets/logo-hub.jpeg';
+    var logo = sys.logo || 'assets/logo-hub.jpeg?v=official1';
     var openUrl = sys.url || '#';
     if (window.HubAuth && HubAuth.attachSsoParams && sys.code) {
       try { openUrl = HubAuth.attachSsoParams(openUrl, sys.code); } catch (e) {}
@@ -810,7 +810,7 @@
       var pts = p.pointsCost != null ? p.pointsCost : p.price;
       var priceText = p.priceLabel || (pts != null ? pts + ' نقطة' : 'حسب الطلب');
       return '<article class="cp-sys">' +
-        '<div class="cp-sys-top"><img src="' + esc(p.logo || 'assets/logo-hub.jpeg') + '" alt="" /><div><strong>' + esc(p.name) + '</strong><small>' + esc(p.type || '') + ' · <strong style="color:var(--cp-ink)">' + esc(priceText) + '</strong></small></div></div>' +
+        '<div class="cp-sys-top"><img src="' + esc(p.logo || 'assets/logo-hub.jpeg?v=official1') + '" alt="" /><div><strong>' + esc(p.name) + '</strong><small>' + esc(p.type || '') + ' · <strong style="color:var(--cp-ink)">' + esc(priceText) + '</strong></small></div></div>' +
         '<p style="margin:0;color:var(--cp-muted);font-size:13px;font-weight:700">' + esc(p.description || '') + '</p>' +
         '<p style="margin:0;font-size:13px;font-weight:800">السعر المعتمد قبل الشراء: ' + esc(priceText) + '</p>' +
         '<div class="cp-actions">' +

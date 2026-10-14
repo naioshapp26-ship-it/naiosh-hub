@@ -51,19 +51,15 @@
   body.homepage #site-logo-header,
   body.homepage .site-header-logo {
     width: auto !important;
-    max-width: min(120px, 40vw) !important;
+    max-width: min(168px, 48vw) !important;
     height: auto !important;
-    max-height: 34px !important;
+    max-height: 40px !important;
     object-fit: contain !important;
   }
 
+  /* الشعار الرسمي يتضمن HUB 360 — لا تُظهر نصًا مكررًا بجانبه */
   body.homepage .nav-main > .brand .logo-text {
-    display: inline-flex !important;
-    align-items: baseline !important;
-    font-size: 13px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    display: none !important;
   }
 
   body.homepage .top-nav.is-mobile-nav-ready .mobile-nav-toggle {

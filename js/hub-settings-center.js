@@ -274,7 +274,7 @@
   }
 
   function previewBlock(s) {
-    var logo = s.logoMain || 'assets/logo-hub.jpeg';
+    var logo = s.logoMain || 'assets/logo-hub.jpeg?v=official1';
     var banners = Array.isArray(s.banners) ? s.banners : [];
     var bnr = null;
     for (var i = 0; i < banners.length; i++) {
@@ -370,7 +370,7 @@
       '</strong><small data-sum-org-en>' +
       esc(s.orgNameEn) +
       '</small></article><article class="sac-sum-logo"><span>الشعار</span><img data-sum-logo src="' +
-      esc(s.logoMain || 'assets/logo-hub.jpeg') +
+      esc(s.logoMain || 'assets/logo-hub.jpeg?v=official1') +
       '" alt="" /></article><article><span>الثيم</span><strong class="sac-sum-swatches"><i style="background:' +
       esc(s.primaryColor) +
       '"></i><i style="background:' +
@@ -693,7 +693,7 @@
               esc(st.nameAr || st.name || '—') +
               '</strong></td>' +
               '<td><img src="' +
-              esc(st.logo || 'assets/logo-hub.jpeg') +
+              esc(st.logo || 'assets/logo-hub.jpeg?v=official1') +
               '" alt="" style="width:28px;height:28px;object-fit:contain;border-radius:6px" /></td>' +
               '<td dir="ltr"><a href="' +
               esc(st.websiteUrl || '#') +
@@ -1057,7 +1057,7 @@
       stage.style.setProperty('--sac-text', d.textColor || '#111');
       stage.style.setProperty('--sac-surface', d.surfaceColor || '#fff');
     }
-    var logo = d.logoMain || 'assets/logo-hub.jpeg';
+    var logo = d.logoMain || 'assets/logo-hub.jpeg?v=official1';
     root.querySelectorAll('[data-preview-logo], [data-sum-logo]').forEach(function (img) {
       img.src = logo;
     });
