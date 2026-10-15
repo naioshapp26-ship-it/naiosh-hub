@@ -95,6 +95,50 @@ button, input, select, textarea { font-family: inherit; }
 
 .sidebar-nav a:hover,
 .sidebar-home:hover { background: #1a1a1a; color: #fff; }
+.sidebar-nav a .nav-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-nav a .nav-ha-badge {
+  margin-inline-start: auto;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fff;
+  color: #9b1c1c;
+  font-size: 11px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 0 0 2px rgba(215, 0, 0, 0.35);
+}
+
+.sidebar-nav a .nav-ha-badge.is-hot {
+  background: #ffe3e6;
+  color: #7f1010;
+  animation: ha-badge-pulse 1.6s ease-in-out infinite;
+}
+
+.sidebar-nav a.active .nav-ha-badge {
+  background: #fff;
+  color: #9b1c1c;
+}
+
+@keyframes ha-badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+html[data-theme="dark"] .sidebar-nav a .nav-ha-badge,
+body.dark .sidebar-nav a .nav-ha-badge {
+  background: #ffd0d6;
+  color: #6a0b0b;
+}
+
 .sidebar-nav a.active {
   background: var(--red);
   box-shadow: 0 8px 18px rgba(215, 0, 0, 0.35);

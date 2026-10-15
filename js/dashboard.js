@@ -420,12 +420,62 @@
     return list;
   };
 
+  let haNavBadge = { awaiting: 0, newer: 0, loaded: false };
+
+  const canSeeHaBadge = () => {
+    try {
+      return !!window.HubHigherApprovals?.canDecide?.(user);
+    } catch {
+      return false;
+    }
+  };
+
+  const refreshHaNavBadge = async ({ force = false } = {}) => {
+    if (!canSeeHaBadge()) {
+      haNavBadge = { awaiting: 0, newer: 0, loaded: true };
+      return haNavBadge;
+    }
+    try {
+      const res = await fetch(`/api/hub/higher-approvals/kpis?t=${Date.now()}`, {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || j.ok === false) return haNavBadge;
+      const awaiting = Number(j.kpis?.awaitingDecision ?? j.kpis?.pending ?? 0) || 0;
+      // Optional "new" count from local hydrate when available
+      let newer = 0;
+      try {
+        await window.HubHigherApprovals?.hydrateFromServer?.({ force: !!force });
+        const seenAt = window.HubHigherApprovalsUI?.getSeenAt?.() || 0;
+        newer = (window.HubHigherApprovals?.list?.() || []).filter((r) => {
+          if (!(r.status === 'pending_review' || r.status === 'under_review')) return false;
+          const created = Date.parse(r.createdAt || '') || 0;
+          return created > seenAt;
+        }).length;
+      } catch (_) {}
+      haNavBadge = { awaiting, newer, loaded: true };
+      return haNavBadge;
+    } catch (_) {
+      return haNavBadge;
+    }
+  };
+
   const renderNav = () => {
     const visibleNav = buildVisibleNav();
+    const showHa = canSeeHaBadge();
     $('#sidebar-nav').innerHTML = visibleNav.map((n) => {
-      const href = n.href || `#${n.key}`;
+      const href = n.key === 'rent-admin' ? `#rent-admin?new=1` : (n.href || `#${n.key}`);
       const active = n.key === current ? 'active' : '';
-      return `<a href="${href}" data-panel="${n.key}" ${n.href ? 'data-external="1"' : ''} class="${active}"><i class="fas ${n.icon}"></i> ${n.label}</a>`;
+      let badge = '';
+      if (n.key === 'rent-admin' && showHa && haNavBadge.awaiting > 0) {
+        const title = haNavBadge.newer > 0
+          ? `${haNavBadge.awaiting} بانتظار قرارك · ${haNavBadge.newer} جديدة`
+          : `${haNavBadge.awaiting} بانتظار قرارك`;
+        badge = `<span class="nav-ha-badge ${haNavBadge.newer > 0 ? 'is-hot' : ''}" title="${esc(title)}">${haNavBadge.awaiting}</span>`;
+      }
+      return `<a href="${href}" data-panel="${n.key}" ${n.href ? 'data-external="1"' : ''} class="${active}"><i class="fas ${n.icon}"></i> <span class="nav-label">${n.label}</span>${badge}</a>`;
     }).join('');
     $('#sidebar-nav').onclick = (e) => {
       const a = e.target.closest('a[data-panel]');
@@ -441,6 +491,12 @@
         return;
       }
       e.preventDefault();
+      if (a.dataset.panel === 'rent-admin') {
+        try {
+          window.HubHigherApprovalsUI?.preferNew?.();
+          history.replaceState(null, '', '#rent-admin?new=1');
+        } catch (_) {}
+      }
       activate(a.dataset.panel);
       document.body.classList.remove('nav-open');
     };
@@ -505,12 +561,28 @@
       return;
     }
     current = next;
-    history.replaceState(null, '', `#${current}`);
+    if (current === 'rent-admin' && !String(location.hash || '').includes('apr=')) {
+      history.replaceState(null, '', `#rent-admin?new=1`);
+    } else {
+      history.replaceState(null, '', `#${current}`);
+    }
     $('#page-title').textContent = TITLES[current][0];
     $('#page-sub').textContent = TITLES[current][1];
     renderNav();
     applyDashboardChrome();
     render();
+    if (current === 'rent-admin') {
+      try {
+        window.HubHigherApprovalsUI?.preferNew?.();
+        // Mark inbox as visited for "new" pills only — pending badge stays until decide.
+        setTimeout(() => {
+          try {
+            window.HubHigherApprovalsUI?.markInboxVisited?.();
+            refreshHaNavBadge({ force: true }).then(() => renderNav());
+          } catch (_) {}
+        }, 2500);
+      } catch (_) {}
+    }
   };
 
   // —— Panels
@@ -2483,6 +2555,7 @@
         render();
       } catch (_) {}
     }
+    refreshHaNavBadge().then(() => renderNav()).catch(() => {});
   });
 
   window.addEventListener('hub-higher-approvals-changed', () => {
@@ -2491,6 +2564,7 @@
         render();
       } catch (_) {}
     }
+    refreshHaNavBadge({ force: true }).then(() => renderNav()).catch(() => {});
   });
 
   // Async workspace updates (e.g. tasks saved after fetch) ask the dashboard to repaint.
@@ -2502,4 +2576,14 @@
   };
   document.addEventListener('hub-panel-refresh', onHubPanelRefresh);
   window.addEventListener('hub-panel-refresh', onHubPanelRefresh);
+
+  // Live HA badge from Postgres-backed API (deciders only).
+  refreshHaNavBadge({ force: true }).then(() => renderNav()).catch(() => {});
+  setInterval(() => {
+    refreshHaNavBadge().then(() => {
+      try {
+        renderNav();
+      } catch (_) {}
+    });
+  }, 20000);
 })();

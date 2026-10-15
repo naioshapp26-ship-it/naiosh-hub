@@ -37,6 +37,7 @@
     priorityFilter: '',
     openId: null,
     modal: null,
+    preferNew: true,
   };
 
   const parseDeepLink = () => {
@@ -46,6 +47,10 @@
       if (m) {
         ui.openId = decodeURIComponent(m[1]);
         ui.tab = 'pending_review';
+      }
+      if (/[?&]new=1\b/.test(hash) || hash.includes('rent-admin') && /new/i.test(hash)) {
+        ui.preferNew = true;
+        ui.tab = ui.tab === 'audit' ? 'pending_review' : ui.tab;
       }
     } catch (_) {}
   };
@@ -77,6 +82,59 @@
     const ar = HA()?.PRIORITY_AR?.[p] || p || 'عادية';
     const cls = p === 'high' ? 'ha-prio is-high' : p === 'low' ? 'ha-prio is-low' : 'ha-prio';
     return `<span class="${cls}">${esc(ar)}</span>`;
+  };
+
+  const SEEN_KEY = () => {
+    const u = window.HubAuth?.getUser?.() || {};
+    return `hubHaSeenAt:${u.email || u.naioshId || 'anon'}`;
+  };
+
+  const getSeenAt = () => {
+    try {
+      return Number(localStorage.getItem(SEEN_KEY()) || 0) || 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  const markInboxVisited = () => {
+    try {
+      localStorage.setItem(SEEN_KEY(), String(Date.now()));
+    } catch (_) {}
+  };
+
+  const isNewRequest = (r) => {
+    const seenAt = getSeenAt();
+    const created = Date.parse(r?.createdAt || '') || 0;
+    return (
+      !!created &&
+      created > seenAt &&
+      (r.status === 'pending_review' || r.status === 'under_review')
+    );
+  };
+
+  const cleanPart = (...parts) => {
+    for (const p of parts) {
+      const s = String(p == null ? '' : p).trim();
+      if (s && s !== 'undefined' && s !== 'null') return s;
+    }
+    return '';
+  };
+
+  const impactText = (req, kind) => {
+    if (kind === 'approve') {
+      const raw = req?.impactIfApproved || '';
+      if (raw && !String(raw).includes('undefined') && !String(raw).includes('null')) return raw;
+      if (req?.type === 'system_rental' || req?.sourceType === 'system_rental') {
+        const system = cleanPart(req.systemLabel, req.system, req.subjectName, req.affectedLabel, 'نظام');
+        const customer = cleanPart(req.requesterName, req.requesterEmail, 'عميل');
+        return `سيتم تفعيل إيجار النظام «${system}» للعميل «${customer}».`;
+      }
+      return req?.requestedDisplay
+        ? `سيتم تطبيق: ${String(req.requestedDisplay).replace(/\n/g, ' · ')}`
+        : 'سيتم تنفيذ العملية الأصلية فور التأكيد.';
+    }
+    return req?.impactIfRejected || 'لن تُنفَّذ العملية.';
   };
 
   const emptyState = (tab) => {
@@ -116,6 +174,7 @@
   };
 
   const TABS = [
+    { id: 'new', label: 'جديدة' },
     { id: 'pending_review', label: 'بانتظار المراجعة' },
     { id: 'under_review', label: 'تحت المراجعة' },
     { id: 'approved', label: 'تمت الموافقة' },
@@ -139,8 +198,22 @@
       type: ui.typeFilter || undefined,
       priority: ui.priorityFilter || undefined,
     };
+    if (ui.tab === 'new') {
+      opts.status = undefined;
+      const rows = (HA().list(opts) || []).filter(isNewRequest);
+      return rows.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    }
     if (ui.tab !== 'all') opts.status = ui.tab;
-    return HA().list(opts);
+    const rows = HA().list(opts) || [];
+    if (ui.preferNew) {
+      return rows.slice().sort((a, b) => {
+        const an = isNewRequest(a) ? 1 : 0;
+        const bn = isNewRequest(b) ? 1 : 0;
+        if (bn !== an) return bn - an;
+        return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+      });
+    }
+    return rows;
   };
 
   const sourceOptions = () => {
@@ -182,8 +255,9 @@
             const canActRow =
               canDecideNow &&
               (r.status === 'pending_review' || r.status === 'under_review' || r.status === 'needs_revision');
-            return `<tr class="${ui.openId === r.id ? 'is-open' : ''}">
-            <td><code dir="ltr">${esc(r.id)}</code></td>
+            const neu = isNewRequest(r);
+            return `<tr class="${ui.openId === r.id ? 'is-open' : ''} ${neu ? 'is-new' : ''}">
+            <td><code dir="ltr">${esc(r.id)}</code>${neu ? ' <span class="ha-new-pill">جديد</span>' : ''}</td>
             <td><strong class="ha-title">${esc(r.title || r.typeLabel)}</strong>
               <div class="ha-muted">${esc(r.affectedLabel || '')}</div></td>
             <td><span class="ha-source">${esc(r.sourceModuleLabel || r.systemLabel || '—')}</span></td>
@@ -421,7 +495,7 @@
           <div class="ha-modal-body">
             <p><b>${esc(req.title || req.typeLabel)}</b> · <code dir="ltr">${esc(req.id)}</code></p>
             <p>المصدر: ${esc(req.sourceModuleLabel || '—')}</p>
-            <p class="ha-impact-ok">${esc(req.impactIfApproved || 'سيتم تنفيذ العملية الأصلية فور التأكيد.')}</p>
+            <p class="ha-impact-ok">${esc(impactText(req, 'approve'))}</p>
             ${m.error ? `<p class="ha-error">${esc(m.error)}</p>` : ''}
           </div>
           <footer>
@@ -457,7 +531,7 @@
         <div class="ha-modal" role="dialog" aria-modal="true" data-action="ha-modal-noop">
           <header><h3>رفض الطلب</h3><button type="button" class="ha-modal-x" data-action="ha-modal-cancel">×</button></header>
           <div class="ha-modal-body">
-            <p class="ha-impact-bad">${esc(req.impactIfRejected || 'لن تُنفَّذ العملية.')}</p>
+            <p class="ha-impact-bad">${esc(impactText(req, 'reject'))}</p>
             <label>سبب الرفض <span class="req">*</span>
               <textarea data-ha-field="value" rows="4" placeholder="اكتب سبب الرفض بوضوح…" ${m.busy ? 'disabled' : ''}>${esc(m.value || '')}</textarea>
             </label>
@@ -646,13 +720,15 @@
         }
         // Never toast success unless the durable call explicitly succeeded
         if (!res || res.ok === false) {
+          const errMsg = (res && res.error) || 'تعذر حفظ القرار — لم يُنفَّذ أي تغيير';
           ui.modal = {
             ...m,
             value,
             note,
             busy: false,
-            error: (res && res.error) || 'تعذر حفظ القرار — لم يُنفَّذ أي تغيير',
+            error: errMsg,
           };
+          toast?.(errMsg);
           return true;
         }
         ui.modal = null;
@@ -679,7 +755,18 @@
     return false;
   };
 
-  window.HubHigherApprovalsUI = { render, handle, getUi: () => ui };
+  window.HubHigherApprovalsUI = {
+    render,
+    handle,
+    getUi: () => ui,
+    markInboxVisited,
+    getSeenAt,
+    isNewRequest,
+    preferNew: () => {
+      ui.preferNew = true;
+      if (ui.tab === 'all' || ui.tab === 'audit') ui.tab = 'pending_review';
+    },
+  };
   window.HubRentAdminWS = {
     render: (ctx) => window.HubHigherApprovalsUI.render(ctx),
     handle: (action, btn, ctx) => window.HubHigherApprovalsUI.handle(action, btn, ctx),

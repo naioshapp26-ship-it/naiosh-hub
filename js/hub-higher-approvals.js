@@ -91,6 +91,35 @@
     decisions: [],
   });
 
+  const cleanLabel = (...parts) => {
+    for (const p of parts) {
+      const s = String(p == null ? '' : p).trim();
+      if (s && s !== 'undefined' && s !== 'null') return s;
+    }
+    return '';
+  };
+
+  const rebuildImpactIfBroken = (r) => {
+    const bad = (s) => !s || String(s).includes('undefined') || String(s).includes('null');
+    if (r.type === 'system_rental' || r.sourceType === 'system_rental') {
+      const system = cleanLabel(r.systemLabel, r.system, r.subjectName, r.affectedLabel, 'نظام');
+      const customer = cleanLabel(r.requesterName, r.subjectEmployeeNo, r.requesterEmail, 'عميل');
+      if (bad(r.impactIfApproved)) {
+        r.impactIfApproved = `سيتم تفعيل إيجار النظام «${system}» للعميل «${customer}».`;
+      }
+      if (bad(r.requestedDisplay)) {
+        r.requestedDisplay = `تفعيل: ${system}`;
+      }
+      if (bad(r.systemLabel)) r.systemLabel = system;
+      if (bad(r.requesterName)) r.requesterName = customer;
+    } else if (bad(r.impactIfApproved)) {
+      r.impactIfApproved = r.requestedDisplay
+        ? `سيتم تطبيق: ${String(r.requestedDisplay).replace(/\n/g, ' · ')}`
+        : 'سيتم تنفيذ العملية المرتبطة بهذا الطلب فور الاعتماد.';
+    }
+    return r;
+  };
+
   const normalizeRequest = (r) => {
     if (!r || typeof r !== 'object') return r;
     if (!r.title) r.title = r.typeLabel || r.affectedLabel || 'طلب موافقة';
@@ -114,6 +143,7 @@
       r.impactIfRejected = 'لن تُنفَّذ العملية وستبقى الحالة كما هي قبل الطلب.';
     }
     if (!r.sourceLink) r.sourceLink = '';
+    rebuildImpactIfBroken(r);
     return r;
   };
 
@@ -582,8 +612,12 @@
   const kpis = () => {
     ingestExternal();
     const rows = state.requests;
+    const awaitingDecision = rows.filter(
+      (r) => r.status === STATUS.PENDING || r.status === STATUS.UNDER_REVIEW
+    ).length;
     return {
-      pending: rows.filter((r) => r.status === STATUS.PENDING || r.status === STATUS.UNDER_REVIEW).length,
+      pending: awaitingDecision,
+      awaitingDecision,
       underReview: rows.filter((r) => r.status === STATUS.UNDER_REVIEW).length,
       approved: rows.filter((r) => r.status === STATUS.APPROVED).length,
       rejected: rows.filter((r) => r.status === STATUS.REJECTED).length,
@@ -709,12 +743,12 @@
             priority: 'normal',
             department: 'استئجار الأنظمة',
             currentDisplay: 'غير مفعّل',
-            requestedDisplay: `تفعيل: ${r.systemLabel || r.systemCode} · خطة: ${r.planLabel || r.plan || '—'}`,
-            impactIfApproved: `سيتم تفعيل إيجار النظام ${r.systemLabel || r.systemCode} للعميل ${r.customerName || r.email || ''}.`,
+            requestedDisplay: `تفعيل: ${cleanLabel(r.systemLabel, r.systemCode, 'نظام')} · خطة: ${cleanLabel(r.planLabel, r.plan, '—')}`,
+            impactIfApproved: `سيتم تفعيل إيجار النظام «${cleanLabel(r.systemLabel, r.systemCode, 'نظام')}» للعميل «${cleanLabel(r.customerName, r.adminName, r.email, 'عميل')}».`,
             impactIfRejected: 'لن يُفعَّل الإيجار وسيُرفض الطلب في سجل الاستئجار.',
             applyPayload: { rentalId: r.id },
           },
-          { name: r.customerName || 'عميل', email: r.email }
+          { name: cleanLabel(r.customerName, r.adminName, 'عميل'), email: r.email || r.adminEmail || '' }
         );
         changed = true;
       });
