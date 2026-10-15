@@ -499,6 +499,37 @@
   }
 }
 
+.ha-new-pill {
+  display: inline-block;
+  margin-inline-start: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #ffe3e6;
+  color: #9b1c1c;
+  font-size: 10px;
+  font-weight: 900;
+  vertical-align: middle;
+}
+
+.hub-ha-ws tr.is-new {
+  background: rgba(215, 0, 0, 0.04);
+}
+
+.hub-ha-ws tr.is-new td:first-child {
+  box-shadow: inset -3px 0 0 #d70000;
+}
+
+html[data-theme="dark"] .ha-new-pill,
+body.dark .ha-new-pill {
+  background: rgba(255, 180, 190, 0.2);
+  color: #ffb4be;
+}
+
+html[data-theme="dark"] .hub-ha-ws tr.is-new,
+body.dark .hub-ha-ws tr.is-new {
+  background: rgba(215, 0, 0, 0.12);
+}
+
 @media (max-width: 720px) {
   .ha-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
