@@ -444,10 +444,13 @@
       const j = await res.json().catch(() => ({}));
       if (!res.ok || j.ok === false) return haNavBadge;
       const awaiting = Number(j.kpis?.awaitingDecision ?? j.kpis?.pending ?? 0) || 0;
-      // Optional "new" count from local hydrate when available
+      // Prefer local list for "new" count — do NOT hydrate on every badge poll
+      // (hydrate → save → hub-higher-approvals-changed → full render = flicker loop).
       let newer = 0;
       try {
-        await window.HubHigherApprovals?.hydrateFromServer?.({ force: !!force });
+        if (force) {
+          await window.HubHigherApprovals?.hydrateFromServer?.({ force: true });
+        }
         const seenAt = window.HubHigherApprovalsUI?.getSeenAt?.() || 0;
         newer = (window.HubHigherApprovals?.list?.() || []).filter((r) => {
           if (!(r.status === 'pending_review' || r.status === 'under_review')) return false;
@@ -455,7 +458,8 @@
           return created > seenAt;
         }).length;
       } catch (_) {}
-      haNavBadge = { awaiting, newer, loaded: true };
+      const prev = haNavBadge.awaiting;
+      haNavBadge = { awaiting, newer, loaded: true, changed: prev !== awaiting };
       return haNavBadge;
     } catch (_) {
       return haNavBadge;
@@ -573,12 +577,14 @@
     render();
     if (current === 'rent-admin') {
       try {
+        // Allow one fresh hydrate for this visit (not on every re-render).
+        window.HubHigherApprovalsUI?.resetHydrateKick?.();
         window.HubHigherApprovalsUI?.preferNew?.();
         // Mark inbox as visited for "new" pills only — pending badge stays until decide.
         setTimeout(() => {
           try {
             window.HubHigherApprovalsUI?.markInboxVisited?.();
-            refreshHaNavBadge({ force: true }).then(() => renderNav());
+            refreshHaNavBadge({ force: false }).then(() => renderNav());
           } catch (_) {}
         }, 2500);
       } catch (_) {}
@@ -2549,41 +2555,60 @@
     }
   });
 
+  let haRerenderTimer = null;
+  const haModalOpen = () => !!document.querySelector('.ha-modal, .ha-modal-backdrop');
+
+  const scheduleHaPanelRefresh = ({ forceBadge = false } = {}) => {
+    if (haRerenderTimer) clearTimeout(haRerenderTimer);
+    haRerenderTimer = setTimeout(() => {
+      haRerenderTimer = null;
+      // Never wipe the panel while a confirm modal is open — that looks like
+      // the page closing/opening and kills in-progress decisions.
+      if (current === 'rent-admin' && !haModalOpen()) {
+        try {
+          render();
+        } catch (_) {}
+      }
+      refreshHaNavBadge({ force: !!forceBadge })
+        .then((b) => {
+          if (b?.changed || forceBadge || !document.querySelector('.nav-ha-badge')) {
+            try {
+              renderNav();
+            } catch (_) {}
+          }
+        })
+        .catch(() => {});
+    }, 120);
+  };
+
   window.addEventListener('hub-ha-rerender', () => {
-    if (current === 'rent-admin') {
-      try {
-        render();
-      } catch (_) {}
-    }
-    refreshHaNavBadge().then(() => renderNav()).catch(() => {});
+    scheduleHaPanelRefresh({ forceBadge: false });
   });
 
   window.addEventListener('hub-higher-approvals-changed', () => {
-    if (current === 'rent-admin') {
-      try {
-        render();
-      } catch (_) {}
-    }
-    refreshHaNavBadge({ force: true }).then(() => renderNav()).catch(() => {});
+    // KPI/badge only from API — do not force full hydrate here (prevents loop).
+    scheduleHaPanelRefresh({ forceBadge: false });
   });
 
   // Async workspace updates (e.g. tasks saved after fetch) ask the dashboard to repaint.
   const onHubPanelRefresh = () => {
     try {
       renderNav();
-      render();
+      if (!haModalOpen()) render();
     } catch (_) {}
   };
   document.addEventListener('hub-panel-refresh', onHubPanelRefresh);
   window.addEventListener('hub-panel-refresh', onHubPanelRefresh);
 
-  // Live HA badge from Postgres-backed API (deciders only).
-  refreshHaNavBadge({ force: true }).then(() => renderNav()).catch(() => {});
+  // Live HA badge from Postgres-backed API (deciders only). KPI poll only — no hydrate.
+  refreshHaNavBadge({ force: false }).then(() => renderNav()).catch(() => {});
   setInterval(() => {
-    refreshHaNavBadge().then(() => {
-      try {
-        renderNav();
-      } catch (_) {}
+    refreshHaNavBadge({ force: false }).then((b) => {
+      if (b?.changed) {
+        try {
+          renderNav();
+        } catch (_) {}
+      }
     });
   }, 20000);
 })();
