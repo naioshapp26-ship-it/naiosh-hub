@@ -143,20 +143,31 @@ async function fillRegister(page) {
     subEl.dispatchEvent(new Event('input', { bubbles: true }));
     document.getElementById('reg-notes').value = 'اختبار واجهة بعد النشر — بدون ترقيع';
   }, slug);
-  const respP = page.waitForResponse(
-    (r) => r.url().includes('/api/hub/register-requests') && r.request().method() === 'POST',
-    { timeout: 60000 }
-  );
+  const respP = page
+    .waitForResponse(
+      (r) => r.url().includes('/api/hub/register-requests') && r.request().method() === 'POST',
+      { timeout: 90000 }
+    )
+    .catch(() => null);
   await page.click('[data-reg-submit]');
   const resp = await respP;
-  const json = await resp.json();
+  await sleep(1500);
+  let json = resp ? await resp.json().catch(() => ({})) : {};
+  const feedback = await page
+    .evaluate(() => document.querySelector('[data-register-feedback]')?.textContent || '')
+    .catch(() => '');
+  const aprFromFb = (feedback.match(/APR-\d{4}-\d+/i) || [])[0] || '';
+  const reqFromFb = (feedback.match(/REG-REQ-[A-Z0-9-]+/i) || [])[0] || '';
   await shot(page, 'register');
+  const approvalId = json.approvalId || json.approval?.id || aprFromFb;
+  const requestId = json.requestId || json.request?.id || reqFromFb;
+  const statusLabel = json.statusLabel || json.request?.statusLabel || feedback;
   return {
     email,
-    approvalId: json.approvalId || json.approval?.id,
-    requestId: json.requestId || json.request?.id,
-    statusLabel: json.statusLabel || json.request?.statusLabel || '',
-    ok: !!(json.approvalId || json.approval?.id),
+    approvalId,
+    requestId,
+    statusLabel,
+    ok: !!approvalId && /بانتظار موافقة المدير الأعلى/.test(statusLabel + feedback),
   };
 }
 
@@ -192,25 +203,29 @@ async function mkExtra(page, tag) {
 
 /** Real UI decide — NO patching of DOM or handlers */
 async function uiDecide(page, approvalId, kind, value) {
-  if (kind === 'revise' || kind === 'refer') {
-    const openSel = `[data-action="ha-open"][data-id="${approvalId}"]`;
-    if (await page.$(openSel)) {
-      await page.click(openSel);
-      await sleep(900);
-    }
-  }
+  // Search first (re-render), THEN open detail for revise/refer (those buttons live in detail pane).
   await page.evaluate((id) => {
     const q = document.querySelector('[data-ha-q]');
     if (q) {
       q.value = id;
       q.dispatchEvent(new Event('input', { bubbles: true }));
     }
+    document
+      .querySelector('[data-action="ha-tab"][data-tab="pending_review"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     document.querySelector('[data-action="ha-search"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   }, approvalId);
-  await sleep(600);
+  await sleep(800);
+
+  if (kind === 'revise' || kind === 'refer') {
+    const openSel = `[data-action="ha-open"][data-id="${approvalId}"]`;
+    if (!(await page.$(openSel))) return { ok: false, error: 'ha-open button missing before revise/refer' };
+    await page.click(openSel);
+    await sleep(1000);
+  }
 
   const modalSel = `[data-action="ha-modal"][data-kind="${kind}"][data-id="${approvalId}"]`;
-  if (!(await page.$(modalSel))) return { ok: false, error: 'modal open button missing' };
+  if (!(await page.$(modalSel))) return { ok: false, error: `modal open button missing (${kind})` };
   await page.$eval(modalSel, (el) => el.scrollIntoView({ block: 'center' }));
   await page.click(modalSel);
   await sleep(800);
@@ -298,28 +313,42 @@ async function main() {
     return finalize();
   }
 
+  console.log('launching browser…');
   const browser = await puppeteer.launch({
     headless: 'new',
     executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome-stable',
-    protocolTimeout: 120000,
+    protocolTimeout: 180000,
     userDataDir: `/tmp/ha-unpatched-${Date.now()}`,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--disable-extensions'],
     defaultViewport: { width: 1440, height: 900 },
   });
+  console.log('browser ready');
 
-  const guest = await browser.newPage();
-  const leader = await browser.newPage();
+  let leader;
   let reg = {};
 
   try {
-    reg = await fillRegister(guest);
-    mark(
-      'ui_register_platform_grant',
-      !!reg.ok && /بانتظار موافقة المدير الأعلى/.test(reg.statusLabel),
-      `${reg.approvalId} · ${reg.requestId}`
-    );
+    const guest = await browser.newPage();
+    guest.setDefaultTimeout(90000);
+    guest.setDefaultNavigationTimeout(90000);
+    console.log('register start');
+    try {
+      reg = await fillRegister(guest);
+      mark(
+        'ui_register_platform_grant',
+        !!reg.ok && /بانتظار موافقة المدير الأعلى/.test(reg.statusLabel),
+        `${reg.approvalId} · ${reg.requestId}`
+      );
+    } catch (e) {
+      mark('ui_register_platform_grant', false, e.message);
+    }
+    console.log('register done', reg.approvalId || 'none');
     await guest.close().catch(() => {});
 
+    leader = await browser.newPage();
+    leader.setDefaultTimeout(90000);
+    leader.setDefaultNavigationTimeout(90000);
+    console.log('leader login');
     mark('ui_leader_login', await login(leader, SA_EMAIL, SA_PASS), leader.url());
     await openInbox(leader);
     await shot(leader, 'inbox');

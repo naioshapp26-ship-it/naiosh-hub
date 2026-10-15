@@ -1,25 +1,110 @@
 {
-  "at": "2026-10-15T00:58:53.865Z",
+  "at": "2026-10-15T01:12:55.550Z",
   "base": "https://naiosh-hub-production.up.railway.app",
   "patched": false,
   "summary": {
-    "pass": 0,
-    "fail": 1,
-    "notTested": 1
+    "pass": 19,
+    "fail": 0,
+    "notTested": 0
   },
-  "requiredPass": false,
-  "fullPass": false,
-  "verdict": "FAIL_OR_PARTIAL_UI_UNPATCHED",
+  "requiredPass": true,
+  "fullPass": true,
+  "verdict": "FULL_PASS_UI_PROD_UNPATCHED",
   "cases": [
     {
       "name": "deploy_js_has_modal_fix",
-      "result": "FAIL",
-      "detail": "fix not on production yet"
+      "result": "PASS",
+      "detail": "ha-modal-noop present, stopPropagation gone"
     },
     {
-      "name": "suite_skipped_until_deploy",
-      "result": "NOT TESTED",
-      "detail": "waiting for PR #240 deploy"
+      "name": "ui_register_platform_grant",
+      "result": "PASS",
+      "detail": "APR-2026-00033 · REG-REQ-MV8UF4D8-F3D5"
+    },
+    {
+      "name": "ui_leader_login",
+      "result": "PASS",
+      "detail": "https://naiosh-hub-production.up.railway.app/dashboard.html#overview"
+    },
+    {
+      "name": "ui_request_visible_cross_session",
+      "result": "PASS",
+      "detail": "APR-2026-00033"
+    },
+    {
+      "name": "ui_button_approve_and_confirm",
+      "result": "PASS",
+      "detail": "approved"
+    },
+    {
+      "name": "ui_double_click_single_decide",
+      "result": "PASS",
+      "detail": "decidePosts=1"
+    },
+    {
+      "name": "ui_approve_reflects_origin",
+      "result": "PASS",
+      "detail": "active/بانتظار موافقة المدير الأعلى"
+    },
+    {
+      "name": "ui_button_reject_and_confirm",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "ui_reject_reflects_origin",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "ui_button_revise_and_confirm",
+      "result": "PASS",
+      "detail": "needs_revision"
+    },
+    {
+      "name": "ui_revise_then_resubmit",
+      "result": "PASS",
+      "detail": "pending_review"
+    },
+    {
+      "name": "ui_button_refer_and_confirm",
+      "result": "PASS",
+      "detail": "referred"
+    },
+    {
+      "name": "ui_persist_postgres_after_relogin",
+      "result": "PASS",
+      "detail": "{\"status\":\"approved\",\"decidedBy\":\"القائد الأعلى\",\"decidedAt\":\"2026-10-15T01:11:45.857Z\"}"
+    },
+    {
+      "name": "ui_no_fake_success_on_repeat",
+      "result": "PASS",
+      "detail": "لا يمكن الموافقة على هذا الطلب في حالته الحالية"
+    },
+    {
+      "name": "ui_requester_decision_visible_fields",
+      "result": "PASS",
+      "detail": "{\"status\":\"approved\",\"statusLabel\":\"تمت الموافقة\",\"requesterEmail\":\"ha-unpatched-mv8uf1yk@example.com\",\"decidedBy\":\"القائد الأعلى\",\"decidedAt\":\"2026-10-15T01:11:45.857Z\"}"
+    },
+    {
+      "name": "ui_theme_light",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "ui_theme_dark",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "ui_mobile_layout",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "existing_approvals_preserved",
+      "result": "PASS",
+      "detail": "script only decided tickets it created"
     }
   ]
 }
