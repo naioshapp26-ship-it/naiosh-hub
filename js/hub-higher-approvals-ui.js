@@ -416,7 +416,7 @@
     if (!req) return '';
     if (m.kind === 'approve') {
       return `<div class="ha-modal-backdrop" data-action="ha-modal-cancel">
-        <div class="ha-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="ha-modal" role="dialog" aria-modal="true" data-action="ha-modal-noop">
           <header><h3>تأكيد الموافقة</h3><button type="button" class="ha-modal-x" data-action="ha-modal-cancel">×</button></header>
           <div class="ha-modal-body">
             <p><b>${esc(req.title || req.typeLabel)}</b> · <code dir="ltr">${esc(req.id)}</code></p>
@@ -433,7 +433,7 @@
     }
     if (m.kind === 'refer') {
       return `<div class="ha-modal-backdrop" data-action="ha-modal-cancel">
-        <div class="ha-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="ha-modal" role="dialog" aria-modal="true" data-action="ha-modal-noop">
           <header><h3>إحالة للمختص</h3><button type="button" class="ha-modal-x" data-action="ha-modal-cancel">×</button></header>
           <div class="ha-modal-body">
             <p><b>${esc(req.title || req.typeLabel)}</b> · <code dir="ltr">${esc(req.id)}</code></p>
@@ -454,7 +454,7 @@
     }
     if (m.kind === 'reject') {
       return `<div class="ha-modal-backdrop" data-action="ha-modal-cancel">
-        <div class="ha-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="ha-modal" role="dialog" aria-modal="true" data-action="ha-modal-noop">
           <header><h3>رفض الطلب</h3><button type="button" class="ha-modal-x" data-action="ha-modal-cancel">×</button></header>
           <div class="ha-modal-body">
             <p class="ha-impact-bad">${esc(req.impactIfRejected || 'لن تُنفَّذ العملية.')}</p>
@@ -472,7 +472,7 @@
     }
     if (m.kind === 'revise') {
       return `<div class="ha-modal-backdrop" data-action="ha-modal-cancel">
-        <div class="ha-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="ha-modal" role="dialog" aria-modal="true" data-action="ha-modal-noop">
           <header><h3>طلب تعديل</h3><button type="button" class="ha-modal-x" data-action="ha-modal-cancel">×</button></header>
           <div class="ha-modal-body">
             <label>ما المطلوب تعديله؟ <span class="req">*</span>
@@ -606,6 +606,11 @@
     }
     if (action === 'ha-modal-cancel') {
       ui.modal = null;
+      return true;
+    }
+    // Absorb clicks on the dialog panel so they do not hit the backdrop cancel,
+    // without stopPropagation (which blocked ha-modal-ok from the dashboard root listener).
+    if (action === 'ha-modal-noop') {
       return true;
     }
     if (action === 'ha-modal-ok') {

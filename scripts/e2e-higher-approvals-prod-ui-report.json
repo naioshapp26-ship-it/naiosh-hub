@@ -1,0 +1,181 @@
+{
+  "at": "2026-10-15T00:48:17.517Z",
+  "base": "https://naiosh-hub-production.up.railway.app",
+  "summary": {
+    "pass": 31,
+    "fail": 1,
+    "notTested": 1
+  },
+  "requiredPass": true,
+  "unpatchedModalOk": false,
+  "fullPass": false,
+  "verdict": "FAIL_UI_MODAL_OK_BLOCKED",
+  "cases": [
+    {
+      "name": "ui_register_platform_grant",
+      "result": "PASS",
+      "detail": "APR-2026-00019 · REG-REQ-MV8T6FLL-202D · تم إرسال طلب التسجيل بنجاح.رقم الطلب: REG-REQ-MV8T6FLL-202Dرقم الموافقة: APR-202"
+    },
+    {
+      "name": "ui_leader_login",
+      "result": "PASS",
+      "detail": "https://naiosh-hub-production.up.railway.app/dashboard.html#overview"
+    },
+    {
+      "name": "ui_inbox_title",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "ui_request_visible_cross_session",
+      "result": "PASS",
+      "detail": "APR-2026-00019"
+    },
+    {
+      "name": "ui_kpis_visible",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "ui_search_by_request_id",
+      "result": "PASS",
+      "detail": "APR-2026-00019"
+    },
+    {
+      "name": "ui_modal_ok_unpatched",
+      "result": "FAIL",
+      "detail": "FAIL root cause: .ha-modal onclick=stopPropagation blocks dashboard delegation"
+    },
+    {
+      "name": "ui_button_approve",
+      "result": "PASS",
+      "detail": "approved · patched=true"
+    },
+    {
+      "name": "ui_approve_reflects_origin",
+      "result": "PASS",
+      "detail": "active/بانتظار موافقة المدير الأعلى"
+    },
+    {
+      "name": "ui_button_reject",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "ui_reject_reflects_origin",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "ui_button_revise",
+      "result": "PASS",
+      "detail": "needs_revision"
+    },
+    {
+      "name": "ui_revise_then_resubmit",
+      "result": "PASS",
+      "detail": "pending_review"
+    },
+    {
+      "name": "ui_button_refer",
+      "result": "PASS",
+      "detail": "referred"
+    },
+    {
+      "name": "ui_audit_decider_and_time",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "ui_staff_admin_login",
+      "result": "PASS",
+      "detail": "https://naiosh-hub-production.up.railway.app/dashboard.html#overview"
+    },
+    {
+      "name": "ui_admin_cannot_decide",
+      "result": "PASS",
+      "detail": "{\"role\":\"admin\",\"canDecide\":false,\"approveBtns\":0}"
+    },
+    {
+      "name": "ui_admin_api_decide_denied",
+      "result": "PASS",
+      "detail": "{\"status\":403,\"error\":\"ليست لديك صلاحية اعتماد/رفض طلبات المدير الأعلى\",\"ok\":false}"
+    },
+    {
+      "name": "ui_synth_identity_created",
+      "result": "PASS",
+      "detail": "NAI-HA-UI-mv8t87k4/EMP-0016"
+    },
+    {
+      "name": "ui_role_grant_enqueued",
+      "result": "PASS",
+      "detail": "APR-2026-00023"
+    },
+    {
+      "name": "ui_role_grant_decide",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "ui_identity_suspend_enqueued",
+      "result": "PASS",
+      "detail": "APR-2026-00024"
+    },
+    {
+      "name": "ui_identity_suspend_decide",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "ui_reward_enqueued",
+      "result": "PASS",
+      "detail": "{\"rewardId\":\"RWD-2026-00003\",\"approvalId\":\"APR-2026-00025\",\"status\":\"Pending Approval\",\"haError\":\"\"}"
+    },
+    {
+      "name": "ui_reward_decide",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "ui_rental_enqueued",
+      "result": "PASS",
+      "detail": "{\"status\":201,\"approvalId\":\"APR-2026-00026\",\"id\":\"rent-mv8tl1qh-302088\"}"
+    },
+    {
+      "name": "ui_rental_decide",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "ui_theme_light",
+      "result": "PASS",
+      "detail": "screenshot captured"
+    },
+    {
+      "name": "ui_theme_dark",
+      "result": "PASS",
+      "detail": "screenshot captured"
+    },
+    {
+      "name": "ui_mobile_layout",
+      "result": "PASS",
+      "detail": "390x844"
+    },
+    {
+      "name": "service_restart_persist",
+      "result": "NOT TESTED",
+      "detail": "no safe Railway restart credential/API in this environment"
+    },
+    {
+      "name": "ui_persist_after_relogin",
+      "result": "PASS",
+      "detail": "APR-2026-00027"
+    },
+    {
+      "name": "ui_identity_not_suspended",
+      "result": "PASS",
+      "detail": "missing"
+    }
+  ],
+  "note": "Stock production modal-ok is blocked by stopPropagation; decide cases after that used a live DOM patch matching the source fix in this PR. FULL PASS is withheld until unpatched production works."
+}
