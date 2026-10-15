@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-15T00:58:53.865Z",
+  "base": "https://naiosh-hub-production.up.railway.app",
+  "patched": false,
+  "summary": {
+    "pass": 0,
+    "fail": 1,
+    "notTested": 1
+  },
+  "requiredPass": false,
+  "fullPass": false,
+  "verdict": "FAIL_OR_PARTIAL_UI_UNPATCHED",
+  "cases": [
+    {
+      "name": "deploy_js_has_modal_fix",
+      "result": "FAIL",
+      "detail": "fix not on production yet"
+    },
+    {
+      "name": "suite_skipped_until_deploy",
+      "result": "NOT TESTED",
+      "detail": "waiting for PR #240 deploy"
+    }
+  ]
+}
