@@ -1,0 +1,104 @@
+{
+  "at": "2026-10-14T23:33:31.252Z",
+  "base": "https://naiosh-hub-production.up.railway.app",
+  "deployedPrs": [
+    "#237",
+    "#238"
+  ],
+  "cases": [
+    {
+      "name": "prod_health",
+      "result": "PASS",
+      "detail": "connected"
+    },
+    {
+      "name": "data_403",
+      "result": "PASS",
+      "detail": "403"
+    },
+    {
+      "name": "unauth_401",
+      "result": "PASS",
+      "detail": "401"
+    },
+    {
+      "name": "leader_login",
+      "result": "PASS",
+      "detail": "supreme_leader"
+    },
+    {
+      "name": "approve_register",
+      "result": "PASS",
+      "detail": "REG-REQ-MV8QX4OS-13A9/APR-2026-00006"
+    },
+    {
+      "name": "approve_in_inbox",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "approve_decide",
+      "result": "PASS",
+      "detail": "approved"
+    },
+    {
+      "name": "approve_origin",
+      "result": "PASS",
+      "detail": "active/مفعّل"
+    },
+    {
+      "name": "reject_decide",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "reject_origin",
+      "result": "PASS",
+      "detail": "rejected/مرفوض"
+    },
+    {
+      "name": "revise_decide",
+      "result": "PASS",
+      "detail": "needs_revision"
+    },
+    {
+      "name": "revise_resubmit",
+      "result": "PASS",
+      "detail": "pending_review"
+    },
+    {
+      "name": "refer_decide",
+      "result": "PASS",
+      "detail": "referred"
+    },
+    {
+      "name": "guest_denied",
+      "result": "PASS",
+      "detail": "401"
+    },
+    {
+      "name": "kpis_server",
+      "result": "PASS",
+      "detail": "{\"pending\":2,\"underReview\":0,\"approved\":2,\"rejected\":3,\"needsRevision\":0,\"referred\":2,\"all\":9}"
+    },
+    {
+      "name": "persist_relogin",
+      "result": "PASS",
+      "detail": "found=4 referred,pending_review,rejected,approved"
+    }
+  ],
+  "summary": {
+    "pass": 16,
+    "fail": 0,
+    "notTested": 0
+  },
+  "corePass": true,
+  "fullPass": true,
+  "verdict": "FULL_PASS_PROD_CORE",
+  "notTestedPaths": [
+    "UI browser full walkthrough",
+    "role_grant / identity_suspend / reward_approval via staff UI on prod",
+    "explicit Railway service restart",
+    "system_rental full HTTP on prod"
+  ]
+}

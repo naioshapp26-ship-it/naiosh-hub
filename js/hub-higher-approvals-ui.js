@@ -416,7 +416,7 @@
     if (!req) return '';
     if (m.kind === 'approve') {
       return `<div class="ha-modal-backdrop" data-action="ha-modal-cancel">
-        <div class="ha-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="ha-modal" role="dialog" aria-modal="true" data-action="ha-modal-noop">
           <header><h3>تأكيد الموافقة</h3><button type="button" class="ha-modal-x" data-action="ha-modal-cancel">×</button></header>
           <div class="ha-modal-body">
             <p><b>${esc(req.title || req.typeLabel)}</b> · <code dir="ltr">${esc(req.id)}</code></p>
@@ -425,64 +425,64 @@
             ${m.error ? `<p class="ha-error">${esc(m.error)}</p>` : ''}
           </div>
           <footer>
-            <button type="button" class="btn btn-ghost" data-action="ha-modal-cancel">إلغاء</button>
-            <button type="button" class="btn btn-primary" data-action="ha-modal-ok">تأكيد الموافقة وتنفيذ العملية</button>
+            <button type="button" class="btn btn-ghost" data-action="ha-modal-cancel" ${m.busy ? 'disabled' : ''}>إلغاء</button>
+            <button type="button" class="btn btn-primary" data-action="ha-modal-ok" ${m.busy ? 'disabled aria-busy="true"' : ''}>${m.busy ? 'جارٍ الحفظ…' : 'تأكيد الموافقة وتنفيذ العملية'}</button>
           </footer>
         </div>
       </div>`;
     }
     if (m.kind === 'refer') {
       return `<div class="ha-modal-backdrop" data-action="ha-modal-cancel">
-        <div class="ha-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="ha-modal" role="dialog" aria-modal="true" data-action="ha-modal-noop">
           <header><h3>إحالة للمختص</h3><button type="button" class="ha-modal-x" data-action="ha-modal-cancel">×</button></header>
           <div class="ha-modal-body">
             <p><b>${esc(req.title || req.typeLabel)}</b> · <code dir="ltr">${esc(req.id)}</code></p>
             <label>المختص (بريد أو اسم/دور) <span class="req">*</span>
-              <input type="text" data-ha-field="value" placeholder="مثال: malika@naiosh.com أو مدير الموارد البشرية" value="${esc(m.value || '')}" />
+              <input type="text" data-ha-field="value" placeholder="مثال: malika@naiosh.com أو مدير الموارد البشرية" value="${esc(m.value || '')}" ${m.busy ? 'disabled' : ''} />
             </label>
             <label style="display:block;margin-top:10px">ملاحظة الإحالة
-              <textarea data-ha-field="note" rows="3" placeholder="سبب الإحالة…">${esc(m.note || '')}</textarea>
+              <textarea data-ha-field="note" rows="3" placeholder="سبب الإحالة…" ${m.busy ? 'disabled' : ''}>${esc(m.note || '')}</textarea>
             </label>
             ${m.error ? `<p class="ha-error">${esc(m.error)}</p>` : ''}
           </div>
           <footer>
-            <button type="button" class="btn btn-ghost" data-action="ha-modal-cancel">إلغاء</button>
-            <button type="button" class="btn btn-primary" data-action="ha-modal-ok">تأكيد الإحالة</button>
+            <button type="button" class="btn btn-ghost" data-action="ha-modal-cancel" ${m.busy ? 'disabled' : ''}>إلغاء</button>
+            <button type="button" class="btn btn-primary" data-action="ha-modal-ok" ${m.busy ? 'disabled aria-busy="true"' : ''}>${m.busy ? 'جارٍ الحفظ…' : 'تأكيد الإحالة'}</button>
           </footer>
         </div>
       </div>`;
     }
     if (m.kind === 'reject') {
       return `<div class="ha-modal-backdrop" data-action="ha-modal-cancel">
-        <div class="ha-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="ha-modal" role="dialog" aria-modal="true" data-action="ha-modal-noop">
           <header><h3>رفض الطلب</h3><button type="button" class="ha-modal-x" data-action="ha-modal-cancel">×</button></header>
           <div class="ha-modal-body">
             <p class="ha-impact-bad">${esc(req.impactIfRejected || 'لن تُنفَّذ العملية.')}</p>
             <label>سبب الرفض <span class="req">*</span>
-              <textarea data-ha-field="value" rows="4" placeholder="اكتب سبب الرفض بوضوح…">${esc(m.value || '')}</textarea>
+              <textarea data-ha-field="value" rows="4" placeholder="اكتب سبب الرفض بوضوح…" ${m.busy ? 'disabled' : ''}>${esc(m.value || '')}</textarea>
             </label>
             ${m.error ? `<p class="ha-error">${esc(m.error)}</p>` : ''}
           </div>
           <footer>
-            <button type="button" class="btn btn-ghost" data-action="ha-modal-cancel">إلغاء</button>
-            <button type="button" class="btn btn-primary" data-action="ha-modal-ok">تأكيد الرفض</button>
+            <button type="button" class="btn btn-ghost" data-action="ha-modal-cancel" ${m.busy ? 'disabled' : ''}>إلغاء</button>
+            <button type="button" class="btn btn-primary" data-action="ha-modal-ok" ${m.busy ? 'disabled aria-busy="true"' : ''}>${m.busy ? 'جارٍ الحفظ…' : 'تأكيد الرفض'}</button>
           </footer>
         </div>
       </div>`;
     }
     if (m.kind === 'revise') {
       return `<div class="ha-modal-backdrop" data-action="ha-modal-cancel">
-        <div class="ha-modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <div class="ha-modal" role="dialog" aria-modal="true" data-action="ha-modal-noop">
           <header><h3>طلب تعديل</h3><button type="button" class="ha-modal-x" data-action="ha-modal-cancel">×</button></header>
           <div class="ha-modal-body">
             <label>ما المطلوب تعديله؟ <span class="req">*</span>
-              <textarea data-ha-field="value" rows="4" placeholder="اكتب التعديل المطلوب بوضوح…">${esc(m.value || '')}</textarea>
+              <textarea data-ha-field="value" rows="4" placeholder="اكتب التعديل المطلوب بوضوح…" ${m.busy ? 'disabled' : ''}>${esc(m.value || '')}</textarea>
             </label>
             ${m.error ? `<p class="ha-error">${esc(m.error)}</p>` : ''}
           </div>
           <footer>
-            <button type="button" class="btn btn-ghost" data-action="ha-modal-cancel">إلغاء</button>
-            <button type="button" class="btn btn-primary" data-action="ha-modal-ok">إرسال طلب التعديل</button>
+            <button type="button" class="btn btn-ghost" data-action="ha-modal-cancel" ${m.busy ? 'disabled' : ''}>إلغاء</button>
+            <button type="button" class="btn btn-primary" data-action="ha-modal-ok" ${m.busy ? 'disabled aria-busy="true"' : ''}>${m.busy ? 'جارٍ الحفظ…' : 'إرسال طلب التعديل'}</button>
           </footer>
         </div>
       </div>`;
@@ -608,10 +608,17 @@
       ui.modal = null;
       return true;
     }
+    // Absorb clicks on the dialog panel so they do not hit the backdrop cancel.
+    // Return false so dashboard does NOT re-render (avoids wiping in-progress form fields
+    // and avoids affecting other dashboard panels). Scoped to HA modal only.
+    if (action === 'ha-modal-noop') {
+      return false;
+    }
     if (action === 'ha-modal-ok') {
       return (async () => {
         const m = ui.modal;
         if (!m) return true;
+        if (m.busy) return true; // ignore double / rapid confirm clicks
         if (!HA()?.canDecide?.(actor) && ['approve', 'reject', 'revise', 'refer'].includes(m.kind)) {
           ui.modal = { ...m, error: 'ليست لديك صلاحية اعتماد/رفض طلبات المدير الأعلى' };
           return true;
@@ -619,13 +626,33 @@
         const value = readModalField();
         const noteEl = document.querySelector('.ha-modal [data-ha-field="note"]');
         const note = noteEl ? noteEl.value : m.note || '';
+        ui.modal = { ...m, value, note, busy: true, error: '' };
+        // Disable confirm button immediately (before await) to prevent double execute
+        try {
+          document.querySelectorAll('.ha-modal [data-action="ha-modal-ok"]').forEach((b) => {
+            b.disabled = true;
+            b.setAttribute('aria-busy', 'true');
+          });
+        } catch (_) {}
         let res;
-        if (m.kind === 'approve') res = await HA().approve(m.id, actor, value);
-        else if (m.kind === 'reject') res = await HA().reject(m.id, value, actor);
-        else if (m.kind === 'revise') res = await HA().requestRevision(m.id, value, actor);
-        else if (m.kind === 'refer') res = await HA().refer(m.id, value, actor, note);
-        if (res && !res.ok) {
-          ui.modal = { ...m, value, note, error: res.error || 'تعذر إكمال العملية' };
+        try {
+          if (m.kind === 'approve') res = await HA().approve(m.id, actor, value);
+          else if (m.kind === 'reject') res = await HA().reject(m.id, value, actor);
+          else if (m.kind === 'revise') res = await HA().requestRevision(m.id, value, actor);
+          else if (m.kind === 'refer') res = await HA().refer(m.id, value, actor, note);
+          else res = { ok: false, error: 'نوع قرار غير معروف' };
+        } catch (e) {
+          res = { ok: false, error: e?.message || 'تعذر إكمال العملية' };
+        }
+        // Never toast success unless the durable call explicitly succeeded
+        if (!res || res.ok === false) {
+          ui.modal = {
+            ...m,
+            value,
+            note,
+            busy: false,
+            error: (res && res.error) || 'تعذر حفظ القرار — لم يُنفَّذ أي تغيير',
+          };
           return true;
         }
         ui.modal = null;
