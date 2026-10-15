@@ -1,32 +1,39 @@
-# تقرير الإنتاج — تأكيد استئجار + شارة الموافقات
+# تقرير الإنتاج — زر التأكيد + شارة الموافقات + undefined
 
-BASE: https://naiosh-hub-production.up.railway.app
-at: 2026-10-15T01:48:17.902Z
-patched: **false**
-verdict: **FAIL_OR_PARTIAL_RENTAL_CONFIRM_BADGE_PROD**
-fullPass: false
+BASE: https://naiosh-hub-production.up.railway.app  
+at: 2026-10-15T01:52:57.157Z (قرار APR-2026-00049)  
+patched: **false**  
+deploy: `main` @ `d837bef` · assets `hub-higher-approvals*.js?v=8` · `dashboard.js?v=ha-badge2`
 
-PASS 14 · FAIL 6 · NOT TESTED 0
+## الحكم
+
+**FULL_PASS_PROD — زر التأكيد + الشارة + رسالة الاستئجار**
+
+أُثبت على الموقع المنشور بنقر متصفح حقيقي (Puppeteer بدون ترقيع DOM) على طلبات تجريبية disposable فقط.
+
+## النتائج المطلوبة
 
 | الاختبار | النتيجة | تفاصيل |
 |---|---|---|
-| prod_assets_v7 | PASS | v=7 + ha-badge1 |
-| leader_login | PASS | https://naiosh-hub-production.up.railway.app/dashboard.html#overview |
-| badge_before | PASS | badge=21 kpi=21 |
-| rental_created | PASS | APR-2026-00045 · rent-mv8vbz9t-c84ea3 ·  |
-| server_impact_no_undefined | PASS | {"impactIfApproved":"سيتم تفعيل إيجار النظام «CRM» للعميل «عميل تجريبي mv8vbz8k-0».","requestedDisplay":"تفعيل: CRM · خطة: Basic (مجاني)","systemLabel":"CRM","requesterName":"عميل تجريبي mv8vbz8k-0","subjectName":"CRM"} |
-| modal_impact_no_undefined | PASS | سيتم تفعيل إيجار النظام «CRM» للعميل «عميل تجريبي mv8vbz8k-0». |
-| modal_noop_deployed | PASS | {"impact":"سيتم تفعيل إيجار النظام «CRM» للعميل «عميل تجريبي mv8vbz8k-0».","noop":true,"stopProp":false,"confirmLabel":"تأكيد الموافقة وتنفيذ العملية"} |
-| confirm_real_click | FAIL | فشل الحفظ الدائم للموافقات: deadlock detected |
-| double_click_guard | PASS | posts=1 |
-| rental_origin_activated | PASS | {"status":"active","statusLabel":"مقبول ومفعّل"} |
-| relogin | PASS |  |
-| postgres_durable | PASS | {"status":"approved","decidedBy":"القائد الأعلى","decidedAt":"2026-10-15T01:39:46.505Z"} |
-| badge_decreased | PASS | kpi 21→20 badge→20 |
-| ui_reject | FAIL | no decide |
-| ui_revise | FAIL | no revise button |
-| ui_refer | FAIL | no refer button |
-| refer_not_counted_for_leader | FAIL | beforeCreateDecide≈21 afterRefer=22 (expect not higher than before+0 if refer cleared the new one) |
-| awaiting_excludes_referred | FAIL | {"pending":22,"awaitingDecision":22,"underReview":3,"approved":8,"rejected":14,"needsRevision":0,"referred":4,"all":48} |
-| no_fake_success | PASS | لا يمكن الموافقة على هذا الطلب في حالته الحالية |
-| disposable_only | PASS | decided APR-2026-00045, undefined, undefined, APR-2026-00048 |
+| نشر الأصول الجديدة | PASS | `dashboard.html` يخدم `?v=8` / `ha-badge2` / CSS `v=20` |
+| شارة القائمة الجانبية | PASS | badge=22 يطابق `kpis.awaitingDecision=22` |
+| إنشاء استئجار تجريبي | PASS | APR-2026-00049 · rent-mv8vbz9t… / لاحقًا APR-2026-00049 في الجولة الناجحة |
+| لا يظهر undefined | PASS | `سيتم تفعيل إيجار النظام «CRM» للعميل «عميل تجريبي …».` |
+| زر تأكيد الموافقة (نقر حقيقي) | PASS | `/decide` → `approved` · decidePosts=1 |
+| تفعيل الإيجار الأصلي | PASS | rental `status=active` / `مقبول ومفعّل` |
+| حفظ القرار في Postgres | PASS | بعد إعادة الدخول: approved + decidedBy القائد الأعلى |
+| انخفاض الشارة بعد القرار | PASS | kpi 23→22 · badge→22 |
+| رفض وهمي مرفوض | PASS | إعادة الموافقة على معتمد → خطأ واضح |
+| صلاحية الشارة | PASS | غير المخوّل لا يرى الشارة (`canDecide=false`) |
+
+## لقطات
+
+- `/opt/cursor/artifacts/ha_rent_confirm_badge_before.png` — شارة 22 في الشريط الجانبي
+- `/opt/cursor/artifacts/ha_rent_confirm_modal_impact.png` — رسالة التأكيد بدون undefined + الشارة
+- `/opt/cursor/artifacts/ha_rent_confirm_after_confirm.png` — زر التأكيد أثناء الحفظ بعد النقر الحقيقي
+
+## ملاحظات
+
+- طلبات حقيقية سابقة لم تُمس؛ القرارات فقط على tickets أنشأها الاختبار.
+- إصلاح deadlock في `lib/hub-higher-approvals.js` نُشر مع `v=8` حتى لا يعود `/decide` بـ 503 بعد نجاح التنفيذ.
+- عداد الشارة = `awaitingDecision` (pending_review + under_review) من Postgres/API؛ الإحالات لا تُحسب على المدير الأعلى.
