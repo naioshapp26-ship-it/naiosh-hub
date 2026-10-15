@@ -567,15 +567,19 @@
   const render = (ctx = {}) => {
     parseDeepLink();
     HA()?.reload?.();
-    // Kick durable hydrate; re-render when server state arrives.
-    if (!ui._hydrateKick) {
+    // Hydrate at most once per panel mount. Re-kicking on every render caused an
+    // infinite hub-ha-rerender ↔ render loop (page flicker / modal open-close).
+    if (!ui._hydratedOnce && !ui._hydrateKick) {
       ui._hydrateKick = true;
       Promise.resolve(window.HubPlatformGrants?.hydrate?.())
         .then(() => HA()?.hydrateFromServer?.({ force: true, backfill: true }))
         .then(() => {
+          ui._hydratedOnce = true;
           window.dispatchEvent(new CustomEvent('hub-ha-rerender'));
         })
-        .catch(() => {})
+        .catch(() => {
+          ui._hydratedOnce = true;
+        })
         .finally(() => {
           ui._hydrateKick = false;
         });
@@ -644,14 +648,17 @@
     }
     if (action === 'ha-refresh') {
       toast?.('جارٍ التحديث من السيرفر…');
+      ui._hydratedOnce = false;
       Promise.resolve(window.HubPlatformGrants?.hydrate?.())
         .then(() => HA()?.hydrateFromServer?.({ force: true, backfill: true }))
         .then(() => {
+          ui._hydratedOnce = true;
           HA()?.reload?.();
           window.dispatchEvent(new CustomEvent('hub-ha-rerender'));
           toast?.('تم التحديث من السجل المركزي');
         })
         .catch(() => {
+          ui._hydratedOnce = true;
           HA()?.reload?.();
           toast?.('تعذر التحديث الكامل — عُرضت النسخة المحلية');
         });
@@ -786,6 +793,10 @@
     markInboxVisited,
     getSeenAt,
     isNewRequest,
+    resetHydrateKick: () => {
+      ui._hydratedOnce = false;
+      ui._hydrateKick = false;
+    },
     preferNew: () => {
       ui.preferNew = true;
       if (ui.tab === 'all' || ui.tab === 'audit') ui.tab = 'pending_review';

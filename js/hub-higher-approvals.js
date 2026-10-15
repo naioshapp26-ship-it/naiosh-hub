@@ -169,12 +169,34 @@
   };
 
   let state = load();
+  let lastChangeFingerprint = '';
 
-  const save = () => {
-    localStorage.setItem(KEY, JSON.stringify(state));
+  const fingerprintState = (s) => {
     try {
-      window.dispatchEvent(new CustomEvent('hub-higher-approvals-changed', { detail: { count: state.requests.length } }));
-    } catch (_) {}
+      const reqs = (s.requests || [])
+        .map((r) => `${r.id}:${r.status}:${r.updatedAt || r.decidedAt || ''}`)
+        .sort()
+        .join('|');
+      const decs = (s.decisions || []).length;
+      return `${reqs}#${decs}`;
+    } catch {
+      return String(Date.now());
+    }
+  };
+
+  const save = ({ silent = false } = {}) => {
+    localStorage.setItem(KEY, JSON.stringify(state));
+    const fp = fingerprintState(state);
+    if (!silent && fp !== lastChangeFingerprint) {
+      lastChangeFingerprint = fp;
+      try {
+        window.dispatchEvent(
+          new CustomEvent('hub-higher-approvals-changed', { detail: { count: state.requests.length } })
+        );
+      } catch (_) {}
+    } else if (!lastChangeFingerprint) {
+      lastChangeFingerprint = fp;
+    }
     return state;
   };
 
