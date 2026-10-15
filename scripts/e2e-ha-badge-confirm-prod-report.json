@@ -1,0 +1,110 @@
+{
+  "at": "2026-10-15T01:34:52.605Z",
+  "base": "https://naiosh-hub-production.up.railway.app",
+  "patched": false,
+  "summary": {
+    "pass": 10,
+    "fail": 8,
+    "notTested": 1
+  },
+  "requiredPass": false,
+  "fullPass": false,
+  "verdict": "FAIL_BADGE_CONFIRM_PROD",
+  "cases": [
+    {
+      "name": "prod_assets_v7",
+      "result": "PASS",
+      "detail": "dashboard.html serves v=7 / ha-badge1 / css v=19"
+    },
+    {
+      "name": "leader_login",
+      "result": "PASS",
+      "detail": "https://naiosh-hub-production.up.railway.app/dashboard.html#overview"
+    },
+    {
+      "name": "badge_visible_matches_kpi",
+      "result": "PASS",
+      "detail": "badge=16 kpi=16 href=#rent-admin?new=1 hot=true"
+    },
+    {
+      "name": "badge_nav_opens_new_first",
+      "result": "PASS",
+      "detail": "#rent-admin?new=1"
+    },
+    {
+      "name": "rental_create_disposable",
+      "result": "FAIL",
+      "detail": " ·  · {\"ok\":false,\"error\":\"فشل الحفظ الدائم للموافقات: deadlock detected\",\"code\":\"DURABLE_PERSIST_FAILED\"}"
+    },
+    {
+      "name": "rental_impact_no_undefined",
+      "result": "FAIL",
+      "detail": "no approval id"
+    },
+    {
+      "name": "modal_uses_noop_not_stopprop",
+      "result": "FAIL",
+      "detail": "{}"
+    },
+    {
+      "name": "confirm_approve_real_click",
+      "result": "FAIL",
+      "detail": "skipped"
+    },
+    {
+      "name": "confirm_double_click_guard",
+      "result": "PASS",
+      "detail": "decidePosts=undefined"
+    },
+    {
+      "name": "rental_origin_activated",
+      "result": "NOT TESTED",
+      "detail": "no rentalId"
+    },
+    {
+      "name": "badge_decreases_after_decide",
+      "result": "FAIL",
+      "detail": "before kpi=17 badge=17 → after kpi=17 badge=17"
+    },
+    {
+      "name": "ui_reject",
+      "result": "PASS",
+      "detail": "rejected"
+    },
+    {
+      "name": "ui_revise",
+      "result": "FAIL",
+      "detail": "under_review"
+    },
+    {
+      "name": "ui_refer",
+      "result": "FAIL",
+      "detail": "ha-open missing"
+    },
+    {
+      "name": "refer_drops_from_leader_count",
+      "result": "FAIL",
+      "detail": "before=19 after=19 referred=4"
+    },
+    {
+      "name": "badge_dark_theme",
+      "result": "PASS",
+      "detail": "count=19"
+    },
+    {
+      "name": "badge_mobile",
+      "result": "PASS",
+      "detail": "count=19"
+    },
+    {
+      "name": "staff_no_ha_badge",
+      "result": "PASS",
+      "detail": "canDecide=false badge=(none) role check"
+    },
+    {
+      "name": "existing_rows_untouched_policy",
+      "result": "PASS",
+      "detail": "only disposable tickets created by this script were decided"
+    }
+  ]
+}

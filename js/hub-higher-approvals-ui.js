@@ -718,18 +718,39 @@
         } catch (e) {
           res = { ok: false, error: e?.message || 'تعذر إكمال العملية' };
         }
-        // Never toast success unless the durable call explicitly succeeded
+        // Never toast success unless the durable call succeeded — OR the row already
+        // reflects the intended status after a forced hydrate (covers rare 503 after
+        // side-effects already applied / deadlock retry races).
         if (!res || res.ok === false) {
-          const errMsg = (res && res.error) || 'تعذر حفظ القرار — لم يُنفَّذ أي تغيير';
-          ui.modal = {
-            ...m,
-            value,
-            note,
-            busy: false,
-            error: errMsg,
-          };
-          toast?.(errMsg);
-          return true;
+          let recovered = null;
+          try {
+            await HA()?.hydrateFromServer?.({ force: true });
+            const row = HA()?.get?.(m.id);
+            const expected =
+              m.kind === 'approve'
+                ? 'approved'
+                : m.kind === 'reject'
+                  ? 'rejected'
+                  : m.kind === 'revise'
+                    ? 'needs_revision'
+                    : m.kind === 'refer'
+                      ? 'referred'
+                      : '';
+            if (expected && row?.status === expected) recovered = row;
+          } catch (_) {}
+          if (!recovered) {
+            const errMsg = (res && res.error) || 'تعذر حفظ القرار — لم يُنفَّذ أي تغيير';
+            ui.modal = {
+              ...m,
+              value,
+              note,
+              busy: false,
+              error: errMsg,
+            };
+            toast?.(errMsg);
+            return true;
+          }
+          res = { ok: true, request: recovered };
         }
         ui.modal = null;
         ui.openId = m.id;
@@ -743,6 +764,9 @@
                 : 'أُعيد للتعديل'
         );
         await HA()?.hydrateFromServer?.({ force: true });
+        try {
+          window.dispatchEvent(new CustomEvent('hub-ha-rerender'));
+        } catch (_) {}
         return true;
       })();
     }

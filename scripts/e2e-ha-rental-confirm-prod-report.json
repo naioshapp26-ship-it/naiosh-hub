@@ -1,0 +1,115 @@
+{
+  "at": "2026-10-15T01:48:17.902Z",
+  "base": "https://naiosh-hub-production.up.railway.app",
+  "patched": false,
+  "summary": {
+    "pass": 14,
+    "fail": 6,
+    "notTested": 0
+  },
+  "requiredPass": false,
+  "fullPass": false,
+  "verdict": "FAIL_OR_PARTIAL_RENTAL_CONFIRM_BADGE_PROD",
+  "cases": [
+    {
+      "name": "prod_assets_v7",
+      "result": "PASS",
+      "detail": "v=7 + ha-badge1"
+    },
+    {
+      "name": "leader_login",
+      "result": "PASS",
+      "detail": "https://naiosh-hub-production.up.railway.app/dashboard.html#overview"
+    },
+    {
+      "name": "badge_before",
+      "result": "PASS",
+      "detail": "badge=21 kpi=21"
+    },
+    {
+      "name": "rental_created",
+      "result": "PASS",
+      "detail": "APR-2026-00045 · rent-mv8vbz9t-c84ea3 · "
+    },
+    {
+      "name": "server_impact_no_undefined",
+      "result": "PASS",
+      "detail": "{\"impactIfApproved\":\"سيتم تفعيل إيجار النظام «CRM» للعميل «عميل تجريبي mv8vbz8k-0».\",\"requestedDisplay\":\"تفعيل: CRM · خطة: Basic (مجاني)\",\"systemLabel\":\"CRM\",\"requesterName\":\"عميل تجريبي mv8vbz8k-0\",\"subjectName\":\"CRM\"}"
+    },
+    {
+      "name": "modal_impact_no_undefined",
+      "result": "PASS",
+      "detail": "سيتم تفعيل إيجار النظام «CRM» للعميل «عميل تجريبي mv8vbz8k-0»."
+    },
+    {
+      "name": "modal_noop_deployed",
+      "result": "PASS",
+      "detail": "{\"impact\":\"سيتم تفعيل إيجار النظام «CRM» للعميل «عميل تجريبي mv8vbz8k-0».\",\"noop\":true,\"stopProp\":false,\"confirmLabel\":\"تأكيد الموافقة وتنفيذ العملية\"}"
+    },
+    {
+      "name": "confirm_real_click",
+      "result": "FAIL",
+      "detail": "فشل الحفظ الدائم للموافقات: deadlock detected"
+    },
+    {
+      "name": "double_click_guard",
+      "result": "PASS",
+      "detail": "posts=1"
+    },
+    {
+      "name": "rental_origin_activated",
+      "result": "PASS",
+      "detail": "{\"status\":\"active\",\"statusLabel\":\"مقبول ومفعّل\"}"
+    },
+    {
+      "name": "relogin",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "postgres_durable",
+      "result": "PASS",
+      "detail": "{\"status\":\"approved\",\"decidedBy\":\"القائد الأعلى\",\"decidedAt\":\"2026-10-15T01:39:46.505Z\"}"
+    },
+    {
+      "name": "badge_decreased",
+      "result": "PASS",
+      "detail": "kpi 21→20 badge→20"
+    },
+    {
+      "name": "ui_reject",
+      "result": "FAIL",
+      "detail": "no decide"
+    },
+    {
+      "name": "ui_revise",
+      "result": "FAIL",
+      "detail": "no revise button"
+    },
+    {
+      "name": "ui_refer",
+      "result": "FAIL",
+      "detail": "no refer button"
+    },
+    {
+      "name": "refer_not_counted_for_leader",
+      "result": "FAIL",
+      "detail": "beforeCreateDecide≈21 afterRefer=22 (expect not higher than before+0 if refer cleared the new one)"
+    },
+    {
+      "name": "awaiting_excludes_referred",
+      "result": "FAIL",
+      "detail": "{\"pending\":22,\"awaitingDecision\":22,\"underReview\":3,\"approved\":8,\"rejected\":14,\"needsRevision\":0,\"referred\":4,\"all\":48}"
+    },
+    {
+      "name": "no_fake_success",
+      "result": "PASS",
+      "detail": "لا يمكن الموافقة على هذا الطلب في حالته الحالية"
+    },
+    {
+      "name": "disposable_only",
+      "result": "PASS",
+      "detail": "decided APR-2026-00045, undefined, undefined, APR-2026-00048"
+    }
+  ]
+}
