@@ -67,39 +67,44 @@
   display: inline-flex;
   align-items: center;
   width: fit-content;
-  margin: 0;
+  margin: 0 !important;
   padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid rgba(140, 170, 230, 0.35);
   background: rgba(255, 255, 255, 0.06);
-  color: #e7eefc;
+  color: #e7eefc !important;
   font-size: 12px;
   font-weight: 800;
 }
 
-.da-ih__title {
-  margin: 0;
-  font-size: clamp(1.9rem, 4.2vw, 2.85rem);
-  line-height: 1.2;
-  font-weight: 900;
-  color: #fff;
+/* specificity > body.homepage h1 / p from styles.css — hero only */
+body.homepage .da-ih .da-ih__title,
+.da-ih h1.da-ih__title {
+  margin: 0 !important;
+  max-width: none !important;
+  font-size: clamp(1.9rem, 4.2vw, 2.85rem) !important;
+  line-height: 1.2 !important;
+  font-weight: 900 !important;
+  color: #fff !important;
 }
 
-.da-ih__tag {
-  margin: 0;
-  font-size: clamp(1.15rem, 2.3vw, 1.5rem);
-  line-height: 1.4;
-  font-weight: 800;
-  color: var(--ih-gold);
+body.homepage .da-ih .da-ih__tag,
+.da-ih .da-ih__tag {
+  margin: 0 !important;
+  font-size: clamp(1.15rem, 2.3vw, 1.5rem) !important;
+  line-height: 1.4 !important;
+  font-weight: 800 !important;
+  color: var(--ih-gold) !important;
 }
 
-.da-ih__lead {
-  margin: 0;
-  max-width: 38ch;
-  font-size: 1.02rem;
-  line-height: 1.75;
-  font-weight: 600;
-  color: var(--ih-muted);
+body.homepage .da-ih .da-ih__lead,
+.da-ih .da-ih__lead {
+  margin: 0 !important;
+  max-width: 38ch !important;
+  font-size: 1.02rem !important;
+  line-height: 1.75 !important;
+  font-weight: 600 !important;
+  color: var(--ih-muted) !important;
 }
 
 .da-ih__points {
@@ -241,17 +246,19 @@
   min-width: 0;
 }
 
-.da-ih__brand-txt strong {
+body.homepage .da-ih .da-ih__brand-txt strong,
+.da-ih .da-ih__brand-txt strong {
   font-size: 15px;
   font-weight: 900;
-  color: #fff;
+  color: #fff !important;
   line-height: 1.35;
 }
 
-.da-ih__brand-txt span {
+body.homepage .da-ih .da-ih__brand-txt span,
+.da-ih .da-ih__brand-txt span {
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--ih-gold2);
+  color: var(--ih-gold2) !important;
 }
 
 .da-ih__art-wrap {
@@ -370,7 +377,8 @@
     border-radius: 20px;
   }
 
-  .da-ih__title {
-    font-size: 1.7rem;
+  body.homepage .da-ih .da-ih__title,
+  .da-ih h1.da-ih__title {
+    font-size: 1.7rem !important;
   }
 }
