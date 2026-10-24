@@ -1,0 +1,74 @@
+{
+  "base": "https://naiosh-hub-production.up.railway.app",
+  "publishedUrl": "https://naiosh-hub-production.up.railway.app/quality-analysis.html",
+  "at": "2026-10-24T18:32:49.706Z",
+  "pass": 13,
+  "fail": 0,
+  "journeys": [
+    {
+      "id": "hub_home_analysis_card_present",
+      "result": "PASS",
+      "detail": "{\"href\":\"quality-analysis.html\",\"aria\":\"الانتقال إلى نظام تحليل البيانات\"}"
+    },
+    {
+      "id": "1_open_analysis_from_hub",
+      "result": "PASS",
+      "detail": "https://naiosh-hub-production.up.railway.app/quality-analysis.html"
+    },
+    {
+      "id": "7_no_placeholder",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "7_no_hub_password_form",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "7_texts_300_jod_services_faq",
+      "result": "PASS",
+      "detail": "{\"has300\":true,\"hasJOD\":true,\"hasServices\":true,\"hasFAQ\":true}"
+    },
+    {
+      "id": "7_screenshots_render",
+      "result": "PASS",
+      "detail": "[{\"n\":\"shot-home.png\",\"w\":1440},{\"n\":\"shot-register.png\",\"w\":1440},{\"n\":\"shot-login.png\",\"w\":1440},{\"n\":\"shot-home-mobile.png\",\"w\":390}]"
+    },
+    {
+      "id": "cta_signup_href",
+      "result": "PASS",
+      "detail": "https://www.naioshai.com/"
+    },
+    {
+      "id": "cta_login_href",
+      "result": "PASS",
+      "detail": "https://www.naioshai.com/#login"
+    },
+    {
+      "id": "2_mobile_page_loads",
+      "result": "PASS",
+      "detail": "الرئيسية\nتحليل البيانات\nدليل الجودة\nآلية التشغيل\nالوضع الليلي\nدخول هوب\n\nنظام مست"
+    },
+    {
+      "id": "3_start_free_opens_intelligence",
+      "result": "PASS",
+      "detail": "خصومات على الخدمات | ابدأ الآن | عروض محدودة | 300 نقطة هدية لكل حساب جديد | أرسل مقترحك وساعدنا نتحسن | خصومات على الخد"
+    },
+    {
+      "id": "4_reach_create_account",
+      "result": "PASS",
+      "detail": "{\"hasForm\":true,\"has300\":true,\"hasPassFields\":true}"
+    },
+    {
+      "id": "5_login_screen",
+      "result": "PASS",
+      "detail": "{\"h1\":\"تسجيل الدخول\",\"hasEmail\":true,\"hasPass\":true,\"text\":\"NAIOSH\\nINTELLIGENCE\\nتسجيل الدخول\\n\\nمنظومة نايوش للذكاء المؤسسي — الدخول للمستخدمين المصرّح لهم فقط.\\n\\nالبريد الإلكتروني\\nكلمة المرور\\n\\nدخول\\n\\nكل دخول يُسجَّل في سجل التدقيق. نسيت كلمة المرور؟ تواصل مع مدير النظام.\"}"
+    },
+    {
+      "id": "6_back_to_hub",
+      "result": "PASS",
+      "detail": "https://naiosh-hub-production.up.railway.app/index.html"
+    }
+  ]
+}
