@@ -119,7 +119,7 @@
       const data = new FormData(reqForm);
       const collected = window.HubFormAttachments?.collect?.(reqForm) || {};
       const stored = window.HubFormAttachments?.toStored?.(collected) || {};
-      const item = window.HubServiceRequests?.create?.({
+      const result = await window.HubServiceRequests?.create?.({
         kind: 'consultation',
         title: data.get('title'),
         body: data.get('body'),
@@ -133,15 +133,21 @@
         ...stored,
       });
       const box = root.querySelector('[data-service-request-feedback]');
-      if (!item) {
+      if (!result?.ok) {
         if (box) {
           box.hidden = false;
-          box.textContent = 'أدخل عنوانًا واضحًا للطلب';
+          box.textContent = result?.needsLogin
+            ? result.error || 'يلزم تسجيل الدخول لإرسال الطلب إلى الإدارة.'
+            : result?.error || 'أدخل عنوانًا واضحًا للطلب';
           box.style.background = '#fef2f2';
           box.style.color = '#991b1b';
         }
+        if (result?.needsLogin && confirm((result.error || 'يلزم تسجيل الدخول.') + '\n\nالانتقال لصفحة الدخول؟')) {
+          location.href = result.loginUrl || window.HubServiceRequests?.loginUrl?.() || 'login.html';
+        }
         return;
       }
+      const item = result.item;
       const persist = await window.HubFormAttachments?.softPersistToEntity?.({
         entityType: 'request',
         entityId: item.id,
@@ -150,13 +156,9 @@
       });
       if (box) {
         box.hidden = false;
-        const note =
-          persist?.skippedReason === 'login_required' && (collected.items || []).length
-            ? ' سجّل الدخول لربط المرفقات بالحفظ الدائم.'
-            : persist?.persisted
-              ? ' تم ربط المرفقات بالحفظ الدائم.'
-              : '';
-        box.textContent = 'تم استلام طلبك وربطه بالنظام. فريق هوب بيتابعه من غرفة العمليات.' + note;
+        const note = persist?.persisted ? ' تم ربط المرفقات بالحفظ الدائم.' : '';
+        const ref = item.number ? ` رقم المرجع: ${item.number}.` : '';
+        box.textContent = 'تم حفظ طلبك في النظام ووصل إلى صندوق الإدارة.' + ref + note;
         box.style.background = '#ecfdf5';
         box.style.color = '#065f46';
       }
