@@ -24,7 +24,7 @@
   <title>نظام تحليل البيانات | نايوش هوب 360</title>
   <meta
     name="description"
-    content="نايوش للتحليل — نظام تحليل بيانات مستقل: ابدأ مجانًا بـ 300 نقطة، حلّل ملفاتك، واطلب تقارير موثّقة من المشكلة حتى التعلم."
+    content="نايوش للتحليل (NAIOSH Intelligence) — نظام تحليل بيانات مستقل. سجّل مجانًا، احصل على 300 نقطة ترحيب، وحلّل ملفاتك أو اطلب تقريرًا موثّقًا."
   />
   <link rel="icon" href="assets/hub-icon-192.png?v=official1" type="image/png" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet" />
@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="css/dark-mode.css?v=theme3" />
   <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme3" />
   <link rel="stylesheet" href="css/hub-dark-surfaces.css" />
-  <link rel="stylesheet" href="css/hub-data-analysis.css?v=1" />
+  <link rel="stylesheet" href="css/hub-data-analysis.css?v=2" />
 </head>
 <body class="homepage da-portal">
   <header class="top-nav">
@@ -66,27 +66,38 @@
       <div class="da-hero-layout">
         <div>
           <p class="da-hero-badge"><i class="fas fa-chart-pie" aria-hidden="true"></i> نظام مستقل · NAIOSH Intelligence</p>
-          <h1 id="da-hero-title">حلّل بياناتك… واتخذ قرارك بثقة</h1>
+          <h1 id="da-hero-title">نايوش للتحليل — من ملف البيانات إلى قرار موثّق</h1>
           <p>
-            «نايوش للتحليل» منظومة مستقلة للتحليل والقرار المؤسسي: من رفع الملف أو طلب التحليل،
-            مرورًا بجودة البيانات والاستبيان والتشخيص والاستشراف، حتى التوصية وقرارك البشري.
-            التسجيل مجاني وتحصل فور التحقق على <strong>300 نقطة ترحيبية</strong>.
+            <strong>NAIOSH Intelligence</strong> منظومة مستقلة عن لوحة هوب: ترفع ملف CSV/Excel،
+            أو تطلب تحليلًا من فريق مختص، أو تسير في استشارة من المشكلة حتى قياس الأثر.
+            التسجيل مجاني، وبعد التحقق من البريد والجوال تحصل على
+            <strong>300 نقطة ترحيبية</strong> لا تنتهي بمدة.
           </p>
           <div class="hub-feature-actions">
-            <a class="btn btn-primary" data-da-signup href="https://www.naioshai.com/">
+            <a
+              class="btn btn-primary"
+              data-da-signup
+              href="https://www.naioshai.com/"
+              title="يفتح النظام — ثم اضغط «إنشاء حساب» في الشريط العلوي"
+            >
               <i class="fas fa-rocket" aria-hidden="true"></i> ابدأ مجانًا
             </a>
             <a class="btn btn-secondary" data-da-login href="https://www.naioshai.com/#login">
-              <i class="fas fa-right-to-bracket" aria-hidden="true"></i> لدي حساب — دخول
+              <i class="fas fa-right-to-bracket" aria-hidden="true"></i> تسجيل الدخول
             </a>
             <a class="btn btn-secondary" href="index.html">
               <i class="fas fa-house" aria-hidden="true"></i> العودة لنايوش هوب
             </a>
           </div>
+          <p class="da-hero-hint">
+            <i class="fas fa-circle-info" aria-hidden="true"></i>
+            لا يوجد رابط تشعيبي منفصل للتسجيل في النظام الحي — «ابدأ مجانًا» يفتح الصفحة العامة،
+            ثم تضغط <strong>إنشاء حساب</strong> في الشريط (خطوة واحدة داخل النظام).
+          </p>
           <div class="da-pill-row" aria-label="مختصر القيمة">
-            <span class="da-pill"><i class="fas fa-gift" aria-hidden="true"></i> 300 نقطة مجانًا</span>
-            <span class="da-pill"><i class="fas fa-file-csv" aria-hidden="true"></i> تحليل ملف CSV / Excel</span>
-            <span class="da-pill"><i class="fas fa-user-shield" aria-hidden="true"></i> القرار للإنسان لا للآلة</span>
+            <span class="da-pill"><i class="fas fa-gift" aria-hidden="true"></i> 300 نقطة ترحيب</span>
+            <span class="da-pill"><i class="fas fa-file-csv" aria-hidden="true"></i> CSV / Excel حتى 40MB</span>
+            <span class="da-pill"><i class="fas fa-coins" aria-hidden="true"></i> باقات الشحن بالدينار (د.أ)</span>
           </div>
         </div>
         <a class="da-hero-mark" data-da-open href="https://www.naioshai.com/" title="فتح نظام تحليل البيانات" aria-label="فتح نظام تحليل البيانات">
@@ -103,62 +114,105 @@
       </div>
     </section>
 
-    <!-- 2) Capabilities -->
-    <section class="da-section" aria-labelledby="da-cap-title">
-      <h2 id="da-cap-title">ماذا يقدّم النظام فعليًا؟</h2>
-      <p class="da-lead">مزايا مستخرجة من واجهة النظام الحي — بلا اختراع لقدرات غير موجودة.</p>
-      <div class="da-grid">
+    <!-- 2) Answers in seconds -->
+    <section class="da-section da-answers" aria-labelledby="da-answers-title">
+      <h2 id="da-answers-title">إجابات خلال ثوانٍ</h2>
+      <p class="da-lead">ما يحتاج العميل معرفته قبل الضغط على أي زر.</p>
+      <div class="da-answers-grid">
+        <article>
+          <h3>ما هو النظام؟</h3>
+          <p>نايوش للتحليل / NAIOSH Intelligence — تطبيق مستقل للتحليل والقرار المؤسسي، وهذه الصفحة في هوب تعرضه وتربطك به فقط.</p>
+        </article>
+        <article>
+          <h3>ماذا تحلّل؟</h3>
+          <p>ملفات CSV/Excel، طلبات لفريق التحليل مع مرفقات وفيديو، ومحاور تشغيلية (ERP، موارد بشرية، مبيعات، مالية…).</p>
+        </article>
+        <article>
+          <h3>كيف تبدأ؟</h3>
+          <p>ابدأ مجانًا → إنشاء حساب (بريد + جوال) → تحقق → استخدم 300 نقطة على خدمتك الأولى.</p>
+        </article>
+        <article>
+          <h3>بعد نفاد النقاط؟</h3>
+          <p>تشحن باقة اختيارية بالدينار الأردني (د.أ) من داخل النظام — الأسعار أدناه من الكتالوج الحي.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 3) Live services catalog -->
+    <section class="da-section" aria-labelledby="da-svc-title">
+      <h2 id="da-svc-title">الخدمات المتاحة وتكلفتها بالنقاط</h2>
+      <p class="da-lead">
+        كما تظهر في كتالوج «الخدمات» داخل النظام الحي. التكلفة بالنقاط من رصيدك (بما فيه نقاط الترحيب).
+      </p>
+      <div class="da-grid da-svc-grid">
         <article class="da-item">
-          <i class="fas fa-file-excel" aria-hidden="true"></i>
+          <i class="fas fa-chart-column" aria-hidden="true"></i>
           <h3>تحليل ملف بيانات</h3>
-          <p>ارفع CSV أو Excel داخل المتصفح واحصل على أنواع تحليل متعددة ولوحة مؤشرات من أعمدة ملفك.</p>
-          <span class="da-meta">من 50 نقطة · ملف حتى 40 ميجابايت</span>
+          <p>ارفع ملفك واحصل على أنواع تحليل متعددة ولوحة مؤشرات من أعمدة ملفك.</p>
+          <span class="da-meta">50 نقطة · حتى 40 ميجابايت · CSV / Excel</span>
         </article>
         <article class="da-item">
           <i class="fas fa-clipboard-list" aria-hidden="true"></i>
           <h3>طلب تحليل مع محلل</h3>
-          <p>نموذج كامل يصل لفريق التحليل مع المرفقات والفيديو، ثم تقرير موثّق برمز تحقق.</p>
-          <span class="da-meta">من 120 نقطة</span>
+          <p>نموذج كامل يصل لفريق التحليل مع المرفقات، ثم تقرير موثّق.</p>
+          <span class="da-meta">120 نقطة · فيديو حتى 500 ميجابايت للملف</span>
         </article>
         <article class="da-item">
           <i class="fas fa-route" aria-hidden="true"></i>
-          <h3>استشارة متكاملة — 13 مرحلة</h3>
-          <p>من المشكلة إلى البيانات والاستبيان والتشخيص والاستشراف والمخاطر والحلول والقرار والتنفيذ والأثر والتعلم.</p>
-          <span class="da-meta">من 250 نقطة</span>
+          <h3>استشارة متكاملة</h3>
+          <p>من المشكلة إلى القرار وقياس الأثر عبر 13 مرحلة.</p>
+          <span class="da-meta">250 نقطة</span>
         </article>
+        <article class="da-item">
+          <i class="fas fa-coins" aria-hidden="true"></i>
+          <h3>دراسة جدوى مشروع جانبي</h3>
+          <p>التكاليف والعائد ونقطة التعادل والمخاطر.</p>
+          <span class="da-meta">200 نقطة</span>
+        </article>
+        <article class="da-item">
+          <i class="fas fa-file-lines" aria-hidden="true"></i>
+          <h3>تقرير تنفيذي</h3>
+          <p>PDF و Excel جاهز للعرض على الإدارة (عند السماح في الإعدادات).</p>
+          <span class="da-meta">80 نقطة</span>
+        </article>
+        <article class="da-item">
+          <i class="fas fa-user" aria-hidden="true"></i>
+          <h3>تحليل الذات «أنا 360»</h3>
+          <p>نقاط القوة والقيم والمسار المهني للأفراد.</p>
+          <span class="da-meta">60 نقطة</span>
+        </article>
+      </div>
+    </section>
+
+    <!-- 4) Capabilities beyond catalog -->
+    <section class="da-section" aria-labelledby="da-cap-title">
+      <h2 id="da-cap-title">ماذا يقدّم النظام إلى جانب الخدمات؟</h2>
+      <p class="da-lead">مزايا ظاهرة في الواجهة الحية — بلا اختراع لقدرات غير موجودة.</p>
+      <div class="da-grid">
         <article class="da-item">
           <i class="fas fa-shield-halved" aria-hidden="true"></i>
           <h3>بوابة جودة البيانات</h3>
-          <p>سبعة أبعاد: الاكتمال، الدقة، الاتساق، الحداثة، التفرّد، الصلاحية، الموثوقية — التحليل يراعي جودة المصدر.</p>
+          <p>سبعة أبعاد: الاكتمال، الدقة، الاتساق، الحداثة، التفرّد، الصلاحية، الموثوقية.</p>
         </article>
         <article class="da-item">
           <i class="fas fa-comments" aria-hidden="true"></i>
           <h3>الاستبيان الذكي</h3>
-          <p>إن نقصت البيانات يسأل النظام ما يلزم فقط — سؤالًا واحدًا في كل مرة — بدل التخمين.</p>
+          <p>إن نقصت البيانات يسأل النظام ما يلزم فقط — سؤالًا واحدًا في كل مرة.</p>
+        </article>
+        <article class="da-item">
+          <i class="fas fa-layer-group" aria-hidden="true"></i>
+          <h3>أنواع تحليل متعددة</h3>
+          <p>وصفي، تشخيصي، تنبؤي، استشرافي، جدوى، مخاطر، فرص، توجيهي، مقارنة — حتى عشرة أنواع في واجهة تحليل الملف.</p>
         </article>
         <article class="da-item">
           <i class="fas fa-scale-balanced" aria-hidden="true"></i>
           <h3>القرار بشري محكوم</h3>
-          <p>الذكاء يقترح بدائل مع درجة الثقة؛ تسجيل القرار ومبرره يبقى لصاحب الصلاحية، مع سجل تدقيق.</p>
+          <p>النظام يقترح بدائل مع درجة ثقة؛ القرار ومبرره يبقى لصاحب الصلاحية، مع سجل تدقيق.</p>
         </article>
       </div>
     </section>
 
-    <!-- 3) Analysis types -->
-    <section class="da-section" aria-labelledby="da-types-title">
-      <h2 id="da-types-title">أنواع التحليل المتاحة</h2>
-      <p class="da-lead">عند تحليل ملف البيانات يمكنك تفعيل الأنواع التالية (حتى عشرة أنواع في الواجهة).</p>
-      <div class="da-grid">
-        <article class="da-item"><h3>وصفي</h3><p>ماذا حدث؟ ملخص المؤشرات والاتجاهات الظاهرة في البيانات.</p></article>
-        <article class="da-item"><h3>تشخيصي</h3><p>لماذا حدث؟ ربط الأسباب المحتملة بالأدلة المتاحة.</p></article>
-        <article class="da-item"><h3>تنبؤي</h3><p>ماذا سيحدث؟ استقراء السلاسل الزمنية عند توفر عمود تاريخ.</p></article>
-        <article class="da-item"><h3>استشرافي وسيناريوهات</h3><p>ماذا يمكن أن يحدث؟ بدائل مع احتمالات وإشارات إنذار.</p></article>
-        <article class="da-item"><h3>دراسة جدوى اقتصادية</h3><p>تكاليف وعائد ونقطة تعادل ضمن محرك الجدوى في المنظومة.</p></article>
-        <article class="da-item"><h3>مخاطر · فرص · توجيهي · مقارنة</h3><p>تحليل مخاطر وفرص ونمو، وتوصيات توجيهية، ومقارنات بين الوحدات.</p></article>
-      </div>
-    </section>
-
-    <!-- 4) Who benefits -->
+    <!-- 5) Who benefits -->
     <section class="da-section" aria-labelledby="da-who-title">
       <h2 id="da-who-title">لمن هذا النظام؟</h2>
       <p class="da-lead">محاور التحليل في الواجهة تغطي أسئلة تشغيلية واضحة لفرق العمل والإدارة.</p>
@@ -166,28 +220,32 @@
         <article class="da-item"><i class="fas fa-building" aria-hidden="true"></i><h3>تشغيل وموارد (ERP)</h3><p>هل تعمل الموارد والعمليات بكفاءة؟</p></article>
         <article class="da-item"><i class="fas fa-users" aria-hidden="true"></i><h3>موارد بشرية ومواهب</h3><p>هل الفريق مستقر ومنتج؟ وهل نحتفظ بالكفاءات؟</p></article>
         <article class="da-item"><i class="fas fa-handshake" aria-hidden="true"></i><h3>عملاء ومبيعات وتسويق</h3><p>اكتساب العملاء، تحقيق الأهداف، وتكلفة الحملات.</p></article>
-        <article class="da-item"><i class="fas fa-coins" aria-hidden="true"></i><h3>مالية وسلامة وقانون</h3><p>سلامة الموقف المالي، بيئة العمل، والامتثال القانوني.</p></article>
+        <article class="da-item"><i class="fas fa-vault" aria-hidden="true"></i><h3>مالية وسلامة وقانون</h3><p>سلامة الموقف المالي، بيئة العمل، والامتثال.</p></article>
         <article class="da-item"><i class="fas fa-graduation-cap" aria-hidden="true"></i><h3>تدريب وتعليم</h3><p>هل يحسّن التدريب الأداء؟ وهل يتقدّم المتعلمون؟</p></article>
-        <article class="da-item"><i class="fas fa-user" aria-hidden="true"></i><h3>تحليل الذات «أنا 360»</h3><p>نقاط القوة والقيم والمسار المهني للأفراد.</p></article>
+        <article class="da-item"><i class="fas fa-user" aria-hidden="true"></i><h3>تحليل الذات «أنا 360»</h3><p>للأفراد الراغبين في قراءة قوتهم ومسارهم.</p></article>
       </div>
     </section>
 
-    <!-- 5) Steps -->
+    <!-- 6) Steps -->
     <section class="da-section" aria-labelledby="da-steps-title">
-      <h2 id="da-steps-title">كيف تبدأ خلال دقائق؟</h2>
-      <p class="da-lead">ثلاث خطوات ظاهرة في واجهة النظام — بدون نموذج موازٍ داخل هوب.</p>
+      <h2 id="da-steps-title">كيف تبدأ؟</h2>
+      <p class="da-lead">مسار التسجيل الحقيقي في النظام — بدون نموذج موازٍ داخل هوب.</p>
       <div class="da-steps">
         <article>
-          <strong>أنشئ حسابك مجانًا</strong>
-          <small>بريد وجوال موثّقان · 300 نقطة ترحيب لا تنتهي بمدة.</small>
+          <strong>افتح النظام واضغط «إنشاء حساب»</strong>
+          <small>من زر «ابدأ مجانًا» ثم «إنشاء حساب» في الشريط العلوي للنظام.</small>
         </article>
         <article>
-          <strong>اختر الموضوع أو ارفع ملفًا</strong>
-          <small>محور تشغيلي (ERP، موارد بشرية…) أو ملف CSV/Excel بعناوين واضحة.</small>
+          <strong>أدخل بياناتك وتحقق</strong>
+          <small>اسم، بريد، جوال، كلمة مرور — ثم رمزا تحقق للبريد والجوال.</small>
         </article>
         <article>
-          <strong>استلم التحليل أو التقرير</strong>
-          <small>لوحة فورية لملف البيانات، أو طلب لفريق التحليل بتقرير موثّق.</small>
+          <strong>استلم 300 نقطة وابدأ</strong>
+          <small>بعد التحقق تُضاف نقاط الترحيب. اختر خدمة أو ارفع ملفًا.</small>
+        </article>
+        <article>
+          <strong>إن كان لديك حساب</strong>
+          <small>استخدم «تسجيل الدخول» للوصول مباشرة لشاشة الدخول في النظام.</small>
         </article>
       </div>
       <div class="hub-feature-actions" style="margin-top:16px">
@@ -200,45 +258,49 @@
       </div>
     </section>
 
-    <!-- 6) Screenshots -->
+    <!-- 7) Screenshots -->
     <section class="da-section" aria-labelledby="da-shots-title">
-      <h2 id="da-shots-title">لمحة من واجهة النظام</h2>
-      <p class="da-lead">لقطات حقيقية من النظام المستقل. اضغط أي لقطة لفتح النظام.</p>
-      <div class="da-gallery">
+      <h2 id="da-shots-title">لقطات حقيقية من واجهة النظام</h2>
+      <p class="da-lead">مأخوذة من النظام الحي. اضغط اللقطة لفتح المسار المناسب.</p>
+      <div class="da-gallery da-gallery-3">
         <a class="da-shot" data-da-open href="https://www.naioshai.com/">
-          <img src="assets/analysis/shot-home.png" alt="الصفحة الرئيسية لنايوش للتحليل على الكمبيوتر" width="1440" height="900" loading="lazy" />
-          <figcaption>الرئيسية · رحلة الاستشارة وطلب التحليل · سطح المكتب</figcaption>
+          <img src="assets/analysis/shot-home.png" alt="الصفحة الرئيسية لنايوش للتحليل" width="1440" height="900" loading="lazy" />
+          <figcaption>الرئيسية · وضع الزائر · سطح المكتب</figcaption>
         </a>
-        <div style="display:grid;gap:14px">
-          <a class="da-shot" data-da-login href="https://www.naioshai.com/#login">
-            <img src="assets/analysis/shot-login.png" alt="شاشة تسجيل الدخول في نظام التحليل" width="1440" height="900" loading="lazy" />
-            <figcaption>تسجيل الدخول للمستخدمين المسجّلين</figcaption>
-          </a>
-          <a class="da-shot" data-da-open href="https://www.naioshai.com/">
-            <img src="assets/analysis/shot-home-mobile.png" alt="واجهة نايوش للتحليل على الجوال" width="390" height="844" loading="lazy" />
-            <figcaption>نفس التجربة على الجوال</figcaption>
-          </a>
-        </div>
+        <a class="da-shot" data-da-signup href="https://www.naioshai.com/">
+          <img src="assets/analysis/shot-register.png" alt="شاشة إنشاء حساب في نظام التحليل" width="1440" height="900" loading="lazy" />
+          <figcaption>إنشاء حساب · 300 نقطة ترحيب ظاهرة في الواجهة</figcaption>
+        </a>
+        <a class="da-shot" data-da-login href="https://www.naioshai.com/#login">
+          <img src="assets/analysis/shot-login.png" alt="شاشة تسجيل الدخول في نظام التحليل" width="1440" height="900" loading="lazy" />
+          <figcaption>تسجيل الدخول عبر المسار #login</figcaption>
+        </a>
+        <a class="da-shot" data-da-open href="https://www.naioshai.com/">
+          <img src="assets/analysis/shot-home-mobile.png" alt="واجهة نايوش للتحليل على الجوال" width="390" height="844" loading="lazy" />
+          <figcaption>التجربة على الجوال</figcaption>
+        </a>
       </div>
     </section>
 
-    <!-- 7) Pricing / limits transparency -->
+    <!-- 8) Pricing / limits transparency -->
     <section class="da-section" aria-labelledby="da-limits-title">
-      <h2 id="da-limits-title">التسجيل مجاني — والحدود واضحة</h2>
+      <h2 id="da-limits-title">المجانية والنقاط والحدود — بشفافية</h2>
       <p class="da-lead">
-        إنشاء الحساب مجاني. الاستخدام يتم عبر نقاط. العملة الظاهرة لباقات الشحن في النظام: الدينار الأردني (JOD).
+        من إعدادات التجارة الظاهرة في النظام الحي وقت المراجعة:
+        العملة المعتمدة لباقات الشحن هي <strong>الدينار الأردني (JOD / د.أ)</strong>،
+        ونقاط الترحيب <strong>300</strong> بعد التحقق.
       </p>
       <table class="da-limits">
         <thead>
           <tr>
             <th>البند</th>
-            <th>التفاصيل</th>
+            <th>التفاصيل المعتمدة من النظام الحي</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>إنشاء حساب</td>
-            <td>مجاني · تحقق بريد ورسالة SMS</td>
+            <td>مجاني · تحقق بريد ورسالة SMS للجوال</td>
           </tr>
           <tr>
             <td>نقاط الترحيب</td>
@@ -254,28 +316,60 @@
           </tr>
           <tr>
             <td>استشارة متكاملة</td>
-            <td>250 نقطة · 13 مرحلة حتى قياس الأثر</td>
+            <td>250 نقطة · 13 مرحلة</td>
           </tr>
           <tr>
-            <td>باقات شحن اختيارية</td>
-            <td>بداية 100 نقطة (9) · أعمال 300 (24) · مؤسسات 1000 (69) · شركاء 3000 (179) — JOD</td>
+            <td>دراسة جدوى / تقرير تنفيذي / أنا 360</td>
+            <td>200 / 80 / 60 نقطة على التوالي (كتالوج الخدمات)</td>
+          </tr>
+          <tr>
+            <td>باقة البداية</td>
+            <td>100 نقطة · 9 د.أ · تكفي لطلبَي تحليل</td>
+          </tr>
+          <tr>
+            <td>باقة الأعمال</td>
+            <td>300 نقطة · 24 د.أ · الأكثر طلبًا في الواجهة</td>
+          </tr>
+          <tr>
+            <td>باقة المؤسسات</td>
+            <td>1000 نقطة · 69 د.أ</td>
+          </tr>
+          <tr>
+            <td>باقة الشركاء</td>
+            <td>3000 نقطة · 179 د.أ · رصيد لا ينتهي بمدة</td>
           </tr>
         </tbody>
       </table>
       <p class="da-note">
         <i class="fas fa-circle-info" aria-hidden="true"></i>
-        الأرقام أعلاه من إعدادات التجارة الظاهرة في النظام الحي وقت المراجعة. قد يحدّثها مشغّل النظام لاحقًا من لوحة الإعدادات.
+        الأرقام من كتالوج الخدمات وإعدادات <code>commerce</code> / <code>packs</code> في النظام الحي.
+        قد يحدّثها مشغّل النظام لاحقًا من لوحة الإعدادات دون تعديل من هوب.
+        الشحن داخل النظام؛ هذه الصفحة لا تجمع مدفوعات ولا كلمات مرور.
       </p>
     </section>
 
-    <!-- 8) FAQ -->
+    <!-- 9) FAQ -->
     <section class="da-section da-faq" aria-labelledby="da-faq-title">
       <h2 id="da-faq-title">أسئلة شائعة</h2>
       <p class="da-lead">إجابات مستمدة من سياسة وواجهة النظام نفسه.</p>
+      <details open>
+        <summary>كيف أسجّل حسابًا جديدًا؟</summary>
+        <p>
+          من هذه الصفحة اضغط «ابدأ مجانًا» لفتح النظام، ثم «إنشاء حساب» في الشريط العلوي.
+          لا يوجد رابط تشعيبي منفصل للتسجيل في النظام الحالي — وهذا المسار هو الصحيح لا رابط وهمي.
+        </p>
+      </details>
+      <details>
+        <summary>هل التسجيل والاستخدام مجانيان؟</summary>
+        <p>
+          إنشاء الحساب مجاني. تحصل على 300 نقطة ترحيب بعد التحقق وتستخدمها في الخدمات.
+          بعد نفاد الرصيد تشحن باقة اختيارية بالدينار الأردني إن رغبت.
+        </p>
+      </details>
       <details>
         <summary>هل هذا جزء من لوحة نايوش هوب أم نظام مستقل؟</summary>
         <p>
-          نظام التحليل مستقل (NAIOSH Intelligence / نايوش للتحليل). هذه الصفحة في هوب تعرضه وتربطك به فقط —
+          نظام التحليل مستقل. هذه الصفحة في هوب تعرضه وتربطك به فقط —
           ولا تعيد بناء محرك التحليل داخل هوب.
         </p>
       </details>
@@ -294,31 +388,30 @@
         <summary>ما شكل الملف المناسب؟</summary>
         <p>
           CSV أو Excel: الصف الأول عناوين أعمدة، عمود تاريخ للتنبؤ إن لزم، عمود تصنيف (فرع/قسم) للمقارنة،
-          وأعمدة رقمية بأسماء واضحة.
+          وأعمدة رقمية بأسماء واضحة. الحد الأقصى 40 ميجابايت لتحليل الملف داخل المتصفح.
         </p>
       </details>
       <details>
         <summary>كيف أعود إلى نايوش هوب؟</summary>
         <p>
-          من هذه الصفحة استخدم «العودة لنايوش هوب»، أو من داخل النظام رابط «نايوش هوب» في الشريط العلوي.
-          استخدام النظام المستقل لا يُغلق حسابك في هوب.
+          من هذه الصفحة استخدم «العودة لنايوش هوب». استخدام النظام المستقل لا يُغلق حسابك في هوب.
         </p>
       </details>
     </section>
 
-    <!-- 9) Closing CTA -->
+    <!-- 10) Closing CTA -->
     <section class="da-closing" aria-labelledby="da-close-title">
-      <h2 id="da-close-title">جاهز تبدأ تحليلك الأول؟</h2>
+      <h2 id="da-close-title">جاهز لـ 300 نقطة وبدء تحليلك؟</h2>
       <p>
-        افتح النظام، أنشئ حسابك مجانًا، واستخدم نقاط الترحيب لطلب تحليل ملف أو استشارة.
-        إن كان لديك حساب مسبقًا فادخل مباشرة.
+        افتح النظام، أنشئ حسابك مجانًا، واستخدم نقاط الترحيب على تحليل ملف أو طلب محلل أو استشارة.
+        إن كان لديك حساب فادخل مباشرة — ثم عد إلى هوب متى شئت.
       </p>
       <div class="hub-feature-actions">
         <a class="btn btn-primary" data-da-signup href="https://www.naioshai.com/">
           <i class="fas fa-rocket" aria-hidden="true"></i> ابدأ مجانًا الآن
         </a>
         <a class="btn btn-secondary" data-da-login href="https://www.naioshai.com/#login">
-          <i class="fas fa-right-to-bracket" aria-hidden="true"></i> دخول النظام
+          <i class="fas fa-right-to-bracket" aria-hidden="true"></i> تسجيل الدخول
         </a>
         <a class="btn btn-secondary" href="index.html">
           <i class="fas fa-house" aria-hidden="true"></i> نايوش هوب
@@ -331,7 +424,7 @@
   </main>
 
   <script src="js/hub-live-systems.js"></script>
-  <script src="js/hub-data-analysis.js?v=1"></script>
+  <script src="js/hub-data-analysis.js?v=2"></script>
   <script src="js/hub-theme.js" defer></script>
   <script src="js/hub-chrome.js" defer></script>
 </body>

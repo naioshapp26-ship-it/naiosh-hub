@@ -86,11 +86,67 @@ body.homepage.dark-mode {
   font-weight: 800;
 }
 
+.da-hero-hint {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 245, 247, 0.95);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
 .da-pill-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 16px;
+}
+
+.da-answers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+
+.da-answers-grid article {
+  background: var(--da-surface);
+  border: 1px solid var(--da-line);
+  border-radius: 16px;
+  padding: 16px 14px;
+  box-shadow: var(--da-shadow);
+  border-inline-start: 4px solid var(--da-red);
+}
+
+.da-answers-grid h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--da-ink);
+}
+
+.da-answers-grid p {
+  margin: 0;
+  color: var(--da-muted);
+  font-size: 13.5px;
+  line-height: 1.7;
+  font-weight: 600;
+}
+
+.da-svc-grid .da-meta {
+  font-size: 13px;
+}
+
+.da-gallery-3 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.da-limits code {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--da-red);
 }
 
 .da-pill {
@@ -401,13 +457,25 @@ body.dark-mode .da-note {
 
 @media (max-width: 900px) {
   .da-hero-layout,
-  .da-gallery {
+  .da-gallery,
+  .da-gallery-3 {
     grid-template-columns: 1fr;
   }
 
   .da-hero-mark {
     order: -1;
     width: min(100%, 280px);
+  }
+
+  .hub-feature-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hub-feature-actions .btn {
+    justify-content: center;
+    text-align: center;
   }
 }
 
