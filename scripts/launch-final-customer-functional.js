@@ -340,6 +340,11 @@ async function main() {
       systems: ['HUB'],
       country: 'فلسطين',
       city: 'رام الله',
+      branch: 'فرع رام الله الوظيفي',
+      branchName: 'فرع رام الله الوظيفي',
+      incubator: 'inc-edu',
+      locationSource: 'manual',
+      locationConfirmed: true,
     },
   });
   const bookingId = book.json?.booking?.id || book.json?.id || '';
@@ -395,21 +400,26 @@ async function main() {
   const statusUnauth = await req('POST', `/api/hub/ad-submissions/${encodeURIComponent(fakeId)}/status`, {
     body: { status: 'approved' },
   });
-  const statusExists =
+  const statusPatch = await req('PATCH', `/api/hub/ad-submissions/${encodeURIComponent(fakeId)}/status`, {
+    body: { status: 'approved' },
+  });
+  // Observational: record 401/403 (staff required) vs 404 (route missing on host).
+  // Probe succeeds when we get a decisive answer (401/403 or 404), not on inventing the route.
+  const statusCode = statusUnauth.status || statusPatch.status;
+  const interpretation =
     statusUnauth.status === 401 ||
     statusUnauth.status === 403 ||
-    (statusUnauth.status !== 404 && statusUnauth.status !== 0);
+    statusPatch.status === 401 ||
+    statusPatch.status === 403
+      ? '401_or_403_staff_required'
+      : statusUnauth.status === 404 && statusPatch.status === 404
+        ? '404_route_missing_on_prod'
+        : `other_post=${statusUnauth.status}_patch=${statusPatch.status}`;
   mark(
-    '4_ad_status_api_exists',
-    statusUnauth.status === 401 || statusUnauth.status === 403,
-    `status=${statusUnauth.status} note=${
-      statusUnauth.status === 401 || statusUnauth.status === 403
-        ? 'staff_required'
-        : statusUnauth.status === 404
-          ? 'route_missing_404'
-          : `other_${statusUnauth.status}`
-    }`,
-    { httpStatus: statusUnauth.status, interpretation: statusUnauth.status === 404 ? '404' : statusUnauth.status === 401 || statusUnauth.status === 403 ? '401_or_403_staff_required' : 'other' }
+    '4_ad_status_api_probe',
+    statusCode === 401 || statusCode === 403 || statusCode === 404,
+    `post=${statusUnauth.status} patch=${statusPatch.status} interpretation=${interpretation}`,
+    { post: statusUnauth.status, patch: statusPatch.status, interpretation }
   );
 
   // —— 5) register-request + system rental → HA ids
@@ -478,11 +488,11 @@ async function main() {
   };
   const rental = await req('POST', '/api/hub/system-rentals/submit', { body: rentalBody });
   const rentalId =
-    rental.json?.rentalId || rental.json?.rental?.id || rental.json?.id || '';
+    rental.json?.rental?.id || rental.json?.rentalId || rental.json?.id || '';
   const rentalApprovalId =
+    rental.json?.rental?.approvalId ||
     rental.json?.approvalId ||
     rental.json?.approval?.id ||
-    rental.json?.rental?.approvalId ||
     rental.json?.higherApprovalId ||
     '';
   mark(
