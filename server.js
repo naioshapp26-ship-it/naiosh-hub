@@ -1292,18 +1292,18 @@ async function handleHubApi(req, res, pathname) {
 
   // —— طلبات «سجل معنا» + المرفقات المرتبطة بنفس Request ID ——
   // Staff inbox: list «سجل معنا» registration requests (never expose passwords).
+  // Without this GET, handleHubApi returns false and the proxy hangs → HTTP 502.
   if (pathname === '/api/hub/register-requests' && req.method === 'GET') {
-    const session = await requireHubStaffOrReject(req, res);
-    if (!session) return true;
-    const store = hubRegisterAttachments.readStore();
-    const rows = (store.requests || [])
-      .slice()
-      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
-      .map((row) => hubRegisterAttachments.publicRequest(row));
+    if (!(await requireHubStaffOrReject(req, res))) return true;
+    const urlObj = new URL(req.url, 'http://127.0.0.1');
+    const statusFilter = String(urlObj.searchParams.get('status') || '').trim();
+    const requests = hubRegisterAttachments.listRequests(
+      statusFilter ? { status: statusFilter } : {}
+    );
     sendJson(res, 200, {
       ok: true,
-      count: rows.length,
-      requests: rows,
+      count: requests.length,
+      requests,
       source: 'register-attachments',
     });
     return true;
