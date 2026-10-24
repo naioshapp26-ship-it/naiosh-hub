@@ -55,17 +55,16 @@ function assertSafeUrl(urlString) {
     throw new Error('Refusing URL that looks like production app service');
   }
   // Require lab naming signals when using railway.internal
-  if (host.endsWith('railway.internal') || host.includes('railway')) {
-    const looksLab =
-      full.includes('restore-lab') ||
-      full.includes('restore_lab') ||
-      full.includes('naiosh-hub-restore-lab') ||
-      process.env.RESTORE_LAB_ALLOW === '1';
-    if (!looksLab) {
-      throw new Error(
-        'Railway URL without restore-lab marker refused. Name the DB service naiosh-hub-restore-lab or set RESTORE_LAB_ALLOW=1 after confirming isolation.'
-      );
-    }
+  // Railway public proxy hosts rarely include the service name. Isolation is
+  // enforced upstream by railway-restore-lab.js (service id + fingerprint).
+  // Here we only refuse when an explicit production app hostname appears.
+  if ((host.endsWith('railway.internal') || host.includes('rlwy.net') || host.includes('railway')) &&
+      process.env.RESTORE_LAB_ALLOW !== '1' &&
+      !full.includes('restore-lab') &&
+      !full.includes('restore_lab')) {
+    throw new Error(
+      'Railway URL refused without RESTORE_LAB_ALLOW=1 (set only after railway-restore-lab destination precheck).'
+    );
   }
   for (const snip of BLOCKED_HOST_SNIPPETS) {
     if (snip === 'postgres.railway.internal') continue;
