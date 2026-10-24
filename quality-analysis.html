@@ -38,6 +38,7 @@
   <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme3" />
   <link rel="stylesheet" href="css/hub-dark-surfaces.css" />
   <link rel="stylesheet" href="css/hub-data-analysis.css?v=3" />
+  <link rel="stylesheet" href="css/hub-da-intel-hero.css?v=2" />
 </head>
 <body class="homepage da-portal">
   <header class="top-nav">
@@ -61,52 +62,64 @@
   </header>
 
   <main class="container hub-feature-page" id="quality-analysis-main">
-    <!-- Hero -->
-    <section class="hub-feature-hero da-hero" aria-labelledby="da-hero-title">
-      <div class="da-hero-layout">
-        <div class="da-hero-copy">
-          <p class="da-hero-badge"><i class="fas fa-chart-pie" aria-hidden="true"></i> نظام مستقل · NAIOSH Intelligence</p>
+    <!-- Hero — NAIOSH Intelligence command aesthetic (isolated) -->
+    <section class="da-intel-hero hub-feature-hero" aria-labelledby="da-hero-title">
+      <div class="da-intel-hero__inner">
+        <div class="da-intel-hero__top">
+          <svg class="da-intel-hero__spark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M12 1.2l1.6 7.2L21 10l-7.4 1.6L12 18.8l-1.6-7.2L3 10l7.4-1.6L12 1.2z"/>
+          </svg>
+          <p class="da-intel-hero__badge">NAIOSH Intelligence</p>
           <h1 id="da-hero-title">نايوش لتحليل البيانات</h1>
-          <p class="da-hero-tagline">ذكاء يحوّل بياناتك إلى قرارات</p>
-          <p class="da-hero-lead">
-            ارفع ملفك، أو اطلب تحليلًا من مختص، أو سر في استشارة من المشكلة حتى قياس الأثر —
-            ثم اتخذ قرارك بثقة.
-          </p>
-
-          <div class="da-gift" role="status">
-            <span class="da-gift-num">300</span>
-            <span class="da-gift-text">
-              <strong>نقطة ترحيبية مجانًا</strong>
-              تُضاف لحسابك بعد التحقق من البريد والجوال · لا تنتهي بمدة
-            </span>
+          <div class="da-intel-hero__tagline">ذكاء يحوّل بياناتك إلى قرارات</div>
+          <div class="da-intel-hero__lead">
+            اكتشف قوة بياناتك مع أدوات التحليل والتقارير والاستشارات الذكية في تجربة واحدة.
           </div>
-
-          <div class="hub-feature-actions da-hero-actions">
-            <a class="btn btn-primary da-cta-primary" data-da-signup href="https://www.naioshai.com/">
-              <i class="fas fa-rocket" aria-hidden="true"></i> ابدأ مجانًا
+          <div class="da-intel-hero__actions">
+            <a class="da-intel-hero__cta" data-da-signup href="https://www.naioshai.com/">
+              ابدأ مجانًا <i class="fas fa-arrow-up-left" aria-hidden="true"></i>
             </a>
-            <a class="btn btn-secondary" data-da-login href="https://www.naioshai.com/#login">
+            <a class="da-intel-hero__login" data-da-login href="https://www.naioshai.com/#login">
               <i class="fas fa-right-to-bracket" aria-hidden="true"></i> تسجيل الدخول
             </a>
-            <a class="btn btn-secondary" href="index.html">
-              <i class="fas fa-house" aria-hidden="true"></i> العودة لنايوش هوب
-            </a>
+            <span class="da-intel-hero__points" role="status">
+              <b>300</b> نقطة ترحيبية
+            </span>
           </div>
-          <p class="da-hero-micro">
-            عند الضغط على «ابدأ مجانًا» يُفتح النظام — اختر <strong>إنشاء حساب</strong> من الشريط العلوي للبدء فورًا.
-          </p>
         </div>
 
-        <a class="da-hero-mark" data-da-open href="https://www.naioshai.com/" title="فتح نايوش لتحليل البيانات" aria-label="فتح نايوش لتحليل البيانات">
+        <a
+          class="da-intel-hero__stage"
+          data-da-open
+          href="https://www.naioshai.com/"
+          title="فتح نايوش لتحليل البيانات"
+          aria-label="فتح نايوش لتحليل البيانات"
+        >
           <img
-            src="assets/logo-naiosh-ai.jpg?v=lockup5"
-            alt="شعار NAIOSH AI — نايوش لتحليل البيانات"
-            width="690"
-            height="470"
+            class="da-intel-hero__stage-art da-intel-hero__pulse"
+            src="assets/analysis/intel-hero-art.png"
+            alt="تصور فني لمركز قيادة بيانات ومؤشرات تحليل"
+            width="1440"
+            height="740"
             decoding="async"
             fetchpriority="high"
           />
-          <span><i class="fas fa-arrow-up-left-from-circle" aria-hidden="true"></i> اضغط لفتح النظام</span>
+          <span class="da-intel-hero__logo-chip">
+            <img
+              src="assets/logo-naiosh-ai.jpg?v=lockup5"
+              alt=""
+              width="96"
+              height="96"
+              decoding="async"
+            />
+            <span>نظام تحليل البيانات<br />اضغط لفتح النظام</span>
+          </span>
+          <p class="da-intel-hero__art-note">تصور فني — ليس لقطة من النظام</p>
+          <p class="da-intel-hero__open-hint">فتح النظام الحي ↗</p>
+        </a>
+
+        <a class="da-intel-hero__scroll" href="#da-what-title" aria-label="الانتقال إلى محتوى الصفحة">
+          <i class="fas fa-chevron-down" aria-hidden="true"></i>
         </a>
       </div>
     </section>

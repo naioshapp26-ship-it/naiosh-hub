@@ -1,0 +1,456 @@
+/**
+ * Hero معزول — نايوش لتحليل البيانات (quality-analysis.html فقط)
+ * نطاق: .da-intel-hero — لا يؤثر على باقي صفحات هوب
+ */
+.da-intel-hero {
+  --ih-bg: #070b16;
+  --ih-bg2: #0c1224;
+  --ih-panel: rgba(14, 22, 44, 0.72);
+  --ih-gold: #d4a24a;
+  --ih-gold-soft: #e8c278;
+  --ih-cyan: #4fd6ff;
+  --ih-cyan-dim: rgba(79, 214, 255, 0.35);
+  --ih-text: #f4f7ff;
+  --ih-muted: #a8b3cc;
+  --ih-line: rgba(120, 150, 220, 0.28);
+  --ih-radius: 28px;
+  position: relative;
+  z-index: 1;
+  margin: 0 0 28px;
+  padding: clamp(22px, 3.2vw, 36px);
+  border-radius: var(--ih-radius);
+  overflow: hidden;
+  color: var(--ih-text);
+  background:
+    radial-gradient(55% 70% at 12% 18%, rgba(88, 40, 160, 0.38), transparent 58%),
+    radial-gradient(50% 60% at 88% 12%, rgba(30, 90, 180, 0.42), transparent 55%),
+    radial-gradient(40% 50% at 70% 88%, rgba(20, 160, 190, 0.18), transparent 60%),
+    linear-gradient(165deg, #0a1020 0%, #070b16 48%, #0b1328 100%);
+  border: 1px solid rgba(120, 150, 220, 0.35);
+  box-shadow:
+    0 0 0 1px rgba(212, 162, 74, 0.08) inset,
+    0 28px 70px rgba(3, 8, 20, 0.55);
+  isolation: isolate;
+}
+
+/* تجاوز مظهر hub-feature-hero القديم دون إلغاء طبقات الكحلي */
+.da-portal .da-intel-hero.hub-feature-hero,
+body.homepage .da-intel-hero.hub-feature-hero,
+body:has(.top-nav) .da-intel-hero.hub-feature-hero {
+  padding: clamp(22px, 3.2vw, 36px) !important;
+  margin-bottom: 28px !important;
+  background:
+    radial-gradient(55% 70% at 12% 18%, rgba(88, 40, 160, 0.38), transparent 58%),
+    radial-gradient(50% 60% at 88% 12%, rgba(30, 90, 180, 0.42), transparent 55%),
+    radial-gradient(40% 50% at 70% 88%, rgba(20, 160, 190, 0.18), transparent 60%),
+    linear-gradient(165deg, #0a1020 0%, #070b16 48%, #0b1328 100%) !important;
+  border: 1px solid rgba(120, 150, 220, 0.35) !important;
+  box-shadow:
+    0 0 0 1px rgba(212, 162, 74, 0.08) inset,
+    0 28px 70px rgba(3, 8, 20, 0.55) !important;
+  color: #f4f7ff !important;
+}
+
+.da-intel-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(120, 160, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 160, 255, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 20%, transparent 75%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+}
+
+.da-intel-hero::after {
+  content: '';
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  right: -80px;
+  top: -90px;
+  background: radial-gradient(circle, rgba(212, 162, 74, 0.16), transparent 68%) !important;
+  inset: auto !important;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1 !important;
+}
+
+/* امسح وهج الهيرو الأحمر العام من hub-header-actions داخل هذا القسم */
+body.homepage .da-intel-hero.hub-feature-hero h1,
+body.homepage .da-intel-hero.hub-feature-hero p {
+  color: inherit;
+}
+
+.da-intel-hero__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 2.5vw, 28px);
+}
+
+.da-intel-hero__top {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  max-width: min(720px, 100%);
+  margin-inline-start: auto;
+  text-align: right;
+}
+
+.da-intel-hero__spark {
+  position: absolute;
+  inset-inline-end: auto;
+  inset-inline-start: 0;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  color: var(--ih-gold);
+  filter: drop-shadow(0 0 10px rgba(212, 162, 74, 0.55));
+}
+
+.da-intel-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ih-line);
+  color: #e8eefc;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.da-intel-hero h1 {
+  margin: 4px 0 0 !important;
+  max-width: none !important;
+  font-size: clamp(1.9rem, 4.4vw, 2.85rem) !important;
+  line-height: 1.22 !important;
+  font-weight: 900 !important;
+  color: #fff !important;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+}
+
+.da-intel-hero__tagline,
+body.homepage .da-intel-hero.hub-feature-hero .da-intel-hero__tagline,
+body.homepage .da-intel-hero .da-intel-hero__tagline {
+  margin: 0 !important;
+  font-size: clamp(1.15rem, 2.4vw, 1.55rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.45 !important;
+  color: #d4a24a !important;
+  text-shadow: 0 0 24px rgba(212, 162, 74, 0.25);
+}
+
+.da-intel-hero__lead,
+body.homepage .da-intel-hero.hub-feature-hero .da-intel-hero__lead {
+  margin: 2px 0 8px !important;
+  max-width: 46ch !important;
+  font-size: clamp(0.95rem, 1.5vw, 1.08rem) !important;
+  line-height: 1.8 !important;
+  font-weight: 600 !important;
+  color: #a8b3cc !important;
+}
+
+.da-intel-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.da-intel-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 26px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #e0b35c, #c4892e);
+  color: #1a1200 !important;
+  font-size: 1.05rem;
+  font-weight: 900;
+  text-decoration: none;
+  border: 0;
+  box-shadow:
+    0 0 0 1px rgba(255, 230, 170, 0.35) inset,
+    0 12px 30px rgba(196, 137, 46, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.da-intel-hero__cta:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgba(255, 230, 170, 0.5) inset,
+    0 16px 36px rgba(196, 137, 46, 0.45);
+  color: #1a1200 !important;
+}
+
+.da-intel-hero__login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(180, 200, 255, 0.35);
+  color: #eef3ff !important;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.da-intel-hero__login:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--ih-cyan-dim);
+  color: #fff !important;
+}
+
+.da-intel-hero__points {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(8, 14, 28, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  backdrop-filter: blur(8px);
+}
+
+.da-intel-hero__points b {
+  color: var(--ih-gold-soft);
+  font-size: 1.05rem;
+}
+
+/* ---------- Visual stage ---------- */
+.da-intel-hero__stage {
+  position: relative;
+  display: block;
+  border-radius: 22px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(120, 180, 255, 0.28);
+  background:
+    radial-gradient(60% 80% at 30% 20%, rgba(40, 100, 200, 0.35), transparent 55%),
+    radial-gradient(50% 60% at 80% 70%, rgba(20, 180, 200, 0.22), transparent 50%),
+    linear-gradient(160deg, #0a1428, #060a14 60%, #0c1830);
+  box-shadow:
+    0 0 40px rgba(60, 140, 255, 0.12),
+    0 20px 50px rgba(0, 0, 0, 0.4);
+  min-height: clamp(220px, 32vw, 360px);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.da-intel-hero__stage:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 50px rgba(79, 214, 255, 0.16),
+    0 26px 56px rgba(0, 0, 0, 0.45);
+}
+
+.da-intel-hero__stage-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 8.2;
+  max-height: 380px;
+  object-fit: cover;
+  object-position: center;
+}
+
+.da-intel-hero__logo-chip {
+  position: absolute;
+  top: 14px;
+  inset-inline-end: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 10px;
+  border-radius: 14px;
+  background: rgba(8, 12, 24, 0.72);
+  border: 1px solid rgba(212, 162, 74, 0.45);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  max-width: min(280px, calc(100% - 28px));
+}
+
+.da-intel-hero__logo-chip img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 10px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.da-intel-hero__logo-chip span {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.35;
+}
+
+.da-intel-hero__art-note {
+  position: absolute;
+  bottom: 12px;
+  inset-inline-start: 14px;
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(230, 238, 255, 0.9);
+  font-size: 11.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.da-intel-hero__open-hint {
+  position: absolute;
+  bottom: 12px;
+  inset-inline-end: 14px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(212, 162, 74, 0.18);
+  border: 1px solid rgba(212, 162, 74, 0.45);
+  color: var(--ih-gold-soft);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.da-intel-hero__scroll {
+  align-self: center;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff;
+  color: #0a1020;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.da-intel-hero__scroll:hover {
+  transform: translateY(3px);
+}
+
+/* حركة خفيفة اختيارية */
+@media (prefers-reduced-motion: no-preference) {
+  .da-intel-hero__pulse {
+    animation: da-ih-pulse 5.5s ease-in-out infinite;
+  }
+
+  @keyframes da-ih-pulse {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .da-intel-hero__cta,
+  .da-intel-hero__stage,
+  .da-intel-hero__scroll,
+  .da-intel-hero__pulse {
+    transition: none;
+    animation: none !important;
+  }
+}
+
+/* ---------- Mobile-first rearrange ---------- */
+@media (max-width: 900px) {
+  .da-intel-hero {
+    padding: 18px 14px 16px;
+    border-radius: 22px;
+  }
+
+  .da-intel-hero__top {
+    max-width: none;
+    margin: 0;
+  }
+
+  .da-intel-hero__spark {
+    display: none;
+  }
+
+  .da-intel-hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .da-intel-hero__cta,
+  .da-intel-hero__login,
+  .da-intel-hero__points {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .da-intel-hero__logo-chip {
+    top: 10px;
+    inset-inline-end: 10px;
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
+  .da-intel-hero__logo-chip img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .da-intel-hero__logo-chip span {
+    font-size: 11px;
+  }
+
+  .da-intel-hero__stage-art {
+    aspect-ratio: 16 / 11;
+    max-height: 280px;
+  }
+
+  .da-intel-hero__art-note,
+  .da-intel-hero__open-hint {
+    font-size: 10.5px;
+    bottom: 8px;
+  }
+
+  .da-intel-hero__art-note {
+    inset-inline-start: 8px;
+  }
+
+  .da-intel-hero__open-hint {
+    inset-inline-end: 8px;
+  }
+}
+
+@media (max-width: 400px) {
+  .da-intel-hero h1 {
+    font-size: 1.65rem !important;
+  }
+
+  .da-intel-hero__tagline {
+    font-size: 1.05rem !important;
+  }
+}

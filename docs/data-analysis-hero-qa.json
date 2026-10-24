@@ -1,0 +1,25 @@
+{
+  "scope": "hero-only",
+  "below_sections_sha256_unchanged": true,
+  "desktop": {
+    "title": "PASS",
+    "tagline_gold": "PASS",
+    "art_visible": "PASS",
+    "links": "PASS",
+    "no_hscroll": "PASS"
+  },
+  "mobile": {
+    "title": "PASS",
+    "cta": "PASS",
+    "no_hscroll": "PASS",
+    "art_labeled": "PASS"
+  },
+  "artifacts": [
+    "da-hero-before-desktop.png",
+    "da-hero-after-desktop.png",
+    "da-hero-after-desktop-fullhero.png",
+    "da-hero-before-mobile.png",
+    "da-hero-after-mobile.png",
+    "da-hero-reference.png"
+  ]
+}
