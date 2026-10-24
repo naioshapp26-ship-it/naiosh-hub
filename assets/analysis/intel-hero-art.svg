@@ -1,104 +1,80 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 740" role="img" aria-label="*5H1 AFJ DE1C2 BJ'/) (J'F'*">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 980" role="img" aria-label="???? ??? ??????? ????? ????????">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0a1630"/>
-      <stop offset="45%" stop-color="#071018"/>
-      <stop offset="100%" stop-color="#0c2040"/>
+      <stop offset="0%" stop-color="#0b1834"/>
+      <stop offset="50%" stop-color="#070d1c"/>
+      <stop offset="100%" stop-color="#102448"/>
     </linearGradient>
     <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1a2d55" stop-opacity=".92"/>
-      <stop offset="100%" stop-color="#0c1730" stop-opacity=".88"/>
+      <stop offset="0%" stop-color="#1a2f58" stop-opacity=".94"/>
+      <stop offset="100%" stop-color="#0c1832" stop-opacity=".9"/>
     </linearGradient>
     <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#3aa0ff"/>
-      <stop offset="55%" stop-color="#4fd6ff"/>
+      <stop offset="60%" stop-color="#4fd6ff"/>
       <stop offset="100%" stop-color="#d4a24a"/>
     </linearGradient>
     <linearGradient id="bar" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0%" stop-color="#1b4f8a"/>
+      <stop offset="0%" stop-color="#194878"/>
       <stop offset="100%" stop-color="#4fd6ff"/>
     </linearGradient>
-    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="6" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
     <radialGradient id="orb" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#5ee7ff" stop-opacity=".55"/>
+      <stop offset="0%" stop-color="#5ee7ff" stop-opacity=".5"/>
       <stop offset="100%" stop-color="#5ee7ff" stop-opacity="0"/>
     </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
 
-  <rect width="1440" height="740" fill="url(#bg)"/>
-  <circle cx="220" cy="160" r="160" fill="url(#orb)"/>
-  <circle cx="1180" cy="520" r="200" fill="url(#orb)" opacity=".7"/>
+  <rect width="900" height="980" rx="36" fill="url(#bg)"/>
+  <circle cx="180" cy="160" r="170" fill="url(#orb)"/>
+  <circle cx="740" cy="780" r="210" fill="url(#orb)" opacity=".75"/>
 
-  <!-- back waveform -->
-  <path d="M80 520 C220 420, 340 610, 480 500 S760 390, 900 470 S1180 560, 1360 430"
-        fill="none" stroke="#2a6aaa" stroke-width="2" opacity=".45"/>
-  <path d="M80 540 C240 460, 360 600, 520 520 S820 400, 980 490 S1220 580, 1360 460"
-        fill="none" stroke="#4fd6ff" stroke-width="1.5" opacity=".35"/>
+  <path d="M60 760 C160 680, 240 820, 340 740 S520 620, 620 700 S780 790, 860 700"
+        fill="none" stroke="#2a6aaa" stroke-width="2.2" opacity=".45"/>
+  <path d="M60 790 C180 720, 260 850, 370 770 S560 640, 680 730 S820 820, 860 740"
+        fill="none" stroke="#4fd6ff" stroke-width="1.6" opacity=".35"/>
 
-  <!-- left bar panel -->
-  <g transform="translate(90,170)">
-    <rect width="220" height="320" rx="22" fill="url(#glass)" stroke="#4a7ab8" stroke-opacity=".45"/>
-    <text x="24" y="42" fill="#c9d7f2" font-family="Segoe UI, Arial" font-size="16" font-weight="700">Signals</text>
-    <rect x="36" y="250" width="28" height="40" rx="6" fill="url(#bar)"/>
-    <rect x="76" y="210" width="28" height="80" rx="6" fill="url(#bar)"/>
-    <rect x="116" y="170" width="28" height="120" rx="6" fill="url(#bar)"/>
-    <rect x="156" y="130" width="28" height="160" rx="6" fill="url(#bar)"/>
-    <circle cx="50" cy="70" r="4" fill="#d4a24a"/>
-    <text x="64" y="75" fill="#9eb2d4" font-family="Segoe UI, Arial" font-size="13">Live feed</text>
-  </g>
-
-  <!-- center dashboard -->
-  <g transform="translate(360,110)" filter="url(#glow)">
-    <rect width="720" height="420" rx="26" fill="url(#glass)" stroke="#5aa8e8" stroke-opacity=".55"/>
-    <text x="36" y="48" fill="#f0f6ff" font-family="Segoe UI, Arial" font-size="26" font-weight="700">Analytic Dashboard</text>
-    <text x="36" y="74" fill="#8fa6c9" font-family="Segoe UI, Arial" font-size="14">Command view · artistic concept</text>
-    <!-- grid -->
-    <g opacity=".25" stroke="#7aa8d8" stroke-width="1">
-      <line x1="40" y1="120" x2="680" y2="120"/>
-      <line x1="40" y1="180" x2="680" y2="180"/>
-      <line x1="40" y1="240" x2="680" y2="240"/>
-      <line x1="40" y1="300" x2="680" y2="300"/>
-      <line x1="40" y1="360" x2="680" y2="360"/>
+  <!-- main chart ? ???? ?? ?? -->
+  <g transform="translate(70,90)" filter="url(#glow)">
+    <rect width="760" height="440" rx="28" fill="url(#glass)" stroke="#5aa8e8" stroke-opacity=".5"/>
+    <g opacity=".2" stroke="#7aa8d8" stroke-width="1">
+      <line x1="40" y1="80" x2="720" y2="80"/>
+      <line x1="40" y1="150" x2="720" y2="150"/>
+      <line x1="40" y1="220" x2="720" y2="220"/>
+      <line x1="40" y1="290" x2="720" y2="290"/>
+      <line x1="40" y1="360" x2="720" y2="360"/>
     </g>
-    <path d="M50 320 C120 280, 170 200, 240 230 S340 310, 410 250 S520 140, 600 170 S660 240, 690 210"
-          fill="none" stroke="url(#line)" stroke-width="4" stroke-linecap="round"/>
+    <path d="M50 340 C130 300, 180 160, 250 200 S360 330, 440 250 S560 110, 640 150 S700 260, 730 220"
+          fill="none" stroke="url(#line)" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M50 340 C130 300, 180 160, 250 200 S360 330, 440 250 S560 110, 640 150 S700 260, 730 220 L730 400 L50 400 Z"
+          fill="#4fd6ff" opacity=".08"/>
     <g fill="#4fd6ff">
-      <circle cx="240" cy="230" r="6"/><circle cx="410" cy="250" r="6"/>
-      <circle cx="600" cy="170" r="6"/><circle cx="690" cy="210" r="6"/>
+      <circle cx="250" cy="200" r="8"/><circle cx="440" cy="250" r="8"/>
+      <circle cx="640" cy="150" r="8"/><circle cx="730" cy="220" r="8"/>
     </g>
     <g fill="#d4a24a">
-      <circle cx="120" cy="285" r="5"/><circle cx="520" cy="185" r="5"/>
-    </g>
-    <!-- mini kpis -->
-    <g transform="translate(40,380)">
-      <rect width="140" height="28" rx="8" fill="#10203c" stroke="#3d6aa0"/>
-      <text x="14" y="19" fill="#9ec9ff" font-family="Segoe UI, Arial" font-size="13">Insight · 98.2</text>
+      <circle cx="130" cy="305" r="7"/><circle cx="560" cy="165" r="7"/>
     </g>
   </g>
 
-  <!-- right gauges -->
-  <g transform="translate(1120,150)">
-    <rect width="230" height="200" rx="22" fill="url(#glass)" stroke="#4a7ab8" stroke-opacity=".45"/>
-    <text x="22" y="36" fill="#c9d7f2" font-family="Segoe UI, Arial" font-size="15" font-weight="700">Quality</text>
-    <circle cx="115" cy="120" r="58" fill="none" stroke="#1c3558" stroke-width="12"/>
-    <circle cx="115" cy="120" r="58" fill="none" stroke="#4fd6ff" stroke-width="12"
-            stroke-dasharray="260" stroke-dashoffset="70" stroke-linecap="round" transform="rotate(-90 115 120)"/>
-    <text x="115" y="128" text-anchor="middle" fill="#fff" font-family="Segoe UI, Arial" font-size="28" font-weight="700">72%</text>
+  <g transform="translate(70,570)">
+    <rect width="360" height="320" rx="26" fill="url(#glass)" stroke="#4a7ab8" stroke-opacity=".45"/>
+    <rect x="48" y="230" width="42" height="55" rx="8" fill="url(#bar)"/>
+    <rect x="110" y="190" width="42" height="95" rx="8" fill="url(#bar)"/>
+    <rect x="172" y="140" width="42" height="145" rx="8" fill="url(#bar)"/>
+    <rect x="234" y="100" width="42" height="185" rx="8" fill="url(#bar)"/>
+    <rect x="296" y="160" width="42" height="125" rx="8" fill="url(#bar)"/>
   </g>
 
-  <g transform="translate(1120,380)">
-    <rect width="230" height="150" rx="22" fill="url(#glass)" stroke="#4a7ab8" stroke-opacity=".45"/>
-    <text x="22" y="36" fill="#c9d7f2" font-family="Segoe UI, Arial" font-size="15" font-weight="700">Throughput</text>
-    <text x="22" y="88" fill="#4fd6ff" font-family="Segoe UI, Arial" font-size="36" font-weight="700">15.28</text>
-    <text x="22" y="120" fill="#8fa6c9" font-family="Segoe UI, Arial" font-size="13">units / cycle</text>
-  </g>
-
-  <!-- floating chip -->
-  <g transform="translate(640,560)">
-    <rect width="170" height="54" rx="14" fill="#101c34" stroke="#d4a24a" stroke-opacity=".55"/>
-    <text x="18" y="33" fill="#e8c278" font-family="Segoe UI, Arial" font-size="16" font-weight="700">Decision layer</text>
+  <g transform="translate(470,570)">
+    <rect width="360" height="320" rx="26" fill="url(#glass)" stroke="#4a7ab8" stroke-opacity=".45"/>
+    <circle cx="180" cy="175" r="86" fill="none" stroke="#1c3558" stroke-width="18"/>
+    <circle cx="180" cy="175" r="86" fill="none" stroke="#4fd6ff" stroke-width="18"
+            stroke-dasharray="380" stroke-dashoffset="105" stroke-linecap="round" transform="rotate(-90 180 175)"/>
+    <circle cx="180" cy="175" r="52" fill="#0b1730" stroke="#d4a24a" stroke-opacity=".5"/>
+    <path d="M163 175 l14 14 28 -32" fill="none" stroke="#d4a24a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>
