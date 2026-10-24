@@ -1,216 +1,180 @@
 /**
- * Hero معزول — نايوش لتحليل البيانات
- * نطاق: .da-intel-hero فقط · لا يؤثر على باقي صفحات هوب
- * سطح المكتب: نص يمين (RTL) + بصري يسار
+ * Hero فقط — نايوش لتحليل البيانات
+ * كل القواعد تحت .da-ih — لا تلمس .da-section / .da-item / .da-gallery
  */
-.da-intel-hero {
+.da-ih {
   --ih-gold: #d4a24a;
-  --ih-gold-soft: #e8c278;
-  --ih-cyan: #4fd6ff;
-  --ih-text: #f4f7ff;
-  --ih-muted: #aeb8d0;
-  --ih-line: rgba(120, 150, 220, 0.3);
-  --ih-radius: 28px;
+  --ih-gold2: #e8c278;
+  --ih-cyan: #5ec8ff;
+  --ih-text: #f5f7ff;
+  --ih-muted: #b4bfd6;
+  box-sizing: border-box;
   position: relative;
   z-index: 1;
   margin: 0 0 28px;
-  padding: clamp(20px, 2.8vw, 32px);
-  border-radius: var(--ih-radius);
+  padding: clamp(18px, 2.4vw, 28px);
+  border-radius: 26px;
   overflow: hidden;
-  color: var(--ih-text);
   direction: rtl;
   text-align: right;
+  color: var(--ih-text);
   background:
-    radial-gradient(55% 70% at 85% 15%, rgba(88, 40, 160, 0.36), transparent 58%),
-    radial-gradient(50% 60% at 15% 20%, rgba(30, 90, 180, 0.4), transparent 55%),
-    radial-gradient(45% 55% at 40% 90%, rgba(20, 160, 190, 0.16), transparent 60%),
-    linear-gradient(165deg, #0a1020 0%, #070b16 48%, #0b1328 100%);
-  border: 1px solid rgba(120, 150, 220, 0.35);
-  box-shadow:
-    0 0 0 1px rgba(212, 162, 74, 0.08) inset,
-    0 28px 70px rgba(3, 8, 20, 0.55);
-  isolation: isolate;
+    radial-gradient(60% 80% at 90% 10%, rgba(95, 45, 170, 0.34), transparent 58%),
+    radial-gradient(55% 70% at 8% 30%, rgba(35, 100, 190, 0.38), transparent 55%),
+    radial-gradient(40% 50% at 55% 100%, rgba(30, 170, 200, 0.14), transparent 55%),
+    linear-gradient(160deg, #0a1224 0%, #070b16 55%, #0c1530 100%);
+  border: 1px solid rgba(120, 155, 230, 0.32);
+  box-shadow: 0 24px 60px rgba(4, 10, 24, 0.45);
 }
 
-.da-portal .da-intel-hero.hub-feature-hero,
-body.homepage .da-intel-hero.hub-feature-hero,
-body:has(.top-nav) .da-intel-hero.hub-feature-hero {
-  padding: clamp(20px, 2.8vw, 32px) !important;
-  margin-bottom: 28px !important;
-  background:
-    radial-gradient(55% 70% at 85% 15%, rgba(88, 40, 160, 0.36), transparent 58%),
-    radial-gradient(50% 60% at 15% 20%, rgba(30, 90, 180, 0.4), transparent 55%),
-    radial-gradient(45% 55% at 40% 90%, rgba(20, 160, 190, 0.16), transparent 60%),
-    linear-gradient(165deg, #0a1020 0%, #070b16 48%, #0b1328 100%) !important;
-  border: 1px solid rgba(120, 150, 220, 0.35) !important;
-  box-shadow:
-    0 0 0 1px rgba(212, 162, 74, 0.08) inset,
-    0 28px 70px rgba(3, 8, 20, 0.55) !important;
-  color: #f4f7ff !important;
+.da-ih *,
+.da-ih *::before,
+.da-ih *::after {
+  box-sizing: border-box;
 }
 
-.da-intel-hero::before {
-  content: '';
+.da-ih__glow {
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(rgba(120, 160, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(120, 160, 255, 0.035) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse 85% 75% at 50% 45%, #000 25%, transparent 78%);
   pointer-events: none;
-  z-index: 0;
+  background-image:
+    linear-gradient(rgba(130, 170, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(130, 170, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 75%);
+  opacity: 0.8;
 }
 
-.da-intel-hero::after {
-  content: none !important;
-}
-
-/* شبكة سطح المكتب: العمود الأول في DOM = اليمين في RTL (نصوص) */
-.da-intel-hero__grid {
+.da-ih__row {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(300px, 1fr);
-  gap: clamp(14px, 2vw, 24px);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(18px, 2.4vw, 32px);
   align-items: center;
-  direction: rtl;
 }
 
-.da-intel-hero__copy {
-  min-width: 0;
+.da-ih__copy {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  justify-content: center;
   gap: 12px;
-  text-align: right;
+  min-width: 0;
+  padding: 4px 2px;
 }
 
-.da-intel-hero__badge {
+.da-ih__badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  width: fit-content;
   margin: 0;
-  padding: 7px 14px;
+  padding: 6px 12px;
   border-radius: 999px;
+  border: 1px solid rgba(140, 170, 230, 0.35);
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--ih-line);
-  color: #e8eefc;
-  font-size: 12.5px;
+  color: #e7eefc;
+  font-size: 12px;
   font-weight: 800;
 }
 
-.da-intel-hero h1,
-body.homepage .da-intel-hero.hub-feature-hero h1 {
-  margin: 0 !important;
-  max-width: none !important;
-  font-size: clamp(2.15rem, 5vw, 3.35rem) !important;
-  line-height: 1.18 !important;
-  font-weight: 900 !important;
-  color: #fff !important;
-  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+.da-ih__title {
+  margin: 0;
+  font-size: clamp(1.9rem, 4.2vw, 2.85rem);
+  line-height: 1.2;
+  font-weight: 900;
+  color: #fff;
 }
 
-.da-intel-hero__tagline,
-body.homepage .da-intel-hero .da-intel-hero__tagline {
-  margin: 0 !important;
-  font-size: clamp(1.2rem, 2.5vw, 1.65rem) !important;
-  font-weight: 800 !important;
-  line-height: 1.4 !important;
-  color: #d4a24a !important;
-  text-shadow: 0 0 22px rgba(212, 162, 74, 0.28);
+.da-ih__tag {
+  margin: 0;
+  font-size: clamp(1.15rem, 2.3vw, 1.5rem);
+  line-height: 1.4;
+  font-weight: 800;
+  color: var(--ih-gold);
 }
 
-.da-intel-hero__lead,
-body.homepage .da-intel-hero .da-intel-hero__lead {
-  margin: 0 !important;
-  max-width: 36ch !important;
-  font-size: clamp(1rem, 1.55vw, 1.12rem) !important;
-  line-height: 1.8 !important;
-  font-weight: 600 !important;
-  color: #aeb8d0 !important;
+.da-ih__lead {
+  margin: 0;
+  max-width: 38ch;
+  font-size: 1.02rem;
+  line-height: 1.75;
+  font-weight: 600;
+  color: var(--ih-muted);
 }
 
-.da-intel-hero__points {
+.da-ih__points {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  max-width: 420px;
-  margin: 4px 0 2px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: linear-gradient(105deg, rgba(255, 205, 17, 0.16), rgba(255, 255, 255, 0.05));
-  border: 1px solid rgba(212, 162, 74, 0.5);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  width: fit-content;
+  max-width: 100%;
+  margin: 2px 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(212, 162, 74, 0.55);
+  background: linear-gradient(110deg, rgba(255, 205, 17, 0.16), rgba(255, 255, 255, 0.04));
 }
 
-.da-intel-hero__points-num {
-  flex: 0 0 auto;
-  min-width: 68px;
-  padding: 10px 8px;
+.da-ih__points-num {
+  display: grid;
+  place-items: center;
+  min-width: 64px;
+  min-height: 52px;
+  padding: 6px;
   border-radius: 12px;
   background: #ffcd11;
   color: #1a1200;
-  font-size: 1.7rem;
+  font-size: 1.55rem;
   font-weight: 900;
   line-height: 1;
-  text-align: center;
 }
 
-.da-intel-hero__points-txt {
+.da-ih__points-txt {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  color: #fff4d6;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
-  line-height: 1.5;
+  color: #fff1d0;
+  line-height: 1.45;
 }
 
-.da-intel-hero__points-txt strong {
+.da-ih__points-txt strong {
   color: #fff;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 900;
 }
 
-.da-intel-hero__actions {
+.da-ih__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 4px;
-  width: 100%;
+  margin-top: 2px;
 }
 
-.da-intel-hero__cta {
+.da-ih__cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 54px;
-  padding: 0 28px;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 26px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #e0b35c, #c4892e);
-  color: #1a1200 !important;
-  font-size: 1.08rem;
-  font-weight: 900;
-  text-decoration: none;
   border: 0;
-  box-shadow:
-    0 0 0 1px rgba(255, 230, 170, 0.35) inset,
-    0 12px 30px rgba(196, 137, 46, 0.38);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  background: linear-gradient(135deg, #e2b55f, #c4892e);
+  color: #1a1200;
+  font-size: 1.05rem;
+  font-weight: 900;
+  box-shadow: 0 12px 28px rgba(196, 137, 46, 0.35);
 }
 
-.da-intel-hero__cta:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 0 1px rgba(255, 230, 170, 0.5) inset,
-    0 16px 36px rgba(196, 137, 46, 0.48);
-  color: #1a1200 !important;
+.da-ih__cta:hover {
+  filter: brightness(1.05);
+  color: #1a1200;
 }
 
-.da-intel-hero__login {
+.da-ih__login {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -218,191 +182,195 @@ body.homepage .da-intel-hero .da-intel-hero__lead {
   min-height: 50px;
   padding: 0 20px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(180, 200, 255, 0.35);
-  color: #eef3ff !important;
-  font-weight: 800;
   text-decoration: none;
+  border: 1px solid rgba(180, 200, 255, 0.4);
+  background: rgba(255, 255, 255, 0.04);
+  color: #eef3ff;
+  font-weight: 800;
 }
 
-.da-intel-hero__login:hover {
+.da-ih__login:hover {
   background: rgba(255, 255, 255, 0.08);
-  color: #fff !important;
+  color: #fff;
 }
 
-/* المنطقة البصرية — يسار على RTL */
-.da-intel-hero__visual {
+/* بصري يسار */
+.da-ih__visual {
   position: relative;
-  display: block;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  border-radius: 24px;
+  min-height: 100%;
+  border-radius: 22px;
   overflow: hidden;
   text-decoration: none;
   color: inherit;
-  border: 1px solid rgba(120, 180, 255, 0.3);
+  border: 1px solid rgba(120, 180, 255, 0.32);
   background:
-    radial-gradient(70% 60% at 50% 35%, rgba(40, 110, 210, 0.28), transparent 60%),
-    linear-gradient(165deg, #0a1428, #060a14);
-  box-shadow:
-    0 0 36px rgba(60, 140, 255, 0.14),
-    0 18px 44px rgba(0, 0, 0, 0.4);
-  aspect-ratio: 9 / 10;
-  max-height: min(520px, 68vh);
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+    radial-gradient(70% 55% at 50% 30%, rgba(50, 120, 220, 0.28), transparent 60%),
+    linear-gradient(165deg, #0b1630, #060a14);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
 }
 
-.da-intel-hero__visual:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 46px rgba(79, 214, 255, 0.18),
-    0 24px 52px rgba(0, 0, 0, 0.45);
+.da-ih__visual:hover {
+  border-color: rgba(212, 162, 74, 0.45);
 }
 
-.da-intel-hero__art {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-  background: transparent;
-}
-
-.da-intel-hero__brand {
-  position: absolute;
-  top: 12px;
-  inset-inline-start: 12px;
-  z-index: 2;
+.da-ih__brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  max-width: calc(100% - 24px);
-  padding: 8px 12px 8px 8px;
-  border-radius: 16px;
-  background: rgba(8, 12, 24, 0.78);
-  border: 1px solid rgba(212, 162, 74, 0.5);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  gap: 12px;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid rgba(120, 160, 220, 0.2);
+  background: rgba(6, 10, 22, 0.55);
 }
 
-.da-intel-hero__brand img {
-  width: 56px;
-  height: 56px;
+.da-ih__brand img {
+  width: 72px;
+  height: 72px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(212, 162, 74, 0.45);
   flex: 0 0 auto;
-  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-.da-intel-hero__brand span {
-  font-size: 13.5px;
+.da-ih__brand-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.da-ih__brand-txt strong {
+  font-size: 15px;
   font-weight: 900;
   color: #fff;
   line-height: 1.35;
 }
 
-.da-intel-hero__art-note {
-  position: absolute;
-  bottom: 12px;
-  inset-inline-end: 12px;
-  z-index: 2;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: rgba(230, 238, 255, 0.92);
-  font-size: 11.5px;
+.da-ih__brand-txt span {
+  font-size: 12.5px;
   font-weight: 700;
-  pointer-events: none;
+  color: var(--ih-gold2);
 }
 
-.da-intel-hero__open {
-  position: absolute;
-  bottom: 12px;
-  inset-inline-start: 12px;
-  z-index: 2;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(212, 162, 74, 0.18);
-  border: 1px solid rgba(212, 162, 74, 0.5);
-  color: var(--ih-gold-soft);
-  font-size: 12.5px;
+.da-ih__art-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  min-height: 260px;
+}
+
+.da-ih__art {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(360px, 42vh);
+  object-fit: contain;
+  object-position: center;
+}
+
+.da-ih__note {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid rgba(120, 160, 220, 0.18);
+  background: rgba(5, 8, 18, 0.65);
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(230, 238, 255, 0.88);
+}
+
+.da-ih__note b {
+  color: var(--ih-gold2);
   font-weight: 800;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .da-intel-hero__cta,
-  .da-intel-hero__visual {
+  .da-ih__cta,
+  .da-ih__visual {
     transition: none;
   }
 }
 
-/* ---------- موبايل: عنوان → وصف → أزرار → نقاط → بصري ---------- */
 @media (max-width: 960px) {
-  .da-intel-hero__grid {
+  .da-ih__row {
     grid-template-columns: 1fr;
-    gap: 18px;
+    gap: 16px;
   }
 
-  .da-intel-hero__copy {
+  .da-ih__copy {
     order: 1;
-    align-items: stretch;
   }
 
-  .da-intel-hero__visual {
+  .da-ih__visual {
     order: 2;
-    aspect-ratio: 16 / 12;
-    max-height: none;
   }
 
-  .da-intel-hero__actions {
+  .da-ih__lead {
+    max-width: none;
+  }
+
+  .da-ih__actions {
     flex-direction: column;
   }
 
-  .da-intel-hero__cta,
-  .da-intel-hero__login {
+  .da-ih__cta,
+  .da-ih__login,
+  .da-ih__points {
     width: 100%;
   }
 
-  .da-intel-hero__points {
-    max-width: none;
-    order: 0;
+  /* عنوان → وصف → نقاط → أزرار → بصري */
+  .da-ih__copy {
+    display: contents;
   }
 
-  /* ترتيب صريح داخل النسخ: badge, h1, tagline, lead, actions, points — نعيد ترتيب النقاط بعد الأزرار */
-  .da-intel-hero__copy {
-    display: grid;
-    grid-template-columns: 1fr;
+  .da-ih__row {
+    display: flex;
+    flex-direction: column;
   }
 
-  .da-intel-hero__badge { order: 1; justify-self: start; }
-  .da-intel-hero h1 { order: 2; }
-  .da-intel-hero__tagline { order: 3; }
-  .da-intel-hero__lead { order: 4; max-width: none !important; }
-  .da-intel-hero__actions { order: 5; }
-  .da-intel-hero__points { order: 6; }
-
-  .da-intel-hero__brand img {
-    width: 44px;
-    height: 44px;
+  .da-ih__badge,
+  .da-ih__title,
+  .da-ih__tag,
+  .da-ih__lead,
+  .da-ih__actions,
+  .da-ih__points,
+  .da-ih__visual {
+    width: 100%;
   }
 
-  .da-intel-hero__brand span {
-    font-size: 12px;
+  .da-ih__badge { order: 1; }
+  .da-ih__title { order: 2; }
+  .da-ih__tag { order: 3; }
+  .da-ih__lead { order: 4; }
+  .da-ih__points { order: 5; }
+  .da-ih__actions { order: 6; }
+  .da-ih__visual { order: 7; }
+
+  .da-ih__art {
+    max-height: 260px;
+  }
+
+  .da-ih__brand img {
+    width: 56px;
+    height: 56px;
   }
 }
 
 @media (max-width: 420px) {
-  .da-intel-hero {
-    padding: 16px 12px;
+  .da-ih {
+    padding: 14px 12px;
     border-radius: 20px;
   }
 
-  .da-intel-hero h1,
-  body.homepage .da-intel-hero.hub-feature-hero h1 {
-    font-size: 1.75rem !important;
-  }
-
-  .da-intel-hero__tagline {
-    font-size: 1.1rem !important;
+  .da-ih__title {
+    font-size: 1.7rem;
   }
 }

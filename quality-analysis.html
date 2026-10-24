@@ -37,8 +37,8 @@
   <link rel="stylesheet" href="css/dark-mode.css?v=theme3" />
   <link rel="stylesheet" href="css/hub-theme-modes.css?v=theme3" />
   <link rel="stylesheet" href="css/hub-dark-surfaces.css" />
-  <link rel="stylesheet" href="css/hub-data-analysis.css?v=3" />
-  <link rel="stylesheet" href="css/hub-da-intel-hero.css?v=4" />
+  <link rel="stylesheet" href="css/hub-data-analysis.css?v=5" />
+  <link rel="stylesheet" href="css/hub-da-intel-hero.css?v=5" />
 </head>
 <body class="homepage da-portal">
   <header class="top-nav">
@@ -62,43 +62,44 @@
   </header>
 
   <main class="container hub-feature-page" id="quality-analysis-main">
-    <!-- Hero — RTL split: نص يمين · بصري يسار (معزول) -->
-    <section class="da-intel-hero hub-feature-hero" aria-labelledby="da-hero-title" dir="rtl">
-      <div class="da-intel-hero__grid">
-        <div class="da-intel-hero__copy">
-          <p class="da-intel-hero__badge">NAIOSH Intelligence</p>
-          <h1 id="da-hero-title">نايوش لتحليل البيانات</h1>
-          <div class="da-intel-hero__tagline">ذكاء يحوّل بياناتك إلى قرارات</div>
-          <div class="da-intel-hero__lead">
+    <!-- Hero فقط — معزول بـ .da-ih · لا يغيّر الأقسام السفلية -->
+    <section class="da-ih" aria-labelledby="da-hero-title" dir="rtl">
+      <div class="da-ih__glow" aria-hidden="true"></div>
+      <div class="da-ih__row">
+        <div class="da-ih__copy">
+          <p class="da-ih__badge">NAIOSH Intelligence</p>
+          <h1 class="da-ih__title" id="da-hero-title">نايوش لتحليل البيانات</h1>
+          <p class="da-ih__tag">ذكاء يحوّل بياناتك إلى قرارات</p>
+          <p class="da-ih__lead">
             اكتشف قوة بياناتك مع أدوات التحليل والتقارير والاستشارات الذكية في تجربة واحدة.
-          </div>
+          </p>
 
-          <div class="da-intel-hero__points" role="status">
-            <span class="da-intel-hero__points-num">300</span>
-            <span class="da-intel-hero__points-txt">
+          <div class="da-ih__points" role="status">
+            <span class="da-ih__points-num">300</span>
+            <span class="da-ih__points-txt">
               <strong>نقطة ترحيبية مجانًا</strong>
               بعد التحقق من البريد والجوال
             </span>
           </div>
 
-          <div class="da-intel-hero__actions">
-            <a class="da-intel-hero__cta" data-da-signup href="https://www.naioshai.com/">
+          <div class="da-ih__actions">
+            <a class="da-ih__cta" data-da-signup href="https://www.naioshai.com/">
               ابدأ مجانًا <i class="fas fa-arrow-up-left" aria-hidden="true"></i>
             </a>
-            <a class="da-intel-hero__login" data-da-login href="https://www.naioshai.com/#login">
+            <a class="da-ih__login" data-da-login href="https://www.naioshai.com/#login">
               <i class="fas fa-right-to-bracket" aria-hidden="true"></i> تسجيل الدخول
             </a>
           </div>
         </div>
 
         <a
-          class="da-intel-hero__visual"
+          class="da-ih__visual"
           data-da-open
           href="https://www.naioshai.com/"
           title="فتح نايوش لتحليل البيانات"
           aria-label="فتح نايوش لتحليل البيانات"
         >
-          <span class="da-intel-hero__brand">
+          <span class="da-ih__brand">
             <img
               src="assets/logo-naiosh-ai.jpg?v=lockup5"
               alt="شعار NAIOSH AI — نظام تحليل البيانات"
@@ -107,18 +108,25 @@
               decoding="async"
               fetchpriority="high"
             />
-            <span>نظام تحليل البيانات</span>
+            <span class="da-ih__brand-txt">
+              <strong>نظام تحليل البيانات</strong>
+              <span>NAIOSH Intelligence</span>
+            </span>
           </span>
-          <img
-            class="da-intel-hero__art"
-            src="assets/analysis/intel-hero-art.png"
-            alt="تصور فني لمؤشرات وتحليل بيانات"
-            width="900"
-            height="980"
-            decoding="async"
-          />
-          <span class="da-intel-hero__art-note">تصور فني — ليس لقطة من النظام</span>
-          <span class="da-intel-hero__open">فتح النظام الحي</span>
+          <span class="da-ih__art-wrap">
+            <img
+              class="da-ih__art"
+              src="assets/analysis/intel-hero-art.png"
+              alt="تصور فني لمؤشرات وتحليل بيانات"
+              width="900"
+              height="980"
+              decoding="async"
+            />
+          </span>
+          <span class="da-ih__note">
+            <span>تصور فني — ليس لقطة من النظام</span>
+            <b>فتح النظام الحي</b>
+          </span>
         </a>
       </div>
     </section>
