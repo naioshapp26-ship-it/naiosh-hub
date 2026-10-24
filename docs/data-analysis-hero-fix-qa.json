@@ -1,0 +1,121 @@
+{
+  "pass": 23,
+  "fail": 0,
+  "results": [
+    {
+      "id": "desktop_text_on_right",
+      "ok": true,
+      "d": "copyL=687 visualL=183"
+    },
+    {
+      "id": "desktop_side_by_side",
+      "ok": true,
+      "d": "deltaTop"
+    },
+    {
+      "id": "desktop_title_large",
+      "ok": true,
+      "d": "fs=48.8"
+    },
+    {
+      "id": "desktop_tag_gold",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "id": "desktop_no_hscroll",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "id": "desktop_no_english_metrics",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "id": "desktop_art_contain",
+      "ok": true,
+      "d": "contain"
+    },
+    {
+      "id": "desktop_art_loaded",
+      "ok": true,
+      "d": "[900,980]"
+    },
+    {
+      "id": "desktop_links",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "id": "sections_intact",
+      "ok": true,
+      "d": "[\"ما هو النظام؟\",\"ماذا يقدّم؟\",\"كيف أبدأ؟\",\"ما الذي أحصل عليه مجانًا؟\",\"الخدمات والتكاليف\",\"أسئلة شائعة\"]"
+    },
+    {
+      "id": "phone-sm_order",
+      "ok": true,
+      "d": "h1>lead>cta>points>visual"
+    },
+    {
+      "id": "phone-sm_stack_order",
+      "ok": true,
+      "d": "h1>lead>cta>points>visual"
+    },
+    {
+      "id": "phone-sm_no_hscroll",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "id": "phone-sm_cta",
+      "ok": true,
+      "d": "h=54"
+    },
+    {
+      "id": "phone-md_order",
+      "ok": true,
+      "d": "h1>lead>cta>points>visual"
+    },
+    {
+      "id": "phone-md_stack_order",
+      "ok": true,
+      "d": "h1>lead>cta>points>visual"
+    },
+    {
+      "id": "phone-md_no_hscroll",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "id": "phone-md_cta",
+      "ok": true,
+      "d": "h=54"
+    },
+    {
+      "id": "phone-lg_order",
+      "ok": true,
+      "d": "h1>lead>cta>points>visual"
+    },
+    {
+      "id": "phone-lg_stack_order",
+      "ok": true,
+      "d": "h1>lead>cta>points>visual"
+    },
+    {
+      "id": "phone-lg_no_hscroll",
+      "ok": true,
+      "d": ""
+    },
+    {
+      "id": "phone-lg_cta",
+      "ok": true,
+      "d": "h=54"
+    },
+    {
+      "id": "below_unchanged",
+      "ok": true,
+      "d": "01ea4ea428bb951f"
+    }
+  ]
+}
