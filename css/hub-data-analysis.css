@@ -483,6 +483,11 @@ body.dark-mode .da-steps article::before {
   grid-template-columns: 1.4fr 0.9fr;
 }
 
+/* شبكة اللقطات الأصلية (4 لقطات) — من #242 */
+.da-gallery-3 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .da-shot {
   display: block;
   border-radius: 18px;
@@ -628,6 +633,7 @@ body.dark-mode .da-note {
 @media (max-width: 900px) {
   .da-hero-layout,
   .da-gallery-2,
+  .da-gallery-3,
   .da-free-panel,
   .da-steps {
     grid-template-columns: 1fr;
