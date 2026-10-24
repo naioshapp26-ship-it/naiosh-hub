@@ -1234,6 +1234,36 @@
     return row;
   };
 
+  const syncAdStatusToServer = (row, status, reason = '') => {
+    if (!row) return Promise.resolve({ ok: false, skipped: true });
+    const id = row.serverSubmissionId || row.requestId || row.id;
+    if (!id) return Promise.resolve({ ok: false, skipped: true });
+    try {
+      const headers = window.HubAuth?.authHeaders?.({ 'Content-Type': 'application/json' }) || {
+        'Content-Type': 'application/json',
+      };
+      return fetch(`/api/hub/ad-submissions/${encodeURIComponent(id)}/status`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ status, reason: reason || undefined }),
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            let err = `HTTP ${res.status}`;
+            try {
+              const j = await res.json();
+              err = j.error || err;
+            } catch (_) {}
+            return { ok: false, error: err };
+          }
+          return { ok: true };
+        })
+        .catch((e) => ({ ok: false, error: e?.message || 'network' }));
+    } catch (e) {
+      return Promise.resolve({ ok: false, error: e?.message || 'unavailable' });
+    }
+  };
+
   const approveRequest = (requestId, actor = 'مشغّل') => {
     const row = get(requestId);
     if (!row) return null;
@@ -1320,6 +1350,8 @@
       save();
       return row;
     } else if (row.referenceType === 'Ad' || row.requestType === 'Ad Submission') {
+      // Persist to server ledger when available; local inbox still updates on failure.
+      void syncAdStatusToServer(row, 'approved');
       let adStatus = 'active';
       try {
         if (window.HubStore?.setAdWorkflowStatus && row.referenceId) {
@@ -1493,10 +1525,13 @@
         row._syncingArticle = false;
       }
     }
-    if ((row.referenceType === 'Ad' || row.requestType === 'Ad Submission') && row.referenceId) {
-      try {
-        window.HubStore?.setAdWorkflowStatus?.(row.referenceId, 'rejected', { rejectionReason: note }, actor);
-      } catch (_) {}
+    if (row.referenceType === 'Ad' || row.requestType === 'Ad Submission') {
+      void syncAdStatusToServer(row, 'rejected', note);
+      if (row.referenceId) {
+        try {
+          window.HubStore?.setAdWorkflowStatus?.(row.referenceId, 'rejected', { rejectionReason: note }, actor);
+        } catch (_) {}
+      }
     }
     if ((row.referenceType === 'Event' || row.requestType === 'Event Submission') && row.referenceId) {
       try {
