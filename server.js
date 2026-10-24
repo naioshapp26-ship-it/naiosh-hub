@@ -1337,14 +1337,16 @@ async function handleHubApi(req, res, pathname) {
     if (!(await requireHubStaffOrReject(req, res))) return true;
     const urlObj = new URL(req.url, 'http://127.0.0.1');
     const statusFilter = String(urlObj.searchParams.get('status') || '').trim();
-    const requests = hubRegisterAttachments.listRequests(
+    const listFn = hubRegisterAttachments.listRequestsAsync || hubRegisterAttachments.listRequests;
+    const requests = await listFn.call(
+      hubRegisterAttachments,
       statusFilter ? { status: statusFilter } : {}
     );
     sendJson(res, 200, {
       ok: true,
       count: requests.length,
       requests,
-      source: 'register-attachments',
+      source: 'register-attachments+platform-grants',
     });
     return true;
   }
