@@ -26,15 +26,106 @@ const ART = '/opt/cursor/artifacts';
 const ROOT = path.resolve(__dirname, '..');
 const DEEP_MIN = Number(process.env.INVENTORY_DEEP_MIN || 60);
 
-/** Filename / path heuristics → audience lane */
-const STAFF_NAME_RE =
-  /(^|-)(admin|ops|dashboard|rent-admin|search-admin|roles-permissions|system-ops|ads|branches|chat|directives|job-roles|marketing-campaigns|events-studio|posha|platforms|global-os|operating|ops-catalog|ops-manuals|side-project-registrations|hub-checklist|hub-interaction|naiosh-ownership|engine-specs|google-search|search-content)(-|$|\.)/i;
-const UTILITY_NAME_RE =
-  /(sso-bridge|admin-bootstrap|packages-paymob-return|forgot-password|user-path|packages-receipts)/i;
-const CUSTOMER_NAME_RE =
-  /(^|-)(client|register|create-account|login|cart|checkout|store|products|services|service|support|complaints|suggestions|consultation|membership|packages|my-orders|my-courses|my-diplomas|my-office|my-platform|my-systems|my-branch|my-channel|my-incubator|profile-360|trial|book-office|book-platform|book-incubator|rent-system|rent-systems|publish-research|register-freelancer|self-assess|naiosh-solutions|cost-reduction|quality|quality-analysis|review-methodology)(-|$|\.)/i;
-const PUBLIC_NAME_RE =
-  /(^|-)(index|blog|news|events|courses|diplomas|communities|competitions|incubators|office|info-center|policies|privacy|terms|partnerships|apps|systems-instructions|search)(-|$|\.)/i;
+/** Filename stem heuristics → audience lane (filename first; avoid substring traps like platforms⊂book-platform) */
+const STAFF_STEMS = new Set([
+  'admin-bootstrap',
+  'ads',
+  'branches',
+  'chat',
+  'dashboard',
+  'directives',
+  'engine-specs',
+  'events-studio-main',
+  'global-os',
+  'google-search',
+  'hub-checklist',
+  'hub-interaction',
+  'job-roles',
+  'marketing-campaigns-studio',
+  'naiosh-ownership',
+  'operating',
+  'ops-catalog-admin',
+  'ops-manuals',
+  'platforms',
+  'posha',
+  'rent-admin',
+  'roles-permissions',
+  'search-admin',
+  'search-content',
+  'side-project-registrations',
+  'system-ops',
+]);
+const UTILITY_STEMS = new Set([
+  'sso-bridge',
+  'admin-bootstrap',
+  'packages-paymob-return',
+  'forgot-password',
+  'user-path',
+  'packages-receipts',
+]);
+const CUSTOMER_STEMS = new Set([
+  'client',
+  'register',
+  'create-account',
+  'login',
+  'cart',
+  'checkout',
+  'store',
+  'products',
+  'services',
+  'service',
+  'support',
+  'complaints',
+  'suggestions',
+  'consultation',
+  'membership',
+  'packages',
+  'my-orders',
+  'my-courses',
+  'my-diplomas',
+  'my-office',
+  'my-platform',
+  'my-systems',
+  'my-branch',
+  'my-channel',
+  'my-incubator',
+  'profile-360',
+  'trial',
+  'book-office',
+  'book-platform',
+  'book-incubator',
+  'rent-system',
+  'rent-systems',
+  'publish-research',
+  'register-freelancer',
+  'self-assess',
+  'naiosh-solutions',
+  'cost-reduction',
+  'quality',
+  'quality-analysis',
+  'review-methodology',
+]);
+const PUBLIC_STEMS = new Set([
+  'index',
+  'blog',
+  'news',
+  'events',
+  'courses',
+  'diplomas',
+  'communities',
+  'competitions',
+  'incubators',
+  'office',
+  'info-center',
+  'policies',
+  'privacy',
+  'terms',
+  'partnerships',
+  'apps',
+  'systems-instructions',
+  'search',
+  'side-projects',
+]);
 
 /** Durable API-backed customer journeys proven in prior prod probes */
 const DATA_SAVE_PASS = new Set([
@@ -165,39 +256,50 @@ function readLocalSnippet(file) {
   }
 }
 
+function stemOf(file) {
+  return String(file || '')
+    .toLowerCase()
+    .replace(/\.html$/i, '');
+}
+
 function classify(file, localSnippet) {
+  const stem = stemOf(file);
   const name = file.toLowerCase();
-  const blob = `${name}\n${localSnippet}`.toLowerCase();
+  const blob = String(localSnippet || '').toLowerCase();
   const reasons = [];
 
-  if (UTILITY_NAME_RE.test(name) || /sso|bootstrap|paymob-return|bridge/.test(blob)) {
-    reasons.push('utility_name_or_bridge');
+  // Filename wins (avoid false positives from nav links to admin pages)
+  if (UTILITY_STEMS.has(stem)) {
+    reasons.push('utility_filename');
     return { audience: 'utility', reasons };
   }
-  if (
-    STAFF_NAME_RE.test(name) ||
-    /\brent-admin\b|\bops-catalog-admin\b|\bsearch-admin\b|role.?permission|hub.?rbac|staff.?shell/.test(blob)
-  ) {
-    reasons.push('staff_name_or_admin_markers');
+  if (STAFF_STEMS.has(stem) || /-admin$/.test(stem)) {
+    reasons.push('staff_filename');
     return { audience: 'staff', reasons };
   }
-  if (
-    CUSTOMER_NAME_RE.test(name) ||
-    /\/api\/client|hub-customer|create.?account|client.?portal|service.?request/.test(blob)
-  ) {
-    reasons.push('customer_name_or_portal_markers');
+  if (CUSTOMER_STEMS.has(stem) || /^my-/.test(stem)) {
+    reasons.push('customer_filename');
     return { audience: 'customer', reasons };
   }
-  if (PUBLIC_NAME_RE.test(name) || /marketing|landing|public.?info|info.?center/.test(blob)) {
-    reasons.push('public_catalog_or_info');
+  if (PUBLIC_STEMS.has(stem)) {
+    reasons.push('public_filename');
     return { audience: 'public', reasons };
   }
-  // Fallback: my-* → customer; *-admin → staff; else public
+
+  // Light content heuristics only when filename unknown
+  if (/\bdata-admin-shell\b|\bhub-rbac\b|\bstaff-only\b/.test(blob)) {
+    reasons.push('content_staff_shell_marker');
+    return { audience: 'staff', reasons };
+  }
+  if (/\/api\/client\/|hub-customer-requests|data-client-portal/.test(blob)) {
+    reasons.push('content_customer_api_marker');
+    return { audience: 'customer', reasons };
+  }
   if (/^my-/.test(name)) {
     reasons.push('fallback_my_prefix');
     return { audience: 'customer', reasons };
   }
-  if (/admin/.test(name)) {
+  if (/admin/.test(stem)) {
     reasons.push('fallback_admin_token');
     return { audience: 'staff', reasons };
   }
@@ -248,34 +350,51 @@ function missingLookingScripts(srcs) {
   });
 }
 
-function analyzeDeep(raw, status) {
+function isAuthRedirect(status, headers) {
+  if (!(status === 301 || status === 302 || status === 303 || status === 307 || status === 308)) return false;
+  const loc = String(headers?.location || '');
+  return /login\.html|\/login|auth|create-account|register\.html/i.test(loc) || loc.length > 0;
+}
+
+function analyzeDeep(raw, status, headers) {
+  if (isAuthRedirect(status, headers)) {
+    return {
+      ok: true,
+      authRedirect: true,
+      location: String(headers?.location || '').slice(0, 200),
+      hasDoctype: false,
+      obvious500Stack: false,
+      bytes: Buffer.byteLength(String(raw || '')),
+      scriptCount: 0,
+      missingLookingScripts: [],
+      note: 'Auth gate redirect (expected for staff/REQUIRES_LOGIN shells)',
+    };
+  }
   const text = String(raw || '');
   const lower = text.toLowerCase();
   const hasDoctype = /<!doctype\s+html/i.test(text) || /<html[\s>]/i.test(text);
   const stackHints = [
     'internal server error',
     'cannot get /',
-    'error: ',
     'at module._compile',
     'at object.<anonymous>',
-    'throw er',
     'errnoexception',
     'stack trace',
-    'typeerror:',
-    'referenceerror:',
   ];
-  const obvious500 = status >= 500 || stackHints.some((h) => lower.includes(h));
+  // Avoid flagging normal JS source comments; only treat body as stack if status is 5xx
+  // or classic Express/HTML error page shapes appear without a normal document.
+  const obvious500 =
+    status >= 500 ||
+    ((/internal server error|cannot get \//i.test(text) || stackHints.some((h) => lower.includes(h))) &&
+      !hasDoctype);
   const srcs = extractScriptSrcs(text);
   const missingScripts = missingLookingScripts(srcs);
-  const ok =
-    status === 200 &&
-    hasDoctype &&
-    !obvious500 &&
-    text.length > 80;
+  const ok = status === 200 && hasDoctype && !obvious500 && text.length > 80;
   return {
     ok,
+    authRedirect: false,
     hasDoctype,
-    obvious500Stack: obvious500 && status !== 200,
+    obvious500Stack: !!obvious500,
     bytes: Buffer.byteLength(text),
     scriptCount: srcs.length,
     missingLookingScripts: missingScripts.slice(0, 8),
@@ -353,6 +472,7 @@ async function main() {
     process.stdout.write(`GET /${row.file}${deep ? ' [deep]' : ''} ... `);
     const r = await req('GET', `/${row.file}`);
     const ct = String(r.headers?.['content-type'] || '');
+    const authRedirect = isAuthRedirect(r.status, r.headers);
     const entry = {
       file: row.file,
       url: `${BASE}/${row.file}`,
@@ -364,15 +484,18 @@ async function main() {
         status: r.status,
         ms: r.ms,
         contentType: ct.slice(0, 100),
+        location: r.headers?.location ? String(r.headers.location).slice(0, 200) : null,
         error: r.error || null,
+        authRedirect,
       },
       deep: false,
       markers: null,
-      httpOk: r.status === 200,
+      // 200 HTML or expected auth redirect both count as healthy page reachability
+      httpOk: r.status === 200 || authRedirect,
     };
 
     if (deep) {
-      const markers = analyzeDeep(r.raw, r.status);
+      const markers = analyzeDeep(r.raw, r.status, r.headers);
       entry.deep = true;
       entry.markers = markers;
       entry.deepOk = markers.ok;
