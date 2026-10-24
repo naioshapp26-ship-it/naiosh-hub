@@ -114,16 +114,19 @@
     line-height: 1.65 !important;
     margin: 0 0 14px !important;
     max-width: none !important;
+    /* readable on dark hero media */
+    color: rgba(255, 245, 247, 0.92) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45) !important;
   }
 
   body.homepage .hero-ctas {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
+    gap: 10px !important;
     width: 100% !important;
     /* clear left guide + right FABs so labels stay tappable */
     padding-inline: 0 !important;
-    margin-bottom: 4px !important;
+    margin-bottom: 10px !important;
   }
 
   body.homepage .hero-ctas .btn,
@@ -133,11 +136,26 @@
     justify-content: center !important;
     white-space: normal !important;
     text-align: center !important;
-    padding: 11px 10px !important;
-    font-size: 12px !important;
-    line-height: 1.35 !important;
-    min-height: 44px !important;
+    padding: 12px 11px !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    min-height: 48px !important;
     border-radius: 14px !important;
+    /* force readable label on every CTA variant */
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    font-weight: 800 !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32) !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  body.homepage .hero-ctas .btn i,
+  body.homepage .hero-ctas .hero-cta-pill i {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    font-size: 14px !important;
+    flex: 0 0 auto !important;
   }
 
   body.homepage .hero-stats {
@@ -145,11 +163,16 @@
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 8px !important;
     margin-top: 12px !important;
+    /* keep stats clear of right FAB stack (cart + AI) */
+    padding-inline-end: 58px !important;
   }
 
   body.homepage .hero-stats .stat {
-    padding: 8px 6px !important;
+    padding: 10px 8px !important;
     text-align: center !important;
+    background: rgba(8, 10, 18, 0.42) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 12px !important;
   }
 
   body.homepage .hero-stats .stat strong {
@@ -390,16 +413,23 @@
     height: 28px !important;
   }
 
-  /* Cart fab: above AI on the physical right */
+  /* Cart fab: above AI on the physical right — clear of hero stats band */
   body.homepage .hub-cart-fab {
     inset-inline-start: auto !important;
     inset-inline-end: auto !important;
     left: auto !important;
     right: 12px !important;
-    bottom: calc(132px + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(128px + env(safe-area-inset-bottom, 0px)) !important;
     width: 44px !important;
     height: 44px !important;
     z-index: 1185 !important;
+  }
+
+  /* Prefer stacking FABs in the bottom chrome, not over hero CTAs/stats */
+  body.homepage .hero-ctas,
+  body.homepage .hero-stats {
+    position: relative;
+    z-index: 2;
   }
 
   /* Floating side rail → inline under content (already static in styles) */
