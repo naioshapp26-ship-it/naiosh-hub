@@ -462,15 +462,25 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/notifications/read' && req.method === 'POST') {
-    if (!(await requireHubAuthOrReject(req, res))) return true;
+    const session = await requireHubAuthOrReject(req, res);
+    if (!session) return true;
     const body = await readBody(req);
-    const items = hubRuntime.markRead(body.id, !!body.all);
+    const email = String(session.email || '')
+      .trim()
+      .toLowerCase();
+    // Clients (and non–super-admin staff) may only mark their own notifications.
+    const staffUnscoped = session.lane === 'SUPER_ADMIN';
+    const items = hubRuntime.markRead(body.id, !!body.all, {
+      targetEmail: email,
+      staffUnscoped,
+    });
     sendJson(res, 200, { ok: true, items });
     return true;
   }
 
   if (pathname === '/api/hub/sync' && req.method === 'POST') {
-    if (!(await requireHubAuthOrReject(req, res))) return true;
+    // P1: runtime sync mutates shared hub state — staff only.
+    if (!(await requireHubStaffOrReject(req, res))) return true;
     const body = await readBody(req);
     const result = hubRuntime.ingestSync(body);
     sendJson(res, 200, { ok: true, ...result });
@@ -483,6 +493,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/apps' && req.method === 'POST') {
+    if (!(await requireHubStaffOrReject(req, res))) return true;
     const body = await readBody(req);
     try {
       const result = hubRuntime.registerApp(body || {});
@@ -945,7 +956,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/search-catalog' && req.method === 'POST') {
-    if (!requireHubStaffOrReject(req, res)) return true;
+    if (!(await requireHubStaffOrReject(req, res))) return true;
     const body = await readBody(req);
     const items = Array.isArray(body?.items) ? body.items : [];
     const config = body?.config && typeof body.config === 'object' ? body.config : undefined;
@@ -1692,8 +1703,20 @@ async function handleHubApi(req, res, pathname) {
   };
 
   if (pathname === '/api/hub/platform-grants' && req.method === 'GET') {
+    // P0: full grants ledger must not be world-readable (PII / ops data).
+    if (!(await requireHubStaffOrReject(req, res))) return true;
     const state = await hydratePlatformGrantsFromDb({ force: true });
-    sendJson(res, 200, { ok: true, state });
+    const grants = (Array.isArray(state?.grants) ? state.grants : []).map((g) => {
+      if (!g || typeof g !== 'object') return g;
+      const safe = { ...g };
+      delete safe.adminPassword;
+      delete safe.adminPasswordHash;
+      delete safe.adminPasswordPlain;
+      delete safe.uploadToken;
+      delete safe.password;
+      return safe;
+    });
+    sendJson(res, 200, { ok: true, state: { ...state, grants } });
     return true;
   }
 
@@ -2021,7 +2044,7 @@ async function handleHubApi(req, res, pathname) {
   };
 
   if (pathname === '/api/hub/tenant-accounts' && req.method === 'POST') {
-    if (!requireHubStaffOrReject(req, res)) return true;
+    if (!(await requireHubStaffOrReject(req, res))) return true;
     const body = await readBody(req);
     const accounts = Array.isArray(body?.accounts) ? body.accounts : [];
     writeTenantAccountsFile({ version: 1, accounts });
@@ -2030,7 +2053,7 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/tenant-account' && req.method === 'POST') {
-    if (!requireHubStaffOrReject(req, res)) return true;
+    if (!(await requireHubStaffOrReject(req, res))) return true;
     const body = await readBody(req);
     const email = String(body?.email || '').trim().toLowerCase();
     const password = String(body?.password || '');
@@ -2109,6 +2132,8 @@ async function handleHubApi(req, res, pathname) {
   }
 
   if (pathname === '/api/hub/adapters/erp/provision' && req.method === 'POST') {
+    // P0: tenant provisioning proxies admin credentials — staff only.
+    if (!(await requireHubStaffOrReject(req, res))) return true;
     const body = await readBody(req);
     try {
       const result = await erpAdapter.provisionTenant(body || {});
@@ -2121,8 +2146,24 @@ async function handleHubApi(req, res, pathname) {
 
   // —— SSO tickets ——
   if (pathname === '/api/hub/sso/issue' && req.method === 'POST') {
+    // P0: minting SSO tickets for arbitrary emails is an auth bypass vector.
+    const session = await requireHubAuthOrReject(req, res);
+    if (!session) return true;
     const body = await readBody(req);
-    const result = hubSso.issue(body || {});
+    const targetEmail = String(body?.email || '').trim().toLowerCase();
+    if (!targetEmail) {
+      sendJson(res, 400, { ok: false, error: 'البريد مطلوب لإصدار تذكرة SSO' });
+      return true;
+    }
+    if (hubSession.isClientLane(session.lane) && session.email !== targetEmail) {
+      sendJson(res, 403, { ok: false, error: 'لا يمكنك إصدار تذكرة SSO لعميل آخر' });
+      return true;
+    }
+    if (!hubSession.isStaffLane(session.lane) && !hubSession.isClientLane(session.lane)) {
+      sendJson(res, 403, { ok: false, error: 'غير مصرح بإصدار تذاكر SSO' });
+      return true;
+    }
+    const result = hubSso.issue({ ...(body || {}), email: targetEmail });
     sendJson(res, result.ok ? 200 : 400, result);
     return true;
   }
@@ -2223,6 +2264,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/env-check') {
+    // P1: env posture / Railway hints must not be public in production.
+    const session = await requireHubAuthOrReject(req, res);
+    if (!session) return;
+    if (!hubSession.isStaffLane(session.lane) || session.lane !== 'SUPER_ADMIN') {
+      sendJson(res, 403, { ok: false, error: 'فحص البيئة للمدير الأعلى فقط' });
+      return;
+    }
     sendJson(res, 200, checkEnvironment());
     return;
   }
