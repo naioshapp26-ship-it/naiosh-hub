@@ -224,41 +224,27 @@ body.homepage .da-ih .da-ih__lead,
 .da-ih__brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 14px 10px;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 12px 14px;
   border-bottom: 1px solid rgba(120, 160, 220, 0.2);
   background: rgba(6, 10, 22, 0.55);
+  overflow: visible;
 }
 
-.da-ih__brand img {
-  width: 72px;
-  height: 72px;
-  object-fit: cover;
-  border-radius: 14px;
+/* قفل الشعار الأصلي 1386×944 — عرض كامل بدون قص */
+.da-ih__brand img,
+.da-ih__brand-logo {
+  display: block;
+  width: min(100%, 228px);
+  height: auto;
+  aspect-ratio: 1386 / 944;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 12px;
   border: 1px solid rgba(212, 162, 74, 0.45);
-  flex: 0 0 auto;
-}
-
-.da-ih__brand-txt {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-body.homepage .da-ih .da-ih__brand-txt strong,
-.da-ih .da-ih__brand-txt strong {
-  font-size: 15px;
-  font-weight: 900;
-  color: #fff !important;
-  line-height: 1.35;
-}
-
-body.homepage .da-ih .da-ih__brand-txt span,
-.da-ih .da-ih__brand-txt span {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--ih-gold2) !important;
+  background: #000;
+  flex: 0 1 auto;
 }
 
 .da-ih__art-wrap {
@@ -365,9 +351,9 @@ body.homepage .da-ih .da-ih__brand-txt span,
     max-height: 260px;
   }
 
-  .da-ih__brand img {
-    width: 56px;
-    height: 56px;
+  .da-ih__brand img,
+  .da-ih__brand-logo {
+    width: min(100%, 196px);
   }
 }
 
