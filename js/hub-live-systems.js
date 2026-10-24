@@ -54,6 +54,15 @@
       openInNewTab: true,
       label: 'نايوش (مباشر)',
     },
+    /** نظام تحليل البيانات المستقل — NAIOSH Intelligence */
+    ANALYSIS: {
+      url: 'https://www.naioshai.com/',
+      domain: 'www.naioshai.com',
+      loginUrl: 'https://www.naioshai.com/#login',
+      signupUrl: 'https://www.naioshai.com/',
+      openInNewTab: true,
+      label: 'نايوش للتحليل (مباشر)',
+    },
   };
 
   const get = (code) => LIVE[String(code || '').toUpperCase()] || null;
