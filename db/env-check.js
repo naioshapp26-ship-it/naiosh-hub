@@ -21,6 +21,12 @@ const REQUIRED = [
     description: 'production على Railway',
     expected: 'production',
   },
+  {
+    key: 'SESSION_SECRET',
+    requiredInProd: true,
+    description: 'سر توقيع جلسات hub360 (HMAC) — إلزامي في الإنتاج',
+    altKeys: ['HUB_TOKEN_SECRET'],
+  },
 ];
 
 const RECOMMENDED = [
@@ -41,10 +47,6 @@ const RECOMMENDED = [
     key: 'CORS_ORIGIN',
     description: 'أصول مسموحة للـ API (اختياري)',
     defaultValue: '*',
-  },
-  {
-    key: 'SESSION_SECRET',
-    description: 'سر جلسات/JWT — غيّره في الإنتاج',
   },
   {
     key: 'HUB_DEMO_AUTH',

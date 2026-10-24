@@ -1291,6 +1291,24 @@ async function handleHubApi(req, res, pathname) {
   }
 
   // —— طلبات «سجل معنا» + المرفقات المرتبطة بنفس Request ID ——
+  // Staff inbox: list «سجل معنا» registration requests (never expose passwords).
+  if (pathname === '/api/hub/register-requests' && req.method === 'GET') {
+    const session = await requireHubStaffOrReject(req, res);
+    if (!session) return true;
+    const store = hubRegisterAttachments.readStore();
+    const rows = (store.requests || [])
+      .slice()
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+      .map((row) => hubRegisterAttachments.publicRequest(row));
+    sendJson(res, 200, {
+      ok: true,
+      count: rows.length,
+      requests: rows,
+      source: 'register-attachments',
+    });
+    return true;
+  }
+
   if (pathname === '/api/hub/register-requests' && req.method === 'POST') {
     const body = await readBody(req);
     const adminName = String(body?.adminName || body?.fullName || '').trim();
@@ -2695,9 +2713,17 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname.startsWith('/api/hub/')) {
-    handleHubApi(req, res, pathname).catch((error) =>
-      sendJson(res, error.status || 500, { ok: false, error: error.message || 'Hub API error' })
-    );
+    handleHubApi(req, res, pathname)
+      .then((handled) => {
+        if (handled === false && !res.headersSent) {
+          sendJson(res, 404, { ok: false, error: 'مسار Hub غير موجود' });
+        }
+      })
+      .catch((error) => {
+        if (!res.headersSent) {
+          sendJson(res, error.status || 500, { ok: false, error: error.message || 'Hub API error' });
+        }
+      });
     return;
   }
 
