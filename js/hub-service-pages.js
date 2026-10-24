@@ -101,7 +101,7 @@
     const data = new FormData(form);
     const collected = window.HubFormAttachments?.collect?.(form) || {};
     const stored = window.HubFormAttachments?.toStored?.(collected) || {};
-    const item = window.HubServiceRequests?.create?.({
+    const result = await window.HubServiceRequests?.create?.({
       kind,
       title: data.get('title'),
       body: data.get('body'),
@@ -116,10 +116,21 @@
       reference: data.get('reference'),
       ...stored,
     });
-    if (!item) {
-      alert('أدخل عنوانًا واضحًا للطلب');
+    if (!result?.ok) {
+      if (result?.needsLogin) {
+        if (feedback) {
+          feedback.hidden = false;
+          feedback.textContent =
+            result.error || 'يجب تسجيل الدخول لإرسال الطلب إلى الإدارة. لن يُحفظ الطلب في المتصفح فقط.';
+        }
+        const go = confirm((result.error || 'يلزم تسجيل الدخول.') + '\n\nالانتقال لصفحة الدخول الآن؟');
+        if (go) location.href = result.loginUrl || window.HubServiceRequests?.loginUrl?.() || 'login.html';
+        return;
+      }
+      alert(result?.error || 'أدخل عنوانًا واضحًا للطلب');
       return;
     }
+    const item = result.item;
     const persist = await window.HubFormAttachments?.softPersistToEntity?.({
       entityType,
       entityId: item.id,
@@ -140,13 +151,10 @@
     }
     if (feedback) {
       feedback.hidden = false;
-      const note =
-        persist?.skippedReason === 'login_required' && (collected.items || []).length
-          ? ' تم حفظ الروابط محليًا — سجّل الدخول لربط المرفقات بالحفظ الدائم والصلاحيات.'
-          : persist?.persisted
-            ? ' تم ربط المرفقات بالحفظ الدائم.'
-            : '';
-      feedback.textContent = 'تم استلام طلبك وربطه بالنظام. فريق هوب بيتابعه من غرفة العمليات.' + note;
+      const note = persist?.persisted ? ' تم ربط المرفقات بالحفظ الدائم.' : '';
+      const ref = item.number ? ` رقم المرجع: ${item.number}.` : '';
+      feedback.textContent =
+        'تم حفظ طلبك في النظام ووصل إلى صندوق الإدارة.' + ref + note;
     }
     form.reset();
     window.HubFormAttachments?.reset?.(form);

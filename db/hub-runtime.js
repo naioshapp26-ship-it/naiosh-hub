@@ -145,9 +145,19 @@ function addNotification(input = {}) {
   return item;
 }
 
-function markRead(id, all = false) {
+function markRead(id, all = false, opts = {}) {
   const store = readStore();
+  const scopeEmail = String(opts.targetEmail || '')
+    .trim()
+    .toLowerCase();
+  const staffUnscoped = opts.staffUnscoped === true;
   (store.notifications || []).forEach((n) => {
+    if (scopeEmail && !staffUnscoped) {
+      const target = String(n.targetEmail || n.meta?.targetEmail || '')
+        .trim()
+        .toLowerCase();
+      if (target !== scopeEmail) return;
+    }
     if (all || n.id === id) n.read = true;
   });
   writeStore(store);

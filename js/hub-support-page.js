@@ -84,14 +84,22 @@
     const fd = new FormData(form);
     const collected = window.HubFormAttachments?.collect?.(form) || {};
     const stored = window.HubFormAttachments?.toStored?.(collected) || {};
-    const ticket = window.HubSupport?.create?.({
+    const result = await window.HubSupport?.create?.({
       title: fd.get('title'),
       body: fd.get('body'),
       system: fd.get('system') || 'HUB',
       priority: fd.get('priority') || 'عادي',
       ...stored,
     });
-    if (!ticket) return alert('أدخل عنوان التذكرة');
+    if (!result?.ok) {
+      if (result?.needsLogin) {
+        const go = confirm((result.error || 'يلزم تسجيل الدخول.') + '\n\nالانتقال لصفحة الدخول الآن؟');
+        if (go) location.href = result.loginUrl || window.HubSupport?.loginUrl?.() || 'login.html';
+        return;
+      }
+      return alert(result?.error || 'أدخل عنوان التذكرة');
+    }
+    const ticket = result.ticket;
     await window.HubFormAttachments?.softPersistToEntity?.({
       entityType,
       entityId: ticket.id,
