@@ -19,6 +19,15 @@
     provisioning: 'قيد التجهيز',
     active: 'مفعّل',
     rejected: 'مرفوض',
+    submitted: 'مسجّل',
+    confirmed: 'مؤكد',
+    cancelled: 'ملغى',
+  };
+
+  const bookingStatusClass = (s) => {
+    if (s === 'confirmed' || s === 'active') return 'is-active';
+    if (s === 'submitted' || s === 'pending') return 'is-pending';
+    return '';
   };
 
   const escapeHtml = (s) =>
@@ -283,6 +292,53 @@
     });
   };
 
+  const renderPlatformBookings = async () => {
+    const root = $('[data-platform-bookings-list]');
+    if (!root) return;
+    root.innerHTML = '<p class="hub-rent-hint">جارٍ تحميل الحجوزات…</p>';
+    try {
+      const headers = window.HubAuth?.authHeaders?.() || {};
+      const res = await fetch('/api/hub/platform-bookings', { headers, credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) {
+        root.innerHTML =
+          '<p class="hub-rent-hint">يلزم تسجيل دخول موظف لعرض حجوزات المنصات.</p>';
+        return;
+      }
+      if (!res.ok) {
+        root.innerHTML = `<p class="hub-rent-hint">تعذر تحميل الحجوزات (${res.status}).</p>`;
+        return;
+      }
+      const data = await res.json();
+      const rows = Array.isArray(data.bookings) ? data.bookings : [];
+      if (!rows.length) {
+        root.innerHTML =
+          '<p class="hub-rent-hint">لا حجوزات بعد — تُرسل من <a href="book-platform.html">حجز منصة</a>.</p>';
+        return;
+      }
+      root.innerHTML = rows
+        .map((b) => {
+          const st = String(b.status || 'submitted');
+          const kindAr =
+            b.kind === 'incubator' ? 'حاضنة' : b.kind === 'office' ? 'مكتب' : 'منصة';
+          const when = b.createdAt
+            ? new Date(b.createdAt).toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+            : '—';
+          return `<article class="hub-rent-admin-item" data-booking-id="${escapeHtml(b.id)}">
+            <h3>${escapeHtml(b.platformName || b.subdomain || 'حجز')} <span class="hub-rent-status ${bookingStatusClass(st)}">${escapeHtml(statusAr[st] || st)}</span></h3>
+            <p>رقم الحجز: <code dir="ltr">${escapeHtml(b.id)}</code> · النوع: ${escapeHtml(kindAr)}</p>
+            <p>النطاق: <span dir="ltr">${escapeHtml(b.subdomain || '—')}</span> · القطاع: ${escapeHtml(b.sectorName || '—')}</p>
+            <p>مقدّم الطلب: ${escapeHtml(b.fullName || '—')} · <span dir="ltr">${escapeHtml(b.email || '')}</span> · ${escapeHtml(b.phone || '')}</p>
+            <p>الفرع: ${escapeHtml(b.branchLabel || b.branch || '—')} · الحاضنة: ${escapeHtml(b.incubator || '—')}</p>
+            <p>التاريخ: ${escapeHtml(when)}</p>
+            ${b.summary ? `<p>${escapeHtml(b.summary)}</p>` : ''}
+          </article>`;
+        })
+        .join('');
+    } catch {
+      root.innerHTML = '<p class="hub-rent-hint">تعذر الاتصال بخادم الحجوزات.</p>';
+    }
+  };
+
   const renderList = () => {
     const root = $('[data-rent-admin-list]');
     if (!root) return;
@@ -385,13 +441,20 @@
       }
     }
 
-    if (!$('[data-rent-admin-list]') && !$('[data-platform-admin-list]')) return;
+    if (
+      !$('[data-rent-admin-list]') &&
+      !$('[data-platform-admin-list]') &&
+      !$('[data-platform-bookings-list]')
+    ) {
+      return;
+    }
     await store()?.hydrate?.();
     await platforms()?.hydrate?.();
     void platforms()?.syncAccountsFromGrants?.();
     renderVisGrid();
     renderList();
     renderPlatformList();
+    void renderPlatformBookings();
     $('[data-vis-save]')?.addEventListener('click', saveVisibility);
     $('#vis-email')?.addEventListener('change', loadVisibility);
     $('#vis-email')?.addEventListener('blur', loadVisibility);

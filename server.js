@@ -979,7 +979,7 @@ async function handleHubApi(req, res, pathname) {
       ok: true,
       staff,
       count: list.length,
-      submissions: list,
+      submissions: list.map((s) => adSubmissions.stripSecrets(s)),
       requests: list.map((s) => adSubmissions.toAdminRequest(s)),
     });
     return true;
@@ -1028,7 +1028,7 @@ async function handleHubApi(req, res, pathname) {
         ok: true,
         duplicate: !!result.duplicate,
         dbPersisted: !!(persistResults && persistResults.ok),
-        submission: result.submission,
+        submission: adSubmissions.stripSecrets(result.submission),
         request: adSubmissions.toAdminRequest(result.submission),
       });
     } catch (err) {
@@ -1042,27 +1042,56 @@ async function handleHubApi(req, res, pathname) {
     return true;
   }
 
-  const adSubMatch = pathname.match(/^\/api\/hub\/ad-submissions\/([^/]+)$/);
-  if (adSubMatch && req.method === 'GET') {
-    let session;
-    try {
-      session = hubSession.requireAuth(req);
-    } catch (err) {
-      sendJson(res, err.status || 401, { ok: false, error: err.message || 'مطلوب تسجيل الدخول' });
+  const adSubMatch = pathname.match(/^\/api\/hub\/ad-submissions\/([^/]+)(?:\/(status))?$/);
+  if (adSubMatch) {
+    const subId = decodeURIComponent(adSubMatch[1]);
+    const isStatus = adSubMatch[2] === 'status';
+
+    if (req.method === 'GET' && !isStatus) {
+      let session;
+      try {
+        session = hubSession.requireAuth(req);
+      } catch (err) {
+        sendJson(res, err.status || 401, { ok: false, error: err.message || 'مطلوب تسجيل الدخول' });
+        return true;
+      }
+      try {
+        const submission = adSubmissions.getSubmission(subId);
+        adSubmissions.assertCanView(submission, session);
+        sendJson(res, 200, {
+          ok: true,
+          submission: adSubmissions.stripSecrets(submission),
+          request: adSubmissions.toAdminRequest(submission),
+        });
+      } catch (err) {
+        sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحميل الطلب' });
+      }
       return true;
     }
-    try {
-      const submission = adSubmissions.getSubmission(decodeURIComponent(adSubMatch[1]));
-      adSubmissions.assertCanView(submission, session);
-      sendJson(res, 200, {
-        ok: true,
-        submission,
-        request: adSubmissions.toAdminRequest(submission),
-      });
-    } catch (err) {
-      sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحميل الطلب' });
+
+    if (isStatus && (req.method === 'PATCH' || req.method === 'POST')) {
+      let session;
+      try {
+        session = hubSession.requireStaff(req);
+      } catch (err) {
+        sendJson(res, err.status || 401, { ok: false, error: err.message || 'Forbidden' });
+        return true;
+      }
+      const body = await readBody(req);
+      try {
+        const submission = adSubmissions.updateStatus(subId, String(body?.status || ''), session, {
+          reason: body?.reason || body?.note || '',
+        });
+        sendJson(res, 200, {
+          ok: true,
+          submission: adSubmissions.stripSecrets(submission),
+          request: adSubmissions.toAdminRequest(submission),
+        });
+      } catch (err) {
+        sendJson(res, err.status || 400, { ok: false, error: err.message || 'تعذر تحديث الحالة' });
+      }
+      return true;
     }
-    return true;
   }
 
   if (pathname === '/api/hub/product-submissions/published' && req.method === 'GET') {
