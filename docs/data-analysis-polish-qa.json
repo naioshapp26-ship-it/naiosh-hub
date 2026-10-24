@@ -1,0 +1,226 @@
+{
+  "pass": 44,
+  "fail": 0,
+  "results": [
+    {
+      "id": "desktop_title",
+      "result": "PASS",
+      "detail": "نايوش لتحليل البيانات"
+    },
+    {
+      "id": "desktop_tagline",
+      "result": "PASS",
+      "detail": "ذكاء يحوّل بياناتك إلى قرارات"
+    },
+    {
+      "id": "desktop_no_dev_speak",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "desktop_no_placeholder",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "desktop_no_hscroll",
+      "result": "PASS",
+      "detail": "scrollW=1440 inner=1440"
+    },
+    {
+      "id": "desktop_no_clip",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "desktop_cta_touch",
+      "result": "PASS",
+      "detail": "h=48"
+    },
+    {
+      "id": "desktop_gift_visible",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "desktop_logo_size",
+      "result": "PASS",
+      "detail": "w=318"
+    },
+    {
+      "id": "desktop_links",
+      "result": "PASS",
+      "detail": "https://www.naioshai.com/ | https://www.naioshai.com/#login"
+    },
+    {
+      "id": "section_order",
+      "result": "PASS",
+      "detail": "[\"ما هو النظام؟\",\"ماذا يقدّم؟\",\"كيف أبدأ؟\",\"ما الذي أحصل عليه مجانًا؟\",\"الخدمات والتكاليف\",\"أسئلة شائعة\",\"ابدأ الآن — مجانًا\"]"
+    },
+    {
+      "id": "pricing_intact",
+      "result": "PASS",
+      "detail": "{\"50\":true,\"60\":true,\"80\":true,\"120\":true,\"200\":true,\"250\":true}"
+    },
+    {
+      "id": "phone-sm_title",
+      "result": "PASS",
+      "detail": "نايوش لتحليل البيانات"
+    },
+    {
+      "id": "phone-sm_tagline",
+      "result": "PASS",
+      "detail": "ذكاء يحوّل بياناتك إلى قرارات"
+    },
+    {
+      "id": "phone-sm_no_dev_speak",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-sm_no_placeholder",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-sm_no_hscroll",
+      "result": "PASS",
+      "detail": "scrollW=360 inner=360"
+    },
+    {
+      "id": "phone-sm_no_clip",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-sm_cta_touch",
+      "result": "PASS",
+      "detail": "h=48"
+    },
+    {
+      "id": "phone-sm_gift_visible",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-sm_logo_size",
+      "result": "PASS",
+      "detail": "w=258"
+    },
+    {
+      "id": "phone-sm_links",
+      "result": "PASS",
+      "detail": "https://www.naioshai.com/ | https://www.naioshai.com/#login"
+    },
+    {
+      "id": "phone-md_title",
+      "result": "PASS",
+      "detail": "نايوش لتحليل البيانات"
+    },
+    {
+      "id": "phone-md_tagline",
+      "result": "PASS",
+      "detail": "ذكاء يحوّل بياناتك إلى قرارات"
+    },
+    {
+      "id": "phone-md_no_dev_speak",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-md_no_placeholder",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-md_no_hscroll",
+      "result": "PASS",
+      "detail": "scrollW=390 inner=390"
+    },
+    {
+      "id": "phone-md_no_clip",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-md_cta_touch",
+      "result": "PASS",
+      "detail": "h=48"
+    },
+    {
+      "id": "phone-md_gift_visible",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-md_logo_size",
+      "result": "PASS",
+      "detail": "w=258"
+    },
+    {
+      "id": "phone-md_links",
+      "result": "PASS",
+      "detail": "https://www.naioshai.com/ | https://www.naioshai.com/#login"
+    },
+    {
+      "id": "phone-lg_title",
+      "result": "PASS",
+      "detail": "نايوش لتحليل البيانات"
+    },
+    {
+      "id": "phone-lg_tagline",
+      "result": "PASS",
+      "detail": "ذكاء يحوّل بياناتك إلى قرارات"
+    },
+    {
+      "id": "phone-lg_no_dev_speak",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-lg_no_placeholder",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-lg_no_hscroll",
+      "result": "PASS",
+      "detail": "scrollW=430 inner=430"
+    },
+    {
+      "id": "phone-lg_no_clip",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-lg_cta_touch",
+      "result": "PASS",
+      "detail": "h=48"
+    },
+    {
+      "id": "phone-lg_gift_visible",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "phone-lg_logo_size",
+      "result": "PASS",
+      "detail": "w=258"
+    },
+    {
+      "id": "phone-lg_links",
+      "result": "PASS",
+      "detail": "https://www.naioshai.com/ | https://www.naioshai.com/#login"
+    },
+    {
+      "id": "live_signup_path_home",
+      "result": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "live_login_path",
+      "result": "PASS",
+      "detail": ""
+    }
+  ]
+}
