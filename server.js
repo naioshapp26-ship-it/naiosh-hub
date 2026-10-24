@@ -2210,6 +2210,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/db/migrate' && (req.method === 'POST' || req.method === 'GET')) {
+    // P0 harden: schema migrate must never be public on production.
+    const session = await requireHubAuthOrReject(req, res);
+    if (!session) return;
+    if (!hubSession.isStaffLane(session.lane) || session.lane !== 'SUPER_ADMIN') {
+      sendJson(res, 403, { ok: false, error: 'ترحيل قاعدة البيانات للمدير الأعلى فقط' });
+      return;
+    }
     migrate()
       .then((result) => sendJson(res, 200, { ok: true, migrated: true, ...result }))
       .catch((error) =>
@@ -2222,6 +2229,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/db/tables') {
+    // P0 harden: table inventory/counts are internal ops data.
+    const session = await requireHubAuthOrReject(req, res);
+    if (!session) return;
+    if (!hubSession.isStaffLane(session.lane) || session.lane !== 'SUPER_ADMIN') {
+      sendJson(res, 403, { ok: false, error: 'قائمة جداول قاعدة البيانات للمدير الأعلى فقط' });
+      return;
+    }
     listTables()
       .then((result) => sendJson(res, 200, { ok: true, ...result }))
       .catch((error) =>
