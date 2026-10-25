@@ -610,12 +610,17 @@ body.dark-mode .da-note {
   background: rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
   color: #fff !important;
+  box-shadow: none !important;
 }
 
-.da-closing .da-cta-primary {
+.da-closing .da-cta-primary,
+.da-closing .btn-primary.da-cta-primary {
   background: #fff !important;
   color: #071426 !important;
   border: 1px solid #fff !important;
+  /* neutralize any global red/maroon button glow inside this band only */
+  box-shadow: 0 10px 24px rgba(5, 13, 27, 0.35) !important;
+  filter: none !important;
 }
 
 /* ---------- Responsive ---------- */
