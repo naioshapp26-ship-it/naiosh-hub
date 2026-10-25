@@ -581,13 +581,14 @@ body.dark-mode .da-note {
 }
 
 .da-closing {
+  /* Scoped navy closing band — match intel hero family; no maroon/red fill */
   background:
-    radial-gradient(100% 80% at 0% 0%, rgba(215, 0, 0, 0.35), transparent 55%),
-    linear-gradient(128deg, #0c0003, #500014);
+    radial-gradient(100% 80% at 0% 0%, rgba(35, 100, 190, 0.28), transparent 55%),
+    linear-gradient(128deg, #050d1b, #071426 42%, #0b2344);
   color: #fff;
   border-radius: 22px;
   padding: clamp(22px, 3vw, 36px);
-  box-shadow: 0 24px 60px rgba(60, 0, 14, 0.35);
+  box-shadow: 0 24px 60px rgba(5, 13, 27, 0.45);
 }
 
 .da-closing h2 {
@@ -599,7 +600,7 @@ body.dark-mode .da-note {
 
 .da-closing p {
   margin: 0 0 16px;
-  color: rgba(255, 245, 247, 0.95) !important;
+  color: rgba(235, 242, 255, 0.95) !important;
   max-width: 52ch;
   line-height: 1.8;
   font-weight: 600;
@@ -613,7 +614,7 @@ body.dark-mode .da-note {
 
 .da-closing .da-cta-primary {
   background: #fff !important;
-  color: #9f1239 !important;
+  color: #071426 !important;
   border: 1px solid #fff !important;
 }
 
